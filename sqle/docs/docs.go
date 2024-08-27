@@ -3362,6 +3362,222 @@ var doc = `{
                 }
             }
         },
+        "/v1/projects/{project_name}/pipelines": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get pipeline list",
+                "tags": [
+                    "pipeline"
+                ],
+                "summary": "获取流水线列表",
+                "operationId": "getPipelinesV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy search pipeline name and description",
+                        "name": "fuzzy_search_name_desc",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetPipelinesResV1"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "create pipeline",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "pipeline"
+                ],
+                "summary": "创建流水线",
+                "operationId": "createPipelineV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "create pipeline",
+                        "name": "pipeline",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.CreatePipelineReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/pipelines/{pipeline_id}/": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get pipeline detail",
+                "tags": [
+                    "pipeline"
+                ],
+                "summary": "获取流水线详情",
+                "operationId": "getPipelineDetailV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "pipeline id",
+                        "name": "pipeline_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetPipelineDetailResV1"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "delete pipeline",
+                "tags": [
+                    "pipeline"
+                ],
+                "summary": "删除流水线",
+                "operationId": "deletePipelineV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "pipeline id",
+                        "name": "pipeline_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update pipeline",
+                "tags": [
+                    "pipeline"
+                ],
+                "summary": "更新流水线",
+                "operationId": "updatePipelineV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "pipeline id",
+                        "name": "pipeline_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "update pipeline",
+                        "name": "pipeline",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdatePipelineReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{project_name}/report_push_configs": {
             "get": {
                 "security": [
@@ -10636,6 +10852,30 @@ var doc = `{
                 }
             }
         },
+        "v1.CreatePipelineReqV1": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "description": "关联流水线地址",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "流水线描述",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "流水线名称",
+                    "type": "string"
+                },
+                "nodes": {
+                    "description": "节点信息，必填，支持多个节点",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.pipelineNodeBase"
+                    }
+                }
+            }
+        },
         "v1.CreateProjectRuleTemplateReqV1": {
             "type": "object",
             "properties": {
@@ -11986,6 +12226,70 @@ var doc = `{
                     "example": "ok"
                 },
                 "total_nums": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.GetPipelineDetailResV1": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "description": "关联流水线地址",
+                    "type": "string"
+                },
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "description": {
+                    "description": "流水线描述",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "流水线的唯一标识符",
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "name": {
+                    "description": "流水线名称",
+                    "type": "string"
+                },
+                "node_count": {
+                    "description": "节点个数",
+                    "type": "integer"
+                },
+                "nodes": {
+                    "description": "流水线节点信息",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.pipelineNodeDetail"
+                    }
+                }
+            }
+        },
+        "v1.GetPipelinesResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "流水线列表数据",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.pipelineDetail"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "description": "流水线总数",
                     "type": "integer"
                 }
             }
@@ -14944,6 +15248,30 @@ var doc = `{
                 }
             }
         },
+        "v1.UpdatePipelineReqV1": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "description": "关联流水线地址",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "流水线描述",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "流水线名称",
+                    "type": "string"
+                },
+                "nodes": {
+                    "description": "节点信息，非必填，若提供则需支持多个节点",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.pipelineNodeDetail"
+                    }
+                }
+            }
+        },
         "v1.UpdateProjectRuleTemplateReqV1": {
             "type": "object",
             "properties": {
@@ -15559,6 +15887,125 @@ var doc = `{
                 },
                 "workflow_template_name": {
                     "type": "string"
+                }
+            }
+        },
+        "v1.pipelineDetail": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "description": "关联流水线地址",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "流水线描述",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "流水线的唯一标识符",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "流水线名称",
+                    "type": "string"
+                },
+                "node_count": {
+                    "description": "节点个数",
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.pipelineNodeBase": {
+            "type": "object",
+            "properties": {
+                "audit_method": {
+                    "description": "审核方式，必选，可选项为离线审核、在线审核",
+                    "type": "string",
+                    "enum": [
+                        "offline",
+                        "online"
+                    ]
+                },
+                "instance_name": {
+                    "description": "数据源名称，在线审核时必填",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "节点名称，必填，支持中文、英文+数字+特殊字符",
+                    "type": "string"
+                },
+                "object_path": {
+                    "description": "审核脚本路径，必填，用户填写文件路径",
+                    "type": "string"
+                },
+                "object_type": {
+                    "description": "审核对象类型，必填，可选项为SQL文件、MyBatis文件",
+                    "type": "string",
+                    "enum": [
+                        "sql",
+                        "mybatis"
+                    ]
+                },
+                "rule_template_name": {
+                    "description": "审核规则模板，必填",
+                    "type": "string"
+                },
+                "type": {
+                    "description": "节点类型，必填，选项为“审核”或“上线”",
+                    "type": "string",
+                    "enum": [
+                        "audit",
+                        "release"
+                    ]
+                }
+            }
+        },
+        "v1.pipelineNodeDetail": {
+            "type": "object",
+            "properties": {
+                "audit_method": {
+                    "description": "审核方式，必选，可选项为离线审核、在线审核",
+                    "type": "string",
+                    "enum": [
+                        "offline",
+                        "online"
+                    ]
+                },
+                "id": {
+                    "description": "节点的唯一标识符，在更新时必填",
+                    "type": "string"
+                },
+                "instance_name": {
+                    "description": "数据源名称，在线审核时必填",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "节点名称，必填，支持中文、英文+数字+特殊字符",
+                    "type": "string"
+                },
+                "object_path": {
+                    "description": "审核脚本路径，必填，用户填写文件路径",
+                    "type": "string"
+                },
+                "object_type": {
+                    "description": "审核对象类型，必填，可选项为SQL文件、MyBatis文件",
+                    "type": "string",
+                    "enum": [
+                        "sql",
+                        "mybatis"
+                    ]
+                },
+                "rule_template_name": {
+                    "description": "审核规则模板，必填",
+                    "type": "string"
+                },
+                "type": {
+                    "description": "节点类型，必填，选项为“审核”或“上线”",
+                    "type": "string",
+                    "enum": [
+                        "audit",
+                        "release"
+                    ]
                 }
             }
         },

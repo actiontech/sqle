@@ -732,6 +732,23 @@ definitions:
       instance_id:
         type: string
     type: object
+  v1.CreatePipelineReqV1:
+    properties:
+      address:
+        description: 关联流水线地址
+        type: string
+      description:
+        description: 流水线描述
+        type: string
+      name:
+        description: 流水线名称
+        type: string
+      nodes:
+        description: 节点信息，必填，支持多个节点
+        items:
+          $ref: '#/definitions/v1.pipelineNodeBase'
+        type: array
+    type: object
   v1.CreateProjectRuleTemplateReqV1:
     properties:
       db_type:
@@ -1661,6 +1678,52 @@ definitions:
         example: ok
         type: string
       total_nums:
+        type: integer
+    type: object
+  v1.GetPipelineDetailResV1:
+    properties:
+      address:
+        description: 关联流水线地址
+        type: string
+      code:
+        example: 0
+        type: integer
+      description:
+        description: 流水线描述
+        type: string
+      id:
+        description: 流水线的唯一标识符
+        type: string
+      message:
+        example: ok
+        type: string
+      name:
+        description: 流水线名称
+        type: string
+      node_count:
+        description: 节点个数
+        type: integer
+      nodes:
+        description: 流水线节点信息
+        items:
+          $ref: '#/definitions/v1.pipelineNodeDetail'
+        type: array
+    type: object
+  v1.GetPipelinesResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        description: 流水线列表数据
+        items:
+          $ref: '#/definitions/v1.pipelineDetail'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_nums:
+        description: 流水线总数
         type: integer
     type: object
   v1.GetProjectRuleTemplateResV1:
@@ -3672,6 +3735,23 @@ definitions:
         - disabled
         type: string
     type: object
+  v1.UpdatePipelineReqV1:
+    properties:
+      address:
+        description: 关联流水线地址
+        type: string
+      description:
+        description: 流水线描述
+        type: string
+      name:
+        description: 流水线名称
+        type: string
+      nodes:
+        description: 节点信息，非必填，若提供则需支持多个节点
+        items:
+          $ref: '#/definitions/v1.pipelineNodeDetail'
+        type: array
+    type: object
   v1.UpdateProjectRuleTemplateReqV1:
     properties:
       desc:
@@ -4082,6 +4162,93 @@ definitions:
           $ref: '#/definitions/v1.WorkFlowStepTemplateResV1'
         type: array
       workflow_template_name:
+        type: string
+    type: object
+  v1.pipelineDetail:
+    properties:
+      address:
+        description: 关联流水线地址
+        type: string
+      description:
+        description: 流水线描述
+        type: string
+      id:
+        description: 流水线的唯一标识符
+        type: string
+      name:
+        description: 流水线名称
+        type: string
+      node_count:
+        description: 节点个数
+        type: integer
+    type: object
+  v1.pipelineNodeBase:
+    properties:
+      audit_method:
+        description: 审核方式，必选，可选项为离线审核、在线审核
+        enum:
+        - offline
+        - online
+        type: string
+      instance_name:
+        description: 数据源名称，在线审核时必填
+        type: string
+      name:
+        description: 节点名称，必填，支持中文、英文+数字+特殊字符
+        type: string
+      object_path:
+        description: 审核脚本路径，必填，用户填写文件路径
+        type: string
+      object_type:
+        description: 审核对象类型，必填，可选项为SQL文件、MyBatis文件
+        enum:
+        - sql
+        - mybatis
+        type: string
+      rule_template_name:
+        description: 审核规则模板，必填
+        type: string
+      type:
+        description: 节点类型，必填，选项为“审核”或“上线”
+        enum:
+        - audit
+        - release
+        type: string
+    type: object
+  v1.pipelineNodeDetail:
+    properties:
+      audit_method:
+        description: 审核方式，必选，可选项为离线审核、在线审核
+        enum:
+        - offline
+        - online
+        type: string
+      id:
+        description: 节点的唯一标识符，在更新时必填
+        type: string
+      instance_name:
+        description: 数据源名称，在线审核时必填
+        type: string
+      name:
+        description: 节点名称，必填，支持中文、英文+数字+特殊字符
+        type: string
+      object_path:
+        description: 审核脚本路径，必填，用户填写文件路径
+        type: string
+      object_type:
+        description: 审核对象类型，必填，可选项为SQL文件、MyBatis文件
+        enum:
+        - sql
+        - mybatis
+        type: string
+      rule_template_name:
+        description: 审核规则模板，必填
+        type: string
+      type:
+        description: 节点类型，必填，选项为“审核”或“上线”
+        enum:
+        - audit
+        - release
         type: string
     type: object
   v2.AffectRows:
@@ -7030,6 +7197,146 @@ paths:
       summary: 批量测试实例连通性（实例提交后）
       tags:
       - instance
+  /v1/projects/{project_name}/pipelines:
+    get:
+      description: get pipeline list
+      operationId: getPipelinesV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: fuzzy search pipeline name and description
+        in: query
+        name: fuzzy_search_name_desc
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        required: true
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetPipelinesResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取流水线列表
+      tags:
+      - pipeline
+    post:
+      consumes:
+      - application/json
+      description: create pipeline
+      operationId: createPipelineV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: create pipeline
+        in: body
+        name: pipeline
+        required: true
+        schema:
+          $ref: '#/definitions/v1.CreatePipelineReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 创建流水线
+      tags:
+      - pipeline
+  /v1/projects/{project_name}/pipelines/{pipeline_id}/:
+    delete:
+      description: delete pipeline
+      operationId: deletePipelineV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: pipeline id
+        in: path
+        name: pipeline_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 删除流水线
+      tags:
+      - pipeline
+    get:
+      description: get pipeline detail
+      operationId: getPipelineDetailV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: pipeline id
+        in: path
+        name: pipeline_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetPipelineDetailResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取流水线详情
+      tags:
+      - pipeline
+    patch:
+      description: update pipeline
+      operationId: updatePipelineV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: pipeline id
+        in: path
+        name: pipeline_id
+        required: true
+        type: string
+      - description: update pipeline
+        in: body
+        name: pipeline
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdatePipelineReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新流水线
+      tags:
+      - pipeline
   /v1/projects/{project_name}/report_push_configs:
     get:
       description: Get report push config list
