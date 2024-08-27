@@ -59,9 +59,9 @@ type AuditResult struct {
 }
 
 type Source struct {
-	SqlSourceType string `json:"sql_source_type"`
-	SqlSourceDesc string `json:"sql_source_desc"`
-	SqlSourceID   string `json:"sql_source_id"`
+	SqlSourceType string   `json:"sql_source_type"`
+	SqlSourceDesc string   `json:"sql_source_desc"`
+	SqlSourceIDs  []string `json:"sql_source_ids"`
 }
 
 // todo : 该接口已废弃，后续会删除
