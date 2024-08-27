@@ -5,30 +5,32 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// Pipeline 单个流水线的信息
-type Pipeline struct {
+// pipelineDetail 流水线的信息详情
+type pipelineDetail struct {
 	ID        string `json:"id"`         // 流水线的唯一标识符
 	NodeCount uint32 `json:"node_count"` // 节点个数
-	PipelineBase
+	pipelineBase
 }
 
-type PipelineBase struct {
+// pipelineBase 流水线基础信息
+type pipelineBase struct {
 	Name        string `json:"name"  valid:"required"` // 流水线名称
 	Description string `json:"description"`            // 流水线描述
 	Address     string `json:"address"`                // 关联流水线地址
 }
 
-// PipelineNode 流水线节点的基础信息
-type PipelineNode struct {
+// pipelineNodeDetail 流水线节点的信息详情
+type pipelineNodeDetail struct {
 	ID string `json:"id" valid:"required"` // 节点的唯一标识符，在更新时必填
-	PipelineNodeBase
+	pipelineNodeBase
 }
 
-type PipelineNodeBase struct {
+// pipelineNodeBase 流水线节点基础信息
+type pipelineNodeBase struct {
 	Name             string `json:"name" valid:"required"`                                        // 节点名称，必填，支持中文、英文+数字+特殊字符
 	Type             string `json:"type" valid:"required" enums:"audit,release"`                  // 节点类型，必填，选项为“审核”或“上线”
 	InstanceName     string `json:"instance_name,omitempty" valid:"required_if=AuditType online"` // 数据源名称，在线审核时必填
-	ScriptPath       string `json:"script_path" valid:"required"`                                 // 审核脚本路径，必填，用户填写文件路径
+	ObjectPath       string `json:"object_path" valid:"required"`                                 // 审核脚本路径，必填，用户填写文件路径
 	ObjectType       string `json:"object_type" valid:"required" enums:"sql,mybatis"`             // 审核对象类型，必填，可选项为SQL文件、MyBatis文件
 	AuditMethod      string `json:"audit_method" valid:"required" enums:"offline,online"`         // 审核方式，必选，可选项为离线审核、在线审核
 	RuleTemplateName string `json:"rule_template_name" valid:"required"`                          // 审核规则模板，必填
@@ -36,8 +38,8 @@ type PipelineNodeBase struct {
 
 // CreatePipelineReqV1 用于创建流水线的请求结构体
 type CreatePipelineReqV1 struct {
-	PipelineBase
-	Nodes []PipelineNodeBase `json:"nodes" valid:"dive,required"` // 节点信息，必填，支持多个节点
+	pipelineBase
+	Nodes []pipelineNodeBase `json:"nodes" valid:"dive,required"` // 节点信息，必填，支持多个节点
 }
 
 // GetPipelinesReqV1 用于请求获取流水线列表的结构体
@@ -50,8 +52,8 @@ type GetPipelinesReqV1 struct {
 // GetPipelinesResV1 用于响应流水线列表的结构体
 type GetPipelinesResV1 struct {
 	controller.BaseRes
-	Data      []Pipeline `json:"data"`       // 流水线列表数据
-	TotalNums uint64     `json:"total_nums"` // 流水线总数
+	Data      []pipelineDetail `json:"data"`       // 流水线列表数据
+	TotalNums uint64           `json:"total_nums"` // 流水线总数
 }
 
 // GetPipelineDetailReqV1 用于请求获取流水线详情的结构体
@@ -62,14 +64,14 @@ type GetPipelineDetailReqV1 struct {
 // GetPipelineDetailResV1 用于响应流水线详情的结构体
 type GetPipelineDetailResV1 struct {
 	controller.BaseRes
-	Pipeline
-	Nodes []PipelineNode `json:"nodes"` // 流水线节点信息
+	pipelineDetail
+	Nodes []pipelineNodeDetail `json:"nodes"` // 流水线节点信息
 }
 
 // UpdatePipelineReqV1 用于更新流水线的请求结构体
 type UpdatePipelineReqV1 struct {
-	PipelineBase
-	Nodes []PipelineNode `json:"nodes,omitempty" valid:"dive,required"` // 节点信息，非必填，若提供则需支持多个节点
+	pipelineBase
+	Nodes []pipelineNodeDetail `json:"nodes,omitempty" valid:"dive,required"` // 节点信息，非必填，若提供则需支持多个节点
 }
 
 // DeletePipelineReqV1 用于删除流水线的请求结构体
@@ -115,7 +117,7 @@ func GetPipelines(c echo.Context) error {
 // @Param project_name path string true "project name"
 // @Param pipeline_id path string true "pipeline id"
 // @Success 200 {object} v1.GetPipelineDetailResV1
-// @router /v1/projects/{project_name}/pipelines/{pipeline_id} [get]
+// @router /v1/projects/{project_name}/pipelines/{pipeline_id}/ [get]
 func GetPipelineDetail(c echo.Context) error {
 	return nil
 }
@@ -128,7 +130,7 @@ func GetPipelineDetail(c echo.Context) error {
 // @Param project_name path string true "project name"
 // @Param pipeline_id path string true "pipeline id"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/{project_name}/pipelines/{pipeline_id} [delete]
+// @router /v1/projects/{project_name}/pipelines/{pipeline_id}/ [delete]
 func DeletePipeline(c echo.Context) error {
 	return nil
 }
@@ -142,7 +144,7 @@ func DeletePipeline(c echo.Context) error {
 // @Param pipeline_id path string true "pipeline id"
 // @Param pipeline body v1.UpdatePipelineReqV1 true "update pipeline"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/{project_name}/pipelines/{pipeline_id} [patch]
+// @router /v1/projects/{project_name}/pipelines/{pipeline_id}/ [patch]
 func UpdatePipeline(c echo.Context) error {
 	return nil
 }
