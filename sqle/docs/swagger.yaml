@@ -744,7 +744,7 @@ definitions:
         description: 流水线名称
         type: string
       nodes:
-        description: 节点信息，必填，支持多个节点
+        description: 节点信息
         items:
           $ref: '#/definitions/v1.pipelineNodeBase'
         type: array
@@ -1682,32 +1682,15 @@ definitions:
     type: object
   v1.GetPipelineDetailResV1:
     properties:
-      address:
-        description: 关联流水线地址
-        type: string
       code:
         example: 0
         type: integer
-      description:
-        description: 流水线描述
-        type: string
-      id:
-        description: 流水线的唯一标识符
-        type: string
+      data:
+        $ref: '#/definitions/v1.pipelineDetailData'
+        type: object
       message:
         example: ok
         type: string
-      name:
-        description: 流水线名称
-        type: string
-      node_count:
-        description: 节点个数
-        type: integer
-      nodes:
-        description: 流水线节点信息
-        items:
-          $ref: '#/definitions/v1.pipelineNodeDetail'
-        type: array
     type: object
   v1.GetPipelinesResV1:
     properties:
@@ -3747,9 +3730,9 @@ definitions:
         description: 流水线名称
         type: string
       nodes:
-        description: 节点信息，非必填，若提供则需支持多个节点
+        description: 节点信息
         items:
-          $ref: '#/definitions/v1.pipelineNodeDetail'
+          $ref: '#/definitions/v1.pipelineNodeBase'
         type: array
     type: object
   v1.UpdateProjectRuleTemplateReqV1:
@@ -4174,13 +4157,36 @@ definitions:
         type: string
       id:
         description: 流水线的唯一标识符
-        type: string
+        type: integer
       name:
         description: 流水线名称
         type: string
       node_count:
         description: 节点个数
         type: integer
+    type: object
+  v1.pipelineDetailData:
+    properties:
+      address:
+        description: 关联流水线地址
+        type: string
+      description:
+        description: 流水线描述
+        type: string
+      id:
+        description: 流水线的唯一标识符
+        type: integer
+      name:
+        description: 流水线名称
+        type: string
+      node_count:
+        description: 节点个数
+        type: integer
+      nodes:
+        description: 流水线节点信息
+        items:
+          $ref: '#/definitions/v1.pipelineNodeDetail'
+        type: array
     type: object
   v1.pipelineNodeBase:
     properties:
@@ -4192,6 +4198,9 @@ definitions:
         type: string
       instance_name:
         description: 数据源名称，在线审核时必填
+        type: string
+      instance_type:
+        description: 数据源类型，离线审核时必填
         type: string
       name:
         description: 节点名称，必填，支持中文、英文+数字+特殊字符
@@ -4224,10 +4233,16 @@ definitions:
         - online
         type: string
       id:
-        description: 节点的唯一标识符，在更新时必填
-        type: string
+        description: 节点的唯一标识符
+        type: integer
       instance_name:
         description: 数据源名称，在线审核时必填
+        type: string
+      instance_type:
+        description: 数据源类型，离线审核时必填
+        type: string
+      integration_info:
+        description: 对接说明
         type: string
       name:
         description: 节点名称，必填，支持中文、英文+数字+特殊字符
