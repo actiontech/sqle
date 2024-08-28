@@ -111,9 +111,9 @@ func auditSQLs(sqls []*model.SQLManageRecord) (*AuditResultResp, error) {
 		return nil, ErrNoSQLNeedToBeAudited
 	}
 	// 同一批sql都属于同一个任务
-	auditPlanID := sqls[0].SourceId
-
-	auditPlan, err := dms.GetAuditPlansWithInstanceV2(auditPlanID, persist.GetAuditPlanDetailByID)
+	instAuditPlanID := sqls[0].SourceId
+	auditPlanType := sqls[0].Source
+	auditPlan, err := dms.GetAuditPlansWithInstanceV2(instAuditPlanID, auditPlanType, persist.GetAuditPlanDetailByInstAuditPlanIdAndType)
 	if err != nil {
 		return nil, err
 	}

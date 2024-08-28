@@ -133,7 +133,7 @@ type AuditPlanV2 struct {
 	ActiveStatus            string                    `json:"active_status" gorm:"type:varchar(255)"`
 	LastCollectionTime      *time.Time                `json:"last_collection_time" gorm:"type:datetime(3)"`
 
-	AuditPlanSQLs []*SQLManageRecord `gorm:"foreignKey:SourceId"`
+	AuditPlanSQLs []*SQLManageRecord `gorm:"-"`
 }
 
 func (a AuditPlanV2) TableName() string {
@@ -174,7 +174,7 @@ type SQLManageRecord struct {
 	Model
 
 	Source         string         `json:"source" gorm:"type:varchar(255)"`
-	SourceId       uint           `json:"source_id" gorm:"type:varchar(255)"`
+	SourceId       string         `json:"source_id" gorm:"type:varchar(255)"`
 	ProjectId      string         `json:"project_id" gorm:"type:varchar(255)"`
 	InstanceID     string         `json:"instance_id" gorm:"type:varchar(255)"`
 	SchemaName     string         `json:"schema_name" gorm:"type:varchar(255)"`
@@ -219,10 +219,10 @@ func (s *Storage) GetManageSQLBySQLId(sqlId string) (*SQLManageRecord, bool, err
 	return sql, true, nil
 }
 
-func (s *Storage) GetManageSQLById(sqlId string) (*SQLManageRecord, bool, error) {
+func (s *Storage) GetManageSQLById(id string) (*SQLManageRecord, bool, error) {
 	sql := &SQLManageRecord{}
 
-	err := s.db.Where("id = ?", sqlId).First(sql).Error
+	err := s.db.Where("id = ?", id).First(sql).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, false, nil
 	} else if err != nil {
@@ -233,22 +233,28 @@ func (s *Storage) GetManageSQLById(sqlId string) (*SQLManageRecord, bool, error)
 
 func (s *Storage) GetManagerSQLListByAuditPlanId(apId uint) ([]*SQLManageRecord, error) {
 	sqls := []*SQLManageRecord{}
-	err := s.db.Where("source_id = ?", apId).Find(&sqls).Error
+	err := s.db.Joins("JOIN audit_plans_v2 ON sql_manage_records.source_id = audit_plans_v2.instance_audit_plan_id AND sql_manage_records.source = audit_plans_v2.type").
+		Where("audit_plans_v2.id = ?", apId).
+		Find(&sqls).Error
 	return sqls, err
 }
 
 func (s *Storage) GetManagerSqlSchemaNameByAuditPlan(auditPlanId uint) ([]string, error) {
 	var metricValueTips []string
-	err := s.db.Table("sql_manage_records").Where("sql_manage_records.source_id = ?", auditPlanId).
+	err := s.db.Table("sql_manage_records").
 		Select("DISTINCT sql_manage_records.schema_name as schema_name").
+		Joins("JOIN audit_plans_v2 ON sql_manage_records.source = audit_plans_v2.type AND sql_manage_records.source_id = audit_plans_v2.instance_audit_plan_id").
+		Where("audit_plan_v2.id = ?", auditPlanId).
 		Scan(&metricValueTips).Error
 	return metricValueTips, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetManagerSqlMetricTipsByAuditPlan(auditPlanId uint, metricName string) ([]string, error) {
 	var metricValueTips []string
-	err := s.db.Table("sql_manage_records").Where("sql_manage_records.source_id = ?", auditPlanId).
+	err := s.db.Table("sql_manage_records").
 		Select(fmt.Sprintf("DISTINCT sql_manage_records.info->>'$.%s' as metric_value", metricName)).
+		Joins("JOIN audit_plans_v2 ON sql_manage_records.source = audit_plan_v2.type AND sql_manage_records.source_id = audit_plan_v2.instance_audit_plan_id").
+		Where("audit_plans_v2.id = ?", auditPlanId).
 		Scan(&metricValueTips).Error
 	return metricValueTips, errors.New(errors.ConnectStorageError, err)
 }
@@ -256,11 +262,11 @@ func (s *Storage) GetManagerSqlMetricTipsByAuditPlan(auditPlanId uint, metricNam
 func (s *Storage) GetManagerSqlRuleTipsByAuditPlan(auditPlanId uint) ([]*SqlManageRuleTips, error) {
 	sqlManageRuleTips := make([]*SqlManageRuleTips, 0)
 	err := s.db.Table("sql_manage_records smr").
-		Joins("LEFT JOIN audit_plans_v2 ap ON ap.id = smr.source_id").
-		Joins("LEFT JOIN instance_audit_plans iap ON iap.id = ap.instance_audit_plan_id").
-		Joins("LEFT JOIN rules ON rules.db_type = iap.db_type").
-		Where("smr.audit_results LIKE CONCAT('%' , rules.name , '%') AND smr.source_id = ?", auditPlanId).
 		Select("DISTINCT iap.db_type, rules.name as rule_name, rules.desc").
+		Joins("JOIN audit_plans_v2 ap ON ap.instance_audit_plan_id = smr.source_id AND ap.type = smr.source").
+		Joins("JOIN instance_audit_plans iap ON iap.id = ap.instance_audit_plan_id").
+		Joins("LEFT JOIN rules ON rules.db_type = iap.db_type").
+		Where("smr.audit_results LIKE CONCAT('%' , rules.name , '%') AND ap.id = ?", auditPlanId).
 		Scan(&sqlManageRuleTips).Error
 	return sqlManageRuleTips, errors.New(errors.ConnectStorageError, err)
 }
@@ -307,9 +313,12 @@ func (s *Storage) GetInstanceAuditPlanDetail(instanceAuditPlanID string) (*Insta
 	return instanceAuditPlan, true, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetAuditPlanTotalSQL(sourceID uint) (int64, error) {
+func (s *Storage) GetAuditPlanTotalSQL(auditPlanID uint) (int64, error) {
 	var count int64
-	err := s.db.Model(&SQLManageRecord{}).Where("source_id = ?", sourceID).Count(&count).Error
+	err := s.db.Model(&SQLManageRecord{}).
+		Joins("JOIN audit_plans_v2 ON sql_manage_records.source_id = audit_plans_v2.instance_audit_plan_id AND sql_manage_records.source = audit_plans_v2.type").
+		Where("audit_plans_v2.id = ?", auditPlanID).
+		Count(&count).Error
 	return count, errors.ConnectStorageErrWrapper(err)
 }
 
@@ -336,7 +345,7 @@ func (s *Storage) DeleteInstanceAuditPlan(instanceAuditPlanId string) error {
 		}
 		err = txDB.Exec(`UPDATE instance_audit_plans iap 
 		LEFT JOIN audit_plans_v2 ap ON iap.id = ap.instance_audit_plan_id
-		LEFT JOIN sql_manage_records oms ON oms.source_id = ap.id
+		LEFT JOIN sql_manage_records oms ON oms.source_id = ap.instance_audit_plan_id AND oms.source = ap.type
 		LEFT JOIN sql_manage_record_processes sm ON sm.sql_manage_record_id = oms.id
 		SET iap.deleted_at = now(),
 		ap.deleted_at = now(),
@@ -361,7 +370,7 @@ func (s *Storage) DeleteAuditPlan(auditPlanID int) error {
 		}
 		err = txDB.Exec(`UPDATE audit_plans_v2 ap 
 		LEFT JOIN sql_manage_records oms ON oms.source_id = ap.id
-		LEFT JOIN sql_manage_record_processes sm ON sm.sql_manage_record_id = oms.id
+		LEFT JOIN sql_manage_records oms ON oms.source_id = ap.instance_audit_plan_id AND oms.source = ap.type
 		SET ap.deleted_at = now(),
 		oms.deleted_at = now(),
 		sm.deleted_at = now()
@@ -371,6 +380,17 @@ func (s *Storage) DeleteAuditPlan(auditPlanID int) error {
 		}
 		return nil
 	})
+}
+
+func (s *Storage) GetAuditPlanDetailByInstAuditPlanIdAndType(instAuditPlanId string, auditPlanType string) (*AuditPlanDetail, error) {
+	ap, exist, err := s.GetAuditPlanDetailByType(instAuditPlanId, auditPlanType)
+	if err != nil {
+		return nil, err
+	}
+	if !exist {
+		return nil, fmt.Errorf("cant find audit plan by id %s", instAuditPlanId)
+	}
+	return ap, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetAuditPlanDetailByType(InstanceAuditPlanId, auditPlanType string) (*AuditPlanDetail, bool, error) {
@@ -398,7 +418,7 @@ type SQLManageQueue struct {
 	Model
 
 	Source         string `json:"source" gorm:"type:varchar(255)"` // 智能扫描SQL/快速审核SQL/IDE审核SQL/CB审核SQL
-	SourceId       uint   `json:"source_id" gorm:"type:varchar(255)"`
+	SourceId       string `json:"source_id" gorm:"type:varchar(255)"`
 	ProjectId      string `json:"project_id" gorm:"type:varchar(255)"`
 	InstanceID     string `json:"instance_id" gorm:"type:varchar(255)"`
 	SchemaName     string `json:"schema_name" gorm:"type:varchar(255)"`
@@ -411,7 +431,7 @@ type SQLManageQueue struct {
 }
 
 func (s *Storage) PushSQLToManagerSQLQueue(sqls []*SQLManageQueue) error {
-	if sqls == nil || len(sqls) == 0 {
+	if len(sqls) == 0 {
 		return nil
 	}
 	return s.db.Create(sqls).Error
