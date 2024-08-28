@@ -31,7 +31,7 @@ type pipelineNodeBase struct {
 	Name             string `json:"name" valid:"required"`                                        // 节点名称，必填，支持中文、英文+数字+特殊字符
 	Type             string `json:"type" valid:"required" enums:"audit,release"`                  // 节点类型，必填，选项为“审核”或“上线”
 	InstanceName     string `json:"instance_name,omitempty" valid:"required_if=AuditType online"` // 数据源名称，在线审核时必填
-	InstanceType     string `json:"instance_type,omitempty" valid:"required_if=AuditType online"` // 数据源类型，在线审核时必填
+	InstanceType     string `json:"instance_type,omitempty" valid:"required_if=AuditType offline"` // 数据源类型，离线审核时必填
 	ObjectPath       string `json:"object_path" valid:"required"`                                 // 审核脚本路径，必填，用户填写文件路径
 	ObjectType       string `json:"object_type" valid:"required" enums:"sql,mybatis"`             // 审核对象类型，必填，可选项为SQL文件、MyBatis文件
 	AuditMethod      string `json:"audit_method" valid:"required" enums:"offline,online"`         // 审核方式，必选，可选项为离线审核、在线审核
