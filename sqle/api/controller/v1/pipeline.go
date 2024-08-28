@@ -7,7 +7,7 @@ import (
 
 // pipelineDetail 流水线的信息详情
 type pipelineDetail struct {
-	ID        string `json:"id"`         // 流水线的唯一标识符
+	ID        uint   `json:"id"`         // 流水线的唯一标识符
 	NodeCount uint32 `json:"node_count"` // 节点个数
 	pipelineBase
 }
@@ -21,7 +21,7 @@ type pipelineBase struct {
 
 // pipelineNodeDetail 流水线节点的信息详情
 type pipelineNodeDetail struct {
-	ID string `json:"id" valid:"required"` // 节点的唯一标识符，在更新时必填
+	ID uint `json:"id" valid:"required"` // 节点的唯一标识符，在更新时必填
 	pipelineNodeBase
 }
 
@@ -30,6 +30,7 @@ type pipelineNodeBase struct {
 	Name             string `json:"name" valid:"required"`                                        // 节点名称，必填，支持中文、英文+数字+特殊字符
 	Type             string `json:"type" valid:"required" enums:"audit,release"`                  // 节点类型，必填，选项为“审核”或“上线”
 	InstanceName     string `json:"instance_name,omitempty" valid:"required_if=AuditType online"` // 数据源名称，在线审核时必填
+	InstanceType     string `json:"instance_type,omitempty" valid:"required_if=AuditType online"` // 数据源类型，在线审核时必填
 	ObjectPath       string `json:"object_path" valid:"required"`                                 // 审核脚本路径，必填，用户填写文件路径
 	ObjectType       string `json:"object_type" valid:"required" enums:"sql,mybatis"`             // 审核对象类型，必填，可选项为SQL文件、MyBatis文件
 	AuditMethod      string `json:"audit_method" valid:"required" enums:"offline,online"`         // 审核方式，必选，可选项为离线审核、在线审核
@@ -64,6 +65,10 @@ type GetPipelineDetailReqV1 struct {
 // GetPipelineDetailResV1 用于响应流水线详情的结构体
 type GetPipelineDetailResV1 struct {
 	controller.BaseRes
+	Data pipelineDetailData `json:"data"`
+}
+
+type pipelineDetailData struct {
 	pipelineDetail
 	Nodes []pipelineNodeDetail `json:"nodes"` // 流水线节点信息
 }
