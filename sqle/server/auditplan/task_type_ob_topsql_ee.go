@@ -342,7 +342,7 @@ func (at *ObForMysqlTopSQLTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan
 		info := NewMetrics()
 		sqlV2 := &SQLV2{
 			Source:      ap.Type,
-			SourceId:    ap.ID,
+			SourceId:    strconv.FormatUint(uint64(ap.InstanceAuditPlanId), 10),
 			ProjectId:   ap.ProjectId,
 			InstanceID:  ap.InstanceID,
 			SchemaName:  "", // todo: top sql 未采集schema, 需要填充

@@ -155,7 +155,7 @@ func (at *SlowLogTaskV2) genSQLV2FromRow(ap *AuditPlan, row map[string]sql.NullS
 	query := row["sql_text"].String
 	sqlV2 := &SQLV2{
 		Source:     ap.Type,
-		SourceId:   ap.ID,
+		SourceId:   strconv.FormatUint(uint64(ap.InstanceAuditPlanId), 10),
 		ProjectId:  ap.ProjectId,
 		InstanceID: ap.InstanceID,
 		SQLContent: query,
