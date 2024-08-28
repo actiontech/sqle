@@ -2,6 +2,9 @@ package model
 
 import (
 	"time"
+
+	"github.com/actiontech/sqle/sqle/errors"
+	"gorm.io/gorm"
 )
 
 type SqlManage struct {
@@ -29,12 +32,34 @@ type SqlManage struct {
 }
 
 type SqlManageSqlAuditRecord struct {
-	ProjFpSourceInstSchemaMd5 string `json:"proj_fp_source_inst_schema_md5" gorm:"primary_key;auto_increment:false;"`
-	SqlAuditRecordId          uint   `json:"sql_audit_record_id" gorm:"primary_key;auto_increment:false;"`
+	ProjFpSourceInstSchemaMd5 string `json:"proj_fp_source_inst_schema_md5" gorm:"primary_key;auto_increment:false;type:varchar(255)"`
+	SqlAuditRecordId          string `json:"sql_audit_record_id" gorm:"primary_key;auto_increment:false;type:varchar(255)"`
 }
 
 func (sm SqlManageSqlAuditRecord) TableName() string {
 	return "sql_manage_sql_audit_records"
+}
+
+func (s *Storage) GetSqlManageSqlAuditRecordBySqlId(sqlId string) ([]*SqlManageSqlAuditRecord, bool, error) {
+	records := []*SqlManageSqlAuditRecord{}
+	if err := s.db.Where("proj_fp_source_inst_schema_md5 = ?", sqlId).
+		Find(&records).Error; err != nil && err == gorm.ErrRecordNotFound {
+		return nil, false, nil
+	} else if err != nil {
+		return nil, false, errors.New(errors.ConnectStorageError, err)
+	}
+	return records, true, nil
+}
+
+func (s *Storage) GetSqlManageSqlAuditRecordByRecordId(recordId string) ([]*SqlManageSqlAuditRecord, bool, error) {
+	records := []*SqlManageSqlAuditRecord{}
+	if err := s.db.Where("sql_audit_record_id = ?", recordId).
+		Find(&records).Error; err != nil && err == gorm.ErrRecordNotFound {
+		return nil, false, nil
+	} else if err != nil {
+		return nil, false, errors.New(errors.ConnectStorageError, err)
+	}
+	return records, true, nil
 }
 
 type SqlManageEndpoint struct {
