@@ -93,10 +93,10 @@ func convertToGetSqlManageListResp(sqlManageList []*model.SqlManageDetail) ([]*S
 	for _, sqlManage := range sqlManageList {
 		sqlMgr := new(SqlManage)
 		sqlMgr.Id = uint64(sqlManage.ID)
-		sqlMgr.SqlFingerprint = sqlManage.SqlFingerprint
-		sqlMgr.Sql = sqlManage.SqlText
-		sqlMgr.InstanceName = dms.GetInstancesByIdWithoutError(sqlManage.InstanceID).Name
-		sqlMgr.SchemaName = sqlManage.SchemaName
+		sqlMgr.SqlFingerprint = sqlManage.SqlFingerprint.String
+		sqlMgr.Sql = sqlManage.SqlText.String
+		sqlMgr.InstanceName = dms.GetInstancesByIdWithoutError(sqlManage.InstanceID.String).Name
+		sqlMgr.SchemaName = sqlManage.SchemaName.String
 
 		for i := range sqlManage.AuditResults {
 			ar := sqlManage.AuditResults[i]
@@ -108,10 +108,10 @@ func convertToGetSqlManageListResp(sqlManageList []*model.SqlManageDetail) ([]*S
 		}
 
 		source := &Source{
-			SqlSourceType: sqlManage.Source,
-			SqlSourceID:   sqlManage.SourceID,
+			SqlSourceType: sqlManage.Source.String,
+			SqlSourceIDs:  sqlManage.SourceIDs,
 		}
-		auditPlanDesc := ConvertAuditPlanDescByType(sqlManage.Source)
+		auditPlanDesc := ConvertSqlSourceDescByType(sqlManage.Source.String)
 		source.SqlSourceDesc = auditPlanDesc
 		sqlMgr.Source = source
 
@@ -266,11 +266,11 @@ func exportSqlManagesV1(c echo.Context) error {
 		var newRow []string
 		newRow = append(
 			newRow,
-			sqlManage.SqlFingerprint,
-			sqlManage.SqlText,
-			ConvertAuditPlanDescByType(sqlManage.Source),
-			dms.GetInstancesByIdWithoutError(sqlManage.InstanceID).Name,
-			sqlManage.SchemaName,
+			sqlManage.SqlFingerprint.String,
+			sqlManage.SqlText.String,
+			ConvertSqlSourceDescByType(sqlManage.Source.String),
+			dms.GetInstancesByIdWithoutError(sqlManage.InstanceID.String).Name,
+			sqlManage.SchemaName.String,
 			spliceAuditResults(sqlManage.AuditResults),
 			sqlManage.Endpoints.String,
 			strings.Join(assignees, ","),
@@ -380,9 +380,12 @@ func getUnsolvedSQLCountByManagerStatus(id uint) (int64, error) {
 	return count, nil
 }
 
-func ConvertAuditPlanDescByType(auditPlanType string) string {
+func ConvertSqlSourceDescByType(source string) string {
+	if source == model.SQLManageSourceSqlAuditRecord {
+		return model.SqlManageSourceMap[source]
+	}
 	for _, meta := range auditplan.Metas {
-		if meta.Type == auditPlanType {
+		if meta.Type == source {
 			return meta.Desc
 		}
 	}

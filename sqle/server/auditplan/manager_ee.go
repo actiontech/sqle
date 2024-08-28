@@ -130,7 +130,7 @@ func (sa *SyncFromSqlAuditRecord) SyncSqlManager() error {
 		source := model.SQLManageSourceSqlAuditRecord
 		instHost := sa.Task.InstanceHost()
 
-		matchedID, isInBlacklist := filterSQLsByBlackList(instHost, sql, fp, instName, blacklist)
+		matchedID, isInBlacklist := FilterSQLsByBlackList(instHost, sql, fp, instName, blacklist)
 		if isInBlacklist {
 			matchedCount[matchedID]++
 			continue

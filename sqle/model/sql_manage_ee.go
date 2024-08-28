@@ -74,6 +74,31 @@ WHERE s.proj_fp_source_inst_schema_md5 = smr.proj_fp_source_inst_schema_md5
 	})
 }
 
+func (s *Storage) UpdateSqlManageRecord(sqlId, originSourceId, sourceIds, source string) error {
+	return s.Tx(func(tx *gorm.DB) error {
+		if sourceIds == "" {
+			err := tx.Exec(`UPDATE sql_manage_records oms 
+			LEFT JOIN sql_manage_record_processes sm ON sm.sql_manage_record_id = oms.id
+			SET oms.deleted_at = now(),
+			sm.deleted_at = now()
+			WHERE oms.source = ? AND oms.sql_id = ? `, source, sqlId).Error
+			if err != nil {
+				return err
+			}
+		} else {
+			err := tx.Model(&SQLManageRecord{}).Where("source = ? AND sql_id = ?", source, sqlId).Update("source_id", sourceIds).Error
+			if err != nil {
+				return err
+			}
+		}
+		err := tx.Exec(`DELETE FROM sql_manage_sql_audit_records WHERE sql_audit_record_id = ?`, originSourceId).Error
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+}
+
 func (s *Storage) GetSqlManageRuleTips(projectID string) ([]*SqlManageRuleTips, error) {
 	sqlManageRuleTips := make([]*SqlManageRuleTips, 0)
 	err := s.db.Raw(`SELECT DISTINCT t.db_type, r.name rule_name, r.desc
@@ -134,22 +159,20 @@ type SqlManageResp struct {
 
 type SqlManageDetail struct {
 	ID                   uint           `json:"id"`
-	SqlFingerprint       string         `json:"sql_fingerprint"`
-	SqlText              string         `json:"sql_text"`
-	Source               string         `json:"source"`
-	SourceID             string         `json:"source_id"`
+	SqlFingerprint       sql.NullString `json:"sql_fingerprint"`
+	SqlText              sql.NullString `json:"sql_text"`
+	Source               sql.NullString `json:"source"`
+	SourceIDs            RowList        `json:"source_id"`
 	AuditLevel           sql.NullString `json:"audit_level"`
 	AuditResults         AuditResults   `json:"audit_results"`
 	FpCount              uint64         `json:"fp_count"`
 	AppearTimestamp      *time.Time     `json:"first_appear_timestamp"`
 	LastReceiveTimestamp *time.Time     `json:"last_receive_timestamp"`
-	InstanceID           string         `json:"instance_id"`
-	SchemaName           string         `json:"schema_name"`
+	InstanceID           sql.NullString `json:"instance_id"`
+	SchemaName           sql.NullString `json:"schema_name"`
 	Status               sql.NullString `json:"status"`
 	Remark               sql.NullString `json:"remark"`
 	Assignees            *string        `json:"assignees"`
-	ApName               *string        `json:"ap_name"`
-	SqlAuditRecordIDs    RowList        `json:"sql_audit_record_ids"`
 	Endpoints            sql.NullString `json:"endpoints"`
 	Priority             sql.NullString `json:"priority"`
 }
@@ -303,11 +326,11 @@ SELECT
 	sm.status,
 	sm.remark,
 	sm.assignees as assignees,
-	iap.id as source_id,
+	oms.source_id as source_id,
 	oms.priority
-
 {{- template "body" . -}} 
 
+GROUP BY oms.id
 ORDER BY 
 {{- if and .sort_field .sort_order }}
 	{{ .sort_field }} {{ .sort_order }}
@@ -325,8 +348,6 @@ var sqlManagerBodyTpl = `
 
 FROM sql_manage_records oms
          LEFT JOIN sql_manage_record_processes sm ON sm.sql_manage_record_id = oms.id
-		 LEFT JOIN audit_plans_v2 ap ON ap.id = oms.source_id
-		 LEFT JOIN instance_audit_plans iap ON iap.id = ap.instance_audit_plan_id
 
 WHERE oms.project_id = :project_id
   AND oms.deleted_at IS NULL
@@ -360,10 +381,6 @@ AND oms.priority = :filter_priority
 
 {{- if .filter_audit_level }}
 AND oms.audit_level in ({{range $index, $element := .filter_audit_level}}{{if $index}}, {{end}}'{{$element}}'{{end}})
-{{- end }}
-
-{{- if .filter_db_type }}
-AND iap.db_type = :filter_db_type
 {{- end }}
 
 {{- if .filter_rule_name }}
@@ -599,6 +616,85 @@ func (s *Storage) InsertOrUpdateSqlManage(sqlManageList []*SqlManage, sqlAuditRe
 				}
 			}
 
+			start += batchSize
+		}
+
+		return nil
+	})
+}
+
+func (s *Storage) InsertOrUpdateSqlManageRecord(sqlManageList []*SQLManageRecord, sqlAuditRecordID string) error {
+	return s.Tx(func(tx *gorm.DB) error {
+		batchSize := 50 // 每批处理的大小
+		total := len(sqlManageList)
+		start := 0
+
+		for start < total {
+			end := start + batchSize
+			if end > total {
+				end = total
+			}
+
+			batchSqlManageList := sqlManageList[start:end]
+
+			args := make([]interface{}, 0, len(batchSqlManageList))
+			pattern := make([]string, 0, len(batchSqlManageList))
+			for _, sqlManage := range batchSqlManageList {
+				pattern = append(pattern, "(?,?,?,?,?,?,?,?,?,?,?)")
+				args = append(args, sqlManage.SQLID, sqlManage.Source, sqlManage.SourceId, sqlManage.ProjectId, sqlManage.InstanceID,
+					sqlManage.SchemaName, sqlManage.SqlFingerprint, sqlManage.SqlText, sqlManage.Info, sqlManage.AuditLevel, sqlManage.AuditResults)
+			}
+
+			raw := fmt.Sprintf(`INSERT INTO sql_manage_records (sql_id, source, source_id, project_id, instance_id, schema_name,
+														sql_fingerprint, sql_text,  info, audit_level, audit_results) 
+							VALUES %s
+							ON DUPLICATE KEY UPDATE source = VALUES(source),
+											source_id = VALUES(source_id), 
+											project_id = VALUES(project_id), 
+											instance_id = VALUES(instance_id), 
+											schema_name = VALUES(schema_name), 
+											sql_text = VALUES(sql_text), 
+											sql_fingerprint = VALUES(sql_fingerprint), 
+											info = VALUES(info), 
+											audit_level= VALUES(audit_level), 
+											audit_results = VALUES(audit_results),
+											deleted_at = NULL;`,
+				strings.Join(pattern, ", "))
+
+			err := tx.Exec(raw, args...).Error
+			if err != nil {
+				return err
+			}
+
+			if sqlAuditRecordID != "" {
+				sqlAuditArgs := make([]interface{}, 0, len(batchSqlManageList))
+				sqlAuditPattern := make([]string, 0, len(batchSqlManageList))
+
+				for _, sqlManage := range batchSqlManageList {
+					sqlAuditPattern = append(sqlAuditPattern, "(?, ?)")
+					sqlAuditArgs = append(sqlAuditArgs, sqlManage.SQLID, sqlAuditRecordID)
+				}
+
+				rawSql := fmt.Sprintf(`
+							INSERT INTO sql_manage_sql_audit_records (proj_fp_source_inst_schema_md5, sql_audit_record_id)
+							 	VALUES %s`, strings.Join(sqlAuditPattern, ", "))
+
+				err := tx.Exec(rawSql, sqlAuditArgs...).Error
+				if err != nil {
+					return err
+				}
+			}
+
+			for _, sqlManage := range batchSqlManageList {
+				const query = `INSERT INTO sql_manage_record_processes (sql_manage_record_id)
+									SELECT oms.id FROM sql_manage_records oms WHERE oms.sql_id = ?
+								ON DUPLICATE KEY UPDATE sql_manage_record_id = VALUES(sql_manage_record_id),
+								deleted_at = NULL;`
+				err := tx.Exec(query, sqlManage.SQLID).Error
+				if err != nil {
+					return err
+				}
+			}
 			start += batchSize
 		}
 

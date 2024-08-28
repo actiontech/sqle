@@ -10,7 +10,7 @@ import (
 	"github.com/actiontech/sqle/sqle/common"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
-	"github.com/actiontech/sqle/sqle/server/auditplan"
+	"github.com/actiontech/sqle/sqle/server/sqlmanage"
 )
 
 func syncSqlManage(record *model.SQLAuditRecord, tags []string) (err error) {
@@ -40,13 +40,17 @@ func syncSqlManage(record *model.SQLAuditRecord, tags []string) (err error) {
 		}
 		sqlFpMap[sql.Content] = node[0].Fingerprint
 	}
-
+	newSyncFromSqlAudit := sqlmanage.NewSyncFromSqlAudit(record.Task, sqlFpMap, record.ProjectId, record.AuditRecordId)
 	if len(tags) > 0 {
-		newSyncFromSqlAudit := auditplan.NewSyncFromSqlAudit(record.Task, sqlFpMap, record.ProjectId, record.ID)
-		if err := newSyncFromSqlAudit.SyncSqlManager(); err != nil {
+		if err := newSyncFromSqlAudit.SyncSqlManager(model.SQLManageSourceSqlAuditRecord); err != nil {
 			return fmt.Errorf("sync sql manager failed, error: %v", err)
 		}
 	} else if len(tags) == 0 {
+
+		if err := newSyncFromSqlAudit.UpdateSqlManageRecord(record.AuditRecordId, model.SQLManageSourceSqlAuditRecord); err != nil {
+			return fmt.Errorf("sync sql manager failed, error: %v", err)
+		}
+
 		s := model.GetStorage()
 		err := s.UpdateSqlManage(record.ID)
 		if err != nil {
