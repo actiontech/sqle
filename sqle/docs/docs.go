@@ -10868,7 +10868,7 @@ var doc = `{
                     "type": "string"
                 },
                 "nodes": {
-                    "description": "节点信息，必填，支持多个节点",
+                    "description": "节点信息",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/v1.pipelineNodeBase"
@@ -15241,10 +15241,10 @@ var doc = `{
                     "type": "string"
                 },
                 "nodes": {
-                    "description": "节点信息，非必填，若提供则需支持多个节点",
+                    "description": "节点信息",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.pipelineNodeDetail"
+                        "$ref": "#/definitions/v1.pipelineNodeBase"
                     }
                 }
             }
@@ -15985,7 +15985,7 @@ var doc = `{
                     ]
                 },
                 "id": {
-                    "description": "节点的唯一标识符，在更新时必填",
+                    "description": "节点的唯一标识符",
                     "type": "integer"
                 },
                 "instance_name": {
@@ -15994,6 +15994,10 @@ var doc = `{
                 },
                 "instance_type": {
                     "description": "数据源类型，在线审核时必填",
+                    "type": "string"
+                },
+                "integration_info": {
+                    "description": "对接说明",
                     "type": "string"
                 },
                 "name": {
