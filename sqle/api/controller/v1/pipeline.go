@@ -21,7 +21,8 @@ type pipelineBase struct {
 
 // pipelineNodeDetail 流水线节点的信息详情
 type pipelineNodeDetail struct {
-	ID uint `json:"id" valid:"required"` // 节点的唯一标识符，在更新时必填
+	ID              uint   `json:"id"`               // 节点的唯一标识符
+	IntegrationInfo string `json:"integration_info"` // 对接说明
 	pipelineNodeBase
 }
 
@@ -40,7 +41,7 @@ type pipelineNodeBase struct {
 // CreatePipelineReqV1 用于创建流水线的请求结构体
 type CreatePipelineReqV1 struct {
 	pipelineBase
-	Nodes []pipelineNodeBase `json:"nodes" valid:"dive,required"` // 节点信息，必填，支持多个节点
+	Nodes []pipelineNodeBase `json:"nodes" valid:"dive,required"` // 节点信息
 }
 
 // GetPipelinesReqV1 用于请求获取流水线列表的结构体
@@ -76,7 +77,7 @@ type pipelineDetailData struct {
 // UpdatePipelineReqV1 用于更新流水线的请求结构体
 type UpdatePipelineReqV1 struct {
 	pipelineBase
-	Nodes []pipelineNodeDetail `json:"nodes,omitempty" valid:"dive,required"` // 节点信息，非必填，若提供则需支持多个节点
+	Nodes []pipelineNodeBase `json:"nodes,omitempty" valid:"dive,required"` // 节点信息
 }
 
 // DeletePipelineReqV1 用于删除流水线的请求结构体
