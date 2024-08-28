@@ -15940,7 +15940,7 @@ var doc = `{
                     "type": "string"
                 },
                 "instance_type": {
-                    "description": "数据源类型，在线审核时必填",
+                    "description": "数据源类型，离线审核时必填",
                     "type": "string"
                 },
                 "name": {
@@ -15993,7 +15993,7 @@ var doc = `{
                     "type": "string"
                 },
                 "instance_type": {
-                    "description": "数据源类型，在线审核时必填",
+                    "description": "数据源类型，离线审核时必填",
                     "type": "string"
                 },
                 "integration_info": {
