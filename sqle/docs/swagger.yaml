@@ -749,6 +749,18 @@ definitions:
           $ref: '#/definitions/v1.pipelineNodeBase'
         type: array
     type: object
+  v1.CreatePipelineResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.createPipelineResData'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.CreateProjectRuleTemplateReqV1:
     properties:
       db_type:
@@ -4147,6 +4159,12 @@ definitions:
       workflow_template_name:
         type: string
     type: object
+  v1.createPipelineResData:
+    properties:
+      pipeline_id:
+        description: 流水线的唯一标识符
+        type: integer
+    type: object
   v1.pipelineDetail:
     properties:
       address:
@@ -7267,7 +7285,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/controller.BaseRes'
+            $ref: '#/definitions/v1.CreatePipelineResV1'
       security:
       - ApiKeyAuth: []
       summary: 创建流水线
