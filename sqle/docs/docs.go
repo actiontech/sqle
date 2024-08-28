@@ -3450,7 +3450,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
+                            "$ref": "#/definitions/v1.CreatePipelineResV1"
                         }
                     }
                 }
@@ -10876,6 +10876,23 @@ var doc = `{
                 }
             }
         },
+        "v1.CreatePipelineResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.createPipelineResData"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.CreateProjectRuleTemplateReqV1": {
             "type": "object",
             "properties": {
@@ -15864,6 +15881,15 @@ var doc = `{
                 },
                 "workflow_template_name": {
                     "type": "string"
+                }
+            }
+        },
+        "v1.createPipelineResData": {
+            "type": "object",
+            "properties": {
+                "pipeline_id": {
+                    "description": "流水线的唯一标识符",
+                    "type": "integer"
                 }
             }
         },
