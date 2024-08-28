@@ -12233,40 +12233,17 @@ var doc = `{
         "v1.GetPipelineDetailResV1": {
             "type": "object",
             "properties": {
-                "address": {
-                    "description": "关联流水线地址",
-                    "type": "string"
-                },
                 "code": {
                     "type": "integer",
                     "example": 0
                 },
-                "description": {
-                    "description": "流水线描述",
-                    "type": "string"
-                },
-                "id": {
-                    "description": "流水线的唯一标识符",
-                    "type": "string"
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.pipelineDetailData"
                 },
                 "message": {
                     "type": "string",
                     "example": "ok"
-                },
-                "name": {
-                    "description": "流水线名称",
-                    "type": "string"
-                },
-                "node_count": {
-                    "description": "节点个数",
-                    "type": "integer"
-                },
-                "nodes": {
-                    "description": "流水线节点信息",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.pipelineNodeDetail"
-                    }
                 }
             }
         },
@@ -15903,7 +15880,7 @@ var doc = `{
                 },
                 "id": {
                     "description": "流水线的唯一标识符",
-                    "type": "string"
+                    "type": "integer"
                 },
                 "name": {
                     "description": "流水线名称",
@@ -15912,6 +15889,38 @@ var doc = `{
                 "node_count": {
                     "description": "节点个数",
                     "type": "integer"
+                }
+            }
+        },
+        "v1.pipelineDetailData": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "description": "关联流水线地址",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "流水线描述",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "流水线的唯一标识符",
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "流水线名称",
+                    "type": "string"
+                },
+                "node_count": {
+                    "description": "节点个数",
+                    "type": "integer"
+                },
+                "nodes": {
+                    "description": "流水线节点信息",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.pipelineNodeDetail"
+                    }
                 }
             }
         },
@@ -15928,6 +15937,10 @@ var doc = `{
                 },
                 "instance_name": {
                     "description": "数据源名称，在线审核时必填",
+                    "type": "string"
+                },
+                "instance_type": {
+                    "description": "数据源类型，在线审核时必填",
                     "type": "string"
                 },
                 "name": {
@@ -15973,10 +15986,14 @@ var doc = `{
                 },
                 "id": {
                     "description": "节点的唯一标识符，在更新时必填",
-                    "type": "string"
+                    "type": "integer"
                 },
                 "instance_name": {
                     "description": "数据源名称，在线审核时必填",
+                    "type": "string"
+                },
+                "instance_type": {
+                    "description": "数据源类型，在线审核时必填",
                     "type": "string"
                 },
                 "name": {
