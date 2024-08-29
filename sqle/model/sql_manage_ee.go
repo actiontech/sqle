@@ -46,7 +46,7 @@ func (s *Storage) UpdateSqlManage(auditRecordId uint) error {
 		err := tx.Exec(`DELETE sql_manages
 FROM sql_manages,
      sql_manage_sql_audit_records smr
-WHERE smr.proj_fp_source_inst_schema_md5 = sql_manages.proj_fp_source_inst_schema_md5
+WHERE smr.sql_id = sql_manages.proj_fp_source_inst_schema_md5
   AND smr.sql_audit_record_id = ?
   AND sql_manages.fp_count = 1
   AND sql_manages.deleted_at IS NULL;`, auditRecordId).Error
@@ -57,7 +57,7 @@ WHERE smr.proj_fp_source_inst_schema_md5 = sql_manages.proj_fp_source_inst_schem
 		err = tx.Exec(`UPDATE sql_manages s,
     sql_manage_sql_audit_records smr
 SET s.fp_count = s.fp_count - 1
-WHERE s.proj_fp_source_inst_schema_md5 = smr.proj_fp_source_inst_schema_md5
+WHERE s.proj_fp_source_inst_schema_md5 = smr.sql_id
   AND smr.sql_audit_record_id = ?
   AND s.fp_count > 1
   AND s.deleted_at IS NULL;`, auditRecordId).Error
@@ -104,7 +104,7 @@ func (s *Storage) GetSqlManageRuleTips(projectID string) ([]*SqlManageRuleTips, 
 	err := s.db.Raw(`SELECT DISTINCT t.db_type, r.name rule_name, r.desc
 FROM sql_manages sm
          LEFT JOIN sql_manage_sql_audit_records msar
-                   ON sm.proj_fp_source_inst_schema_md5 = msar.proj_fp_source_inst_schema_md5
+                   ON sm.proj_fp_source_inst_schema_md5 = msar.sql_id
          LEFT JOIN sql_audit_records sar ON msar.sql_audit_record_id = sar.id
          LEFT JOIN tasks t ON sar.task_id = t.id
          LEFT JOIN rules r ON r.db_type = t.db_type
@@ -236,7 +236,7 @@ var sqlManageBodyTpl = `
 {{ define "body" }}
 
 FROM sql_manages sm
-         LEFT JOIN sql_manage_sql_audit_records msar ON sm.proj_fp_source_inst_schema_md5 = msar.proj_fp_source_inst_schema_md5
+         LEFT JOIN sql_manage_sql_audit_records msar ON sm.proj_fp_source_inst_schema_md5 = msar.sql_id
          LEFT JOIN sql_audit_records sar ON msar.sql_audit_record_id = sar.id
          LEFT JOIN sql_manage_endpoints sme ON sme.proj_fp_source_inst_schema_md5 = sm.proj_fp_source_inst_schema_md5
          LEFT JOIN sql_manage_endpoints all_sme ON all_sme.proj_fp_source_inst_schema_md5 = sm.proj_fp_source_inst_schema_md5
@@ -607,7 +607,7 @@ func (s *Storage) InsertOrUpdateSqlManage(sqlManageList []*SqlManage, sqlAuditRe
 				}
 
 				rawSql := fmt.Sprintf(`
-				INSERT INTO sql_manage_sql_audit_records (proj_fp_source_inst_schema_md5, sql_audit_record_id) 
+				INSERT INTO sql_manage_sql_audit_records (sql_id, sql_audit_record_id) 
 				 	VALUES %s`, strings.Join(sqlAuditPattern, ", "))
 
 				err := tx.Exec(rawSql, sqlAuditArgs...).Error
@@ -676,7 +676,7 @@ func (s *Storage) InsertOrUpdateSqlManageRecord(sqlManageList []*SQLManageRecord
 				}
 
 				rawSql := fmt.Sprintf(`
-							INSERT INTO sql_manage_sql_audit_records (proj_fp_source_inst_schema_md5, sql_audit_record_id)
+							INSERT INTO sql_manage_sql_audit_records (sql_id, sql_audit_record_id)
 							 	VALUES %s`, strings.Join(sqlAuditPattern, ", "))
 
 				err := tx.Exec(rawSql, sqlAuditArgs...).Error
