@@ -32,8 +32,8 @@ type SqlManage struct {
 }
 
 type SqlManageSqlAuditRecord struct {
-	ProjFpSourceInstSchemaMd5 string `json:"proj_fp_source_inst_schema_md5" gorm:"primary_key;auto_increment:false;type:varchar(255)"`
-	SqlAuditRecordId          string `json:"sql_audit_record_id" gorm:"primary_key;auto_increment:false;type:varchar(255)"`
+	SQLID            string `json:"sql_id" gorm:"primary_key;auto_increment:false;type:varchar(255)"`
+	SqlAuditRecordId string `json:"sql_audit_record_id" gorm:"primary_key;auto_increment:false;type:varchar(255)"`
 }
 
 func (sm SqlManageSqlAuditRecord) TableName() string {
@@ -42,7 +42,7 @@ func (sm SqlManageSqlAuditRecord) TableName() string {
 
 func (s *Storage) GetSqlManageSqlAuditRecordBySqlId(sqlId string) ([]*SqlManageSqlAuditRecord, bool, error) {
 	records := []*SqlManageSqlAuditRecord{}
-	if err := s.db.Where("proj_fp_source_inst_schema_md5 = ?", sqlId).
+	if err := s.db.Where("sql_id = ?", sqlId).
 		Find(&records).Error; err != nil && err == gorm.ErrRecordNotFound {
 		return nil, false, nil
 	} else if err != nil {
