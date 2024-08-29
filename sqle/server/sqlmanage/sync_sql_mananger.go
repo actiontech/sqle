@@ -4,7 +4,7 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 )
 
-type SqlManager interface {
+type SyncSqlManager interface {
 	SyncSqlManager(source string) error
 	UpdateSqlManageRecord(sourceId, source string) error
 }
@@ -16,7 +16,7 @@ type SyncFromSqlAuditRecord struct {
 	SqlAuditRecordID string
 }
 
-func NewSyncFromSqlAudit(task *model.Task, fpMap map[string]string, projectID string, sqlAuditID string) SqlManager {
+func NewSyncFromSqlAudit(task *model.Task, fpMap map[string]string, projectID string, sqlAuditID string) SyncSqlManager {
 	return &SyncFromSqlAuditRecord{
 		Task:             task,
 		ProjectId:        projectID,
