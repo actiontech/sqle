@@ -70,12 +70,12 @@ func (sa *SyncFromSqlAuditRecord) UpdateSqlManageRecord(sourceId, source string)
 		return fmt.Errorf("record does not exist or get manage sql error, error: %v", err)
 	}
 	for _, record := range sqlAuditRecords {
-		aggSourceId, err := AggregateSourceIdsBysqlId(record.ProjFpSourceInstSchemaMd5, sourceId, false)
+		aggSourceId, err := AggregateSourceIdsBysqlId(record.SQLID, sourceId, false)
 		if err != nil {
 			return fmt.Errorf("aggregate source id failed, error: %v", err)
 		}
 
-		err = s.UpdateSqlManageRecord(record.ProjFpSourceInstSchemaMd5, sourceId, aggSourceId, source)
+		err = s.UpdateSqlManageRecord(record.SQLID, sourceId, aggSourceId, source)
 		if err != nil {
 			return fmt.Errorf("update sql manage record failed, error: %v", err)
 		}
