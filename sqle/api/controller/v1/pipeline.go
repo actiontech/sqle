@@ -86,7 +86,12 @@ type pipelineDetailData struct {
 // UpdatePipelineReqV1 用于更新流水线的请求结构体
 type UpdatePipelineReqV1 struct {
 	pipelineBase
-	Nodes []pipelineNodeBase `json:"nodes,omitempty" valid:"dive,required"` // 节点信息
+	Nodes []pipelineNodeToBeUpdated `json:"nodes,omitempty" valid:"dive,required"` // 节点信息
+}
+
+type pipelineNodeToBeUpdated struct {
+	ID uint `json:"id"`
+	pipelineNodeBase
 }
 
 // DeletePipelineReqV1 用于删除流水线的请求结构体
