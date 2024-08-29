@@ -15245,7 +15245,7 @@
                     "description": "节点信息",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.pipelineNodeBase"
+                        "$ref": "#/definitions/v1.pipelineNodeToBeUpdated"
                     }
                 }
             }
@@ -16008,6 +16008,58 @@
                 },
                 "integration_info": {
                     "description": "对接说明",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "节点名称，必填，支持中文、英文+数字+特殊字符",
+                    "type": "string"
+                },
+                "object_path": {
+                    "description": "审核脚本路径，必填，用户填写文件路径",
+                    "type": "string"
+                },
+                "object_type": {
+                    "description": "审核对象类型，必填，可选项为SQL文件、MyBatis文件",
+                    "type": "string",
+                    "enum": [
+                        "sql",
+                        "mybatis"
+                    ]
+                },
+                "rule_template_name": {
+                    "description": "审核规则模板，必填",
+                    "type": "string"
+                },
+                "type": {
+                    "description": "节点类型，必填，选项为“审核”或“上线”",
+                    "type": "string",
+                    "enum": [
+                        "audit",
+                        "release"
+                    ]
+                }
+            }
+        },
+        "v1.pipelineNodeToBeUpdated": {
+            "type": "object",
+            "properties": {
+                "audit_method": {
+                    "description": "审核方式，必选，可选项为离线审核、在线审核",
+                    "type": "string",
+                    "enum": [
+                        "offline",
+                        "online"
+                    ]
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "instance_name": {
+                    "description": "数据源名称，在线审核时必填",
+                    "type": "string"
+                },
+                "instance_type": {
+                    "description": "数据源类型，离线审核时必填",
                     "type": "string"
                 },
                 "name": {
