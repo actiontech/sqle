@@ -52,10 +52,8 @@ type Plugin struct {
 	OperateDataResourceHandleUrl string `json:"operate_data_resource_handle_url"`
 }
 
-// swagger:parameters RegisterDMSPlugin
+// swagger:model
 type RegisterDMSPluginReq struct {
-	// Register dms plugin
-	// in:body
 	Plugin *Plugin `json:"plugin" validate:"required"`
 }
 

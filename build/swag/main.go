@@ -56,9 +56,9 @@ var initFlags = []cli.Flag{
 		Name:  parseVendorFlag,
 		Usage: "Parse go files in 'vendor' folder, disabled by default",
 	},
-	&cli.BoolFlag{
+	&cli.IntFlag{
 		Name:  parseDependencyFlag,
-		Usage: "Parse go files in outside dependency folder, disabled by default",
+		Usage: "ParseDependencies whether swag should be parse outside dependency folder: 0 none, 1 models, 2 operations, 3 all. 0 by default",
 	},
 	&cli.StringFlag{
 		Name:    markdownFilesFlag,
@@ -92,7 +92,7 @@ func initAction(c *cli.Context) error {
 		PropNamingStrategy: strategy,
 		OutputDir:          c.String(outputFlag),
 		ParseVendor:        c.Bool(parseVendorFlag),
-		ParseDependency:    c.Bool(parseDependencyFlag),
+		ParseDependency:    c.Int(parseDependencyFlag),
 		MarkdownFilesDir:   c.String(markdownFilesFlag),
 		ParseInternal:      c.Bool(parseInternal),
 		GeneratedTime:      c.Bool(generatedTimeFlag),

@@ -2,10 +2,8 @@ package v1
 
 import base "github.com/actiontech/dms/pkg/dms-common/api/base/v1"
 
-// swagger:parameters RegisterDMSProxyTarget
+// swagger:model
 type RegisterDMSProxyTargetReq struct {
-	// register dms proxy
-	// in:body
 	DMSProxyTarget *DMSProxyTarget `json:"dms_proxy_target" validate:"required"`
 }
 
