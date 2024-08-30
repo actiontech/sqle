@@ -331,6 +331,7 @@ const ( // InstanceTipReqV1.FunctionalModule Enums
 	create_audit_plan   = "create_audit_plan"
 	create_workflow     = "create_workflow"
 	create_optimization = "create_optimization"
+	create_pipeline     = "create_pipeline"
 )
 
 type InstanceTipReqV1 struct {
@@ -390,6 +391,8 @@ func GetInstanceTips(c echo.Context) error {
 		operationType = v1.OpPermissionTypeCreateWorkflow
 	case create_optimization:
 		operationType = v1.OpPermissionTypeCreateOptimization
+	case create_pipeline:
+		operationType = v1.OpPermissionTypeCreatePipeline
 	default:
 	}
 	dbServiceReq := &dmsV1.ListDBServiceReq{

@@ -3746,7 +3746,7 @@ definitions:
       nodes:
         description: 节点信息
         items:
-          $ref: '#/definitions/v1.pipelineNodeToBeUpdated'
+          $ref: '#/definitions/v1.updatePipelineNode'
         type: array
     type: object
   v1.UpdateProjectRuleTemplateReqV1:
@@ -4286,7 +4286,7 @@ definitions:
         - release
         type: string
     type: object
-  v1.pipelineNodeToBeUpdated:
+  v1.updatePipelineNode:
     properties:
       audit_method:
         description: 审核方式，必选，可选项为离线审核、在线审核

@@ -43,7 +43,7 @@ github.com/StackExchange/wmi
 # github.com/acomagu/bufpipe v1.0.4
 ## explicit; go 1.12
 github.com/acomagu/bufpipe
-# github.com/actiontech/dms v0.0.0-20240426094735-693e797b6293
+# github.com/actiontech/dms v0.0.0-20240830025931-20d313b918e8
 ## explicit; go 1.19
 github.com/actiontech/dms/pkg/dms-common/api/accesstoken
 github.com/actiontech/dms/pkg/dms-common/api/base/v1
@@ -718,7 +718,7 @@ github.com/spf13/pflag
 # github.com/stretchr/testify v1.8.4
 ## explicit; go 1.20
 github.com/stretchr/testify/assert
-# github.com/swaggo/swag v1.6.7
+# github.com/swaggo/swag v1.16.3 => github.com/swaggo/swag v1.6.7
 ## explicit; go 1.13
 github.com/swaggo/swag
 github.com/swaggo/swag/gen
@@ -1039,4 +1039,5 @@ vitess.io/vitess/go/vt/vtgate/evalengine
 # github.com/percona/pmm-agent => github.com/taolx0/pmm-agent v0.0.0-20231221020848-96469ebf303a
 # github.com/pingcap/log => github.com/pingcap/log v0.0.0-20191012051959-b742a5d432e9
 # github.com/pingcap/parser => github.com/sjjian/parser v0.0.0-20240305095250-688ad439ef31
+# github.com/swaggo/swag => github.com/swaggo/swag v1.6.7
 # google.golang.org/grpc => google.golang.org/grpc v1.29.0
