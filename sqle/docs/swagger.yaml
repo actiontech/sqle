@@ -7089,6 +7089,7 @@ paths:
         - create_workflow
         - sql_manage
         - create_optimization
+        - create_pipeline
         in: query
         name: functional_module
         type: string
