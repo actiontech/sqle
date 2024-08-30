@@ -146,7 +146,7 @@ func (svc PipelineSvc) toModelPipelineNodes(pipe *Pipeline, userId string) []*mo
 		return nil
 	}
 	nodeVersion := svc.newVersion()
-	var modelNodes []*model.PipelineNode
+	modelNodes := make([]*model.PipelineNode, 0, len(pipe.PipelineNodes))
 	for _, node := range pipe.PipelineNodes {
 		nodeUuid := utils.GetUUID()
 		token, err := svc.newToken(userId, nodeVersion, nodeUuid)
