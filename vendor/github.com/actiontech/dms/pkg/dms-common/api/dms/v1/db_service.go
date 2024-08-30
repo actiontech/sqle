@@ -95,6 +95,12 @@ type Time struct {
 	Minute int `json:"minute"`
 }
 
+type AuditPlanTypes struct {
+	AuditPlanId       uint   `json:"audit_plan_id"`
+	AuditPlanType     string `json:"type"`
+	AuditPlanTypeDesc string `json:"desc"`
+}
+
 // A dms db Service
 type ListDBService struct {
 	// db service uid
@@ -127,6 +133,10 @@ type ListDBService struct {
 	AdditionalParams []*AdditionalParam `json:"additional_params"`
 	// is enable masking
 	IsEnableMasking bool `json:"is_enable_masking"`
+	// audit plan types
+	AuditPlanTypes []*AuditPlanTypes `json:"audit_plan_types"`
+	// instance audit plan id
+	InstanceAuditPlanID uint `json:"instance_audit_plan_id,omitempty"`
 }
 
 type SQLEConfig struct {

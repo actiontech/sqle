@@ -92,9 +92,13 @@ type GetUserOpPermissionReq struct {
 	// user uid
 	// in:path
 	UserUid string `param:"user_uid" json:"user_uid" validate:"required"`
+
+	// in:query
+	// uesr project uid
+	ProjectUid string `json:"project_uid" query:"project_uid"`
 	// user op permission info
 	// in:body
-	UserOpPermission *UserOpPermission `json:"user_op_permission" validate:"required"`
+	UserOpPermission *UserOpPermission `json:"user_op_permission" `
 }
 
 type UserOpPermission struct {
@@ -183,6 +187,8 @@ const (
 	OpPermissionTypeCreateOptimization OpPermissionType = "create_optimization"
 	// 查看他人创建的智能调优
 	OpPermissionTypeViewOthersOptimization OpPermissionType = "view_others_optimization"
+	// 配置流水线
+	OpPermissionTypeCreatePipeline OpPermissionType = "create_pipeline"
 )
 
 func ParseOpPermissionType(typ string) (OpPermissionType, error) {
@@ -215,6 +221,8 @@ func ParseOpPermissionType(typ string) (OpPermissionType, error) {
 		return OpPermissionTypeCreateOptimization, nil
 	case string(OpPermissionTypeViewOthersOptimization):
 		return OpPermissionTypeViewOthersOptimization, nil
+	case string(OpPermissionTypeCreatePipeline):
+		return OpPermissionTypeCreatePipeline, nil
 	default:
 		return "", fmt.Errorf("invalid op permission type: %s", typ)
 	}
@@ -248,6 +256,8 @@ func GetOperationTypeDesc(opType OpPermissionType) string {
 		return "创建智能调优"
 	case OpPermissionTypeViewOthersOptimization:
 		return "查看他人创建的智能调优"
+	case OpPermissionTypeCreatePipeline:
+		return "配置流水线"
 	default:
 		return "未知操作类型"
 	}
@@ -319,7 +329,7 @@ type ListUserReply struct {
 	base.GenericResp
 }
 
-// swagger:parameters GenAccessToken
+// swagger:model
 type GenAccessToken struct {
 	ExpirationDays string `param:"expiration_days" json:"expiration_days" validate:"required"`
 }
