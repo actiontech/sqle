@@ -3087,7 +3087,8 @@ var doc = `{
                             "create_audit_plan",
                             "create_workflow",
                             "sql_manage",
-                            "create_optimization"
+                            "create_optimization",
+                            "create_pipeline"
                         ],
                         "type": "string",
                         "description": "functional module",
