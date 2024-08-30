@@ -74,7 +74,7 @@ WHERE s.proj_fp_source_inst_schema_md5 = smr.sql_id
 	})
 }
 
-func (s *Storage) UpdateSqlManageRecord(sqlId, originSourceId, sourceIds, source string) error {
+func (s *Storage) UpdateSqlManageRecord(sqlId, sourceIds, source string) error {
 	return s.Tx(func(tx *gorm.DB) error {
 		if sourceIds == "" {
 			err := tx.Exec(`UPDATE sql_manage_records oms 
@@ -619,7 +619,7 @@ func (s *Storage) InsertOrUpdateSqlManage(sqlManageList []*SqlManage, sqlAuditRe
 	})
 }
 
-func (s *Storage) InsertOrUpdateSqlManageRecord(sqlManageList []*SQLManageRecord, sqlAuditRecordID string) error {
+func (s *Storage) InsertOrUpdateSqlManageRecord(sqlManageList []*SQLManageRecord) error {
 	return s.Tx(func(tx *gorm.DB) error {
 		batchSize := 50 // 每批处理的大小
 		total := len(sqlManageList)
