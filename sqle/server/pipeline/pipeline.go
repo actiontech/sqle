@@ -302,23 +302,23 @@ func (svc PipelineSvc) needUpdateToken(oldNode *model.PipelineNode, newNode *Pip
 	1. uv1表示的是用户理解的版本1 user version 1
 	2. node1 表示用户理解的节点1，uuid表示节点的唯一id
 	3. n1-v1表示节点1的第一个版本 node 1 version 1
-	4. uv2表示用户理解的版本2，此时由于node1实际未修改，因此继承了之前节点的uuid version token，用户可以无需修改命令
-	5. 在用户修改的第三个版本中，即行uv3，节点1更新了参数(例如修改了审核路径，实际上用户也会知道需要修改命令)，导致需要修改命令，因此这里的uuid version token都更新了
+	4. uv2表示用户理解的版本2，此时由于node1实际未修改，因此继承了之前节点的uuid version token，用户可以无需修改启动命令
+	5. 在用户修改的第三个版本中，即行uv3，节点1更新了参数(例如修改了审核路径，实际上用户也会知道需要修改命令)，导致需要修改启动命令，因此这里的version token都更新了
 	版本
 	↓
-	+-------+-------+-------+-------+-------+-------+
-	|       |     node1     |     node2     | node3 | <- 节点名称
-	+-------+-------+-------+-------+-------+-------+
-	|       | uuid1 | uuid2 | uuid3 | uuid4 | uuid5 | <- 此列不展示
-	+-------+-------+-------+-------+-------+-------+
-	|  uv1  | n1-v1 |       | n2-v1 |       |       |
-	+-------+-------+-------+-------+-------+-------+
-	|  uv2  | n1-v1 |       |       | n2-v2 |       |
-	+-------+-------+-------+-------+-------+-------+
-	|  uv3  |       | n1-v3 |       | n2-v2 |       |
-	+-------+-------+-------+-------+-------+-------+
-	|  uv4  |       | n1-v3 |       | n2-v2 | n3-v4 |
-	+-------+-------+-------+-------+-------+-------+
+	+-------+-------+-------+-------+
+	|       | node1 | node2 | node3 | <- 节点名称
+	+-------+-------+-------+-------+
+	|       | uuid1 | uuid2 | uuid3 | <- 此列不展示
+	+-------+-------+-------+-------+
+	|  uv1  | n1-v1 | n2-v1 |       |
+	+-------+-------+-------+-------+
+	|  uv2  | n1-v1 | n2-v2 |       |
+	+-------+-------+-------+-------+
+	|  uv3  | n1-v3 | n2-v2 |       |
+	+-------+-------+-------+-------+
+	|  uv4  | n1-v3 | n2-v2 | n3-v4 |
+	+-------+-------+-------+-------+
 
 ```
 */
@@ -358,13 +358,23 @@ func (svc PipelineSvc) UpdatePipeline(pipe *Pipeline, userId string) error {
 				若节点命令不变更，则节点继承原有节点对应的token uuid和version
 				若节点命令变更，则节点使用新的token uuid和version
 			*/
+			// 节点不变
 			oldNode, exist := oldNodeMap[newNode.ID]
 			if exist {
 				newToken = oldNode.Token
 				newUuid = oldNode.UUID
 				newVersion = oldNode.NodeVersion
 			}
-			if !exist || svc.needUpdateToken(oldNode, newNode) {
+			// 更新节点
+			if exist && svc.needUpdateToken(oldNode, newNode) {
+				newVersion = v
+				newToken, err = svc.newToken(userId, newVersion, newUuid)
+				if err != nil {
+					return err
+				}
+			}
+			// 新建节点
+			if !exist {
 				newVersion = v
 				newUuid = utils.GetUUID()
 				newToken, err = svc.newToken(userId, newVersion, newUuid)
