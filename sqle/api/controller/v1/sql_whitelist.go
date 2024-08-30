@@ -106,6 +106,12 @@ func UpdateAuditWhitelistById(c echo.Context) error {
 	if req.MatchType != nil {
 		sqlWhitelist.MatchType = *req.MatchType
 	}
+
+	if req.Value != nil || req.MatchType != nil {
+		sqlWhitelist.MatchedCount = 0
+		sqlWhitelist.LastMatchedTime = nil
+	}
+
 	if req.Desc != nil {
 		sqlWhitelist.Desc = *req.Desc
 	}

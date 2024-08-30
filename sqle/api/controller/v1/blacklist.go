@@ -138,6 +138,11 @@ func UpdateBlacklist(c echo.Context) error {
 		blacklist.Desc = *req.Desc
 	}
 
+	if req.Content != nil || req.Type != nil {
+		blacklist.MatchedCount = 0
+		blacklist.LastMatchTime = nil
+	}
+
 	err = s.Save(blacklist)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
