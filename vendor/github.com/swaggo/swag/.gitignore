@@ -1,5 +1,9 @@
 dist
 testdata/simple*/docs
+testdata/quotes/docs
+testdata/quotes/quotes.so
+testdata/delims/docs
+testdata/delims/delims.so
 example/basic/docs/*
 example/celler/docs/*
 cover.out
@@ -16,5 +20,5 @@ cover.out
 # Etc
 .DS_Store
 
-swag
-swag.exe
+/swag
+/swag.exe

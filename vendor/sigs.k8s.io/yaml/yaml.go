@@ -1,14 +1,4 @@
-// Package yaml provides a wrapper around go-yaml designed to enable a better
-// way of handling YAML when marshaling to and from structs.
-//
-// In short, this package first converts YAML to JSON using go-yaml and then
-// uses json.Marshal and json.Unmarshal to convert to or from the struct. This
-// means that it effectively reuses the JSON struct tags as well as the custom
-// JSON methods MarshalJSON and UnmarshalJSON unlike go-yaml.
-//
-// See also http://ghodss.com/2014/the-right-way-to-handle-yaml-in-golang
-//
-package yaml  // import "github.com/ghodss/yaml"
+package yaml
 
 import (
 	"bytes"
@@ -21,7 +11,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-// Marshals the object into JSON then converts JSON to YAML and returns the
+// Marshal marshals the object into JSON then converts JSON to YAML and returns the
 // YAML.
 func Marshal(o interface{}) ([]byte, error) {
 	j, err := json.Marshal(o)
@@ -43,19 +33,24 @@ type JSONOpt func(*json.Decoder) *json.Decoder
 // Unmarshal converts YAML to JSON then uses JSON to unmarshal into an object,
 // optionally configuring the behavior of the JSON unmarshal.
 func Unmarshal(y []byte, o interface{}, opts ...JSONOpt) error {
-	return unmarshal(yaml.Unmarshal, y, o, opts)
+	return yamlUnmarshal(y, o, false, opts...)
 }
 
-// UnmarshalStrict is like Unmarshal except that any mapping keys that are
-// duplicates will result in an error.
-// To also be strict about unknown fields, add the DisallowUnknownFields option.
+// UnmarshalStrict strictly converts YAML to JSON then uses JSON to unmarshal
+// into an object, optionally configuring the behavior of the JSON unmarshal.
 func UnmarshalStrict(y []byte, o interface{}, opts ...JSONOpt) error {
-	return unmarshal(yaml.UnmarshalStrict, y, o, opts)
+	return yamlUnmarshal(y, o, true, append(opts, DisallowUnknownFields)...)
 }
 
-func unmarshal(f func(in []byte, out interface{}) (err error), y []byte, o interface{}, opts []JSONOpt) error {
+// yamlUnmarshal unmarshals the given YAML byte stream into the given interface,
+// optionally performing the unmarshalling strictly
+func yamlUnmarshal(y []byte, o interface{}, strict bool, opts ...JSONOpt) error {
 	vo := reflect.ValueOf(o)
-	j, err := yamlToJSON(y, &vo, f)
+	unmarshalFn := yaml.Unmarshal
+	if strict {
+		unmarshalFn = yaml.UnmarshalStrict
+	}
+	j, err := yamlToJSON(y, &vo, unmarshalFn)
 	if err != nil {
 		return fmt.Errorf("error converting YAML to JSON: %v", err)
 	}
@@ -83,7 +78,7 @@ func jsonUnmarshal(r io.Reader, o interface{}, opts ...JSONOpt) error {
 	return nil
 }
 
-// Convert JSON to YAML.
+// JSONToYAML Converts JSON to YAML.
 func JSONToYAML(j []byte) ([]byte, error) {
 	// Convert the JSON to an object.
 	var jsonObj interface{}
@@ -134,7 +129,7 @@ func yamlToJSON(y []byte, jsonTarget *reflect.Value, yamlUnmarshal func([]byte, 
 	// YAML objects are not completely compatible with JSON objects (e.g. you
 	// can have non-string keys in YAML). So, convert the YAML-compatible object
 	// to a JSON-compatible object, failing with an error if irrecoverable
-	// incompatibilities happen along the way.
+	// incompatibilties happen along the way.
 	jsonObj, err := convertToJSONableObject(yamlObj, jsonTarget)
 	if err != nil {
 		return nil, err
@@ -321,6 +316,65 @@ func convertToJSONableObject(yamlObj interface{}, jsonTarget *reflect.Value) (in
 		}
 		return yamlObj, nil
 	}
+}
 
-	return nil, nil
+// JSONObjectToYAMLObject converts an in-memory JSON object into a YAML in-memory MapSlice,
+// without going through a byte representation. A nil or empty map[string]interface{} input is
+// converted to an empty map, i.e. yaml.MapSlice(nil).
+//
+// interface{} slices stay interface{} slices. map[string]interface{} becomes yaml.MapSlice.
+//
+// int64 and float64 are down casted following the logic of github.com/go-yaml/yaml:
+// - float64s are down-casted as far as possible without data-loss to int, int64, uint64.
+// - int64s are down-casted to int if possible without data-loss.
+//
+// Big int/int64/uint64 do not lose precision as in the json-yaml roundtripping case.
+//
+// string, bool and any other types are unchanged.
+func JSONObjectToYAMLObject(j map[string]interface{}) yaml.MapSlice {
+	if len(j) == 0 {
+		return nil
+	}
+	ret := make(yaml.MapSlice, 0, len(j))
+	for k, v := range j {
+		ret = append(ret, yaml.MapItem{Key: k, Value: jsonToYAMLValue(v)})
+	}
+	return ret
+}
+
+func jsonToYAMLValue(j interface{}) interface{} {
+	switch j := j.(type) {
+	case map[string]interface{}:
+		if j == nil {
+			return interface{}(nil)
+		}
+		return JSONObjectToYAMLObject(j)
+	case []interface{}:
+		if j == nil {
+			return interface{}(nil)
+		}
+		ret := make([]interface{}, len(j))
+		for i := range j {
+			ret[i] = jsonToYAMLValue(j[i])
+		}
+		return ret
+	case float64:
+		// replicate the logic in https://github.com/go-yaml/yaml/blob/51d6538a90f86fe93ac480b35f37b2be17fef232/resolve.go#L151
+		if i64 := int64(j); j == float64(i64) {
+			if i := int(i64); i64 == int64(i) {
+				return i
+			}
+			return i64
+		}
+		if ui64 := uint64(j); j == float64(ui64) {
+			return ui64
+		}
+		return j
+	case int64:
+		if i := int(j); j == int64(i) {
+			return i
+		}
+		return j
+	}
+	return j
 }
