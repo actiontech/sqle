@@ -15265,7 +15265,7 @@ var doc = `{
                     "description": "节点信息",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.pipelineNodeToBeUpdated"
+                        "$ref": "#/definitions/v1.updatePipelineNode"
                     }
                 }
             }
@@ -16060,7 +16060,7 @@ var doc = `{
                 }
             }
         },
-        "v1.pipelineNodeToBeUpdated": {
+        "v1.updatePipelineNode": {
             "type": "object",
             "properties": {
                 "audit_method": {
