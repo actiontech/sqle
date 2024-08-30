@@ -81,7 +81,7 @@ func (sa *SyncFromSqlAuditRecord) UpdateSqlManageRecord() error {
 		}
 	}()
 	s := model.GetStorage()
-	records, err := s.GetSqlManageRecordsBySourceId(sa.SqlAuditRecordID)
+	records, err := s.GetSqlManageRecordsBySourceId(sa.Source, sa.SqlAuditRecordID)
 	if err != nil {
 		return fmt.Errorf("get sql manage list by source id error, error: %v", err)
 	}
@@ -148,14 +148,14 @@ func genSQLId(fp, schemaName, instName, source, projectId string) string {
 // 根据sql id聚合source id（删除或者新增一条记录中的source id），结果以逗号隔开
 func AggregateSourceIdsBysqlId(sqlId, sourceId string, isAddSourceId bool) (string, error) {
 	s := model.GetStorage()
-	sqlManageRecords, exist, err := s.GetManageSQLBySQLId(sqlId)
+	sqlManageRecord, exist, err := s.GetManageSQLBySQLId(sqlId)
 	if err != nil {
 		return "", err
 	}
 	if !exist {
 		return sourceId, nil
 	}
-	recordSourceIds := strings.Split(sqlManageRecords.SourceId, ",")
+	recordSourceIds := strings.Split(sqlManageRecord.SourceId, ",")
 	sourceIds := make([]string, 0)
 	for _, recordsSourceId := range recordSourceIds {
 		if recordsSourceId != sourceId {

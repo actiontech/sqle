@@ -809,9 +809,9 @@ func (s *Storage) GetHighLevelSQLsByTime(projectId string, fromTime time.Time) (
 	return sqlManageList, nil
 }
 
-func (s *Storage) GetSqlManageRecordsBySourceId(sourceId string) ([]*SQLManageRecord, error) {
+func (s *Storage) GetSqlManageRecordsBySourceId(source, sourceId string) ([]*SQLManageRecord, error) {
 	sqlManageRecors := []*SQLManageRecord{}
-	err := s.db.Model(SQLManageRecord{}).Where("source_id LIKE ?", "%"+sourceId+"%").Find(&sqlManageRecors).Error
+	err := s.db.Model(SQLManageRecord{}).Where("source = ? AND source_id LIKE ?", source, "%"+sourceId+"%").Find(&sqlManageRecors).Error
 	if err != nil {
 		return nil, err
 	}
