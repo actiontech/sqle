@@ -91,10 +91,6 @@ func (s *Storage) UpdateSqlManageRecord(sqlId, originSourceId, sourceIds, source
 				return err
 			}
 		}
-		err := tx.Exec(`DELETE FROM sql_manage_sql_audit_records WHERE sql_audit_record_id = ?`, originSourceId).Error
-		if err != nil {
-			return err
-		}
 		return nil
 	})
 }
@@ -666,25 +662,6 @@ func (s *Storage) InsertOrUpdateSqlManageRecord(sqlManageList []*SQLManageRecord
 				return err
 			}
 
-			if sqlAuditRecordID != "" {
-				sqlAuditArgs := make([]interface{}, 0, len(batchSqlManageList))
-				sqlAuditPattern := make([]string, 0, len(batchSqlManageList))
-
-				for _, sqlManage := range batchSqlManageList {
-					sqlAuditPattern = append(sqlAuditPattern, "(?, ?)")
-					sqlAuditArgs = append(sqlAuditArgs, sqlManage.SQLID, sqlAuditRecordID)
-				}
-
-				rawSql := fmt.Sprintf(`
-							INSERT INTO sql_manage_sql_audit_records (sql_id, sql_audit_record_id)
-							 	VALUES %s`, strings.Join(sqlAuditPattern, ", "))
-
-				err := tx.Exec(rawSql, sqlAuditArgs...).Error
-				if err != nil {
-					return err
-				}
-			}
-
 			for _, sqlManage := range batchSqlManageList {
 				const query = `INSERT INTO sql_manage_record_processes (sql_manage_record_id)
 									SELECT oms.id FROM sql_manage_records oms WHERE oms.sql_id = ?
@@ -830,4 +807,13 @@ func (s *Storage) GetHighLevelSQLsByTime(projectId string, fromTime time.Time) (
 		return nil, err
 	}
 	return sqlManageList, nil
+}
+
+func (s *Storage) GetSqlManageRecordsBySourceId(sourceId string) ([]*SQLManageRecord, error) {
+	sqlManageRecors := []*SQLManageRecord{}
+	err := s.db.Model(SQLManageRecord{}).Where("source_id LIKE ?", "%"+sourceId+"%").Find(&sqlManageRecors).Error
+	if err != nil {
+		return nil, err
+	}
+	return sqlManageRecors, nil
 }

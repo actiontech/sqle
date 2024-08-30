@@ -65,11 +65,11 @@ func (sa *SyncFromSqlAuditRecord) UpdateSqlManageRecord(sourceId, source string)
 		}
 	}()
 	s := model.GetStorage()
-	sqlAuditRecords, exist, err := s.GetSqlManageSqlAuditRecordByRecordId(sourceId)
-	if err != nil || !exist {
-		return fmt.Errorf("record does not exist or get manage sql error, error: %v", err)
+	records, err := s.GetSqlManageRecordsBySourceId(sourceId)
+	if err != nil {
+		return fmt.Errorf("get sql manage list by source id error, error: %v", err)
 	}
-	for _, record := range sqlAuditRecords {
+	for _, record := range records {
 		aggSourceId, err := AggregateSourceIdsBysqlId(record.SQLID, sourceId, false)
 		if err != nil {
 			return fmt.Errorf("aggregate source id failed, error: %v", err)
@@ -189,19 +189,21 @@ func genSQLId(fp, schemaName, instName, source, projectId string) string {
 	}
 }
 
+// 根据sql id聚合source id（删除或者新增一条记录中的source id），结果以逗号隔开
 func AggregateSourceIdsBysqlId(sqlId, sourceId string, isAddSourceId bool) (string, error) {
 	s := model.GetStorage()
-	sqlAuditRecord, exist, err := s.GetSqlManageSqlAuditRecordBySqlId(sqlId)
+	sqlManageRecord, exist, err := s.GetManageSQLBySQLId(sqlId)
 	if err != nil {
 		return "", err
 	}
-	if !exist || len(sqlAuditRecord) == 0 {
+	if !exist {
 		return sourceId, nil
 	}
-	sourceIds := make([]string, 0, len(sqlAuditRecord))
-	for _, record := range sqlAuditRecord {
-		if record.SqlAuditRecordId != sourceId {
-			sourceIds = append(sourceIds, record.SqlAuditRecordId)
+	recordSourceIds := strings.Split(sqlManageRecord.SourceId, ",")
+	sourceIds := make([]string, 0)
+	for _, recordsSourceId := range recordSourceIds {
+		if recordsSourceId != sourceId {
+			sourceIds = append(sourceIds, recordsSourceId)
 		}
 	}
 	if isAddSourceId {
