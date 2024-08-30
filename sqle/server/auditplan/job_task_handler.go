@@ -107,7 +107,7 @@ func BatchAuditSQLs(sqlList []*model.SQLManageRecord, isSkipAuditedSql bool) ([]
 		}
 
 		// 根据source id和schema name 聚合sqls，避免task内需要切换schema上下文审核
-		key := fmt.Sprintf("%d:%s", sql.SourceId, sql.SchemaName)
+		key := fmt.Sprintf("%s:%s", sql.SourceId, sql.SchemaName)
 		_, ok := sqlMap[key]
 		if !ok {
 			sqlMap[key] = make([]*model.SQLManageRecord, 0)
@@ -144,15 +144,15 @@ func SetSQLPriority(sqlList []*model.SQLManageRecord) ([]*model.SQLManageRecord,
 	var err error
 	s := model.GetStorage()
 	// SQL聚合
-	auditPlanMap := make(map[uint]*model.AuditPlanV2, 0)
+	auditPlanMap := make(map[string]*model.AuditPlanV2, 0)
 
 	for i, sql_ := range sqlList {
 		sourceId := sql_.SourceId
-
+		sourceType := sql_.Source
 		auditPlan, ok := auditPlanMap[sourceId]
 		if !ok {
 			var exist bool
-			auditPlan, exist, err = s.GetAuditPlanByID(int(sourceId))
+			auditPlan, exist, err = s.GetAuditPlanByInstanceIdAndType(sourceId, sourceType)
 			if err != nil {
 				return nil, err
 			}

@@ -321,7 +321,7 @@ func (at *TaskWrapper) filterSqlManageQueue(sqlList []*model.SQLManageQueue) (ma
 			instanceMap[sql.InstanceID] = instName
 		}
 
-		matchedID, isInBlacklist := filterSQLsByBlackList(sql.EndPoint, sql.SqlText, sql.SqlFingerprint, instName, blacklist)
+		matchedID, isInBlacklist := FilterSQLsByBlackList(sql.EndPoint, sql.SqlText, sql.SqlFingerprint, instName, blacklist)
 		if isInBlacklist {
 			matchedCount[matchedID]++
 			continue
@@ -333,7 +333,7 @@ func (at *TaskWrapper) filterSqlManageQueue(sqlList []*model.SQLManageQueue) (ma
 	return matchedCount, SqlQueueList, nil
 }
 
-func filterSQLsByBlackList(endpoint, sqlText, sqlFp, instName string, blacklist []*model.BlackListAuditPlanSQL) (uint, bool) {
+func FilterSQLsByBlackList(endpoint, sqlText, sqlFp, instName string, blacklist []*model.BlackListAuditPlanSQL) (uint, bool) {
 	if len(blacklist) == 0 {
 		return 0, false
 	}

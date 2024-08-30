@@ -465,8 +465,8 @@ func ListActiveAuditPlansWithInstanceV2(fn func() ([]*model.AuditPlanDetail, err
 	}
 	return auditPlans, nil
 }
-func GetAuditPlansWithInstanceV2(id uint, fn func(id uint) (*model.AuditPlanDetail, error)) (*model.AuditPlanDetail, error) {
-	auditPlan, err := fn(id)
+func GetAuditPlansWithInstanceV2(instAuditPlanId, auditPlanType string, fn func(instAuditPlanId, auditPlanType string) (*model.AuditPlanDetail, error)) (*model.AuditPlanDetail, error) {
+	auditPlan, err := fn(instAuditPlanId, auditPlanType)
 	if err != nil {
 		return nil, err
 	}
