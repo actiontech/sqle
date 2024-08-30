@@ -3,6 +3,7 @@ package auditplan
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/dms"
@@ -104,7 +105,7 @@ func (at *MySQLProcessListTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan
 		query := res[i]["info"].String
 		sqlV2 := &SQLV2{
 			Source:     ap.Type,
-			SourceId:   ap.ID,
+			SourceId:   strconv.FormatUint(uint64(ap.InstanceAuditPlanId), 10),
 			ProjectId:  ap.ProjectId,
 			InstanceID: ap.InstanceID,
 			SchemaName: res[i]["db"].String,

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/dms"
@@ -159,7 +160,7 @@ func (at *BaseSchemaMetaTaskV2) genSQLId(sql *SQLV2) string {
 			Schema    string
 			InstName  string
 			Source    string
-			ApID      uint
+			ApID      string
 			MetaName  string
 			MetaType  string
 		}{
@@ -173,7 +174,7 @@ func (at *BaseSchemaMetaTaskV2) genSQLId(sql *SQLV2) string {
 		},
 	)
 	if err != nil { // todo: 处理错误
-		return utils.Md5String(fmt.Sprintf("%d:%s:%s:%s", sql.SourceId, sql.SchemaName, sql.Info.Get(MetricNameMetaName).String(), sql.Info.Get(MetricNameMetaType).String()))
+		return utils.Md5String(fmt.Sprintf("%s:%s:%s:%s", sql.SourceId, sql.SchemaName, sql.Info.Get(MetricNameMetaName).String(), sql.Info.Get(MetricNameMetaType).String()))
 	} else {
 		return utils.Md5String(string(md5Json))
 	}
@@ -232,7 +233,7 @@ func (at *BaseSchemaMetaTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, 
 	for _, sql := range sqls {
 		sqlV2 := &SQLV2{
 			Source:      ap.Type,
-			SourceId:    ap.ID,
+			SourceId:    strconv.FormatUint(uint64(ap.InstanceAuditPlanId), 10),
 			ProjectId:   ap.ProjectId,
 			InstanceID:  ap.InstanceID,
 			SchemaName:  sql.SchemaName,

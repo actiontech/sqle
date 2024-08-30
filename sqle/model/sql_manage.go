@@ -29,8 +29,8 @@ type SqlManage struct {
 }
 
 type SqlManageSqlAuditRecord struct {
-	ProjFpSourceInstSchemaMd5 string `json:"proj_fp_source_inst_schema_md5" gorm:"primary_key;auto_increment:false;"`
-	SqlAuditRecordId          uint   `json:"sql_audit_record_id" gorm:"primary_key;auto_increment:false;"`
+	SQLID            string `json:"sql_id" gorm:"primary_key;auto_increment:false;type:varchar(255)"`
+	SqlAuditRecordId string `json:"sql_audit_record_id" gorm:"primary_key;auto_increment:false;type:varchar(255)"`
 }
 
 func (sm SqlManageSqlAuditRecord) TableName() string {

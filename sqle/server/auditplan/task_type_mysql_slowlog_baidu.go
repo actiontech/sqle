@@ -3,6 +3,7 @@ package auditplan
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
@@ -149,7 +150,7 @@ func (at *MySQLSlowLogBaiduTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPla
 	for _, sql := range slowSqls {
 		sqlV2 := &SQLV2{
 			Source:     ap.Type,
-			SourceId:   ap.ID,
+			SourceId:   strconv.FormatUint(uint64(ap.InstanceAuditPlanId), 10),
 			ProjectId:  ap.ProjectId,
 			InstanceID: ap.InstanceID,
 			SchemaName: sql.schema,

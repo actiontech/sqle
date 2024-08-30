@@ -3217,8 +3217,10 @@ definitions:
     properties:
       sql_source_desc:
         type: string
-      sql_source_id:
-        type: string
+      sql_source_ids:
+        items:
+          type: string
+        type: array
       sql_source_type:
         type: string
     type: object
