@@ -101,10 +101,10 @@ func convertToGetSqlManageListResp(sqlManageList []*model.SqlManageDetail) ([]*S
 	for _, sqlManage := range sqlManageList {
 		sqlMgr := new(SqlManage)
 		sqlMgr.Id = uint64(sqlManage.ID)
-		sqlMgr.SqlFingerprint = sqlManage.SqlFingerprint
-		sqlMgr.Sql = sqlManage.SqlText
-		sqlMgr.InstanceName = dms.GetInstancesByIdWithoutError(sqlManage.InstanceID).Name
-		sqlMgr.SchemaName = sqlManage.SchemaName
+		sqlMgr.SqlFingerprint = sqlManage.SqlFingerprint.String
+		sqlMgr.Sql = sqlManage.SqlText.String
+		sqlMgr.InstanceName = dms.GetInstancesByIdWithoutError(sqlManage.InstanceID.String).Name
+		sqlMgr.SchemaName = sqlManage.SchemaName.String
 
 		for i := range sqlManage.AuditResults {
 			ar := sqlManage.AuditResults[i]
@@ -116,11 +116,11 @@ func convertToGetSqlManageListResp(sqlManageList []*model.SqlManageDetail) ([]*S
 		}
 
 		source := &v1.Source{
-			SqlSourceType: sqlManage.Source,
-			SqlSourceID:   sqlManage.SourceID,
+			SqlSourceType: sqlManage.Source.String,
+			SqlSourceIDs:  sqlManage.SourceIDs,
 		}
-		auditPlanDesc := v1.ConvertAuditPlanDescByType(sqlManage.Source)
-		source.SqlSourceDesc = auditPlanDesc
+		sqlSourceDesc := v1.ConvertSqlSourceDescByType(sqlManage.Source.String)
+		source.SqlSourceDesc = sqlSourceDesc
 		sqlMgr.Source = source
 
 		if sqlManage.AppearTimestamp != nil {
