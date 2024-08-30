@@ -58,7 +58,7 @@ var initFlags = []cli.Flag{
 	},
 	&cli.BoolFlag{
 		Name:  parseDependencyFlag,
-		Usage: "Parse go files in outside dependency folder, disabled by default",
+		Usage: "ParseDependencies whether swag should be parse outside dependency folder: 0 none, 1 models, 2 operations, 3 all. 0 by default",
 	},
 	&cli.StringFlag{
 		Name:    markdownFilesFlag,

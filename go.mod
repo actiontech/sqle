@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/Masterminds/semver/v3 v3.1.1
-	github.com/actiontech/dms v0.0.0-20240426094735-693e797b6293
+	github.com/actiontech/dms v0.0.0-20240830025931-20d313b918e8
 	github.com/actiontech/java-sql-extractor v0.0.0-20231103015812-cdd5fc040f62
 	github.com/actiontech/mybatis-mapper-2-sql v0.5.1-0.20240806065717-29cde7000ef5
 	github.com/agiledragon/gomonkey v2.0.2+incompatible
@@ -64,7 +64,7 @@ require (
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/cobra v1.1.1
 	github.com/stretchr/testify v1.8.4
-	github.com/swaggo/swag v1.6.7
+	github.com/swaggo/swag v1.16.3
 	github.com/timtadh/data-structures v0.5.3 // indirect
 	github.com/timtadh/lexmachine v0.2.2
 	github.com/ungerik/go-dry v0.0.0-20210209114055-a3e162a9e62e
@@ -79,6 +79,7 @@ require (
 require golang.org/x/sys v0.15.0
 
 require (
+	github.com/aliyun/credentials-go v1.1.2
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/guregu/null v0.0.0-20160228005316-41961cea0328
 	github.com/hashicorp/go-version v1.7.0
@@ -102,7 +103,6 @@ require (
 	github.com/alibabacloud-go/endpoint-util v1.1.0 // indirect
 	github.com/alibabacloud-go/openapi-util v0.1.0 // indirect
 	github.com/alibabacloud-go/tea-xml v1.1.2 // indirect
-	github.com/aliyun/credentials-go v1.1.2 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
@@ -124,7 +124,11 @@ require (
 	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/go-openapi/errors v0.20.3 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
+	github.com/go-openapi/jsonpointer v0.19.5 // indirect
+	github.com/go-openapi/jsonreference v0.19.6 // indirect
+	github.com/go-openapi/spec v0.20.4 // indirect
 	github.com/go-openapi/strfmt v0.21.7 // indirect
+	github.com/go-openapi/swag v0.19.15 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
 	github.com/golang-sql/civil v0.0.0-20190719163853-cb61b32ac6fe // indirect
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b // indirect
@@ -206,5 +210,6 @@ replace (
 	github.com/percona/pmm-agent => github.com/taolx0/pmm-agent v0.0.0-20231221020848-96469ebf303a
 	github.com/pingcap/log => github.com/pingcap/log v0.0.0-20191012051959-b742a5d432e9
 	github.com/pingcap/parser => github.com/sjjian/parser v0.0.0-20240305095250-688ad439ef31
+	github.com/swaggo/swag => github.com/swaggo/swag v1.6.7
 	google.golang.org/grpc => google.golang.org/grpc v1.29.0
 )

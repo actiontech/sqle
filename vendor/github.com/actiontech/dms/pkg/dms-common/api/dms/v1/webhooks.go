@@ -9,10 +9,8 @@ const (
 	TriggerEventAuditPlan    TriggerEventType = "auditplan"
 )
 
-// swagger:parameters WebHookSendMessage
+// swagger:model
 type WebHookSendMessageReq struct {
-	// webhooks
-	// in:body
 	WebHookMessage *WebHooksMessage `json:"webhook_message" validate:"required"`
 }
 
