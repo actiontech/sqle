@@ -152,7 +152,6 @@ var autoMigrateList = []interface{}{
 	&SQLAuditRecord{},
 	&RuleKnowledge{},
 	&SqlManage{},
-	&SqlManageSqlAuditRecord{},
 	&BlackListAuditPlanSQL{},
 	&CompanyNotice{},
 	&SqlManageEndpoint{},
