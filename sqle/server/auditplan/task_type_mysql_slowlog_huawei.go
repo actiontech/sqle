@@ -169,7 +169,7 @@ func (at *MySQLSlowLogHuaweiTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPl
 	for _, sql := range slowSqls {
 		sqlV2 := &SQLV2{
 			Source:     ap.Type,
-			SourceId:   ap.ID,
+			SourceId:   strconv.FormatUint(uint64(ap.InstanceAuditPlanId), 10),
 			ProjectId:  ap.ProjectId,
 			InstanceID: ap.InstanceID,
 			SchemaName: sql.schema,

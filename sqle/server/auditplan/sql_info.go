@@ -2,6 +2,7 @@ package auditplan
 
 import (
 	"encoding/json"
+	"strconv"
 
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
@@ -11,7 +12,7 @@ type SQLV2 struct {
 	SQLId string
 	// from audit plan
 	Source     string
-	SourceId   uint
+	SourceId   string
 	ProjectId  string
 	InstanceID string
 
@@ -30,7 +31,7 @@ func (s *SQLV2) GenSQLId() {
 			Schema      string
 			InstID      string
 			Source      string
-			ApID        uint
+			ApID        string
 		}{
 			ProjectId:   s.ProjectId,
 			Fingerprint: s.Fingerprint,
@@ -56,7 +57,7 @@ func NewSQLV2FromSQL(ap *AuditPlan, sql *SQL) *SQLV2 {
 	}
 	s := &SQLV2{
 		Source:      ap.Type,
-		SourceId:    ap.ID,
+		SourceId:    strconv.FormatUint(uint64(ap.InstanceAuditPlanId), 10),
 		ProjectId:   ap.ProjectId,
 		InstanceID:  ap.InstanceID,
 		SchemaName:  sql.Schema,

@@ -14488,8 +14488,11 @@ var doc = `{
                 "sql_source_desc": {
                     "type": "string"
                 },
-                "sql_source_id": {
-                    "type": "string"
+                "sql_source_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "sql_source_type": {
                     "type": "string"
