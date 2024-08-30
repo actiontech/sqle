@@ -369,8 +369,8 @@ func (s *Storage) DeleteAuditPlan(auditPlanID int) error {
 			return err
 		}
 		err = txDB.Exec(`UPDATE audit_plans_v2 ap 
-		LEFT JOIN sql_manage_records oms ON oms.source_id = ap.id
 		LEFT JOIN sql_manage_records oms ON oms.source_id = ap.instance_audit_plan_id AND oms.source = ap.type
+		LEFT JOIN sql_manage_record_processes sm ON sm.sql_manage_record_id = oms.id
 		SET ap.deleted_at = now(),
 		oms.deleted_at = now(),
 		sm.deleted_at = now()
