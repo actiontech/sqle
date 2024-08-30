@@ -2,9 +2,6 @@ package model
 
 import (
 	"time"
-
-	"github.com/actiontech/sqle/sqle/errors"
-	"gorm.io/gorm"
 )
 
 type SqlManage struct {
@@ -38,28 +35,6 @@ type SqlManageSqlAuditRecord struct {
 
 func (sm SqlManageSqlAuditRecord) TableName() string {
 	return "sql_manage_sql_audit_records"
-}
-
-func (s *Storage) GetSqlManageSqlAuditRecordBySqlId(sqlId string) ([]*SqlManageSqlAuditRecord, bool, error) {
-	records := []*SqlManageSqlAuditRecord{}
-	if err := s.db.Where("sql_id = ?", sqlId).
-		Find(&records).Error; err != nil && err == gorm.ErrRecordNotFound {
-		return nil, false, nil
-	} else if err != nil {
-		return nil, false, errors.New(errors.ConnectStorageError, err)
-	}
-	return records, true, nil
-}
-
-func (s *Storage) GetSqlManageSqlAuditRecordByRecordId(recordId string) ([]*SqlManageSqlAuditRecord, bool, error) {
-	records := []*SqlManageSqlAuditRecord{}
-	if err := s.db.Where("sql_audit_record_id = ?", recordId).
-		Find(&records).Error; err != nil && err == gorm.ErrRecordNotFound {
-		return nil, false, nil
-	} else if err != nil {
-		return nil, false, errors.New(errors.ConnectStorageError, err)
-	}
-	return records, true, nil
 }
 
 type SqlManageEndpoint struct {
