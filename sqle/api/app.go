@@ -319,6 +319,13 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		// report push
 		v1ProjectAdminRouter.PUT("/:project_name/report_push_configs/:report_push_config_id/", v1.UpdateReportPushConfig)
 		v1ProjectRouter.GET("/:project_name/report_push_configs", v1.GetReportPushConfigList)
+
+		// pipeline
+		v1ProjectRouter.POST("/:project_name/pipelines", v1.CreatePipeline)
+		v1ProjectRouter.DELETE("/:project_name/pipelines/:pipeline_id/", v1.DeletePipeline)
+		v1ProjectRouter.PATCH("/:project_name/pipelines/:pipeline_id/", v1.UpdatePipeline)
+		v1ProjectRouter.GET("/:project_name/pipelines", v1.GetPipelines)
+		v1ProjectRouter.GET("/:project_name/pipelines/:pipeline_id/", v1.GetPipelineDetail)
 	}
 
 	// project member router
