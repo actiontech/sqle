@@ -13,12 +13,15 @@ import (
 
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/driver/mysql/keyword"
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 	"github.com/actiontech/sqle/sqle/driver/mysql/session"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/log"
+	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/utils"
-
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/opcode"
@@ -29,6 +32,8 @@ import (
 )
 
 // rule type
+
+// todo i18n del after rewrite rules localized
 const (
 	RuleTypeGlobalConfig       = "全局配置"
 	RuleTypeNamingConvention   = "命名规范"
@@ -226,7 +231,7 @@ type RuleHandlerFunc func(input *RuleHandlerInput) error
 
 type RuleHandler struct {
 	Rule                 driverV2.Rule
-	Message              string
+	Message              *i18n.Message
 	Func                 RuleHandlerFunc
 	AllowOffline         bool
 	NotAllowOfflineStmts []ast.Node
@@ -236,6 +241,97 @@ type RuleHandler struct {
 	NotSupportExecutedSQLAuditStmts []ast.Node
 }
 
+type SourceEnum struct {
+	Value string        `json:"value"`
+	Desc  *i18n.Message `json:"desc"`
+}
+
+type SourceParam struct {
+	Key   string           `json:"key"`
+	Value string           `json:"value"`
+	Desc  *i18n.Message    `json:"desc"`
+	Type  params.ParamType `json:"type"`
+	Enums []SourceEnum     `json:"enums"`
+}
+
+type SourceRule struct {
+	Name       string
+	Desc       *i18n.Message
+	Annotation *i18n.Message
+	Category   *i18n.Message
+	Level      driverV2.RuleLevel
+	Params     []*SourceParam
+	Knowledge  driverV2.RuleKnowledge
+}
+
+type SourceHandler struct {
+	Rule                 SourceRule
+	Message              *i18n.Message
+	Func                 RuleHandlerFunc
+	AllowOffline         bool
+	NotAllowOfflineStmts []ast.Node
+	// 开始事后审核时将会跳过这个值为ture的规则
+	OnlyAuditNotExecutedSQL bool
+	// 事后审核时将会跳过下方列表中的类型
+	NotSupportExecutedSQLAuditStmts []ast.Node
+}
+
+// 通过 source* 生成多语言版本的 RuleHandler
+func generateRuleHandlers(shs []*SourceHandler) []RuleHandler {
+	rhs := make([]RuleHandler, len(shs))
+	for k, v := range shs {
+		rhs[k] = RuleHandler{
+			Rule:                            *ConvertSourceRule(&v.Rule),
+			Message:                         v.Message,
+			Func:                            v.Func,
+			AllowOffline:                    v.AllowOffline,
+			NotAllowOfflineStmts:            v.NotAllowOfflineStmts,
+			OnlyAuditNotExecutedSQL:         v.OnlyAuditNotExecutedSQL,
+			NotSupportExecutedSQLAuditStmts: v.NotSupportExecutedSQLAuditStmts,
+		}
+	}
+	return rhs
+}
+
+func ConvertSourceRule(sr *SourceRule) *driverV2.Rule {
+	r := &driverV2.Rule{
+		Name:         sr.Name,
+		Level:        sr.Level,
+		Params:       nil,
+		I18nRuleInfo: genAllI18nRuleInfo(sr),
+	}
+	if info, exist := r.I18nRuleInfo[locale.DefaultLang.String()]; exist {
+		r.Params = info.Params
+	}
+	return r
+}
+
+func genAllI18nRuleInfo(sr *SourceRule) map[string]*driverV2.RuleInfo {
+	result := make(map[string]*driverV2.RuleInfo, len(plocale.AllLocalizers))
+	for langTag, localizer := range plocale.AllLocalizers {
+		newInfo := &driverV2.RuleInfo{
+			Desc:       plocale.ShouldLocalizeMessage(localizer, sr.Desc),
+			Annotation: plocale.ShouldLocalizeMessage(localizer, sr.Annotation),
+			Category:   plocale.ShouldLocalizeMessage(localizer, sr.Category),
+			//Level:      sr.Level,
+			Params:    make(params.Params, len(sr.Params)),
+			Knowledge: driverV2.RuleKnowledge{Content: sr.Knowledge.Content}, //todo i18n Knowledge
+		}
+
+		for k, v := range sr.Params {
+			newInfo.Params[k] = &params.Param{
+				Key:   v.Key,
+				Value: v.Value,
+				Desc:  plocale.ShouldLocalizeMessage(localizer, v.Desc),
+				Type:  v.Type,
+				Enums: nil, // all nil now
+			}
+		}
+		result[langTag] = newInfo
+	}
+	return result
+}
+
 func init() {
 	defaultRulesKnowledge, err := getDefaultRulesKnowledge()
 	if err != nil {
@@ -243,7 +339,8 @@ func init() {
 	}
 	for i, rh := range RuleHandlers {
 		if knowledge, ok := defaultRulesKnowledge[rh.Rule.Name]; ok {
-			rh.Rule.Knowledge = driverV2.RuleKnowledge{Content: knowledge}
+			// todo i18n Knowledge
+			rh.Rule.I18nRuleInfo[locale.DefaultLang.String()].Knowledge = driverV2.RuleKnowledge{Content: knowledge}
 			RuleHandlers[i] = rh
 		}
 		RuleHandlerMap[rh.Rule.Name] = rh
@@ -262,7 +359,7 @@ func addResult(result *driverV2.AuditResults, currentRule driverV2.Rule, ruleNam
 	}
 	level := currentRule.Level
 	message := RuleHandlerMap[ruleName].Message
-	result.Add(level, ruleName, message, args...)
+	result.Add(level, ruleName, plocale.ShouldLocalizeAll(message), args...)
 }
 
 func (rh *RuleHandler) IsAllowOfflineRule(node ast.Node) bool {
