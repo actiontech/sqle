@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"fmt"
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 	"testing"
 
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
@@ -13,19 +14,19 @@ func TestPTOSC(t *testing.T) {
 
 	runOSCCase(t, "add column not null no default",
 		"alter table exist_tb_1 add column v3 varchar(255) NOT NULL;",
-		PTOSCAvoidNoDefaultValueOnNotNullColumn)
+		plocale.ShouldLocalizeMessage(plocale.DefaultLocalizer, plocale.PTOSCNoUniqueIndexOrPrimaryKey))
 
 	runOSCCase(t, "not pk and unique key",
 		"alter table exist_tb_3 add column v3 varchar(255);",
-		PTOSCNoUniqueIndexOrPrimaryKey)
+		plocale.ShouldLocalizeMessage(plocale.DefaultLocalizer, plocale.PTOSCNoUniqueIndexOrPrimaryKey))
 
 	runOSCCase(t, "rename table",
 		"alter table exist_tb_1 rename as not_exist_tb_1;",
-		PTOSCAvoidRenameTable)
+		plocale.ShouldLocalizeMessage(plocale.DefaultLocalizer, plocale.PTOSCAvoidRenameTable))
 
 	runOSCCase(t, "add unique index",
 		"alter table exist_tb_1 add unique index u_1 (v1) ",
-		PTOSCAvoidUniqueIndex)
+		plocale.ShouldLocalizeMessage(plocale.DefaultLocalizer, plocale.PTOSCAvoidUniqueIndex))
 
 	runOSCCase(t, "add column ok",
 		"alter table exist_tb_1 add column v3 varchar(255);",
