@@ -12,6 +12,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/driver"
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/model"
 	opt "github.com/actiontech/sqle/sqle/server/optimization/rule"
 	"github.com/actiontech/sqle/sqle/utils"
@@ -117,7 +118,7 @@ func (a *OptimizationOnlinePawSQLServer) getOptimizationInfo(ctx context.Context
 		a.logger.Debugf("get Optimization detail %v", detail)
 		triggeredRule := make([]model.RewriteRule, 0)
 		for _, v := range detail.RewrittenQuery {
-			name, message := convertRuleNameAndMessage(v.RuleCode, v.RuleNameZh, dbType)
+			name, message := convertRuleNameAndMessage(ctx, v.RuleCode, v.RuleNameZh, dbType)
 			triggeredRule = append(triggeredRule, model.RewriteRule{
 				RuleName:            name,
 				Message:             message,
@@ -224,19 +225,20 @@ func convertRulesToOptimizationReqRules(templateRules []*model.Rule, dbType stri
 	return reqRules
 }
 
-func convertRuleNameAndMessage(ruleCode string, ruleMessage string, dbType string) (string, string) {
+func convertRuleNameAndMessage(ctx context.Context, ruleCode string, ruleMessage string, dbType string) (string, string) {
+	lang := locale.GetLangTagFromCtx(ctx)
 	name, message := ruleCode, ruleMessage
 	// 获取对应的重写规则
 	rule, exist := opt.GetOptimizationRuleByRuleCode(ruleCode, dbType)
 	if exist && rule != nil {
 		// 用重写规则的名称和描述
-		name, message = rule.Name, rule.Desc
+		name, message = rule.Name, rule.I18nRuleInfo.GetRuleInfoByLangTag(lang.String()).Desc
 		dm := driver.GetPluginManager().GetDriverMetasOfPlugin(dbType)
 		if dm != nil {
 			for _, v := range dm.Rules {
 				if v.Name == name {
 					// 获取复用规则的Desc（保持与规则模板中的规则名一致）
-					message = v.Desc
+					message = v.I18nRuleInfo.GetRuleInfoByLangTag(lang.String()).Desc
 					break
 				}
 			}

@@ -7,6 +7,7 @@ import (
 	"regexp"
 
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/sirupsen/logrus"
@@ -16,7 +17,7 @@ func CustomRuleAudit(l *logrus.Entry, task *model.Task, sqls []string, results [
 	if len(customRules) == 0 {
 		return
 	}
-	
+
 	if len(results) != len(sqls) {
 		l.Errorf("audit results [%d] does not match the number of SQL [%d]", len(results), len(sqls))
 		return
@@ -32,9 +33,11 @@ func CustomRuleAudit(l *logrus.Entry, task *model.Task, sqls []string, results [
 			}
 			if regex.MatchString(sql) {
 				res := driverV2.AuditResult{
-					Message:  customRule.Desc,
 					RuleName: customRule.RuleId,
 					Level:    driverV2.RuleLevel(customRule.Level),
+					I18nAuditResultInfo: map[string]driverV2.AuditResultInfo{
+						locale.DefaultLang.String(): {Message: customRule.Desc},
+					},
 				}
 				result := results[i]
 				result.Results = append(result.Results, &res)
