@@ -1,11 +1,13 @@
 package model
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"gorm.io/gorm"
 )
@@ -22,59 +24,78 @@ type RuleTemplate struct {
 }
 
 func GenerateRuleByDriverRule(dr *driverV2.Rule, dbType string) *Rule {
-	return &Rule{
-		Name:       dr.Name,
-		Desc:       dr.Desc,
-		Annotation: dr.Annotation,
-		Level:      string(dr.Level),
-		Typ:        dr.Category,
-		DBType:     dbType,
-		Params:     dr.Params,
+	r := &Rule{
+		Name:   dr.Name,
+		Level:  string(dr.Level),
+		DBType: dbType,
+		Params: dr.Params,
 		Knowledge: &RuleKnowledge{
-			Content: dr.Knowledge.Content,
+			I18nContent: make(driverV2.I18nStr, len(dr.I18nRuleInfo)),
 		},
+		I18nRuleInfo: make(driverV2.I18nRuleInfo, len(dr.I18nRuleInfo)),
 	}
+	for lang, v := range dr.I18nRuleInfo {
+		r.Knowledge.I18nContent[lang] = v.Knowledge.Content
+		r.I18nRuleInfo[lang] = &driverV2.RuleInfo{
+			Desc:       v.Desc,
+			Annotation: v.Annotation,
+			Category:   v.Category,
+			Params:     v.Params,
+		}
+	}
+	return r
 }
 
 func ConvertRuleToDriverRule(r *Rule) *driverV2.Rule {
-	return &driverV2.Rule{
-		Name:       r.Name,
-		Desc:       r.Desc,
-		Annotation: r.Annotation,
-		Category:   r.Typ,
-		Level:      driverV2.RuleLevel(r.Level),
-		Params:     r.Params,
+	dr := &driverV2.Rule{
+		Name:         r.Name,
+		Level:        driverV2.RuleLevel(r.Level),
+		Params:       r.Params,
+		I18nRuleInfo: make(map[string]*driverV2.RuleInfo, len(r.I18nRuleInfo)),
 	}
+	for lang, v := range r.I18nRuleInfo {
+		dr.I18nRuleInfo[lang] = &driverV2.RuleInfo{
+			Desc:       v.Desc,
+			Annotation: v.Annotation,
+			Category:   v.Category,
+			Params:     v.Params,
+			Knowledge:  driverV2.RuleKnowledge{},
+		}
+	}
+	return dr
 }
 
 type RuleKnowledge struct {
 	Model
-	Content string `gorm:"type:longtext"`
+	Content     string           `gorm:"type:longtext"` // Deprecated: use I18nContent instead
+	I18nContent driverV2.I18nStr `gorm:"type:json"`
 }
 
 func (r *RuleKnowledge) TableName() string {
 	return "rule_knowledge"
 }
 
-func (r *RuleKnowledge) GetContent() string {
+func (r *RuleKnowledge) GetContentByLangTag(lang string) string {
 	if r == nil {
 		return ""
 	}
-	return r.Content
+	return r.I18nContent.GetStrInLang(lang)
 }
 
 type Rule struct {
-	Name            string         `json:"name" gorm:"primary_key; not null;type:varchar(255)"`
-	DBType          string         `json:"db_type" gorm:"primary_key; not null; default:\"mysql\";type:varchar(255)"`
-	Desc            string         `json:"desc" gorm:"type:varchar(255)"`
-	Annotation      string         `json:"annotation" gorm:"column:annotation;type:varchar(255)"`
-	Level           string         `json:"level" example:"error" gorm:"type:varchar(255)"` // notice, warn, error
-	Typ             string         `json:"type" gorm:"column:type; not null;type:varchar(255)"`
-	Params          params.Params  `json:"params" gorm:"type:varchar(1000)"`
-	KnowledgeId     uint           `json:"knowledge_id"`
-	Knowledge       *RuleKnowledge `json:"knowledge" gorm:"foreignkey:KnowledgeId"`
-	HasAuditPower   bool           `json:"has_audit_power" gorm:"type:bool" example:"true"`
-	HasRewritePower bool           `json:"has_rewrite_power" gorm:"type:bool" example:"true"`
+	Name   string `json:"name" gorm:"primary_key; not null;type:varchar(255)"`
+	DBType string `json:"db_type" gorm:"primary_key; not null; default:\"mysql\";type:varchar(255)"`
+	// todo i18n 规则应该不用兼容老sqle数据
+	//Desc            string                `json:"desc" gorm:"type:varchar(255)"`                          // Deprecated: use driverV2.RuleInfo .Desc in I18nRuleInfo instead
+	//Annotation      string                `json:"annotation" gorm:"column:annotation;type:varchar(1024)"` // Deprecated: use driverV2.RuleInfo .Annotation in I18nRuleInfo instead
+	Level string `json:"level" example:"error" gorm:"type:varchar(255)"` // notice, warn, error
+	//Typ             string                `json:"type" gorm:"column:type; not null;type:varchar(255)"`    // Deprecated: use driverV2.RuleInfo .Category in I18nRuleInfo instead
+	Params          params.Params         `json:"params" gorm:"type:varchar(1000)"`
+	KnowledgeId     uint                  `json:"knowledge_id"`
+	Knowledge       *RuleKnowledge        `json:"knowledge" gorm:"foreignkey:KnowledgeId"`
+	HasAuditPower   bool                  `json:"has_audit_power" gorm:"type:bool" example:"true"`
+	HasRewritePower bool                  `json:"has_rewrite_power" gorm:"type:bool" example:"true"`
+	I18nRuleInfo    driverV2.I18nRuleInfo `json:"i18n_rule_info" gorm:"type:json"`
 }
 
 func (r Rule) TableName() string {
@@ -293,7 +314,8 @@ func (s *Storage) GetRuleTemplateDetailByNameAndProjectIds(projectIds []string, 
 		if fuzzy_keyword_rule == "" {
 			return db
 		}
-		return db.Where("`desc` like ? OR annotation like ?", fmt.Sprintf("%%%s%%", fuzzy_keyword_rule), fmt.Sprintf("%%%s%%", fuzzy_keyword_rule))
+		// todo i18n use json syntax to query?
+		return db.Where("`i18n_rule_info` like ?", fmt.Sprintf("%%%s%%", fuzzy_keyword_rule))
 	}
 	t := &RuleTemplate{Name: name}
 	err := s.db.Preload("RuleList", dbOrder).Preload("RuleList.Rule", fuzzy_condition).Preload("CustomRuleList.CustomRule", fuzzy_condition).
@@ -331,13 +353,13 @@ func (s *Storage) CloneRuleTemplateRules(source, destination *RuleTemplate) erro
 	return s.UpdateRuleTemplateRules(destination, source.RuleList...)
 }
 
-func (s *Storage) GetRuleTemplateRuleByName(name string, dbType string) (*[]RuleTemplateRule, error) {
+func (s *Storage) GetRuleTemplateRuleByName(name string, dbType string) ([]RuleTemplateRule, error) {
 	ruleTemplateRule := []RuleTemplateRule{}
 	result := s.db.Where("rule_name = ?", name).Where("db_type = ?", dbType).Find(&ruleTemplateRule)
 	if result.RowsAffected == 0 {
 		return nil, nil
 	}
-	return &ruleTemplateRule, errors.New(errors.ConnectStorageError, result.Error)
+	return ruleTemplateRule, errors.New(errors.ConnectStorageError, result.Error)
 }
 
 func (s *Storage) CloneRuleTemplateCustomRules(source, destination *RuleTemplate) error {
@@ -491,7 +513,8 @@ func (s *Storage) GetAuditPlanNamesByRuleTemplateAndProject(
 	return auditPlanNames, nil
 }
 
-func (s *Storage) GetRuleTypeByDBType(DBType string) ([]string, error) {
+func (s *Storage) GetRuleTypeByDBType(ctx context.Context, DBType string) ([]string, error) {
+	lang := locale.GetLangTagFromCtx(ctx)
 	rules := []*Rule{}
 	err := s.db.Select("type").Where("db_type = ?", DBType).Group("type").Find(&rules).Error
 	if err != nil {
@@ -499,17 +522,17 @@ func (s *Storage) GetRuleTypeByDBType(DBType string) ([]string, error) {
 	}
 	ruleDBTypes := make([]string, len(rules))
 	for i := range rules {
-		ruleDBTypes[i] = rules[i].Typ
+		ruleDBTypes[i] = rules[i].I18nRuleInfo.GetRuleInfoByLangTag(lang.String()).Category
 	}
 	return ruleDBTypes, nil
 }
 
 type CustomRule struct {
 	Model
-	RuleId      string         `json:"rule_id" gorm:"index:unique; not null; type:varchar(255)"`
+	RuleId string `json:"rule_id" gorm:"index:unique; not null; type:varchar(255)"`
 
 	Desc        string         `json:"desc" gorm:"not null; type:varchar(255)"`
-	Annotation  string         `json:"annotation" gorm:"type:varchar(255)"`
+	Annotation  string         `json:"annotation" gorm:"type:varchar(1024)"`
 	DBType      string         `json:"db_type" gorm:"not null; default:\"mysql\"; type:varchar(255)"`
 	Level       string         `json:"level" example:"error" gorm:"type:varchar(255)"` // notice, warn, error
 	Typ         string         `json:"type" gorm:"column:type; not null; type:varchar(255)"`
