@@ -20,10 +20,12 @@ import (
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/labstack/echo/v4"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 func exportWorkflowV1(c echo.Context) error {
@@ -74,36 +76,37 @@ func exportWorkflowV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	ctx := c.Request().Context()
 	buff := new(bytes.Buffer)
 	buff.WriteString("\xEF\xBB\xBF") // 写入UTF-8 BOM
 	csvWriter := csv.NewWriter(buff)
 	if err := csvWriter.Write([]string{
-		"工单编号",
-		"工单名称",
-		"工单描述",
-		"数据源",
-		"创建时间",
-		"创建人 ",
-		"工单状态",
-		"操作人",
-		"工单执行时间",
-		"具体执行SQL内容",
-		"[节点1]审核人",
-		"[节点1]审核时间",
-		"[节点1]审核结果",
-		"[节点2]审核人",
-		"[节点2]审核时间",
-		"[节点2]审核结果",
-		"[节点3]审核人",
-		"[节点3]审核时间",
-		"[节点3]审核结果",
-		"[节点4]审核人",
-		"[节点4]审核时间",
-		"[节点4]审核结果",
-		"上线人",
-		"上线开始时间",
-		"上线结束时间",
-		"上线结果",
+		locale.ShouldLocalizeMsg(ctx, locale.WFExportWorkflowNumber),      // "工单编号",
+		locale.ShouldLocalizeMsg(ctx, locale.WFExportWorkflowName),        // "工单名称",
+		locale.ShouldLocalizeMsg(ctx, locale.WFExportWorkflowDescription), // "工单描述",
+		locale.ShouldLocalizeMsg(ctx, locale.WFExportDataSource),          // "数据源",
+		locale.ShouldLocalizeMsg(ctx, locale.WFExportCreateTime),          // "创建时间",
+		locale.ShouldLocalizeMsg(ctx, locale.WFExportCreator),             // "创建人 ",
+		locale.ShouldLocalizeMsg(ctx, locale.WFExportTaskOrderStatus),     // "工单状态",
+		locale.ShouldLocalizeMsg(ctx, locale.WFExportOperator),            // "操作人",
+		locale.ShouldLocalizeMsg(ctx, locale.WFExportExecutionTime),       // "工单执行时间",
+		locale.ShouldLocalizeMsg(ctx, locale.WFExportSQLContent),          // "具体执行SQL内容",
+		locale.ShouldLocalizeMsg(ctx, locale.WFExportNode1Auditor),        // "[节点1]审核人",
+		locale.ShouldLocalizeMsg(ctx, locale.WFExportNode1AuditTime),      // "[节点1]审核时间",
+		locale.ShouldLocalizeMsg(ctx, locale.WFExportNode1AuditResult),    // "[节点1]审核结果",
+		locale.ShouldLocalizeMsg(ctx, locale.WFExportNode2Auditor),        // "[节点2]审核人",
+		locale.ShouldLocalizeMsg(ctx, locale.WFExportNode2AuditTime),      // "[节点2]审核时间",
+		locale.ShouldLocalizeMsg(ctx, locale.WFExportNode2AuditResult),    // "[节点2]审核结果",
+		locale.ShouldLocalizeMsg(ctx, locale.WFExportNode3Auditor),        // "[节点3]审核人",
+		locale.ShouldLocalizeMsg(ctx, locale.WFExportNode3AuditTime),      // "[节点3]审核时间",
+		locale.ShouldLocalizeMsg(ctx, locale.WFExportNode3AuditResult),    // "[节点3]审核结果",
+		locale.ShouldLocalizeMsg(ctx, locale.WFExportNode4Auditor),        // "[节点4]审核人",
+		locale.ShouldLocalizeMsg(ctx, locale.WFExportNode4AuditTime),      // "[节点4]审核时间",
+		locale.ShouldLocalizeMsg(ctx, locale.WFExportNode4AuditResult),    // "[节点4]审核结果",
+		locale.ShouldLocalizeMsg(ctx, locale.WFExportExecutor),            // "上线人",
+		locale.ShouldLocalizeMsg(ctx, locale.WFExportExecutionStartTime),  // "上线开始时间",
+		locale.ShouldLocalizeMsg(ctx, locale.WFExportExecutionEndTime),    // "上线结束时间",
+		locale.ShouldLocalizeMsg(ctx, locale.WFExportExecutionStatus),     // "上线结果",
 	}); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -146,12 +149,12 @@ func exportWorkflowV1(c echo.Context) error {
 				utils.AddDelTag(nil, instanceRecord.Instance.Name),
 				workflow.Model.CreatedAt.Format("2006-01-02 15:04:05"),
 				dms.GetUserNameWithDelTag(workflow.CreateUserId),
-				model.WorkflowStatus[workflow.Record.Status],
+				locale.ShouldLocalizeMsg(ctx, model.WorkflowStatus[workflow.Record.Status]),
 				dms.GetUserNameWithDelTag(instanceRecord.ExecutionUserId),
 				instanceRecord.Task.TaskExecEndAt(),
 				getExecuteSqlList(instanceRecord.Task.ExecuteSQLs),
 			}
-			exportWorkflowRecord = append(exportWorkflowRecord, getAuditAndExecuteList(workflow, instanceRecord)...)
+			exportWorkflowRecord = append(exportWorkflowRecord, getAuditAndExecuteList(ctx, workflow, instanceRecord)...)
 
 			if err := csvWriter.Write(exportWorkflowRecord); err != nil {
 				return controller.JSONBaseErrorReq(c, err)
@@ -161,7 +164,7 @@ func exportWorkflowV1(c echo.Context) error {
 
 	csvWriter.Flush()
 
-	fileName := fmt.Sprintf("%s_工单.csv", time.Now().Format("20060102150405"))
+	fileName := fmt.Sprintf("%s_workflow.csv", time.Now().Format("20060102150405"))
 	c.Response().Header().Set(echo.HeaderContentDisposition, mime.FormatMediaType("attachment", map[string]string{
 		"filename": fileName,
 	}))
@@ -169,28 +172,28 @@ func exportWorkflowV1(c echo.Context) error {
 	return c.Blob(http.StatusOK, "text/csv", buff.Bytes())
 }
 
-var workflowStepStateMap = map[string]string{
-	model.WorkflowStepStateApprove: "通过",
-	model.WorkflowStepStateReject:  "驳回",
+var workflowStepStateMap = map[string]*i18n.Message{
+	model.WorkflowStepStateApprove: locale.WorkflowStepStateApprove,
+	model.WorkflowStepStateReject:  locale.WorkflowStepStateReject,
 }
 
-var executeStateMap = map[string]string{
-	model.TaskStatusExecuting:        "正在上线",
-	model.TaskStatusExecuteSucceeded: "上线成功",
-	model.TaskStatusExecuteFailed:    "上线失败",
-	model.TaskStatusManuallyExecuted: "手动上线",
+var executeStateMap = map[string]*i18n.Message{
+	model.TaskStatusExecuting:        locale.TaskStatusExecuting,
+	model.TaskStatusExecuteSucceeded: locale.TaskStatusExecuteSucceeded,
+	model.TaskStatusExecuteFailed:    locale.TaskStatusExecuteFailed,
+	model.TaskStatusManuallyExecuted: locale.TaskStatusManuallyExecuted,
 }
 
 // 获取审核和上线节点
-func getAuditAndExecuteList(workflow *model.Workflow, instanceRecord *model.WorkflowInstanceRecord) (auditAndExecuteList []string) {
+func getAuditAndExecuteList(ctx context.Context, workflow *model.Workflow, instanceRecord *model.WorkflowInstanceRecord) (auditAndExecuteList []string) {
 	// 审核节点
-	auditAndExecuteList = append(auditAndExecuteList, getAuditList(workflow)...)
+	auditAndExecuteList = append(auditAndExecuteList, getAuditList(ctx, workflow)...)
 	// 上线节点
 	auditAndExecuteList = append(auditAndExecuteList,
 		dms.GetUserNameWithDelTag(instanceRecord.ExecutionUserId),
 		instanceRecord.Task.TaskExecStartAt(),
 		instanceRecord.Task.TaskExecEndAt(),
-		executeStateMap[instanceRecord.Task.Status],
+		locale.ShouldLocalizeMsg(ctx, executeStateMap[instanceRecord.Task.Status]),
 	)
 	return auditAndExecuteList
 }
@@ -205,14 +208,14 @@ func getExecuteSqlList(executeSQLList []*model.ExecuteSQL) string {
 	return stringBuilder.String()
 }
 
-func getAuditList(workflow *model.Workflow) (workflowList []string) {
+func getAuditList(ctx context.Context, workflow *model.Workflow) (workflowList []string) {
 	auditNodeList := make([]string, 12) // 4个审核节点,每个节点有3个字段,最大3*4个字段
 	stepSize := 3                       // 每个节点有3个字段
 	for i, step := range workflow.AuditStepList() {
 		stepIndex := i * stepSize
 		auditNodeList[stepIndex] = dms.GetUserNameWithDelTag(step.OperationUserId)
 		auditNodeList[stepIndex+1] = step.OperationTime()
-		auditNodeList[stepIndex+2] = workflowStepStateMap[step.State]
+		auditNodeList[stepIndex+2] = locale.ShouldLocalizeMsg(ctx, workflowStepStateMap[step.State])
 	}
 	return auditNodeList
 }
@@ -236,6 +239,7 @@ func getWorkflowTemplate(c echo.Context) error {
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
+		td.Desc = fmt.Sprintf(locale.ShouldLocalizeMsg(c.Request().Context(), locale.DefaultTemplatesDesc), projectUid)
 	} else {
 		td, err = getWorkflowTemplateDetailByTemplate(template)
 		if err != nil {

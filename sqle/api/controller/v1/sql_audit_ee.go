@@ -10,6 +10,7 @@ import (
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/common"
 	dms "github.com/actiontech/sqle/sqle/dms"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/labstack/echo/v4"
@@ -76,18 +77,22 @@ func getRuleKnowledge(c echo.Context) error {
 	ruleName := c.Param("rule_name")
 	dbType := c.Param("db_type")
 	s := model.GetStorage()
+	lang := locale.GetLangTagFromCtx(c.Request().Context())
+
 	rule, err := s.GetRuleWithKnowledge(ruleName, dbType)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+
+	ruleInfo := rule.I18nRuleInfo.GetRuleInfoByLangTag(lang.String())
 	return c.JSON(http.StatusOK, GetRuleKnowledgeResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data: RuleKnowledgeResV1{
 			Rule: RuleInfo{
-				Desc:       rule.Desc,
-				Annotation: rule.Annotation,
+				Desc:       ruleInfo.Desc,
+				Annotation: ruleInfo.Annotation,
 			},
-			KnowledgeContent: rule.Knowledge.GetContent(),
+			KnowledgeContent: rule.Knowledge.GetContentByLangTag(lang.String()),
 		},
 	})
 }
@@ -103,8 +108,9 @@ func updateRuleKnowledge(c echo.Context) error {
 		return c.JSON(http.StatusOK, controller.JSONBaseErrorReq(c, nil))
 	}
 
+	ctx := c.Request().Context()
 	s := model.GetStorage()
-	if err := s.CreateOrUpdateRuleKnowledgeContent(ruleName, dbType, *req.KnowledgeContent); err != nil {
+	if err := s.CreateOrUpdateRuleKnowledgeContent(ctx, ruleName, dbType, *req.KnowledgeContent); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	return controller.JSONBaseErrorReq(c, nil)
@@ -125,7 +131,7 @@ func getCustomRuleKnowledge(c echo.Context) error {
 				Desc:       rule.Desc,
 				Annotation: rule.Annotation,
 			},
-			KnowledgeContent: rule.Knowledge.GetContent(),
+			KnowledgeContent: rule.Knowledge.GetContentByLangTag(locale.GetLangTagFromCtx(c.Request().Context()).String()),
 		},
 	})
 }
@@ -140,8 +146,9 @@ func updateCustomRuleKnowledge(c echo.Context) error {
 		return c.JSON(http.StatusOK, controller.JSONBaseErrorReq(c, nil))
 	}
 
+	ctx := c.Request().Context()
 	s := model.GetStorage()
-	if err := s.CreateOrUpdateCustomRuleKnowledgeContent(ruleName, dbType, *req.KnowledgeContent); err != nil {
+	if err := s.CreateOrUpdateCustomRuleKnowledgeContent(ctx, ruleName, dbType, *req.KnowledgeContent); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	return controller.JSONBaseErrorReq(c, nil)

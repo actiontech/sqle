@@ -17,8 +17,10 @@ import (
 	"github.com/actiontech/sqle/sqle/driver"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/labstack/echo/v4"
 )
@@ -164,17 +166,17 @@ const (
 
 type FileOrderMethod struct {
 	Method string
-	Desc   string
+	Desc   *i18n.Message
 }
 
 var FileOrderMethods = []FileOrderMethod{
 	{
 		Method: FileOrderMethodPrefixNumAsc,
-		Desc:   "文件名前缀数字升序",
+		Desc:   locale.FileOrderMethodPrefixNumAsc,
 	},
 	{
 		Method: FileOrderMethodSuffixNumAsc,
-		Desc:   "文件名后缀数字升序",
+		Desc:   locale.FileOrderMethodSuffixNumAsc,
 	},
 }
 
@@ -183,7 +185,7 @@ func getSqlFileOrderMethod(c echo.Context) error {
 	for _, method := range FileOrderMethods {
 		methods = append(methods, SqlFileOrderMethod{
 			OrderMethod: method.Method,
-			Desc:        method.Desc,
+			Desc:        locale.ShouldLocalizeMsg(c.Request().Context(), method.Desc),
 		})
 	}
 	return c.JSON(http.StatusOK, GetSqlFileOrderMethodResV1{

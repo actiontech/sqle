@@ -18,6 +18,7 @@ import (
 	"github.com/actiontech/sqle/sqle/api/controller"
 	dms "github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server/auditplan"
@@ -41,6 +42,7 @@ func getSqlManageList(c echo.Context) error {
 		offset = (req.PageIndex - 1) * req.PageSize
 	}
 
+	ctx := c.Request().Context()
 	searchSqlFingerprint := ""
 	if req.FuzzySearchSqlFingerprint != nil {
 		searchSqlFingerprint = strings.Replace(*req.FuzzySearchSqlFingerprint, "'", "\\'", -1)
@@ -71,7 +73,7 @@ func getSqlManageList(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	sqlManageRet, err := convertToGetSqlManageListResp(sqlManage.SqlManageList)
+	sqlManageRet, err := convertToGetSqlManageListResp(ctx, sqlManage.SqlManageList)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -84,7 +86,8 @@ func getSqlManageList(c echo.Context) error {
 	})
 }
 
-func convertToGetSqlManageListResp(sqlManageList []*model.SqlManageDetail) ([]*SqlManage, error) {
+func convertToGetSqlManageListResp(ctx context.Context, sqlManageList []*model.SqlManageDetail) ([]*SqlManage, error) {
+	lang := locale.GetLangTagFromCtx(ctx)
 	sqlManageRespList := make([]*SqlManage, 0, len(sqlManageList))
 	users, err := dms.GetMapUsers(context.TODO(), nil, dms.GetDMSServerAddress())
 	if err != nil {
@@ -102,7 +105,7 @@ func convertToGetSqlManageListResp(sqlManageList []*model.SqlManageDetail) ([]*S
 			ar := sqlManage.AuditResults[i]
 			sqlMgr.AuditResult = append(sqlMgr.AuditResult, &AuditResult{
 				Level:    ar.Level,
-				Message:  ar.Message,
+				Message:  ar.GetAuditMsgByLangTag(lang.String()),
 				RuleName: ar.RuleName,
 			})
 		}
@@ -111,7 +114,7 @@ func convertToGetSqlManageListResp(sqlManageList []*model.SqlManageDetail) ([]*S
 			SqlSourceType: sqlManage.Source.String,
 			SqlSourceIDs:  sqlManage.SourceIDs,
 		}
-		auditPlanDesc := ConvertSqlSourceDescByType(sqlManage.Source.String)
+		auditPlanDesc := ConvertSqlSourceDescByType(ctx, sqlManage.Source.String)
 		source.SqlSourceDesc = auditPlanDesc
 		sqlMgr.Source = source
 
@@ -180,6 +183,7 @@ func exportSqlManagesV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	ctx := c.Request().Context()
 	s := model.GetStorage()
 
 	searchSqlFingerprint := ""
@@ -228,25 +232,25 @@ func exportSqlManagesV1(c echo.Context) error {
 	csvWriter := csv.NewWriter(buff)
 
 	err = csvWriter.WriteAll([][]string{
-		{"SQL总数", strconv.FormatUint(sqlManageResp.SqlManageTotalNum, 10)},
-		{"问题SQL数", strconv.FormatUint(sqlManageResp.SqlManageBadNum, 10)},
-		{"已优化SQL数", strconv.FormatUint(sqlManageResp.SqlManageOptimizedNum, 10)},
+		{locale.ShouldLocalizeMsg(ctx, locale.SMExportTotalSQLCount), strconv.FormatUint(sqlManageResp.SqlManageTotalNum, 10)},         // SQL总数
+		{locale.ShouldLocalizeMsg(ctx, locale.SMExportProblemSQLCount), strconv.FormatUint(sqlManageResp.SqlManageBadNum, 10)},         // 问题SQL数
+		{locale.ShouldLocalizeMsg(ctx, locale.SMExportOptimizedSQLCount), strconv.FormatUint(sqlManageResp.SqlManageOptimizedNum, 10)}, // 已优化SQL数
 	})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	if err := csvWriter.Write([]string{
-		"SQL指纹",
-		"SQL",
-		"来源",
-		"数据源",
-		"SCHEMA",
-		"审核结果",
-		"端点信息",
-		"负责人",
-		"状态",
-		"备注",
+		locale.ShouldLocalizeMsg(ctx, locale.SMExportSQLFingerprint), // "SQL指纹",
+		locale.ShouldLocalizeMsg(ctx, locale.SMExportSQL),            // "SQL",
+		locale.ShouldLocalizeMsg(ctx, locale.SMExportSource),         // "来源",
+		locale.ShouldLocalizeMsg(ctx, locale.SMExportDataSource),     // "数据源",
+		locale.ShouldLocalizeMsg(ctx, locale.SMExportSCHEMA),         // "SCHEMA",
+		locale.ShouldLocalizeMsg(ctx, locale.SMExportAuditResult),    // "审核结果",
+		locale.ShouldLocalizeMsg(ctx, locale.SMExportEndpoint),       // "端点信息",
+		locale.ShouldLocalizeMsg(ctx, locale.SMExportPersonInCharge), // "负责人",
+		locale.ShouldLocalizeMsg(ctx, locale.SMExportState),          // "状态",
+		locale.ShouldLocalizeMsg(ctx, locale.SMExportRemarks),        // "备注",
 	}); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -268,13 +272,13 @@ func exportSqlManagesV1(c echo.Context) error {
 			newRow,
 			sqlManage.SqlFingerprint.String,
 			sqlManage.SqlText.String,
-			ConvertSqlSourceDescByType(sqlManage.Source.String),
+			ConvertSqlSourceDescByType(ctx, sqlManage.Source.String),
 			dms.GetInstancesByIdWithoutError(sqlManage.InstanceID.String).Name,
 			sqlManage.SchemaName.String,
-			spliceAuditResults(sqlManage.AuditResults),
+			spliceAuditResults(ctx, sqlManage.AuditResults),
 			sqlManage.Endpoints.String,
 			strings.Join(assignees, ","),
-			model.SqlManageStatusMap[sqlManage.Status.String],
+			locale.ShouldLocalizeMsg(ctx, model.SqlManageStatusMap[sqlManage.Status.String]),
 			sqlManage.Remark.String,
 		)
 
@@ -289,7 +293,7 @@ func exportSqlManagesV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	fileName := fmt.Sprintf("%s_SQL管控.csv", time.Now().Format("20060102150405"))
+	fileName := fmt.Sprintf("%s_sql_manager.csv", time.Now().Format("20060102150405"))
 	c.Response().Header().Set(echo.HeaderContentDisposition, mime.FormatMediaType("attachment", map[string]string{
 		"filename": fileName,
 	}))
@@ -380,9 +384,10 @@ func getAuditPlanUnsolvedSQLCount(auditPlanId uint) (int64, error) {
 	return count, nil
 }
 
-func ConvertSqlSourceDescByType(source string) string {
+// todo i18n
+func ConvertSqlSourceDescByType(ctx context.Context, source string) string {
 	if source == model.SQLManageSourceSqlAuditRecord {
-		return model.SqlManageSourceMap[source]
+		return locale.ShouldLocalizeMsg(ctx, model.SqlManageSourceMap[source])
 	}
 	for _, meta := range auditplan.Metas {
 		if meta.Type == source {

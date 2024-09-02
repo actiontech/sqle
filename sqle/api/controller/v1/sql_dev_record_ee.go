@@ -14,6 +14,7 @@ import (
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/common"
 	dms "github.com/actiontech/sqle/sqle/dms"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
@@ -56,13 +57,14 @@ func getSqlDEVRecordList(c echo.Context) error {
 		"offset":                        offset,
 	}
 
+	ctx := c.Request().Context()
 	s := model.GetStorage()
 	sqlDEVRecords, total, err := s.GetSqlDEVRecordListByReq(data)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	sqlDEVRecordRet, err := convertToGetSqlDEVRecordListResp(sqlDEVRecords)
+	sqlDEVRecordRet, err := convertToGetSqlDEVRecordListResp(ctx, sqlDEVRecords)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -74,9 +76,9 @@ func getSqlDEVRecordList(c echo.Context) error {
 	})
 }
 
-func convertToGetSqlDEVRecordListResp(sqlDEVRecordList []*model.SQLDevRecord) ([]*SqlDEVRecord, error) {
+func convertToGetSqlDEVRecordListResp(ctx context.Context, sqlDEVRecordList []*model.SQLDevRecord) ([]*SqlDEVRecord, error) {
+	lang := locale.GetLangTagFromCtx(ctx)
 	sqlDEVRecordRespList := make([]*SqlDEVRecord, 0, len(sqlDEVRecordList))
-
 	for _, sqlDEVRecord := range sqlDEVRecordList {
 		sqlDEV := new(SqlDEVRecord)
 		sqlDEV.Id = uint64(sqlDEVRecord.ID)
@@ -92,7 +94,7 @@ func convertToGetSqlDEVRecordListResp(sqlDEVRecordList []*model.SQLDevRecord) ([
 			ar := sqlDEVRecord.AuditResults[i]
 			sqlDEV.AuditResult = append(sqlDEV.AuditResult, &AuditResult{
 				Level:    ar.Level,
-				Message:  ar.Message,
+				Message:  ar.GetAuditMsgByLangTag(lang.String()),
 				RuleName: ar.RuleName,
 			})
 		}
