@@ -2,6 +2,7 @@ package optimization
 
 import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/log"
 )
 
@@ -86,7 +87,8 @@ func init() {
 	for _, optimizationRule := range OptimizationRuleMap {
 		for i, rule := range optimizationRule {
 			if knowledge, ok := defaultRulesKnowledge[rule.RuleCode]; ok {
-				rule.Rule.Knowledge = driverV2.RuleKnowledge{Content: knowledge}
+				// todo i18n rewrite rule Knowledge
+				rule.Rule.I18nRuleInfo[locale.DefaultLang.String()].Knowledge = driverV2.RuleKnowledge{Content: knowledge}
 				optimizationRule[i] = rule
 			}
 		}
