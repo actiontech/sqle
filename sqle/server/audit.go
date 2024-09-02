@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/actiontech/sqle/sqle/driver"
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 	"github.com/actiontech/sqle/sqle/driver/mysql/session"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/model"
@@ -179,7 +180,7 @@ func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHoo
 		}
 		if whitelistMatch {
 			result := driverV2.NewAuditResults()
-			result.Add(driverV2.RuleLevelNormal, "", "审核SQL例外")
+			result.Add(driverV2.RuleLevelNormal, "", plocale.ShouldLocalizeAll(plocale.AuditResultMsgExcludedSQL))
 			executeSQL.AuditStatus = model.SQLAuditStatusFinished
 			executeSQL.AuditLevel = string(result.Level())
 			executeSQL.AuditFingerprint = utils.Md5String(string(append([]byte(result.Message()), []byte(node.Fingerprint)...)))
@@ -327,7 +328,7 @@ func parse(l *logrus.Entry, p driver.Plugin, sql string) (node driverV2.Node, er
 func genRollbackSQL(l *logrus.Entry, task *model.Task, p driver.Plugin) ([]*model.RollbackSQL, error) {
 	rollbackSQLs := make([]*model.RollbackSQL, 0, len(task.ExecuteSQLs))
 	for _, executeSQL := range task.ExecuteSQLs {
-		rollbackSQL, reason, err := p.GenRollbackSQL(context.TODO(), executeSQL.Content)
+		rollbackSQL, i18nReason, err := p.GenRollbackSQL(context.TODO(), executeSQL.Content)
 		if err != nil && session.IsParseShowCreateTableContentErr(err) {
 			l.Errorf("gen rollback sql error, %v", err) // todo #1630 临时跳过创表语句解析错误
 			return nil, nil
@@ -338,9 +339,9 @@ func genRollbackSQL(l *logrus.Entry, task *model.Task, p driver.Plugin) ([]*mode
 		result := driverV2.NewAuditResults()
 		for i := range executeSQL.AuditResults {
 			ar := executeSQL.AuditResults[i]
-			result.Add(driverV2.RuleLevel(ar.Level), ar.RuleName, ar.Message)
+			result.Add(driverV2.RuleLevel(ar.Level), ar.RuleName, model.ConvertI18NAuditResultInfoMapToI18nStr(ar.I18nAuditResultInfo))
 		}
-		result.Add(driverV2.RuleLevelNotice, "", reason)
+		result.Add(driverV2.RuleLevelNotice, "", i18nReason)
 
 		executeSQL.AuditLevel = string(result.Level())
 		appendExecuteSqlResults(executeSQL, result)
@@ -358,7 +359,6 @@ func genRollbackSQL(l *logrus.Entry, task *model.Task, p driver.Plugin) ([]*mode
 
 func appendExecuteSqlResults(executeSQL *model.ExecuteSQL, result *driverV2.AuditResults) {
 	for i := range result.Results {
-		ar := result.Results[i]
-		executeSQL.AuditResults.Append(string(ar.Level), ar.RuleName, ar.Message)
+		executeSQL.AuditResults.Append(result.Results[i])
 	}
 }
