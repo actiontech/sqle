@@ -10,6 +10,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/driver/common"
 	protoV2 "github.com/actiontech/sqle/sqle/driver/v2/proto"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 
 	goPlugin "github.com/hashicorp/go-plugin"
@@ -144,18 +145,24 @@ func RuleLevelLessOrEqual(a, b string) bool {
 }
 
 type AuditResults struct {
-	Results []*AuditResult
+	Results       []*AuditResult
+	ruleNameIndex map[string]int
 }
 
 type AuditResult struct {
-	Level    RuleLevel
-	Message  string
-	RuleName string
+	Level               RuleLevel
+	RuleName            string
+	I18nAuditResultInfo map[string]AuditResultInfo
+}
+
+type AuditResultInfo struct {
+	Message string
 }
 
 func NewAuditResults() *AuditResults {
 	return &AuditResults{
-		Results: []*AuditResult{},
+		Results:       []*AuditResult{},
+		ruleNameIndex: map[string]int{},
 	}
 }
 
@@ -174,7 +181,7 @@ func (rs *AuditResults) Message() string {
 	repeatCheck := map[string]struct{}{}
 	messages := []string{}
 	for _, result := range rs.Results {
-		token := result.Message + string(result.Level)
+		token := result.I18nAuditResultInfo[locale.DefaultLang.String()].Message + string(result.Level)
 		if _, ok := repeatCheck[token]; ok {
 			continue
 		}
@@ -183,30 +190,54 @@ func (rs *AuditResults) Message() string {
 		var message string
 		match, _ := regexp.MatchString(fmt.Sprintf(`^\[%s|%s|%s|%s|%s\]`,
 			RuleLevelError, RuleLevelWarn, RuleLevelNotice, RuleLevelNormal, "osc"),
-			result.Message)
+			result.I18nAuditResultInfo[locale.DefaultLang.String()].Message)
 		if match {
-			message = result.Message
+			message = result.I18nAuditResultInfo[locale.DefaultLang.String()].Message
 		} else {
-			message = fmt.Sprintf("[%s]%s", result.Level, result.Message)
+			message = fmt.Sprintf("[%s]%s", result.Level, result.I18nAuditResultInfo[locale.DefaultLang.String()].Message)
 		}
 		messages = append(messages, message)
 	}
 	return strings.Join(messages, "\n")
 }
 
-func (rs *AuditResults) Add(level RuleLevel, ruleName string, messagePattern string, args ...interface{}) {
-	if level == "" || messagePattern == "" {
+func (rs *AuditResults) Add(level RuleLevel, ruleName string, i18nMsgPattern I18nStr, args ...interface{}) {
+	if level == "" || len(i18nMsgPattern) == 0 {
 		return
 	}
-	message := messagePattern
-	if len(args) > 0 {
-		message = fmt.Sprintf(message, args...)
+
+	if rs.ruleNameIndex == nil {
+		rs.ruleNameIndex = make(map[string]int)
 	}
-	rs.Results = append(rs.Results, &AuditResult{
-		Level:    level,
-		Message:  message,
-		RuleName: ruleName,
-	})
+
+	if index, exist := rs.ruleNameIndex[ruleName]; exist {
+		rs.Results[index].Level = level
+		for langTag, msg := range i18nMsgPattern {
+			rs.Results[index].I18nAuditResultInfo[langTag] = AuditResultInfo{
+				Message: msg,
+			}
+		}
+	} else {
+		ar := &AuditResult{
+			Level:               level,
+			RuleName:            ruleName,
+			I18nAuditResultInfo: make(map[string]AuditResultInfo, len(i18nMsgPattern)),
+		}
+		for langTag, msg := range i18nMsgPattern {
+			ari := AuditResultInfo{
+				Message: msg,
+			}
+			if len(args) > 0 {
+				ari.Message = fmt.Sprintf(msg, args...)
+			}
+			ar.I18nAuditResultInfo[langTag] = ari
+		}
+		if ruleName != "" {
+			rs.ruleNameIndex[ruleName] = len(rs.Results)
+		}
+		rs.Results = append(rs.Results, ar)
+	}
+
 	rs.SortByLevel()
 }
 
@@ -218,6 +249,14 @@ func (rs *AuditResults) SortByLevel() {
 
 func (rs *AuditResults) HasResult() bool {
 	return len(rs.Results) != 0
+}
+
+func (rs *AuditResults) SetResults(ars []*AuditResult) {
+	rs.Results = ars
+	rs.ruleNameIndex = make(map[string]int, len(ars))
+	for k, v := range ars {
+		rs.ruleNameIndex[v.RuleName] = k
+	}
 }
 
 type QueryConf struct {
