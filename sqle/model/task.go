@@ -2,6 +2,7 @@ package model
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
@@ -9,9 +10,10 @@ import (
 	"strings"
 	"time"
 
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/utils"
-
 	"gorm.io/gorm"
 )
 
@@ -132,27 +134,82 @@ type BaseSQL struct {
 	SQLType         string `json:"sql_type" gorm:"type:varchar(255)"` // such as DDL,DML,DQL...
 }
 
-func (s *BaseSQL) GetExecStatusDesc() string {
+func (s *BaseSQL) GetExecStatusDesc(ctx context.Context) string {
 	switch s.ExecStatus {
 	case SQLExecuteStatusInitialized:
-		return "准备执行"
+		return locale.ShouldLocalizeMsg(ctx, locale.SQLExecuteStatusInitialized)
 	case SQLExecuteStatusDoing:
-		return "正在执行"
+		return locale.ShouldLocalizeMsg(ctx, locale.SQLExecuteStatusDoing)
 	case SQLExecuteStatusFailed:
-		return "执行失败"
+		return locale.ShouldLocalizeMsg(ctx, locale.SQLExecuteStatusFailed)
 	case SQLExecuteStatusSucceeded:
-		return "执行成功"
+		return locale.ShouldLocalizeMsg(ctx, locale.SQLExecuteStatusSucceeded)
 	case SQLExecuteStatusManuallyExecuted:
-		return "人工执行"
+		return locale.ShouldLocalizeMsg(ctx, locale.SQLExecuteStatusManuallyExecuted)
 	default:
-		return "未知"
+		return locale.ShouldLocalizeMsg(ctx, locale.SQLExecuteStatusUnknown)
 	}
 }
 
 type AuditResult struct {
-	Level    string `json:"level"`
-	Message  string `json:"message"`
-	RuleName string `json:"rule_name"`
+	Level               string              `json:"level"`
+	Message             string              `json:"message"` // Deprecated: use I18nAuditResultInfo instead
+	RuleName            string              `json:"rule_name"`
+	I18nAuditResultInfo I18nAuditResultInfo `json:"i18n_audit_result_info"`
+}
+
+func (ar *AuditResult) GetAuditMsgByLangTag(lang string) string {
+	if len(ar.I18nAuditResultInfo) == 0 {
+		// 兼容老sqle数据
+		return ar.Message
+	}
+	return ar.I18nAuditResultInfo.GetAuditResultInfoByLangTag(lang).Message
+}
+
+type AuditResultInfo struct {
+	Message string
+}
+
+type I18nAuditResultInfo map[string]AuditResultInfo
+
+func (i *I18nAuditResultInfo) GetAuditResultInfoByLangTag(lang string) *AuditResultInfo {
+	if i == nil {
+		return &AuditResultInfo{}
+	}
+	for langTag, ari := range *i {
+		if strings.HasPrefix(lang, langTag) {
+			return &ari
+		}
+	}
+	ruleInfo := (*i)[locale.DefaultLang.String()]
+	return &ruleInfo
+}
+
+func (i I18nAuditResultInfo) Value() (driver.Value, error) {
+	b, err := json.Marshal(i)
+	return string(b), err
+}
+
+func (i *I18nAuditResultInfo) Scan(input interface{}) error {
+	return json.Unmarshal(input.([]byte), i)
+}
+
+func ConvertI18NAuditResultInfoMapToI18nStr(m I18nAuditResultInfo) driverV2.I18nStr {
+	s := make(map[string]string, len(m))
+	for lang, v := range m {
+		s[lang] = v.Message
+	}
+	return s
+}
+
+func ConvertI18nStrToI18NAuditResultInfoMap(s driverV2.I18nStr) I18nAuditResultInfo {
+	m := make(I18nAuditResultInfo, len(s))
+	for lang, v := range s {
+		m[lang] = AuditResultInfo{
+			Message: v,
+		}
+	}
+	return m
 }
 
 type AuditResults []AuditResult
@@ -166,24 +223,54 @@ func (a *AuditResults) Scan(input interface{}) error {
 	return json.Unmarshal(input.([]byte), a)
 }
 
-func (a *AuditResults) String() string {
+// todo check somewhere fmt Sprint AuditResults to frontend?
+func (a *AuditResults) String(ctx context.Context) string {
+	lang := locale.GetLangTagFromCtx(ctx)
 	msgs := make([]string, len(*a))
 	for i := range *a {
 		res := (*a)[i]
-		msg := fmt.Sprintf("[%s]%s", res.Level, res.Message)
-		msgs[i] = msg
+		msgs[i] = res.GetAuditMsgByLangTag(lang.String())
 	}
 	return strings.Join(msgs, "\n")
 }
 
-func (a *AuditResults) Append(level, ruleName, message string) {
+func (a *AuditResults) Append(dar *driverV2.AuditResult) {
 	for i := range *a {
 		ar := (*a)[i]
-		if ar.Level == level && ar.RuleName == ruleName && ar.Message == message {
+		if ar.Level == string(dar.Level) && ar.RuleName == dar.RuleName {
 			return
 		}
 	}
-	*a = append(*a, AuditResult{Level: level, RuleName: ruleName, Message: message})
+	newAr := ConvertAuditResultFromDriverToModel(dar)
+	*a = append(*a, *newAr)
+}
+
+func ConvertAuditResultFromDriverToModel(dar *driverV2.AuditResult) *AuditResult {
+	newAr := &AuditResult{
+		Level:               string(dar.Level),
+		RuleName:            dar.RuleName,
+		I18nAuditResultInfo: make(map[string]AuditResultInfo, len(dar.I18nAuditResultInfo)),
+	}
+	for langTag, info := range dar.I18nAuditResultInfo {
+		newAr.I18nAuditResultInfo[langTag] = AuditResultInfo{
+			Message: info.Message,
+		}
+	}
+	return newAr
+}
+
+func ConvertAuditResultFromModelToDriver(mar *AuditResult) *driverV2.AuditResult {
+	newAr := &driverV2.AuditResult{
+		Level:               driverV2.RuleLevel(mar.Level),
+		RuleName:            mar.RuleName,
+		I18nAuditResultInfo: make(map[string]driverV2.AuditResultInfo, len(mar.I18nAuditResultInfo)),
+	}
+	for langTag, info := range mar.I18nAuditResultInfo {
+		newAr.I18nAuditResultInfo[langTag] = driverV2.AuditResultInfo{
+			Message: info.Message,
+		}
+	}
+	return newAr
 }
 
 type ExecuteSQL struct {
@@ -201,33 +288,33 @@ func (s ExecuteSQL) TableName() string {
 	return "execute_sql_detail"
 }
 
-func (s *ExecuteSQL) GetAuditStatusDesc() string {
+func (s *ExecuteSQL) GetAuditStatusDesc(ctx context.Context) string {
 	switch s.AuditStatus {
 	case SQLAuditStatusInitialized:
-		return "未审核"
+		return locale.ShouldLocalizeMsg(ctx, locale.SQLAuditStatusInitialized)
 	case SQLAuditStatusDoing:
-		return "正在审核"
+		return locale.ShouldLocalizeMsg(ctx, locale.SQLAuditStatusDoing)
 	case SQLAuditStatusFinished:
-		return "审核完成"
+		return locale.ShouldLocalizeMsg(ctx, locale.SQLAuditStatusFinished)
 	default:
-		return "未知状态"
+		return locale.ShouldLocalizeMsg(ctx, locale.SQLAuditStatusUnknown)
 	}
 }
 
-func (s *ExecuteSQL) GetAuditResults() string {
+func (s *ExecuteSQL) GetAuditResults(ctx context.Context) string {
 	if len(s.AuditResults) == 0 {
 		return ""
 	}
 
-	return s.AuditResults.String()
+	return s.AuditResults.String(ctx)
 }
 
-func (s *ExecuteSQL) GetAuditResultDesc() string {
+func (s *ExecuteSQL) GetAuditResultDesc(ctx context.Context) string {
 	if len(s.AuditResults) == 0 {
-		return "审核通过"
+		return locale.ShouldLocalizeMsg(ctx, locale.SQLAuditResultDescPass)
 	}
 
-	return s.AuditResults.String()
+	return s.AuditResults.String(ctx)
 }
 
 func (s *Storage) BatchSaveExecuteSqls(models []*ExecuteSQL) error {
@@ -478,12 +565,12 @@ type TaskSQLDetail struct {
 	SQLType       sql.NullString `json:"sql_type"`
 }
 
-func (t *TaskSQLDetail) GetAuditResults() string {
+func (t *TaskSQLDetail) GetAuditResults(ctx context.Context) string {
 	if len(t.AuditResults) == 0 {
 		return ""
 	}
 
-	return t.AuditResults.String()
+	return t.AuditResults.String(ctx)
 }
 
 var taskSQLsQueryTpl = `SELECT e_sql.number, e_sql.description, e_sql.content AS exec_sql,  e_sql.source_file AS sql_source_file, e_sql.start_line AS sql_start_line, e_sql.sql_type, r_sql.content AS rollback_sql,
