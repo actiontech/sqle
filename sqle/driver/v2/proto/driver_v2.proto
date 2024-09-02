@@ -75,6 +75,16 @@ message Rule {
   repeated Param params = 5;
   string annotation = 6;
   Knowledge knowledge = 7;
+  map<string, I18nRuleInfo> i18nRuleInfo = 8;
+}
+
+message I18nRuleInfo {
+  string desc = 2;
+//  string level = 3;
+  string category = 4;
+  repeated Param params = 5;
+  string annotation = 6;
+  Knowledge knowledge = 7;
 }
 
 message Knowledge {
@@ -143,10 +153,15 @@ message AuditRequest {
   repeated AuditSQL sqls = 2;
 }
 
+message I18nAuditResultInfo {
+  string message = 1;
+}
+
 message AuditResult {
   string message = 1;
   string level = 2;
   string rule_name = 3;
+  map<string, I18nAuditResultInfo> i18nAuditResultInfo = 4;
 }
 
 message AuditResults {
@@ -167,9 +182,14 @@ message GenRollbackSQLRequest {
   NeedRollbackSQL sql = 2;
 }
 
+message I18nRollbackSQLInfo {
+  string message = 1;
+}
+
 message RollbackSQL {
   string query = 1;
   string message = 2;
+  map<string, I18nRollbackSQLInfo> i18nRollbackSQLInfo = 3;
 }
 
 message GenRollbackSQLResponse {
