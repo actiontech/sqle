@@ -10,10 +10,10 @@ import (
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server"
-
 	"github.com/labstack/echo/v4"
 )
 
@@ -60,6 +60,7 @@ func DirectAudit(c echo.Context) error {
 		return err
 	}
 
+	ctx := c.Request().Context()
 	sql := req.SQLContent
 	if req.SQLType == v1.SQLTypeMyBatis {
 		sql, err = parser.ParseXML(req.SQLContent)
@@ -78,11 +79,12 @@ func DirectAudit(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, DirectAuditResV2{
 		BaseRes: controller.BaseRes{},
-		Data:    convertTaskResultToAuditResV2(task),
+		Data:    convertTaskResultToAuditResV2(ctx, task),
 	})
 }
 
-func convertTaskResultToAuditResV2(task *model.Task) *AuditResDataV2 {
+func convertTaskResultToAuditResV2(ctx context.Context, task *model.Task) *AuditResDataV2 {
+	lang := locale.GetLangTagFromCtx(ctx)
 	results := make([]AuditSQLResV2, len(task.ExecuteSQLs))
 	for i, sql := range task.ExecuteSQLs {
 
@@ -90,7 +92,7 @@ func convertTaskResultToAuditResV2(task *model.Task) *AuditResDataV2 {
 		for j := range sql.AuditResults {
 			ar[j] = &AuditResult{
 				Level:    sql.AuditResults[j].Level,
-				Message:  sql.AuditResults[j].Message,
+				Message:  sql.AuditResults[j].GetAuditMsgByLangTag(lang.String()),
 				RuleName: sql.AuditResults[j].RuleName,
 				DbType:   task.DBType,
 			}
@@ -99,7 +101,7 @@ func convertTaskResultToAuditResV2(task *model.Task) *AuditResDataV2 {
 		results[i] = AuditSQLResV2{
 			Number:      sql.Number,
 			ExecSQL:     sql.Content,
-			AuditResult: convertAuditResultToAuditResV2(sql.AuditResults),
+			AuditResult: convertAuditResultToAuditResV2(ctx, sql.AuditResults),
 			AuditLevel:  sql.AuditLevel,
 		}
 
@@ -168,6 +170,7 @@ func DirectAuditFiles(c echo.Context) error {
 
 	l := log.NewEntry().WithField("api", "[post]/v2/audit_files")
 
+	ctx := c.Request().Context()
 	var instance *model.Instance
 	var exist bool
 	if req.InstanceName != nil {
@@ -209,17 +212,17 @@ func DirectAuditFiles(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, DirectAuditResV2{
 		BaseRes: controller.BaseRes{},
-		Data:    convertFileAuditTaskResultToAuditResV2(task),
+		Data:    convertFileAuditTaskResultToAuditResV2(ctx, task),
 	})
 }
 
-func convertFileAuditTaskResultToAuditResV2(task *model.Task) *AuditResDataV2 {
+func convertFileAuditTaskResultToAuditResV2(ctx context.Context, task *model.Task) *AuditResDataV2 {
 	results := make([]AuditSQLResV2, len(task.ExecuteSQLs))
 	for i, sql := range task.ExecuteSQLs {
 		results[i] = AuditSQLResV2{
 			Number:      sql.Number,
 			ExecSQL:     sql.Content,
-			AuditResult: convertAuditResultToAuditResV2(sql.AuditResults),
+			AuditResult: convertAuditResultToAuditResV2(ctx, sql.AuditResults),
 			AuditLevel:  sql.AuditLevel,
 		}
 
@@ -232,12 +235,13 @@ func convertFileAuditTaskResultToAuditResV2(task *model.Task) *AuditResDataV2 {
 	}
 }
 
-func convertAuditResultToAuditResV2(auditResults model.AuditResults) []AuditResult {
+func convertAuditResultToAuditResV2(ctx context.Context, auditResults model.AuditResults) []AuditResult {
+	lang := locale.GetLangTagFromCtx(ctx)
 	ar := make([]AuditResult, len(auditResults))
 	for i := range auditResults {
 		ar[i] = AuditResult{
 			Level:    auditResults[i].Level,
-			Message:  auditResults[i].Message,
+			Message:  auditResults[i].GetAuditMsgByLangTag(lang.String()),
 			RuleName: auditResults[i].RuleName,
 		}
 	}
