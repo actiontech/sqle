@@ -19,7 +19,7 @@ type Plugin interface {
 	Audit(ctx context.Context, sqls []string) ([]*driverV2.AuditResults, error)
 
 	// GenRollbackSQL generate sql's rollback SQL.
-	GenRollbackSQL(ctx context.Context, sql string) (string, string, error)
+	GenRollbackSQL(ctx context.Context, sql string) (string, driverV2.I18nStr, error)
 
 	Ping(ctx context.Context) error
 	Exec(ctx context.Context, query string) (driver.Result, error)

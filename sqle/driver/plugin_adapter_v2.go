@@ -10,6 +10,7 @@ import (
 
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	protoV2 "github.com/actiontech/sqle/sqle/driver/v2/proto"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 
@@ -77,7 +78,13 @@ func (d *PluginProcessorV2) GetDriverMetas() (*driverV2.DriverMetas, error) {
 
 	rules := make([]*driverV2.Rule, 0, len(result.Rules))
 	for _, r := range result.Rules {
-		rules = append(rules, driverV2.ConvertRuleFromProtoToDriver(r))
+		if len(r.I18NRuleInfo) > 0 {
+			if _, exist := r.I18NRuleInfo[locale.DefaultLang.String()]; !exist {
+				// 多语言插件必须支持 locale.DefaultLang 用以默认展示
+				return nil, fmt.Errorf("client rule: %s not support language: %s", r.Name, locale.DefaultLang.String())
+			}
+		}
+		rules = append(rules, driverV2.ConvertI18nRuleFromProtoToDriver(r))
 	}
 
 	ms := make([]driverV2.OptionalModule, 0, len(result.EnabledOptionalModule))
@@ -118,14 +125,10 @@ func (d *PluginProcessorV2) Open(l *logrus.Entry, cfgV2 *driverV2.Config) (Plugi
 		}
 	}
 
-	var rules = make([]*protoV2.Rule, 0, len(cfgV2.Rules))
-	for _, rule := range cfgV2.Rules {
-		rules = append(rules, driverV2.ConvertRuleFromDriverToProto(rule))
-	}
 	l.Infof("starting call plugin interface [Init]")
 	result, err := c.Init(context.TODO(), &protoV2.InitRequest{
 		Dsn:   dsn,
-		Rules: rules,
+		Rules: driverV2.ConvertI18nRulesFromDriverToProto(cfgV2.Rules),
 	})
 	if err != nil {
 		l.Errorf("fail to call plugin interface [Init], error: %v", err)
@@ -237,22 +240,20 @@ func (s *PluginImplV2) Audit(ctx context.Context, sqls []string) ([]*driverV2.Au
 		return nil, err
 	}
 
-	rets := []*driverV2.AuditResults{}
+	rets := make([]*driverV2.AuditResults, 0, len(resp.AuditResults))
 	for _, results := range resp.AuditResults {
-		ret := &driverV2.AuditResults{}
-		for _, result := range results.Results {
-			ret.Results = append(ret.Results, &driverV2.AuditResult{
-				Level:    driverV2.RuleLevel(result.Level),
-				Message:  result.Message,
-				RuleName: result.RuleName,
-			})
+		dResult, err := driverV2.ConvertI18nAuditResultsFromProtoToDriver(results.Results)
+		if err != nil {
+			return nil, err
 		}
+		ret := driverV2.NewAuditResults()
+		ret.SetResults(dResult)
 		rets = append(rets, ret)
 	}
 	return rets, nil
 }
 
-func (s *PluginImplV2) GenRollbackSQL(ctx context.Context, sql string) (string, string, error) {
+func (s *PluginImplV2) GenRollbackSQL(ctx context.Context, sql string) (string, driverV2.I18nStr, error) {
 	api := "GenRollbackSQL"
 	s.preLog(api)
 	resp, err := s.client.GenRollbackSQL(ctx, &protoV2.GenRollbackSQLRequest{
@@ -263,9 +264,19 @@ func (s *PluginImplV2) GenRollbackSQL(ctx context.Context, sql string) (string, 
 	})
 	s.afterLog(api, err)
 	if err != nil {
-		return "", "", err
+		return "", nil, err
 	}
-	return resp.Sql.Query, resp.Sql.Message, nil
+
+	var i18nReason driverV2.I18nStr
+	if resp.Sql.Message != "" && len(resp.Sql.I18NRollbackSQLInfo) == 0 {
+		i18nReason = driverV2.I18nStr{locale.DefaultLang.String(): resp.Sql.Message}
+	} else if len(resp.Sql.I18NRollbackSQLInfo) > 0 {
+		i18nReason = make(driverV2.I18nStr, len(resp.Sql.I18NRollbackSQLInfo))
+		for langTag, v := range resp.Sql.I18NRollbackSQLInfo {
+			i18nReason[langTag] = v.Message
+		}
+	}
+	return resp.Sql.Query, i18nReason, nil
 }
 
 // executor

@@ -2,10 +2,14 @@ package driverV2
 
 import (
 	"context"
+	"database/sql/driver"
+	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 
 	protoV2 "github.com/actiontech/sqle/sqle/driver/v2/proto"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 
 	"github.com/pkg/errors"
@@ -30,16 +34,76 @@ type DSN struct {
 }
 
 type Rule struct {
-	Name       string
+	Name         string
+	Level        RuleLevel
+	Params       params.Params // 仅用于ParamValue处理，展示 Param.Desc 等以 I18nRuleInfo->RuleInfo.Params 为准
+	I18nRuleInfo I18nRuleInfo
+}
+
+type I18nRuleInfo map[string]*RuleInfo
+
+// GetRuleInfoByLangTag if the lang not exists, return DefaultLang
+func (i *I18nRuleInfo) GetRuleInfoByLangTag(lang string) *RuleInfo {
+	for langTag, ruleInfo := range *i {
+		if strings.HasPrefix(lang, langTag) {
+			return ruleInfo
+		}
+	}
+	ruleInfo := (*i)[locale.DefaultLang.String()]
+	return ruleInfo
+}
+
+func (i I18nRuleInfo) Value() (driver.Value, error) {
+	b, err := json.Marshal(i)
+	return string(b), err
+}
+
+func (i *I18nRuleInfo) Scan(input interface{}) error {
+	return json.Unmarshal(input.([]byte), i)
+}
+
+type RuleInfo struct {
 	Desc       string
 	Annotation string
 
 	// Category is the category of the rule. Such as "Naming Conventions"...
 	// Rules will be displayed on the SQLE rule list page by category.
 	Category  string
-	Level     RuleLevel
-	Params    params.Params
+	Params    params.Params // 仅用于国际化，ParamValue以 Rule.Params 为准
 	Knowledge RuleKnowledge
+}
+
+type I18nStr map[string]string // lang -> str in the lang
+
+// GetStrInLang if the lang not exists, return DefaultLang
+func (s *I18nStr) GetStrInLang(lang string) string {
+	if s == nil || *s == nil {
+		return ""
+	}
+	for langTag, str := range *s {
+		if strings.HasPrefix(lang, langTag) {
+			return str
+		}
+	}
+	return (*s)[locale.DefaultLang.String()]
+}
+
+func (s *I18nStr) SetStrInLang(lang, str string) {
+	if *s == nil {
+		*s = map[string]string{lang: str}
+	} else {
+		(*s)[lang] = str
+	}
+	return
+}
+
+func (s I18nStr) Value() (driver.Value, error) {
+	b, err := json.Marshal(s)
+	return string(b), err
+}
+
+func (s *I18nStr) Scan(input interface{}) error {
+	return json.Unmarshal(input.([]byte), s)
 }
 
 type Config struct {
@@ -87,7 +151,7 @@ func (d *DriverGrpcServer) Metas(ctx context.Context, req *protoV2.Empty) (*prot
 		DatabaseDefaultPort:      d.Meta.DatabaseDefaultPort,
 		Logo:                     d.Meta.Logo,
 		DatabaseAdditionalParams: ConvertParamToProtoParam(d.Meta.DatabaseAdditionalParams),
-		Rules:                    rules,
+		Rules:                    ConvertI18nRulesFromDriverToProto(d.Meta.Rules),
 		EnabledOptionalModule:    ms,
 	}, nil
 }
@@ -95,7 +159,7 @@ func (d *DriverGrpcServer) Metas(ctx context.Context, req *protoV2.Empty) (*prot
 func (d *DriverGrpcServer) Init(ctx context.Context, req *protoV2.InitRequest) (*protoV2.InitResponse, error) {
 	var rules = make([]*Rule, 0, len(req.GetRules()))
 	for _, rule := range req.GetRules() {
-		rules = append(rules, ConvertRuleFromProtoToDriver(rule))
+		rules = append(rules, ConvertI18nRuleFromProtoToDriver(rule))
 	}
 
 	var dsn *DSN
@@ -191,14 +255,10 @@ func (d *DriverGrpcServer) Audit(ctx context.Context, req *protoV2.AuditRequest)
 	resp := &protoV2.AuditResponse{}
 	for _, results := range auditResults {
 		rets := &protoV2.AuditResults{
-			Results: []*protoV2.AuditResult{},
+			Results: make([]*protoV2.AuditResult, 0, len(results.Results)),
 		}
 		for _, result := range results.Results {
-			rets.Results = append(rets.Results, &protoV2.AuditResult{
-				Level:    string(result.Level),
-				Message:  result.Message,
-				RuleName: result.RuleName,
-			})
+			rets.Results = append(rets.Results, ConvertI18nAuditResultFromDriverToProto(result))
 		}
 		resp.AuditResults = append(resp.AuditResults, rets)
 	}
