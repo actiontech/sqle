@@ -15,7 +15,6 @@ import (
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server"
-
 	"github.com/labstack/echo/v4"
 )
 
@@ -99,6 +98,7 @@ func DirectAudit(c echo.Context) error {
 	}
 	l := log.NewEntry().WithField("/v1/sql_audit", "direct audit failed")
 
+	ctx := c.Request().Context()
 	var instance *model.Instance
 	var exist bool
 	if req.ProjectName != nil && req.InstanceName != nil {
@@ -129,17 +129,17 @@ func DirectAudit(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, DirectAuditResV1{
 		BaseRes: controller.BaseRes{},
-		Data:    convertTaskResultToAuditResV1(task),
+		Data:    convertTaskResultToAuditResV1(ctx, task),
 	})
 }
 
-func convertTaskResultToAuditResV1(task *model.Task) *AuditResDataV1 {
+func convertTaskResultToAuditResV1(ctx context.Context, task *model.Task) *AuditResDataV1 {
 	results := make([]AuditSQLResV1, len(task.ExecuteSQLs))
 	for i, sql := range task.ExecuteSQLs {
 		results[i] = AuditSQLResV1{
 			Number:      sql.Number,
 			ExecSQL:     sql.Content,
-			AuditResult: sql.GetAuditResults(),
+			AuditResult: sql.GetAuditResults(ctx),
 			AuditLevel:  sql.AuditLevel,
 		}
 	}
@@ -206,6 +206,7 @@ func DirectAuditFiles(c echo.Context) error {
 
 	l := log.NewEntry().WithField("api", "[post]/v1/audit_files")
 
+	ctx := c.Request().Context()
 	var instance *model.Instance
 	var exist bool
 	if req.InstanceName != nil {
@@ -236,7 +237,7 @@ func DirectAuditFiles(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, DirectAuditResV1{
 		BaseRes: controller.BaseRes{},
-		Data:    convertTaskResultToAuditResV1(task),
+		Data:    convertTaskResultToAuditResV1(ctx, task),
 	})
 }
 
