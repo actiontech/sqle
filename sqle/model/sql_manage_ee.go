@@ -7,6 +7,8 @@ import (
 	"database/sql"
 	e "errors"
 	"fmt"
+	"github.com/actiontech/sqle/sqle/locale"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"strings"
 	"time"
 
@@ -29,16 +31,16 @@ const (
 	ErrorAuditLevel  = "error"
 )
 
-var SqlManageSourceMap = map[string]string{
-	SQLManageSourceSqlAuditRecord: "SQL审核",
-	SQLManageSourceAuditPlan:      "智能扫描",
+var SqlManageSourceMap = map[string]*i18n.Message{
+	SQLManageSourceSqlAuditRecord: locale.SQLManageSourceSqlAuditRecord,
+	SQLManageSourceAuditPlan:      locale.SQLManageSourceAuditPlan,
 }
 
-var SqlManageStatusMap = map[string]string{
-	SQLManageStatusUnhandled:     "未处理",
-	SQLManageStatusSolved:        "已解决",
-	SQLManageStatusIgnored:       "已忽略",
-	SQLManageStatusManualAudited: "已人工审核",
+var SqlManageStatusMap = map[string]*i18n.Message{
+	SQLManageStatusUnhandled:     locale.SQLManageStatusUnhandled,
+	SQLManageStatusSolved:        locale.SQLManageStatusSolved,
+	SQLManageStatusIgnored:       locale.SQLManageStatusIgnored,
+	SQLManageStatusManualAudited: locale.SQLManageStatusManualAudited,
 }
 
 func (s *Storage) UpdateSqlManage(auditRecordId uint) error {
