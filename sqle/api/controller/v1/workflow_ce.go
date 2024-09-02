@@ -6,11 +6,13 @@ package v1
 import (
 	"context"
 	e "errors"
+	"fmt"
 	"net/http"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/labstack/echo/v4"
 )
@@ -33,6 +35,7 @@ func getWorkflowTemplate(c echo.Context) error {
 	}
 
 	td := model.DefaultWorkflowTemplate(projectUid)
+	td.Desc = fmt.Sprintf(locale.ShouldLocalizeMsg(c.Request().Context(), locale.DefaultTemplatesDesc), projectUid)
 
 	return c.JSON(http.StatusOK, &GetWorkflowTemplateResV1{
 		BaseRes: controller.NewBaseReq(nil),

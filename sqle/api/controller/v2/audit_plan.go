@@ -10,6 +10,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/common"
 	"github.com/actiontech/sqle/sqle/driver"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/server"
@@ -203,6 +204,7 @@ func GetAuditPlanReportSQLs(c echo.Context) error {
 	}
 
 	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
+	lang := locale.GetLangTagFromCtx(c.Request().Context())
 
 	data := map[string]interface{}{
 		"audit_plan_report_id": c.Param("audit_plan_report_id"),
@@ -225,7 +227,7 @@ func GetAuditPlanReportSQLs(c echo.Context) error {
 			ar := auditPlanReportSQL.AuditResults[j]
 			auditPlanReportSQLsRes[i].AuditResult = append(auditPlanReportSQLsRes[i].AuditResult, &AuditResult{
 				Level:    ar.Level,
-				Message:  ar.Message,
+				Message:  ar.GetAuditMsgByLangTag(lang.String()),
 				RuleName: ar.RuleName,
 				DbType:   ap.DBType,
 			})

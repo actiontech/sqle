@@ -21,6 +21,7 @@ import (
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server"
@@ -881,6 +882,9 @@ type GetSQLAuditRecordTagTipsResV1 struct {
 func GetSQLAuditRecordTagTipsV1(c echo.Context) error {
 	return c.JSON(http.StatusOK, &GetSQLAuditRecordTagTipsResV1{
 		BaseRes: controller.BaseRes{},
-		Tags:    []string{"全量", "增量"},
+		Tags: []string{
+			locale.ShouldLocalizeMsg(c.Request().Context(), locale.AuditRecordTagFull),      // 全量
+			locale.ShouldLocalizeMsg(c.Request().Context(), locale.AuditRecordTagIncrement), // 增量
+		},
 	})
 }

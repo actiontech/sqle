@@ -19,6 +19,7 @@ import (
 	"github.com/actiontech/sqle/sqle/driver"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/notification"
@@ -1463,7 +1464,7 @@ func GetAuditPlanReportSQLsV1(c echo.Context) error {
 	for i, auditPlanReportSQL := range auditPlanReportSQLs {
 		auditPlanReportSQLsResV1[i] = AuditPlanReportSQLResV1{
 			SQL:         auditPlanReportSQL.SQL,
-			AuditResult: auditPlanReportSQL.AuditResults.String(),
+			AuditResult: auditPlanReportSQL.AuditResults.String(c.Request().Context()),
 			Number:      auditPlanReportSQL.Number,
 		}
 	}
@@ -1474,10 +1475,13 @@ func GetAuditPlanReportSQLsV1(c echo.Context) error {
 	})
 }
 
-func spliceAuditResults(auditResults []model.AuditResult) string {
+func spliceAuditResults(ctx context.Context, auditResults []model.AuditResult) string {
+	lang := locale.GetLangTagFromCtx(ctx)
 	results := []string{}
 	for _, auditResult := range auditResults {
-		results = append(results, fmt.Sprintf("[%v]%v", auditResult.Level, auditResult.Message))
+		results = append(results,
+			fmt.Sprintf("[%v]%v", auditResult.Level, auditResult.GetAuditMsgByLangTag(lang.String())),
+		)
 	}
 	return strings.Join(results, "\n")
 }
@@ -1517,16 +1521,17 @@ func ExportAuditPlanReportV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, fmt.Errorf("the audit plan corresponding to the report was not found"))
 	}
 
+	ctx := c.Request().Context()
 	baseInfo := [][]string{
-		{"扫描任务名称", auditPlanName},
-		{"报告生成时间", reportInfo.CreatedAt.Format("2006/01/02 15:04")},
-		{"审核结果评分", strconv.FormatInt(int64(reportInfo.Score), 10)},
-		{"审核通过率", fmt.Sprintf("%v%%", reportInfo.PassRate*100)},
-		{"所属项目", projectName},
-		{"扫描任务创建人", dms.GetUserNameWithDelTag(reportInfo.AuditPlan.CreateUserID)},
-		{"扫描任务类型", reportInfo.AuditPlan.Type},
-		{"数据库类型", reportInfo.AuditPlan.DBType},
-		{"审核的数据库", reportInfo.AuditPlan.InstanceDatabase},
+		{locale.ShouldLocalizeMsg(ctx, locale.APExportTaskName), auditPlanName},
+		{locale.ShouldLocalizeMsg(ctx, locale.APExportGenerationTime), reportInfo.CreatedAt.Format("2006/01/02 15:04")},
+		{locale.ShouldLocalizeMsg(ctx, locale.APExportResultRating), strconv.FormatInt(int64(reportInfo.Score), 10)},
+		{locale.ShouldLocalizeMsg(ctx, locale.APExportApprovalRate), fmt.Sprintf("%v%%", reportInfo.PassRate*100)},
+		{locale.ShouldLocalizeMsg(ctx, locale.APExportBelongingProject), projectName},
+		{locale.ShouldLocalizeMsg(ctx, locale.APExportCreator), dms.GetUserNameWithDelTag(reportInfo.AuditPlan.CreateUserID)},
+		{locale.ShouldLocalizeMsg(ctx, locale.APExportType), reportInfo.AuditPlan.Type},
+		{locale.ShouldLocalizeMsg(ctx, locale.APExportDbType), reportInfo.AuditPlan.DBType},
+		{locale.ShouldLocalizeMsg(ctx, locale.APExportDatabase), reportInfo.AuditPlan.InstanceDatabase},
 	}
 	err = csvWriter.WriteAll(baseInfo)
 	if err != nil {
@@ -1539,14 +1544,18 @@ func ExportAuditPlanReportV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	err = csvWriter.Write([]string{"编号", "SQL", "审核结果"})
+	err = csvWriter.Write([]string{
+		locale.ShouldLocalizeMsg(ctx, locale.APExportNumber), // 编号
+		"SQL",
+		locale.ShouldLocalizeMsg(ctx, locale.APExportAuditResult), // 审核结果
+	})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	sqlInfo := [][]string{}
 	for idx, sql := range reportInfo.AuditPlanReportSQLs {
-		sqlInfo = append(sqlInfo, []string{strconv.Itoa(idx + 1), sql.SQL, spliceAuditResults(sql.AuditResults)})
+		sqlInfo = append(sqlInfo, []string{strconv.Itoa(idx + 1), sql.SQL, spliceAuditResults(ctx, sql.AuditResults)})
 	}
 
 	err = csvWriter.WriteAll(sqlInfo)
@@ -1556,7 +1565,7 @@ func ExportAuditPlanReportV1(c echo.Context) error {
 
 	csvWriter.Flush()
 
-	fileName := fmt.Sprintf("扫描任务报告_%s_%s.csv", auditPlanName, time.Now().Format("20060102150405"))
+	fileName := fmt.Sprintf("audit_plan_report_%s_%s.csv", auditPlanName, time.Now().Format("20060102150405"))
 	c.Response().Header().Set(echo.HeaderContentDisposition, mime.FormatMediaType("attachment", map[string]string{
 		"filename": fileName,
 	}))
