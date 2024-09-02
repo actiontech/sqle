@@ -10,6 +10,8 @@ import (
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/driver/mysql/onlineddl"
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
+	"github.com/actiontech/sqle/sqle/locale"
 
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	"github.com/actiontech/sqle/sqle/driver/mysql/session"
@@ -345,7 +347,10 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 	}
 	if err != nil && session.IsParseShowCreateTableContentErr(err) {
 		i.Logger().Errorf("check invalid failed: %v", err)
-		i.result.Add(driverV2.RuleLevelWarn, CheckInvalidError, fmt.Sprintf(CheckInvalidErrorFormat, "解析建表语句失败，部分在线审核规则可能失效，请人工确认"))
+		i.result.Add(driverV2.RuleLevelWarn,
+			"pre_check_err", // todo i18n 预检查失败规则名称
+			plocale.ShouldLocalizeAllWithFmt(plocale.CheckInvalidErrorFormat, plocale.ParseDDLError),
+		)
 	} else if err != nil {
 		return nil, err
 	}
@@ -393,7 +398,7 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 		if err := handler.Func(input); err != nil {
 			// todo #1630 临时跳过解析建表语句失败导致的规则
 			if session.IsParseShowCreateTableContentErr(err) {
-				i.Logger().Errorf("skip rule, rule_desc_name=%v rule_desc=%v err:%v", rule.Name, rule.Desc, err.Error())
+				i.Logger().Errorf("skip rule, rule_desc_name=%v rule_desc=%v err:%v", rule.Name, rule.I18nRuleInfo[locale.DefaultLang.String()].Desc, err.Error())
 				continue
 			}
 			return nil, err
@@ -430,9 +435,10 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 	}
 	if useGhost {
 		if _, err := i.executeByGhost(ctx, sql, true); err != nil {
-			i.result.Add(driverV2.RuleLevelError, ghostRule.Name, fmt.Sprintf("表空间大小超过%vMB, 将使用gh-ost进行上线, 但是dry-run抛出如下错误: %v", i.cnf.DDLGhostMinSize, err))
+			// todo
+			i.result.Add(driverV2.RuleLevelError, ghostRule.Name, plocale.ShouldLocalizeAll(plocale.GhostDryRunError), i.cnf.DDLGhostMinSize, err)
 		} else {
-			i.result.Add(ghostRule.Level, ghostRule.Name, fmt.Sprintf("表空间大小超过%vMB, 将使用gh-ost进行上线", i.cnf.DDLGhostMinSize))
+			i.result.Add(ghostRule.Level, ghostRule.Name, plocale.ShouldLocalizeAll(plocale.GhostDryRunNotice), i.cnf.DDLGhostMinSize)
 		}
 	}
 
@@ -443,8 +449,8 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 	} else if err != nil {
 		return nil, err
 	}
-	if oscCommandLine != "" {
-		i.result.Add(driverV2.RuleLevelNotice, rulepkg.ConfigDDLOSCMinSize, fmt.Sprintf("[osc]%s", oscCommandLine))
+	if oscCommandLine != nil {
+		i.result.Add(driverV2.RuleLevelNotice, rulepkg.ConfigDDLOSCMinSize, oscCommandLine)
 	}
 
 	if !i.IsExecutedSQL() {
@@ -454,27 +460,27 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 	return i.result, nil
 }
 
-func (i *MysqlDriverImpl) GenRollbackSQL(ctx context.Context, sql string) (string, string, error) {
+func (i *MysqlDriverImpl) GenRollbackSQL(ctx context.Context, sql string) (string, driverV2.I18nStr, error) {
 	if i.IsOfflineAudit() {
-		return "", "", nil
+		return "", nil, nil
 	}
 	if i.HasInvalidSql {
-		return "", "", nil
+		return "", nil, nil
 	}
 
 	nodes, err := i.ParseSql(sql)
 	if err != nil {
-		return "", "", err
+		return "", nil, err
 	}
 
-	rollback, reason, err := i.GenerateRollbackSql(nodes[0])
+	rollback, i18nReason, err := i.GenerateRollbackSql(nodes[0])
 	if err != nil {
-		return "", "", err
+		return "", nil, err
 	}
 
 	i.Ctx.UpdateContext(nodes[0])
 
-	return rollback, reason, nil
+	return rollback, i18nReason, nil
 }
 
 func (i *MysqlDriverImpl) Close(ctx context.Context) {

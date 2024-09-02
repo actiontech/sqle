@@ -9,6 +9,10 @@ import (
 	"sync"
 	"text/template"
 
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/locale"
+
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	"github.com/pingcap/parser/ast"
 )
@@ -30,48 +34,41 @@ func LoadPtTemplateFromFile(fileName string) error {
 	return nil
 }
 
-const (
-	PTOSCNoUniqueIndexOrPrimaryKey          = "至少要包含主键或者唯一键索引才能使用 pt-online-schema-change"
-	PTOSCAvoidUniqueIndex                   = "添加唯一键使用 pt-online-schema-change，可能会导致数据丢失，在数据迁移到新表时使用了insert ignore"
-	PTOSCAvoidRenameTable                   = "pt-online-schema-change 不支持使用rename table 来重命名表"
-	PTOSCAvoidNoDefaultValueOnNotNullColumn = "非空字段必须设置默认值，不然 pt-online-schema-change 会执行失败"
-)
-
 // generateOSCCommandLine generate pt-online-schema-change command-line statement;
 // see https://www.percona.com/doc/percona-toolkit/LATEST/pt-online-schema-change.html.
-func (i *MysqlDriverImpl) generateOSCCommandLine(node ast.Node) (string, error) {
+func (i *MysqlDriverImpl) generateOSCCommandLine(node ast.Node) (driverV2.I18nStr, error) {
 	if i.cnf.DDLOSCMinSize < 0 {
-		return "", nil
+		return nil, nil
 	}
 
 	stmt, ok := node.(*ast.AlterTableStmt)
 	if !ok {
-		return "", nil
+		return nil, nil
 	}
 	tableSize, err := i.Ctx.GetTableSize(stmt.Table)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	if int64(tableSize) < i.cnf.DDLOSCMinSize {
-		return "", err
+		return nil, err
 	}
 
 	createTableStmt, exist, err := i.Ctx.GetCreateTableStmt(stmt.Table)
 	if !exist || err != nil {
-		return "", err
+		return nil, err
 	}
 
 	// In almost all cases a PRIMARY KEY or UNIQUE INDEX needs to be present in the table.
 	// This is necessary because the tool creates a DELETE trigger to keep the new table
 	// updated while the process is running.
 	if !util.HasPrimaryKey(createTableStmt) && !util.HasUniqIndex(createTableStmt) {
-		return PTOSCNoUniqueIndexOrPrimaryKey, nil
+		return plocale.ShouldLocalizeAll(plocale.PTOSCNoUniqueIndexOrPrimaryKey), nil
 	}
 
 	// The RENAME clause cannot be used to rename the table.
 	if len(util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableRenameTable)) > 0 {
-		return PTOSCAvoidRenameTable, nil
+		return plocale.ShouldLocalizeAll(plocale.PTOSCAvoidRenameTable), nil
 	}
 
 	// If you add a column without a default value and make it NOT NULL, the tool will fail,
@@ -80,7 +77,7 @@ func (i *MysqlDriverImpl) generateOSCCommandLine(node ast.Node) (string, error) 
 		for _, col := range spec.NewColumns {
 			if util.HasOneInOptions(col.Options, ast.ColumnOptionNotNull) {
 				if !util.HasOneInOptions(col.Options, ast.ColumnOptionDefaultValue) {
-					return PTOSCAvoidNoDefaultValueOnNotNullColumn, nil
+					return plocale.ShouldLocalizeAll(plocale.PTOSCAvoidNoDefaultValueOnNotNullColumn), nil
 				}
 			}
 		}
@@ -92,7 +89,7 @@ func (i *MysqlDriverImpl) generateOSCCommandLine(node ast.Node) (string, error) 
 	for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
 		switch spec.Constraint.Tp {
 		case ast.ConstraintUniq:
-			return PTOSCAvoidUniqueIndex, nil
+			return plocale.ShouldLocalizeAll(plocale.PTOSCAvoidUniqueIndex), nil
 		}
 	}
 
@@ -116,7 +113,7 @@ func (i *MysqlDriverImpl) generateOSCCommandLine(node ast.Node) (string, error) 
 	}
 
 	if len(changes) <= 0 {
-		return "", nil
+		return nil, nil
 	}
 
 	ptTemplateMutex.Lock()
@@ -124,9 +121,9 @@ func (i *MysqlDriverImpl) generateOSCCommandLine(node ast.Node) (string, error) 
 	ptTemplateMutex.Unlock()
 	tp, err := template.New("tp").Parse(text)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	buff := bytes.NewBufferString("")
+	buff := bytes.NewBufferString("[osc]")
 	err = tp.Execute(buff, map[string]interface{}{
 		"Alter":  strings.Join(changes, ","),
 		"Host":   i.inst.Host,
@@ -135,5 +132,5 @@ func (i *MysqlDriverImpl) generateOSCCommandLine(node ast.Node) (string, error) 
 		"Schema": i.Ctx.GetSchemaName(stmt.Table),
 		"Table":  stmt.Table.Name.String(),
 	})
-	return buff.String(), err
+	return map[string]string{locale.DefaultLang.String(): buff.String()}, err
 }

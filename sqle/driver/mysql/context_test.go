@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 	"testing"
 
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
@@ -37,7 +38,7 @@ alter table not_exist_tb_1 drop column v1;
 		newTestResult().addResult(rulepkg.DDLCheckPKName),
 		newTestResult(),
 		newTestResult(),
-		newTestResult().add(driverV2.RuleLevelError, "", TableNotExistMessage, "exist_db.not_exist_tb_1"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMessage(plocale.DefaultLocalizer, plocale.TableNotExistMessage), "exist_db.not_exist_tb_1"),
 	)
 
 	runDefaultRulesInspectCase(t, "drop column twice: column not exists(1)", DefaultMysqlInspect(),
@@ -48,7 +49,7 @@ alter table not_exist_tb_1 drop column v1;
 	`,
 		newTestResult(),
 		newTestResult(),
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "v1"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMessage(plocale.DefaultLocalizer, plocale.ColumnNotExistMessage), "v1"),
 	)
 	runDefaultRulesInspectCase(t, "drop column twice: column not exists(2)", DefaultMysqlInspect(),
 		`
@@ -67,7 +68,7 @@ alter table not_exist_tb_1 drop column v1;
 		newTestResult(),
 		newTestResult().addResult(rulepkg.DDLCheckPKName),
 		newTestResult(),
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "v1"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMessage(plocale.DefaultLocalizer, plocale.ColumnNotExistMessage), "v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "change and drop column: column not exists", DefaultMysqlInspect(),
@@ -78,7 +79,7 @@ alter table not_exist_tb_1 drop column v1;
 	`,
 		newTestResult(),
 		newTestResult(),
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "v1"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMessage(plocale.DefaultLocalizer, plocale.ColumnNotExistMessage), "v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "Add column twice: column exists", DefaultMysqlInspect(),
@@ -89,7 +90,7 @@ alter table not_exist_tb_1 drop column v1;
 	`,
 		newTestResult(),
 		newTestResult(),
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnExistMessage, "v3"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMessage(plocale.DefaultLocalizer, plocale.ColumnExistMessage), "v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "drop index twice: index not exists", DefaultMysqlInspect(),
@@ -100,7 +101,7 @@ alter table not_exist_tb_1 drop column v1;
 	`,
 		newTestResult(),
 		newTestResult(),
-		newTestResult().add(driverV2.RuleLevelError, "", IndexNotExistMessage, "idx_1"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMessage(plocale.DefaultLocalizer, plocale.IndexNotExistMessage), "idx_1"),
 	)
 	runDefaultRulesInspectCase(t, "drop index, rename index: index not exists", DefaultMysqlInspect(),
 		`
@@ -110,7 +111,7 @@ alter table not_exist_tb_1 drop column v1;
 	`,
 		newTestResult(),
 		newTestResult(),
-		newTestResult().add(driverV2.RuleLevelError, "", IndexNotExistMessage, "idx_1"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMessage(plocale.DefaultLocalizer, plocale.IndexNotExistMessage), "idx_1"),
 	)
 }
 
@@ -157,7 +158,7 @@ alter table not_exist_tb_1 drop column v1;
 		`
 alter table not_exist_tb_1 drop column v1;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "v1"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMessage(plocale.DefaultLocalizer, plocale.ColumnNotExistMessage), "v1"),
 	)
 
 	inspect4 := DefaultMysqlInspect()
@@ -175,7 +176,7 @@ alter table not_exist_tb_1 add column v3 varchar(255) NOT NULL DEFAULT "unit tes
 		`
 insert into not_exist_tb_1 (id,v1,v2) values (1,"1","1");
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", ColumnNotExistMessage, "v1"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMessage(plocale.DefaultLocalizer, plocale.ColumnNotExistMessage), "v1"),
 	)
 
 	inspect6 := DefaultMysqlInspect()

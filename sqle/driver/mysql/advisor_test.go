@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"fmt"
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 	"regexp"
 	"strings"
 	"testing"
@@ -30,7 +31,7 @@ func newPrefixOptimizeResult(columns []string, tableName string) *OptimizeResult
 	return &OptimizeResult{
 		TableName:      tableName,
 		IndexedColumns: columns,
-		Reason:         prefixIndexAdviceFormat,
+		Reason:         plocale.ShouldLocalizeMessage(plocale.DefaultLocalizer, plocale.PrefixIndexAdviceFormat),
 	}
 }
 
@@ -39,12 +40,12 @@ func mockThreeStarOptimizeResult(caseName string, c optimizerTestContent, t *tes
 }
 
 func newThreeStarOptimizeResult(columns []string, tableName string) *OptimizeResult {
-	var indexType string = "复合"
+	var indexType = plocale.ShouldLocalizeMessage(plocale.DefaultLocalizer, plocale.AdvisorIndexTypeComposite)
 	if len(columns) == 1 {
-		indexType = "单列"
+		indexType = plocale.ShouldLocalizeMessage(plocale.DefaultLocalizer, plocale.AdvisorIndexTypeSingle)
 	}
 	return &OptimizeResult{
-		Reason:         fmt.Sprintf(threeStarIndexAdviceFormat, tableName, indexType, strings.Join(columns, "，")),
+		Reason:         fmt.Sprintf(plocale.ShouldLocalizeMessage(plocale.DefaultLocalizer, plocale.ThreeStarIndexAdviceFormat), tableName, indexType, strings.Join(columns, "，")),
 		IndexedColumns: columns,
 		TableName:      tableName,
 	}
@@ -70,7 +71,7 @@ func newExtremalIndexOptimizeResult(column string, tableName string) *OptimizeRe
 	return &OptimizeResult{
 		TableName:      tableName,
 		IndexedColumns: []string{column},
-		Reason:         fmt.Sprintf(extremalIndexAdviceFormat, tableName, column),
+		Reason:         fmt.Sprintf(plocale.ShouldLocalizeMessage(plocale.DefaultLocalizer, plocale.ExtremalIndexAdviceFormat), tableName, column),
 	}
 }
 
@@ -80,7 +81,7 @@ func mockJoinOptimizeResult(caseName string, c optimizerTestContent, t *testing.
 
 func newJoinIndexOptimizeResult(indexColumn []string, drivenTableName string) *OptimizeResult {
 	return &OptimizeResult{
-		Reason:         fmt.Sprintf(joinIndexAdviceFormat, strings.Join(indexColumn, "，"), drivenTableName, drivenTableName, strings.Join(indexColumn, "，")),
+		Reason:         fmt.Sprintf(plocale.ShouldLocalizeMessage(plocale.DefaultLocalizer, plocale.JoinIndexAdviceFormat), strings.Join(indexColumn, "，"), drivenTableName, drivenTableName, strings.Join(indexColumn, "，")),
 		IndexedColumns: indexColumn,
 		TableName:      drivenTableName,
 	}
@@ -212,7 +213,7 @@ func TestFunctionIndexOptimize(t *testing.T) {
 			},
 		},
 		expectResults: []*OptimizeResult{
-			newFunctionIndexOptimizeResult(functionIndexAdviceFormatV80, []string{"v1"}, "exist_tb_1"),
+			newFunctionIndexOptimizeResult(plocale.ShouldLocalizeMessage(plocale.DefaultLocalizer, plocale.FunctionIndexAdviceFormatV80), []string{"v1"}, "exist_tb_1"),
 		},
 		maxColumn: 4,
 	}
@@ -228,7 +229,7 @@ func TestFunctionIndexOptimize(t *testing.T) {
 			},
 		},
 		expectResults: []*OptimizeResult{
-			newFunctionIndexOptimizeResult(functionIndexAdviceFormatV57, []string{"v1"}, "exist_tb_1"),
+			newFunctionIndexOptimizeResult(plocale.ShouldLocalizeMessage(plocale.DefaultLocalizer, plocale.FunctionIndexAdviceFormatV57), []string{"v1"}, "exist_tb_1"),
 		},
 		maxColumn: 4,
 	}
@@ -270,7 +271,7 @@ func TestFunctionIndexOptimize(t *testing.T) {
 			},
 		},
 		expectResults: []*OptimizeResult{
-			newFunctionIndexOptimizeResult(functionIndexAdviceFormatAll, []string{"v1"}, "exist_tb_1"),
+			newFunctionIndexOptimizeResult(plocale.ShouldLocalizeMessage(plocale.DefaultLocalizer, plocale.FunctionIndexAdviceFormatAll), []string{"v1"}, "exist_tb_1"),
 		},
 		maxColumn: 4,
 	}

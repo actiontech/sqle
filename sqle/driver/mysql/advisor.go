@@ -7,8 +7,10 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 	"github.com/actiontech/sqle/sqle/driver/mysql/session"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/format"
@@ -23,20 +25,12 @@ const (
 	MAX_INDEX_COLUMN_DEFAULT_VALUE       int     = 5
 	MIN_COLUMN_SELECTIVITY               string  = "min_column_selectivity"
 	MIN_COLUMN_SELECTIVITY_DEFAULT_VALUE float64 = 2
-
-	threeStarIndexAdviceFormat   string = "索引建议 | 根据三星索引设计规范，建议对表%s添加%s索引：【%s】"
-	prefixIndexAdviceFormat      string = "索引建议 | SQL使用了前模糊匹配，数据量大时，可建立翻转函数索引"
-	extremalIndexAdviceFormat    string = "索引建议 | SQL使用了最值函数，可以利用索引有序的性质快速找到最值，建议对表%s添加单列索引，参考列：%s"
-	functionIndexAdviceFormatV80 string = "索引建议 | SQL使用了函数作为查询条件，在MySQL8.0.13以上的版本，可以创建函数索引，建议对表%s添加函数索引，参考列：%s"
-	functionIndexAdviceFormatV57 string = "索引建议 | SQL使用了函数作为查询条件，在MySQL5.7以上的版本，可以在虚拟列上创建索引，建议对表%s添加虚拟列索引，参考列：%s"
-	functionIndexAdviceFormatAll string = "索引建议 | SQL使用了函数作为查询条件，在MySQL5.7以上的版本，可以在虚拟列上创建索引，在MySQL8.0.13以上的版本，可以创建函数索引，建议根据MySQL版本对表%s添加合适的索引，参考列：%s"
-	joinIndexAdviceFormat        string = "索引建议 | SQL中字段%s为被驱动表%s上的关联字段，建议对表%s添加单列索引，参考列：%s"
 )
 
 type OptimizeResult struct {
 	TableName      string
 	IndexedColumns []string
-	Reason         string
+	Reason         driverV2.I18nStr
 }
 
 func optimize(log *logrus.Entry, ctx *session.Context, node ast.Node, params params.Params) []*OptimizeResult {
@@ -357,14 +351,14 @@ func (a *threeStarIndexAdvisor) GiveAdvices() []*OptimizeResult {
 	}
 	tableName := util.GetTableNameFromTableSource(a.drivingTableSource)
 	indexColumns := a.adviceColumns.stringSlice()
-	var indexType string = "复合"
+	var indexType = plocale.ShouldLocalizeMessage(plocale.DefaultLocalizer, plocale.AdvisorIndexTypeComposite)
 	if len(indexColumns) == 1 {
-		indexType = "单列"
+		indexType = plocale.ShouldLocalizeMessage(plocale.DefaultLocalizer, plocale.AdvisorIndexTypeSingle)
 	}
 	return []*OptimizeResult{{
 		TableName:      tableName,
 		IndexedColumns: indexColumns,
-		Reason:         fmt.Sprintf(threeStarIndexAdviceFormat, tableName, indexType, strings.Join(indexColumns, "，")),
+		Reason:         plocale.ShouldLocalizeAllWithArgs(plocale.ThreeStarIndexAdviceFormat, tableName, indexType, strings.Join(indexColumns, "，")),
 	}}
 }
 
@@ -896,7 +890,7 @@ func (a *joinIndexAdvisor) giveAdvice() {
 	a.advices = append(a.advices, &OptimizeResult{
 		TableName:      drivenTableName,
 		IndexedColumns: indexColumn,
-		Reason:         fmt.Sprintf(joinIndexAdviceFormat, strings.Join(indexColumn, "，"), drivenTableName, drivenTableName, strings.Join(indexColumn, "，")),
+		Reason:         plocale.ShouldLocalizeAllWithArgs(plocale.JoinIndexAdviceFormat, strings.Join(indexColumn, "，"), drivenTableName, drivenTableName, strings.Join(indexColumn, "，")),
 	})
 }
 
@@ -1036,7 +1030,7 @@ func (a *functionIndexAdvisor) giveAdvice() {
 		a.advices = append(a.advices, &OptimizeResult{
 			TableName:      tableName,
 			IndexedColumns: columns,
-			Reason:         fmt.Sprintf(functionIndexAdviceFormatV57, tableName, strings.Join(columns, "，")),
+			Reason:         plocale.ShouldLocalizeAllWithArgs(plocale.FunctionIndexAdviceFormatV57, tableName, strings.Join(columns, "，")),
 		})
 		return
 	}
@@ -1044,7 +1038,7 @@ func (a *functionIndexAdvisor) giveAdvice() {
 		a.advices = append(a.advices, &OptimizeResult{
 			TableName:      tableName,
 			IndexedColumns: columns,
-			Reason:         fmt.Sprintf(functionIndexAdviceFormatV80, tableName, strings.Join(columns, "，")),
+			Reason:         plocale.ShouldLocalizeAllWithArgs(plocale.FunctionIndexAdviceFormatV80, tableName, strings.Join(columns, "，")),
 		})
 		return
 	}
@@ -1052,7 +1046,7 @@ func (a *functionIndexAdvisor) giveAdvice() {
 	a.advices = append(a.advices, &OptimizeResult{
 		TableName:      tableName,
 		IndexedColumns: columns,
-		Reason:         fmt.Sprintf(functionIndexAdviceFormatAll, tableName, strings.Join(columns, "，")),
+		Reason:         plocale.ShouldLocalizeAllWithArgs(plocale.FunctionIndexAdviceFormatAll, tableName, strings.Join(columns, "，")),
 	})
 }
 
@@ -1149,7 +1143,7 @@ func (a *extremalIndexAdvisor) giveAdvice() {
 	a.advices = append(a.advices, &OptimizeResult{
 		TableName:      tableName,
 		IndexedColumns: []string{indexColumn},
-		Reason:         fmt.Sprintf(extremalIndexAdviceFormat, tableName, indexColumn),
+		Reason:         plocale.ShouldLocalizeAllWithArgs(plocale.ExtremalIndexAdviceFormat, tableName, indexColumn),
 	})
 }
 
@@ -1241,6 +1235,6 @@ func (a *prefixIndexAdvisor) giveAdvice() {
 	a.advices = append(a.advices, &OptimizeResult{
 		TableName:      tableName,
 		IndexedColumns: []string{column.Name.Name.L},
-		Reason:         prefixIndexAdviceFormat,
+		Reason:         plocale.ShouldLocalizeAll(plocale.PrefixIndexAdviceFormat),
 	})
 }
