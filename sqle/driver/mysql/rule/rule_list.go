@@ -4,37 +4,40 @@
 package rule
 
 import (
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
 )
 
-var RuleHandlers = []RuleHandler{
+var RuleHandlers = generateRuleHandlers(sourceRuleHandlers)
+
+var sourceRuleHandlers = []*SourceHandler{
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLNotAllowInsertAutoincrement,
-			Desc:       "禁止手动设置自增字段值",
-			Annotation: "手动赋值可能会造成数据空洞，主键冲突",
+			Desc:       plocale.DMLNotAllowInsertAutoincrementDesc,
+			Annotation: plocale.DMLNotAllowInsertAutoincrementAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message:      "禁止手动设置自增字段值",
+		Message:      plocale.DMLNotAllowInsertAutoincrementMessage,
 		AllowOffline: false,
 		Func:         notAllowInsertAutoincrement,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       ConfigDMLRollbackMaxRows,
-			Desc:       "在 DML 语句中预计影响行数超过指定值则不回滚",
-			Annotation: "大事务回滚，容易影响数据库性能，使得业务发生波动；具体规则阈值可以根据业务需求调整，默认值：1000",
+			Desc:       plocale.ConfigDMLRollbackMaxRowsDesc,
+			Annotation: plocale.ConfigDMLRollbackMaxRowsAnnotation,
 			//Value:    "1000",
 			Level:    driverV2.RuleLevelNotice,
-			Category: RuleTypeGlobalConfig,
-			Params: params.Params{
-				&params.Param{
+			Category: plocale.RuleTypeGlobalConfig,
+			Params: []*SourceParam{
+				{
 					Key:   DefaultSingleParamKeyName,
 					Value: "1000",
-					Desc:  "最大影响行数",
+					Desc:  plocale.ConfigDMLRollbackMaxRowsParams1,
 					Type:  params.ParamTypeInt,
 				},
 			},
@@ -42,18 +45,18 @@ var RuleHandlers = []RuleHandler{
 		Func: nil,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       ConfigDDLOSCMinSize,
-			Desc:       "改表时，表空间超过指定大小(MB)审核时输出osc改写建议",
-			Annotation: "开启该规则后会对大表的DDL语句给出 pt-osc工具的改写建议【需要参考命令进行手工执行，后续会支持自动执行】；直接对大表进行DDL变更时可能会导致长时间锁表问题，影响业务可持续性。具体对大表定义的阈值可以根据业务需求调整，默认值：1024",
+			Desc:       plocale.ConfigDDLOSCMinSizeDesc,
+			Annotation: plocale.ConfigDDLOSCMinSizeAnnotation,
 			//Value:    "16",
 			Level:    driverV2.RuleLevelNormal,
-			Category: RuleTypeGlobalConfig,
-			Params: params.Params{
-				&params.Param{
+			Category: plocale.RuleTypeGlobalConfig,
+			Params: []*SourceParam{
+				{
 					Key:   DefaultSingleParamKeyName,
 					Value: "1024",
-					Desc:  "表空间大小（MB）",
+					Desc:  plocale.ConfigDDLOSCMinSizeParams1,
 					Type:  params.ParamTypeInt,
 				},
 			},
@@ -61,104 +64,105 @@ var RuleHandlers = []RuleHandler{
 		Func: nil,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckTableSize,
-			Desc:       "不建议对数据量过大的表执行DDL操作",
-			Annotation: "大表执行DDL，耗时较久且负载较高，长时间占用锁资源，会影响数据库性能；具体规则阈值可以根据业务需求调整，默认值：1024",
+			Desc:       plocale.DDLCheckTableSizeDesc,
+			Annotation: plocale.DDLCheckTableSizeAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeDDLConvention,
-			Params: params.Params{
-				&params.Param{
+			Category:   plocale.RuleTypeDDLConvention,
+			Params: []*SourceParam{
+				{
 					Key:   DefaultSingleParamKeyName,
 					Value: "1024",
-					Desc:  "表空间大小（MB）",
+					Desc:  plocale.DDLCheckTableSizeParams1,
 					Type:  params.ParamTypeInt,
 				},
 			},
 		},
-		Message:                 "执行DDL的表 %v 空间不建议超过 %vMB",
+		Message:                 plocale.DDLCheckTableSizeMessage,
 		OnlyAuditNotExecutedSQL: true,
 		Func:                    checkDDLTableSize,
-	}, {
-		Rule: driverV2.Rule{
+	},
+	{
+		Rule: SourceRule{
 			Name:       DDLCheckIndexTooMany,
-			Desc:       "单字段上的索引数量不建议超过阈值",
-			Annotation: "单字段上存在过多索引，一般情况下这些索引都是没有存在价值的；相反，还会降低数据增加删除时的性能，特别是对频繁更新的表来说，负面影响更大；具体规则阈值可以根据业务需求调整，默认值：2",
+			Desc:       plocale.DDLCheckIndexTooManyDesc,
+			Annotation: plocale.DDLCheckIndexTooManyAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeIndexingConvention,
-			Params: params.Params{
-				&params.Param{
+			Category:   plocale.RuleTypeIndexingConvention,
+			Params: []*SourceParam{
+				{
 					Key:   DefaultSingleParamKeyName,
 					Value: "2",
-					Desc:  "单字段的索引数最大值",
+					Desc:  plocale.DDLCheckIndexTooManyParams1,
 					Type:  params.ParamTypeInt,
 				},
 			},
 		},
-		Message:                         "字段 %v 上的索引数量不建议超过%v个",
+		Message:                         plocale.DDLCheckIndexTooManyMessage,
 		NotSupportExecutedSQLAuditStmts: []ast.Node{&ast.AlterTableStmt{}, &ast.CreateIndexStmt{}},
 		Func:                            checkIndex,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       ConfigDMLExplainPreCheckEnable,
-			Desc:       "使用EXPLAIN加强预检查能力",
-			Annotation: "通过 EXPLAIN 的形式将待上线的DML进行SQL是否能正确执行的检查，提前发现语句的错误，提高上线成功率",
+			Desc:       plocale.ConfigDMLExplainPreCheckEnableDesc,
+			Annotation: plocale.ConfigDMLExplainPreCheckEnableAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeGlobalConfig,
+			Category:   plocale.RuleTypeGlobalConfig,
 		},
 		Func: nil,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckRedundantIndex,
-			Desc:       "不建议创建冗余索引",
-			Annotation: "MySQL需要单独维护重复的索引，冗余索引增加维护成本，并且优化器在优化查询时需要逐个进行代价计算，影响查询性能",
+			Desc:       plocale.DDLCheckRedundantIndexDesc,
+			Annotation: plocale.DDLCheckRedundantIndexAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeIndexOptimization,
+			Category:   plocale.RuleTypeIndexOptimization,
 		},
-		Message:                         "%v",
+		Message:                         plocale.DDLCheckRedundantIndexMessage,
 		AllowOffline:                    true,
 		NotSupportExecutedSQLAuditStmts: []ast.Node{&ast.AlterTableStmt{}, &ast.CreateIndexStmt{}},
 		Func:                            checkIndex,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLCheckTableSize,
-			Desc:       "不建议对数据量过大的表执行DML操作",
-			Annotation: "DML操作大表，耗时较久且负载较高，容易影响数据库性能；具体规则阈值可以根据业务需求调整，默认值：1024",
+			Desc:       plocale.DMLCheckTableSizeDesc,
+			Annotation: plocale.DMLCheckTableSizeAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeDMLConvention,
-			Params: params.Params{
-				&params.Param{
+			Category:   plocale.RuleTypeDMLConvention,
+			Params: []*SourceParam{
+				{
 					Key:   DefaultSingleParamKeyName,
 					Value: "1024",
-					Desc:  "表空间大小（MB）",
+					Desc:  plocale.DMLCheckTableSizeParams1,
 					Type:  params.ParamTypeInt,
 				},
 			},
 		},
-		Message: "执行DML的表 %v 空间不建议超过 %vMB",
+		Message: plocale.DMLCheckTableSizeMessage,
 		Func:    checkDMLTableSize,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       ConfigOptimizeIndexEnabled,
-			Desc:       "索引创建建议",
-			Annotation: "通过该规则开启索引优化建议，提供两个参数配置来定义索引优化建议的行为。1. 列区分度最低值阈值（百分制）：配置当前表中列的区分度小于多少时，不作为索引的列；2. 联合索引最大列数：限制联合索引给到的列数最大值，防止给出建议的联合索引不符合其他SQL标准",
+			Desc:       plocale.ConfigOptimizeIndexEnabledDesc,
+			Annotation: plocale.ConfigOptimizeIndexEnabledAnnotation,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   RuleTypeIndexOptimization,
-			Params: params.Params{
-				&params.Param{
+			Category:   plocale.RuleTypeIndexOptimization,
+			Params: []*SourceParam{
+				{
 					Key:   DefaultMultiParamsFirstKeyName,
 					Value: "2.00",
-					Desc:  "列区分度最低值阈值（百分比）",
+					Desc:  plocale.ConfigOptimizeIndexEnabledParams1,
 					Type:  params.ParamTypeFloat64,
 				},
-				&params.Param{
+				{
 					Key:   DefaultMultiParamsSecondKeyName,
 					Value: "3",
-					Desc:  "联合索引最大列数",
+					Desc:  plocale.ConfigOptimizeIndexEnabledParams2,
 					Type:  params.ParamTypeInt,
 				},
 			},
@@ -166,28 +170,28 @@ var RuleHandlers = []RuleHandler{
 	},
 
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       ConfigSQLIsExecuted,
-			Desc:       "停用上线审核模式",
-			Annotation: "启用该规则来兼容事后审核的场景，对于事后采集的DDL 和 DML 语句将不再进行上线校验。例如库表元数据的扫描任务可开启该规则",
+			Desc:       plocale.ConfigSQLIsExecutedDesc,
+			Annotation: plocale.ConfigSQLIsExecutedAnnotation,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   RuleTypeGlobalConfig,
+			Category:   plocale.RuleTypeGlobalConfig,
 		},
 	},
 
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       ConfigDDLGhostMinSize,
-			Desc:       "改表时，表空间超过指定大小(MB)时使用gh-ost上线",
-			Annotation: "开启该规则后会自动对大表的DDL操作使用gh-ost 工具进行在线改表；直接对大表进行DDL变更时可能会导致长时间锁表问题，影响业务可持续性。具体对大表定义的阈值可以根据业务需求调整，默认值：1024",
+			Desc:       plocale.ConfigDDLGhostMinSizeDesc,
+			Annotation: plocale.ConfigDDLGhostMinSizeAnnotation,
 			//Value:    "16",
 			Level:    driverV2.RuleLevelNormal,
-			Category: RuleTypeGlobalConfig,
-			Params: params.Params{
-				&params.Param{
+			Category: plocale.RuleTypeGlobalConfig,
+			Params: []*SourceParam{
+				{
 					Key:   DefaultSingleParamKeyName,
 					Value: "1024",
-					Desc:  "表空间大小（MB）",
+					Desc:  plocale.ConfigDDLGhostMinSizeParams1,
 					Type:  params.ParamTypeInt,
 				},
 			},
@@ -197,1953 +201,1989 @@ var RuleHandlers = []RuleHandler{
 
 	// rule
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckPKWithoutIfNotExists,
-			Desc:       "新建表建议加入 IF NOT EXISTS，保证重复执行不报错",
-			Annotation: "新建表如果表已经存在，不添加IF NOT EXISTS CREATE执行SQL会报错，建议开启此规则，避免SQL实际执行报错",
+			Desc:       plocale.DDLCheckPKWithoutIfNotExistsDesc,
+			Annotation: plocale.DDLCheckPKWithoutIfNotExistsAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeUsageSuggestion,
+			Category:   plocale.RuleTypeUsageSuggestion,
 		},
-		Message:      "新建表建议加入 IF NOT EXISTS，保证重复执行不报错",
+		Message:      plocale.DDLCheckPKWithoutIfNotExistsMessage,
 		AllowOffline: true,
 		Func:         checkIfNotExist,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckObjectNameLength,
-			Desc:       "表名、列名、索引名的长度不建议超过阈值",
-			Annotation: "通过配置该规则可以规范指定业务的对象命名长度，具体长度可以自定义设置，默认最大长度：64。是MySQL规定标识符命名最大长度为64字节",
+			Desc:       plocale.DDLCheckObjectNameLengthDesc,
+			Annotation: plocale.DDLCheckObjectNameLengthAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeNamingConvention,
+			Category:   plocale.RuleTypeNamingConvention,
 			//Value:    "64",
-			Params: params.Params{
-				&params.Param{
+			Params: []*SourceParam{
+				{
 					Key:   DefaultSingleParamKeyName,
 					Value: "64",
-					Desc:  "最大长度（字节）",
+					Desc:  plocale.DDLCheckObjectNameLengthParams1,
 					Type:  params.ParamTypeInt,
 				},
 			},
 		},
-		Message:      "表名、列名、索引名的长度不建议大于%v字节",
+		Message:      plocale.DDLCheckObjectNameLengthMessage,
 		AllowOffline: true,
 		Func:         checkNewObjectName,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckObjectNameIsUpperAndLowerLetterMixed,
-			Desc:       "数据库对象命名不建议大小写字母混合",
-			Annotation: "数据库对象命名规范，不推荐采用大小写混用的形式建议词语之间使用下划线连接，提高代码可读性",
-			Category:   RuleTypeNamingConvention,
+			Desc:       plocale.DDLCheckObjectNameIsUpperAndLowerLetterMixedDesc,
+			Annotation: plocale.DDLCheckObjectNameIsUpperAndLowerLetterMixedAnnotation,
+			Category:   plocale.RuleTypeNamingConvention,
 			Level:      driverV2.RuleLevelNotice,
 		},
-		Message:      "数据库对象命名不建议大小写字母混合，以下对象命名不规范：%v",
+		Message:      plocale.DDLCheckObjectNameIsUpperAndLowerLetterMixedMessage,
 		Func:         checkIsObjectNameUpperAndLowerLetterMixed,
 		AllowOffline: true,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckPKNotExist,
-			Desc:       "表必须有主键",
-			Annotation: "主键使数据达到全局唯一，可提高数据检索效率",
+			Desc:       plocale.DDLCheckPKNotExistDesc,
+			Annotation: plocale.DDLCheckPKNotExistAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeIndexingConvention,
+			Category:   plocale.RuleTypeIndexingConvention,
 		},
-		Message:                         "表必须有主键",
+		Message:                         plocale.DDLCheckPKNotExistMessage,
 		AllowOffline:                    true,
 		NotAllowOfflineStmts:            []ast.Node{&ast.AlterTableStmt{}},
 		NotSupportExecutedSQLAuditStmts: []ast.Node{&ast.AlterTableStmt{}},
 		Func:                            checkPrimaryKey,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckPKWithoutAutoIncrement,
-			Desc:       "主键建议使用自增",
-			Annotation: "自增主键，数字型速度快，而且是增量增长，占用空间小，更快速的做数据插入操作，避免增加维护索引的开销",
+			Desc:       plocale.DDLCheckPKWithoutAutoIncrementDesc,
+			Annotation: plocale.DDLCheckPKWithoutAutoIncrementAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeIndexingConvention,
+			Category:   plocale.RuleTypeIndexingConvention,
 		},
-		Message:                         "主键建议使用自增",
+		Message:                         plocale.DDLCheckPKWithoutAutoIncrementMessage,
 		AllowOffline:                    true,
 		NotAllowOfflineStmts:            []ast.Node{&ast.AlterTableStmt{}},
 		NotSupportExecutedSQLAuditStmts: []ast.Node{&ast.AlterTableStmt{}},
 		Func:                            checkPrimaryKey,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckPKWithoutBigintUnsigned,
-			Desc:       "主键建议使用 BIGINT 无符号类型，即 BIGINT UNSIGNED",
-			Annotation: "BIGINT UNSIGNED拥有更大的取值范围，建议开启此规则，避免发生溢出",
+			Desc:       plocale.DDLCheckPKWithoutBigintUnsignedDesc,
+			Annotation: plocale.DDLCheckPKWithoutBigintUnsignedAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeIndexingConvention,
+			Category:   plocale.RuleTypeIndexingConvention,
 		},
-		Message:                         "主键建议使用 BIGINT 无符号类型，即 BIGINT UNSIGNED",
+		Message:                         plocale.DDLCheckPKWithoutBigintUnsignedMessage,
 		AllowOffline:                    true,
 		NotAllowOfflineStmts:            []ast.Node{&ast.AlterTableStmt{}},
 		NotSupportExecutedSQLAuditStmts: []ast.Node{&ast.AlterTableStmt{}},
 		Func:                            checkPrimaryKey,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLCheckJoinFieldType,
-			Desc:       "建议JOIN字段类型保持一致",
-			Annotation: "JOIN字段类型不一致会导致类型不匹配发生隐式准换，建议开启此规则，避免索引失效",
+			Desc:       plocale.DMLCheckJoinFieldTypeDesc,
+			Annotation: plocale.DMLCheckJoinFieldTypeAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message:      "建议JOIN字段类型保持一致, 否则会导致隐式转换",
+		Message:      plocale.DMLCheckJoinFieldTypeMessage,
 		AllowOffline: false,
 		Func:         checkJoinFieldType,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLCheckHasJoinCondition,
-			Desc:       "建议连接操作指定连接条件",
-			Annotation: "指定连接条件可以确保连接操作的正确性和可靠性，如果没有指定连接条件，可能会导致连接失败或连接不正确的情况。",
+			Desc:       plocale.DMLCheckHasJoinConditionDesc,
+			Annotation: plocale.DMLCheckHasJoinConditionAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message:      "建议连接操作指定连接条件，JOIN字段后必须有ON条件",
+		Message:      plocale.DMLCheckHasJoinConditionMessage,
 		AllowOffline: true,
 		Func:         checkHasJoinCondition,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckColumnCharLength,
-			Desc:       "CHAR长度大于20时，必须使用VARCHAR类型",
-			Annotation: "VARCHAR是变长字段，存储空间小，可节省存储空间，同时相对较小的字段检索效率显然也要高些",
+			Desc:       plocale.DDLCheckColumnCharLengthDesc,
+			Annotation: plocale.DDLCheckColumnCharLengthAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeDDLConvention,
+			Category:   plocale.RuleTypeDDLConvention,
 		},
-		Message:      "CHAR长度大于20时，必须使用VARCHAR类型",
+		Message:      plocale.DDLCheckColumnCharLengthMessage,
 		AllowOffline: true,
 		Func:         checkStringType,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckFieldNotNUllMustContainDefaultValue,
-			Desc:       "建议字段约束为NOT NULL时带默认值",
-			Annotation: "如存在NOT NULL且不带默认值的字段，INSERT时不包含该字段，会导致插入报错",
+			Desc:       plocale.DDLCheckFieldNotNUllMustContainDefaultValueDesc,
+			Annotation: plocale.DDLCheckFieldNotNUllMustContainDefaultValueAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeDDLConvention,
+			Category:   plocale.RuleTypeDDLConvention,
 		},
-		Message:      "建议字段约束为NOT NULL时带默认值，以下字段不规范:%v",
+		Message:      plocale.DDLCheckFieldNotNUllMustContainDefaultValueMessage,
 		AllowOffline: true,
 		Func:         checkFieldNotNUllMustContainDefaultValue,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLDisableFK,
-			Desc:       "禁止使用外键",
-			Annotation: "外键在高并发场景下性能较差，容易造成死锁，同时不利于后期维护（拆分、迁移）",
+			Desc:       plocale.DDLDisableFKDesc,
+			Annotation: plocale.DDLDisableFKAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeIndexingConvention,
+			Category:   plocale.RuleTypeIndexingConvention,
 		},
-		Message:      "禁止使用外键",
+		Message:      plocale.DDLDisableFKMessage,
 		AllowOffline: true,
 		Func:         checkForeignKey,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLDisableAlterFieldUseFirstAndAfter,
-			Desc:       "ALTER表字段禁止使用FIRST,AFTER",
-			Annotation: "FIRST,AFTER 的ALTER操作通过COPY TABLE的方式完成，对业务影响较大",
+			Desc:       plocale.DDLDisableAlterFieldUseFirstAndAfterDesc,
+			Annotation: plocale.DDLDisableAlterFieldUseFirstAndAfterAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeDDLConvention,
+			Category:   plocale.RuleTypeDDLConvention,
 		},
-		Message:      "ALTER表字段禁止使用FIRST,AFTER",
+		Message:      plocale.DDLDisableAlterFieldUseFirstAndAfterMessage,
 		AllowOffline: true,
 		Func:         disableAlterUseFirstAndAfter,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckCreateTimeColumn,
-			Desc:       "建议建表DDL包含创建时间字段且默认值为CURRENT_TIMESTAMP",
-			Annotation: "使用CREATE_TIME字段，有利于问题查找跟踪和检索数据，同时避免后期对数据生命周期管理不便 ，默认值为CURRENT_TIMESTAMP可保证时间的准确性",
+			Desc:       plocale.DDLCheckCreateTimeColumnDesc,
+			Annotation: plocale.DDLCheckCreateTimeColumnAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeDDLConvention,
-			Params: params.Params{
-				&params.Param{
+			Category:   plocale.RuleTypeDDLConvention,
+			Params: []*SourceParam{
+				{
 					Key:   DefaultSingleParamKeyName,
 					Value: "CREATE_TIME",
-					Desc:  "创建时间字段名",
+					Desc:  plocale.DDLCheckCreateTimeColumnParams1,
 					Type:  params.ParamTypeString,
 				},
 			},
 		},
-		Message:      "建议建表DDL包含%v字段且默认值为CURRENT_TIMESTAMP",
+		Message:      plocale.DDLCheckCreateTimeColumnMessage,
 		AllowOffline: true,
 		Func:         checkFieldCreateTime,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckIndexCount,
-			Desc:       "索引个数建议不超过阈值",
-			Annotation: "在表上建立的每个索引都会增加存储开销，索引对于插入、删除、更新操作也会增加处理上的开销，太多与不充分、不正确的索引对性能都毫无益处；具体规则阈值可以根据业务需求调整，默认值：5",
+			Desc:       plocale.DDLCheckIndexCountDesc,
+			Annotation: plocale.DDLCheckIndexCountAnnotation,
 			Level:      driverV2.RuleLevelNotice,
 			//Value:    "5",
-			Category: RuleTypeIndexingConvention,
-			Params: params.Params{
-				&params.Param{
+			Category: plocale.RuleTypeIndexingConvention,
+			Params: []*SourceParam{
+				{
 					Key:   DefaultSingleParamKeyName,
 					Value: "5",
-					Desc:  "最大索引个数",
+					Desc:  plocale.DDLCheckIndexCountParams1,
 					Type:  params.ParamTypeInt,
 				},
 			},
 		},
-		Message:                         "索引个数建议不超过%v个",
+		Message:                         plocale.DDLCheckIndexCountMessage,
 		AllowOffline:                    true,
 		NotAllowOfflineStmts:            []ast.Node{&ast.AlterTableStmt{}, &ast.CreateIndexStmt{}},
 		NotSupportExecutedSQLAuditStmts: []ast.Node{&ast.AlterTableStmt{}, &ast.CreateIndexStmt{}},
 		Func:                            checkIndex,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckUpdateTimeColumn,
-			Desc:       "建表DDL需要包含更新时间字段且默认值为CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
-			Annotation: "使用更新时间字段，有利于问题查找跟踪和检索数据，同时避免后期对数据生命周期管理不便 ，默认值为UPDATE_TIME可保证时间的准确性",
+			Desc:       plocale.DDLCheckUpdateTimeColumnDesc,
+			Annotation: plocale.DDLCheckUpdateTimeColumnAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeDDLConvention,
-			Params: params.Params{
-				&params.Param{
+			Category:   plocale.RuleTypeDDLConvention,
+			Params: []*SourceParam{
+				{
 					Key:   DefaultSingleParamKeyName,
 					Value: "UPDATE_TIME",
-					Desc:  "更新时间字段名",
+					Desc:  plocale.DDLCheckUpdateTimeColumnParams1,
 					Type:  params.ParamTypeString,
 				},
 			},
 		},
-		Message:      "建表DDL需要包含%v字段且默认值为CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
+		Message:      plocale.DDLCheckUpdateTimeColumnMessage,
 		AllowOffline: true,
 		Func:         checkFieldUpdateTime,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckCompositeIndexMax,
-			Desc:       "复合索引的列数量不建议超过阈值",
-			Annotation: "复合索引会根据索引列数创建对应组合的索引，列数越多，创建的索引越多，每个索引都会增加磁盘空间的开销，同时增加索引维护的开销；具体规则阈值可以根据业务需求调整，默认值：3",
+			Desc:       plocale.DDLCheckCompositeIndexMaxDesc,
+			Annotation: plocale.DDLCheckCompositeIndexMaxAnnotation,
 			Level:      driverV2.RuleLevelNotice,
 			//Value:    "3",
-			Category: RuleTypeIndexingConvention,
-			Params: params.Params{
-				&params.Param{
+			Category: plocale.RuleTypeIndexingConvention,
+			Params: []*SourceParam{
+				{
 					Key:   DefaultSingleParamKeyName,
 					Value: "3",
-					Desc:  "最大索引列数量",
+					Desc:  plocale.DDLCheckCompositeIndexMaxParams1,
 					Type:  params.ParamTypeInt,
 				},
 			},
 		},
-		Message:                         "复合索引的列数量不建议超过%v个",
+		Message:                         plocale.DDLCheckCompositeIndexMaxMessage,
 		AllowOffline:                    true,
 		NotAllowOfflineStmts:            []ast.Node{&ast.AlterTableStmt{}, &ast.CreateIndexStmt{}},
 		NotSupportExecutedSQLAuditStmts: []ast.Node{&ast.AlterTableStmt{}, &ast.CreateIndexStmt{}},
 		Func:                            checkIndex,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckIndexNotNullConstraint,
-			Desc:       "索引字段需要有非空约束",
-			Annotation: "索引字段上如果没有非空约束，则表记录与索引记录不会完全映射。",
+			Desc:       plocale.DDLCheckIndexNotNullConstraintDesc,
+			Annotation: plocale.DDLCheckIndexNotNullConstraintAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeIndexingConvention,
+			Category:   plocale.RuleTypeIndexingConvention,
 		},
-		Message:              "这些索引字段(%v)需要有非空约束",
+		Message:              plocale.DDLCheckIndexNotNullConstraintMessage,
 		AllowOffline:         true,
 		NotAllowOfflineStmts: []ast.Node{&ast.AlterTableStmt{}, &ast.CreateIndexStmt{}},
 		Func:                 checkIndexNotNullConstraint,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckObjectNameUsingKeyword,
-			Desc:       "数据库对象命名禁止使用保留字",
-			Annotation: "通过配置该规则可以规范指定业务的数据对象命名规则，避免发生冲突，以及混淆",
+			Desc:       plocale.DDLCheckObjectNameUsingKeywordDesc,
+			Annotation: plocale.DDLCheckObjectNameUsingKeywordAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeNamingConvention,
+			Category:   plocale.RuleTypeNamingConvention,
 		},
-		Message:      "数据库对象命名禁止使用保留字 %s",
+		Message:      plocale.DDLCheckObjectNameUsingKeywordMessage,
 		AllowOffline: true,
 		Func:         checkNewObjectName,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckObjectNameUseCN,
-			Desc:       "数据库对象命名只能使用英文、下划线或数字，首字母必须是英文",
-			Annotation: "通过配置该规则可以规范指定业务的数据对象命名规则",
+			Desc:       plocale.DDLCheckObjectNameUseCNDesc,
+			Annotation: plocale.DDLCheckObjectNameUseCNAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeNamingConvention,
+			Category:   plocale.RuleTypeNamingConvention,
 		},
-		Message:      "数据库对象命名只能使用英文、下划线或数字，首字母必须是英文",
+		Message:      plocale.DDLCheckObjectNameUseCNMessage,
 		AllowOffline: true,
 		Func:         checkNewObjectName,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckTableDBEngine,
-			Desc:       "建议使用指定数据库引擎",
-			Annotation: "通过配置该规则可以规范指定业务的数据库引擎，具体规则可以自定义设置。默认值是INNODB，INNODB 支持事务，支持行级锁，更好的恢复性，高并发下性能更好",
+			Desc:       plocale.DDLCheckTableDBEngineDesc,
+			Annotation: plocale.DDLCheckTableDBEngineAnnotation,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   RuleTypeDDLConvention,
+			Category:   plocale.RuleTypeDDLConvention,
 			//Value:    "Innodb",
-			Params: params.Params{
-				&params.Param{
+			Params: []*SourceParam{
+				{
 					Key:   DefaultSingleParamKeyName,
 					Value: "Innodb",
-					Desc:  "数据库引擎",
+					Desc:  plocale.DDLCheckTableDBEngineParams1,
 					Type:  params.ParamTypeString,
 				},
 			},
 		},
-		Message:      "建议使用%v数据库引擎",
+		Message:      plocale.DDLCheckTableDBEngineMessage,
 		AllowOffline: false,
 		Func:         checkEngine,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckTableCharacterSet,
-			Desc:       "建议使用指定数据库字符集",
-			Annotation: "通过该规则约束全局的数据库字符集，避免创建非预期的字符集，防止业务侧出现“乱码”等问题。建议项目内库表使用统一的字符集和字符集排序，部分连表查询的情况下字段的字符集或排序规则不一致可能会导致索引失效且不易发现",
+			Desc:       plocale.DDLCheckTableCharacterSetDesc,
+			Annotation: plocale.DDLCheckTableCharacterSetAnnotation,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   RuleTypeDDLConvention,
+			Category:   plocale.RuleTypeDDLConvention,
 			//Value:    "utf8mb4",
-			Params: params.Params{
-				&params.Param{
+			Params: []*SourceParam{
+				{
 					Key:   DefaultSingleParamKeyName,
 					Value: "utf8mb4",
-					Desc:  "数据库字符集",
+					Desc:  plocale.DDLCheckTableCharacterSetParams1,
 					Type:  params.ParamTypeString,
 				},
 			},
 		},
-		Message:      "建议使用%v数据库字符集",
+		Message:      plocale.DDLCheckTableCharacterSetMessage,
 		AllowOffline: false,
 		Func:         checkCharacterSet,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckIndexedColumnWithBlob,
-			Desc:       "禁止将BLOB类型的列加入索引",
-			Annotation: "BLOB类型属于大字段类型，作为索引会占用很大的存储空间",
+			Desc:       plocale.DDLCheckIndexedColumnWithBlobDesc,
+			Annotation: plocale.DDLCheckIndexedColumnWithBlobAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeIndexingConvention,
+			Category:   plocale.RuleTypeIndexingConvention,
 		},
-		Message:                         "禁止将BLOB类型的列加入索引",
+		Message:                         plocale.DDLCheckIndexedColumnWithBlobMessage,
 		AllowOffline:                    true,
 		NotAllowOfflineStmts:            []ast.Node{&ast.AlterTableStmt{}, &ast.CreateIndexStmt{}},
 		NotSupportExecutedSQLAuditStmts: []ast.Node{&ast.AlterTableStmt{}, &ast.CreateIndexStmt{}},
 		Func:                            disableAddIndexForColumnsTypeBlob,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLCheckWhereIsInvalid,
-			Desc:       "禁止使用没有WHERE条件或者WHERE条件恒为TRUE的SQL",
-			Annotation: "SQL缺少WHERE条件在执行时会进行全表扫描产生额外开销，建议在大数据量高并发环境下开启，避免影响数据库查询性能",
+			Desc:       plocale.DMLCheckWhereIsInvalidDesc,
+			Annotation: plocale.DMLCheckWhereIsInvalidAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message:      "禁止使用没有WHERE条件或者WHERE条件恒为TRUE的SQL",
+		Message:      plocale.DMLCheckWhereIsInvalidMessage,
 		AllowOffline: true,
 		Func:         checkSelectWhere,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckAlterTableNeedMerge,
-			Desc:       "存在多条对同一个表的修改语句，建议合并成一个ALTER语句",
-			Annotation: "避免多次 TABLE REBUILD 带来的消耗、以及对线上业务的影响",
+			Desc:       plocale.DDLCheckAlterTableNeedMergeDesc,
+			Annotation: plocale.DDLCheckAlterTableNeedMergeAnnotation,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   RuleTypeUsageSuggestion,
+			Category:   plocale.RuleTypeUsageSuggestion,
 		},
-		Message:                 "已存在对该表的修改语句，建议合并成一个ALTER语句",
+		Message:                 plocale.DDLCheckAlterTableNeedMergeMessage,
 		AllowOffline:            false,
 		OnlyAuditNotExecutedSQL: true,
 		Func:                    checkMergeAlterTable,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLDisableSelectAllColumn,
-			Desc:       "不建议使用SELECT *",
-			Annotation: "当表结构变更时，使用*通配符选择所有列将导致查询行为会发生更改，与业务期望不符；同时SELECT * 中的无用字段会带来不必要的磁盘I/O，以及网络开销，且无法覆盖索引进而回表，大幅度降低查询效率",
+			Desc:       plocale.DMLDisableSelectAllColumnDesc,
+			Annotation: plocale.DMLDisableSelectAllColumnAnnotation,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message:      "不建议使用SELECT *",
+		Message:      plocale.DMLDisableSelectAllColumnMessage,
 		AllowOffline: true,
 		Func:         checkSelectAll,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLDisableDropStatement,
-			Desc:       "禁止除索引外的DROP操作",
-			Annotation: "DROP是DDL，数据变更不会写入日志，无法进行回滚；建议开启此规则，避免误删除操作",
+			Desc:       plocale.DDLDisableDropStatementDesc,
+			Annotation: plocale.DDLDisableDropStatementAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeUsageSuggestion,
+			Category:   plocale.RuleTypeUsageSuggestion,
 		},
-		Message:      "禁止除索引外的DROP操作",
+		Message:      plocale.DDLDisableDropStatementMessage,
 		AllowOffline: true,
 		Func:         disableDropStmt,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckTableWithoutComment,
-			Desc:       "表建议添加注释",
-			Annotation: "表添加注释能够使表的意义更明确，方便日后的维护",
+			Desc:       plocale.DDLCheckTableWithoutCommentDesc,
+			Annotation: plocale.DDLCheckTableWithoutCommentAnnotation,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   RuleTypeDDLConvention,
+			Category:   plocale.RuleTypeDDLConvention,
 		},
-		Message:      "表建议添加注释",
+		Message:      plocale.DDLCheckTableWithoutCommentMessage,
 		AllowOffline: true,
 		Func:         checkTableWithoutComment,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckColumnWithoutComment,
-			Desc:       "列建议添加注释",
-			Annotation: "列添加注释能够使列的意义更明确，方便日后的维护",
+			Desc:       plocale.DDLCheckColumnWithoutCommentDesc,
+			Annotation: plocale.DDLCheckColumnWithoutCommentAnnotation,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   RuleTypeDDLConvention,
+			Category:   plocale.RuleTypeDDLConvention,
 		},
-		Message:      "列建议添加注释",
+		Message:      plocale.DDLCheckColumnWithoutCommentMessage,
 		AllowOffline: true,
 		Func:         checkColumnWithoutComment,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckIndexPrefix,
-			Desc:       "建议普通索引使用固定前缀",
-			Annotation: "通过配置该规则可以规范指定业务的索引命名规则，具体命名规范可以自定义设置，默认提示值：idx_",
+			Desc:       plocale.DDLCheckIndexPrefixDesc,
+			Annotation: plocale.DDLCheckIndexPrefixAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeNamingConvention,
+			Category:   plocale.RuleTypeNamingConvention,
 			//Value:    "idx_",
-			Params: params.Params{
-				&params.Param{
+			Params: []*SourceParam{
+				{
 					Key:   DefaultSingleParamKeyName,
 					Value: "idx_",
-					Desc:  "索引前缀",
+					Desc:  plocale.DDLCheckIndexPrefixParams1,
 					Type:  params.ParamTypeString,
 				},
 			},
 		},
-		Message:      "建议普通索引要以\"%v\"为前缀",
+		Message:      plocale.DDLCheckIndexPrefixMessage,
 		AllowOffline: true,
 		Func:         checkIndexPrefix,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckUniqueIndexPrefix,
-			Desc:       "建议UNIQUE索引使用固定前缀",
-			Annotation: "通过配置该规则可以规范指定业务的UNIQUE索引命名规则，具体命名规范可以自定义设置，默认提示值：uniq_",
+			Desc:       plocale.DDLCheckUniqueIndexPrefixDesc,
+			Annotation: plocale.DDLCheckUniqueIndexPrefixAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeNamingConvention,
+			Category:   plocale.RuleTypeNamingConvention,
 			//Value:    "uniq_",
-			Params: params.Params{
-				&params.Param{
+			Params: []*SourceParam{
+				{
 					Key:   DefaultSingleParamKeyName,
 					Value: "uniq_",
-					Desc:  "索引前缀",
+					Desc:  plocale.DDLCheckUniqueIndexPrefixParams1,
 					Type:  params.ParamTypeString,
 				},
 			},
 		},
-		Message:      "建议UNIQUE索引要以\"%v\"为前缀",
+		Message:      plocale.DDLCheckUniqueIndexPrefixMessage,
 		AllowOffline: true,
 		Func:         checkUniqIndexPrefix,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckUniqueIndex,
-			Desc:       "建议UNIQUE索引名使用 IDX_UK_表名_字段名",
-			Annotation: "通过配置该规则可以规范指定业务的UNIQUE索引命名规则",
+			Desc:       plocale.DDLCheckUniqueIndexDesc,
+			Annotation: plocale.DDLCheckUniqueIndexAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeNamingConvention,
+			Category:   plocale.RuleTypeNamingConvention,
 		},
-		Message:      "建议UNIQUE索引名使用 IDX_UK_表名_字段名",
+		Message:      plocale.DDLCheckUniqueIndexMessage,
 		AllowOffline: true,
 		Func:         checkUniqIndex,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckColumnWithoutDefault,
-			Desc:       "除了自增列及大字段列之外，每个列都必须添加默认值",
-			Annotation: "列添加默认值，可避免列为NULL值时对查询的影响",
+			Desc:       plocale.DDLCheckColumnWithoutDefaultDesc,
+			Annotation: plocale.DDLCheckColumnWithoutDefaultAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeDDLConvention,
+			Category:   plocale.RuleTypeDDLConvention,
 		},
-		Message:      "除了自增列及大字段列之外，每个列都必须添加默认值",
+		Message:      plocale.DDLCheckColumnWithoutDefaultMessage,
 		AllowOffline: true,
 		Func:         checkColumnWithoutDefault,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckColumnTimestampWithoutDefault,
-			Desc:       "TIMESTAMP 类型的列必须添加默认值",
-			Annotation: "TIMESTAMP添加默认值，可避免出现全为0的日期格式与业务预期不符",
+			Desc:       plocale.DDLCheckColumnTimestampWithoutDefaultDesc,
+			Annotation: plocale.DDLCheckColumnTimestampWithoutDefaultAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeDDLConvention,
+			Category:   plocale.RuleTypeDDLConvention,
 		},
-		Message:      "TIMESTAMP 类型的列必须添加默认值",
+		Message:      plocale.DDLCheckColumnTimestampWithoutDefaultMessage,
 		AllowOffline: true,
 		Func:         checkColumnTimestampWithoutDefault,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckColumnBlobWithNotNull,
-			Desc:       "BLOB 和 TEXT 类型的字段不建议设置为 NOT NULL",
-			Annotation: "BLOB 和 TEXT 类型的字段无法指定默认值，如插入数据不指定字段默认为NULL，如果添加了 NOT NULL 限制，写入数据时又未对该字段指定值会导致写入失败",
+			Desc:       plocale.DDLCheckColumnBlobWithNotNullDesc,
+			Annotation: plocale.DDLCheckColumnBlobWithNotNullAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeDDLConvention,
+			Category:   plocale.RuleTypeDDLConvention,
 		},
-		Message:      "BLOB 和 TEXT 类型的字段不建议设置为 NOT NULL",
+		Message:      plocale.DDLCheckColumnBlobWithNotNullMessage,
 		AllowOffline: true,
 		Func:         checkColumnBlobNotNull,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckColumnBlobDefaultIsNotNull,
-			Desc:       "BLOB 和 TEXT 类型的字段默认值只能为NULL",
-			Annotation: "在SQL_MODE严格模式下BLOB 和 TEXT 类型无法设置默认值，如插入数据不指定值，字段会被设置为NULL",
+			Desc:       plocale.DDLCheckColumnBlobDefaultIsNotNullDesc,
+			Annotation: plocale.DDLCheckColumnBlobDefaultIsNotNullAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeDDLConvention,
+			Category:   plocale.RuleTypeDDLConvention,
 		},
-		Message:      "BLOB 和 TEXT 类型的字段默认值只能为NULL",
+		Message:      plocale.DDLCheckColumnBlobDefaultIsNotNullMessage,
 		AllowOffline: true,
 		Func:         checkColumnBlobDefaultNull,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckAutoIncrementFieldNum,
-			Desc:       "建表时，自增字段只能设置一个",
-			Annotation: "MySQL InnoDB，MyISAM 引擎不允许存在多个自增字段，设置多个自增字段会导致上线失败。",
+			Desc:       plocale.DDLCheckAutoIncrementFieldNumDesc,
+			Annotation: plocale.DDLCheckAutoIncrementFieldNumAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeDDLConvention,
+			Category:   plocale.RuleTypeDDLConvention,
 		},
 		AllowOffline: true,
-		Message:      "建表时，自增字段只能设置一个",
+		Message:      plocale.DDLCheckAutoIncrementFieldNumMessage,
 		Func:         checkAutoIncrementFieldNum,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckAllIndexNotNullConstraint,
-			Desc:       "建议为至少一个索引添加非空约束",
-			Annotation: "所有索引字段均未做非空约束，请确认下表索引规划的合理性。",
+			Desc:       plocale.DDLCheckAllIndexNotNullConstraintDesc,
+			Annotation: plocale.DDLCheckAllIndexNotNullConstraintAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeDDLConvention,
+			Category:   plocale.RuleTypeDDLConvention,
 		},
 		AllowOffline: true,
-		Message:      "建议为至少一个索引添加非空约束",
+		Message:      plocale.DDLCheckAllIndexNotNullConstraintMessage,
 		Func:         checkAllIndexNotNullConstraint,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLCheckWithLimit,
-			Desc:       "DELETE/UPDATE 语句不能有LIMIT条件",
-			Annotation: "DELETE/UPDATE 语句使用LIMIT条件将随机选取数据进行删除或者更新，业务无法预期",
+			Desc:       plocale.DMLCheckWithLimitDesc,
+			Annotation: plocale.DMLCheckWithLimitAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message:      "DELETE/UPDATE 语句不能有LIMIT条件",
+		Message:      plocale.DMLCheckWithLimitMessage,
 		AllowOffline: true,
 		Func:         checkDMLWithLimit,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLCheckSelectLimit,
-			Desc:       "SELECT 语句需要带LIMIT",
-			Annotation: "如果查询的扫描行数很大，可能会导致优化器选择错误的索引甚至不走索引；具体规则阈值可以根据业务需求调整，默认值：1000",
+			Desc:       plocale.DMLCheckSelectLimitDesc,
+			Annotation: plocale.DMLCheckSelectLimitAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeDMLConvention,
-			Params: params.Params{
-				&params.Param{
+			Category:   plocale.RuleTypeDMLConvention,
+			Params: []*SourceParam{
+				{
 					Key:   DefaultSingleParamKeyName,
 					Value: "1000",
-					Desc:  "最大查询行数",
+					Desc:  plocale.DMLCheckSelectLimitParams1,
 					Type:  params.ParamTypeInt,
 				},
 			},
 		},
-		Message:      "SELECT 语句需要带LIMIT,且限制数不得超过%v",
+		Message:      plocale.DMLCheckSelectLimitMessage,
 		AllowOffline: true,
 		Func:         checkSelectLimit,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLCheckWithOrderBy,
-			Desc:       "DELETE/UPDATE 语句不能有ORDER BY",
-			Annotation: "DELETE/UPDATE 存在ORDER BY会使用排序，带来无谓的开销",
+			Desc:       plocale.DMLCheckWithOrderByDesc,
+			Annotation: plocale.DMLCheckWithOrderByAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message:      "DELETE/UPDATE 语句不能有ORDER BY",
+		Message:      plocale.DMLCheckWithOrderByMessage,
 		AllowOffline: true,
 		Func:         checkDMLWithOrderBy,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLCheckSelectWithOrderBy,
-			Desc:       "SELECT 语句不能有ORDER BY",
-			Annotation: "ORDER BY 对查询性能影响较大，同时不便于优化维护，建议将排序部分放到业务处理",
+			Desc:       plocale.DMLCheckSelectWithOrderByDesc,
+			Annotation: plocale.DMLCheckSelectWithOrderByAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message:      "SELECT 语句不能有ORDER BY",
+		Message:      plocale.DMLCheckSelectWithOrderByMessage,
 		AllowOffline: true,
 		Func:         checkSelectWithOrderBy,
 	},
 	{
 		// TODO: 修改level以适配默认模板
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLCheckInsertColumnsExist,
-			Desc:       "INSERT 语句需要指定COLUMN",
-			Annotation: "当表结构发生变更，INSERT请求不明确指定列名，会发生插入数据不匹配的情况；建议开启此规则，避免插入结果与业务预期不符",
+			Desc:       plocale.DMLCheckInsertColumnsExistDesc,
+			Annotation: plocale.DMLCheckInsertColumnsExistAnnotation,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message:      "INSERT 语句需要指定COLUMN",
+		Message:      plocale.DMLCheckInsertColumnsExistMessage,
 		AllowOffline: true,
 		Func:         checkDMLWithInsertColumnExist,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLCheckBatchInsertListsMax,
-			Desc:       "单条INSERT语句，建议批量插入不超过阈值",
-			Annotation: "避免大事务，以及降低发生回滚对业务的影响；具体规则阈值可以根据业务需求调整，默认值：100",
+			Desc:       plocale.DMLCheckBatchInsertListsMaxDesc,
+			Annotation: plocale.DMLCheckBatchInsertListsMaxAnnotation,
 			Level:      driverV2.RuleLevelNotice,
 			//Value:    "5000",
-			Category: RuleTypeDMLConvention,
-			Params: params.Params{
-				&params.Param{
+			Category: plocale.RuleTypeDMLConvention,
+			Params: []*SourceParam{
+				{
 					Key:   DefaultSingleParamKeyName,
 					Value: "100",
-					Desc:  "最大插入行数",
+					Desc:  plocale.DMLCheckBatchInsertListsMaxParams1,
 					Type:  params.ParamTypeInt,
 				},
 			},
 		},
-		Message:      "单条INSERT语句，建议批量插入不超过%v条",
+		Message:      plocale.DMLCheckBatchInsertListsMaxMessage,
 		AllowOffline: true,
 		Func:         checkDMLWithBatchInsertMaxLimits,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLCheckInQueryNumber,
-			Desc:       "WHERE条件内IN语句中的参数个数不能超过阈值",
-			Annotation: "当IN值过多时，有可能会导致查询进行全表扫描，使得MySQL性能急剧下降；具体规则阈值可以根据业务需求调整，默认值：50",
+			Desc:       plocale.DMLCheckInQueryNumberDesc,
+			Annotation: plocale.DMLCheckInQueryNumberAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeDMLConvention,
-			Params: params.Params{
-				&params.Param{
+			Category:   plocale.RuleTypeDMLConvention,
+			Params: []*SourceParam{
+				{
 					Key:   DefaultSingleParamKeyName,
 					Value: "50",
-					Desc:  "in语句参数最大个数",
+					Desc:  plocale.DMLCheckInQueryNumberParams1,
 					Type:  params.ParamTypeInt,
 				},
 			},
 		},
-		Message:      "WHERE条件内IN语句中的参数已有%v个，不建议超过阙值%v",
+		Message:      plocale.DMLCheckInQueryNumberMessage,
 		AllowOffline: true,
 		Func:         checkInQueryLimit,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckPKProhibitAutoIncrement,
-			Desc:       "不建议主键使用自增",
-			Annotation: "后期维护相对不便，过于依赖数据库自增机制达到全局唯一，不易拆分，容易造成主键冲突",
+			Desc:       plocale.DDLCheckPKProhibitAutoIncrementDesc,
+			Annotation: plocale.DDLCheckPKProhibitAutoIncrementAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeIndexingConvention,
+			Category:   plocale.RuleTypeIndexingConvention,
 		},
-		Message:                         "不建议主键使用自增",
+		Message:                         plocale.DDLCheckPKProhibitAutoIncrementMessage,
 		AllowOffline:                    true,
 		NotAllowOfflineStmts:            []ast.Node{&ast.AlterTableStmt{}},
 		NotSupportExecutedSQLAuditStmts: []ast.Node{&ast.AlterTableStmt{}},
 		Func:                            checkPrimaryKey,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLCheckWhereExistFunc,
-			Desc:       "避免对条件字段使用函数操作",
-			Annotation: "对条件字段做函数操作，可能会破坏索引值的有序性，导致优化器选择放弃走索引，使查询性能大幅度降低",
+			Desc:       plocale.DMLCheckWhereExistFuncDesc,
+			Annotation: plocale.DMLCheckWhereExistFuncAnnotation,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message:      "避免对条件字段使用函数操作",
+		Message:      plocale.DMLCheckWhereExistFuncMessage,
 		AllowOffline: false,
 		Func:         checkWhereExistFunc,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLCheckWhereExistNot,
-			Desc:       "不建议对条件字段使用负向查询",
-			Annotation: "使用负向查询，将导致全表扫描，出现慢SQL",
+			Desc:       plocale.DMLCheckWhereExistNotDesc,
+			Annotation: plocale.DMLCheckWhereExistNotAnnotation,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message:      "不建议对条件字段使用负向查询",
+		Message:      plocale.DMLCheckWhereExistNotMessage,
 		AllowOffline: true,
 		Func:         checkSelectWhere,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLWhereExistNull,
-			Desc:       "不建议对条件字段使用 NULL 值判断",
-			Annotation: "使用 IS NULL 或 IS NOT NULL 可能导致查询放弃使用索引而进行全表扫描",
+			Desc:       plocale.DMLWhereExistNullDesc,
+			Annotation: plocale.DMLWhereExistNullAnnotation,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message:      "不建议对条件字段使用 NULL 值判断",
+		Message:      plocale.DMLWhereExistNullMessage,
 		Func:         checkWhereExistNull,
 		AllowOffline: true,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLCheckWhereExistImplicitConversion,
-			Desc:       "不建议在WHERE条件中使用与过滤字段不一致的数据类型",
-			Annotation: "WHERE条件中使用与过滤字段不一致的数据类型会引发隐式数据类型转换，导致查询有无法命中索引的风险，在高并发、大数据量的情况下，不走索引会使得数据库的查询性能严重下降",
+			Desc:       plocale.DMLCheckWhereExistImplicitConversionDesc,
+			Annotation: plocale.DMLCheckWhereExistImplicitConversionAnnotation,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message: "不建议在WHERE条件中使用与过滤字段不一致的数据类型",
+		Message: plocale.DMLCheckWhereExistImplicitConversionMessage,
 		Func:    checkWhereColumnImplicitConversion,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLCheckLimitMustExist,
-			Desc:       "建议DELETE/UPDATE 语句带有LIMIT条件",
-			Annotation: "LIMIT条件可以降低写错 SQL 的代价（删错数据），同时避免长事务影响业务",
+			Desc:       plocale.DMLCheckLimitMustExistDesc,
+			Annotation: plocale.DMLCheckLimitMustExistAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message:      "建议DELETE/UPDATE 语句带有LIMIT条件",
+		Message:      plocale.DMLCheckLimitMustExistMessage,
 		Func:         checkDMLLimitExist,
 		AllowOffline: true,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLCheckWhereExistScalarSubquery,
-			Desc:       "不建议使用标量子查询",
-			Annotation: "标量子查询存在多次访问同一张表的问题，执行开销大效率低，可使用LEFT JOIN 替代标量子查询",
+			Desc:       plocale.DMLCheckWhereExistScalarSubqueryDesc,
+			Annotation: plocale.DMLCheckWhereExistScalarSubqueryAnnotation,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message:      "不建议使用标量子查询",
+		Message:      plocale.DMLCheckWhereExistScalarSubqueryMessage,
 		AllowOffline: true,
 		Func:         checkSelectWhere,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckIndexesExistBeforeCreateConstraints,
-			Desc:       "对字段创建约束前，建议先创建索引",
-			Annotation: "创建约束前，先行创建索引，约束可作用于二级索引，避免全表扫描，提高性能",
+			Desc:       plocale.DDLCheckIndexesExistBeforeCreateConstraintsDesc,
+			Annotation: plocale.DDLCheckIndexesExistBeforeCreateConstraintsAnnotation,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   RuleTypeIndexingConvention,
+			Category:   plocale.RuleTypeIndexingConvention,
 		},
-		Message:                 "对字段创建约束前，建议先创建索引",
+		Message:                 plocale.DDLCheckIndexesExistBeforeCreateConstraintsMessage,
 		OnlyAuditNotExecutedSQL: true,
 		Func:                    checkIndexesExistBeforeCreatConstraints,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLCheckSelectForUpdate,
-			Desc:       "不建议使用SELECT FOR UPDATE",
-			Annotation: "SELECT FOR UPDATE 会对查询结果集中每行数据都添加排他锁，其他线程对该记录的更新与删除操作都会阻塞，在高并发下，容易造成数据库大量锁等待，影响数据库查询性能",
+			Desc:       plocale.DMLCheckSelectForUpdateDesc,
+			Annotation: plocale.DMLCheckSelectForUpdateAnnotation,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message:      "不建议使用SELECT FOR UPDATE",
+		Message:      plocale.DMLCheckSelectForUpdateMessage,
 		Func:         checkDMLSelectForUpdate,
 		AllowOffline: true,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckDatabaseCollation,
-			Desc:       "建议使用规定的数据库排序规则",
-			Annotation: "通过该规则约束全局的数据库排序规则，避免创建非预期的数据库排序规则，防止业务侧出现排序结果非预期等问题。建议项目内库表使用统一的字符集和字符集排序，部分连表查询的情况下字段的字符集或排序规则不一致可能会导致索引失效且不易发现",
+			Desc:       plocale.DDLCheckDatabaseCollationDesc,
+			Annotation: plocale.DDLCheckDatabaseCollationAnnotation,
 			Level:      driverV2.RuleLevelNotice,
 			//Value:    "utf8mb4_0900_ai_ci",
-			Category: RuleTypeDDLConvention,
-			Params: params.Params{
-				&params.Param{
+			Category: plocale.RuleTypeDDLConvention,
+			Params: []*SourceParam{
+				{
 					Key:   DefaultSingleParamKeyName,
 					Value: "utf8mb4_0900_ai_ci",
-					Desc:  "数据库排序规则",
+					Desc:  plocale.DDLCheckDatabaseCollationParams1,
 					Type:  params.ParamTypeString,
 				},
 			},
 		},
-		Message: "建议使用规定的数据库排序规则为%s",
+		Message: plocale.DDLCheckDatabaseCollationMessage,
 		Func:    checkCollationDatabase,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckDecimalTypeColumn,
-			Desc:       "精确浮点数建议使用DECIMAL",
-			Annotation: "对于浮点数运算，DECIMAL精确度较高",
+			Desc:       plocale.DDLCheckDecimalTypeColumnDesc,
+			Annotation: plocale.DDLCheckDecimalTypeColumnAnnotation,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   RuleTypeDDLConvention,
+			Category:   plocale.RuleTypeDDLConvention,
 		},
-		Message:      "精确浮点数建议使用DECIMAL",
+		Message:      plocale.DDLCheckDecimalTypeColumnMessage,
 		Func:         checkDecimalTypeColumn,
 		AllowOffline: true,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckBigintInsteadOfDecimal,
-			Desc:       "建议用BIGINT类型代替DECIMAL",
-			Annotation: "因为CPU不支持对DECIMAL的直接运算，只是MySQL自身实现了DECIMAL的高精度计算，但是计算代价高，并且存储同样范围值的时候，空间占用也更多；使用BIGINT代替DECIMAL，可根据小数的位数乘以相应的倍数，即可达到精确的浮点存储计算，避免DECIMAL计算代价高的问题",
+			Desc:       plocale.DDLCheckBigintInsteadOfDecimalDesc,
+			Annotation: plocale.DDLCheckBigintInsteadOfDecimalAnnotation,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   RuleTypeDDLConvention,
+			Category:   plocale.RuleTypeDDLConvention,
 		},
-		Message:      "建议列%s用BIGINT类型代替DECIMAL",
+		Message:      plocale.DDLCheckBigintInsteadOfDecimalMessage,
 		Func:         checkBigintInsteadOfDecimal,
 		AllowOffline: true,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLCheckSubQueryNestNum,
-			Desc:       "子查询嵌套层数不建议超过阈值",
-			Annotation: "子查询嵌套层数超过阈值，有些情况下，子查询并不能使用到索引。同时对于返回结果集比较大的子查询，会产生大量的临时表，消耗过多的CPU和IO资源，产生大量的慢查询",
+			Desc:       plocale.DMLCheckSubQueryNestNumDesc,
+			Annotation: plocale.DMLCheckSubQueryNestNumAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeDMLConvention,
-			Params: params.Params{
-				&params.Param{
+			Category:   plocale.RuleTypeDMLConvention,
+			Params: []*SourceParam{
+				{
 					Key:   DefaultSingleParamKeyName,
 					Value: "3",
-					Desc:  "子查询嵌套层数不建议超过阈值",
+					Desc:  plocale.DMLCheckSubQueryNestNumParams1,
 					Type:  params.ParamTypeInt,
 				},
 			},
 		},
-		Message:      "子查询嵌套层数超过阈值%v",
+		Message:      plocale.DMLCheckSubQueryNestNumMessage,
 		Func:         checkSubQueryNestNum,
 		AllowOffline: true,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLCheckNeedlessFunc,
-			Desc:       "避免使用不必要的内置函数",
-			Annotation: "通过配置该规则可以指定业务中需要禁止使用的内置函数，使用内置函数可能会导致SQL无法走索引或者产生一些非预期的结果。实际需要禁用的函数可通过规则设置",
+			Desc:       plocale.DMLCheckNeedlessFuncDesc,
+			Annotation: plocale.DMLCheckNeedlessFuncAnnotation,
 			Level:      driverV2.RuleLevelNotice,
 			//Value:    "sha(),sqrt(),md5()",
-			Category: RuleTypeDMLConvention,
-			Params: params.Params{
-				&params.Param{
+			Category: plocale.RuleTypeDMLConvention,
+			Params: []*SourceParam{
+				{
 					Key:   DefaultSingleParamKeyName,
 					Value: "sha(),sqrt(),md5()",
-					Desc:  "指定的函数集合（逗号分割）",
+					Desc:  plocale.DMLCheckNeedlessFuncParams1,
 					Type:  params.ParamTypeString,
 				},
 			},
 		},
-		Message:      "避免使用不必要的内置函数%v",
+		Message:      plocale.DMLCheckNeedlessFuncMessage,
 		Func:         checkNeedlessFunc,
 		AllowOffline: true,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckDatabaseSuffix,
-			Desc:       "建议数据库名称使用固定后缀结尾",
-			Annotation: "通过配置该规则可以规范指定业务的数据库命名规则，具体命名规范可以自定义设置，默认提示值：_DB",
+			Desc:       plocale.DDLCheckDatabaseSuffixDesc,
+			Annotation: plocale.DDLCheckDatabaseSuffixAnnotation,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   RuleTypeNamingConvention,
+			Category:   plocale.RuleTypeNamingConvention,
 			//Value:    "_DB",
-			Params: params.Params{
-				&params.Param{
+			Params: []*SourceParam{
+				{
 					Key:   DefaultSingleParamKeyName,
 					Value: "_DB",
-					Desc:  "数据库名称后缀",
+					Desc:  plocale.DDLCheckDatabaseSuffixParams1,
 					Type:  params.ParamTypeString,
 				},
 			},
 		},
-		Message:      "建议数据库名称以\"%v\"结尾",
+		Message:      plocale.DDLCheckDatabaseSuffixMessage,
 		Func:         checkDatabaseSuffix,
 		AllowOffline: true,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckPKName,
-			Desc:       "建议主键命名为\"PK_表名\"",
-			Annotation: "通过配置该规则可以规范指定业务的主键命名规则",
+			Desc:       plocale.DDLCheckPKNameDesc,
+			Annotation: plocale.DDLCheckPKNameAnnotation,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   RuleTypeNamingConvention,
+			Category:   plocale.RuleTypeNamingConvention,
 		},
-		Message:      "建议主键命名为\"PK_表名\"",
+		Message:      plocale.DDLCheckPKNameMessage,
 		Func:         checkPKIndexName,
 		AllowOffline: true,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckTransactionIsolationLevel,
-			Desc:       "事物隔离级别建议设置成RC",
-			Annotation: "RC避免了脏读的现象，但没有解决幻读的问题；使用RR，能避免幻读，但是由于引入间隙锁导致加锁的范围可能扩大，从而会影响并发，还容易造成死锁，所以在大多数业务场景下，幻读出现的机率较少，RC基本上能满足业务需求",
+			Desc:       plocale.DDLCheckTransactionIsolationLevelDesc,
+			Annotation: plocale.DDLCheckTransactionIsolationLevelAnnotation,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   RuleTypeUsageSuggestion,
+			Category:   plocale.RuleTypeUsageSuggestion,
 		},
-		Message:      "事物隔离级别建议设置成RC",
+		Message:      plocale.DDLCheckTransactionIsolationLevelMessage,
 		Func:         checkTransactionIsolationLevel,
 		AllowOffline: true,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLCheckFuzzySearch,
-			Desc:       "禁止使用全模糊搜索或左模糊搜索",
-			Annotation: "使用全模糊搜索或左模糊搜索将导致查询无法使用索引，导致全表扫描",
+			Desc:       plocale.DMLCheckFuzzySearchDesc,
+			Annotation: plocale.DMLCheckFuzzySearchAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message:      "禁止使用全模糊搜索或左模糊搜索",
+		Message:      plocale.DMLCheckFuzzySearchMessage,
 		AllowOffline: true,
 		Func:         checkSelectWhere,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckTablePartition,
-			Desc:       "不建议使用分区表相关功能",
-			Annotation: "分区表在物理上表现为多个文件，在逻辑上表现为一个表，跨分区查询效率可能更低，建议采用物理分表的方式管理大数据",
+			Desc:       plocale.DDLCheckTablePartitionDesc,
+			Annotation: plocale.DDLCheckTablePartitionAnnotation,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   RuleTypeUsageSuggestion,
+			Category:   plocale.RuleTypeUsageSuggestion,
 		},
-		Message:      "不建议使用分区表相关功能",
+		Message:      plocale.DDLCheckTablePartitionMessage,
 		AllowOffline: true,
 		Func:         checkTablePartition,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLCheckNumberOfJoinTables,
-			Desc:       "使用JOIN连接表查询建议不超过阈值",
-			Annotation: "表关联越多，意味着各种驱动关系组合就越多，比较各种结果集的执行成本的代价也就越高，进而SQL查询性能会大幅度下降；具体规则阈值可以根据业务需求调整，默认值：3",
+			Desc:       plocale.DMLCheckNumberOfJoinTablesDesc,
+			Annotation: plocale.DMLCheckNumberOfJoinTablesAnnotation,
 			Level:      driverV2.RuleLevelNotice,
 			//Value:    "3",
-			Category: RuleTypeDMLConvention,
-			Params: params.Params{
-				&params.Param{
+			Category: plocale.RuleTypeDMLConvention,
+			Params: []*SourceParam{
+				{
 					Key:   DefaultSingleParamKeyName,
 					Value: "3",
-					Desc:  "最大连接表个数",
+					Desc:  plocale.DMLCheckNumberOfJoinTablesParams1,
 					Type:  params.ParamTypeInt,
 				},
 			},
 		},
-		Message:      "使用JOIN连接表查询建议不超过%v张",
+		Message:      plocale.DMLCheckNumberOfJoinTablesMessage,
 		AllowOffline: true,
 		Func:         checkNumberOfJoinTables,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLCheckIfAfterUnionDistinct,
-			Desc:       "建议使用UNION ALL,替代UNION",
-			Annotation: "UNION会按照字段的顺序进行排序同时去重，UNION ALL只是简单的将两个结果合并后就返回，从效率上看，UNION ALL 要比UNION快很多；如果合并的两个结果集中允许包含重复数据且不需要排序时的话，建议开启此规则，使用UNION ALL替代UNION",
+			Desc:       plocale.DMLCheckIfAfterUnionDistinctDesc,
+			Annotation: plocale.DMLCheckIfAfterUnionDistinctAnnotation,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message:      "建议使用UNION ALL,替代UNION",
+		Message:      plocale.DMLCheckIfAfterUnionDistinctMessage,
 		AllowOffline: true,
 		Func:         checkIsAfterUnionDistinct,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckIsExistLimitOffset,
-			Desc:       "使用分页查询时，避免使用偏移量",
-			Annotation: "例如：LIMIT N OFFSET M 或 LIMIT M,N。当偏移量m过大的时候，查询效率会很低，因为MySQL是先查出m+n个数据，然后抛弃掉前m个数据；对于有大数据量的MySQL表来说，使用LIMIT分页存在很严重的性能问题",
+			Desc:       plocale.DDLCheckIsExistLimitOffsetDesc,
+			Annotation: plocale.DDLCheckIsExistLimitOffsetAnnotation,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message:      "使用分页查询时，避免使用偏移量",
+		Message:      plocale.DDLCheckIsExistLimitOffsetMessage,
 		AllowOffline: true,
 		Func:         checkIsExistLimitOffset,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckIndexOption,
-			Desc:       "建议索引字段对区分度大于阈值",
-			Annotation: "选择区分度高的字段作为索引，可快速定位数据；区分度太低，无法有效利用索引，甚至可能需要扫描大量数据页，拖慢SQL；具体规则阈值可以根据业务需求调整，默认值：70",
+			Desc:       plocale.DDLCheckIndexOptionDesc,
+			Annotation: plocale.DDLCheckIndexOptionAnnotation,
 			Level:      driverV2.RuleLevelNotice,
 			//Value:    "0.7",
-			Category: RuleTypeIndexOptimization,
-			Params: params.Params{
-				&params.Param{
+			Category: plocale.RuleTypeIndexOptimization,
+			Params: []*SourceParam{
+				{
 					Key:   DefaultSingleParamKeyName,
 					Value: "70",
-					Desc:  "可选择性（百分比）",
+					Desc:  plocale.DDLCheckIndexOptionParams1,
 					Type:  params.ParamTypeInt,
 				},
 			},
 		},
-		Message:      "索引 %v 未超过区分度阈值 百分之%v, 不建议选为索引",
+		Message:      plocale.DDLCheckIndexOptionMessage,
 		AllowOffline: false,
 		Func:         checkIndexOption,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckColumnEnumNotice,
-			Desc:       "不建议使用 ENUM 类型",
-			Annotation: "ENUM类型不是SQL标准，移植性较差，后期如修改或增加枚举值需重建整张表，代价较大，且无法通过字面量值进行排序",
+			Desc:       plocale.DDLCheckColumnEnumNoticeDesc,
+			Annotation: plocale.DDLCheckColumnEnumNoticeAnnotation,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   RuleTypeDDLConvention,
+			Category:   plocale.RuleTypeDDLConvention,
 		},
-		Message:      "不建议使用 ENUM 类型",
+		Message:      plocale.DDLCheckColumnEnumNoticeMessage,
 		AllowOffline: true,
 		Func:         checkColumnEnumNotice,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckColumnSetNotice,
-			Desc:       "不建议使用 SET 类型",
-			Annotation: "集合的修改需要重新定义列，后期修改的代价大，建议在业务层实现",
+			Desc:       plocale.DDLCheckColumnSetNoticeDesc,
+			Annotation: plocale.DDLCheckColumnSetNoticeAnnotation,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   RuleTypeDDLConvention,
+			Category:   plocale.RuleTypeDDLConvention,
 		},
-		Message:      "不建议使用 SET 类型",
+		Message:      plocale.DDLCheckColumnSetNoticeMessage,
 		AllowOffline: true,
 		Func:         checkColumnSetNotice,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckColumnBlobNotice,
-			Desc:       "不建议使用 BLOB 或 TEXT 类型",
-			Annotation: "BLOB 或 TEXT 类型消耗大量的网络和IO带宽，同时在该表上的DML操作都会变得很慢",
+			Desc:       plocale.DDLCheckColumnBlobNoticeDesc,
+			Annotation: plocale.DDLCheckColumnBlobNoticeAnnotation,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   RuleTypeDDLConvention,
+			Category:   plocale.RuleTypeDDLConvention,
 		},
-		Message:      "不建议使用 BLOB 或 TEXT 类型",
+		Message:      plocale.DDLCheckColumnBlobNoticeMessage,
 		AllowOffline: true,
 		Func:         checkColumnBlobNotice,
 	},
 	{
-		Rule: driverV2.Rule{
-			Name: DMLCheckExplainAccessTypeAll,
-			//Value:    "10000",
-			Desc:       "全表扫描时，扫描行数不建议超过指定行数（默认值：10000）",
-			Annotation: "全表扫描时，扫描行数不建议超过指定行数是为了避免性能问题；具体规则阈值可以根据业务需求调整，默认值：10000；如果设置为0，全表扫描都会触发规则",
+		Rule: SourceRule{
+			Name:       DMLCheckExplainAccessTypeAll,
+			Desc:       plocale.DMLCheckExplainAccessTypeAllDesc,
+			Annotation: plocale.DMLCheckExplainAccessTypeAllAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeDMLConvention,
-			Params: params.Params{
-				&params.Param{
+			Category:   plocale.RuleTypeDMLConvention,
+			Params: []*SourceParam{
+				{
 					Key:   DefaultSingleParamKeyName,
 					Value: "10000",
-					Desc:  "最大扫描行数",
+					Desc:  plocale.DMLCheckExplainAccessTypeAllParams1,
 					Type:  params.ParamTypeInt,
 				},
 			},
 		},
-		Message:      "该查询使用了全表扫描并且扫描行数为%v",
+		Message:      plocale.DMLCheckExplainAccessTypeAllMessage,
 		AllowOffline: false,
 		Func:         checkExplain,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLCheckExplainExtraUsingFilesort,
-			Desc:       "不建议使用文件排序",
-			Annotation: "大数据量的情况下，文件排序意味着SQL性能较低，会增加OS的开销，影响数据库性能",
+			Desc:       plocale.DMLCheckExplainExtraUsingFilesortDesc,
+			Annotation: plocale.DMLCheckExplainExtraUsingFilesortAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message:      "不建议使用文件排序",
+		Message:      plocale.DMLCheckExplainExtraUsingFilesortMessage,
 		AllowOffline: false,
 		Func:         checkExplain,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLCheckExplainExtraUsingTemporary,
-			Desc:       "不建议使用临时表",
-			Annotation: "大数据量的情况下，临时表意味着SQL性能较低，会增加OS的开销，影响数据库性能",
+			Desc:       plocale.DMLCheckExplainExtraUsingTemporaryDesc,
+			Annotation: plocale.DMLCheckExplainExtraUsingTemporaryAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message:      "不建议使用临时表",
+		Message:      plocale.DMLCheckExplainExtraUsingTemporaryMessage,
 		AllowOffline: false,
 		Func:         checkExplain,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckCreateView,
-			Desc:       "禁止使用视图",
-			Annotation: "视图的查询性能较差，同时基表结构变更，需要对视图进行维护，如果视图可读性差且包含复杂的逻辑，都会增加维护的成本",
+			Desc:       plocale.DDLCheckCreateViewDesc,
+			Annotation: plocale.DDLCheckCreateViewAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeUsageSuggestion,
+			Category:   plocale.RuleTypeUsageSuggestion,
 		},
-		Message:      "禁止使用视图",
+		Message:      plocale.DDLCheckCreateViewMessage,
 		AllowOffline: true,
 		Func:         checkCreateView,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckCreateTrigger,
-			Desc:       "禁止使用触发器",
-			Annotation: "触发器难以开发和维护，不能高效移植，且在复杂的逻辑以及高并发下，容易出现死锁影响业务",
+			Desc:       plocale.DDLCheckCreateTriggerDesc,
+			Annotation: plocale.DDLCheckCreateTriggerAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeUsageSuggestion,
+			Category:   plocale.RuleTypeUsageSuggestion,
 		},
-		Message:      "禁止使用触发器",
+		Message:      plocale.DDLCheckCreateTriggerMessage,
 		AllowOffline: true,
 		Func:         checkCreateTrigger,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckCreateFunction,
-			Desc:       "禁止使用自定义函数",
-			Annotation: "自定义函数，维护较差，且依赖性高会导致SQL无法跨库使用",
+			Desc:       plocale.DDLCheckCreateFunctionDesc,
+			Annotation: plocale.DDLCheckCreateFunctionAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeUsageSuggestion,
+			Category:   plocale.RuleTypeUsageSuggestion,
 		},
-		Message:      "禁止使用自定义函数",
+		Message:      plocale.DDLCheckCreateFunctionMessage,
 		AllowOffline: true,
 		Func:         checkCreateFunction,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckCreateProcedure,
-			Desc:       "禁止使用存储过程",
-			Annotation: "存储过程在一定程度上会使程序难以调试和拓展，各种数据库的存储过程语法相差很大，给将来的数据库移植带来很大的困难，且会极大的增加出现BUG的概率",
+			Desc:       plocale.DDLCheckCreateProcedureDesc,
+			Annotation: plocale.DDLCheckCreateProcedureAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeUsageSuggestion,
+			Category:   plocale.RuleTypeUsageSuggestion,
 		},
-		Message:      "禁止使用存储过程",
+		Message:      plocale.DDLCheckCreateProcedureMessage,
 		AllowOffline: true,
 		Func:         checkCreateProcedure,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLDisableTypeTimestamp,
-			Desc:       "不建议使用TIMESTAMP字段",
-			Annotation: "TIMESTAMP 有最大值限制（'2038-01-19 03:14:07' UTC），且会时区转换的问题",
+			Desc:       plocale.DDLDisableTypeTimestampDesc,
+			Annotation: plocale.DDLDisableTypeTimestampAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeDDLConvention,
+			Category:   plocale.RuleTypeDDLConvention,
 		},
-		Message:      "不建议使用TIMESTAMP字段",
+		Message:      plocale.DDLDisableTypeTimestampMessage,
 		AllowOffline: true,
 		Func:         disableUseTypeTimestampField,
 	},
 	{
-		Rule: driverV2.Rule{ //select a as id, id , b as user  from mysql.user;
+		Rule: SourceRule{ //select a as id, id , b as user  from mysql.user;
 			Name:       DMLCheckAlias,
-			Desc:       "别名不建议与表或列的名字相同",
-			Annotation: "表或列的别名与其真实名称相同, 这样的别名会使得查询更难去分辨",
+			Desc:       plocale.DMLCheckAliasDesc,
+			Annotation: plocale.DMLCheckAliasAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message: "这些别名(%v)与列名或表名相同",
+		Message: plocale.DMLCheckAliasMessage,
 		Func:    checkAlias,
 	},
 	{
-		Rule: driverV2.Rule{ //ALTER TABLE test CONVERT TO CHARACTER SET utf8 COLLATE utf8_general_ci;
+		Rule: SourceRule{ //ALTER TABLE test CONVERT TO CHARACTER SET utf8 COLLATE utf8_general_ci;
 			Name:       DDLHintUpdateTableCharsetWillNotUpdateFieldCharset,
-			Desc:       "不建议修改表的默认字符集",
-			Annotation: "修改表的默认字符集，只会影响后续新增的字段，不会修表已有字段的字符集；如需修改整张表所有字段的字符集建议开启此规则",
+			Desc:       plocale.DDLHintUpdateTableCharsetWillNotUpdateFieldCharsetDesc,
+			Annotation: plocale.DDLHintUpdateTableCharsetWillNotUpdateFieldCharsetAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeDDLConvention,
+			Category:   plocale.RuleTypeDDLConvention,
 		},
-		Message: "不建议修改表的默认字符集",
+		Message: plocale.DDLHintUpdateTableCharsetWillNotUpdateFieldCharsetMessage,
 		Func:    hintUpdateTableCharsetWillNotUpdateFieldCharset,
-	}, {
-		Rule: driverV2.Rule{ //ALTER TABLE tbl DROP COLUMN col;
+	},
+	{
+		Rule: SourceRule{ //ALTER TABLE tbl DROP COLUMN col;
 			Name:       DDLHintDropColumn,
-			Desc:       "禁止进行删除列的操作",
-			Annotation: "业务逻辑与删除列依赖未完全消除，列被删除后可能导致程序异常（无法正常读写）的情况；开启该规则，SQLE将提醒删除列为高危操作",
+			Desc:       plocale.DDLHintDropColumnDesc,
+			Annotation: plocale.DDLHintDropColumnAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeDDLConvention,
+			Category:   plocale.RuleTypeDDLConvention,
 		},
-		Message: "禁止进行删除列的操作",
+		Message: plocale.DDLHintDropColumnMessage,
 		Func:    hintDropColumn,
-	}, {
-		Rule: driverV2.Rule{ //ALTER TABLE tbl DROP PRIMARY KEY;
+	},
+	{
+		Rule: SourceRule{ //ALTER TABLE tbl DROP PRIMARY KEY;
 			Name:       DDLHintDropPrimaryKey,
-			Desc:       "禁止进行删除主键的操作",
-			Annotation: "删除已有约束会影响已有业务逻辑；开启该规则，SQLE将提醒删除主键为高危操作",
+			Desc:       plocale.DDLHintDropPrimaryKeyDesc,
+			Annotation: plocale.DDLHintDropPrimaryKeyAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeDDLConvention,
+			Category:   plocale.RuleTypeDDLConvention,
 		},
-		Message: "禁止进行删除主键的操作",
+		Message: plocale.DDLHintDropPrimaryKeyMessage,
 		Func:    hintDropPrimaryKey,
-	}, {
-		Rule: driverV2.Rule{ //ALTER TABLE tbl DROP FOREIGN KEY a;
+	},
+	{
+		Rule: SourceRule{ //ALTER TABLE tbl DROP FOREIGN KEY a;
 			Name:       DDLHintDropForeignKey,
-			Desc:       "禁止进行删除外键的操作",
-			Annotation: "删除已有约束会影响已有业务逻辑；开启该规则，SQLE将提醒删除外键为高危操作",
+			Desc:       plocale.DDLHintDropForeignKeyDesc,
+			Annotation: plocale.DDLHintDropForeignKeyAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeDDLConvention,
+			Category:   plocale.RuleTypeDDLConvention,
 		},
-		Message: "禁止进行删除外键的操作",
+		Message: plocale.DDLHintDropForeignKeyMessage,
 		Func:    hintDropForeignKey,
 	},
 	{
-		Rule: driverV2.Rule{ //select * from user where id like "a";
+		Rule: SourceRule{ //select * from user where id like "a";
 			Name:       DMLNotRecommendNotWildcardLike,
-			Desc:       "不建议使用没有通配符的 LIKE 查询",
-			Annotation: "不包含通配符的 LIKE 查询逻辑上与等值查询相同，建议使用等值查询替代",
+			Desc:       plocale.DMLNotRecommendNotWildcardLikeDesc,
+			Annotation: plocale.DMLNotRecommendNotWildcardLikeAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message: "不建议使用没有通配符的 LIKE 查询",
+		Message: plocale.DMLNotRecommendNotWildcardLikeMessage,
 		Func:    notRecommendNotWildcardLike,
-	}, {
-		Rule: driverV2.Rule{ //SELECT * FROM tb WHERE col IN (NULL);
+	},
+	{
+		Rule: SourceRule{ //SELECT * FROM tb WHERE col IN (NULL);
 			Name:       DMLHintInNullOnlyFalse,
-			Desc:       "避免使用 IN (NULL) 或者 NOT IN (NULL)",
-			Annotation: "查询条件永远非真，这将导致查询无匹配到的结果",
+			Desc:       plocale.DMLHintInNullOnlyFalseDesc,
+			Annotation: plocale.DMLHintInNullOnlyFalseAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message: "避免使用IN (NULL)/NOT IN (NULL) ，该用法永远非真将导致条件失效",
+		Message: plocale.DMLHintInNullOnlyFalseMessage,
 		Func:    hintInNullOnlyFalse,
-	}, {
-		Rule: driverV2.Rule{ //select * from user where id in (a);
+	},
+	{
+		Rule: SourceRule{ //select * from user where id in (a);
 			Name:       DMLNotRecommendIn,
-			Desc:       "不建议使用IN",
-			Annotation: "当IN值过多时，有可能会导致查询进行全表扫描，使得MySQL性能急剧下降",
+			Desc:       plocale.DMLNotRecommendInDesc,
+			Annotation: plocale.DMLNotRecommendInAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message: "不建议使用IN",
+		Message: plocale.DMLNotRecommendInMessage,
 		Func:    notRecommendIn,
 	},
 	{
-		Rule: driverV2.Rule{ //select * from user where id = ' 1';
+		Rule: SourceRule{ //select * from user where id = ' 1';
 			Name:       DMLCheckSpacesAroundTheString,
-			Desc:       "引号中的字符串开头或结尾不建议包含空格",
-			Annotation: "字符串前后存在空格将可能导致查询判断逻辑出错，如在MySQL 5.5中'a'和'a '在查询中被认为是相同的值",
+			Desc:       plocale.DMLCheckSpacesAroundTheStringDesc,
+			Annotation: plocale.DMLCheckSpacesAroundTheStringAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message: "引号中的字符串开头或结尾不建议包含空格",
+		Message: plocale.DMLCheckSpacesAroundTheStringMessage,
 		Func:    checkSpacesAroundTheString,
-	}, {
-		Rule: driverV2.Rule{ //CREATE TABLE tb (a varchar(10) default '“');
+	},
+	{
+		Rule: SourceRule{ //CREATE TABLE tb (a varchar(10) default '“');
 			Name:       DDLCheckFullWidthQuotationMarks,
-			Desc:       "DDL语句中不建议使用中文全角引号",
-			Annotation: "建议开启此规则，可避免MySQL会将中文全角引号识别为命名的一部分，执行结果与业务预期不符",
+			Desc:       plocale.DDLCheckFullWidthQuotationMarksDesc,
+			Annotation: plocale.DDLCheckFullWidthQuotationMarksAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeDDLConvention,
+			Category:   plocale.RuleTypeDDLConvention,
 		},
-		Message: "DDL语句中不建议使用中文全角引号，这可能是书写错误",
+		Message: plocale.DDLCheckFullWidthQuotationMarksMessage,
 		Func:    checkFullWidthQuotationMarks,
-	}, {
-		Rule: driverV2.Rule{ //select name from tbl where id < 1000 order by rand(1)
+	},
+	{
+		Rule: SourceRule{ //select name from tbl where id < 1000 order by rand(1)
 			Name:       DMLNotRecommendOrderByRand,
-			Desc:       "不建议使用 ORDER BY RAND()",
-			Annotation: "ORDER BY RAND()使用了临时表，同时还要对其进行排序，在数据量很大的情况下会增加服务器负载以及增加查询时间",
+			Desc:       plocale.DMLNotRecommendOrderByRandDesc,
+			Annotation: plocale.DMLNotRecommendOrderByRandAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message: "不建议使用 ORDER BY RAND()",
+		Message: plocale.DMLNotRecommendOrderByRandMessage,
 		Func:    notRecommendOrderByRand,
-	}, {
-		Rule: driverV2.Rule{ //select col1,col2 from tbl group by 1
+	},
+	{
+		Rule: SourceRule{ //select col1,col2 from tbl group by 1
 			Name:       DMLNotRecommendGroupByConstant,
-			Desc:       "不建议对常量进行 GROUP BY",
-			Annotation: "GROUP BY 1 表示按第一列进行GROUP BY；在GROUP BY子句中使用数字，而不是表达式或列名称，当查询列顺序改变时，会导致查询逻辑出现问题",
+			Desc:       plocale.DMLNotRecommendGroupByConstantDesc,
+			Annotation: plocale.DMLNotRecommendGroupByConstantAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message: "不建议对常量进行 GROUP BY",
+		Message: plocale.DMLNotRecommendGroupByConstantMessage,
 		Func:    notRecommendGroupByConstant,
-	}, {
-		Rule: driverV2.Rule{ //select c1,c2,c3 from t1 where c1='foo' order by c2 desc, c3 asc
+	},
+	{
+		Rule: SourceRule{ //select c1,c2,c3 from t1 where c1='foo' order by c2 desc, c3 asc
 			Name:       DMLCheckSortDirection,
-			Desc:       "不建议在 ORDER BY 语句中对多个不同条件使用不同方向的排序",
-			Annotation: "在 MySQL 8.0 之前当 ORDER BY 多个列指定的排序方向不同时将无法使用已经建立的索引。在MySQL8.0 之后可以建立对应的排序顺序的联合索引来优化",
+			Desc:       plocale.DMLCheckSortDirectionDesc,
+			Annotation: plocale.DMLCheckSortDirectionAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message: "不建议在 ORDER BY 语句中对多个不同条件使用不同方向的排序",
+		Message: plocale.DMLCheckSortDirectionMessage,
 		Func:    checkSortDirection,
-	}, {
-		Rule: driverV2.Rule{ //select col1,col2 from tbl group by 1
+	},
+	{
+		Rule: SourceRule{ //select col1,col2 from tbl group by 1
 			Name:       DMLHintGroupByRequiresConditions,
-			Desc:       "建议为GROUP BY语句添加ORDER BY条件",
-			Annotation: "在5.7中，MySQL默认会对’GROUP BY col1, …’按如下顺序’ORDER BY col1,…’隐式排序，导致产生无谓的排序，带来额外的开销；在8.0中，则不会出现这种情况。如果不需要排序建议显示添加’ORDER BY NULL’",
+			Desc:       plocale.DMLHintGroupByRequiresConditionsDesc,
+			Annotation: plocale.DMLHintGroupByRequiresConditionsAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message: "建议为GROUP BY语句添加ORDER BY条件",
+		Message: plocale.DMLHintGroupByRequiresConditionsMessage,
 		Func:    hintGroupByRequiresConditions,
-	}, {
-		Rule: driverV2.Rule{ //select description from film where title ='ACADEMY DINOSAUR' order by length-language_id;
+	},
+	{
+		Rule: SourceRule{ //select description from film where title ='ACADEMY DINOSAUR' order by length-language_id;
 			Name:       DMLNotRecommendGroupByExpression,
-			Desc:       "不建议ORDER BY 的条件为表达式",
-			Annotation: "当ORDER BY条件为表达式或函数时会使用到临时表，如果在未指定WHERE或WHERE条件返回的结果集较大时性能会很差",
+			Desc:       plocale.DMLNotRecommendGroupByExpressionDesc,
+			Annotation: plocale.DMLNotRecommendGroupByExpressionAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message: "不建议ORDER BY 的条件为表达式",
+		Message: plocale.DMLNotRecommendGroupByExpressionMessage,
 		Func:    notRecommendGroupByExpression,
-	}, {
-		Rule: driverV2.Rule{ //select description from film where title ='ACADEMY DINOSAUR' order by length-language_id;
+	},
+	{
+		Rule: SourceRule{ //select description from film where title ='ACADEMY DINOSAUR' order by length-language_id;
 			Name:       DMLCheckSQLLength,
-			Desc:       "建议将过长的SQL分解成几个简单的SQL",
-			Annotation: "过长的SQL可读性较差，难以维护，且容易引发性能问题；具体规则阈值可以根据业务需求调整，默认值：1024",
+			Desc:       plocale.DMLCheckSQLLengthDesc,
+			Annotation: plocale.DMLCheckSQLLengthAnnotation,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   RuleTypeDMLConvention,
-			Params: params.Params{
-				&params.Param{
+			Category:   plocale.RuleTypeDMLConvention,
+			Params: []*SourceParam{
+				{
 					Key:   DefaultSingleParamKeyName,
 					Value: "1024",
-					Desc:  "SQL最大长度",
+					Desc:  plocale.DMLCheckSQLLengthParams1,
 					Type:  params.ParamTypeInt,
 				},
 			},
 		},
-		Message: "建议将过长的SQL分解成几个简单的SQL",
+		Message: plocale.DMLCheckSQLLengthMessage,
 		Func:    checkSQLLength,
-	}, {
-		Rule: driverV2.Rule{ //SELECT s.c_id,count(s.c_id) FROM s where c = test GROUP BY s.c_id HAVING s.c_id <> '1660' AND s.c_id <> '2' order by s.c_id
+	},
+	{
+		Rule: SourceRule{ //SELECT s.c_id,count(s.c_id) FROM s where c = test GROUP BY s.c_id HAVING s.c_id <> '1660' AND s.c_id <> '2' order by s.c_id
 			Name:       DMLNotRecommendHaving,
-			Desc:       "不建议使用 HAVING 子句",
-			Annotation: "对于索引字段，放在HAVING子句中时不会走索引；建议将HAVING子句改写为WHERE中的查询条件，可以在查询处理期间使用索引，提高SQL的执行效率",
+			Desc:       plocale.DMLNotRecommendHavingDesc,
+			Annotation: plocale.DMLNotRecommendHavingAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message: "不建议使用 HAVING 子句",
+		Message: plocale.DMLNotRecommendHavingMessage,
 		Func:    notRecommendHaving,
-	}, {
-		Rule: driverV2.Rule{ //delete from tbl
+	},
+	{
+		Rule: SourceRule{ //delete from tbl
 			Name:       DMLHintUseTruncateInsteadOfDelete,
-			Desc:       "删除全表时建议使用 TRUNCATE 替代 DELETE",
-			Annotation: "TRUNCATE TABLE 比 DELETE 速度快，且使用的系统和事务日志资源少，同时TRUNCATE后表所占用的空间会被释放，而DELETE后需要手工执行OPTIMIZE才能释放表空间",
+			Desc:       plocale.DMLHintUseTruncateInsteadOfDeleteDesc,
+			Annotation: plocale.DMLHintUseTruncateInsteadOfDeleteAnnotation,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message: "删除全表时建议使用 TRUNCATE 替代 DELETE",
+		Message: plocale.DMLHintUseTruncateInsteadOfDeleteMessage,
 		Func:    hintUseTruncateInsteadOfDelete,
-	}, {
-		Rule: driverV2.Rule{ //update mysql.func set name ="hello";
+	},
+	{
+		Rule: SourceRule{ //update mysql.func set name ="hello";
 			Name:       DMLNotRecommendUpdatePK,
-			Desc:       "不建议UPDATE主键",
-			Annotation: "主键索引数据列的顺序就是表记录的物理存储顺序，频繁更新主键将导致整个表记录的顺序的调整，会耗费相当大的资源",
+			Desc:       plocale.DMLNotRecommendUpdatePKDesc,
+			Annotation: plocale.DMLNotRecommendUpdatePKAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message: "不建议UPDATE主键",
+		Message: plocale.DMLNotRecommendUpdatePKMessage,
 		Func:    notRecommendUpdatePK,
-	}, {
-		Rule: driverV2.Rule{ //create table t(c1 int,c2 int,c3 int,c4 int,c5 int,c6 int);
+	},
+	{
+		Rule: SourceRule{ //create table t(c1 int,c2 int,c3 int,c4 int,c5 int,c6 int);
 			Name:       DDLCheckColumnQuantity,
-			Desc:       "表的列数不建议超过阈值",
-			Annotation: "避免在OLTP系统上做宽表设计，后期对性能影响很大；具体规则阈值可根据业务需求调整，默认值：40",
+			Desc:       plocale.DDLCheckColumnQuantityDesc,
+			Annotation: plocale.DDLCheckColumnQuantityAnnotation,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   RuleTypeDDLConvention,
-			Params: params.Params{
-				&params.Param{
+			Category:   plocale.RuleTypeDDLConvention,
+			Params: []*SourceParam{
+				{
 					Key:   DefaultSingleParamKeyName,
 					Value: "40",
-					Desc:  "最大列数",
+					Desc:  plocale.DDLCheckColumnQuantityParams1,
 					Type:  params.ParamTypeInt,
 				},
 			},
 		},
-		Message:      "表的列数不建议超过阈值",
+		Message:      plocale.DDLCheckColumnQuantityMessage,
 		Func:         checkColumnQuantity,
 		AllowOffline: true,
-	}, {
-		Rule: driverV2.Rule{ //CREATE TABLE `tb2` ( `id` int(11) DEFAULT NULL, `col` char(10) CHARACTER SET utf8 DEFAULT NULL)
+	},
+	{
+		Rule: SourceRule{ //CREATE TABLE `tb2` ( `id` int(11) DEFAULT NULL, `col` char(10) CHARACTER SET utf8 DEFAULT NULL)
 			Name:       DDLRecommendTableColumnCharsetSame,
-			Desc:       "建议列与表使用同一个字符集",
-			Annotation: "统一字符集可以避免由于字符集转换产生的乱码，不同的字符集进行比较前需要进行转换会造成索引失效",
+			Desc:       plocale.DDLRecommendTableColumnCharsetSameDesc,
+			Annotation: plocale.DDLRecommendTableColumnCharsetSameAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeDDLConvention,
+			Category:   plocale.RuleTypeDDLConvention,
 		},
-		Message: "建议列与表使用同一个字符集",
+		Message: plocale.DDLRecommendTableColumnCharsetSameMessage,
 		Func:    recommendTableColumnCharsetSame,
-	}, {
-		Rule: driverV2.Rule{ //CREATE TABLE tab (a INT(1));
+	},
+	{
+		Rule: SourceRule{ //CREATE TABLE tab (a INT(1));
 			Name:       DDLCheckColumnTypeInteger,
-			Desc:       "整型定义建议采用 INT(10) 或 BIGINT(20)",
-			Annotation: "INT(M) 或 BIGINT(M)，M 表示最大显示宽度，可存储最大值的宽度分别为10、20，采用 INT(10) 或 BIGINT(20)可避免发生显示截断的可能",
+			Desc:       plocale.DDLCheckColumnTypeIntegerDesc,
+			Annotation: plocale.DDLCheckColumnTypeIntegerAnnotation,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   RuleTypeDDLConvention,
+			Category:   plocale.RuleTypeDDLConvention,
 		},
-		Message: "整型定义建议采用 INT(10) 或 BIGINT(20)",
+		Message: plocale.DDLCheckColumnTypeIntegerMessage,
 		Func:    checkColumnTypeInteger,
-	}, {
-		Rule: driverV2.Rule{ //CREATE TABLE tab (a varchar(3500));
+	},
+	{
+		Rule: SourceRule{ //CREATE TABLE tab (a varchar(3500));
 			Name:       DDLCheckVarcharSize,
-			Desc:       "定义VARCHAR 长度时不建议大于阈值",
-			Annotation: "MySQL建立索引时没有限制索引的大小，索引长度会默认采用的该字段的长度，VARCHAR 定义长度越长建立的索引存储大小越大；具体规则阈值可以根据业务需求调整，默认值：1024",
+			Desc:       plocale.DDLCheckVarcharSizeDesc,
+			Annotation: plocale.DDLCheckVarcharSizeAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeDDLConvention,
-			Params: params.Params{
-				&params.Param{
+			Category:   plocale.RuleTypeDDLConvention,
+			Params: []*SourceParam{
+				{
 					Key:   DefaultSingleParamKeyName,
 					Value: "1024",
-					Desc:  "VARCHAR最大长度",
+					Desc:  plocale.DDLCheckVarcharSizeParams1,
 					Type:  params.ParamTypeInt,
 				},
 			},
 		},
-		Message: "定义VARCHAR 长度时不建议大于阈值, 阈值为%d",
+		Message: plocale.DDLCheckVarcharSizeMessage,
 		Func:    checkVarcharSize,
-	}, {
-		Rule: driverV2.Rule{ //select id from t where substring(name,1,3)='abc'
+	},
+	{
+		Rule: SourceRule{ //select id from t where substring(name,1,3)='abc'
 			Name:       DMLNotRecommendFuncInWhere,
-			Desc:       "应避免在 WHERE 条件中使用函数或其他运算符",
-			Annotation: "函数或运算符会导致查询无法利用表中的索引，该查询将会全表扫描，性能较差",
+			Desc:       plocale.DMLNotRecommendFuncInWhereDesc,
+			Annotation: plocale.DMLNotRecommendFuncInWhereAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message: "应避免在 WHERE 条件中使用函数或其他运算符",
+		Message: plocale.DMLNotRecommendFuncInWhereMessage,
 		Func:    notRecommendFuncInWhere,
-	}, {
-		Rule: driverV2.Rule{ //SELECT SYSDATE();
+	},
+	{
+		Rule: SourceRule{ //SELECT SYSDATE();
 			Name:       DMLNotRecommendSysdate,
-			Desc:       "不建议使用 SYSDATE() 函数",
-			Annotation: "当SYSDATE()函数在基于STATEMENT模式的主从环境下可能造成数据的不一致，因为语句在主库中执行到日志传递到备库，存在时间差，到备库执行的时候就会变成不同的时间值，建议采取ROW模式的复制环境",
+			Desc:       plocale.DMLNotRecommendSysdateDesc,
+			Annotation: plocale.DMLNotRecommendSysdateAnnotation,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message: "不建议使用 SYSDATE() 函数",
+		Message: plocale.DMLNotRecommendSysdateMessage,
 		Func:    notRecommendSysdate,
-	}, {
-		Rule: driverV2.Rule{ //SELECT SUM(COL) FROM tbl;
+	},
+	{
+		Rule: SourceRule{ //SELECT SUM(COL) FROM tbl;
 			Name:       DMLHintSumFuncTips,
-			Desc:       "避免使用 SUM(COL)",
-			Annotation: "当某一列的值全是NULL时，COUNT(COL)的返回结果为0，但SUM(COL)的返回结果为NULL，因此使用SUM()时需注意NPE问题（指数据返回NULL）；如业务需避免NPE问题，建议开启此规则",
+			Desc:       plocale.DMLHintSumFuncTipsDesc,
+			Annotation: plocale.DMLHintSumFuncTipsAnnotation,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message: "避免使用 SUM(COL) ，该用法存在返回NULL值导致程序空指针的风险",
+		Message: plocale.DMLHintSumFuncTipsMessage,
 		Func:    hintSumFuncTips,
-	}, {
-		Rule: driverV2.Rule{
+	},
+	{
+		Rule: SourceRule{
 			Name:       DMLHintCountFuncWithCol,
-			Desc:       "避免使用 COUNT(COL)",
-			Annotation: "建议使用COUNT(*)，因为使用 COUNT(COL) 需要对表进行全表扫描，这可能会导致性能下降。",
+			Desc:       plocale.DMLHintCountFuncWithColDesc,
+			Annotation: plocale.DMLHintCountFuncWithColAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message:      "避免使用 COUNT(COL)",
+		Message:      plocale.DMLHintCountFuncWithColMessage,
 		Func:         hintCountFuncWithCol,
 		AllowOffline: true,
-	}, {
-		Rule: driverV2.Rule{
+	},
+	{
+		Rule: SourceRule{
 			Name:       DDLCheckColumnQuantityInPK,
-			Desc:       "主键包含的列数不建议超过阈值",
-			Annotation: "主建中的列过多，会导致二级索引占用更多的空间，同时增加索引维护的开销；具体规则阈值可根据业务需求调整，默认值：2",
+			Desc:       plocale.DDLCheckColumnQuantityInPKDesc,
+			Annotation: plocale.DDLCheckColumnQuantityInPKAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeDDLConvention,
-			Params: params.Params{
-				&params.Param{
+			Category:   plocale.RuleTypeDDLConvention,
+			Params: []*SourceParam{
+				{
 					Key:   DefaultSingleParamKeyName,
 					Value: "2",
-					Desc:  "最大列数",
+					Desc:  plocale.DDLCheckColumnQuantityInPKParams1,
 					Type:  params.ParamTypeInt,
 				},
 			},
 		},
-		Message: "主键包含的列数不建议超过阈值",
+		Message: plocale.DDLCheckColumnQuantityInPKMessage,
 		Func:    checkColumnQuantityInPK,
-	}, {
-		Rule: driverV2.Rule{ //select col1,col2 from tbl where name=xx limit 10
+	},
+	{
+		Rule: SourceRule{ //select col1,col2 from tbl where name=xx limit 10
 			Name:       DMLHintLimitMustBeCombinedWithOrderBy,
-			Desc:       "LIMIT 查询建议使用ORDER BY",
-			Annotation: "没有ORDER BY的LIMIT会导致非确定性的结果可能与业务需求不符，这取决于执行计划",
+			Desc:       plocale.DMLHintLimitMustBeCombinedWithOrderByDesc,
+			Annotation: plocale.DMLHintLimitMustBeCombinedWithOrderByAnnotation,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message: "LIMIT 查询建议使用ORDER BY",
+		Message: plocale.DMLHintLimitMustBeCombinedWithOrderByMessage,
 		Func:    hintLimitMustBeCombinedWithOrderBy,
 	},
 	{
-		Rule: driverV2.Rule{ //TRUNCATE TABLE tbl_name
+		Rule: SourceRule{ //TRUNCATE TABLE tbl_name
 			Name:       DMLHintTruncateTips,
-			Desc:       "不建议使用TRUNCATE操作",
-			Annotation: "TRUNCATE是DLL，数据不能回滚，在没有备份情况下，谨慎使用TRUNCATE",
+			Desc:       plocale.DMLHintTruncateTipsDesc,
+			Annotation: plocale.DMLHintTruncateTipsAnnotation,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message: "不建议使用TRUNCATE操作",
+		Message: plocale.DMLHintTruncateTipsMessage,
 		Func:    hintTruncateTips,
-	}, {
-		Rule: driverV2.Rule{ //delete from t where col = 'condition'
+	},
+	{
+		Rule: SourceRule{ //delete from t where col = 'condition'
 			Name:       DMLHintDeleteTips,
-			Desc:       "建议在执行DELETE/DROP/TRUNCATE等操作前进行备份",
-			Annotation: "DROP/TRUNCATE是DDL，操作立即生效，不会写入日志，所以无法回滚，在执行高危操作之前对数据进行备份是很有必要的",
+			Desc:       plocale.DMLHintDeleteTipsDesc,
+			Annotation: plocale.DMLHintDeleteTipsAnnotation,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message: "建议在执行DELETE/DROP/TRUNCATE等操作前进行备份",
+		Message: plocale.DMLHintDeleteTipsMessage,
 		Func:    hintDeleteTips,
-	}, {
-		Rule: driverV2.Rule{ //SELECT BENCHMARK(10, RAND())
+	},
+	{
+		Rule: SourceRule{ //SELECT BENCHMARK(10, RAND())
 			Name:       DMLCheckSQLInjectionFunc,
-			Desc:       "不建议使用常见 SQL 注入函数",
-			Annotation: "攻击者通过SQL注入，可未经授权可访问数据库中的数据，存在盗取用户信息，造成用户数据泄露等安全漏洞问题",
+			Desc:       plocale.DMLCheckSQLInjectionFuncDesc,
+			Annotation: plocale.DMLCheckSQLInjectionFuncAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message: "不建议使用常见 SQL 注入函数",
+		Message: plocale.DMLCheckSQLInjectionFuncMessage,
 		Func:    checkSQLInjectionFunc,
-	}, {
-		Rule: driverV2.Rule{ //select col1,col2 from tbl where type!=0
+	},
+	{
+		Rule: SourceRule{ //select col1,col2 from tbl where type!=0
 			Name:       DMLCheckNotEqualSymbol,
-			Desc:       "建议使用'<>'代替'!='",
-			Annotation: "'!=' 是非标准的运算符，'<>' 才是SQL中标准的不等于运算符",
+			Desc:       plocale.DMLCheckNotEqualSymbolDesc,
+			Annotation: plocale.DMLCheckNotEqualSymbolAnnotation,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message: "建议使用'<>'代替'!='",
+		Message: plocale.DMLCheckNotEqualSymbolMessage,
 		Func:    checkNotEqualSymbol,
-	}, {
-		Rule: driverV2.Rule{ //select col1,col2,col3 from table1 where col2 in(select col from table2)
+	},
+	{
+		Rule: SourceRule{ //select col1,col2,col3 from table1 where col2 in(select col from table2)
 			Name:       DMLNotRecommendSubquery,
-			Desc:       "不推荐使用子查询",
-			Annotation: "有些情况下，子查询并不能使用到索引，同时对于返回结果集比较大的子查询，会产生大量的临时表，消耗过多的CPU和IO资源，产生大量的慢查询",
+			Desc:       plocale.DMLNotRecommendSubqueryDesc,
+			Annotation: plocale.DMLNotRecommendSubqueryAnnotation,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message: "不推荐使用子查询",
+		Message: plocale.DMLNotRecommendSubqueryMessage,
 		Func:    notRecommendSubquery,
-	}, {
-		Rule: driverV2.Rule{ //SELECT * FROM staff WHERE name IN (SELECT NAME FROM customer ORDER BY name LIMIT 1)
+	},
+	{
+		Rule: SourceRule{ //SELECT * FROM staff WHERE name IN (SELECT NAME FROM customer ORDER BY name LIMIT 1)
 			Name:       DMLCheckSubqueryLimit,
-			Desc:       "不建议在子查询中使用LIMIT",
-			Annotation: "部分MySQL版本不支持在子查询中进行'LIMIT & IN/ALL/ANY/SOME'",
+			Desc:       plocale.DMLCheckSubqueryLimitDesc,
+			Annotation: plocale.DMLCheckSubqueryLimitAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message: "不建议在子查询中使用LIMIT",
+		Message: plocale.DMLCheckSubqueryLimitMessage,
 		Func:    checkSubqueryLimit,
-	}, {
-		Rule: driverV2.Rule{ //CREATE TABLE tbl (a int) AUTO_INCREMENT = 10;
+	},
+	{
+		Rule: SourceRule{ //CREATE TABLE tbl (a int) AUTO_INCREMENT = 10;
 			Name:       DDLCheckAutoIncrement,
-			Desc:       "表的初始AUTO_INCREMENT值建议为0",
-			Annotation: "创建表时AUTO_INCREMENT设置为0则自增从1开始，可以避免数据空洞。例如在导出表结构DDL时，表结构内AUTO_INCREMENT通常为当前的自增值，如果建表时没有把AUTO_INCREMENT设置为0，那么通过该DDL进行建表操作会导致自增值从一个无意义数字开始。",
+			Desc:       plocale.DDLCheckAutoIncrementDesc,
+			Annotation: plocale.DDLCheckAutoIncrementAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeDDLConvention,
+			Category:   plocale.RuleTypeDDLConvention,
 		},
-		Message: "表的初始AUTO_INCREMENT值建议为0",
+		Message: plocale.DDLCheckAutoIncrementMessage,
 		Func:    checkAutoIncrement,
-	}, {
-		Rule: driverV2.Rule{ // rename table t1 to t2;
+	},
+	{
+		Rule: SourceRule{ // rename table t1 to t2;
 			Name:       DDLNotAllowRenaming,
-			Desc:       "禁止使用RENAME或CHANGE对表名字段名进行修改",
-			Annotation: "RENAME/CHANGE 表名/列名会对线上业务不停机发布造成影响，如需这种操作应当DBA手工干预",
+			Desc:       plocale.DDLNotAllowRenamingDesc,
+			Annotation: plocale.DDLNotAllowRenamingAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeDDLConvention,
+			Category:   plocale.RuleTypeDDLConvention,
 		},
 		AllowOffline: true,
-		Message:      "禁止使用RENAME或CHANGE对表名字段名进行修改",
+		Message:      plocale.DDLNotAllowRenamingMessage,
 		Func:         ddlNotAllowRenaming,
-	}, {
-		Rule: driverV2.Rule{
+	},
+	{
+		Rule: SourceRule{
 			Name:       DMLCheckExplainFullIndexScan,
-			Desc:       "不建议对表进行全索引扫描",
-			Annotation: "在数据量大的情况下索引全扫描严重影响SQL性能。",
+			Desc:       plocale.DMLCheckExplainFullIndexScanDesc,
+			Annotation: plocale.DMLCheckExplainFullIndexScanAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
 		AllowOffline: false,
-		Message:      "不建议对表进行全索引扫描",
+		Message:      plocale.DMLCheckExplainFullIndexScanMessage,
 		Func:         checkExplain,
-	}, {
-		Rule: driverV2.Rule{
+	},
+	{
+		Rule: SourceRule{
 			Name:       DMLCheckLimitOffsetNum,
-			Desc:       "不建议LIMIT的偏移OFFSET大于阈值",
-			Annotation: "因为OFFSET指定了结果集的起始位置，如果起始位置过大，那么 MySQL 需要处理更多的数据才能返回结果集，这可能会导致查询性能下降。",
+			Desc:       plocale.DMLCheckLimitOffsetNumDesc,
+			Annotation: plocale.DMLCheckLimitOffsetNumAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeDMLConvention,
-			Params: params.Params{
-				&params.Param{
+			Category:   plocale.RuleTypeDMLConvention,
+			Params: []*SourceParam{
+				{
 					Key:   DefaultSingleParamKeyName,
 					Value: "100",
-					Desc:  "offset 大小",
+					Desc:  plocale.DMLCheckLimitOffsetNumParams1,
 					Type:  params.ParamTypeInt,
 				},
 			},
 		},
-		Message:      "不建议LIMIT的偏移OFFSET大于阈值，OFFSET=%v（阈值为%v）",
+		Message:      plocale.DMLCheckLimitOffsetNumMessage,
 		AllowOffline: true,
 		Func:         checkLimitOffsetNum,
-	}, {
-		Rule: driverV2.Rule{
+	},
+	{
+		Rule: SourceRule{
 			Name:       DMLCheckUpdateOrDeleteHasWhere,
-			Desc:       "建议UPDATE/DELETE操作使用WHERE条件",
-			Annotation: "因为这些语句的目的是修改数据库中的数据，需要使用 WHERE 条件来过滤需要更新或删除的记录，以确保数据的正确性。另外，使用 WHERE 条件还可以提高查询性能。",
+			Desc:       plocale.DMLCheckUpdateOrDeleteHasWhereDesc,
+			Annotation: plocale.DMLCheckUpdateOrDeleteHasWhereAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
-		Message:      "建议UPDATE/DELETE操作使用WHERE条件",
+		Message:      plocale.DMLCheckUpdateOrDeleteHasWhereMessage,
 		AllowOffline: true,
 		Func:         checkUpdateOrDeleteHasWhere,
-	}, {
-		Rule: driverV2.Rule{
+	},
+	{
+		Rule: SourceRule{
 			Name:       DMLCheckSortColumnLength,
-			Desc:       "禁止对长字段排序",
-			Annotation: "对例如VARCHAR(2000)这样的长字段进行ORDER BY、DISTINCT、GROUP BY、UNION之类的操作，会引发排序，有性能隐患",
+			Desc:       plocale.DMLCheckSortColumnLengthDesc,
+			Annotation: plocale.DMLCheckSortColumnLengthAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeUsageSuggestion,
-			Params: params.Params{
-				&params.Param{
+			Category:   plocale.RuleTypeUsageSuggestion,
+			Params: []*SourceParam{
+				{
 					Key:   DefaultSingleParamKeyName,
 					Value: "2000",
-					Desc:  "可排序字段的最大长度",
+					Desc:  plocale.DMLCheckSortColumnLengthParams1,
 					Type:  params.ParamTypeInt,
 				},
 			},
 		},
 		AllowOffline: false,
-		Message:      "长度超过阈值的字段不建议用于ORDER BY、DISTINCT、GROUP BY、UNION，这些字段有：%v",
+		Message:      plocale.DMLCheckSortColumnLengthMessage,
 		Func:         checkSortColumnLength,
-	}, {
-		Rule: driverV2.Rule{
+	},
+	{
+		Rule: SourceRule{
 			Name:       AllCheckPrepareStatementPlaceholders,
-			Desc:       "绑定的变量个数不建议超过阈值",
-			Annotation: "因为过度使用绑定变量会增加查询的复杂度，从而降低查询性能。过度使用绑定变量还会增加维护成本。默认阈值:100",
+			Desc:       plocale.AllCheckPrepareStatementPlaceholdersDesc,
+			Annotation: plocale.AllCheckPrepareStatementPlaceholdersAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeUsageSuggestion,
-			Params: params.Params{
-				&params.Param{
+			Category:   plocale.RuleTypeUsageSuggestion,
+			Params: []*SourceParam{
+				{
 					Key:   DefaultSingleParamKeyName,
 					Value: "100",
-					Desc:  "最大绑定变量数量",
+					Desc:  plocale.AllCheckPrepareStatementPlaceholdersParams1,
 					Type:  params.ParamTypeInt,
 				},
 			},
 		},
 		AllowOffline: true,
-		Message:      "使用绑定变量数量为 %v，不建议超过设定阈值 %v",
+		Message:      plocale.AllCheckPrepareStatementPlaceholdersMessage,
 		Func:         checkPrepareStatementPlaceholders,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLCheckExplainExtraUsingIndexForSkipScan,
-			Desc:       "不建议对表进行索引跳跃扫描",
-			Annotation: "索引扫描是跳跃扫描，未遵循最左匹配原则，可能降低索引的使用效率，影响查询性能",
+			Desc:       plocale.DMLCheckExplainExtraUsingIndexForSkipScanDesc,
+			Annotation: plocale.DMLCheckExplainExtraUsingIndexForSkipScanAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
 		AllowOffline: false,
-		Message:      "不建议对表进行索引跳跃扫描",
+		Message:      plocale.DMLCheckExplainExtraUsingIndexForSkipScanMessage,
 		Func:         checkExplain,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLCheckAffectedRows,
-			Desc:       "UPDATE/DELETE操作影响行数不建议超过阈值",
-			Annotation: "如果 DML 操作影响行数过多，会导致查询性能下降，因为需要扫描更多的数据。",
+			Desc:       plocale.DMLCheckAffectedRowsDesc,
+			Annotation: plocale.DMLCheckAffectedRowsAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeDMLConvention,
-			Params: params.Params{
-				&params.Param{
+			Category:   plocale.RuleTypeDMLConvention,
+			Params: []*SourceParam{
+				{
 					Key:   DefaultSingleParamKeyName,
 					Value: "10000",
-					Desc:  "最大影响行数",
+					Desc:  plocale.DMLCheckAffectedRowsParams1,
 					Type:  params.ParamTypeInt,
 				},
 			},
 		},
 		AllowOffline: false,
-		Message:      "UPDATE/DELETE操作影响行数不建议超过阈值，影响行数为 %v，超过设定阈值 %v",
+		Message:      plocale.DMLCheckAffectedRowsMessage,
 		Func:         checkAffectedRows,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLCheckSameTableJoinedMultipleTimes,
-			Desc:       "不建议对同一张表连接多次",
-			Annotation: "如果对单表查询多次，会导致查询性能下降。",
+			Desc:       plocale.DMLCheckSameTableJoinedMultipleTimesDesc,
+			Annotation: plocale.DMLCheckSameTableJoinedMultipleTimesAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
 		AllowOffline: false,
-		Message:      "表%v被连接多次",
+		Message:      plocale.DMLCheckSameTableJoinedMultipleTimesMessage,
 		Func:         checkSameTableJoinedMultipleTimes,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLCheckExplainUsingIndex,
-			Desc:       "SQL查询条件需要走索引",
-			Annotation: "使用索引可以显著提高SQL查询的性能。",
+			Desc:       plocale.DMLCheckExplainUsingIndexDesc,
+			Annotation: plocale.DMLCheckExplainUsingIndexAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
 		AllowOffline: false,
-		Message:      "建议使用索引以优化 SQL 查询性能",
+		Message:      plocale.DMLCheckExplainUsingIndexMessage,
 		Func:         checkExplain,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLCheckInsertSelect,
-			Desc:       "不建议使用INSERT ... SELECT",
-			Annotation: "使用 INSERT ... SELECT 在默认事务隔离级别下，可能会导致对查询的表施加表级锁。",
+			Desc:       plocale.DMLCheckInsertSelectDesc,
+			Annotation: plocale.DMLCheckInsertSelectAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
 		AllowOffline: true,
-		Message:      "不建议使用INSERT ... SELECT",
+		Message:      plocale.DMLCheckInsertSelectMessage,
 		Func:         checkInsertSelect,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLCheckAggregate,
-			Desc:       "不建议使用聚合函数",
-			Annotation: "不建议使用SQL聚合函数,是为了确保查询的简单性、高性能和数据一致性。",
+			Desc:       plocale.DMLCheckAggregateDesc,
+			Annotation: plocale.DMLCheckAggregateAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
 		AllowOffline: true,
-		Message:      "不建议使用聚合函数计算",
+		Message:      plocale.DMLCheckAggregateMessage,
 		Func:         checkAggregateFunc,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckColumnNotNULL,
-			Desc:       "表字段建议有NOT NULL约束",
-			Annotation: "表字段建议有 NOT NULL 约束，可确保数据的完整性，防止插入空值，提升查询准确性。",
+			Desc:       plocale.DDLCheckColumnNotNULLDesc,
+			Annotation: plocale.DDLCheckColumnNotNULLAnnotation,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   RuleTypeDDLConvention,
+			Category:   plocale.RuleTypeDDLConvention,
 		},
 		AllowOffline: false,
-		Message:      "建议字段%v设置NOT NULL约束",
+		Message:      plocale.DDLCheckColumnNotNULLMessage,
 		Func:         checkColumnNotNull,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLCheckIndexSelectivity,
-			Desc:       "建议连库查询时，确保SQL执行计划中使用的索引区分度大于阈值",
-			Annotation: "确保SQL执行计划中使用的高索引区分度，有助于提升查询性能并优化查询效率。",
+			Desc:       plocale.DMLCheckIndexSelectivityDesc,
+			Annotation: plocale.DMLCheckIndexSelectivityAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeDMLConvention,
-			Params: params.Params{
-				&params.Param{
+			Category:   plocale.RuleTypeDMLConvention,
+			Params: []*SourceParam{
+				{
 					Key:   DefaultSingleParamKeyName,
 					Value: "70",
-					Desc:  "可选择性（百分比）",
+					Desc:  plocale.DMLCheckIndexSelectivityParams1,
 					Type:  params.ParamTypeInt,
 				},
 			},
 		},
 		AllowOffline: false,
-		Message:      "索引：%v，未超过区分度阈值：%v，建议使用超过阈值的索引。",
+		Message:      plocale.DMLCheckIndexSelectivityMessage,
 		Func:         checkIndexSelectivity,
 	},
 	{
 		// 该规则只适用于库表元数据扫描并且需要与停用上线审核模式规则一起使用
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckTableRows,
-			Desc:       "表行数超过阈值，建议对表进行拆分",
-			Annotation: "当表行数超过阈值时，对表进行拆分有助于提高数据库性能和查询速度。",
+			Desc:       plocale.DDLCheckTableRowsDesc,
+			Annotation: plocale.DDLCheckTableRowsAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeUsageSuggestion,
-			Params: params.Params{
-				&params.Param{
+			Category:   plocale.RuleTypeUsageSuggestion,
+			Params: []*SourceParam{
+				{
 					Key:   DefaultSingleParamKeyName,
 					Value: "1000",
-					Desc:  "表行数（万）",
+					Desc:  plocale.DDLCheckTableRowsParams1,
 					Type:  params.ParamTypeInt,
 				},
 			},
 		},
-		Message: "表行数超过阈值，建议对表进行拆分",
+		Message: plocale.DDLCheckTableRowsMessage,
 		Func:    checkTableRows,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckCompositeIndexDistinction,
-			Desc:       "建议在组合索引中将区分度高的字段靠前放",
-			Annotation: "将区分度高的字段靠前放置在组合索引中有助于提高索引的查询性能，因为它能更快地减小数据范围，提高检索效率。",
+			Desc:       plocale.DDLCheckCompositeIndexDistinctionDesc,
+			Annotation: plocale.DDLCheckCompositeIndexDistinctionAnnotation,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   RuleTypeDDLConvention,
+			Category:   plocale.RuleTypeDDLConvention,
 		},
 		AllowOffline: false,
-		Message:      "建议在组合索引中将区分度高的字段靠前放，%v",
+		Message:      plocale.DDLCheckCompositeIndexDistinctionMessage,
 		Func:         checkCompositeIndexSelectivity,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLAvoidText,
-			Desc:       "使用TEXT 类型的字段建议和原表进行分拆，与原表主键单独组成另外一个表进行存放",
-			Annotation: "将TEXT类型的字段与原表主键分拆成另一个表可以提高数据库性能和查询速度，减少不必要的 I/O 操作。",
+			Desc:       plocale.DDLAvoidTextDesc,
+			Annotation: plocale.DDLAvoidTextAnnotation,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   RuleTypeDDLConvention,
+			Category:   plocale.RuleTypeDDLConvention,
 		},
 		AllowOffline: true,
-		Message:      "字段：%v为TEXT类型，建议和原表进行分拆，与原表主键单独组成另外一个表进行存放",
+		Message:      plocale.DDLAvoidTextMessage,
 		Func:         checkText,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLCheckSelectRows,
-			Desc:       "查询数据量超过阈值，筛选条件必须带上主键或者索引",
-			Annotation: "筛选条件必须带上主键或索引可提高查询性能和减少全表扫描的成本。",
+			Desc:       plocale.DMLCheckSelectRowsDesc,
+			Annotation: plocale.DMLCheckSelectRowsAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeDMLConvention,
-			Params: params.Params{
-				&params.Param{
+			Category:   plocale.RuleTypeDMLConvention,
+			Params: []*SourceParam{
+				{
 					Key:   DefaultSingleParamKeyName,
 					Value: "10",
-					Desc:  "查询数据量（万）",
+					Desc:  plocale.DMLCheckSelectRowsParams1,
 					Type:  params.ParamTypeInt,
 				},
 			},
 		},
 		AllowOffline: false,
-		Message:      "查询数据量超过阈值，筛选条件必须带上主键或者索引",
+		Message:      plocale.DMLCheckSelectRowsMessage,
 		Func:         checkSelectRows,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLCheckScanRows,
-			Desc:       "扫描行数超过阈值，筛选条件必须带上主键或者索引",
-			Annotation: "筛选条件必须带上主键或索引可降低数据库查询的时间复杂度，提高查询效率。",
+			Desc:       plocale.DMLCheckScanRowsDesc,
+			Annotation: plocale.DMLCheckScanRowsAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeDMLConvention,
-			Params: params.Params{
-				&params.Param{
+			Category:   plocale.RuleTypeDMLConvention,
+			Params: []*SourceParam{
+				{
 					Key:   DefaultSingleParamKeyName,
 					Value: "10",
-					Desc:  "扫描行数量（万）",
+					Desc:  plocale.DMLCheckScanRowsParams1,
 					Type:  params.ParamTypeInt,
 				},
 			},
 		},
 		AllowOffline: false,
-		Message:      "扫描行数超过阈值，筛选条件必须带上主键或者索引",
+		Message:      plocale.DMLCheckScanRowsMessage,
 		Func:         checkScanRows,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLMustUseLeftMostPrefix,
-			Desc:       "使用联合索引时，必须使用联合索引的首字段",
-			Annotation: "使用联合索引时，不包含首字段会导致联合索引失效",
+			Desc:       plocale.DMLMustUseLeftMostPrefixDesc,
+			Annotation: plocale.DMLMustUseLeftMostPrefixAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeIndexInvalidation,
+			Category:   plocale.RuleTypeIndexInvalidation,
 		},
 		AllowOffline: false,
-		Message:      "使用联合索引时，必须使用联合索引的首字段",
+		Message:      plocale.DMLMustUseLeftMostPrefixMessage,
 		Func:         mustMatchLeftMostPrefix,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLMustMatchLeftMostPrefix,
-			Desc:       "禁止对联合索引左侧字段进行IN 、OR等非等值查询",
-			Annotation: "对联合索引左侧字段进行IN 、OR等非等值查询会导致联合索引失效",
+			Desc:       plocale.DMLMustMatchLeftMostPrefixDesc,
+			Annotation: plocale.DMLMustMatchLeftMostPrefixAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeIndexInvalidation,
+			Category:   plocale.RuleTypeIndexInvalidation,
 		},
 		AllowOffline: false,
-		Message:      "对联合索引左侧字段进行IN 、OR等非等值查询会导致联合索引失效",
+		Message:      plocale.DMLMustMatchLeftMostPrefixMessage,
 		Func:         mustMatchLeftMostPrefix,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLCheckJoinFieldUseIndex,
-			Desc:       "JOIN字段必须包含索引",
-			Annotation: "JOIN字段包含索引可提高连接操作的性能和查询速度。",
+			Desc:       plocale.DMLCheckJoinFieldUseIndexDesc,
+			Annotation: plocale.DMLCheckJoinFieldUseIndexAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeIndexInvalidation,
+			Category:   plocale.RuleTypeIndexInvalidation,
 		},
 		AllowOffline: false,
-		Message:      "JOIN字段必须包含索引",
+		Message:      plocale.DMLCheckJoinFieldUseIndexMessage,
 		Func:         checkJoinFieldUseIndex,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLCheckJoinFieldCharacterSetAndCollation,
-			Desc:       "连接表字段的字符集和排序规则必须一致",
-			Annotation: "连接表字段的字符集和排序规则一致可避免数据不一致和查询错误，确保连接操作正确执行。",
+			Desc:       plocale.DMLCheckJoinFieldCharacterSetAndCollationDesc,
+			Annotation: plocale.DMLCheckJoinFieldCharacterSetAndCollationAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeIndexInvalidation,
+			Category:   plocale.RuleTypeIndexInvalidation,
 		},
 		AllowOffline: false,
-		Message:      "连接表字段的字符集和排序规则必须一致",
+		Message:      plocale.DMLCheckJoinFieldCharacterSetAndCollationMessage,
 		Func:         checkJoinFieldCharacterSetAndCollation,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLCheckMathComputationOrFuncOnIndex,
-			Desc:       "禁止对索引列进行数学运算和使用函数",
-			Annotation: "对索引列进行数学运算和使用函数会导致索引失效，从而导致全表扫描，影响查询性能。",
+			Desc:       plocale.DMLCheckMathComputationOrFuncOnIndexDesc,
+			Annotation: plocale.DMLCheckMathComputationOrFuncOnIndexAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeIndexInvalidation,
+			Category:   plocale.RuleTypeIndexInvalidation,
 		},
 		AllowOffline: false,
-		Message:      "禁止对索引列进行数学运算和使用函数",
+		Message:      plocale.DMLCheckMathComputationOrFuncOnIndexMessage,
 		Func:         checkMathComputationOrFuncOnIndex,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLSQLExplainLowestLevel,
-			Desc:       "SQL执行计划中type字段建议满足规定的级别",
-			Annotation: "验证 SQL 执行计划中的 type 字段，确保满足要求级别，以保证查询性能。",
+			Desc:       plocale.DMLSQLExplainLowestLevelDesc,
+			Annotation: plocale.DMLSQLExplainLowestLevelAnnotation,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   RuleTypeDDLConvention,
-			Params: params.Params{
-				&params.Param{
+			Category:   plocale.RuleTypeDDLConvention,
+			Params: []*SourceParam{
+				{
 					Key:   DefaultSingleParamKeyName,
 					Value: "range,ref,const,eq_ref,system,NULL",
-					Desc:  "查询计划type等级，以英文逗号隔开",
+					Desc:  plocale.DMLSQLExplainLowestLevelParams1,
 					Type:  params.ParamTypeString,
 				},
 			},
 		},
 		AllowOffline: false,
-		Message:      "建议修改SQL，确保执行计划中type字段可以满足规定中的任一等级：%v",
+		Message:      plocale.DMLSQLExplainLowestLevelMessage,
 		Func:         checkSQLExplainLowestLevel,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLAvoidFullText,
-			Desc:       "禁止使用全文索引",
-			Annotation: "全文索引的使用会增加存储开销，并对写操作性能产生一定影响。",
+			Desc:       plocale.DDLAvoidFullTextDesc,
+			Annotation: plocale.DDLAvoidFullTextAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeUsageSuggestion,
+			Category:   plocale.RuleTypeUsageSuggestion,
 		},
 		AllowOffline: true,
-		Message:      "禁止使用全文索引",
+		Message:      plocale.DDLAvoidFullTextMessage,
 		Func:         avoidFullText,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLAvoidGeometry,
-			Desc:       "禁止使用空间字段和空间索引",
-			Annotation: "使用空间字段和空间索引会增加存储需求，对数据库性能造成一定影响",
+			Desc:       plocale.DDLAvoidGeometryDesc,
+			Annotation: plocale.DDLAvoidGeometryAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeUsageSuggestion,
+			Category:   plocale.RuleTypeUsageSuggestion,
 		},
 		AllowOffline: true,
-		Message:      "禁止使用空间字段和空间索引",
+		Message:      plocale.DDLAvoidGeometryMessage,
 		Func:         avoidGeometry,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DMLAvoidWhereEqualNull,
-			Desc:       "WHERE子句中禁止将NULL值与其他字段或值进行比较运算",
-			Annotation: "NULL在SQL中属于特殊值，无法与普通值进行比较。例如：column = NULL恒为false，即使column存在null值也不会查询出来，所以column = NULL应该写为column is NULL",
+			Desc:       plocale.DMLAvoidWhereEqualNullDesc,
+			Annotation: plocale.DMLAvoidWhereEqualNullAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeDMLConvention,
+			Category:   plocale.RuleTypeDMLConvention,
 		},
 		AllowOffline: true,
-		Message:      "WHERE子句中禁止将NULL值与其他字段或值进行比较运算",
+		Message:      plocale.DMLAvoidWhereEqualNullMessage,
 		Func:         avoidWhereEqualNull,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLAvoidEvent,
-			Desc:       "禁止使用event",
-			Annotation: "使用event会增加数据库的维护难度和依赖性，并且也会造成安全问题。",
+			Desc:       plocale.DDLAvoidEventDesc,
+			Annotation: plocale.DDLAvoidEventAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeUsageSuggestion,
+			Category:   plocale.RuleTypeUsageSuggestion,
 		},
 		AllowOffline: true,
-		Message:      "禁止使用event",
+		Message:      plocale.DDLAvoidEventMessage,
 		Func:         avoidEvent,
 	},
 	{
-		Rule: driverV2.Rule{
+		Rule: SourceRule{
 			Name:       DDLCheckCharLength,
-			Desc:       "禁止char, varchar类型字段字符长度总和超过阈值",
-			Annotation: "使用过长或者过多的varchar，char字段可能会增加业务逻辑的复杂性；如果字段平均长度过大时，会占用更多的存储空间。",
+			Desc:       plocale.DDLCheckCharLengthDesc,
+			Annotation: plocale.DDLCheckCharLengthAnnotation,
 			Level:      driverV2.RuleLevelError,
-			Category:   RuleTypeUsageSuggestion,
-			Params: params.Params{
-				&params.Param{
+			Category:   plocale.RuleTypeUsageSuggestion,
+			Params: []*SourceParam{
+				{
 					Key:   DefaultSingleParamKeyName,
 					Value: "2000",
-					Desc:  "字符长度",
+					Desc:  plocale.DDLCheckCharLengthParams1,
 					Type:  params.ParamTypeInt,
 				},
 			},
 		},
 		AllowOffline: false,
-		Message:      "禁止char, varchar类型字段字符长度总和超过阈值 %v",
+		Message:      plocale.DDLCheckCharLengthMessage,
 		Func:         checkCharLength,
 	},
 }
