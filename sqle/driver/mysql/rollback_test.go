@@ -2,8 +2,10 @@ package mysql
 
 import (
 	"context"
-	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 	"testing"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
+	"github.com/actiontech/sqle/sqle/locale"
 
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	"github.com/stretchr/testify/assert"
@@ -39,7 +41,7 @@ func TestRollbackWithVariable(t *testing.T) {
 		i := DefaultMysqlInspect()
 		rollbackSQL, reason, err := i.GenRollbackSQL(context.Background(), sql)
 		assert.NoError(t, err)
-		assert.Equal(t, plocale.ShouldLocalizeMessage(plocale.DefaultLocalizer, plocale.NotSupportHasVariableRollback), reason)
+		assert.Equal(t, plocale.ShouldLocalizeMessage(plocale.DefaultLocalizer, plocale.NotSupportHasVariableRollback), reason[locale.DefaultLang.String()])
 		assert.Equal(t, "", rollbackSQL)
 	}
 }

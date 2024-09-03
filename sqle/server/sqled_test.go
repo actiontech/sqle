@@ -85,8 +85,8 @@ func (d *mockDriver) Audit(ctx context.Context, sqls []string) ([]*driverV2.Audi
 	return nil, nil
 }
 
-func (d *mockDriver) GenRollbackSQL(ctx context.Context, sql string) (string, string, error) {
-	return "", "", nil
+func (d *mockDriver) GenRollbackSQL(ctx context.Context, sql string) (string, driverV2.I18nStr, error) {
+	return "", nil, nil
 }
 
 func (d *mockDriver) Explain(ctx context.Context, conf *driverV2.ExplainConf) (*driverV2.ExplainResult, error) {
