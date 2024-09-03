@@ -3,10 +3,11 @@ package mysql
 import (
 	"context"
 	"fmt"
-	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
@@ -33,8 +34,8 @@ func newTestResult() *testResult {
 	}
 }
 
-func (t *testResult) add(level driverV2.RuleLevel, ruleName, message string, args ...interface{}) *testResult {
-	t.Results.Add(level, ruleName, message, args...)
+func (t *testResult) add(level driverV2.RuleLevel, ruleName string, message string, args ...interface{}) *testResult {
+	t.Results.Add(level, ruleName, plocale.ConvertStr2I18n(message), args...)
 	return t
 }
 
@@ -44,9 +45,11 @@ func (t *testResult) addResult(ruleName string, args ...interface{}) *testResult
 		panic("should not enter here, it means that the uint test result is not expect")
 	}
 	level := handler.Rule.Level
-	message := handler.Message
-
-	return t.add(level, ruleName, message, args...)
+	var m string
+	if handler.Message != nil {
+		m = plocale.ShouldLocalizeMessage(plocale.DefaultLocalizer, handler.Message)
+	}
+	return t.add(level, ruleName, m, args...)
 }
 
 func (t *testResult) level() driverV2.RuleLevel {
@@ -7160,7 +7163,7 @@ func TestMustMatchLeftMostPrefix(t *testing.T) {
 		t.Run(arg.Name, func(t *testing.T) {
 			res := newTestResult()
 			if arg.TriggerRule {
-				res = newTestResult().add(rule.Level, rule.Name, rulepkg.RuleHandlerMap[rulepkg.DMLMustMatchLeftMostPrefix].Message)
+				res = newTestResult().add(rule.Level, rule.Name, plocale.ShouldLocalizeMessage(plocale.DefaultLocalizer, rulepkg.RuleHandlerMap[rulepkg.DMLMustMatchLeftMostPrefix].Message))
 			}
 			runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLMustMatchLeftMostPrefix].Rule, t, "", inspect, arg.Sql, res)
 		})
@@ -7439,7 +7442,7 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 		t.Run(arg.Name, func(t *testing.T) {
 			res := newTestResult()
 			if arg.TriggerRule {
-				res = newTestResult().add(rule.Level, rule.Name, rulepkg.RuleHandlerMap[rulepkg.DMLMustUseLeftMostPrefix].Message)
+				res = newTestResult().add(rule.Level, rule.Name, plocale.ShouldLocalizeMessage(plocale.DefaultLocalizer, rulepkg.RuleHandlerMap[rulepkg.DMLMustUseLeftMostPrefix].Message))
 			}
 			runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLMustUseLeftMostPrefix].Rule, t, "", inspect, arg.Sql, res)
 		})
@@ -7666,7 +7669,7 @@ func TestDDLCheckCharLength(t *testing.T) {
 		t.Run(arg.Name, func(t *testing.T) {
 			res := newTestResult()
 			if arg.TriggerRule {
-				res = newTestResult().add(rule.Level, rule.Name, rulepkg.RuleHandlerMap[rulepkg.DDLCheckCharLength].Message, arg.Param)
+				res = newTestResult().add(rule.Level, rule.Name, plocale.ShouldLocalizeMessage(plocale.DefaultLocalizer, rulepkg.RuleHandlerMap[rulepkg.DDLCheckCharLength].Message), arg.Param)
 			}
 			runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckCharLength].Rule, t, "", inspect, arg.Sql, res)
 		})

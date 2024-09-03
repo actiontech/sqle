@@ -2,19 +2,20 @@ package mysql
 
 import (
 	"fmt"
-	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 	"testing"
 
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestPTOSC(t *testing.T) {
-	expect := "pt-online-schema-change D=exist_db,t=%s --alter='%s' --host=127.0.0.1 --user=root --port=3306 --ask-pass --print --execute"
+	expect := "[osc]pt-online-schema-change D=exist_db,t=%s --alter='%s' --host=127.0.0.1 --user=root --port=3306 --ask-pass --print --execute"
 
 	runOSCCase(t, "add column not null no default",
 		"alter table exist_tb_1 add column v3 varchar(255) NOT NULL;",
-		plocale.ShouldLocalizeMessage(plocale.DefaultLocalizer, plocale.PTOSCNoUniqueIndexOrPrimaryKey))
+		plocale.ShouldLocalizeMessage(plocale.DefaultLocalizer, plocale.PTOSCAvoidNoDefaultValueOnNotNullColumn))
 
 	runOSCCase(t, "not pk and unique key",
 		"alter table exist_tb_3 add column v3 varchar(255);",
@@ -58,5 +59,5 @@ func runOSCCase(t *testing.T, desc string, sql, expect string) {
 		t.Error(err)
 		return
 	}
-	assert.Equal(t, expect, actual, desc)
+	assert.Equal(t, expect, actual[locale.DefaultLang.String()], desc)
 }
