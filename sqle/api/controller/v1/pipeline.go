@@ -52,6 +52,10 @@ func (p *pipelineNodeDetail) fillWith(node *pipeline.PipelineNode) {
 	if node == nil {
 		return
 	}
+	integrationInfo, err := node.IntegrationInfo()
+	if err != nil {
+		integrationInfo = err.Error()
+	}
 	p.ID = node.ID
 	p.Name = node.Name
 	p.Type = node.NodeType
@@ -61,7 +65,7 @@ func (p *pipelineNodeDetail) fillWith(node *pipeline.PipelineNode) {
 	p.ObjectType = node.ObjectType
 	p.AuditMethod = node.AuditMethod
 	p.RuleTemplateName = node.RuleTemplateName
-	p.IntegrationInfo = node.IntegrationInfo()
+	p.IntegrationInfo = integrationInfo
 }
 
 // pipelineNodeBase 流水线节点基础信息
@@ -332,7 +336,7 @@ func UpdatePipeline(c echo.Context) error {
 
 	var pipelineSvc pipeline.PipelineSvc
 	svcPipeline := req.convertToSvcPipeline(projectUid, uint(pipelineID))
-	
+
 	err = pipelineSvc.CheckRuleTemplate(svcPipeline)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
