@@ -230,7 +230,7 @@ func (mgr *Manager) sync() error {
 		}
 	}
 	// 增量同步智能扫描任务，根据数据库记录的更新时间筛选，更新后将下次筛选的时间为上一次记录的最晚的更新时间。
-	aps, err := mgr.persist.GetLatestAuditPlanRecordsV2()
+	aps, err := mgr.persist.GetLatestAuditPlanRecordsV2(*mgr.lastSyncTime)
 	if err != nil {
 		return err
 	}
@@ -241,6 +241,7 @@ func (mgr *Manager) sync() error {
 		if err != nil {
 			mgr.logger.WithField("id", ap.ID).Errorf("sync audit task failed, error: %v", err)
 		}
+		mgr.lastSyncTime = &ap.UpdatedAt
 	}
 	return nil
 }

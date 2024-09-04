@@ -191,7 +191,7 @@ func CreateInstanceAuditPlan(c echo.Context) error {
 		AuditPlans:   auditPlans,
 		ActiveStatus: model.ActiveStatusNormal,
 	}
-	err = s.Save(ap)
+	err = s.SaveInstanceAuditPlan(ap)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -781,16 +781,18 @@ func GetInstanceAuditPlanOverview(c echo.Context) error {
 
 		typeBase := ConvertAuditPlanTypeToRes(v.ID, v.Type)
 		resAuditPlan := InstanceAuditPlanInfo{
-			ID:                 v.ID,
-			Type:               typeBase,
-			DBType:             detail.DBType,
-			InstanceName:       inst.Name,
-			ExecCmd:            execCmd,
-			RuleTemplate:       ruleTemplate,
-			TotalSQLNums:       totalSQLNums,
-			UnsolvedSQLNums:    unsolvedSQLNums,
-			LastCollectionTime: v.LastCollectionTime,
-			ActiveStatus:       v.ActiveStatus,
+			ID:              v.ID,
+			Type:            typeBase,
+			DBType:          detail.DBType,
+			InstanceName:    inst.Name,
+			ExecCmd:         execCmd,
+			RuleTemplate:    ruleTemplate,
+			TotalSQLNums:    totalSQLNums,
+			UnsolvedSQLNums: unsolvedSQLNums,
+			ActiveStatus:    v.ActiveStatus,
+		}
+		if v.AuditPlanTaskInfo != nil {
+			resAuditPlan.LastCollectionTime = v.AuditPlanTaskInfo.LastCollectionTime
 		}
 		resAuditPlans = append(resAuditPlans, resAuditPlan)
 	}
