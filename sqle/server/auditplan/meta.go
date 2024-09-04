@@ -2,7 +2,7 @@ package auditplan
 
 import (
 	"fmt"
-
+	scannerCmd "github.com/actiontech/sqle/sqle/cmd/scannerd/command"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 
 	"github.com/sirupsen/logrus"
@@ -28,18 +28,18 @@ type MetaBuilder struct {
 
 const (
 	TypeDefault               = "default"
-	TypeMySQLSlowLog          = "mysql_slow_log"
-	TypeMySQLMybatis          = "mysql_mybatis"
+	TypeMySQLSlowLog          = scannerCmd.TypeMySQLSlowLog
+	TypeMySQLMybatis          = scannerCmd.TypeMySQLMybatis
 	TypeMySQLSchemaMeta       = "mysql_schema_meta"
 	TypeMySQLProcesslist      = "mysql_processlist"
 	TypeAliRdsMySQLSlowLog    = "ali_rds_mysql_slow_log"
 	TypeAliRdsMySQLAuditLog   = "ali_rds_mysql_audit_log"
 	TypeHuaweiRdsMySQLSlowLog = "huawei_rds_mysql_slow_log"
 	TypeOracleTopSQL          = "oracle_top_sql"
-	TypeTiDBAuditLog          = "tidb_audit_log"
+	TypeTiDBAuditLog          = scannerCmd.TypeTiDBAuditLog
 	TypeAllAppExtract         = "all_app_extract"
 	TypeBaiduRdsMySQLSlowLog  = "baidu_rds_mysql_slow_log"
-	TypeSQLFile               = "sql_file"
+	TypeSQLFile               = scannerCmd.TypeSQLFile
 )
 
 const (
