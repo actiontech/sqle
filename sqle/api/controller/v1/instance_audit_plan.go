@@ -17,6 +17,7 @@ import (
 	v1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	dmsCommonJwt "github.com/actiontech/dms/pkg/dms-common/api/jwt"
 	"github.com/actiontech/sqle/sqle/api/controller"
+	scannerCmd "github.com/actiontech/sqle/sqle/cmd/scannerd/command"
 	"github.com/actiontech/sqle/sqle/config"
 	dms "github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/driver"
@@ -820,8 +821,23 @@ func GetAuditPlanExecCmd(projectName string, iap *model.InstanceAuditPlan, ap *m
 		return ""
 	}
 
-	cmd := `./scannerd %s --project=%s --host=%s --port=%s  --audit_plan_id=%d  --token=%s`
-	return fmt.Sprintf(cmd, ap.Type, projectName, ip, port, ap.ID, iap.Token)
+	scannerd, err := scannerCmd.GetScannerdCmd(ap.Type)
+	if err != nil {
+		logger.Infof("get scannerd %s failed %s", ap.Type, err)
+		return ""
+	}
+	cmd, err := scannerd.GenCommand("./scannerd", map[string]string{
+		scannerCmd.FlagHost:        ip,
+		scannerCmd.FlagPort:        port,
+		scannerCmd.FlagProject:     projectName,
+		scannerCmd.FlagToken:       iap.Token,
+		scannerCmd.FlagAuditPlanID: string(ap.ID),
+	})
+	if err != nil {
+		logger.Infof("generate scannerd %s command failed %s", ap.Type, err)
+		return ""
+	}
+	return cmd
 }
 
 type UpdateInstanceAuditPlanStatusReqV1 struct {
