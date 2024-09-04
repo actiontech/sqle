@@ -9,6 +9,7 @@ import (
 
 	dmsCommonJwt "github.com/actiontech/dms/pkg/dms-common/api/jwt"
 	"github.com/actiontech/sqle/sqle/api/controller"
+	scannerCmd "github.com/actiontech/sqle/sqle/cmd/scannerd/command"
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/aliyun/credentials-go/credentials/utils"
@@ -30,40 +31,49 @@ func (pipe Pipeline) NodeCount() uint32 {
 	return uint32(len(pipe.PipelineNodes))
 }
 
-func (node PipelineNode) IntegrationInfo() string {
+func (node PipelineNode) IntegrationInfo() (string, error) {
 	dmsAddr := controller.GetDMSServerAddress()
 	parsedURL, err := url.Parse(dmsAddr)
 	if err != nil {
-		return ""
+		return "", err
 	}
 	ip, port, err := net.SplitHostPort(parsedURL.Host)
 	if err != nil {
-		return ""
+		return "", err
 	}
 
 	switch model.PipelineNodeType(node.NodeType) {
 	case model.NodeTypeAudit:
 		var cmdUsage = "#使用方法#\n1. 确保运行该命令的用户具有scannerd的执行权限。\n2. 在scannerd文件所在目录执行启动命令。\n#启动命令#\n"
-		baseCmd := "./scannerd %s --host=\"%s\" --port=\"%s\" --dir=\"%s\" --token=\"%s\""
-		var extraArgs string
+
+		var cmd string
 		var cmdType string
 		if model.ObjectType(node.ObjectType) == model.ObjectTypeSQL {
-			cmdType = "sql_file"
+			cmdType = scannerCmd.TypeSQLFile
 		}
 		if model.ObjectType(node.ObjectType) == model.ObjectTypeMyBatis {
-			cmdType = "mysql_mybatis"
+			cmdType = scannerCmd.TypeMySQLMybatis
 		}
-		if model.AuditMethod(node.AuditMethod) == model.AuditMethodOnline {
-			extraArgs = fmt.Sprintf(" --instance-name=\"%s\"", node.InstanceName)
+		sqlfile, err := scannerCmd.GetScannerdCmd(cmdType)
+		if err != nil {
+			return "", err
 		}
-		if model.AuditMethod(node.AuditMethod) == model.AuditMethodOffline {
-			extraArgs = fmt.Sprintf(" --db-type=\"%s\"", node.InstanceType)
+		cmd, err = sqlfile.GenCommand("./scannerd", map[string]string{
+			scannerCmd.FlagHost:         ip,
+			scannerCmd.FlagPort:         port,
+			scannerCmd.FlagToken:        node.Token,
+			scannerCmd.FlagDirectory:    node.ObjectPath,
+			scannerCmd.FlagDbType:       node.InstanceType,
+			scannerCmd.FlagInstanceName: node.InstanceName,
+		})
+		if err != nil {
+			return "", err
 		}
-		return fmt.Sprintf(cmdUsage+baseCmd+extraArgs, cmdType, ip, port, node.ObjectPath, node.Token)
+		return cmdUsage + cmd, nil
 	case model.NodeTypeRelease:
-		return ""
+		return "", fmt.Errorf("unsupport node type release")
 	default:
-		return ""
+		return "", fmt.Errorf("unsupport node type unknown")
 	}
 }
 
