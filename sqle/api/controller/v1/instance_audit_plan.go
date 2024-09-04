@@ -831,7 +831,7 @@ func GetAuditPlanExecCmd(projectName string, iap *model.InstanceAuditPlan, ap *m
 		scannerCmd.FlagPort:        port,
 		scannerCmd.FlagProject:     projectName,
 		scannerCmd.FlagToken:       iap.Token,
-		scannerCmd.FlagAuditPlanID: string(ap.ID),
+		scannerCmd.FlagAuditPlanID: fmt.Sprint(ap.ID),
 	})
 	if err != nil {
 		logger.Infof("generate scannerd %s command failed %s", ap.Type, err)
