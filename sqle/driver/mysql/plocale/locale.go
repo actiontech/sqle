@@ -2,94 +2,45 @@ package plocale
 
 import (
 	"embed"
-	"fmt"
 
-	"github.com/BurntSushi/toml"
-	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/log"
+	"github.com/actiontech/sqle/sqle/pkg/i18nPkg"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
+	"golang.org/x/text/language"
 )
 
 //go:embed active.*.toml
-var LocaleFS embed.FS
+var localeFS embed.FS
 
-var bundle *i18n.Bundle
-
-var defaultLang = locale.DefaultLang
-
-var DefaultLocalizer *i18n.Localizer
-
-var AllLocalizers map[string]*i18n.Localizer
-
-var newEntry = log.NewEntry()
+var Bundle *i18nPkg.Bundle
 
 func init() {
-	bundle = i18n.NewBundle(defaultLang)
-	bundle.RegisterUnmarshalFunc("toml", toml.Unmarshal)
-	_, err := bundle.LoadMessageFileFS(LocaleFS, "active.zh.toml")
+	b, err := i18nPkg.NewBundleFromTomlDir(localeFS, log.NewEntry())
 	if err != nil {
-		panic(fmt.Sprintf("MySQL plugin load i18n config failed, error: %v", err))
+		panic(err)
 	}
-	_, err = bundle.LoadMessageFileFS(LocaleFS, "active.en.toml")
-	if err != nil {
-		panic(fmt.Sprintf("MySQL plugin load i18n config failed, error: %v", err))
-	}
-
-	AllLocalizers = make(map[string]*i18n.Localizer, len(bundle.LanguageTags()))
-	for _, langTag := range bundle.LanguageTags() {
-		AllLocalizers[langTag.String()] = GetLocalizer(langTag.String())
-	}
-	DefaultLocalizer = AllLocalizers[defaultLang.String()]
+	Bundle = b
 }
 
-func GetLocalizer(langs ...string) *i18n.Localizer {
-	l := i18n.NewLocalizer(bundle, langs...)
-	return l
+// todo i18n 把调用下列函数的地方改成直接使用 Bundle对应方法
+
+// ShouldLocalizeMsgByLang todo i18n MySQL插件用到这个函数的地方应该都没完成国际化（低优先级）
+func ShouldLocalizeMsgByLang(lang language.Tag, msg *i18n.Message) string {
+	return Bundle.ShouldLocalizeMsgByLang(lang, msg)
 }
 
-func ShouldLocalizeMessage(localizer *i18n.Localizer, msg *i18n.Message) string {
-	m, err := localizer.LocalizeMessage(msg)
-	if err != nil {
-		newEntry.Errorf("MySQL plugin LocalizeMessage %v failed: %v", msg.ID, err)
-	}
-	return m
+func ShouldLocalizeAll(msg *i18n.Message) i18nPkg.I18nStr {
+	return Bundle.ShouldLocalizeAll(msg)
 }
 
-func ShouldLocalizeAll(msg *i18n.Message) map[string]string {
-	result := make(map[string]string, len(AllLocalizers))
-	for langTag, localizer := range AllLocalizers {
-		result[langTag] = ShouldLocalizeMessage(localizer, msg)
-	}
-	return result
+func ShouldLocalizeAllWithArgs(msg *i18n.Message, args ...any) i18nPkg.I18nStr {
+	return Bundle.ShouldLocalizeAllWithArgs(msg, args...)
 }
 
-func ShouldLocalizeAllWithArgs(msg *i18n.Message, args ...any) map[string]string {
-	result := make(map[string]string, len(AllLocalizers))
-	for langTag, localizer := range AllLocalizers {
-		result[langTag] = fmt.Sprintf(ShouldLocalizeMessage(localizer, msg), args...)
-	}
-	return result
+func ShouldLocalizeAllWithFmt(fmtMsg *i18n.Message, msg ...*i18n.Message) i18nPkg.I18nStr {
+	return Bundle.ShouldLocalizeAllWithMsgArgs(fmtMsg, msg...)
 }
 
-func ShouldLocalizeAllWithFmt(fmtMsg *i18n.Message, msg ...*i18n.Message) map[string]string {
-	result := make(map[string]string, len(AllLocalizers))
-	for langTag, localizer := range AllLocalizers {
-		strs := make([]any, len(msg))
-		for k, m := range msg {
-			strs[k] = ShouldLocalizeMessage(localizer, m)
-		}
-		result[langTag] = fmt.Sprintf(ShouldLocalizeMessage(localizer, fmtMsg), strs...)
-	}
-	return result
-}
-
-func ConvertStr2I18n(s string) map[string]string {
-	if s == "" {
-		return nil
-	}
-	result := make(map[string]string, len(AllLocalizers))
-	for langTag := range AllLocalizers {
-		result[langTag] = s
-	}
-	return result
+func ConvertStr2I18n(s string) i18nPkg.I18nStr {
+	return i18nPkg.ConvertStr2I18nAsDefaultLang(s)
 }
