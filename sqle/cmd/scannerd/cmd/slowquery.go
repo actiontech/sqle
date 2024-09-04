@@ -6,10 +6,10 @@ import (
 	"os"
 	"time"
 
+	scannerCmd "github.com/actiontech/sqle/sqle/cmd/scannerd/command"
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners/slowquery"
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners/supervisor"
 	"github.com/actiontech/sqle/sqle/pkg/scanner"
-	pkgAP "github.com/actiontech/sqle/sqle/server/auditplan"
 	"github.com/fatih/color"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -23,7 +23,7 @@ var (
 	excludeSchemas string
 
 	slowlogCmd = &cobra.Command{
-		Use:   pkgAP.TypeMySQLSlowLog,
+		Use:   scannerCmd.TypeMySQLSlowLog,
 		Short: "Parse slow query",
 		Run: func(cmd *cobra.Command, args []string) {
 			param := &slowquery.Params{
@@ -52,11 +52,19 @@ var (
 )
 
 func init() {
-	slowlogCmd.Flags().StringVarP(&logFilePath, "log-file", "", "", "log file absolute path")
-	slowlogCmd.Flags().StringVarP(&includeUsers, "include-user-list", "", "", "include mysql user list, split by \",\"")
-	slowlogCmd.Flags().StringVarP(&excludeUsers, "exclude-user-list", "", "", "exclude mysql user list, split by \",\"")
-	slowlogCmd.Flags().StringVarP(&includeSchemas, "include-schema-list", "", "", "include mysql schema list, split by \",\"")
-	slowlogCmd.Flags().StringVarP(&excludeSchemas, "exclude-schema-list", "", "", "exclude mysql schema list, split by \",\"")
-	_ = slowlogCmd.MarkFlagRequired("log-file")
+	slowlog, err := scannerCmd.GetScannerdCmd(scannerCmd.TypeMySQLSlowLog)
+	if err != nil {
+		panic(err)
+	}
+	slowlogCmd.Flags().StringVarP(slowlog.StringFlagFn[scannerCmd.FlagLogFile](&logFilePath))
+	slowlogCmd.Flags().StringVarP(slowlog.StringFlagFn[scannerCmd.FlagIncludeUserList](&includeUsers))
+	slowlogCmd.Flags().StringVarP(slowlog.StringFlagFn[scannerCmd.FlagExcludeUserList](&excludeUsers))
+	slowlogCmd.Flags().StringVarP(slowlog.StringFlagFn[scannerCmd.FlagIncludeSchemaList](&includeSchemas))
+	slowlogCmd.Flags().StringVarP(slowlog.StringFlagFn[scannerCmd.FlagExcludeSchemaList](&excludeSchemas))
+
+	for _, requiredFlag := range slowlog.RequiredFlags {
+		_ = slowlogCmd.MarkFlagRequired(requiredFlag)
+	}
+
 	rootCmd.AddCommand(slowlogCmd)
 }

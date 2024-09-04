@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	pkgScanner "github.com/actiontech/sqle/sqle/pkg/scanner"
+	scannerCmd "github.com/actiontech/sqle/sqle/cmd/scannerd/command"
 
 	"github.com/spf13/cobra"
 )
@@ -27,13 +27,20 @@ var (
 )
 
 func init() {
-	rootCmd.PersistentFlags().StringVarP(&rootCmdFlags.host, "host", "H", "127.0.0.1", "sqle host")
-	rootCmd.PersistentFlags().StringVarP(&rootCmdFlags.port, "port", "P", "10000", "sqle port")
-	rootCmd.PersistentFlags().StringVarP(&rootCmdFlags.auditPlanID, "audit_plan_id", "", "", "audit plan id")
-	rootCmd.PersistentFlags().StringVarP(&rootCmdFlags.token, "token", "A", "", "sqle token")
-	rootCmd.PersistentFlags().IntVarP(&rootCmdFlags.timeout, "timeout", "T", pkgScanner.DefaultTimeoutNum, "request sqle timeout in seconds")
-	rootCmd.PersistentFlags().StringVarP(&rootCmdFlags.project, "project", "J", "default", "project name")
-	_ = rootCmd.MarkPersistentFlagRequired("token")
+	root, err := scannerCmd.GetScannerdCmd(scannerCmd.TypeRootScannerd)
+	if err != nil {
+		panic(err)
+	}
+	rootCmd.PersistentFlags().StringVarP(root.StringFlagFn[scannerCmd.FlagHost](&rootCmdFlags.host))
+	rootCmd.PersistentFlags().StringVarP(root.StringFlagFn[scannerCmd.FlagPort](&rootCmdFlags.port))
+	rootCmd.PersistentFlags().StringVarP(root.StringFlagFn[scannerCmd.FlagAuditPlanID](&rootCmdFlags.auditPlanID))
+	rootCmd.PersistentFlags().StringVarP(root.StringFlagFn[scannerCmd.FlagToken](&rootCmdFlags.token))
+	rootCmd.PersistentFlags().IntVarP(root.IntFlagFn[scannerCmd.FlagTimeout](&rootCmdFlags.timeout))
+	rootCmd.PersistentFlags().StringVarP(root.StringFlagFn[scannerCmd.FlagProject](&rootCmdFlags.project))
+
+	for _, requiredFlag := range root.RequiredFlags {
+		_ = rootCmd.MarkPersistentFlagRequired(requiredFlag)
+	}
 }
 
 func Execute(ctx context.Context) error {
