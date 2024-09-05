@@ -298,12 +298,20 @@ func ConvertSourceRule(sr *SourceRule) *driverV2.Rule {
 	r := &driverV2.Rule{
 		Name:         sr.Name,
 		Level:        sr.Level,
-		Params:       nil,
+		Params:       make(params.Params, 0, len(sr.Params)),
 		I18nRuleInfo: genAllI18nRuleInfo(sr),
 	}
-	if info, exist := r.I18nRuleInfo[locale.DefaultLang]; exist {
-		r.Params = info.Params
+	for _, v := range sr.Params {
+		r.Params = append(r.Params, &params.Param{
+			Key:      v.Key,
+			Value:    v.Value,
+			Desc:     plocale.ShouldLocalizeMsgByLang(locale.DefaultLang, v.Desc),
+			I18nDesc: plocale.ShouldLocalizeAll(v.Desc),
+			Type:     v.Type,
+			Enums:    nil, // all nil now
+		})
 	}
+
 	return r
 }
 
@@ -315,19 +323,9 @@ func genAllI18nRuleInfo(sr *SourceRule) map[language.Tag]*driverV2.RuleInfo {
 			Annotation: plocale.ShouldLocalizeMsgByLang(langTag, sr.Annotation),
 			Category:   plocale.ShouldLocalizeMsgByLang(langTag, sr.Category),
 			//Level:      sr.Level,
-			Params:    make(params.Params, len(sr.Params)),
 			Knowledge: driverV2.RuleKnowledge{Content: sr.Knowledge.Content}, //todo i18n Knowledge
 		}
 
-		for k, v := range sr.Params {
-			newInfo.Params[k] = &params.Param{
-				Key:      v.Key,
-				Value:    v.Value,
-				Type:     v.Type,
-				Enums:    nil, // all nil now
-				I18nDesc: plocale.ShouldLocalizeAll(v.Desc),
-			}
-		}
 		result[langTag] = newInfo
 	}
 	return result
