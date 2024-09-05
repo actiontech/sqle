@@ -165,17 +165,17 @@ func TestInspect_GenRollbackSQL(t *testing.T) {
 
 	rollback, reason, err := i.GenRollbackSQL(context.TODO(), "create table t1(id int, c1 int)")
 	assert.NoError(t, err)
-	assert.Equal(t, "", reason[locale.DefaultLang.String()])
+	assert.Equal(t, "", reason[locale.DefaultLang])
 	assert.Equal(t, "DROP TABLE IF EXISTS `exist_db`.`t1`", rollback)
 
 	rollback, reason, err = i.GenRollbackSQL(context.TODO(), "alter table t1 drop column c1")
 	assert.NoError(t, err)
-	assert.Equal(t, "", reason[locale.DefaultLang.String()])
+	assert.Equal(t, "", reason[locale.DefaultLang])
 	assert.Equal(t, "ALTER TABLE `exist_db`.`t1`\nADD COLUMN `c1` int(11);", rollback)
 
 	rollback, reason, err = i.GenRollbackSQL(context.TODO(), "alter table t1 add column c1 int")
 	assert.NoError(t, err)
-	assert.Equal(t, "", reason[locale.DefaultLang.String()])
+	assert.Equal(t, "", reason[locale.DefaultLang])
 	assert.Equal(t, "ALTER TABLE `exist_db`.`t1`\nDROP COLUMN `c1`;", rollback)
 }
 func TestInspect_assertSQLType(t *testing.T) {

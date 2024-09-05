@@ -9,9 +9,11 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/locale"
+	"github.com/actiontech/sqle/sqle/pkg/i18nPkg"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	goPlugin "github.com/hashicorp/go-plugin"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/text/language"
 )
 
 type PluginProcessorV1 struct {
@@ -26,22 +28,22 @@ func convertRuleFromV1ToV2(rule *driverV1.Rule) *driverV2.Rule {
 	var ps = make(params.Params, 0, len(rule.Params))
 	for _, p := range rule.Params {
 		ps = append(ps, &params.Param{
-			Key:   p.Key,
-			Value: p.Value,
-			Desc:  p.Desc,
-			Type:  p.Type,
+			Key:      p.Key,
+			Value:    p.Value,
+			Desc:     p.Desc,
+			Type:     p.Type,
+			I18nDesc: p.I18nDesc.Copy(),
 		})
 	}
 	return &driverV2.Rule{
 		Name:   rule.Name,
 		Level:  driverV2.RuleLevel(rule.Level),
 		Params: ps,
-		I18nRuleInfo: map[string]*driverV2.RuleInfo{
-			locale.DefaultLang.String(): {
+		I18nRuleInfo: map[language.Tag]*driverV2.RuleInfo{
+			locale.DefaultLang: {
 				Desc:       rule.Desc,
 				Annotation: rule.Annotation,
 				Category:   rule.Category,
-				Params:     ps,
 				Knowledge:  driverV2.RuleKnowledge{},
 			},
 		},
@@ -103,9 +105,9 @@ func (d *PluginProcessorV1) Open(l *logrus.Entry, cfgV2 *driverV2.Config) (Plugi
 	for _, rule := range cfgV2.Rules {
 		cfg.Rules = append(cfg.Rules, &driverV1.Rule{
 			Name:       rule.Name,
-			Desc:       rule.I18nRuleInfo.GetRuleInfoByLangTag(locale.DefaultLang.String()).Desc,
-			Annotation: rule.I18nRuleInfo.GetRuleInfoByLangTag(locale.DefaultLang.String()).Annotation,
-			Category:   rule.I18nRuleInfo.GetRuleInfoByLangTag(locale.DefaultLang.String()).Category,
+			Desc:       rule.I18nRuleInfo.GetRuleInfoByLangTag(locale.DefaultLang).Desc,
+			Annotation: rule.I18nRuleInfo.GetRuleInfoByLangTag(locale.DefaultLang).Annotation,
+			Category:   rule.I18nRuleInfo.GetRuleInfoByLangTag(locale.DefaultLang).Category,
 			Level:      driverV1.RuleLevel(rule.Level),
 			Params:     rule.Params,
 		})
@@ -171,8 +173,8 @@ func (p *PluginImplV1) Audit(ctx context.Context, sqls []string) ([]*driverV2.Au
 		for _, result := range resultV1.Results {
 			resultV2.Results = append(resultV2.Results, &driverV2.AuditResult{
 				Level: driverV2.RuleLevel(result.Level),
-				I18nAuditResultInfo: map[string]driverV2.AuditResultInfo{
-					locale.DefaultLang.String(): {
+				I18nAuditResultInfo: map[language.Tag]driverV2.AuditResultInfo{
+					locale.DefaultLang: {
 						Message: result.Message,
 					},
 				},
@@ -183,13 +185,13 @@ func (p *PluginImplV1) Audit(ctx context.Context, sqls []string) ([]*driverV2.Au
 	return resultsV2, nil
 }
 
-func (p *PluginImplV1) GenRollbackSQL(ctx context.Context, sql string) (string, driverV2.I18nStr, error) {
+func (p *PluginImplV1) GenRollbackSQL(ctx context.Context, sql string) (string, i18nPkg.I18nStr, error) {
 	client, err := p.DriverManager.GetAuditDriver()
 	if err != nil {
 		return "", nil, err
 	}
 	rollbackSql, reason, err := client.GenRollbackSQL(ctx, sql)
-	return rollbackSql, driverV2.I18nStr{locale.DefaultLang.String(): reason}, err
+	return rollbackSql, i18nPkg.ConvertStr2I18nAsDefaultLang(reason), err
 }
 
 func (p *PluginImplV1) Ping(ctx context.Context) error {

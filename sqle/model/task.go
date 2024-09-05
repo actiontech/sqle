@@ -13,7 +13,9 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/locale"
+	"github.com/actiontech/sqle/sqle/pkg/i18nPkg"
 	"github.com/actiontech/sqle/sqle/utils"
+	"golang.org/x/text/language"
 	"gorm.io/gorm"
 )
 
@@ -158,7 +160,7 @@ type AuditResult struct {
 	I18nAuditResultInfo I18nAuditResultInfo `json:"i18n_audit_result_info"`
 }
 
-func (ar *AuditResult) GetAuditMsgByLangTag(lang string) string {
+func (ar *AuditResult) GetAuditMsgByLangTag(lang language.Tag) string {
 	if len(ar.I18nAuditResultInfo) == 0 {
 		// 兼容老sqle数据
 		return ar.Message
@@ -170,18 +172,18 @@ type AuditResultInfo struct {
 	Message string
 }
 
-type I18nAuditResultInfo map[string]AuditResultInfo
+type I18nAuditResultInfo map[language.Tag]AuditResultInfo
 
-func (i *I18nAuditResultInfo) GetAuditResultInfoByLangTag(lang string) *AuditResultInfo {
+func (i *I18nAuditResultInfo) GetAuditResultInfoByLangTag(lang language.Tag) *AuditResultInfo {
 	if i == nil {
 		return &AuditResultInfo{}
 	}
-	for langTag, ari := range *i {
-		if strings.HasPrefix(lang, langTag) {
-			return &ari
-		}
+
+	if ruleInfo, ok := (*i)[lang]; ok {
+		return &ruleInfo
 	}
-	ruleInfo := (*i)[locale.DefaultLang.String()]
+
+	ruleInfo := (*i)[locale.DefaultLang]
 	return &ruleInfo
 }
 
@@ -194,15 +196,15 @@ func (i *I18nAuditResultInfo) Scan(input interface{}) error {
 	return json.Unmarshal(input.([]byte), i)
 }
 
-func ConvertI18NAuditResultInfoMapToI18nStr(m I18nAuditResultInfo) driverV2.I18nStr {
-	s := make(map[string]string, len(m))
+func ConvertI18NAuditResultInfoMapToI18nStr(m I18nAuditResultInfo) i18nPkg.I18nStr {
+	s := make(i18nPkg.I18nStr, len(m))
 	for lang, v := range m {
 		s[lang] = v.Message
 	}
 	return s
 }
 
-func ConvertI18nStrToI18NAuditResultInfoMap(s driverV2.I18nStr) I18nAuditResultInfo {
+func ConvertI18nStrToI18NAuditResultInfoMap(s i18nPkg.I18nStr) I18nAuditResultInfo {
 	m := make(I18nAuditResultInfo, len(s))
 	for lang, v := range s {
 		m[lang] = AuditResultInfo{
@@ -229,7 +231,7 @@ func (a *AuditResults) String(ctx context.Context) string {
 	msgs := make([]string, len(*a))
 	for i := range *a {
 		res := (*a)[i]
-		msgs[i] = res.GetAuditMsgByLangTag(lang.String())
+		msgs[i] = res.GetAuditMsgByLangTag(lang)
 	}
 	return strings.Join(msgs, "\n")
 }
@@ -249,7 +251,7 @@ func ConvertAuditResultFromDriverToModel(dar *driverV2.AuditResult) *AuditResult
 	newAr := &AuditResult{
 		Level:               string(dar.Level),
 		RuleName:            dar.RuleName,
-		I18nAuditResultInfo: make(map[string]AuditResultInfo, len(dar.I18nAuditResultInfo)),
+		I18nAuditResultInfo: make(map[language.Tag]AuditResultInfo, len(dar.I18nAuditResultInfo)),
 	}
 	for langTag, info := range dar.I18nAuditResultInfo {
 		newAr.I18nAuditResultInfo[langTag] = AuditResultInfo{
@@ -263,7 +265,7 @@ func ConvertAuditResultFromModelToDriver(mar *AuditResult) *driverV2.AuditResult
 	newAr := &driverV2.AuditResult{
 		Level:               driverV2.RuleLevel(mar.Level),
 		RuleName:            mar.RuleName,
-		I18nAuditResultInfo: make(map[string]driverV2.AuditResultInfo, len(mar.I18nAuditResultInfo)),
+		I18nAuditResultInfo: make(map[language.Tag]driverV2.AuditResultInfo, len(mar.I18nAuditResultInfo)),
 	}
 	for langTag, info := range mar.I18nAuditResultInfo {
 		newAr.I18nAuditResultInfo[langTag] = driverV2.AuditResultInfo{

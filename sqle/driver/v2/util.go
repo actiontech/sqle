@@ -8,6 +8,7 @@ import (
 	protoV2 "github.com/actiontech/sqle/sqle/driver/v2/proto"
 	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/pkg/params"
+	"golang.org/x/text/language"
 )
 
 const (
@@ -102,21 +103,25 @@ func ConvertI18nAuditResultFromProtoToDriver(par *protoV2.AuditResult) (*AuditRe
 	ar := &AuditResult{
 		RuleName:            par.RuleName,
 		Level:               RuleLevel(par.Level),
-		I18nAuditResultInfo: make(map[string]AuditResultInfo, len(par.I18NAuditResultInfo)),
+		I18nAuditResultInfo: make(map[language.Tag]AuditResultInfo, len(par.I18NAuditResultInfo)),
 	}
 	if len(par.I18NAuditResultInfo) == 0 {
 		// 对非多语言的插件支持
-		ar.I18nAuditResultInfo = map[string]AuditResultInfo{
-			locale.DefaultLang.String(): {Message: par.Message},
+		ar.I18nAuditResultInfo = map[language.Tag]AuditResultInfo{
+			locale.DefaultLang: {Message: par.Message},
 		}
 	} else {
 		if _, exist := par.I18NAuditResultInfo[locale.DefaultLang.String()]; !exist {
 			// 多语言的插件 审核结果需包含 locale.DefaultLang
-			return nil, fmt.Errorf("client audit results must support language: %s", locale.DefaultLang.String())
+			return nil, fmt.Errorf("client audit results must support language: %s", locale.DefaultLang)
 		}
 	}
 	for langTag, ruleInfo := range par.I18NAuditResultInfo {
-		ar.I18nAuditResultInfo[langTag] = AuditResultInfo{
+		tag, err := language.Parse(langTag)
+		if err != nil {
+			return nil, fmt.Errorf("fail to parse I18NAuditResultInfo tag [%s], error: %v", langTag, err)
+		}
+		ar.I18nAuditResultInfo[tag] = AuditResultInfo{
 			Message: ruleInfo.Message,
 		}
 	}
@@ -125,20 +130,20 @@ func ConvertI18nAuditResultFromProtoToDriver(par *protoV2.AuditResult) (*AuditRe
 
 func ConvertI18nAuditResultFromDriverToProto(ar *AuditResult) *protoV2.AuditResult {
 	par := &protoV2.AuditResult{
-		Message:             ar.I18nAuditResultInfo[locale.DefaultLang.String()].Message,
+		Message:             ar.I18nAuditResultInfo[locale.DefaultLang].Message,
 		RuleName:            ar.RuleName,
 		Level:               string(ar.Level),
 		I18NAuditResultInfo: make(map[string]*protoV2.I18NAuditResultInfo, len(ar.I18nAuditResultInfo)),
 	}
 	for langTag, ruleInfo := range ar.I18nAuditResultInfo {
-		par.I18NAuditResultInfo[langTag] = &protoV2.I18NAuditResultInfo{
+		par.I18NAuditResultInfo[langTag.String()] = &protoV2.I18NAuditResultInfo{
 			Message: ruleInfo.Message,
 		}
 	}
 	return par
 }
 
-func ConvertI18nRuleFromProtoToDriver(rule *protoV2.Rule) *Rule {
+func ConvertI18nRuleFromProtoToDriver(rule *protoV2.Rule) (*Rule, error) {
 	dRule := &Rule{
 		Name:         rule.Name,
 		Level:        RuleLevel(rule.Level),
@@ -146,7 +151,11 @@ func ConvertI18nRuleFromProtoToDriver(rule *protoV2.Rule) *Rule {
 		I18nRuleInfo: make(I18nRuleInfo, len(rule.I18NRuleInfo)),
 	}
 	for langTag, ruleInfo := range rule.I18NRuleInfo {
-		dRule.I18nRuleInfo[langTag] = ConvertI18nRuleInfoFromProtoToDriver(ruleInfo)
+		tag, err := language.Parse(langTag)
+		if err != nil {
+			return nil, fmt.Errorf("fail to parse I18NRuleInfo tag [%s], error: %v", langTag, err)
+		}
+		dRule.I18nRuleInfo[tag] = ConvertI18nRuleInfoFromProtoToDriver(ruleInfo)
 	}
 	if len(rule.I18NRuleInfo) == 0 {
 		ruleInfo := &RuleInfo{
@@ -159,10 +168,10 @@ func ConvertI18nRuleFromProtoToDriver(rule *protoV2.Rule) *Rule {
 			ruleInfo.Knowledge = RuleKnowledge{Content: rule.Knowledge.Content}
 		}
 		dRule.I18nRuleInfo = I18nRuleInfo{
-			locale.DefaultLang.String(): ruleInfo,
+			locale.DefaultLang: ruleInfo,
 		}
 	}
-	return dRule
+	return dRule, nil
 }
 
 func ConvertI18nRuleInfoFromProtoToDriver(ruleInfo *protoV2.I18NRuleInfo) *RuleInfo {
@@ -187,18 +196,18 @@ func ConvertI18nRuleFromDriverToProto(rule *Rule) *protoV2.Rule {
 	// 填充默认语言以支持非多语言插件
 	pRule := &protoV2.Rule{
 		Name:       rule.Name,
-		Desc:       rule.I18nRuleInfo[locale.DefaultLang.String()].Desc,
+		Desc:       rule.I18nRuleInfo[locale.DefaultLang].Desc,
 		Level:      string(rule.Level),
-		Category:   rule.I18nRuleInfo[locale.DefaultLang.String()].Category,
+		Category:   rule.I18nRuleInfo[locale.DefaultLang].Category,
 		Params:     ConvertParamToProtoParam(rule.Params),
-		Annotation: rule.I18nRuleInfo[locale.DefaultLang.String()].Annotation,
+		Annotation: rule.I18nRuleInfo[locale.DefaultLang].Annotation,
 		Knowledge: &protoV2.Knowledge{
-			Content: rule.I18nRuleInfo[locale.DefaultLang.String()].Knowledge.Content,
+			Content: rule.I18nRuleInfo[locale.DefaultLang].Knowledge.Content,
 		},
 		I18NRuleInfo: make(map[string]*protoV2.I18NRuleInfo, len(rule.I18nRuleInfo)),
 	}
 	for langTag, ruleInfo := range rule.I18nRuleInfo {
-		pRule.I18NRuleInfo[langTag] = ConvertI18nRuleInfoFromDriverToProto(ruleInfo)
+		pRule.I18NRuleInfo[langTag.String()] = ConvertI18nRuleInfoFromDriverToProto(ruleInfo)
 	}
 	return pRule
 }
@@ -215,7 +224,7 @@ func ConvertI18nRuleInfoFromDriverToProto(ruleInfo *RuleInfo) *protoV2.I18NRuleI
 	}
 }
 
-func ConvertRuleFromProtoToDriver(rule *protoV2.Rule) *Rule {
+func ConvertRuleFromProtoToDriver(rule *protoV2.Rule) (*Rule, error) {
 	var ps = make(params.Params, 0, len(rule.Params))
 	for _, p := range rule.Params {
 		ps = append(ps, &params.Param{
@@ -241,9 +250,13 @@ func ConvertRuleFromProtoToDriver(rule *protoV2.Rule) *Rule {
 		if v.Knowledge != nil {
 			ri.Knowledge = RuleKnowledge{Content: v.Knowledge.Content}
 		}
-		dr.I18nRuleInfo[langTag] = ri
+		tag, err := language.Parse(langTag)
+		if err != nil {
+			return nil, fmt.Errorf("fail to parse I18NRuleInfo tag [%s], error: %v", langTag, err)
+		}
+		dr.I18nRuleInfo[tag] = ri
 	}
-	return dr
+	return dr, nil
 }
 
 func ConvertRuleFromDriverToProto(rule *Rule) *protoV2.Rule {
@@ -257,8 +270,8 @@ func ConvertRuleFromDriverToProto(rule *Rule) *protoV2.Rule {
 		Knowledge:    nil,
 		I18NRuleInfo: make(map[string]*protoV2.I18NRuleInfo, len(rule.I18nRuleInfo)),
 	}
-	for k, v := range rule.I18nRuleInfo {
-		pr.I18NRuleInfo[k] = &protoV2.I18NRuleInfo{
+	for langTag, v := range rule.I18nRuleInfo {
+		pr.I18NRuleInfo[langTag.String()] = &protoV2.I18NRuleInfo{
 			Desc:       v.Desc,
 			Category:   v.Category,
 			Params:     ConvertParamToProtoParam(v.Params),

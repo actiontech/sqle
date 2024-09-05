@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
+	"golang.org/x/text/language"
 
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	"github.com/actiontech/sqle/sqle/driver/mysql/session"
@@ -49,7 +50,7 @@ func (i *MysqlDriverImpl) CheckInvalid(node ast.Node) error {
 	if err != nil && session.IsParseShowCreateTableContentErr(err) {
 		return err // todo #1630 直接返回原始错误类型，方便跳过
 	} else if err != nil {
-		return fmt.Errorf(plocale.ShouldLocalizeMessage(plocale.DefaultLocalizer, plocale.CheckInvalidErrorFormat), err)
+		return fmt.Errorf(plocale.ShouldLocalizeMsgByLang(language.English, plocale.CheckInvalidErrorFormat), err)
 	}
 	return nil
 
@@ -87,7 +88,7 @@ func (i *MysqlDriverImpl) CheckInvalidOffline(node ast.Node) error {
 		err = i.checkUnparsedStmt(stmt)
 	}
 	if err != nil {
-		return fmt.Errorf(plocale.ShouldLocalizeMessage(plocale.DefaultLocalizer, plocale.CheckInvalidErrorFormat), err)
+		return fmt.Errorf(plocale.ShouldLocalizeMsgByLang(language.English, plocale.CheckInvalidErrorFormat), err)
 	}
 	return nil
 }
@@ -177,7 +178,7 @@ func (i *MysqlDriverImpl) checkInvalidCreateTableOffline(stmt *ast.CreateTableSt
 			if constraintName != "" {
 				indexesName = append(indexesName, constraint.Name)
 			} else {
-				constraintName = plocale.ShouldLocalizeMessage(plocale.DefaultLocalizer, plocale.AnonymousMark)
+				constraintName = plocale.ShouldLocalizeMsgByLang(language.English, plocale.AnonymousMark)
 			}
 			names := []string{}
 			for _, col := range constraint.Keys {
@@ -404,7 +405,7 @@ func (i *MysqlDriverImpl) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error
 					indexLowerCaseNameMap.Add(indexName)
 				}
 			} else {
-				indexName = plocale.ShouldLocalizeMessage(plocale.DefaultLocalizer, plocale.AnonymousMark)
+				indexName = plocale.ShouldLocalizeMsgByLang(language.English, plocale.AnonymousMark)
 			}
 			names := []string{}
 			for _, col := range spec.Constraint.Keys {
@@ -490,7 +491,7 @@ func (i *MysqlDriverImpl) checkInvalidAlterTableOffline(stmt *ast.AlterTableStmt
 		case ast.ConstraintUniq, ast.ConstraintIndex, ast.ConstraintFulltext:
 			indexName := spec.Constraint.Name
 			if indexName == "" {
-				indexName = plocale.ShouldLocalizeMessage(plocale.DefaultLocalizer, plocale.AnonymousMark)
+				indexName = plocale.ShouldLocalizeMsgByLang(language.English, plocale.AnonymousMark)
 			}
 			names := []string{}
 			for _, col := range spec.Constraint.Keys {

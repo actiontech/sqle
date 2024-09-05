@@ -11,7 +11,9 @@ import (
 	"github.com/actiontech/sqle/sqle/driver/common"
 	protoV2 "github.com/actiontech/sqle/sqle/driver/v2/proto"
 	"github.com/actiontech/sqle/sqle/locale"
+	"github.com/actiontech/sqle/sqle/pkg/i18nPkg"
 	"github.com/actiontech/sqle/sqle/pkg/params"
+	"golang.org/x/text/language"
 
 	goPlugin "github.com/hashicorp/go-plugin"
 	"google.golang.org/grpc"
@@ -152,7 +154,7 @@ type AuditResults struct {
 type AuditResult struct {
 	Level               RuleLevel
 	RuleName            string
-	I18nAuditResultInfo map[string]AuditResultInfo
+	I18nAuditResultInfo map[language.Tag]AuditResultInfo
 }
 
 type AuditResultInfo struct {
@@ -181,7 +183,7 @@ func (rs *AuditResults) Message() string {
 	repeatCheck := map[string]struct{}{}
 	messages := []string{}
 	for _, result := range rs.Results {
-		token := result.I18nAuditResultInfo[locale.DefaultLang.String()].Message + string(result.Level)
+		token := result.I18nAuditResultInfo[locale.DefaultLang].Message + string(result.Level)
 		if _, ok := repeatCheck[token]; ok {
 			continue
 		}
@@ -190,18 +192,18 @@ func (rs *AuditResults) Message() string {
 		var message string
 		match, _ := regexp.MatchString(fmt.Sprintf(`^\[%s|%s|%s|%s|%s\]`,
 			RuleLevelError, RuleLevelWarn, RuleLevelNotice, RuleLevelNormal, "osc"),
-			result.I18nAuditResultInfo[locale.DefaultLang.String()].Message)
+			result.I18nAuditResultInfo[locale.DefaultLang].Message)
 		if match {
-			message = result.I18nAuditResultInfo[locale.DefaultLang.String()].Message
+			message = result.I18nAuditResultInfo[locale.DefaultLang].Message
 		} else {
-			message = fmt.Sprintf("[%s]%s", result.Level, result.I18nAuditResultInfo[locale.DefaultLang.String()].Message)
+			message = fmt.Sprintf("[%s]%s", result.Level, result.I18nAuditResultInfo[locale.DefaultLang].Message)
 		}
 		messages = append(messages, message)
 	}
 	return strings.Join(messages, "\n")
 }
 
-func (rs *AuditResults) Add(level RuleLevel, ruleName string, i18nMsgPattern I18nStr, args ...interface{}) {
+func (rs *AuditResults) Add(level RuleLevel, ruleName string, i18nMsgPattern i18nPkg.I18nStr, args ...interface{}) {
 	if level == "" || len(i18nMsgPattern) == 0 {
 		return
 	}
@@ -221,7 +223,7 @@ func (rs *AuditResults) Add(level RuleLevel, ruleName string, i18nMsgPattern I18
 		ar := &AuditResult{
 			Level:               level,
 			RuleName:            ruleName,
-			I18nAuditResultInfo: make(map[string]AuditResultInfo, len(i18nMsgPattern)),
+			I18nAuditResultInfo: make(map[language.Tag]AuditResultInfo, len(i18nMsgPattern)),
 		}
 		for langTag, msg := range i18nMsgPattern {
 			ari := AuditResultInfo{

@@ -12,7 +12,9 @@ import (
 	protoV2 "github.com/actiontech/sqle/sqle/driver/v2/proto"
 	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/log"
+	"github.com/actiontech/sqle/sqle/pkg/i18nPkg"
 	"github.com/actiontech/sqle/sqle/pkg/params"
+	"golang.org/x/text/language"
 
 	goPlugin "github.com/hashicorp/go-plugin"
 	"github.com/sirupsen/logrus"
@@ -84,7 +86,11 @@ func (d *PluginProcessorV2) GetDriverMetas() (*driverV2.DriverMetas, error) {
 				return nil, fmt.Errorf("client rule: %s not support language: %s", r.Name, locale.DefaultLang.String())
 			}
 		}
-		rules = append(rules, driverV2.ConvertI18nRuleFromProtoToDriver(r))
+		dr, err := driverV2.ConvertI18nRuleFromProtoToDriver(r)
+		if err != nil {
+			return nil, err
+		}
+		rules = append(rules, dr)
 	}
 
 	ms := make([]driverV2.OptionalModule, 0, len(result.EnabledOptionalModule))
@@ -253,7 +259,7 @@ func (s *PluginImplV2) Audit(ctx context.Context, sqls []string) ([]*driverV2.Au
 	return rets, nil
 }
 
-func (s *PluginImplV2) GenRollbackSQL(ctx context.Context, sql string) (string, driverV2.I18nStr, error) {
+func (s *PluginImplV2) GenRollbackSQL(ctx context.Context, sql string) (string, i18nPkg.I18nStr, error) {
 	api := "GenRollbackSQL"
 	s.preLog(api)
 	resp, err := s.client.GenRollbackSQL(ctx, &protoV2.GenRollbackSQLRequest{
@@ -267,13 +273,17 @@ func (s *PluginImplV2) GenRollbackSQL(ctx context.Context, sql string) (string, 
 		return "", nil, err
 	}
 
-	var i18nReason driverV2.I18nStr
+	var i18nReason i18nPkg.I18nStr
 	if resp.Sql.Message != "" && len(resp.Sql.I18NRollbackSQLInfo) == 0 {
-		i18nReason = driverV2.I18nStr{locale.DefaultLang.String(): resp.Sql.Message}
+		i18nReason = i18nPkg.ConvertStr2I18nAsDefaultLang(resp.Sql.Message)
 	} else if len(resp.Sql.I18NRollbackSQLInfo) > 0 {
-		i18nReason = make(driverV2.I18nStr, len(resp.Sql.I18NRollbackSQLInfo))
+		i18nReason = make(i18nPkg.I18nStr, len(resp.Sql.I18NRollbackSQLInfo))
 		for langTag, v := range resp.Sql.I18NRollbackSQLInfo {
-			i18nReason[langTag] = v.Message
+			tag, err := language.Parse(langTag)
+			if err != nil {
+				return "", nil, fmt.Errorf("fail to parse I18NRollbackSQLInfo tag [%s], error: %v", langTag, err)
+			}
+			i18nReason[tag] = v.Message
 		}
 	}
 	return resp.Sql.Query, i18nReason, nil
@@ -390,7 +400,7 @@ func (s *PluginImplV2) Query(ctx context.Context, sql string, conf *driverV2.Que
 		result.Column = append(result.Column, &params.Param{
 			Key:   p.GetKey(),
 			Value: p.GetValue(),
-			Desc:  p.GetDesc(),
+			Desc:  p.GetDesc(), // todo i18n proto Param
 			Type:  params.ParamType(p.GetType()),
 		})
 	}

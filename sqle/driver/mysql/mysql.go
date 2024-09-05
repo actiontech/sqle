@@ -12,6 +12,7 @@ import (
 	"github.com/actiontech/sqle/sqle/driver/mysql/onlineddl"
 	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 	"github.com/actiontech/sqle/sqle/locale"
+	"github.com/actiontech/sqle/sqle/pkg/i18nPkg"
 
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	"github.com/actiontech/sqle/sqle/driver/mysql/session"
@@ -398,7 +399,7 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 		if err := handler.Func(input); err != nil {
 			// todo #1630 临时跳过解析建表语句失败导致的规则
 			if session.IsParseShowCreateTableContentErr(err) {
-				i.Logger().Errorf("skip rule, rule_desc_name=%v rule_desc=%v err:%v", rule.Name, rule.I18nRuleInfo[locale.DefaultLang.String()].Desc, err.Error())
+				i.Logger().Errorf("skip rule, rule_desc_name=%v rule_desc=%v err:%v", rule.Name, rule.I18nRuleInfo[locale.DefaultLang].Desc, err.Error())
 				continue
 			}
 			return nil, err
@@ -460,7 +461,7 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 	return i.result, nil
 }
 
-func (i *MysqlDriverImpl) GenRollbackSQL(ctx context.Context, sql string) (string, driverV2.I18nStr, error) {
+func (i *MysqlDriverImpl) GenRollbackSQL(ctx context.Context, sql string) (string, i18nPkg.I18nStr, error) {
 	if i.IsOfflineAudit() {
 		return "", nil, nil
 	}

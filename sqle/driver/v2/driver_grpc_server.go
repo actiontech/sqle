@@ -5,12 +5,12 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"sync"
 
 	protoV2 "github.com/actiontech/sqle/sqle/driver/v2/proto"
 	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/pkg/params"
+	"golang.org/x/text/language"
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/status"
@@ -40,17 +40,14 @@ type Rule struct {
 	I18nRuleInfo I18nRuleInfo
 }
 
-type I18nRuleInfo map[string]*RuleInfo
+type I18nRuleInfo map[language.Tag]*RuleInfo
 
 // GetRuleInfoByLangTag if the lang not exists, return DefaultLang
-func (i *I18nRuleInfo) GetRuleInfoByLangTag(lang string) *RuleInfo {
-	for langTag, ruleInfo := range *i {
-		if strings.HasPrefix(lang, langTag) {
-			return ruleInfo
-		}
+func (i *I18nRuleInfo) GetRuleInfoByLangTag(lang language.Tag) *RuleInfo {
+	if ruleInfo, ok := (*i)[lang]; ok {
+		return ruleInfo
 	}
-	ruleInfo := (*i)[locale.DefaultLang.String()]
-	return ruleInfo
+	return (*i)[locale.DefaultLang]
 }
 
 func (i I18nRuleInfo) Value() (driver.Value, error) {
@@ -71,39 +68,6 @@ type RuleInfo struct {
 	Category  string
 	Params    params.Params // 仅用于国际化，ParamValue以 Rule.Params 为准
 	Knowledge RuleKnowledge
-}
-
-type I18nStr map[string]string // lang -> str in the lang
-
-// GetStrInLang if the lang not exists, return DefaultLang
-func (s *I18nStr) GetStrInLang(lang string) string {
-	if s == nil || *s == nil {
-		return ""
-	}
-	for langTag, str := range *s {
-		if strings.HasPrefix(lang, langTag) {
-			return str
-		}
-	}
-	return (*s)[locale.DefaultLang.String()]
-}
-
-func (s *I18nStr) SetStrInLang(lang, str string) {
-	if *s == nil {
-		*s = map[string]string{lang: str}
-	} else {
-		(*s)[lang] = str
-	}
-	return
-}
-
-func (s I18nStr) Value() (driver.Value, error) {
-	b, err := json.Marshal(s)
-	return string(b), err
-}
-
-func (s *I18nStr) Scan(input interface{}) error {
-	return json.Unmarshal(input.([]byte), s)
 }
 
 type Config struct {
@@ -159,7 +123,11 @@ func (d *DriverGrpcServer) Metas(ctx context.Context, req *protoV2.Empty) (*prot
 func (d *DriverGrpcServer) Init(ctx context.Context, req *protoV2.InitRequest) (*protoV2.InitResponse, error) {
 	var rules = make([]*Rule, 0, len(req.GetRules()))
 	for _, rule := range req.GetRules() {
-		rules = append(rules, ConvertI18nRuleFromProtoToDriver(rule))
+		dr, err := ConvertI18nRuleFromProtoToDriver(rule)
+		if err != nil {
+			return nil, err
+		}
+		rules = append(rules, dr)
 	}
 
 	var dsn *DSN

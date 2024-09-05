@@ -10,7 +10,7 @@ import (
 	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 	"github.com/actiontech/sqle/sqle/driver/mysql/session"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
-	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/pkg/i18nPkg"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/format"
@@ -18,6 +18,7 @@ import (
 	"github.com/pingcap/parser/opcode"
 	parser_driver "github.com/pingcap/tidb/types/parser_driver"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/text/language"
 )
 
 const (
@@ -30,7 +31,7 @@ const (
 type OptimizeResult struct {
 	TableName      string
 	IndexedColumns []string
-	Reason         driverV2.I18nStr
+	Reason         i18nPkg.I18nStr
 }
 
 func optimize(log *logrus.Entry, ctx *session.Context, node ast.Node, params params.Params) []*OptimizeResult {
@@ -351,9 +352,9 @@ func (a *threeStarIndexAdvisor) GiveAdvices() []*OptimizeResult {
 	}
 	tableName := util.GetTableNameFromTableSource(a.drivingTableSource)
 	indexColumns := a.adviceColumns.stringSlice()
-	var indexType = plocale.ShouldLocalizeMessage(plocale.DefaultLocalizer, plocale.AdvisorIndexTypeComposite)
+	var indexType = plocale.ShouldLocalizeMsgByLang(language.English, plocale.AdvisorIndexTypeComposite)
 	if len(indexColumns) == 1 {
-		indexType = plocale.ShouldLocalizeMessage(plocale.DefaultLocalizer, plocale.AdvisorIndexTypeSingle)
+		indexType = plocale.ShouldLocalizeMsgByLang(language.English, plocale.AdvisorIndexTypeSingle)
 	}
 	return []*OptimizeResult{{
 		TableName:      tableName,

@@ -88,7 +88,7 @@ func init() {
 		for i, rule := range optimizationRule {
 			if knowledge, ok := defaultRulesKnowledge[rule.RuleCode]; ok {
 				// todo i18n rewrite rule Knowledge
-				rule.Rule.I18nRuleInfo[locale.DefaultLang.String()].Knowledge = driverV2.RuleKnowledge{Content: knowledge}
+				rule.Rule.I18nRuleInfo[locale.DefaultLang].Knowledge = driverV2.RuleKnowledge{Content: knowledge}
 				optimizationRule[i] = rule
 			}
 		}

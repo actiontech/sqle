@@ -16,11 +16,11 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
+	"github.com/actiontech/sqle/sqle/pkg/i18nPkg"
 	opt "github.com/actiontech/sqle/sqle/server/optimization/rule"
 	"github.com/jmoiron/sqlx"
 	"github.com/jmoiron/sqlx/reflectx"
 	xerrors "github.com/pkg/errors"
-	"golang.org/x/text/language"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -231,8 +231,8 @@ func (s *Storage) CreateRulesIfNotExist(rulesMap map[string][]*Rule) error {
 
 				if !isI18nInfoSame || isOldKnowledge || !isRuleLevelSame || !isParamSame || !isHasAuditPowerSame || !isHasRewritePowerSame {
 					if isOldKnowledge {
-						// 兼容老sqle的数据，将其移动到中文Key下
-						existedRule.Knowledge.I18nContent = driverV2.I18nStr{language.Chinese.String(): existedRule.Knowledge.Content}
+						// 兼容老sqle的数据，将其移动到默认Key下
+						existedRule.Knowledge.I18nContent = i18nPkg.ConvertStr2I18nAsDefaultLang(existedRule.Knowledge.Content)
 						existedRule.Knowledge.Content = ""
 					}
 					if existedRule.Knowledge != nil && existedRule.Knowledge.I18nContent != nil {
