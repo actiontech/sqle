@@ -160,6 +160,7 @@ var autoMigrateList = []interface{}{
 	&FeishuScheduledRecord{},
 	&InstanceAuditPlan{},
 	&AuditPlanV2{},
+	&AuditPlanTaskInfo{},
 	&SQLManageRecord{},
 	&SQLManageRecordProcess{},
 	&SQLManageQueue{},
