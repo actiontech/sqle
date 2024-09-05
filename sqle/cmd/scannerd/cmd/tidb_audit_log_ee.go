@@ -6,22 +6,21 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
-
+	scannerCmd "github.com/actiontech/sqle/sqle/cmd/scannerd/command"
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners/supervisor"
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners/tidb_audit_log"
 	"github.com/actiontech/sqle/sqle/pkg/scanner"
-	pkgAP "github.com/actiontech/sqle/sqle/server/auditplan"
 	"github.com/fatih/color"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"os"
 )
 
 var (
 	tidbAuditLogPath string
 
 	tidbAuditLogCmd = &cobra.Command{
-		Use:   pkgAP.TypeTiDBAuditLog,
+		Use:   scannerCmd.TypeTiDBAuditLog,
 		Short: "Parse TiDB audit log file",
 		Run: func(cmd *cobra.Command, args []string) {
 			param := &tidb_audit_log.Params{
@@ -47,7 +46,14 @@ var (
 )
 
 func init() {
-	tidbAuditLogCmd.Flags().StringVarP(&tidbAuditLogPath, "file", "f", "", "audit log file path")
-	_ = tidbAuditLogCmd.MarkFlagRequired("file")
+	tidbAuditLog, err := scannerCmd.GetScannerdCmd(scannerCmd.TypeTiDBAuditLog)
+	if err != nil {
+		panic(err)
+	}
+	tidbAuditLogCmd.Flags().StringVarP(tidbAuditLog.StringFlagFn[scannerCmd.FlagFile](&tidbAuditLogPath))
+
+	for _, requiredFlag := range tidbAuditLog.RequiredFlags {
+		_ = tidbAuditLogCmd.MarkFlagRequired(requiredFlag)
+	}
 	rootCmd.AddCommand(tidbAuditLogCmd)
 }
