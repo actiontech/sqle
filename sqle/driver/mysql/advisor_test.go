@@ -8,6 +8,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
+	"golang.org/x/text/language"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
@@ -42,9 +43,9 @@ func mockThreeStarOptimizeResult(caseName string, c optimizerTestContent, t *tes
 }
 
 func newThreeStarOptimizeResult(columns []string, tableName string) *OptimizeResult {
-	var indexType = plocale.ShouldLocalizeMessage(plocale.DefaultLocalizer, plocale.AdvisorIndexTypeComposite)
+	var indexType = plocale.ShouldLocalizeMsgByLang(language.English, plocale.AdvisorIndexTypeComposite)
 	if len(columns) == 1 {
-		indexType = plocale.ShouldLocalizeMessage(plocale.DefaultLocalizer, plocale.AdvisorIndexTypeSingle)
+		indexType = plocale.ShouldLocalizeMsgByLang(language.English, plocale.AdvisorIndexTypeSingle)
 	}
 	return &OptimizeResult{
 		Reason:         plocale.ShouldLocalizeAllWithArgs(plocale.ThreeStarIndexAdviceFormat, tableName, indexType, strings.Join(columns, "，")),

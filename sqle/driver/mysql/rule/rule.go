@@ -29,6 +29,7 @@ import (
 	tidbTypes "github.com/pingcap/tidb/types"
 	parserdriver "github.com/pingcap/tidb/types/parser_driver"
 	dry "github.com/ungerik/go-dry"
+	"golang.org/x/text/language"
 )
 
 // rule type
@@ -300,19 +301,19 @@ func ConvertSourceRule(sr *SourceRule) *driverV2.Rule {
 		Params:       nil,
 		I18nRuleInfo: genAllI18nRuleInfo(sr),
 	}
-	if info, exist := r.I18nRuleInfo[locale.DefaultLang.String()]; exist {
+	if info, exist := r.I18nRuleInfo[locale.DefaultLang]; exist {
 		r.Params = info.Params
 	}
 	return r
 }
 
-func genAllI18nRuleInfo(sr *SourceRule) map[string]*driverV2.RuleInfo {
-	result := make(map[string]*driverV2.RuleInfo, len(plocale.AllLocalizers))
-	for langTag, localizer := range plocale.AllLocalizers {
+func genAllI18nRuleInfo(sr *SourceRule) map[language.Tag]*driverV2.RuleInfo {
+	result := make(map[language.Tag]*driverV2.RuleInfo, len(plocale.Bundle.LanguageTags()))
+	for _, langTag := range plocale.Bundle.LanguageTags() {
 		newInfo := &driverV2.RuleInfo{
-			Desc:       plocale.ShouldLocalizeMessage(localizer, sr.Desc),
-			Annotation: plocale.ShouldLocalizeMessage(localizer, sr.Annotation),
-			Category:   plocale.ShouldLocalizeMessage(localizer, sr.Category),
+			Desc:       plocale.ShouldLocalizeMsgByLang(langTag, sr.Desc),
+			Annotation: plocale.ShouldLocalizeMsgByLang(langTag, sr.Annotation),
+			Category:   plocale.ShouldLocalizeMsgByLang(langTag, sr.Category),
 			//Level:      sr.Level,
 			Params:    make(params.Params, len(sr.Params)),
 			Knowledge: driverV2.RuleKnowledge{Content: sr.Knowledge.Content}, //todo i18n Knowledge
@@ -320,11 +321,11 @@ func genAllI18nRuleInfo(sr *SourceRule) map[string]*driverV2.RuleInfo {
 
 		for k, v := range sr.Params {
 			newInfo.Params[k] = &params.Param{
-				Key:   v.Key,
-				Value: v.Value,
-				Desc:  plocale.ShouldLocalizeMessage(localizer, v.Desc),
-				Type:  v.Type,
-				Enums: nil, // all nil now
+				Key:      v.Key,
+				Value:    v.Value,
+				Type:     v.Type,
+				Enums:    nil, // all nil now
+				I18nDesc: plocale.ShouldLocalizeAll(v.Desc),
 			}
 		}
 		result[langTag] = newInfo
@@ -333,6 +334,7 @@ func genAllI18nRuleInfo(sr *SourceRule) map[string]*driverV2.RuleInfo {
 }
 
 func init() {
+	RuleHandlers = generateRuleHandlers(sourceRuleHandlers)
 	defaultRulesKnowledge, err := getDefaultRulesKnowledge()
 	if err != nil {
 		panic(fmt.Errorf("get default rules knowledge failed: %v", err))
@@ -340,7 +342,7 @@ func init() {
 	for i, rh := range RuleHandlers {
 		if knowledge, ok := defaultRulesKnowledge[rh.Rule.Name]; ok {
 			// todo i18n Knowledge
-			rh.Rule.I18nRuleInfo[locale.DefaultLang.String()].Knowledge = driverV2.RuleKnowledge{Content: knowledge}
+			rh.Rule.I18nRuleInfo[locale.DefaultLang].Knowledge = driverV2.RuleKnowledge{Content: knowledge}
 			RuleHandlers[i] = rh
 		}
 		RuleHandlerMap[rh.Rule.Name] = rh

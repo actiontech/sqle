@@ -8,7 +8,9 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/locale"
+	"github.com/actiontech/sqle/sqle/pkg/i18nPkg"
 	"github.com/actiontech/sqle/sqle/pkg/params"
+	"golang.org/x/text/language"
 	"gorm.io/gorm"
 )
 
@@ -30,7 +32,7 @@ func GenerateRuleByDriverRule(dr *driverV2.Rule, dbType string) *Rule {
 		DBType: dbType,
 		Params: dr.Params,
 		Knowledge: &RuleKnowledge{
-			I18nContent: make(driverV2.I18nStr, len(dr.I18nRuleInfo)),
+			I18nContent: make(i18nPkg.I18nStr, len(dr.I18nRuleInfo)),
 		},
 		I18nRuleInfo: make(driverV2.I18nRuleInfo, len(dr.I18nRuleInfo)),
 	}
@@ -51,7 +53,7 @@ func ConvertRuleToDriverRule(r *Rule) *driverV2.Rule {
 		Name:         r.Name,
 		Level:        driverV2.RuleLevel(r.Level),
 		Params:       r.Params,
-		I18nRuleInfo: make(map[string]*driverV2.RuleInfo, len(r.I18nRuleInfo)),
+		I18nRuleInfo: make(map[language.Tag]*driverV2.RuleInfo, len(r.I18nRuleInfo)),
 	}
 	for lang, v := range r.I18nRuleInfo {
 		dr.I18nRuleInfo[lang] = &driverV2.RuleInfo{
@@ -67,15 +69,15 @@ func ConvertRuleToDriverRule(r *Rule) *driverV2.Rule {
 
 type RuleKnowledge struct {
 	Model
-	Content     string           `gorm:"type:longtext"` // Deprecated: use I18nContent instead
-	I18nContent driverV2.I18nStr `gorm:"type:json"`
+	Content     string          `gorm:"type:longtext"` // Deprecated: use I18nContent instead
+	I18nContent i18nPkg.I18nStr `gorm:"type:json"`
 }
 
 func (r *RuleKnowledge) TableName() string {
 	return "rule_knowledge"
 }
 
-func (r *RuleKnowledge) GetContentByLangTag(lang string) string {
+func (r *RuleKnowledge) GetContentByLangTag(lang language.Tag) string {
 	if r == nil {
 		return ""
 	}
@@ -522,7 +524,7 @@ func (s *Storage) GetRuleTypeByDBType(ctx context.Context, DBType string) ([]str
 	}
 	ruleDBTypes := make([]string, len(rules))
 	for i := range rules {
-		ruleDBTypes[i] = rules[i].I18nRuleInfo.GetRuleInfoByLangTag(lang.String()).Category
+		ruleDBTypes[i] = rules[i].I18nRuleInfo.GetRuleInfoByLangTag(lang).Category
 	}
 	return ruleDBTypes, nil
 }

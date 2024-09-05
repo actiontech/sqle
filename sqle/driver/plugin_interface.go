@@ -5,6 +5,7 @@ import (
 	"database/sql/driver"
 
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/pkg/i18nPkg"
 
 	"github.com/sirupsen/logrus"
 )
@@ -19,7 +20,7 @@ type Plugin interface {
 	Audit(ctx context.Context, sqls []string) ([]*driverV2.AuditResults, error)
 
 	// GenRollbackSQL generate sql's rollback SQL.
-	GenRollbackSQL(ctx context.Context, sql string) (string, driverV2.I18nStr, error)
+	GenRollbackSQL(ctx context.Context, sql string) (string, i18nPkg.I18nStr, error)
 
 	Ping(ctx context.Context) error
 	Exec(ctx context.Context, query string) (driver.Result, error)

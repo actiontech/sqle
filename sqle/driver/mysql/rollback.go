@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
-	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/pkg/i18nPkg"
 
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	"github.com/actiontech/sqle/sqle/errors"
@@ -18,7 +18,7 @@ import (
 	parserMysql "github.com/pingcap/parser/mysql"
 )
 
-func (i *MysqlDriverImpl) GenerateRollbackSql(node ast.Node) (string, driverV2.I18nStr, error) {
+func (i *MysqlDriverImpl) GenerateRollbackSql(node ast.Node) (string, i18nPkg.I18nStr, error) {
 	switch node.(type) {
 	case ast.DDLNode:
 		return i.GenerateDDLStmtRollbackSql(node)
@@ -28,7 +28,7 @@ func (i *MysqlDriverImpl) GenerateRollbackSql(node ast.Node) (string, driverV2.I
 	return "", nil, nil
 }
 
-func (i *MysqlDriverImpl) GenerateDDLStmtRollbackSql(node ast.Node) (rollbackSql string, unableRollbackReason driverV2.I18nStr, err error) {
+func (i *MysqlDriverImpl) GenerateDDLStmtRollbackSql(node ast.Node) (rollbackSql string, unableRollbackReason i18nPkg.I18nStr, err error) {
 	switch stmt := node.(type) {
 	case *ast.AlterTableStmt:
 		rollbackSql, unableRollbackReason, err = i.generateAlterTableRollbackSql(stmt)
@@ -46,7 +46,7 @@ func (i *MysqlDriverImpl) GenerateDDLStmtRollbackSql(node ast.Node) (rollbackSql
 	return rollbackSql, unableRollbackReason, err
 }
 
-func (i *MysqlDriverImpl) GenerateDMLStmtRollbackSql(node ast.Node) (rollbackSql string, unableRollbackReason driverV2.I18nStr, err error) {
+func (i *MysqlDriverImpl) GenerateDMLStmtRollbackSql(node ast.Node) (rollbackSql string, unableRollbackReason i18nPkg.I18nStr, err error) {
 	// MysqlDriverImpl may skip initialized cnf when Audited SQLs in whitelist.
 	if i.cnf == nil || i.cnf.DMLRollbackMaxRows < 0 {
 		return "", nil, nil
@@ -76,7 +76,7 @@ func (i *MysqlDriverImpl) GenerateDMLStmtRollbackSql(node ast.Node) (rollbackSql
 }
 
 // generateAlterTableRollbackSql generate alter table SQL for alter table.
-func (i *MysqlDriverImpl) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) (string, driverV2.I18nStr, error) {
+func (i *MysqlDriverImpl) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) (string, i18nPkg.I18nStr, error) {
 	schemaName := i.Ctx.GetSchemaName(stmt.Table)
 	tableName := stmt.Table.Name.String()
 
@@ -269,7 +269,7 @@ func (i *MysqlDriverImpl) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt
 }
 
 // generateCreateSchemaRollbackSql generate drop database SQL for create database.
-func (i *MysqlDriverImpl) generateCreateSchemaRollbackSql(stmt *ast.CreateDatabaseStmt) (string, driverV2.I18nStr, error) {
+func (i *MysqlDriverImpl) generateCreateSchemaRollbackSql(stmt *ast.CreateDatabaseStmt) (string, i18nPkg.I18nStr, error) {
 	schemaName := stmt.Name
 	schemaExist, err := i.Ctx.IsSchemaExist(schemaName)
 	if err != nil {
@@ -283,7 +283,7 @@ func (i *MysqlDriverImpl) generateCreateSchemaRollbackSql(stmt *ast.CreateDataba
 }
 
 // generateCreateTableRollbackSql generate drop table SQL for create table.
-func (i *MysqlDriverImpl) generateCreateTableRollbackSql(stmt *ast.CreateTableStmt) (string, driverV2.I18nStr, error) {
+func (i *MysqlDriverImpl) generateCreateTableRollbackSql(stmt *ast.CreateTableStmt) (string, i18nPkg.I18nStr, error) {
 	schemaExist, err := i.Ctx.IsSchemaExist(i.Ctx.GetSchemaName(stmt.Table))
 	if err != nil {
 		return "", nil, err
@@ -306,7 +306,7 @@ func (i *MysqlDriverImpl) generateCreateTableRollbackSql(stmt *ast.CreateTableSt
 }
 
 // generateDropTableRollbackSql generate create table SQL for drop table.
-func (i *MysqlDriverImpl) generateDropTableRollbackSql(stmt *ast.DropTableStmt) (string, driverV2.I18nStr, error) {
+func (i *MysqlDriverImpl) generateDropTableRollbackSql(stmt *ast.DropTableStmt) (string, i18nPkg.I18nStr, error) {
 	rollbackSql := ""
 	for _, table := range stmt.Tables {
 		stmt, tableExist, err := i.Ctx.GetCreateTableStmt(table)
@@ -323,12 +323,12 @@ func (i *MysqlDriverImpl) generateDropTableRollbackSql(stmt *ast.DropTableStmt) 
 }
 
 // generateCreateIndexRollbackSql generate drop index SQL for create index.
-func (i *MysqlDriverImpl) generateCreateIndexRollbackSql(stmt *ast.CreateIndexStmt) (string, driverV2.I18nStr, error) {
+func (i *MysqlDriverImpl) generateCreateIndexRollbackSql(stmt *ast.CreateIndexStmt) (string, i18nPkg.I18nStr, error) {
 	return fmt.Sprintf("DROP INDEX `%s` ON %s", stmt.IndexName, i.getTableNameWithQuote(stmt.Table)), nil, nil
 }
 
 // generateDropIndexRollbackSql generate create index SQL for drop index.
-func (i *MysqlDriverImpl) generateDropIndexRollbackSql(stmt *ast.DropIndexStmt) (string, driverV2.I18nStr, error) {
+func (i *MysqlDriverImpl) generateDropIndexRollbackSql(stmt *ast.DropIndexStmt) (string, i18nPkg.I18nStr, error) {
 	indexName := stmt.IndexName
 	createTableStmt, tableExist, err := i.Ctx.GetCreateTableStmt(stmt.Table)
 	if err != nil {
@@ -362,7 +362,7 @@ func (i *MysqlDriverImpl) generateDropIndexRollbackSql(stmt *ast.DropIndexStmt) 
 }
 
 // generateInsertRollbackSql generate delete SQL for insert.
-func (i *MysqlDriverImpl) generateInsertRollbackSql(stmt *ast.InsertStmt) (string, driverV2.I18nStr, error) {
+func (i *MysqlDriverImpl) generateInsertRollbackSql(stmt *ast.InsertStmt) (string, i18nPkg.I18nStr, error) {
 	tables := util.GetTables(stmt.Table.TableRefs)
 	// table just has one in insert stmt.
 	if len(tables) != 1 {
@@ -456,7 +456,7 @@ func getHexStrFromBytesStr(byteStr string) string {
 }
 
 // generateDeleteRollbackSql generate insert SQL for delete.
-func (i *MysqlDriverImpl) generateDeleteRollbackSql(stmt *ast.DeleteStmt) (string, driverV2.I18nStr, error) {
+func (i *MysqlDriverImpl) generateDeleteRollbackSql(stmt *ast.DeleteStmt) (string, i18nPkg.I18nStr, error) {
 	// not support multi-table syntax
 	if stmt.IsMultiTable {
 		i.Logger().Infof("not support generate rollback sql with multi-delete statement")
@@ -538,7 +538,7 @@ func (i *MysqlDriverImpl) generateDeleteRollbackSql(stmt *ast.DeleteStmt) (strin
 }
 
 // generateUpdateRollbackSql generate update SQL for update.
-func (i *MysqlDriverImpl) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (string, driverV2.I18nStr, error) {
+func (i *MysqlDriverImpl) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (string, i18nPkg.I18nStr, error) {
 	tableSources := util.GetTableSources(stmt.TableRefs.TableRefs)
 	// multi table syntax
 	if len(tableSources) != 1 {

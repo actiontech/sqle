@@ -10,10 +10,8 @@ import (
 	"text/template"
 
 	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
-	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
-	"github.com/actiontech/sqle/sqle/locale"
-
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
+	"github.com/actiontech/sqle/sqle/pkg/i18nPkg"
 	"github.com/pingcap/parser/ast"
 )
 
@@ -36,7 +34,7 @@ func LoadPtTemplateFromFile(fileName string) error {
 
 // generateOSCCommandLine generate pt-online-schema-change command-line statement;
 // see https://www.percona.com/doc/percona-toolkit/LATEST/pt-online-schema-change.html.
-func (i *MysqlDriverImpl) generateOSCCommandLine(node ast.Node) (driverV2.I18nStr, error) {
+func (i *MysqlDriverImpl) generateOSCCommandLine(node ast.Node) (i18nPkg.I18nStr, error) {
 	if i.cnf.DDLOSCMinSize < 0 {
 		return nil, nil
 	}
@@ -132,5 +130,5 @@ func (i *MysqlDriverImpl) generateOSCCommandLine(node ast.Node) (driverV2.I18nSt
 		"Schema": i.Ctx.GetSchemaName(stmt.Table),
 		"Table":  stmt.Table.Name.String(),
 	})
-	return map[string]string{locale.DefaultLang.String(): buff.String()}, err
+	return i18nPkg.ConvertStr2I18nAsDefaultLang(buff.String()), err
 }
