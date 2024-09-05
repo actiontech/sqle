@@ -65,8 +65,8 @@ type RuleInfo struct {
 
 	// Category is the category of the rule. Such as "Naming Conventions"...
 	// Rules will be displayed on the SQLE rule list page by category.
-	Category  string
-	Params    params.Params // 仅用于国际化，ParamValue以 Rule.Params 为准
+	Category string
+	//Params    params.Params // 仅用于国际化，ParamValue以 Rule.Params 为准
 	Knowledge RuleKnowledge
 }
 
@@ -132,13 +132,17 @@ func (d *DriverGrpcServer) Init(ctx context.Context, req *protoV2.InitRequest) (
 
 	var dsn *DSN
 	if req.GetDsn() != nil {
+		ps, err := ConvertProtoParamToParam(req.GetDsn().GetAdditionalParams())
+		if err != nil {
+			return nil, fmt.Errorf("DriverGrpcServer Init req rule param err: %w", err)
+		}
 		dsn = &DSN{
 			Host:             req.GetDsn().GetHost(),
 			Port:             req.GetDsn().GetPort(),
 			User:             req.GetDsn().GetUser(),
 			Password:         req.GetDsn().GetPassword(),
 			DatabaseName:     req.GetDsn().GetDatabase(),
-			AdditionalParams: ConvertProtoParamToParam(req.GetDsn().GetAdditionalParams()),
+			AdditionalParams: ps,
 		}
 	}
 	id := RandStr(20)
@@ -382,10 +386,11 @@ func (d *DriverGrpcServer) Query(ctx context.Context, req *protoV2.QueryRequest)
 	}
 	for _, param := range res.Column {
 		resp.Column = append(resp.Column, &protoV2.Param{
-			Key:   param.Key,
-			Value: param.Value,
-			Desc:  param.Desc,
-			Type:  string(param.Type),
+			Key:      param.Key,
+			Value:    param.Value,
+			Desc:     param.GetDesc(locale.DefaultLang),
+			I18NDesc: param.I18nDesc.StrMap(),
+			Type:     string(param.Type),
 		})
 	}
 	for _, row := range res.Rows {

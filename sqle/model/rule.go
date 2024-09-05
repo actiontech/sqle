@@ -42,7 +42,6 @@ func GenerateRuleByDriverRule(dr *driverV2.Rule, dbType string) *Rule {
 			Desc:       v.Desc,
 			Annotation: v.Annotation,
 			Category:   v.Category,
-			Params:     v.Params,
 		}
 	}
 	return r
@@ -60,7 +59,6 @@ func ConvertRuleToDriverRule(r *Rule) *driverV2.Rule {
 			Desc:       v.Desc,
 			Annotation: v.Annotation,
 			Category:   v.Category,
-			Params:     v.Params,
 			Knowledge:  driverV2.RuleKnowledge{},
 		}
 	}

@@ -500,7 +500,7 @@ func convertRuleToRes(ctx context.Context, rule *model.Rule) RuleResV1 {
 		HasAuditPower:   rule.HasAuditPower,
 		HasRewritePower: rule.HasRewritePower,
 	}
-	params := ruleInfo.Params
+	params := rule.Params
 	if params != nil && len(params) > 0 {
 		paramsRes := make([]RuleParamResV1, 0, len(params))
 		for _, p := range params {
@@ -508,7 +508,7 @@ func convertRuleToRes(ctx context.Context, rule *model.Rule) RuleResV1 {
 				Key:   p.Key,
 				Desc:  p.Desc,
 				Type:  string(p.Type),
-				Value: rule.Params.GetParam(p.Key).Value, // RuleInfo 中的params只用于国际化，Value 以 rule.Params 为准
+				Value: rule.Params.GetParam(p.Key).Value,
 			}
 			paramsRes = append(paramsRes, paramRes)
 		}

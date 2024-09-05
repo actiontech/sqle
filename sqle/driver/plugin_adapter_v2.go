@@ -97,11 +97,15 @@ func (d *PluginProcessorV2) GetDriverMetas() (*driverV2.DriverMetas, error) {
 	for _, m := range result.EnabledOptionalModule {
 		ms = append(ms, driverV2.OptionalModule(m))
 	}
+	ps, err := driverV2.ConvertProtoParamToParam(result.DatabaseAdditionalParams)
+	if err != nil {
+		return nil, fmt.Errorf("plugin Metas rule param err: %w", err)
+	}
 	meta := &driverV2.DriverMetas{
 		PluginName:               result.PluginName,
 		DatabaseDefaultPort:      result.DatabaseDefaultPort,
 		Logo:                     result.Logo,
-		DatabaseAdditionalParams: driverV2.ConvertProtoParamToParam(result.DatabaseAdditionalParams),
+		DatabaseAdditionalParams: ps,
 		Rules:                    rules,
 		EnabledOptionalModule:    ms,
 	}
@@ -397,11 +401,16 @@ func (s *PluginImplV2) Query(ctx context.Context, sql string, conf *driverV2.Que
 		Rows:   []*driverV2.QueryResultRow{},
 	}
 	for _, p := range res.GetColumn() {
+		i18nDesc, err := i18nPkg.ConvertStrMap2I18nStr(p.I18NDesc)
+		if err != nil {
+			return nil, fmt.Errorf("PluginImplV2 Query fail to convert i18nDesc to I18nStrMap, error: %v", err)
+		}
 		result.Column = append(result.Column, &params.Param{
-			Key:   p.GetKey(),
-			Value: p.GetValue(),
-			Desc:  p.GetDesc(), // todo i18n proto Param
-			Type:  params.ParamType(p.GetType()),
+			Key:      p.GetKey(),
+			Value:    p.GetValue(),
+			Desc:     p.GetDesc(),
+			I18nDesc: i18nDesc,
+			Type:     params.ParamType(p.GetType()),
 		})
 	}
 	for _, row := range res.GetRows() {

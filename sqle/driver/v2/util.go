@@ -7,6 +7,7 @@ import (
 
 	protoV2 "github.com/actiontech/sqle/sqle/driver/v2/proto"
 	"github.com/actiontech/sqle/sqle/locale"
+	"github.com/actiontech/sqle/sqle/pkg/i18nPkg"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"golang.org/x/text/language"
 )
@@ -144,10 +145,14 @@ func ConvertI18nAuditResultFromDriverToProto(ar *AuditResult) *protoV2.AuditResu
 }
 
 func ConvertI18nRuleFromProtoToDriver(rule *protoV2.Rule) (*Rule, error) {
+	ps, err := ConvertProtoParamToParam(rule.Params)
+	if err != nil {
+		return nil, err
+	}
 	dRule := &Rule{
 		Name:         rule.Name,
 		Level:        RuleLevel(rule.Level),
-		Params:       ConvertProtoParamToParam(rule.Params),
+		Params:       ps,
 		I18nRuleInfo: make(I18nRuleInfo, len(rule.I18NRuleInfo)),
 	}
 	for langTag, ruleInfo := range rule.I18NRuleInfo {
@@ -162,7 +167,6 @@ func ConvertI18nRuleFromProtoToDriver(rule *protoV2.Rule) (*Rule, error) {
 			Desc:       rule.Desc,
 			Annotation: rule.Annotation,
 			Category:   rule.Category,
-			Params:     ConvertProtoParamToParam(rule.Params),
 		}
 		if rule.Knowledge != nil {
 			ruleInfo.Knowledge = RuleKnowledge{Content: rule.Knowledge.Content}
@@ -178,7 +182,6 @@ func ConvertI18nRuleInfoFromProtoToDriver(ruleInfo *protoV2.I18NRuleInfo) *RuleI
 	return &RuleInfo{
 		Desc:       ruleInfo.Desc,
 		Category:   ruleInfo.Category,
-		Params:     ConvertProtoParamToParam(ruleInfo.Params),
 		Annotation: ruleInfo.Annotation,
 		Knowledge:  RuleKnowledge{Content: ruleInfo.Knowledge.Content},
 	}
@@ -216,7 +219,6 @@ func ConvertI18nRuleInfoFromDriverToProto(ruleInfo *RuleInfo) *protoV2.I18NRuleI
 	return &protoV2.I18NRuleInfo{
 		Desc:       ruleInfo.Desc,
 		Category:   ruleInfo.Category,
-		Params:     ConvertParamToProtoParam(ruleInfo.Params),
 		Annotation: ruleInfo.Annotation,
 		Knowledge: &protoV2.Knowledge{
 			Content: ruleInfo.Knowledge.Content,
@@ -227,11 +229,16 @@ func ConvertI18nRuleInfoFromDriverToProto(ruleInfo *RuleInfo) *protoV2.I18NRuleI
 func ConvertRuleFromProtoToDriver(rule *protoV2.Rule) (*Rule, error) {
 	var ps = make(params.Params, 0, len(rule.Params))
 	for _, p := range rule.Params {
+		i18nDesc, err := i18nPkg.ConvertStrMap2I18nStr(p.I18NDesc)
+		if err != nil {
+			return nil, err
+		}
 		ps = append(ps, &params.Param{
-			Key:   p.Key,
-			Value: p.Value,
-			Desc:  p.Desc,
-			Type:  params.ParamType(p.Type),
+			Key:      p.Key,
+			Value:    p.Value,
+			Desc:     p.Desc,
+			I18nDesc: i18nDesc,
+			Type:     params.ParamType(p.Type),
 		})
 	}
 	dr := &Rule{
@@ -245,7 +252,6 @@ func ConvertRuleFromProtoToDriver(rule *protoV2.Rule) (*Rule, error) {
 			Desc:       v.Desc,
 			Annotation: v.Annotation,
 			Category:   v.Category,
-			Params:     ps,
 		}
 		if v.Knowledge != nil {
 			ri.Knowledge = RuleKnowledge{Content: v.Knowledge.Content}
@@ -274,7 +280,6 @@ func ConvertRuleFromDriverToProto(rule *Rule) *protoV2.Rule {
 		pr.I18NRuleInfo[langTag.String()] = &protoV2.I18NRuleInfo{
 			Desc:       v.Desc,
 			Category:   v.Category,
-			Params:     ConvertParamToProtoParam(v.Params),
 			Annotation: v.Annotation,
 			Knowledge:  &protoV2.Knowledge{Content: v.Knowledge.Content},
 		}
@@ -289,29 +294,35 @@ func ConvertParamToProtoParam(p params.Params) []*protoV2.Param {
 			continue
 		}
 		pp[i] = &protoV2.Param{
-			Key:   v.Key,
-			Value: v.Value,
-			Desc:  v.Desc,
-			Type:  string(v.Type),
+			Key:      v.Key,
+			Value:    v.Value,
+			Desc:     v.GetDesc(locale.DefaultLang),
+			I18NDesc: v.I18nDesc.StrMap(),
+			Type:     string(v.Type),
 		}
 	}
 	return pp
 }
 
-func ConvertProtoParamToParam(p []*protoV2.Param) params.Params {
+func ConvertProtoParamToParam(p []*protoV2.Param) (params.Params, error) {
 	pp := make(params.Params, len(p))
 	for i, v := range p {
 		if v == nil {
 			continue
 		}
+		i18nDesc, err := i18nPkg.ConvertStrMap2I18nStr(v.I18NDesc)
+		if err != nil {
+			return nil, fmt.Errorf("fail to convert I18NDesc: %v", err)
+		}
 		pp[i] = &params.Param{
-			Key:   v.Key,
-			Value: v.Value,
-			Desc:  v.Desc,
-			Type:  params.ParamType(v.Type),
+			Key:      v.Key,
+			Value:    v.Value,
+			Desc:     v.Desc,
+			I18nDesc: i18nDesc,
+			Type:     params.ParamType(v.Type),
 		}
 	}
-	return pp
+	return pp, nil
 }
 
 func ConvertTabularDataToProto(td TabularData) *protoV2.TabularData {
