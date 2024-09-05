@@ -47,11 +47,11 @@ type Pipeline struct {
 type PipelineNode struct {
 	gorm.Model
 	PipelineID       uint   `gorm:"type:bigint;not null;index" json:"pipeline_id"`        // 关联的流水线ID
-	UUID             string `gorm:"type:varchar(255);not null" json:"uuid"`               // 节点uuid
+	UUID             string `gorm:"type:varchar(32);not null" json:"uuid"`                // 节点uuid
 	Name             string `gorm:"type:varchar(255);not null" json:"name"`               // 节点名称
 	NodeType         string `gorm:"type:varchar(20);not null" json:"node_type"`           // 节点类型
-	NodeVersion      string `gorm:"type:varchar(255)" json:"node_version"`                // 节点版本
-	InstanceName     string `gorm:"type:varchar(255)" json:"instance_name,omitempty"`     // 数据源名称，在线审核时必填
+	NodeVersion      string `gorm:"type:varchar(32)" json:"node_version"`                 // 节点版本
+	InstanceID       uint64 `gorm:"type:bigint" json:"instance_id"`                       // 数据源名称，在线审核时必填
 	InstanceType     string `gorm:"type:varchar(255)" json:"instance_type,omitempty"`     // 数据源类型，离线审核时必填
 	ObjectPath       string `gorm:"type:varchar(512);not null" json:"object_path"`        // 审核脚本路径
 	ObjectType       string `gorm:"type:varchar(20);not null" json:"object_type"`         // 审核对象类型
@@ -134,6 +134,18 @@ func (s *Storage) GetPipelineDetail(projectID ProjectUID, pipelineID uint) (*Pip
 func (s *Storage) GetPipelineNodes(pipelineID uint) ([]*PipelineNode, error) {
 	var nodes []*PipelineNode
 	err := s.db.Model(PipelineNode{}).Where("pipeline_id = ?", pipelineID).Find(&nodes).Error
+	if err != nil {
+		return nodes, errors.New(errors.ConnectStorageError, err)
+	}
+	return nodes, nil
+}
+
+func (s *Storage) GetPipelineNodesByInstanceId(instanceID uint64) ([]*PipelineNode, error) {
+	if instanceID == 0 {
+		return nil, fmt.Errorf("instance id should not be zero")
+	}
+	var nodes []*PipelineNode
+	err := s.db.Model(PipelineNode{}).Where("instance_id = ?", instanceID).Find(&nodes).Error
 	if err != nil {
 		return nodes, errors.New(errors.ConnectStorageError, err)
 	}
