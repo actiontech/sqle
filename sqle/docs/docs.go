@@ -908,6 +908,49 @@ var doc = `{
                 }
             }
         },
+        "/v1/import_rule_template": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get rule template file",
+                "tags": [
+                    "rule_template"
+                ],
+                "summary": "获取规则模板文件",
+                "operationId": "getRuleTemplateFileV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "instance type",
+                        "name": "instance_type",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "csv",
+                            "json"
+                        ],
+                        "type": "string",
+                        "description": "file type",
+                        "name": "file_type",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "sqle rule template file",
+                        "schema": {
+                            "type": "file"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/operation_records": {
             "get": {
                 "security": [
@@ -3991,6 +4034,17 @@ var doc = `{
                         "name": "rule_template_name",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "enum": [
+                            "csv",
+                            "json"
+                        ],
+                        "type": "string",
+                        "description": "export type",
+                        "name": "export_type",
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -7022,6 +7076,17 @@ var doc = `{
                 "operationId": "importProjectRuleTemplateV1",
                 "parameters": [
                     {
+                        "enum": [
+                            "csv",
+                            "json"
+                        ],
+                        "type": "string",
+                        "description": "file type",
+                        "name": "file_type",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
                         "type": "file",
                         "description": "SQLE rule template file",
                         "name": "rule_template_file",
@@ -7034,6 +7099,12 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.ParseProjectRuleTemplateFileResV1"
+                        }
+                    },
+                    "400": {
+                        "description": "return error file",
+                        "schema": {
+                            "type": "file"
                         }
                     }
                 }
@@ -7204,6 +7275,17 @@ var doc = `{
                 "summary": "导出全局规则模板",
                 "operationId": "exportRuleTemplateV1",
                 "parameters": [
+                    {
+                        "enum": [
+                            "csv",
+                            "json"
+                        ],
+                        "type": "string",
+                        "description": "export type",
+                        "name": "export_type",
+                        "in": "query",
+                        "required": true
+                    },
                     {
                         "type": "string",
                         "description": "rule template name",

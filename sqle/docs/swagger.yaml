@@ -5673,6 +5673,34 @@ paths:
       summary: 获取 dashboard 信息
       tags:
       - dashboard
+  /v1/import_rule_template:
+    get:
+      description: get rule template file
+      operationId: getRuleTemplateFileV1
+      parameters:
+      - description: instance type
+        in: query
+        name: instance_type
+        required: true
+        type: string
+      - description: file type
+        enum:
+        - csv
+        - json
+        in: query
+        name: file_type
+        required: true
+        type: string
+      responses:
+        "200":
+          description: sqle rule template file
+          schema:
+            type: file
+      security:
+      - ApiKeyAuth: []
+      summary: 获取规则模板文件
+      tags:
+      - rule_template
   /v1/operation_records:
     get:
       description: Get operation record list
@@ -7672,6 +7700,14 @@ paths:
       - description: rule template name
         in: path
         name: rule_template_name
+        required: true
+        type: string
+      - description: export type
+        enum:
+        - csv
+        - json
+        in: query
+        name: export_type
         required: true
         type: string
       responses:
@@ -9767,6 +9803,14 @@ paths:
       description: export rule template
       operationId: exportRuleTemplateV1
       parameters:
+      - description: export type
+        enum:
+        - csv
+        - json
+        in: query
+        name: export_type
+        required: true
+        type: string
       - description: rule template name
         in: path
         name: rule_template_name
@@ -9789,6 +9833,14 @@ paths:
       description: parse rule template
       operationId: importProjectRuleTemplateV1
       parameters:
+      - description: file type
+        enum:
+        - csv
+        - json
+        in: formData
+        name: file_type
+        required: true
+        type: string
       - description: SQLE rule template file
         in: formData
         name: rule_template_file
@@ -9799,6 +9851,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/v1.ParseProjectRuleTemplateFileResV1'
+        "400":
+          description: return error file
+          schema:
+            type: file
       security:
       - ApiKeyAuth: []
       summary: 解析规则模板文件
