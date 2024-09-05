@@ -117,7 +117,7 @@ func GetTaskSQLs(c echo.Context) error {
 			ar := taskSQL.AuditResults[i]
 			taskSQLRes.AuditResult = append(taskSQLRes.AuditResult, &AuditResult{
 				Level:    ar.Level,
-				Message:  ar.GetAuditMsgByLangTag(locale.GetLangTagFromCtx(c.Request().Context()).String()),
+				Message:  ar.GetAuditMsgByLangTag(locale.GetLangTagFromCtx(c.Request().Context())),
 				RuleName: ar.RuleName,
 				DbType:   task.DBType,
 			})

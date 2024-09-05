@@ -1,11 +1,14 @@
 package auditplan
 
 import (
+	"context"
+
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/server"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"github.com/sirupsen/logrus"
 )
 
@@ -17,7 +20,7 @@ type AuditResultResp struct {
 
 type Head struct {
 	Name     string
-	Desc     string
+	Desc     *i18n.Message
 	Type     string
 	Sortable bool
 }
@@ -49,7 +52,7 @@ const (
 
 type FilterMeta struct {
 	Name            string
-	Desc            string
+	Desc            *i18n.Message
 	FilterInputType FilterInputType
 	FilterOpType    FilterOpType
 	FilterTips      []FilterTip
@@ -100,7 +103,7 @@ type AuditPlanHandler interface {
 	Head(ap *AuditPlan) []Head
 
 	// todo: 放到 AuditPlanMeta 里, 原因是meta里未保存 AuditPlanMeta, 其他开发者也在改造等合并后在处理。
-	Filters(logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) []FilterMeta
+	Filters(ctx context.Context, logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) []FilterMeta
 	GetSQLData(ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error)
 }
 

@@ -142,7 +142,7 @@ func GetAuditPlans(c echo.Context) error {
 			InstanceDatabase: ap.InstanceDatabase,
 			RuleTemplate:     ruleTemplate,
 			Token:            ap.Token,
-			Meta:             v1.ConvertAuditPlanMetaToRes(meta),
+			Meta:             v1.ConvertAuditPlanMetaToRes(c.Request().Context(), meta),
 			CreateUserId:     ap.CreateUserId,
 		}
 	}
@@ -227,7 +227,7 @@ func GetAuditPlanReportSQLs(c echo.Context) error {
 			ar := auditPlanReportSQL.AuditResults[j]
 			auditPlanReportSQLsRes[i].AuditResult = append(auditPlanReportSQLsRes[i].AuditResult, &AuditResult{
 				Level:    ar.Level,
-				Message:  ar.GetAuditMsgByLangTag(lang.String()),
+				Message:  ar.GetAuditMsgByLangTag(lang),
 				RuleName: ar.RuleName,
 				DbType:   ap.DBType,
 			})

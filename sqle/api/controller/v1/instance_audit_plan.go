@@ -2,6 +2,7 @@ package v1
 
 import (
 	"bytes"
+	"context"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
@@ -23,6 +24,7 @@ import (
 	"github.com/actiontech/sqle/sqle/driver"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/params"
@@ -137,7 +139,7 @@ func CreateInstanceAuditPlan(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !canCreateAuditPlan {
-		return controller.JSONBaseErrorReq(c, errors.NewUserNotPermissionError(model.GetOperationCodeDesc(uint(model.OP_AUDIT_PLAN_SAVE))))
+		return controller.JSONBaseErrorReq(c, errors.NewUserNotPermissionError(model.GetOperationCodeDesc(c.Request().Context(), uint(model.OP_AUDIT_PLAN_SAVE))))
 	}
 
 	userId := controller.GetUserID(c)
@@ -517,7 +519,7 @@ func GetInstanceAuditPlans(c echo.Context) error {
 		typeBases := make([]AuditPlanTypeResBase, 0, len(auditPlanIds))
 		for _, auditPlanId := range auditPlanIds {
 			if auditPlanId != "" {
-				typeBase, err := ConvertAuditPlanTypeToResByID(auditPlanId)
+				typeBase, err := ConvertAuditPlanTypeToResByID(c.Request().Context(), auditPlanId)
 				if err != nil {
 					return controller.JSONBaseErrorReq(c, err)
 				}
@@ -545,7 +547,7 @@ func GetInstanceAuditPlans(c echo.Context) error {
 	})
 }
 
-func ConvertAuditPlanTypeToResByID(id string) (AuditPlanTypeResBase, error) {
+func ConvertAuditPlanTypeToResByID(ctx context.Context, id string) (AuditPlanTypeResBase, error) {
 	auditPlanID, err := strconv.Atoi(id)
 	if err != nil {
 		return AuditPlanTypeResBase{}, err
@@ -562,7 +564,7 @@ func ConvertAuditPlanTypeToResByID(id string) (AuditPlanTypeResBase, error) {
 		if meta.Type == auditPlan.Type {
 			return AuditPlanTypeResBase{
 				AuditPlanType:     auditPlan.Type,
-				AuditPlanTypeDesc: meta.Desc,
+				AuditPlanTypeDesc: locale.ShouldLocalizeMsg(ctx, meta.Desc),
 				AuditPlanId:       auditPlan.ID,
 			}, nil
 		}
@@ -570,12 +572,12 @@ func ConvertAuditPlanTypeToResByID(id string) (AuditPlanTypeResBase, error) {
 	return AuditPlanTypeResBase{}, nil
 }
 
-func ConvertAuditPlanTypeToRes(id uint, auditPlanType string) AuditPlanTypeResBase {
+func ConvertAuditPlanTypeToRes(ctx context.Context, id uint, auditPlanType string) AuditPlanTypeResBase {
 	for _, meta := range auditplan.Metas {
 		if meta.Type == auditPlanType {
 			return AuditPlanTypeResBase{
 				AuditPlanType:     auditPlanType,
-				AuditPlanTypeDesc: meta.Desc,
+				AuditPlanTypeDesc: locale.ShouldLocalizeMsg(ctx, meta.Desc),
 				AuditPlanId:       id,
 			}
 		}
@@ -628,7 +630,7 @@ func GetInstanceAuditPlanDetail(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.NewInstanceAuditPlanNotExistErr())
 	}
-	auditPlans, err := ConvertAuditPlansToRes(detail.AuditPlans)
+	auditPlans, err := ConvertAuditPlansToRes(c.Request().Context(), detail.AuditPlans)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -646,10 +648,10 @@ func GetInstanceAuditPlanDetail(c echo.Context) error {
 	})
 }
 
-func ConvertAuditPlansToRes(auditPlans []*model.AuditPlanV2) ([]AuditPlanRes, error) {
+func ConvertAuditPlansToRes(ctx context.Context, auditPlans []*model.AuditPlanV2) ([]AuditPlanRes, error) {
 	resAuditPlans := make([]AuditPlanRes, 0, len(auditPlans))
 	for _, v := range auditPlans {
-		typeBase := ConvertAuditPlanTypeToRes(v.ID, v.Type)
+		typeBase := ConvertAuditPlanTypeToRes(ctx, v.ID, v.Type)
 		resAuditPlan := AuditPlanRes{
 			RuleTemplateName: v.RuleTemplateName,
 			Type:             typeBase,
@@ -668,7 +670,7 @@ func ConvertAuditPlansToRes(auditPlans []*model.AuditPlanV2) ([]AuditPlanRes, er
 				}
 				paramRes := AuditPlanParamResV1{
 					Key:   p.Key,
-					Desc:  p.Desc,
+					Desc:  p.GetDesc(locale.GetLangTagFromCtx(ctx)),
 					Type:  string(p.Type),
 					Value: val,
 				}
@@ -686,7 +688,7 @@ func ConvertAuditPlansToRes(auditPlans []*model.AuditPlanV2) ([]AuditPlanRes, er
 					}
 					highParamRes := HighPriorityCondition{
 						Key:   metaHpp.Key,
-						Desc:  metaHpp.Desc,
+						Desc:  metaHpp.GetDesc(locale.GetLangTagFromCtx(ctx)),
 						Value: hpp.Value,
 						Type:  string(metaHpp.Type),
 						Operator: Operator{
@@ -780,7 +782,7 @@ func GetInstanceAuditPlanOverview(c echo.Context) error {
 			ruleTemplate.IsGlobalRuleTemplate = (template.ProjectId == model.ProjectIdForGlobalRuleTemplate)
 		}
 
-		typeBase := ConvertAuditPlanTypeToRes(v.ID, v.Type)
+		typeBase := ConvertAuditPlanTypeToRes(c.Request().Context(), v.ID, v.Type)
 		resAuditPlan := InstanceAuditPlanInfo{
 			ID:              v.ID,
 			Type:            typeBase,
@@ -1000,7 +1002,7 @@ func GetInstanceAuditPlanSQLs(c echo.Context) error {
 	for _, v := range head {
 		res.Head = append(res.Head, AuditPlanSQLHeadV1{
 			Name: v.Name,
-			Desc: v.Desc,
+			Desc: locale.ShouldLocalizeMsg(c.Request().Context(), v.Desc),
 			Type: v.Type,
 		})
 	}
@@ -1070,6 +1072,7 @@ func GetInstanceAuditPlanSQLMeta(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.NewInstanceAuditPlanNotExistErr())
 	}
+	ctx := c.Request().Context()
 	s := model.GetStorage()
 	auditPlanId, err := strconv.Atoi(c.Param("audit_plan_id"))
 	if err != nil {
@@ -1084,7 +1087,7 @@ func GetInstanceAuditPlanSQLMeta(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	filter, err := auditplan.GetSQLFilterMeta(ap, s)
+	filter, err := auditplan.GetSQLFilterMeta(ctx, ap, s)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1093,7 +1096,7 @@ func GetInstanceAuditPlanSQLMeta(c echo.Context) error {
 	for _, v := range head {
 		data.Head = append(data.Head, AuditPlanSQLHeadV1{
 			Name:     v.Name,
-			Desc:     v.Desc,
+			Desc:     locale.ShouldLocalizeMsg(ctx, v.Desc),
 			Type:     v.Type,
 			Sortable: v.Sortable,
 		})
@@ -1101,7 +1104,7 @@ func GetInstanceAuditPlanSQLMeta(c echo.Context) error {
 	for _, v := range filter {
 		data.FilterMetaList = append(data.FilterMetaList, FilterMeta{
 			Name:            v.Name,
-			Desc:            v.Desc,
+			Desc:            locale.ShouldLocalizeMsg(ctx, v.Desc),
 			FilterInputType: string(v.FilterInputType),
 			FilterOpType:    string(v.FilterOpType),
 			FilterTips:      ConvertFilterTipsToRes(v.FilterTips),
@@ -1259,7 +1262,7 @@ func GetInstanceAuditPlanSQLExport(c echo.Context) error {
 	csvWriter := csv.NewWriter(buff)
 	toWrite := make([]string, len(head))
 	for col, h := range head {
-		toWrite[col] = h.Desc
+		toWrite[col] = locale.ShouldLocalizeMsg(c.Request().Context(), h.Desc)
 	}
 	if err = csvWriter.Write(toWrite); err != nil {
 		return controller.JSONBaseErrorReq(c, err)

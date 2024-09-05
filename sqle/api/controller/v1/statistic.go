@@ -2,16 +2,15 @@ package v1
 
 import (
 	"context"
+	"math"
 	"net/http"
+	"time"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/dms"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server/auditplan"
-
-	"time"
-
-	"math"
 
 	"github.com/labstack/echo/v4"
 )
@@ -356,7 +355,7 @@ func GetLicenseUsageV1(c echo.Context) error {
 		Data: &LicenseUsageV1{
 			UsersUsage: LicenseUsageItem{
 				ResourceType:     "user",
-				ResourceTypeDesc: "用户",
+				ResourceTypeDesc: locale.ShouldLocalizeMsg(c.Request().Context(), locale.StatisticResourceTypeUser),
 				Used:             0,
 				Limit:            0,
 				IsLimited:        false,
@@ -681,7 +680,7 @@ func StatisticAuditPlanV1(c echo.Context) error {
 		newAuditPlanCount := &AuditPlanCount{
 			Count: dBTypeAuditPlanCounts[i].AuditPlanCount,
 			Type:  dBTypeAuditPlanCounts[i].Type,
-			Desc:  meta.Desc,
+			Desc:  locale.ShouldLocalizeMsg(c.Request().Context(), meta.Desc),
 		}
 		dbTypeAuditPlanCountSliceMap[dbType] = append(auditPlanCountSlice, newAuditPlanCount)
 	}

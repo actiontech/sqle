@@ -10,6 +10,7 @@ import (
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/utils"
@@ -125,16 +126,16 @@ type SchemaMetaSQL struct {
 func (at *BaseSchemaMetaTaskV2) Params(instanceId ...string) params.Params {
 	return []*params.Param{
 		{
-			Key:   paramKeyCollectIntervalMinute,
-			Desc:  "采集周期（分钟）",
-			Value: "60",
-			Type:  params.ParamTypeInt,
+			Key:      paramKeyCollectIntervalMinute,
+			Value:    "60",
+			Type:     params.ParamTypeInt,
+			I18nDesc: locale.ShouldLocalizeAll(locale.ParamCollectIntervalMinuteOracle),
 		},
 		{
-			Key:   "collect_view",
-			Desc:  "是否采集视图信息",
-			Value: "0",
-			Type:  params.ParamTypeBool,
+			Key:      "collect_view",
+			Value:    "0",
+			Type:     params.ParamTypeBool,
+			I18nDesc: locale.ShouldLocalizeAll(locale.ParamCollectView),
 		},
 	}
 }
@@ -274,12 +275,12 @@ func (at *BaseSchemaMetaTaskV2) Head(ap *AuditPlan) []Head {
 	return []Head{
 		{
 			Name: "sql",
-			Desc: "SQL语句",
+			Desc: locale.ApSQLStatement,
 			Type: "sql",
 		},
 		{
 			Name: "priority",
-			Desc: "优先级",
+			Desc: locale.ApPriority,
 		},
 		{
 			Name: model.AuditResultName,
@@ -287,44 +288,44 @@ func (at *BaseSchemaMetaTaskV2) Head(ap *AuditPlan) []Head {
 		},
 		{
 			Name: "schema_name",
-			Desc: "schema",
+			Desc: locale.ApSchema,
 		},
 		{
 			Name: MetricNameMetaName,
-			Desc: "对象名称",
+			Desc: locale.ApMetricNameMetaName,
 		},
 		{
 			Name: MetricNameMetaType,
-			Desc: "对象类型",
+			Desc: locale.ApMetricNameMetaType,
 		},
 	}
 }
 
-func (at *BaseSchemaMetaTaskV2) Filters(logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) []FilterMeta {
+func (at *BaseSchemaMetaTaskV2) Filters(ctx context.Context, logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) []FilterMeta {
 	return []FilterMeta{
 		{
 			Name:            "sql", // 模糊筛选
-			Desc:            "SQL",
+			Desc:            locale.ApSQLStatement,
 			FilterInputType: FilterInputTypeString,
 			FilterOpType:    FilterOpTypeEqual,
 		},
 		{
 			Name:            "rule_name",
-			Desc:            "审核规则",
+			Desc:            locale.ApRuleName,
 			FilterInputType: FilterInputTypeString,
 			FilterOpType:    FilterOpTypeEqual,
-			FilterTips:      GetSqlManagerRuleTips(logger, ap.ID, persist),
+			FilterTips:      GetSqlManagerRuleTips(ctx, logger, ap.ID, persist),
 		},
 		{
 			Name:            "priority",
-			Desc:            "SQL优先级",
+			Desc:            locale.ApPriority,
 			FilterInputType: FilterInputTypeString,
 			FilterOpType:    FilterOpTypeEqual,
-			FilterTips:      GetSqlManagerPriorityTips(logger),
+			FilterTips:      GetSqlManagerPriorityTips(ctx, logger),
 		},
 		{
 			Name:            "schema_name",
-			Desc:            "schema",
+			Desc:            locale.ApSchema,
 			FilterInputType: FilterInputTypeString,
 			FilterOpType:    FilterOpTypeEqual,
 			FilterTips:      GetSqlManagerSchemaNameTips(logger, ap.ID, persist),

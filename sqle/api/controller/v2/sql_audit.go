@@ -92,7 +92,7 @@ func convertTaskResultToAuditResV2(ctx context.Context, task *model.Task) *Audit
 		for j := range sql.AuditResults {
 			ar[j] = &AuditResult{
 				Level:    sql.AuditResults[j].Level,
-				Message:  sql.AuditResults[j].GetAuditMsgByLangTag(lang.String()),
+				Message:  sql.AuditResults[j].GetAuditMsgByLangTag(lang),
 				RuleName: sql.AuditResults[j].RuleName,
 				DbType:   task.DBType,
 			}
@@ -241,7 +241,7 @@ func convertAuditResultToAuditResV2(ctx context.Context, auditResults model.Audi
 	for i := range auditResults {
 		ar[i] = AuditResult{
 			Level:    auditResults[i].Level,
-			Message:  auditResults[i].GetAuditMsgByLangTag(lang.String()),
+			Message:  auditResults[i].GetAuditMsgByLangTag(lang),
 			RuleName: auditResults[i].RuleName,
 		}
 	}
