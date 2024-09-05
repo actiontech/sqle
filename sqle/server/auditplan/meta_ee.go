@@ -3,6 +3,8 @@
 
 package auditplan
 
+import "github.com/actiontech/sqle/sqle/cmd/scannerd/command"
+
 const (
 	TypeOceanBaseForMySQLMybatis = "ocean_base_for_mysql_mybatis"
 	TypeOceanBaseForMySQLTopSQL  = "ocean_base_for_mysql_top_sql"
@@ -14,7 +16,7 @@ const (
 	TypeDmTopSQL                 = "dm_top_sql"
 	TypePostgreSQLTopSQL         = "postgresql_top_sql"
 	TypePostgreSQLSchemaMeta     = "Postgresql_schema_meta"
-	TypeTBaseSlowLog             = "TBase_slow_log"
+	TypeTBaseSlowLog             = command.TypeTBaseSlowLog
 )
 
 const (
