@@ -489,7 +489,7 @@ func convertRuleToRes(ctx context.Context, rule *model.Rule) RuleResV1 {
 	if rule.I18nRuleInfo == nil {
 		rule.I18nRuleInfo = make(driverV2.I18nRuleInfo) // avoid panic
 	}
-	ruleInfo := rule.I18nRuleInfo.GetRuleInfoByLangTag(lang.String())
+	ruleInfo := rule.I18nRuleInfo.GetRuleInfoByLangTag(lang)
 	ruleRes := RuleResV1{
 		Name:            rule.Name,
 		Desc:            ruleInfo.Desc,
@@ -506,7 +506,7 @@ func convertRuleToRes(ctx context.Context, rule *model.Rule) RuleResV1 {
 		for _, p := range params {
 			paramRes := RuleParamResV1{
 				Key:   p.Key,
-				Desc:  p.Desc,
+				Desc:  p.GetDesc(locale.GetLangTagFromCtx(ctx)),
 				Type:  string(p.Type),
 				Value: rule.Params.GetParam(p.Key).Value,
 			}
@@ -1317,7 +1317,7 @@ func exportRuleTemplateFile(c echo.Context, projectID string, ruleTemplateName s
 		RuleList: []RuleResV1{},
 	}
 	for _, rule := range template.RuleList {
-		ruleInfo := ruleCache[rule.RuleName].I18nRuleInfo.GetRuleInfoByLangTag(lang.String())
+		ruleInfo := ruleCache[rule.RuleName].I18nRuleInfo.GetRuleInfoByLangTag(lang)
 		r := RuleResV1{
 			Name:       rule.RuleName,
 			Desc:       ruleInfo.Desc,
@@ -1332,7 +1332,7 @@ func exportRuleTemplateFile(c echo.Context, projectID string, ruleTemplateName s
 			r.Params = append(r.Params, RuleParamResV1{
 				Key:   param.Key,
 				Value: param.Value,
-				Desc:  param.Desc,
+				Desc:  param.GetDesc(locale.GetLangTagFromCtx(c.Request().Context())),
 				Type:  string(param.Type),
 			})
 		}

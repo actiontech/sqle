@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/utils"
@@ -37,40 +38,40 @@ func (at *MySQLSlowLogHuaweiTaskV2) InstanceType() string {
 func (at *MySQLSlowLogHuaweiTaskV2) Params(instanceId ...string) params.Params {
 	return []*params.Param{
 		{
-			Key:   paramKeyProjectId,
-			Desc:  "项目ID",
-			Value: "",
-			Type:  params.ParamTypeString,
+			Key:      paramKeyProjectId,
+			Value:    "",
+			Type:     params.ParamTypeString,
+			I18nDesc: locale.ShouldLocalizeAll(locale.ParamProjectId),
 		},
 		{
-			Key:   paramKeyDBInstanceId,
-			Desc:  "实例ID",
-			Value: "",
-			Type:  params.ParamTypeString,
+			Key:      paramKeyDBInstanceId,
+			Value:    "",
+			Type:     params.ParamTypeString,
+			I18nDesc: locale.ShouldLocalizeAll(locale.ParamDBInstanceId),
 		},
 		{
-			Key:   paramKeyAccessKeyId,
-			Desc:  "Access Key ID",
-			Value: "",
-			Type:  params.ParamTypePassword,
+			Key:      paramKeyAccessKeyId,
+			Value:    "",
+			Type:     params.ParamTypePassword,
+			I18nDesc: locale.ShouldLocalizeAll(locale.ParamAccessKeyId),
 		},
 		{
-			Key:   paramKeyAccessKeySecret,
-			Desc:  "Access Key Secret",
-			Value: "",
-			Type:  params.ParamTypePassword,
+			Key:      paramKeyAccessKeySecret,
+			Value:    "",
+			Type:     params.ParamTypePassword,
+			I18nDesc: locale.ShouldLocalizeAll(locale.ParamAccessKeySecret),
 		},
 		{
-			Key:   paramKeyFirstSqlsScrappedInLastPeriodHours,
-			Desc:  "启动任务时拉取慢日志的时间范围（单位：小时，最大30天）",
-			Value: "24",
-			Type:  params.ParamTypeInt,
+			Key:      paramKeyFirstSqlsScrappedInLastPeriodHours,
+			Value:    "24",
+			Type:     params.ParamTypeInt,
+			I18nDesc: locale.ShouldLocalizeAllWithArgs(locale.ParamFirstCollectDurationWithMaxDays, 30),
 		},
 		{
-			Key:   paramKeyRegion,
-			Desc:  "当前RDS实例所在的地区（示例：cn-east-2）",
-			Value: "",
-			Type:  params.ParamTypeString,
+			Key:      paramKeyRegion,
+			Value:    "",
+			Type:     params.ParamTypeString,
+			I18nDesc: locale.ShouldLocalizeAll(locale.ParamRegion),
 		},
 	}
 }
