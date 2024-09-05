@@ -40,6 +40,12 @@ func CheckDeleteInstance(instanceId int64) error {
 	if isBoundToAuditPlan {
 		return errors.New("there is an unbound audit plan")
 	}
-
+	nodes, err := s.GetPipelineNodesByInstanceId(uint64(instanceId))
+	if err != nil {
+		return fmt.Errorf("check that all pipeline node are unbound failed: %v", err)
+	}
+	if len(nodes) > 0 {
+		return errors.New("there is an unbound pipeline node")
+	}
 	return nil
 }
