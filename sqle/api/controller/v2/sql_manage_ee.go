@@ -105,7 +105,7 @@ func convertToGetSqlManageListResp(sqlManageList []*model.SqlManageDetail) ([]*S
 		sqlMgr.Sql = sqlManage.SqlText.String
 		sqlMgr.InstanceName = dms.GetInstancesByIdWithoutError(sqlManage.InstanceID.String).Name
 		sqlMgr.SchemaName = sqlManage.SchemaName.String
-
+		sqlMgr.AuditStatus = sqlManage.AuditStatus.String
 		for i := range sqlManage.AuditResults {
 			ar := sqlManage.AuditResults[i]
 			sqlMgr.AuditResult = append(sqlMgr.AuditResult, &v1.AuditResult{

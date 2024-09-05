@@ -161,6 +161,7 @@ type SqlManageDetail struct {
 	SourceIDs            RowList        `json:"source_id"`
 	AuditLevel           sql.NullString `json:"audit_level"`
 	AuditResults         AuditResults   `json:"audit_results"`
+	AuditStatus          sql.NullString `json:"audit_status"`
 	FpCount              uint64         `json:"fp_count"`
 	AppearTimestamp      *time.Time     `json:"first_appear_timestamp"`
 	LastReceiveTimestamp *time.Time     `json:"last_receive_timestamp"`
@@ -315,7 +316,8 @@ SELECT
 	oms.sql_text,
 	oms.source,
 	oms.audit_level,
-	oms.audit_results,
+	IF(oms.audit_results IS NULL,'null',oms.audit_results) AS audit_results,
+	IF(oms.audit_results IS NULL,'being_audited','') AS audit_status,
 	oms.instance_id,
 	oms.schema_name,
 	oms.end_point as endpoints,
@@ -347,7 +349,6 @@ FROM sql_manage_records oms
 
 WHERE oms.project_id = :project_id
   AND oms.deleted_at IS NULL
-  AND oms.audit_results IS NOT NULL
 
 {{- if .fuzzy_search_sql_fingerprint }}
 AND oms.sql_fingerprint LIKE '%{{ .fuzzy_search_sql_fingerprint }}%'
