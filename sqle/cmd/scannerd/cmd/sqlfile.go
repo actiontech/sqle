@@ -6,11 +6,10 @@ import (
 	"os"
 	"time"
 
+	scannerCmd "github.com/actiontech/sqle/sqle/cmd/scannerd/command"
 	sqlFile "github.com/actiontech/sqle/sqle/cmd/scannerd/scanners/sql_file"
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners/supervisor"
 	"github.com/actiontech/sqle/sqle/pkg/scanner"
-
-	pkgAP "github.com/actiontech/sqle/sqle/server/auditplan"
 
 	"github.com/fatih/color"
 	"github.com/sirupsen/logrus"
@@ -24,7 +23,7 @@ var (
 	schemaNameSqlFile string
 
 	sqlFileCmd = &cobra.Command{
-		Use:   pkgAP.TypeSQLFile,
+		Use:   scannerCmd.TypeSQLFile,
 		Short: "Parse sql file",
 		Run: func(cmd *cobra.Command, args []string) {
 			param := &sqlFile.Params{
@@ -54,11 +53,19 @@ var (
 )
 
 func init() {
-	sqlFileCmd.Flags().StringVarP(&dir, "dir", "D", "", "sql file directory")
-	sqlFileCmd.Flags().BoolVarP(&skipErrorSqlFile, "skip-error-sql-file", "S", false, "skip the sql file that failed to parse")
-	sqlFileCmd.Flags().StringVarP(&dbTypeSqlFile, "db-type", "B", "", "database type")
-	sqlFileCmd.Flags().StringVarP(&instNameSqlFile, "instance-name", "I", "", "instance name")
-	sqlFileCmd.Flags().StringVarP(&schemaNameSqlFile, "schema-name", "C", "", "schema name")
-	_ = sqlFileCmd.MarkFlagRequired("dir")
+	sqlfile, err := scannerCmd.GetScannerdCmd(scannerCmd.TypeSQLFile)
+	if err != nil {
+		panic(err)
+	}
+	sqlFileCmd.Flags().StringVarP(sqlfile.StringFlagFn[scannerCmd.FlagDirectory](&dir))
+	sqlFileCmd.Flags().BoolVarP(sqlfile.BoolFlagFn[scannerCmd.FlagSkipErrorSqlFile](&skipErrorSqlFile))
+	sqlFileCmd.Flags().StringVarP(sqlfile.StringFlagFn[scannerCmd.FlagDbType](&dbTypeSqlFile))
+	sqlFileCmd.Flags().StringVarP(sqlfile.StringFlagFn[scannerCmd.FlagInstanceName](&instNameSqlFile))
+	sqlFileCmd.Flags().StringVarP(sqlfile.StringFlagFn[scannerCmd.FlagSchemaName](&schemaNameSqlFile))
+
+	for _, requiredFlag := range sqlfile.RequiredFlags {
+		_ = sqlFileCmd.MarkFlagRequired(requiredFlag)
+	}
+
 	rootCmd.AddCommand(sqlFileCmd)
 }
