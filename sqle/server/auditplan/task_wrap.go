@@ -230,7 +230,6 @@ func (at *TaskWrapper) extractSQL() {
 	err = at.persist.UpdateAuditPlanLastCollectionTime(at.ap.ID, collectionTime)
 	if err != nil {
 		at.logger.Errorf("update audit plan last collection time failed, error : %v", err)
-		return
 	}
 	if len(sqls) == 0 {
 		at.logger.Info("extract sql list is empty, skip")
