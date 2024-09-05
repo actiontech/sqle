@@ -10,7 +10,7 @@ import (
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners/supervisor"
 	"github.com/actiontech/sqle/sqle/pkg/scanner"
 
-	pkgAP "github.com/actiontech/sqle/sqle/server/auditplan"
+	scannerCmd "github.com/actiontech/sqle/sqle/cmd/scannerd/command"
 	"github.com/fatih/color"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -25,7 +25,7 @@ var (
 	schemaNameXml  string
 
 	mybatisCmd = &cobra.Command{
-		Use:   pkgAP.TypeMySQLMybatis,
+		Use:   scannerCmd.TypeMySQLMybatis,
 		Short: "Parse MyBatis XML file",
 		Run: func(cmd *cobra.Command, args []string) {
 			param := &mybatis.Params{
@@ -55,12 +55,20 @@ var (
 )
 
 func init() {
-	mybatisCmd.Flags().StringVarP(&dir, "dir", "D", "", "xml directory")
-	mybatisCmd.Flags().BoolVarP(&skipErrorQuery, "skip-error-query", "S", false, "skip the statement that the scanner failed to parse from within the xml file")
-	mybatisCmd.Flags().BoolVarP(&skipErrorXml, "skip-error-xml", "X", false, "skip the xml file that failed to parse")
-	mybatisCmd.Flags().StringVarP(&dbTypeXml, "db-type", "B", "", "database type")
-	mybatisCmd.Flags().StringVarP(&instNameXml, "instance-name", "I", "", "instance name")
-	mybatisCmd.Flags().StringVarP(&schemaNameXml, "schema-name", "C", "", "schema name")
-	_ = mybatisCmd.MarkFlagRequired("dir")
+	mybatis, err := scannerCmd.GetScannerdCmd(scannerCmd.TypeMySQLMybatis)
+	if err != nil {
+		panic(err)
+	}
+	mybatisCmd.Flags().StringVarP(mybatis.StringFlagFn[scannerCmd.FlagDirectory](&dir))
+	mybatisCmd.Flags().BoolVarP(mybatis.BoolFlagFn[scannerCmd.FlagSkipErrorQuery](&skipErrorQuery))
+	mybatisCmd.Flags().BoolVarP(mybatis.BoolFlagFn[scannerCmd.FlagSkipErrorXml](&skipErrorXml))
+	mybatisCmd.Flags().StringVarP(mybatis.StringFlagFn[scannerCmd.FlagDbType](&dbTypeXml))
+	mybatisCmd.Flags().StringVarP(mybatis.StringFlagFn[scannerCmd.FlagInstanceName](&instNameXml))
+	mybatisCmd.Flags().StringVarP(mybatis.StringFlagFn[scannerCmd.FlagSchemaName](&schemaNameXml))
+
+	for _, requiredFlag := range mybatis.RequiredFlags {
+		_ = mybatisCmd.MarkFlagRequired(requiredFlag)
+	}
+
 	rootCmd.AddCommand(mybatisCmd)
 }
