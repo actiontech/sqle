@@ -41,6 +41,13 @@ func (node PipelineNode) IntegrationInfo() (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if node.InstanceID != 0 {
+		instance, _, err := dms.GetInstancesById(context.TODO(), fmt.Sprint(node.InstanceID))
+		if err != nil {
+			return "", err
+		}
+		node.InstanceName = instance.Name
+	}
 
 	switch model.PipelineNodeType(node.NodeType) {
 	case model.NodeTypeAudit:
@@ -83,6 +90,7 @@ type PipelineNode struct {
 	Name             string // 节点名称，必填，支持中文、英文+数字+特殊字符
 	NodeType         string // 节点类型，必填，选项为“审核”或“上线”
 	InstanceName     string // 数据源名称，在线审核时必填
+	InstanceID       uint64 // 数据源ID
 	InstanceType     string // 数据源类型，在线审核时必填
 	ObjectPath       string // 审核脚本路径，必填，用户填写文件路径
 	ObjectType       string // 审核对象类型，必填，可选项为SQL文件、MyBatis文件
@@ -121,6 +129,7 @@ func (svc PipelineSvc) CheckInstance(ctx context.Context, pipe *Pipeline) (err e
 				return fmt.Errorf("instance does not exist")
 			}
 			node.InstanceType = instance.DbType
+			node.InstanceID = instance.ID
 		}
 	}
 	return nil
@@ -167,7 +176,7 @@ func (svc PipelineSvc) toModelPipelineNodes(pipe *Pipeline, userId string) []*mo
 			PipelineID:       pipe.ID, // 需要将 Pipeline 的 ID 关联到 Node 上
 			Name:             node.Name,
 			NodeType:         node.NodeType,
-			InstanceName:     node.InstanceName,
+			InstanceID:       node.InstanceID,
 			InstanceType:     node.InstanceType,
 			ObjectPath:       node.ObjectPath,
 			ObjectType:       node.ObjectType,
@@ -262,7 +271,7 @@ func (svc PipelineSvc) toPipelineNode(modelPipelineNode *model.PipelineNode) *Pi
 		ID:               modelPipelineNode.ID,
 		Name:             modelPipelineNode.Name,
 		NodeType:         modelPipelineNode.NodeType,
-		InstanceName:     modelPipelineNode.InstanceName,
+		InstanceID:       modelPipelineNode.InstanceID,
 		InstanceType:     modelPipelineNode.InstanceType,
 		ObjectPath:       modelPipelineNode.ObjectPath,
 		ObjectType:       modelPipelineNode.ObjectType,
@@ -290,7 +299,7 @@ func (svc PipelineSvc) needUpdateToken(oldNode *model.PipelineNode, newNode *Pip
 		newNode.ObjectPath != oldNode.ObjectPath ||
 		newNode.ObjectType != oldNode.ObjectType ||
 		newNode.AuditMethod != oldNode.AuditMethod ||
-		newNode.InstanceName != oldNode.InstanceName ||
+		newNode.InstanceID != oldNode.InstanceID ||
 		newNode.InstanceType != oldNode.InstanceType
 }
 
@@ -396,7 +405,7 @@ func (svc PipelineSvc) UpdatePipeline(pipe *Pipeline, userId string) error {
 				PipelineID:       pipe.ID,
 				Name:             newNode.Name,
 				NodeType:         newNode.NodeType,
-				InstanceName:     newNode.InstanceName,
+				InstanceID:       newNode.InstanceID,
 				InstanceType:     newNode.InstanceType,
 				ObjectPath:       newNode.ObjectPath,
 				ObjectType:       newNode.ObjectType,
@@ -424,7 +433,7 @@ func (svc PipelineSvc) DeletePipeline(projectUID string, pipelineID uint) error 
 		}
 
 		// 删除 pipeline
-		if err := txDB.Model(&model.Pipeline{}).Where("id = ?", pipelineID).Delete(&model.Pipeline{}).Error; err != nil {
+		if err := txDB.Model(&model.Pipeline{}).Where("project_uid = ? AND id = ?", projectUID, pipelineID).Delete(&model.Pipeline{}).Error; err != nil {
 			return fmt.Errorf("failed to delete pipeline: %w", err)
 		}
 
