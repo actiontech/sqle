@@ -10,6 +10,7 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 type AuditPlanHandlerJob struct {
@@ -61,38 +62,59 @@ func (j *AuditPlanHandlerJob) HandlerSQL(entry *logrus.Entry) {
 	if len(sqlList) == 0 {
 		return
 	}
-	// 审核
-	sqlList, err = BatchAuditSQLs(sqlList, true)
-	if err != nil {
-		entry.Warnf("batch audit origin manager sql failed, error: %v", err)
+
+	// todo: 错误处理
+	if err = s.Tx(func(txDB *gorm.DB) error {
+		for _, sql := range sqlList {
+			err := s.SaveManagerSQL(txDB, sql)
+			if err != nil {
+				entry.Warnf("update manager sql failed, error: %v", err)
+				return err
+			}
+
+			// 更新状态表
+			err = s.UpdateManagerSQLStatus(txDB, sql)
+			if err != nil {
+				entry.Warnf("update manager sql status failed, error: %v", err)
+				return err
+			}
+		}
+
+		for _, sql := range queues {
+			err := s.RemoveSQLFromQueue(txDB, sql)
+			if err != nil {
+				entry.Warnf("remove manager sql queue failed, error: %v", err)
+				return err
+			}
+		}
+
+		return nil
+
+	}); err != nil {
 		return
 	}
+
+	go handlerSQLAudit(sqlList, entry)
+
+}
+
+// todo: 错误处理
+func handlerSQLAudit(sqlList []*model.SQLManageRecord, entry *logrus.Entry) {
+	s := model.GetStorage()
+	sqlList, err := BatchAuditSQLs(sqlList, true)
+	if err != nil {
+		entry.Warnf("batch audit manager sql failed, error: %v", err)
+	}
+	// 设置高优先级
 	sqlList, err = SetSQLPriority(sqlList)
 	if err != nil {
-		entry.Warnf("check sql priority sql failed, error: %v", err)
-		return
+		entry.Warnf("set sql priority sql failed, error: %v", err)
 	}
-	// todo: 保证事务和错误处理
 	for _, sql := range sqlList {
-		err := s.UpdateManagerSQL(sql)
+		err = s.UpdateManagerSQLBySqlId(sql)
 		if err != nil {
 			entry.Warnf("update manager sql failed, error: %v", err)
-			return
-		}
-
-		// 同时更新状态表
-		err = s.UpdateManagerSQLStatus(sql)
-		if err != nil {
-			entry.Warnf("update manager sql status failed, error: %v", err)
-			return
-		}
-
-	}
-	for _, sql := range queues {
-		err := s.RemoveSQLFromQueue(sql)
-		if err != nil {
-			entry.Warnf("remove manager sql queue failed, error: %v", err)
-			return
+			continue
 		}
 	}
 }
