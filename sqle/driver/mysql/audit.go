@@ -1177,6 +1177,9 @@ func (i *MysqlDriverImpl) checkInvalidSelect(stmt *ast.SelectStmt) error {
 
 // checkUnparsedStmt might add more check in future.
 func (i *MysqlDriverImpl) checkUnparsedStmt(stmt *ast.UnparsedStmt) error {
-	i.result.Add(driverV2.RuleLevelWarn, "", "语法错误或者解析器不支持，请人工确认SQL正确性")
+	if i.cnf.parsingSQLFailureCheckEnable {
+		parsingRule := rulepkg.RuleHandlerMap[rulepkg.ConfigParsingSQLFailure]
+		i.result.Add(i.cnf.parsingSQLFailureLevel, rulepkg.ConfigParsingSQLFailure, parsingRule.Message)
+	}
 	return nil
 }

@@ -2146,4 +2146,15 @@ var RuleHandlers = []RuleHandler{
 		Message:      "禁止char, varchar类型字段字符长度总和超过阈值 %v",
 		Func:         checkCharLength,
 	},
+	{
+		Rule: driverV2.Rule{
+			Name:       ConfigParsingSQLFailure,
+			Desc:       "语法错误或者解析器不支持",
+			Annotation: "语法错误或者解析器不支持，请人工确认SQL正确性。",
+			Level:      driverV2.RuleLevelError,
+			Category:   RuleTypeGlobalConfig,
+		},
+		Message: "语法错误或者解析器不支持，请人工确认SQL正确性。",
+		Func:    nil,
+	},
 }
