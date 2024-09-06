@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/driver/v1/proto"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 
 	"github.com/pkg/errors"
@@ -426,7 +427,7 @@ func convertRuleFromDriverToProto(rule *Rule) *proto.Rule {
 		params = append(params, &proto.Param{
 			Key:   p.Key,
 			Value: p.Value,
-			Desc:  p.Desc,
+			Desc:  p.GetDesc(locale.DefaultLang),
 			Type:  string(p.Type),
 		})
 	}

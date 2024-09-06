@@ -79,14 +79,16 @@ require (
 require golang.org/x/sys v0.15.0
 
 require (
+	github.com/BurntSushi/toml v1.3.2
 	github.com/aliyun/credentials-go v1.1.2
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/guregu/null v0.0.0-20160228005316-41961cea0328
 	github.com/hashicorp/go-version v1.7.0
 	github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.1.69
+	github.com/nicksnyder/go-i18n/v2 v2.4.0
 	github.com/pganalyze/pg_query_go/v4 v4.2.1
 	github.com/xen0n/go-workwx v1.7.0
-	golang.org/x/text v0.13.0
+	golang.org/x/text v0.14.0
 	gorm.io/driver/mysql v1.4.7
 	gorm.io/gorm v1.24.3
 )

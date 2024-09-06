@@ -108,7 +108,7 @@ func convertInstance(instance *dmsV1.ListDBService) (*model.Instance, error) {
 		additionalParams = append(additionalParams, &params.Param{
 			Key:   item.Name,
 			Value: item.Value,
-			Desc:  item.Description,
+			Desc:  item.Description, // todo i18n dms resp instance Param desc
 			Type:  params.ParamType(item.Type),
 		})
 	}

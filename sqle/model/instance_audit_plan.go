@@ -265,7 +265,7 @@ func (s *Storage) GetManagerSqlMetricTipsByAuditPlan(auditPlanId uint, metricNam
 func (s *Storage) GetManagerSqlRuleTipsByAuditPlan(auditPlanId uint) ([]*SqlManageRuleTips, error) {
 	sqlManageRuleTips := make([]*SqlManageRuleTips, 0)
 	err := s.db.Table("sql_manage_records smr").
-		Select("DISTINCT iap.db_type, rules.name as rule_name, rules.desc").
+		Select("DISTINCT iap.db_type, rules.name as rule_name, rules.i18n_rule_info").
 		Joins("JOIN audit_plans_v2 ap ON ap.instance_audit_plan_id = smr.source_id AND ap.type = smr.source").
 		Joins("JOIN instance_audit_plans iap ON iap.id = ap.instance_audit_plan_id").
 		Joins("LEFT JOIN rules ON rules.db_type = iap.db_type").
@@ -481,22 +481,31 @@ func (s *Storage) PullSQLFromManagerSQLQueue() ([]*SQLManageQueue, error) {
 	return sqls, err
 }
 
-func (s *Storage) RemoveSQLFromQueue(sql *SQLManageQueue) error {
-	return s.db.Unscoped().Delete(sql).Error
+func (s *Storage) RemoveSQLFromQueue(txDB *gorm.DB, sql *SQLManageQueue) error {
+	return txDB.Unscoped().Delete(sql).Error
 }
 
-func (s *Storage) UpdateManagerSQL(sql *SQLManageRecord) error {
-	const query = "INSERT INTO `sql_manage_records` (`sql_id`,`source`,`source_id`,`project_id`,`instance_id`,`schema_name`,`sql_fingerprint`, `sql_text`, `info`, `audit_level`, `audit_results`,`priority`) " +
-		"VALUES (?,?,?,?,?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE `source` = VALUES(source),`source_id` = VALUES(source_id),`project_id` = VALUES(project_id), `instance_id` = VALUES(instance_id), `priority` = VALUES(priority), " +
-		"`schema_name` = VALUES(`schema_name`), `sql_text` = VALUES(sql_text), `sql_fingerprint` = VALUES(sql_fingerprint), `info`= VALUES(info), `audit_level`= VALUES(audit_level), `audit_results`= VALUES(audit_results)"
-	return s.db.Exec(query, sql.SQLID, sql.Source, sql.SourceId, sql.ProjectId, sql.InstanceID, sql.SchemaName, sql.SqlFingerprint, sql.SqlText, sql.Info, sql.AuditLevel, sql.AuditResults, sql.Priority).Error
+func (s *Storage) SaveManagerSQL(txDB *gorm.DB, sql *SQLManageRecord) error {
+	const query = "INSERT INTO `sql_manage_records` (`sql_id`,`source`,`source_id`,`project_id`,`instance_id`,`schema_name`,`sql_fingerprint`, `sql_text`, `info`) " +
+		"VALUES (?,?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE `source` = VALUES(source),`source_id` = VALUES(source_id),`project_id` = VALUES(project_id), `instance_id` = VALUES(instance_id), " +
+		"`schema_name` = VALUES(`schema_name`), `sql_text` = VALUES(sql_text), `sql_fingerprint` = VALUES(sql_fingerprint), `info`= VALUES(info)"
+	return txDB.Exec(query, sql.SQLID, sql.Source, sql.SourceId, sql.ProjectId, sql.InstanceID, sql.SchemaName, sql.SqlFingerprint, sql.SqlText, sql.Info).Error
 }
 
-func (s *Storage) UpdateManagerSQLStatus(sql *SQLManageRecord) error {
+func (s *Storage) UpdateManagerSQLStatus(txDB *gorm.DB, sql *SQLManageRecord) error {
 	const query = `	INSERT INTO sql_manage_record_processes (sql_manage_record_id)
 	SELECT smr.id FROM sql_manage_records smr WHERE smr.sql_id = ?
 	ON DUPLICATE KEY UPDATE sql_manage_record_id = VALUES(sql_manage_record_id);`
-	return s.db.Exec(query, sql.SQLID).Error
+	return txDB.Exec(query, sql.SQLID).Error
+}
+
+func (s *Storage) UpdateManagerSQLBySqlId(sqlManageMap map[string]interface{}, sqlId string) error {
+	err := s.db.Model(&SQLManageRecord{}).Where("sql_id = ?", sqlId).
+		Updates(sqlManageMap).Error
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *Storage) UpdateAuditPlanLastCollectionTime(auditPlanID uint, collectionTime time.Time) error {

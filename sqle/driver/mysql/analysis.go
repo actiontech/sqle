@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
+	"golang.org/x/text/language"
+
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
@@ -86,28 +89,28 @@ func (i *MysqlDriverImpl) getTableColumnsInfo(conn *executor.Executor, schema, t
 	columns := []driverV2.TabularDataHead{
 		{
 			Name: "COLUMN_NAME",
-			Desc: "列名",
+			Desc: plocale.ShouldLocalizeMsgByLang(language.English, plocale.AnalysisDescColumnName),
 		}, {
 			Name: "COLUMN_TYPE",
-			Desc: "列类型",
+			Desc: plocale.ShouldLocalizeMsgByLang(language.English, plocale.AnalysisDescColumnType),
 		}, {
 			Name: "CHARACTER_SET_NAME",
-			Desc: "列字符集",
+			Desc: plocale.ShouldLocalizeMsgByLang(language.English, plocale.AnalysisDescCharacterSetName),
 		}, {
 			Name: "IS_NULLABLE",
-			Desc: "是否可以为空",
+			Desc: plocale.ShouldLocalizeMsgByLang(language.English, plocale.AnalysisDescIsNullable),
 		}, {
 			Name: "COLUMN_KEY",
-			Desc: "列索引",
+			Desc: plocale.ShouldLocalizeMsgByLang(language.English, plocale.AnalysisDescColumnKey),
 		}, {
 			Name: "COLUMN_DEFAULT",
-			Desc: "默认值",
+			Desc: plocale.ShouldLocalizeMsgByLang(language.English, plocale.AnalysisDescColumnDefault),
 		}, {
 			Name: "EXTRA",
-			Desc: "拓展信息",
+			Desc: plocale.ShouldLocalizeMsgByLang(language.English, plocale.AnalysisDescExtra),
 		}, {
 			Name: "COLUMN_COMMENT",
-			Desc: "列说明",
+			Desc: plocale.ShouldLocalizeMsgByLang(language.English, plocale.AnalysisDescColumnComment),
 		},
 	}
 
@@ -145,30 +148,30 @@ func (i *MysqlDriverImpl) getTableIndexesInfo(conn *executor.Executor, schema, t
 	columns := []driverV2.TabularDataHead{
 		{
 			Name: "Column_name",
-			Desc: "列名",
+			Desc: plocale.ShouldLocalizeMsgByLang(language.English, plocale.AnalysisDescColumnName),
 		}, {
 			Name: "Key_name",
-			Desc: "索引名",
+			Desc: plocale.ShouldLocalizeMsgByLang(language.English, plocale.AnalysisDescKeyName),
 		}, {
 			// set the row's value as Yes if Non_unique is 0 and No if Non_unique is 1
 			Name: "Unique",
-			Desc: "唯一性",
+			Desc: plocale.ShouldLocalizeMsgByLang(language.English, plocale.AnalysisDescUnique),
 		}, {
 			Name: "Seq_in_index",
-			Desc: "列序列",
+			Desc: plocale.ShouldLocalizeMsgByLang(language.English, plocale.AnalysisDescSeqInIndex),
 		}, {
 			Name: "Cardinality",
-			Desc: "基数",
+			Desc: plocale.ShouldLocalizeMsgByLang(language.English, plocale.AnalysisDescCardinality),
 		}, {
 			// set the row's value as Yes if the column may contain NULL values and No if not
 			Name: "Null",
-			Desc: "是否可以为空",
+			Desc: plocale.ShouldLocalizeMsgByLang(language.English, plocale.AnalysisDescIsNullable),
 		}, {
 			Name: "Index_type",
-			Desc: "索引类型",
+			Desc: plocale.ShouldLocalizeMsgByLang(language.English, plocale.AnalysisDescIndexType),
 		}, {
 			Name: "Comment",
-			Desc: "备注",
+			Desc: plocale.ShouldLocalizeMsgByLang(language.English, plocale.AnalysisDescComment),
 		},
 	}
 

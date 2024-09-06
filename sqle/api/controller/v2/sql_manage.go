@@ -22,6 +22,7 @@ type SqlManage struct {
 	InstanceName         string            `json:"instance_name"`
 	SchemaName           string            `json:"schema_name"`
 	AuditResult          []*v1.AuditResult `json:"audit_result"`
+	AuditStatus          string            `json:"audit_status" enums:"being_audited"`
 	FirstAppearTimeStamp string            `json:"first_appear_timestamp"`
 	LastReceiveTimeStamp string            `json:"last_receive_timestamp"`
 	FpCount              uint64            `json:"fp_count"`
