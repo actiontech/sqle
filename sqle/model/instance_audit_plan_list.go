@@ -168,7 +168,7 @@ audit_plan_sqls.sql_fingerprint,
 audit_plan_sqls.sql_text,
 audit_plan_sqls.schema_name,
 audit_plan_sqls.info,
-audit_plan_sqls.audit_results,
+IF(audit_plan_sqls.audit_results IS NULL,'being_audited',audit_plan_sqls.audit_results) AS audit_results,
 audit_plan_sqls.priority
 
 {{- template "body" . -}} 
