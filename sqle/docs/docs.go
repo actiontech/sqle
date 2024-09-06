@@ -17015,6 +17015,12 @@ var doc = `{
                         "$ref": "#/definitions/v1.AuditResult"
                     }
                 },
+                "audit_status": {
+                    "type": "string",
+                    "enum": [
+                        "being_audited"
+                    ]
+                },
                 "endpoints": {
                     "type": "string"
                 },
