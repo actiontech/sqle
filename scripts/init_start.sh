@@ -35,6 +35,8 @@ systemctl start sqled.service
 # 10秒sqle还没有启动成功退出
 if detectSystemServiceStatus "sqled.service"; then
     echo "init and start sqled success!"
+    exit 0
 else
     echo "duration 30 seconds; start sqled failed"
+    exit 1
 fi
