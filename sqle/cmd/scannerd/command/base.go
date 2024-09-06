@@ -118,27 +118,36 @@ func (cmd scannerCmd) Type() string {
 	return cmd.ScannerType
 }
 
+/*
+	根据params中传递的命令标志生成scannerd的启动命令
+	1. 若检测到params中未传递必要参数，或传递必要参数但值为空，则会自动填充<请在此处填写必要参数>
+	2. 若检测到params中传递的参数不在启动参数中，则不会添加到命令中
+	3. 若检测到params中传递的参数在scannerd的非必要启动参数中，但值为空，则会自动填充<请在此处填写可选参数>
+	4. 若检测到params中传递的参数在scannerd的非必要启动参数中，且值非空，则根据参数的标志和参数值进行填充
+	5. 若检测到params中传递的参数，数值类型错误，属于开发时没有正确处理的参数，返回错误
+*/
 // path can be relative path or absolute path. params is flagName:flagValue map, bool type input true or false string.
 func (cmd scannerCmd) GenCommand(path string, params map[string] /* flag name */ string /* flag value */) (string, error) {
+	var command string = fmt.Sprintf("%s %s", path, cmd.Type())
+	var addParamTpl string = "%s --%s %s"
 	// check required flag exist
 	for _, father := range cmd.FatherCmds {
 		for _, requiredFlag := range father.RequiredFlags {
 			if value, exist := params[requiredFlag]; !exist || value == "" {
-				return "", fmt.Errorf("required flag: %s value: %s", requiredFlag, value)
+				command = fmt.Sprintf(addParamTpl, command, requiredFlag, "<请在此处填写必要参数>")
 			}
 		}
 	}
 	for _, requiredFlag := range cmd.RequiredFlags {
 		if value, exist := params[requiredFlag]; !exist || value == "" {
-			return "", fmt.Errorf("required flag: %s value: %s", requiredFlag, value)
+			command = fmt.Sprintf(addParamTpl, command, requiredFlag, "<请在此处填写必要参数>")
 		}
 	}
-	var command string = fmt.Sprintf("%s %s", path, cmd.Type())
-	var addParamTpl string = "%s --%s %s"
 	// check is flag valid and add flag
 	for flagName, flagValue := range params {
 		var err error
 		var exist bool
+		// check if flag exist
 		for _, father := range cmd.FatherCmds {
 			exist, err = father.checkFlag(flagName, flagValue)
 			if err != nil {
@@ -155,18 +164,18 @@ func (cmd scannerCmd) GenCommand(path string, params map[string] /* flag name */
 				return "", fmt.Errorf("when checking flag: %s,error %w", flagName, err)
 			}
 		}
+		// add flag if flag exist
 		if exist {
 			if flagValue == "" {
-				continue
+				flagValue = "<请在此处填写可选参数>"
 			}
 			command = fmt.Sprintf(addParamTpl, command, flagName, flagValue)
-			continue
 		}
-		return "", fmt.Errorf("unsupport flag %s", flagName)
 	}
 	return command, nil
 }
 
+// 检查输入的参数名称是否是scanner支持的参数，并且会检查参数值的类型是否正确
 func (cmd scannerCmd) checkFlag(flagName string, flagValue string) (exist bool, err error) {
 	if _, exist = cmd.StringFlagFn[flagName]; exist {
 		return true, nil
