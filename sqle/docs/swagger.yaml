@@ -4947,6 +4947,10 @@ definitions:
         items:
           $ref: '#/definitions/v1.AuditResult'
         type: array
+      audit_status:
+        enum:
+        - being_audited
+        type: string
       endpoints:
         type: string
       first_appear_timestamp:
