@@ -1,0 +1,22 @@
+样例说明：
+
+```
+TRUNCATE TABLE table_a  
+```
+```
+DELETE FROM table_a
+```
+
+重写说明：
+
+规则描述  
+没有查询条件或查询条件恒真的DELETE语句会删除表中的所有数据。DELETE语句需要写大量日志，以便进行事务回滚及主备同步。对于大表而言，可能会导致数据库的锁定和事务阻塞，同时会占用大量的日志空间。如果确认表中的数据不再需要，可以通过TRUNCATE表了代替DELETE语句。TRUNCATE比DELETE语句更快，因为它不会记录每个删除的行，而是直接将表清空并释放空间。
+```
+delete from lineitem
+```
+重写为
+```
+truncate lineitem
+```
+触发条件  
+没有条件或条件恒真的DELETE语句

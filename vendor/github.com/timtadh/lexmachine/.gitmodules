@@ -1,0 +1,6 @@
+[submodule "src/github.com/timtadh/getopt"]
+	path = src/github.com/timtadh/getopt
+	url = git@github.com:timtadh/getopt.git
+[submodule "src/github.com/timtadh/data-structures"]
+	path = src/github.com/timtadh/data-structures
+	url = git@github.com:timtadh/data-structures.git

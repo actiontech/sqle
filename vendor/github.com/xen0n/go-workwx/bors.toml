@@ -1,0 +1,4 @@
+status = [
+  "Tests result",
+]
+timeout_sec = 300

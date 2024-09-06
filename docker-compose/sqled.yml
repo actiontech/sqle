@@ -1,0 +1,18 @@
+server:
+  sqle_config:
+    server_host: 127.0.0.1
+    server_port: 10000
+    auto_migrate_table: true
+    debug_log: true
+    log_path: './logs'
+    dms_server_address: 'http://127.0.0.1:7601'
+  db_config:
+    mysql_cnf:
+      mysql_host: '20.20.20.2'
+      mysql_port: '3306'
+      mysql_user: 'root'
+      mysql_password: 'mysqlpass'
+      mysql_schema: 'sqle'
+    sql_server_cnf:
+      sql_server_host: '127.0.0.1'
+      sql_server_port: '10001'
