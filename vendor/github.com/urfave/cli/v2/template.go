@@ -1,98 +1,87 @@
 package cli
 
-var helpNameTemplate = `{{$v := offset .HelpName 6}}{{wrap .HelpName 3}}{{if .Usage}} - {{wrap .Usage $v}}{{end}}`
-var usageTemplate = `{{if .UsageText}}{{wrap .UsageText 3}}{{else}}{{.HelpName}}{{if .VisibleFlags}} [command options]{{end}} {{if .ArgsUsage}}{{.ArgsUsage}}{{else}}[arguments...]{{end}}{{end}}`
-var descriptionTemplate = `{{wrap .Description 3}}`
-var authorsTemplate = `{{with $length := len .Authors}}{{if ne 1 $length}}S{{end}}{{end}}:
-   {{range $index, $author := .Authors}}{{if $index}}
-   {{end}}{{$author}}{{end}}`
-var visibleCommandTemplate = `{{ $cv := offsetCommands .VisibleCommands 5}}{{range .VisibleCommands}}
-   {{$s := join .Names ", "}}{{$s}}{{ $sp := subtract $cv (offset $s 3) }}{{ indent $sp ""}}{{wrap .Usage $cv}}{{end}}`
-var visibleCommandCategoryTemplate = `{{range .VisibleCategories}}{{if .Name}}
-   {{.Name}}:{{range .VisibleCommands}}
-     {{join .Names ", "}}{{"\t"}}{{.Usage}}{{end}}{{else}}{{template "visibleCommandTemplate" .}}{{end}}{{end}}`
-var visibleFlagCategoryTemplate = `{{range .VisibleFlagCategories}}
-   {{if .Name}}{{.Name}}
-
-   {{end}}{{$flglen := len .Flags}}{{range $i, $e := .Flags}}{{if eq (subtract $flglen $i) 1}}{{$e}}
-{{else}}{{$e}}
-   {{end}}{{end}}{{end}}`
-
-var visibleFlagTemplate = `{{range $i, $e := .VisibleFlags}}
-   {{wrap $e.String 6}}{{end}}`
-
-var versionTemplate = `{{if .Version}}{{if not .HideVersion}}
-
-VERSION:
-   {{.Version}}{{end}}{{end}}`
-
-var copyrightTemplate = `{{wrap .Copyright 3}}`
-
 // AppHelpTemplate is the text template for the Default help topic.
 // cli.go uses text/template to render templates. You can
 // render custom help text by setting this variable.
 var AppHelpTemplate = `NAME:
-   {{template "helpNameTemplate" .}}
+   {{.Name}}{{if .Usage}} - {{.Usage}}{{end}}
 
 USAGE:
-   {{if .UsageText}}{{wrap .UsageText 3}}{{else}}{{.HelpName}} {{if .VisibleFlags}}[global options]{{end}}{{if .Commands}} command [command options]{{end}} {{if .ArgsUsage}}{{.ArgsUsage}}{{else}}[arguments...]{{end}}{{end}}{{if .Version}}{{if not .HideVersion}}
+   {{if .UsageText}}{{.UsageText | nindent 3 | trim}}{{else}}{{.HelpName}} {{if .VisibleFlags}}[global options]{{end}}{{if .Commands}} command [command options]{{end}} {{if .ArgsUsage}}{{.ArgsUsage}}{{else}}[arguments...]{{end}}{{end}}{{if .Version}}{{if not .HideVersion}}
 
 VERSION:
    {{.Version}}{{end}}{{end}}{{if .Description}}
 
 DESCRIPTION:
-   {{template "descriptionTemplate" .}}{{end}}
-{{- if len .Authors}}
+   {{.Description | nindent 3 | trim}}{{end}}{{if len .Authors}}
 
-AUTHOR{{template "authorsTemplate" .}}{{end}}{{if .VisibleCommands}}
+AUTHOR{{with $length := len .Authors}}{{if ne 1 $length}}S{{end}}{{end}}:
+   {{range $index, $author := .Authors}}{{if $index}}
+   {{end}}{{$author}}{{end}}{{end}}{{if .VisibleCommands}}
 
-COMMANDS:{{template "visibleCommandCategoryTemplate" .}}{{end}}{{if .VisibleFlagCategories}}
+COMMANDS:{{range .VisibleCategories}}{{if .Name}}
+   {{.Name}}:{{range .VisibleCommands}}
+     {{join .Names ", "}}{{"\t"}}{{.Usage}}{{end}}{{else}}{{range .VisibleCommands}}
+   {{join .Names ", "}}{{"\t"}}{{.Usage}}{{end}}{{end}}{{end}}{{end}}{{if .VisibleFlagCategories}}
 
-GLOBAL OPTIONS:{{template "visibleFlagCategoryTemplate" .}}{{else if .VisibleFlags}}
+GLOBAL OPTIONS:{{range .VisibleFlagCategories}}
+   {{if .Name}}{{.Name}}
+   {{end}}{{range .Flags}}{{.}}
+   {{end}}{{end}}{{else}}{{if .VisibleFlags}}
 
-GLOBAL OPTIONS:{{template "visibleFlagTemplate" .}}{{end}}{{if .Copyright}}
+GLOBAL OPTIONS:
+   {{range $index, $option := .VisibleFlags}}{{if $index}}
+   {{end}}{{$option}}{{end}}{{end}}{{end}}{{if .Copyright}}
 
 COPYRIGHT:
-   {{template "copyrightTemplate" .}}{{end}}
+   {{.Copyright}}{{end}}
 `
 
 // CommandHelpTemplate is the text template for the command help topic.
 // cli.go uses text/template to render templates. You can
 // render custom help text by setting this variable.
 var CommandHelpTemplate = `NAME:
-   {{template "helpNameTemplate" .}}
+   {{.HelpName}} - {{.Usage}}
 
 USAGE:
-   {{template "usageTemplate" .}}{{if .Category}}
+   {{if .UsageText}}{{.UsageText | nindent 3 | trim}}{{else}}{{.HelpName}}{{if .VisibleFlags}} [command options]{{end}} {{if .ArgsUsage}}{{.ArgsUsage}}{{else}}[arguments...]{{end}}{{end}}{{if .Category}}
 
 CATEGORY:
    {{.Category}}{{end}}{{if .Description}}
 
 DESCRIPTION:
-   {{template "descriptionTemplate" .}}{{end}}{{if .VisibleFlagCategories}}
+   {{.Description | nindent 3 | trim}}{{end}}{{if .VisibleFlagCategories}}
 
-OPTIONS:{{template "visibleFlagCategoryTemplate" .}}{{else if .VisibleFlags}}
+OPTIONS:{{range .VisibleFlagCategories}}
+   {{if .Name}}{{.Name}}
+   {{end}}{{range .Flags}}{{.}}
+   {{end}}{{end}}{{else}}{{if .VisibleFlags}}
 
-OPTIONS:{{template "visibleFlagTemplate" .}}{{end}}
+OPTIONS:
+   {{range .VisibleFlags}}{{.}}
+   {{end}}{{end}}{{end}}
 `
 
 // SubcommandHelpTemplate is the text template for the subcommand help topic.
 // cli.go uses text/template to render templates. You can
 // render custom help text by setting this variable.
 var SubcommandHelpTemplate = `NAME:
-   {{template "helpNameTemplate" .}}
+   {{.HelpName}} - {{.Usage}}
 
 USAGE:
-   {{if .UsageText}}{{wrap .UsageText 3}}{{else}}{{.HelpName}} {{if .VisibleFlags}}command [command options]{{end}} {{if .ArgsUsage}}{{.ArgsUsage}}{{else}}[arguments...]{{end}}{{end}}{{if .Description}}
+   {{if .UsageText}}{{.UsageText | nindent 3 | trim}}{{else}}{{.HelpName}} command{{if .VisibleFlags}} [command options]{{end}} {{if .ArgsUsage}}{{.ArgsUsage}}{{else}}[arguments...]{{end}}{{end}}{{if .Description}}
 
 DESCRIPTION:
-   {{template "descriptionTemplate" .}}{{end}}{{if .VisibleCommands}}
+   {{.Description | nindent 3 | trim}}{{end}}
 
-COMMANDS:{{template "visibleCommandTemplate" .}}{{end}}{{if .VisibleFlagCategories}}
+COMMANDS:{{range .VisibleCategories}}{{if .Name}}
+   {{.Name}}:{{range .VisibleCommands}}
+     {{join .Names ", "}}{{"\t"}}{{.Usage}}{{end}}{{else}}{{range .VisibleCommands}}
+   {{join .Names ", "}}{{"\t"}}{{.Usage}}{{end}}{{end}}{{end}}{{if .VisibleFlags}}
 
-OPTIONS:{{template "visibleFlagCategoryTemplate" .}}{{else if .VisibleFlags}}
-
-OPTIONS:{{template "visibleFlagTemplate" .}}{{end}}
+OPTIONS:
+   {{range .VisibleFlags}}{{.}}
+   {{end}}{{end}}
 `
 
 var MarkdownDocTemplate = `{{if gt .SectionNum 0}}% {{ .App.Name }} {{ .SectionNum }}
