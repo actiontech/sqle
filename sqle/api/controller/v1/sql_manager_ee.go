@@ -368,9 +368,9 @@ func getSqlManageSqlAnalysisV1(c echo.Context) error {
 	})
 }
 
-func getUnsolvedSQLCountByManagerStatus(id uint) (int64, error) {
+func getAuditPlanUnsolvedSQLCount(auditPlanId uint) (int64, error) {
 	s := model.GetStorage()
-	count, err := s.GetUnsolvedSQLCount(id,
+	count, err := s.GetAuditPlanUnsolvedSQLCount(auditPlanId,
 		[]string{model.SQLManageStatusIgnored,
 			model.SQLManageStatusSolved,
 			model.SQLManageStatusManualAudited})

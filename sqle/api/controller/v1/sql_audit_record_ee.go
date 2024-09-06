@@ -33,12 +33,6 @@ func syncSqlManage(record *model.SQLAuditRecord, tags []string) (err error) {
 		if err := newSyncFromSqlAudit.UpdateSqlManageRecord(); err != nil {
 			return fmt.Errorf("sync sql manager failed, error: %v", err)
 		}
-
-		s := model.GetStorage()
-		err := s.UpdateSqlManage(record.ID)
-		if err != nil {
-			return fmt.Errorf("update sql manage failed: %v", err)
-		}
 	}
 
 	return nil

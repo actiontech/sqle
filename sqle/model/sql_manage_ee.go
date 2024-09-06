@@ -779,18 +779,18 @@ func (s *Storage) GetSqlManagerListByIDs(ids []*uint64) ([]*SQLManageRecordProce
 	return sqlManagerList, nil
 }
 
-func (s *Storage) GetUnsolvedSQLCount(id uint, status []string) (int64, error) {
+func (s *Storage) GetAuditPlanUnsolvedSQLCount(id uint, status []string) (int64, error) {
 	query := `SELECT
-					count(oms.id)
+					count(smr.id)
 				FROM
-					sql_manage_records AS oms
-				LEFT JOIN sql_manage_record_processes AS sm ON
-					sm.sql_manage_record_id = oms.id 
-					AND sm.deleted_at IS NULL
+					sql_manage_records AS smr
+				LEFT JOIN sql_manage_record_processes AS sm ON sm.sql_manage_record_id = smr.id
+				LEFT JOIN audit_plans_v2 AS ap ON ap.instance_audit_plan_id = smr.source_id AND ap.type = smr.source 
 				WHERE
-					oms.source_id = ?
-					AND oms.deleted_at IS NULL
-					AND JSON_TYPE(oms.audit_results) <> 'NULL'
+					ap.id = ?
+					AND smr.deleted_at IS NULL
+					AND JSON_TYPE(smr.audit_results) <> 'NULL'
+					AND smr.audit_results IS NOT NULL 
 					AND sm.status NOT IN(?);`
 	var count int64
 	err := s.db.Raw(query, id, status).Count(&count).Error
