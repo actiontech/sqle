@@ -766,7 +766,7 @@ func GetInstanceAuditPlanOverview(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 
-		unsolvedSQLNums, err := getUnsolvedSQLCountByManagerStatus(v.ID)
+		unsolvedSQLNums, err := getAuditPlanUnsolvedSQLCount(v.ID)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
