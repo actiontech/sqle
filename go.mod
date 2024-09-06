@@ -66,6 +66,7 @@ require (
 
 require (
 	github.com/aliyun/credentials-go v1.1.2
+	github.com/gocarina/gocsv v0.0.0-20240520201108-78e41c74b4b1
 	github.com/hashicorp/go-version v1.7.0
 	github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.1.69
 	github.com/nicksnyder/go-i18n/v2 v2.4.0
