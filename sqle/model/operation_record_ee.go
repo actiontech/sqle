@@ -3,8 +3,6 @@
 
 package model
 
-import "time"
-
 const (
 	// operation record type
 	OperationRecordTypeProject             = "project"
@@ -74,7 +72,8 @@ SELECT o.id,
        o.operation_action,
        o.operation_content,
        o.operation_project_name,
-       o.operation_status
+       o.operation_status,
+       o.operation_i18n_content
 {{- template "body" . -}}
 ORDER BY o.operation_time DESC
 {{- if .limit }}
@@ -143,16 +142,7 @@ func (s *Storage) GetOperationRecordList(data map[string]interface{}) (result []
 	return result, count, err
 }
 
-type OperationRecordExport struct {
-	OperationTime        time.Time `json:"operation_time"`
-	OperationProjectName string    `json:"operation_project_name"`
-	OperationUserName    string    `json:"operation_user_name"`
-	OperationAction      string    `json:"operation_action"`
-	OperationContent     string    `json:"operation_content"`
-	OperationStatus      string    `json:"operation_status"`
-}
-
-func (s *Storage) GetOperationRecordExportList(data map[string]interface{}) (result []*OperationRecordExport, err error) {
+func (s *Storage) GetOperationRecordExportList(data map[string]interface{}) (result []*OperationRecord, err error) {
 	err = s.getListResult(operationRecordQueryBodyTpl, operationRecordExportTpl, data, &result)
 	if err != nil {
 		return nil, err

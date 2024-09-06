@@ -232,13 +232,13 @@ func convertRuleNameAndMessage(ctx context.Context, ruleCode string, ruleMessage
 	rule, exist := opt.GetOptimizationRuleByRuleCode(ruleCode, dbType)
 	if exist && rule != nil {
 		// 用重写规则的名称和描述
-		name, message = rule.Name, rule.I18nRuleInfo.GetRuleInfoByLangTag(lang.String()).Desc
+		name, message = rule.Name, rule.I18nRuleInfo.GetRuleInfoByLangTag(lang).Desc
 		dm := driver.GetPluginManager().GetDriverMetasOfPlugin(dbType)
 		if dm != nil {
 			for _, v := range dm.Rules {
 				if v.Name == name {
 					// 获取复用规则的Desc（保持与规则模板中的规则名一致）
-					message = v.I18nRuleInfo.GetRuleInfoByLangTag(lang.String()).Desc
+					message = v.I18nRuleInfo.GetRuleInfoByLangTag(lang).Desc
 					break
 				}
 			}

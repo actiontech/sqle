@@ -105,7 +105,7 @@ func convertToGetSqlManageListResp(ctx context.Context, sqlManageList []*model.S
 			ar := sqlManage.AuditResults[i]
 			sqlMgr.AuditResult = append(sqlMgr.AuditResult, &AuditResult{
 				Level:    ar.Level,
-				Message:  ar.GetAuditMsgByLangTag(lang.String()),
+				Message:  ar.GetAuditMsgByLangTag(lang),
 				RuleName: ar.RuleName,
 			})
 		}
@@ -316,16 +316,16 @@ func getSqlManageRuleTips(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, &GetSqlManageRuleTipsResp{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertRuleTipsToResp(sqlManageRuleTips),
+		Data:    convertRuleTipsToResp(c.Request().Context(), sqlManageRuleTips),
 	})
 }
 
-func convertRuleTipsToResp(tips []*model.SqlManageRuleTips) []RuleTips {
+func convertRuleTipsToResp(ctx context.Context, tips []*model.SqlManageRuleTips) []RuleTips {
 	m := make(map[string] /*数据库类型*/ []RuleRespV1)
 	for _, tip := range tips {
 		m[tip.DbType] = append(m[tip.DbType], RuleRespV1{
 			RuleName: tip.RuleName,
-			Desc:     tip.Desc,
+			Desc:     tip.I18nRuleInfo.GetRuleInfoByLangTag(locale.GetLangTagFromCtx(ctx)).Desc,
 		})
 	}
 
@@ -391,7 +391,7 @@ func ConvertSqlSourceDescByType(ctx context.Context, source string) string {
 	}
 	for _, meta := range auditplan.Metas {
 		if meta.Type == source {
-			return meta.Desc
+			return locale.ShouldLocalizeMsg(ctx, meta.Desc)
 		}
 	}
 	return ""

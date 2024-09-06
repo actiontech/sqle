@@ -7,10 +7,11 @@ import (
 	"database/sql"
 	e "errors"
 	"fmt"
-	"github.com/actiontech/sqle/sqle/locale"
-	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"strings"
 	"time"
+
+	"github.com/actiontech/sqle/sqle/locale"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/actiontech/sqle/sqle/errors"
 	"gorm.io/gorm"
@@ -99,7 +100,7 @@ func (s *Storage) UpdateSqlManageRecord(sqlId, sourceIds, source string) error {
 
 func (s *Storage) GetSqlManageRuleTips(projectID string) ([]*SqlManageRuleTips, error) {
 	sqlManageRuleTips := make([]*SqlManageRuleTips, 0)
-	err := s.db.Raw(`SELECT DISTINCT t.db_type, r.name rule_name, r.desc
+	err := s.db.Raw(`SELECT DISTINCT t.db_type, r.name rule_name, r.i18n_rule_info
 FROM sql_manages sm
          LEFT JOIN sql_manage_sql_audit_records msar
                    ON sm.proj_fp_source_inst_schema_md5 = msar.sql_id
@@ -111,7 +112,7 @@ WHERE sm.deleted_at IS NULL AND sm.project_id = ?
     , r.name
     , '"%')
 UNION
-SELECT DISTINCT ap.db_type, r.name rule_name, r.desc
+SELECT DISTINCT ap.db_type, r.name rule_name, r.i18n_rule_info
 FROM sql_manages sm
          LEFT JOIN audit_plans ap ON ap.id = sm.audit_plan_id
          LEFT JOIN rules r ON r.db_type = ap.db_type
@@ -133,7 +134,7 @@ func (s *Storage) GetSqlManagerRuleTips(projectID string) ([]*SqlManageRuleTips,
 		Joins("LEFT JOIN instance_audit_plans iap ON iap.id = ap.instance_audit_plan_id").
 		Joins("LEFT JOIN rules ON rules.db_type = iap.db_type").
 		Where("oms.audit_results LIKE CONCAT('%' , rules.name , '%') AND oms.project_id = ?", projectID).
-		Select("DISTINCT iap.db_type, rules.name as rule_name, rules.desc").
+		Select("DISTINCT iap.db_type, rules.name as rule_name, rules.i18n_rule_info").
 		Scan(&sqlManageRuleTips).Error
 	return sqlManageRuleTips, errors.New(errors.ConnectStorageError, err)
 }

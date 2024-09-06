@@ -94,7 +94,7 @@ func convertToGetSqlDEVRecordListResp(ctx context.Context, sqlDEVRecordList []*m
 			ar := sqlDEVRecord.AuditResults[i]
 			sqlDEV.AuditResult = append(sqlDEV.AuditResult, &AuditResult{
 				Level:    ar.Level,
-				Message:  ar.GetAuditMsgByLangTag(lang.String()),
+				Message:  ar.GetAuditMsgByLangTag(lang),
 				RuleName: ar.RuleName,
 			})
 		}

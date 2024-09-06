@@ -9,6 +9,7 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/model"
+	"golang.org/x/text/language"
 
 	"github.com/sirupsen/logrus"
 )
@@ -35,8 +36,8 @@ func CustomRuleAudit(l *logrus.Entry, task *model.Task, sqls []string, results [
 				res := driverV2.AuditResult{
 					RuleName: customRule.RuleId,
 					Level:    driverV2.RuleLevel(customRule.Level),
-					I18nAuditResultInfo: map[string]driverV2.AuditResultInfo{
-						locale.DefaultLang.String(): {Message: customRule.Desc},
+					I18nAuditResultInfo: map[language.Tag]driverV2.AuditResultInfo{
+						locale.DefaultLang: {Message: customRule.Desc},
 					},
 				}
 				result := results[i]

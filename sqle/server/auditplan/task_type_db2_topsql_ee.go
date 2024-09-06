@@ -12,6 +12,7 @@ import (
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/driver"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/sirupsen/logrus"
@@ -35,10 +36,10 @@ func (at *DB2TopSQLTaskV2) InstanceType() string {
 func (at *DB2TopSQLTaskV2) Params(instanceId ...string) params.Params {
 	return []*params.Param{
 		{
-			Key:   paramKeyCollectIntervalMinute,
-			Desc:  "采集周期（分钟）",
-			Value: "60",
-			Type:  params.ParamTypeInt,
+			Key:      paramKeyCollectIntervalMinute,
+			Value:    "60",
+			Type:     params.ParamTypeInt,
+			I18nDesc: locale.ShouldLocalizeAll(locale.ParamCollectIntervalMinuteOracle),
 		},
 		{
 			Key:   paramKeyTopN,
@@ -47,10 +48,10 @@ func (at *DB2TopSQLTaskV2) Params(instanceId ...string) params.Params {
 			Type:  params.ParamTypeInt,
 		},
 		{
-			Key:   paramKeyIndicator,
-			Desc:  "关注指标",
-			Value: DB2IndicatorAverageElapsedTime,
-			Type:  params.ParamTypeString,
+			Key:      paramKeyIndicator,
+			Value:    DB2IndicatorAverageElapsedTime,
+			Type:     params.ParamTypeString,
+			I18nDesc: locale.ShouldLocalizeAll(locale.ParamIndicator),
 		},
 	}
 }
@@ -332,7 +333,7 @@ func (at *DB2TopSQLTaskV2) Head(ap *AuditPlan) []Head {
 	return []Head{
 		{
 			Name: "sql",
-			Desc: "SQL语句",
+			Desc: locale.ApSQLStatement,
 			Type: "sql",
 		},
 		{
@@ -341,39 +342,39 @@ func (at *DB2TopSQLTaskV2) Head(ap *AuditPlan) []Head {
 		},
 		{
 			Name: "priority",
-			Desc: "优先级",
+			Desc: locale.ApPriority,
 		},
 		{
 			Name: MetricNameQueryTimeTotal,
-			Desc: "总执行时间(ms)",
+			Desc: locale.ApMetricNameQueryTimeTotal,
 		},
 		{
 			Name: MetricNameQueryTimeAvg,
-			Desc: "平均执行时间(ms)",
+			Desc: locale.ApMetricNameQueryTimeAvg,
 		},
 		{
 			Name: MetricNameCounter,
-			Desc: "执行次数",
+			Desc: locale.ApMetricNameCounter,
 		},
 		{
 			Name: MetricNameCPUTimeAvg,
-			Desc: "平均 CPU 时间(μs)",
+			Desc: locale.ApMetricNameCPUTimeAvg,
 		},
 		{
 			Name: MetricNameLockWaitTimeTotal,
-			Desc: "锁等待时间(ms)",
+			Desc: locale.ApMetricNameLockWaitTimeTotal,
 		},
 		{
 			Name: MetricNameLockWaitCounter,
-			Desc: "锁等待次数",
+			Desc: locale.ApMetricNameLockWaitCounter,
 		},
 		{
 			Name: MetricNameActiveWaitTimeTotal,
-			Desc: "活动等待总时间(ms)",
+			Desc: locale.ApMetricNameActiveWaitTimeTotal,
 		},
 		{
 			Name: MetricNameActiveTimeTotal,
-			Desc: "活动总时间(ms)",
+			Desc: locale.ApMetricNameActiveTimeTotal,
 		},
 	}
 }

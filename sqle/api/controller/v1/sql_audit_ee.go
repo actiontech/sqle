@@ -84,7 +84,7 @@ func getRuleKnowledge(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	ruleInfo := rule.I18nRuleInfo.GetRuleInfoByLangTag(lang.String())
+	ruleInfo := rule.I18nRuleInfo.GetRuleInfoByLangTag(lang)
 	return c.JSON(http.StatusOK, GetRuleKnowledgeResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data: RuleKnowledgeResV1{
@@ -92,7 +92,7 @@ func getRuleKnowledge(c echo.Context) error {
 				Desc:       ruleInfo.Desc,
 				Annotation: ruleInfo.Annotation,
 			},
-			KnowledgeContent: rule.Knowledge.GetContentByLangTag(lang.String()),
+			KnowledgeContent: rule.Knowledge.GetContentByLangTag(lang),
 		},
 	})
 }
@@ -131,7 +131,7 @@ func getCustomRuleKnowledge(c echo.Context) error {
 				Desc:       rule.Desc,
 				Annotation: rule.Annotation,
 			},
-			KnowledgeContent: rule.Knowledge.GetContentByLangTag(locale.GetLangTagFromCtx(c.Request().Context()).String()),
+			KnowledgeContent: rule.Knowledge.GetContentByLangTag(locale.GetLangTagFromCtx(c.Request().Context())),
 		},
 	})
 }

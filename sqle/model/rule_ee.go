@@ -8,6 +8,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/locale"
+	"github.com/actiontech/sqle/sqle/pkg/i18nPkg"
 	"gorm.io/gorm"
 )
 
@@ -21,11 +22,11 @@ func (s *Storage) CreateOrUpdateRuleKnowledgeContent(ctx context.Context, ruleNa
 		return errors.New(errors.ConnectStorageError, err)
 	}
 	if rule.Knowledge == nil || rule.Knowledge.I18nContent == nil {
-		rule.Knowledge = &RuleKnowledge{I18nContent: map[string]string{
-			lang.String(): content,
+		rule.Knowledge = &RuleKnowledge{I18nContent: i18nPkg.I18nStr{
+			lang: content,
 		}}
 	} else {
-		rule.Knowledge.I18nContent.SetStrInLang(lang.String(), content)
+		rule.Knowledge.I18nContent.SetStrInLang(lang, content)
 	}
 	return errors.New(errors.ConnectStorageError, s.db.Session(&gorm.Session{FullSaveAssociations: true}).Save(&rule).Error)
 }
@@ -37,11 +38,11 @@ func (s *Storage) CreateOrUpdateCustomRuleKnowledgeContent(ctx context.Context, 
 		return errors.New(errors.ConnectStorageError, err)
 	}
 	if rule.Knowledge == nil || rule.Knowledge.I18nContent == nil {
-		rule.Knowledge = &RuleKnowledge{I18nContent: map[string]string{
-			lang.String(): content,
+		rule.Knowledge = &RuleKnowledge{I18nContent: i18nPkg.I18nStr{
+			lang: content,
 		}}
 	} else {
-		rule.Knowledge.I18nContent.SetStrInLang(lang.String(), content)
+		rule.Knowledge.I18nContent.SetStrInLang(lang, content)
 	}
 	return errors.New(errors.ConnectStorageError, s.db.Session(&gorm.Session{FullSaveAssociations: true}).Save(&rule).Error)
 }

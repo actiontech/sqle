@@ -11,6 +11,7 @@ import (
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/driver"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/sirupsen/logrus"
@@ -33,10 +34,10 @@ func (at *ObForMysqlTopSQLTaskV2) InstanceType() string {
 func (at *ObForMysqlTopSQLTaskV2) Params(instanceId ...string) params.Params {
 	return []*params.Param{
 		{
-			Key:   paramKeyCollectIntervalMinute,
-			Desc:  "采集周期（分钟）",
-			Value: "60",
-			Type:  params.ParamTypeInt,
+			Key:      paramKeyCollectIntervalMinute,
+			Value:    "60",
+			Type:     params.ParamTypeInt,
+			I18nDesc: locale.ShouldLocalizeAll(locale.ParamCollectIntervalMinute),
 		},
 		{
 			Key:   paramKeyTopN,
@@ -45,10 +46,10 @@ func (at *ObForMysqlTopSQLTaskV2) Params(instanceId ...string) params.Params {
 			Type:  params.ParamTypeInt,
 		},
 		{
-			Key:   paramKeyIndicator,
-			Desc:  "关注指标",
-			Value: OBMySQLIndicatorElapsedTime,
-			Type:  params.ParamTypeString,
+			Key:      paramKeyIndicator,
+			Value:    DB2IndicatorAverageElapsedTime,
+			Type:     params.ParamTypeString,
+			I18nDesc: locale.ShouldLocalizeAll(locale.ParamIndicator),
 		},
 	}
 }
@@ -390,85 +391,85 @@ func (at *ObForMysqlTopSQLTaskV2) Head(ap *AuditPlan) []Head {
 		return []Head{
 			{
 				Name: "sql",
-				Desc: "SQL指纹",
+				Desc: locale.ApSQLFingerprint,
 				Type: "sql",
 			},
 			{
 				Name: "priority",
-				Desc: "优先级",
+				Desc: locale.ApPriority,
 			}, {
 				Name: model.AuditResultName,
 				Desc: model.AuditResultDesc,
 			}, {
 				Name: MetricNameCounter,
-				Desc: "执行次数",
+				Desc: locale.ApMetricNameCounter,
 			}, {
 				Name: MetricNameQueryTimeAvg,
-				Desc: "平均执行时间(毫秒)",
+				Desc: locale.ApMetricNameQueryTimeAvg,
 			}, {
 				Name: MetricNameQueryTimeMax,
-				Desc: "最长执行时间(毫秒)",
+				Desc: locale.ApMetricNameQueryTimeMax,
 			}, {
 				Name: MetricNameFirstQueryAt,
-				Desc: "首次执行时间",
+				Desc: locale.ApMetricNameFirstQueryAt,
 			}, {
 				Name: MetricNameLastQueryAt,
-				Desc: "最后执行时间",
+				Desc: locale.ApMetricNameLastQueryAt,
 			},
 		}
 	case OBMySQLIndicatorIOWait:
 		return []Head{
 			{
 				Name: "sql",
-				Desc: "SQL指纹",
+				Desc: locale.ApSQLFingerprint,
 				Type: "sql",
 			}, {
 				Name: model.AuditResultName,
 				Desc: model.AuditResultDesc,
 			}, {
 				Name: MetricNameCounter,
-				Desc: "执行次数",
+				Desc: locale.ApMetricNameCounter,
 			}, {
 				Name: MetricNameIoWaitTimeAvg,
-				Desc: "平均IO等待时间(毫秒)",
+				Desc: locale.ApMetricNameIoWaitTimeAvg,
 			}, {
 				Name: MetricNameBufferReadAvg,
-				Desc: "平均逻辑读次数",
+				Desc: locale.ApMetricNameBufferReadAvg,
 			}, {
 				Name: MetricNameDiskReadAvg,
-				Desc: "平均物理读次数",
+				Desc: locale.ApMetricNameDiskReadAvg,
 			}, {
 				Name: MetricNameFirstQueryAt,
-				Desc: "首次执行时间",
+				Desc: locale.ApMetricNameFirstQueryAt,
 			}, {
 				Name: MetricNameLastQueryAt,
-				Desc: "最后执行时间",
+				Desc: locale.ApMetricNameLastQueryAt,
 			},
 		}
 	case OBMySQLIndicatorCPUTime:
 		return []Head{
 			{
 				Name: "sql",
-				Desc: "SQL指纹",
+				Desc: locale.ApSQLFingerprint,
 				Type: "sql",
 			}, {
 				Name: model.AuditResultName,
 				Desc: model.AuditResultDesc,
 			}, {
 				Name: MetricNameCounter,
-				Desc: "执行次数",
+				Desc: locale.ApMetricNameCounter,
 			}, {
 				Name: MetricNameCPUTimeAvg,
-				Desc: "平均CPU时间(毫秒)",
+				Desc: locale.ApMetricNameCPUTimeAvg,
 			}, {
 				Name: MetricNameQueryTimeAvg,
-				Desc: "SQL平均执行时间(毫秒)",
+				Desc: locale.ApMetricNameQueryTimeAvg,
 			}, {
 				Name: MetricNameFirstQueryAt,
-				Desc: "首次执行时间",
+				Desc: locale.ApMetricNameFirstQueryAt,
 			}, {
 				Name: MetricNameLastQueryAt,
-				Desc: "最后执行时间",
+				Desc: locale.ApMetricNameLastQueryAt,
 			},
 		}
 	}

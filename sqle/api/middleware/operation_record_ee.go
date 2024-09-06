@@ -13,6 +13,7 @@ import (
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/pkg/i18nPkg"
 
 	"github.com/labstack/echo/v4"
 )
@@ -22,7 +23,7 @@ type ApiInterfaceInfo struct {
 	Method                   string
 	OperationType            string
 	OperationAction          string
-	GetProjectAndContentFunc func(c echo.Context) (projectName, objectName string, err error)
+	GetProjectAndContentFunc func(c echo.Context) (projectName string, content i18nPkg.I18nStr, err error)
 }
 
 var ApiInterfaceInfoList []ApiInterfaceInfo
@@ -42,6 +43,7 @@ func (w *ResponseBodyWrite) WriteString(s string) (int, error) {
 	return w.ResponseWriter.Write([]byte(s))
 }
 
+// OperationLogRecord depends on locale.EchoMiddlewareI18nByAcceptLanguage
 func OperationLogRecord() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) (err error) {
@@ -65,13 +67,13 @@ func OperationLogRecord() echo.MiddlewareFunc {
 						OperationAction:   interfaceInfo.OperationAction,
 					}
 
-					projectName, content, err := interfaceInfo.GetProjectAndContentFunc(c)
+					projectName, i18nContent, err := interfaceInfo.GetProjectAndContentFunc(c)
 					if err != nil {
 						newLog.Errorf("get content and project name error: %s", err)
 					}
 
 					operationRecord.OperationProjectName = projectName
-					operationRecord.OperationContent = content
+					operationRecord.OperationI18nContent = i18nContent
 
 					respBodyWrite := &ResponseBodyWrite{body: new(bytes.Buffer), ResponseWriter: c.Response().Writer}
 

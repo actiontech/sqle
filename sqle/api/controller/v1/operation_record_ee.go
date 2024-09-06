@@ -17,6 +17,9 @@ import (
 
 	sqleMiddleware "github.com/actiontech/sqle/sqle/api/middleware"
 	dms "github.com/actiontech/sqle/sqle/dms"
+	"github.com/actiontech/sqle/sqle/locale"
+	"github.com/actiontech/sqle/sqle/pkg/i18nPkg"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/model"
@@ -40,8 +43,8 @@ func init() {
 			Method:          http.MethodDelete,
 			OperationType:   model.OperationRecordTypeProjectRuleTemplate,
 			OperationAction: model.OperationRecordActionDeleteProjectRuleTemplate,
-			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
-				return c.Param("project_name"), fmt.Sprintf("删除规则模板，模板名：%v", c.Param("rule_template_name")), nil
+			GetProjectAndContentFunc: func(c echo.Context) (string, i18nPkg.I18nStr, error) {
+				return c.Param("project_name"), locale.ShouldLocalizeAllWithArgs(locale.OprDelRuleTemplateWithName, c.Param("rule_template_name")), nil
 			},
 		},
 		{
@@ -49,8 +52,8 @@ func init() {
 			Method:          http.MethodPatch,
 			OperationType:   model.OperationRecordTypeProjectRuleTemplate,
 			OperationAction: model.OperationRecordActionUpdateProjectRuleTemplate,
-			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
-				return c.Param("project_name"), fmt.Sprintf("编辑规则模板，模板名：%v", c.Param("rule_template_name")), nil
+			GetProjectAndContentFunc: func(c echo.Context) (string, i18nPkg.I18nStr, error) {
+				return c.Param("project_name"), locale.ShouldLocalizeAllWithArgs(locale.OprEditRuleTemplateWithName, c.Param("rule_template_name")), nil
 			},
 		},
 		// 流程模板
@@ -59,8 +62,8 @@ func init() {
 			Method:          http.MethodPatch,
 			OperationType:   model.OperationRecordTypeWorkflowTemplate,
 			OperationAction: model.OperationRecordActionUpdateWorkflowTemplate,
-			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
-				return c.Param("project_name"), "编辑流程模板", nil
+			GetProjectAndContentFunc: func(c echo.Context) (string, i18nPkg.I18nStr, error) {
+				return c.Param("project_name"), locale.ShouldLocalizeAll(locale.OprEditProcedureTemplate), nil
 			},
 		},
 		// 智能扫描
@@ -76,8 +79,8 @@ func init() {
 			Method:          http.MethodDelete,
 			OperationType:   model.OperationRecordTypeAuditPlan,
 			OperationAction: model.OperationRecordActionDeleteAuditPlan,
-			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
-				return c.Param("project_name"), fmt.Sprintf("删除智能扫描任务，任务名：%v", c.Param("audit_plan_name")), nil
+			GetProjectAndContentFunc: func(c echo.Context) (string, i18nPkg.I18nStr, error) {
+				return c.Param("project_name"), locale.ShouldLocalizeAllWithArgs(locale.OprDelAuditPlanWithName, c.Param("audit_plan_name")), nil
 			},
 		},
 		{
@@ -85,8 +88,8 @@ func init() {
 			Method:          http.MethodPatch,
 			OperationType:   model.OperationRecordTypeAuditPlan,
 			OperationAction: model.OperationRecordActionUpdateAuditPlan,
-			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
-				return c.Param("project_name"), fmt.Sprintf("编辑智能扫描任务，任务名：%v", c.Param("audit_plan_name")), nil
+			GetProjectAndContentFunc: func(c echo.Context) (string, i18nPkg.I18nStr, error) {
+				return c.Param("project_name"), locale.ShouldLocalizeAllWithArgs(locale.OprEditAuditPlanWithName, c.Param("audit_plan_name")), nil
 			},
 		},
 		// 全局规则模板
@@ -102,8 +105,8 @@ func init() {
 			Method:          http.MethodPatch,
 			OperationType:   model.OperationRecordTypeGlobalRuleTemplate,
 			OperationAction: model.OperationRecordActionUpdateGlobalRuleTemplate,
-			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
-				return "", fmt.Sprintf("编辑全局规则模板，模板名：%v", c.Param("rule_template_name")), nil
+			GetProjectAndContentFunc: func(c echo.Context) (string, i18nPkg.I18nStr, error) {
+				return "", locale.ShouldLocalizeAllWithArgs(locale.OprEditGlobalRuleTemplateWithName, c.Param("rule_template_name")), nil
 			},
 		},
 		{
@@ -111,8 +114,8 @@ func init() {
 			Method:          http.MethodDelete,
 			OperationType:   model.OperationRecordTypeGlobalRuleTemplate,
 			OperationAction: model.OperationRecordActionDeleteGlobalRuleTemplate,
-			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
-				return "", fmt.Sprintf("删除全局规则模板，模板名：%v", c.Param("rule_template_name")), nil
+			GetProjectAndContentFunc: func(c echo.Context) (string, i18nPkg.I18nStr, error) {
+				return "", locale.ShouldLocalizeAllWithArgs(locale.OprDelGlobalRuleTemplateWithName, c.Param("rule_template_name")), nil
 			},
 		},
 		// 系统配置
@@ -121,8 +124,8 @@ func init() {
 			Method:          http.MethodPatch,
 			OperationType:   model.OperationRecordTypeSystemConfiguration,
 			OperationAction: model.OperationRecordActionUpdateDingTalkConfiguration,
-			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
-				return "", "修改钉钉配置", nil
+			GetProjectAndContentFunc: func(c echo.Context) (string, i18nPkg.I18nStr, error) {
+				return "", locale.ShouldLocalizeAll(locale.OprEditDingConfig), nil
 			},
 		},
 		{
@@ -130,8 +133,8 @@ func init() {
 			Method:          http.MethodPatch,
 			OperationType:   model.OperationRecordTypeSystemConfiguration,
 			OperationAction: model.OperationRecordActionUpdateSystemVariables,
-			GetProjectAndContentFunc: func(c echo.Context) (string, string, error) {
-				return "", "修改全局配置", nil
+			GetProjectAndContentFunc: func(c echo.Context) (string, i18nPkg.I18nStr, error) {
+				return "", locale.ShouldLocalizeAll(locale.OprEditGlobalConfig), nil
 			},
 		},
 		// 工单
@@ -145,37 +148,37 @@ func init() {
 	}...)
 }
 
-func getProjectAndContentFromCreateRuleTemplate(c echo.Context) (string, string, error) {
+func getProjectAndContentFromCreateRuleTemplate(c echo.Context) (string, i18nPkg.I18nStr, error) {
 	req := new(CreateRuleTemplateReqV1)
 	if err := marshalRequestBody(c, req); err != nil {
-		return "", "", err
+		return "", nil, err
 	}
-	return "", fmt.Sprintf("创建全局规则模板，模板名：%v", req.Name), nil
+	return "", locale.ShouldLocalizeAllWithArgs(locale.OprAddGlobalRuleTemplateWithName, req.Name), nil
 }
 
-func getProjectAndContentFromCreatingAuditPlan(c echo.Context) (string, string, error) {
+func getProjectAndContentFromCreatingAuditPlan(c echo.Context) (string, i18nPkg.I18nStr, error) {
 	req := new(CreateAuditPlanReqV1)
 	err := marshalRequestBody(c, req)
 	if err != nil {
-		return "", "", err
+		return "", nil, err
 	}
-	return c.Param("project_name"), fmt.Sprintf("创建智能扫描任务，任务名：%v", req.Name), nil
+	return c.Param("project_name"), locale.ShouldLocalizeAllWithArgs(locale.OprAddAuditPlanWithName, req.Name), nil
 }
 
-func getProjectAndContentFromCreatingProjectRuleTemplate(c echo.Context) (string, string, error) {
+func getProjectAndContentFromCreatingProjectRuleTemplate(c echo.Context) (string, i18nPkg.I18nStr, error) {
 	req := new(CreateProjectRuleTemplateReqV1)
 	err := marshalRequestBody(c, req)
 	if err != nil {
-		return "", "", err
+		return "", nil, err
 	}
-	return c.Param("project_name"), fmt.Sprintf("添加规则模板，模板名：%v", req.Name), nil
+	return c.Param("project_name"), locale.ShouldLocalizeAllWithArgs(locale.OprAddRuleTemplateWithName, req.Name), nil
 }
 
-func getProjectAndContentFromUpdatingFilesOrder(c echo.Context) (string, string, error) {
+func getProjectAndContentFromUpdatingFilesOrder(c echo.Context) (string, i18nPkg.I18nStr, error) {
 	req := new(UpdateSqlFileOrderV1Req)
 	err := marshalRequestBody(c, req)
 	if err != nil {
-		return "", "", err
+		return "", nil, err
 	}
 
 	s := model.GetStorage()
@@ -189,28 +192,28 @@ func getProjectAndContentFromUpdatingFilesOrder(c echo.Context) (string, string,
 
 	auditFiles, err := s.GetFileByIds(fileIds)
 	if err != nil {
-		return "", "", err
+		return "", nil, err
 	}
 
 	for _, file := range auditFiles {
 		newIndex := idIndexMap[file.ID]
-		contents = append(contents, fmt.Sprintf("将%s->%d", file.FileName, newIndex))
+		contents = append(contents, fmt.Sprintf("%s->%d", file.FileName, newIndex))
 	}
 
 	projectName := c.Param("project_name")
 	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), projectName)
 	if err != nil {
-		return "", "", err
+		return "", nil, err
 	}
 	id := c.Param("workflow_id")
 	workflow, exist, err := s.GetWorkflowByProjectAndWorkflowId(projectUid, id)
 	if err != nil {
-		return "", "", fmt.Errorf("get workflow failed: %v", err)
+		return "", nil, fmt.Errorf("get workflow failed: %v", err)
 	}
 	if !exist {
-		return "", "", ErrWorkflowNoAccess
+		return "", nil, ErrWorkflowNoAccess
 	}
-	content := "文件上线顺序调整：" + strings.Join(contents, "，") + fmt.Sprintf("，工单名称：%s", workflow.Subject)
+	content := locale.ShouldLocalizeAllWithArgs(locale.OprUpdateFilesOrderWithOrderAndName, strings.Join(contents, "，"), workflow.Subject)
 	return projectName, content, nil
 }
 
@@ -248,17 +251,17 @@ func getReqBodyBytes(c echo.Context) ([]byte, error) {
 	return nil, fmt.Errorf("request body is nil")
 }
 
-var typeNameDescMap = map[string]string{
-	model.OperationRecordTypeProject:             "项目",
-	model.OperationRecordTypeInstance:            "数据源",
-	model.OperationRecordTypeProjectRuleTemplate: "项目规则模板",
-	model.OperationRecordTypeWorkflowTemplate:    "流程模板",
-	model.OperationRecordTypeAuditPlan:           "智能扫描任务",
-	model.OperationRecordTypeWorkflow:            "工单",
-	model.OperationRecordTypeGlobalUser:          "平台用户",
-	model.OperationRecordTypeGlobalRuleTemplate:  "全局规则模板",
-	model.OperationRecordTypeSystemConfiguration: "系统配置",
-	model.OperationRecordTypeProjectMember:       "项目成员",
+var typeNameDescMap = map[string]*i18n.Message{
+	model.OperationRecordTypeProject:             locale.OprTypeProject,
+	model.OperationRecordTypeInstance:            locale.OprTypeInstance,
+	model.OperationRecordTypeProjectRuleTemplate: locale.OprTypeProjectRuleTemplate,
+	model.OperationRecordTypeWorkflowTemplate:    locale.OprTypeWorkflowTemplate,
+	model.OperationRecordTypeAuditPlan:           locale.OprTypeAuditPlan,
+	model.OperationRecordTypeWorkflow:            locale.OprTypeWorkflow,
+	model.OperationRecordTypeGlobalUser:          locale.OprTypeGlobalUser,
+	model.OperationRecordTypeGlobalRuleTemplate:  locale.OprTypeGlobalRuleTemplate,
+	model.OperationRecordTypeSystemConfiguration: locale.OprTypeSystemConfiguration,
+	model.OperationRecordTypeProjectMember:       locale.OprTypeProjectMember,
 }
 
 func getOperationTypeNameList(c echo.Context) error {
@@ -273,7 +276,7 @@ func getOperationTypeNameList(c echo.Context) error {
 	for _, operationType := range distinctOperationTypeList {
 		operationTypeNameList = append(operationTypeNameList, OperationTypeNameList{
 			OperationTypeName: operationType,
-			Desc:              typeNameDescMap[operationType],
+			Desc:              locale.ShouldLocalizeMsg(c.Request().Context(), typeNameDescMap[operationType]),
 		})
 	}
 
@@ -283,46 +286,46 @@ func getOperationTypeNameList(c echo.Context) error {
 	})
 }
 
-var actionNameDescMap = map[string]string{
-	model.OperationRecordActionCreateProject:               "创建项目",
-	model.OperationRecordActionDeleteProject:               "删除项目",
-	model.OperationRecordActionUpdateProject:               "编辑项目",
-	model.OperationRecordActionArchiveProject:              "冻结项目",
-	model.OperationRecordActionUnarchiveProject:            "取消冻结项目",
-	model.OperationRecordActionCreateInstance:              "创建数据源",
-	model.OperationRecordActionUpdateInstance:              "编辑数据源",
-	model.OperationRecordActionDeleteInstance:              "删除数据源",
-	model.OperationRecordActionCreateProjectRuleTemplate:   "添加规则模版",
-	model.OperationRecordActionDeleteProjectRuleTemplate:   "删除规则模版",
-	model.OperationRecordActionUpdateProjectRuleTemplate:   "编辑规则模版",
-	model.OperationRecordActionUpdateWorkflowTemplate:      "编辑流程模版",
-	model.OperationRecordActionCreateAuditPlan:             "创建智能扫描任务",
-	model.OperationRecordActionDeleteAuditPlan:             "删除智能扫描任务",
-	model.OperationRecordActionUpdateAuditPlan:             "编辑智能扫描任务",
-	model.OperationRecordActionCreateWorkflow:              "创建工单",
-	model.OperationRecordActionCancelWorkflow:              "关闭工单",
-	model.OperationRecordActionApproveWorkflow:             "审核通过工单",
-	model.OperationRecordActionRejectWorkflow:              "驳回工单",
-	model.OperationRecordActionExecuteWorkflow:             "上线工单",
-	model.OperationRecordActionScheduleWorkflow:            "定时上线",
-	model.OperationRecordActionCreateUser:                  "创建用户",
-	model.OperationRecordActionUpdateUser:                  "编辑用户",
-	model.OperationRecordActionDeleteUser:                  "删除用户",
-	model.OperationRecordActionCreateGlobalRuleTemplate:    "创建全局规则模版",
-	model.OperationRecordActionUpdateGlobalRuleTemplate:    "编辑全局规则模版",
-	model.OperationRecordActionDeleteGlobalRuleTemplate:    "删除全局规则模版",
-	model.OperationRecordActionUpdateDingTalkConfiguration: "修改钉钉配置",
-	model.OperationRecordActionUpdateSMTPConfiguration:     "修改SMTP配置",
-	model.OperationRecordActionUpdateWechatConfiguration:   "修改微信配置",
-	model.OperationRecordActionUpdateSystemVariables:       "修改系统变量",
-	model.OperationRecordActionUpdateLDAPConfiguration:     "修改LDAP配置",
-	model.OperationRecordActionUpdateOAuth2Configuration:   "修改OAuth2配置",
-	model.OperationRecordActionCreateMember:                "添加成员",
-	model.OperationRecordActionCreateMemberGroup:           "添加成员组",
-	model.OperationRecordActionDeleteMember:                "删除成员",
-	model.OperationRecordActionDeleteMemberGroup:           "删除成员组",
-	model.OperationRecordActionUpdateMember:                "编辑成员",
-	model.OperationRecordActionUpdateMemberGroup:           "编辑成员组",
+var actionNameDescMap = map[string]*i18n.Message{
+	model.OperationRecordActionCreateProject:               locale.OprActionCreateProject,
+	model.OperationRecordActionDeleteProject:               locale.OprActionDeleteProject,
+	model.OperationRecordActionUpdateProject:               locale.OprActionUpdateProject,
+	model.OperationRecordActionArchiveProject:              locale.OprActionArchiveProject,
+	model.OperationRecordActionUnarchiveProject:            locale.OprActionUnarchiveProject,
+	model.OperationRecordActionCreateInstance:              locale.OprActionCreateInstance,
+	model.OperationRecordActionUpdateInstance:              locale.OprActionUpdateInstance,
+	model.OperationRecordActionDeleteInstance:              locale.OprActionDeleteInstance,
+	model.OperationRecordActionCreateProjectRuleTemplate:   locale.OprActionCreateProjectRuleTemplate,
+	model.OperationRecordActionDeleteProjectRuleTemplate:   locale.OprActionDeleteProjectRuleTemplate,
+	model.OperationRecordActionUpdateProjectRuleTemplate:   locale.OprActionUpdateProjectRuleTemplate,
+	model.OperationRecordActionUpdateWorkflowTemplate:      locale.OprActionUpdateWorkflowTemplate,
+	model.OperationRecordActionCreateAuditPlan:             locale.OprActionCreateAuditPlan,
+	model.OperationRecordActionDeleteAuditPlan:             locale.OprActionDeleteAuditPlan,
+	model.OperationRecordActionUpdateAuditPlan:             locale.OprActionUpdateAuditPlan,
+	model.OperationRecordActionCreateWorkflow:              locale.OprActionCreateWorkflow,
+	model.OperationRecordActionCancelWorkflow:              locale.OprActionCancelWorkflow,
+	model.OperationRecordActionApproveWorkflow:             locale.OprActionApproveWorkflow,
+	model.OperationRecordActionRejectWorkflow:              locale.OprActionRejectWorkflow,
+	model.OperationRecordActionExecuteWorkflow:             locale.OprActionExecuteWorkflow,
+	model.OperationRecordActionScheduleWorkflow:            locale.OprActionScheduleWorkflow,
+	model.OperationRecordActionCreateUser:                  locale.OprActionCreateUser,
+	model.OperationRecordActionUpdateUser:                  locale.OprActionUpdateUser,
+	model.OperationRecordActionDeleteUser:                  locale.OprActionDeleteUser,
+	model.OperationRecordActionCreateGlobalRuleTemplate:    locale.OprActionCreateGlobalRuleTemplate,
+	model.OperationRecordActionUpdateGlobalRuleTemplate:    locale.OprActionUpdateGlobalRuleTemplate,
+	model.OperationRecordActionDeleteGlobalRuleTemplate:    locale.OprActionDeleteGlobalRuleTemplate,
+	model.OperationRecordActionUpdateDingTalkConfiguration: locale.OprActionUpdateDingTalkConfiguration,
+	model.OperationRecordActionUpdateSMTPConfiguration:     locale.OprActionUpdateSMTPConfiguration,
+	model.OperationRecordActionUpdateWechatConfiguration:   locale.OprActionUpdateWechatConfiguration,
+	model.OperationRecordActionUpdateSystemVariables:       locale.OprActionUpdateSystemVariables,
+	model.OperationRecordActionUpdateLDAPConfiguration:     locale.OprActionUpdateLDAPConfiguration,
+	model.OperationRecordActionUpdateOAuth2Configuration:   locale.OprActionUpdateOAuth2Configuration,
+	model.OperationRecordActionCreateMember:                locale.OprActionCreateMember,
+	model.OperationRecordActionCreateMemberGroup:           locale.OprActionCreateMemberGroup,
+	model.OperationRecordActionDeleteMember:                locale.OprActionDeleteMember,
+	model.OperationRecordActionDeleteMemberGroup:           locale.OprActionDeleteMemberGroup,
+	model.OperationRecordActionUpdateMember:                locale.OprActionUpdateMember,
+	model.OperationRecordActionUpdateMemberGroup:           locale.OprActionUpdateMemberGroup,
 }
 
 func getOperationActionList(c echo.Context) error {
@@ -348,7 +351,7 @@ func getOperationActionList(c echo.Context) error {
 		operationActionNameList = append(operationActionNameList, OperationActionList{
 			OperationType:   operationAction.OperationType,
 			OperationAction: operationAction.OperationAction,
-			Desc:            actionNameDescMap[operationAction.OperationAction],
+			Desc:            locale.ShouldLocalizeMsg(c.Request().Context(), actionNameDescMap[operationAction.OperationAction]),
 		})
 	}
 
@@ -383,6 +386,7 @@ func getOperationRecordList(c echo.Context) error {
 		data["filter_operate_project_name"] = req.FilterOperateProjectName
 	}
 
+	ctx := c.Request().Context()
 	s := model.GetStorage()
 	operationRecordList, count, err := s.GetOperationRecordList(data)
 	if err != nil {
@@ -398,9 +402,9 @@ func getOperationRecordList(c echo.Context) error {
 				UserName: operationRecord.OperationUserName,
 				IP:       operationRecord.OperationReqIP,
 			},
-			OperationTypeName: typeNameDescMap[operationRecord.OperationTypeName],
-			OperationAction:   actionNameDescMap[operationRecord.OperationAction],
-			OperationContent:  operationRecord.OperationContent,
+			OperationTypeName: locale.ShouldLocalizeMsg(ctx, typeNameDescMap[operationRecord.OperationTypeName]),
+			OperationAction:   locale.ShouldLocalizeMsg(ctx, actionNameDescMap[operationRecord.OperationAction]),
+			OperationContent:  operationRecord.GetOperationContentByLangTag(locale.GetLangTagFromCtx(ctx)),
 			ProjectName:       operationRecord.OperationProjectName,
 			Status:            operationRecord.OperationStatus,
 		})
@@ -413,9 +417,9 @@ func getOperationRecordList(c echo.Context) error {
 	})
 }
 
-var operationRecordStatusMap = map[string]string{
-	model.OperationRecordStatusSucceeded: "成功",
-	model.OperationRecordStatusFailed:    "失败",
+var operationRecordStatusMap = map[string]*i18n.Message{
+	model.OperationRecordStatusSucceeded: locale.OprStatusSucceeded,
+	model.OperationRecordStatusFailed:    locale.OprStatusFailed,
 }
 
 func exportOperationRecordList(c echo.Context) error {
@@ -435,6 +439,7 @@ func exportOperationRecordList(c echo.Context) error {
 		data["filter_operate_project_name"] = req.FilterOperateProjectName
 	}
 
+	ctx := c.Request().Context()
 	s := model.GetStorage()
 	exportList, err := s.GetOperationRecordExportList(data)
 	if err != nil {
@@ -446,7 +451,14 @@ func exportOperationRecordList(c echo.Context) error {
 
 	csvWriter := csv.NewWriter(buff)
 
-	csvColumnNameList := []string{"操作时间", "项目", "操作人", "操作对象", "操作内容", "状态"}
+	csvColumnNameList := []string{
+		locale.ShouldLocalizeMsg(ctx, locale.OprOperationTime),        //"操作时间",
+		locale.ShouldLocalizeMsg(ctx, locale.OprOperationProjectName), //"项目",
+		locale.ShouldLocalizeMsg(ctx, locale.OprOperationUserName),    //"操作人",
+		locale.ShouldLocalizeMsg(ctx, locale.OprOperationAction),      //"操作对象",
+		locale.ShouldLocalizeMsg(ctx, locale.OprOperationContent),     //"操作内容",
+		locale.ShouldLocalizeMsg(ctx, locale.OprOperationStatus),      //"状态",
+	}
 	err = csvWriter.Write(csvColumnNameList)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -457,9 +469,9 @@ func exportOperationRecordList(c echo.Context) error {
 			record.OperationTime.Format("2006-01-02 15:04:05"),
 			record.OperationProjectName,
 			record.OperationUserName,
-			actionNameDescMap[record.OperationAction],
-			record.OperationContent,
-			operationRecordStatusMap[record.OperationStatus],
+			locale.ShouldLocalizeMsg(ctx, actionNameDescMap[record.OperationAction]),
+			record.GetOperationContentByLangTag(locale.GetLangTagFromCtx(ctx)),
+			locale.ShouldLocalizeMsg(ctx, operationRecordStatusMap[record.OperationStatus]),
 		}
 		err = csvWriter.Write(csvLine)
 		if err != nil {
@@ -469,7 +481,7 @@ func exportOperationRecordList(c echo.Context) error {
 
 	csvWriter.Flush()
 
-	fileName := fmt.Sprintf("%s_操作记录.csv", time.Now().Format("20060102150405"))
+	fileName := fmt.Sprintf("%s_operation_record.csv", time.Now().Format("20060102150405"))
 	c.Response().Header().Set(echo.HeaderContentDisposition, mime.FormatMediaType("attachment", map[string]string{
 		"filename": fileName,
 	}))

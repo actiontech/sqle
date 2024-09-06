@@ -12,6 +12,7 @@ import (
 	"github.com/actiontech/sqle/sqle/common"
 	"github.com/actiontech/sqle/sqle/dms"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/params"
@@ -37,10 +38,10 @@ func (at *ObForOracleTopSQLTaskV2) InstanceType() string {
 func (at *ObForOracleTopSQLTaskV2) Params(instanceId ...string) params.Params {
 	return []*params.Param{
 		{
-			Key:   paramKeyCollectIntervalMinute,
-			Desc:  "采集周期（分钟）",
-			Value: "60",
-			Type:  params.ParamTypeInt,
+			Key:      paramKeyCollectIntervalMinute,
+			Value:    "60",
+			Type:     params.ParamTypeInt,
+			I18nDesc: locale.ShouldLocalizeAll(locale.ParamCollectIntervalMinuteOracle),
 		},
 		{
 			Key:   "top_n",
@@ -49,10 +50,10 @@ func (at *ObForOracleTopSQLTaskV2) Params(instanceId ...string) params.Params {
 			Type:  params.ParamTypeInt,
 		},
 		{
-			Key:   "order_by_column",
-			Desc:  "排序字段",
-			Value: DynPerformanceViewObForOracleColumnElapsedTime,
-			Type:  params.ParamTypeString,
+			Key:      "order_by_column",
+			Value:    DynPerformanceViewObForOracleColumnElapsedTime,
+			Type:     params.ParamTypeString,
+			I18nDesc: locale.ShouldLocalizeAll(locale.ParamOrderByColumnGeneric),
 		},
 	}
 }
@@ -326,12 +327,12 @@ func (at *ObForOracleTopSQLTaskV2) Head(ap *AuditPlan) []Head {
 	return []Head{
 		{
 			Name: "sql",
-			Desc: "SQL语句",
+			Desc: locale.ApSQLStatement,
 			Type: "sql",
 		},
 		{
 			Name: "priority",
-			Desc: "优先级",
+			Desc: locale.ApPriority,
 		},
 		{
 			Name: model.AuditResultName,
@@ -339,27 +340,27 @@ func (at *ObForOracleTopSQLTaskV2) Head(ap *AuditPlan) []Head {
 		},
 		{
 			Name: MetricNameCounter,
-			Desc: "总执行次数",
+			Desc: locale.ApMetricNameCounter,
 		},
 		{
 			Name: MetricNameQueryTimeTotal,
-			Desc: "执行时间(s)",
+			Desc: locale.ApMetricNameQueryTimeTotal,
 		},
 		{
 			Name: MetricNameCPUTimeTotal,
-			Desc: "CPU消耗时间(s)",
+			Desc: locale.ApMetricNameCPUTimeTotal,
 		},
 		{
 			Name: MetricNameDiskReadTotal,
-			Desc: "物理读次数",
+			Desc: locale.ApMetricNameDiskReadTotal,
 		},
 		{
 			Name: MetricNameBufferGetCounter,
-			Desc: "逻辑读次数",
+			Desc: locale.ApMetricNameBufferGetCounter,
 		},
 		{
 			Name: MetricNameUserIOWaitTimeTotal,
-			Desc: "I/O等待时间(s)",
+			Desc: locale.ApMetricNameUserIOWaitTimeTotal,
 		},
 	}
 }

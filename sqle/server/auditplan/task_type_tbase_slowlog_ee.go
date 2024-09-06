@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 
@@ -111,17 +112,17 @@ func (at *TBaseSlowLogTaskV2) Head(ap *AuditPlan) []Head {
 	return []Head{
 		{
 			Name: "fingerprint",
-			Desc: "SQL指纹",
+			Desc: locale.ApSQLFingerprint,
 			Type: "sql",
 		},
 		{
 			Name: "sql",
-			Desc: "SQL",
+			Desc: locale.ApSQLStatement,
 			Type: "sql",
 		},
 		{
 			Name: "priority",
-			Desc: "优先级",
+			Desc: locale.ApPriority,
 		},
 		{
 			Name: model.AuditResultName,
@@ -129,31 +130,31 @@ func (at *TBaseSlowLogTaskV2) Head(ap *AuditPlan) []Head {
 		},
 		{
 			Name: "counter",
-			Desc: "数量",
+			Desc: locale.ApMetricNameCounter,
 		},
 		{
 			Name: "last_receive_timestamp",
-			Desc: "最后匹配时间",
+			Desc: locale.ApLastMatchTime,
 		},
 		{
 			Name: "average_query_time",
-			Desc: "平均执行时间",
+			Desc: locale.ApMetricNameQueryTimeAvg,
 		},
 		{
 			Name: "max_query_time",
-			Desc: "最长执行时间",
+			Desc: locale.ApMetricNameMaxQueryTime,
 		},
 		{
 			Name: "row_examined_avg",
-			Desc: "平均扫描行数",
+			Desc: locale.ApMetricNameRowExaminedAvg,
 		},
 		{
 			Name: "db_user",
-			Desc: "用户",
+			Desc: locale.ApMetricNameDBUser,
 		},
 		{
 			Name: "schema",
-			Desc: "Schema",
+			Desc: locale.ApSchema,
 		},
 	}
 }

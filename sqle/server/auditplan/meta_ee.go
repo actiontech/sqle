@@ -3,7 +3,10 @@
 
 package auditplan
 
-import "github.com/actiontech/sqle/sqle/cmd/scannerd/command"
+import (
+	"github.com/actiontech/sqle/sqle/cmd/scannerd/command"
+	"github.com/actiontech/sqle/sqle/locale"
+)
 
 const (
 	TypeOceanBaseForMySQLMybatis = "ocean_base_for_mysql_mybatis"
@@ -39,56 +42,57 @@ const (
 var EEMetaBuilderList = []MetaBuilder{
 	{
 		Type:          TypeMySQLSlowLog,
-		Desc:          "慢日志",
+		Desc:          locale.ApMetaSlowLog,
 		TaskHandlerFn: NewSlowLogTaskV2Fn(),
 	},
 	{
 		Type:          TypeTDSQLSlowLog,
-		Desc:          "慢日志",
+		Desc:          locale.ApMetaSlowLog,
 		TaskHandlerFn: NewTDMySQLSlowLogTaskV2Fn(),
 	},
 	{
 		Type:          TypeOceanBaseForMySQLTopSQL,
-		Desc:          "Top SQL",
+		Desc:          locale.ApMetaTopSQL,
 		TaskHandlerFn: NewObForMysqlTopSQLTaskV2Fn(),
 	},
 	{
 		Type:          TypeDB2TopSQL,
-		Desc:          "DB2 Top SQL",
+		Desc:          locale.ApMetaDB2TopSQL,
 		TaskHandlerFn: NewDB2TopSQLTaskV2Fn(),
 	},
 	{
 		Type:          TypeDB2SchemaMeta,
-		Desc:          "库表元数据",
+		Desc:          locale.ApMetaSchemaMeta,
 		TaskHandlerFn: NewDB2SchemaMetaTaskV2Fn(),
 	},
 	{
 		Type:          TypeTDSQLSchemaMeta,
-		Desc:          "库表元数据",
+		Desc:          locale.ApMetaSchemaMeta,
 		TaskHandlerFn: NewTDMySQLSchemaMetaTaskV2Fn(),
 	},
 	{
 		Type:          TypePostgreSQLSchemaMeta,
-		Desc:          "库表元数据",
+		Desc:          locale.ApMetaSchemaMeta,
 		TaskHandlerFn: NewPGSchemaMetaTaskV2Fn(),
 	},
 	{
 		Type:          TypeDmTopSQL,
-		Desc:          "DM TOP SQL",
+		Desc:          locale.ApMetaDmTopSQL,
 		TaskHandlerFn: NewDmTopSQLTaskV2Fn(),
 	},
 	{
 		Type:          TypeObForOracleTopSQL,
-		Desc:          "OceanBase For Oracle TOP SQL",
+		Desc:          locale.ApMetaObForOracleTopSQL,
 		TaskHandlerFn: NewObForOracleTopSQLTaskV2Fn(),
 	},
 	{
 		Type:          TypePostgreSQLTopSQL,
-		Desc:          "TOP SQL",
-		TaskHandlerFn: NewPGTopSQLTaskV2Fn()},
+		Desc:          locale.ApMetaPostgreSQLTopSQL,
+		TaskHandlerFn: NewPGTopSQLTaskV2Fn(),
+	},
 	{
 		Type:          TypeTBaseSlowLog,
-		Desc:          "慢日志",
+		Desc:          locale.ApMetaSlowLog,
 		TaskHandlerFn: NewTBaseSlowLogTaskV2Fn(),
 	},
 }

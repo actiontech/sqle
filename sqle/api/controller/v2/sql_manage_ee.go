@@ -113,7 +113,7 @@ func convertToGetSqlManageListResp(ctx context.Context, sqlManageList []*model.S
 			ar := sqlManage.AuditResults[i]
 			sqlMgr.AuditResult = append(sqlMgr.AuditResult, &v1.AuditResult{
 				Level:    ar.Level,
-				Message:  ar.GetAuditMsgByLangTag(lang.String()),
+				Message:  ar.GetAuditMsgByLangTag(lang),
 				RuleName: ar.RuleName,
 			})
 		}
