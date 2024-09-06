@@ -16,19 +16,19 @@ func TestPTOSC(t *testing.T) {
 
 	runOSCCase(t, "add column not null no default",
 		"alter table exist_tb_1 add column v3 varchar(255) NOT NULL;",
-		plocale.ShouldLocalizeMsgByLang(language.English, plocale.PTOSCAvoidNoDefaultValueOnNotNullColumn))
+		plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.PTOSCAvoidNoDefaultValueOnNotNullColumn))
 
 	runOSCCase(t, "not pk and unique key",
 		"alter table exist_tb_3 add column v3 varchar(255);",
-		plocale.ShouldLocalizeMsgByLang(language.English, plocale.PTOSCNoUniqueIndexOrPrimaryKey))
+		plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.PTOSCNoUniqueIndexOrPrimaryKey))
 
 	runOSCCase(t, "rename table",
 		"alter table exist_tb_1 rename as not_exist_tb_1;",
-		plocale.ShouldLocalizeMsgByLang(language.English, plocale.PTOSCAvoidRenameTable))
+		plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.PTOSCAvoidRenameTable))
 
 	runOSCCase(t, "add unique index",
 		"alter table exist_tb_1 add unique index u_1 (v1) ",
-		plocale.ShouldLocalizeMsgByLang(language.English, plocale.PTOSCAvoidUniqueIndex))
+		plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.PTOSCAvoidUniqueIndex))
 
 	runOSCCase(t, "add column ok",
 		"alter table exist_tb_1 add column v3 varchar(255);",

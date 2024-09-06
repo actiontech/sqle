@@ -42,7 +42,7 @@ func TestRollbackWithVariable(t *testing.T) {
 		i := DefaultMysqlInspect()
 		rollbackSQL, reason, err := i.GenRollbackSQL(context.Background(), sql)
 		assert.NoError(t, err)
-		assert.Equal(t, plocale.ShouldLocalizeMsgByLang(language.English, plocale.NotSupportHasVariableRollback), reason[locale.DefaultLang])
+		assert.Equal(t, plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.NotSupportHasVariableRollback), reason[locale.DefaultLang])
 		assert.Equal(t, "", rollbackSQL)
 	}
 }
