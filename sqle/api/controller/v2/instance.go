@@ -1,12 +1,14 @@
 package v2
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
 	"github.com/actiontech/sqle/sqle/dms"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/labstack/echo/v4"
@@ -77,11 +79,11 @@ func GetInstance(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, &GetInstanceResV2{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertInstanceToRes(instance),
+		Data:    convertInstanceToRes(c.Request().Context(), instance),
 	})
 }
 
-func convertInstanceToRes(instance *model.Instance) InstanceResV2 {
+func convertInstanceToRes(ctx context.Context, instance *model.Instance) InstanceResV2 {
 	instanceResV2 := InstanceResV2{
 		Name:             instance.Name,
 		Host:             instance.Host,
@@ -110,7 +112,7 @@ func convertInstanceToRes(instance *model.Instance) InstanceResV2 {
 	for _, param := range instance.AdditionalParams {
 		instanceResV2.AdditionalParams = append(instanceResV2.AdditionalParams, &v1.InstanceAdditionalParamResV1{
 			Name:        param.Key,
-			Description: param.Desc,
+			Description: param.GetDesc(locale.GetLangTagFromCtx(ctx)),
 			Type:        string(param.Type),
 			Value:       fmt.Sprintf("%v", param.Value),
 		})

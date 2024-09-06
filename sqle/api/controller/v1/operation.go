@@ -35,7 +35,7 @@ func GetOperations(c echo.Context) error {
 	for i := range opCodes {
 		respData[i] = &OperationResV1{
 			Code: opCodes[i],
-			Desc: model.GetOperationCodeDesc(opCodes[i]),
+			Desc: model.GetOperationCodeDesc(c.Request().Context(), opCodes[i]),
 		}
 	}
 

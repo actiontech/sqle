@@ -7,6 +7,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
+	"github.com/actiontech/sqle/sqle/pkg/i18nPkg"
+
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	"github.com/actiontech/sqle/sqle/errors"
 
@@ -15,17 +18,17 @@ import (
 	parserMysql "github.com/pingcap/parser/mysql"
 )
 
-func (i *MysqlDriverImpl) GenerateRollbackSql(node ast.Node) (string, string, error) {
+func (i *MysqlDriverImpl) GenerateRollbackSql(node ast.Node) (string, i18nPkg.I18nStr, error) {
 	switch node.(type) {
 	case ast.DDLNode:
 		return i.GenerateDDLStmtRollbackSql(node)
 	case ast.DMLNode:
 		return i.GenerateDMLStmtRollbackSql(node)
 	}
-	return "", "", nil
+	return "", nil, nil
 }
 
-func (i *MysqlDriverImpl) GenerateDDLStmtRollbackSql(node ast.Node) (rollbackSql, unableRollbackReason string, err error) {
+func (i *MysqlDriverImpl) GenerateDDLStmtRollbackSql(node ast.Node) (rollbackSql string, unableRollbackReason i18nPkg.I18nStr, err error) {
 	switch stmt := node.(type) {
 	case *ast.AlterTableStmt:
 		rollbackSql, unableRollbackReason, err = i.generateAlterTableRollbackSql(stmt)
@@ -43,22 +46,22 @@ func (i *MysqlDriverImpl) GenerateDDLStmtRollbackSql(node ast.Node) (rollbackSql
 	return rollbackSql, unableRollbackReason, err
 }
 
-func (i *MysqlDriverImpl) GenerateDMLStmtRollbackSql(node ast.Node) (rollbackSql, unableRollbackReason string, err error) {
+func (i *MysqlDriverImpl) GenerateDMLStmtRollbackSql(node ast.Node) (rollbackSql string, unableRollbackReason i18nPkg.I18nStr, err error) {
 	// MysqlDriverImpl may skip initialized cnf when Audited SQLs in whitelist.
 	if i.cnf == nil || i.cnf.DMLRollbackMaxRows < 0 {
-		return "", "", nil
+		return "", nil, nil
 	}
 
 	paramMarkerChecker := util.ParamMarkerChecker{}
 	node.Accept(&paramMarkerChecker)
 	if paramMarkerChecker.HasParamMarker {
-		return "", NotSupportParamMarkerStatementRollback, nil
+		return "", plocale.ShouldLocalizeAll(plocale.NotSupportParamMarkerStatementRollback), nil
 	}
 
 	hasVarChecker := util.HasVarChecker{}
 	node.Accept(&hasVarChecker)
 	if hasVarChecker.HasVar {
-		return "", NotSupportHasVariableRollback, nil
+		return "", plocale.ShouldLocalizeAll(plocale.NotSupportHasVariableRollback), nil
 	}
 
 	switch stmt := node.(type) {
@@ -72,26 +75,14 @@ func (i *MysqlDriverImpl) GenerateDMLStmtRollbackSql(node ast.Node) (rollbackSql
 	return
 }
 
-const (
-	NotSupportStatementRollback               = "暂不支持回滚该类型的语句"
-	NotSupportMultiTableStatementRollback     = "暂不支持回滚多表的 DML 语句"
-	NotSupportOnDuplicatStatementRollback     = "暂不支持回滚 ON DUPLICATE 语句"
-	NotSupportSubQueryStatementRollback       = "暂不支持回滚带子查询的语句"
-	NotSupportNoPrimaryKeyTableRollback       = "不支持回滚没有主键的表的DML语句"
-	NotSupportInsertWithoutPrimaryKeyRollback = "不支持回滚 INSERT 没有指定主键的语句"
-	NotSupportParamMarkerStatementRollback    = "不支持回滚包含指纹的语句"
-	NotSupportHasVariableRollback             = "不支持回滚包含变量的 DML 语句"
-	NotSupportExceedMaxRowsRollback           = "预计影响行数超过配置的最大值，不生成回滚语句"
-)
-
 // generateAlterTableRollbackSql generate alter table SQL for alter table.
-func (i *MysqlDriverImpl) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) (string, string, error) {
+func (i *MysqlDriverImpl) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt) (string, i18nPkg.I18nStr, error) {
 	schemaName := i.Ctx.GetSchemaName(stmt.Table)
 	tableName := stmt.Table.Name.String()
 
 	createTableStmt, exist, err := i.Ctx.GetCreateTableStmt(stmt.Table)
 	if err != nil || !exist {
-		return "", "", err
+		return "", nil, err
 	}
 	rollbackStmt := &ast.AlterTableStmt{
 		Table: util.NewTableName(schemaName, tableName),
@@ -274,53 +265,53 @@ func (i *MysqlDriverImpl) generateAlterTableRollbackSql(stmt *ast.AlterTableStmt
 	}
 
 	rollbackSql := util.AlterTableStmtFormat(rollbackStmt)
-	return rollbackSql, "", nil
+	return rollbackSql, nil, nil
 }
 
 // generateCreateSchemaRollbackSql generate drop database SQL for create database.
-func (i *MysqlDriverImpl) generateCreateSchemaRollbackSql(stmt *ast.CreateDatabaseStmt) (string, string, error) {
+func (i *MysqlDriverImpl) generateCreateSchemaRollbackSql(stmt *ast.CreateDatabaseStmt) (string, i18nPkg.I18nStr, error) {
 	schemaName := stmt.Name
 	schemaExist, err := i.Ctx.IsSchemaExist(schemaName)
 	if err != nil {
-		return "", "", err
+		return "", nil, err
 	}
 	if schemaExist {
-		return "", "", err
+		return "", nil, err
 	}
 	rollbackSql := fmt.Sprintf("DROP DATABASE IF EXISTS `%s`", schemaName)
-	return rollbackSql, "", nil
+	return rollbackSql, nil, nil
 }
 
 // generateCreateTableRollbackSql generate drop table SQL for create table.
-func (i *MysqlDriverImpl) generateCreateTableRollbackSql(stmt *ast.CreateTableStmt) (string, string, error) {
+func (i *MysqlDriverImpl) generateCreateTableRollbackSql(stmt *ast.CreateTableStmt) (string, i18nPkg.I18nStr, error) {
 	schemaExist, err := i.Ctx.IsSchemaExist(i.Ctx.GetSchemaName(stmt.Table))
 	if err != nil {
-		return "", "", err
+		return "", nil, err
 	}
 	// if schema not exist, create table will be failed. don't rollback
 	if !schemaExist {
-		return "", "", nil
+		return "", nil, nil
 	}
 
 	tableExist, err := i.Ctx.IsTableExist(stmt.Table)
 	if err != nil {
-		return "", "", err
+		return "", nil, err
 	}
 
 	if tableExist {
-		return "", "", nil
+		return "", nil, nil
 	}
 	rollbackSql := fmt.Sprintf("DROP TABLE IF EXISTS %s", i.getTableNameWithQuote(stmt.Table))
-	return rollbackSql, "", nil
+	return rollbackSql, nil, nil
 }
 
 // generateDropTableRollbackSql generate create table SQL for drop table.
-func (i *MysqlDriverImpl) generateDropTableRollbackSql(stmt *ast.DropTableStmt) (string, string, error) {
+func (i *MysqlDriverImpl) generateDropTableRollbackSql(stmt *ast.DropTableStmt) (string, i18nPkg.I18nStr, error) {
 	rollbackSql := ""
 	for _, table := range stmt.Tables {
 		stmt, tableExist, err := i.Ctx.GetCreateTableStmt(table)
 		if err != nil {
-			return "", "", err
+			return "", nil, err
 		}
 		// if table not exist, can not rollback it.
 		if !tableExist {
@@ -328,24 +319,24 @@ func (i *MysqlDriverImpl) generateDropTableRollbackSql(stmt *ast.DropTableStmt) 
 		}
 		rollbackSql += stmt.Text() + ";\n"
 	}
-	return rollbackSql, "", nil
+	return rollbackSql, nil, nil
 }
 
 // generateCreateIndexRollbackSql generate drop index SQL for create index.
-func (i *MysqlDriverImpl) generateCreateIndexRollbackSql(stmt *ast.CreateIndexStmt) (string, string, error) {
-	return fmt.Sprintf("DROP INDEX `%s` ON %s", stmt.IndexName, i.getTableNameWithQuote(stmt.Table)), "", nil
+func (i *MysqlDriverImpl) generateCreateIndexRollbackSql(stmt *ast.CreateIndexStmt) (string, i18nPkg.I18nStr, error) {
+	return fmt.Sprintf("DROP INDEX `%s` ON %s", stmt.IndexName, i.getTableNameWithQuote(stmt.Table)), nil, nil
 }
 
 // generateDropIndexRollbackSql generate create index SQL for drop index.
-func (i *MysqlDriverImpl) generateDropIndexRollbackSql(stmt *ast.DropIndexStmt) (string, string, error) {
+func (i *MysqlDriverImpl) generateDropIndexRollbackSql(stmt *ast.DropIndexStmt) (string, i18nPkg.I18nStr, error) {
 	indexName := stmt.IndexName
 	createTableStmt, tableExist, err := i.Ctx.GetCreateTableStmt(stmt.Table)
 	if err != nil {
-		return "", "", err
+		return "", nil, err
 	}
 	// if table not exist, don't rollback
 	if !tableExist {
-		return "", "", nil
+		return "", nil, nil
 	}
 	rollbackSql := ""
 	for _, constraint := range createTableStmt.Constraints {
@@ -359,7 +350,7 @@ func (i *MysqlDriverImpl) generateDropIndexRollbackSql(stmt *ast.DropIndexStmt) 
 				sql = fmt.Sprintf("CREATE UNIQUE INDEX `%s` ON %s",
 					indexName, i.getTableNameWithQuote(stmt.Table))
 			default:
-				return "", NotSupportStatementRollback, nil
+				return "", plocale.ShouldLocalizeAll(plocale.NotSupportStatementRollback), nil
 			}
 			if constraint.Option != nil {
 				sql = fmt.Sprintf("%s %s", sql, util.IndexOptionFormat(constraint.Option))
@@ -367,34 +358,34 @@ func (i *MysqlDriverImpl) generateDropIndexRollbackSql(stmt *ast.DropIndexStmt) 
 			rollbackSql = sql
 		}
 	}
-	return rollbackSql, "", nil
+	return rollbackSql, nil, nil
 }
 
 // generateInsertRollbackSql generate delete SQL for insert.
-func (i *MysqlDriverImpl) generateInsertRollbackSql(stmt *ast.InsertStmt) (string, string, error) {
+func (i *MysqlDriverImpl) generateInsertRollbackSql(stmt *ast.InsertStmt) (string, i18nPkg.I18nStr, error) {
 	tables := util.GetTables(stmt.Table.TableRefs)
 	// table just has one in insert stmt.
 	if len(tables) != 1 {
-		return "", NotSupportMultiTableStatementRollback, nil
+		return "", plocale.ShouldLocalizeAll(plocale.NotSupportMultiTableStatementRollback), nil
 	}
 	if stmt.OnDuplicate != nil {
-		return "", NotSupportOnDuplicatStatementRollback, nil
+		return "", plocale.ShouldLocalizeAll(plocale.NotSupportOnDuplicatStatementRollback), nil
 	}
 	table := tables[0]
 	createTableStmt, exist, err := i.Ctx.GetCreateTableStmt(table)
 	if err != nil {
-		return "", "", err
+		return "", nil, err
 	}
 	// if table not exist, insert will failed.
 	if !exist {
-		return "", "", nil
+		return "", nil, nil
 	}
 	pkColumnsName, hasPk, err := i.getPrimaryKey(createTableStmt)
 	if err != nil {
-		return "", "", err
+		return "", nil, err
 	}
 	if !hasPk {
-		return "", NotSupportNoPrimaryKeyTableRollback, nil
+		return "", plocale.ShouldLocalizeAll(plocale.NotSupportNoPrimaryKeyTableRollback), nil
 	}
 
 	rollbackSql := ""
@@ -403,7 +394,7 @@ func (i *MysqlDriverImpl) generateInsertRollbackSql(stmt *ast.InsertStmt) (strin
 	// match "insert into table_name value (v1,...)"
 	if stmt.Lists != nil {
 		if int64(len(stmt.Lists)) > i.cnf.DMLRollbackMaxRows {
-			return "", NotSupportExceedMaxRowsRollback, nil
+			return "", plocale.ShouldLocalizeAll(plocale.NotSupportExceedMaxRowsRollback), nil
 		}
 		columnsName := []string{}
 		if stmt.Columns != nil {
@@ -419,7 +410,7 @@ func (i *MysqlDriverImpl) generateInsertRollbackSql(stmt *ast.InsertStmt) (strin
 			where := []string{}
 			// mysql will throw error: 1136 (21S01): Column count doesn't match value count
 			if len(columnsName) != len(value) {
-				return "", "", nil
+				return "", nil, nil
 			}
 			for n, name := range columnsName {
 				_, isPk := pkColumnsName[name]
@@ -428,18 +419,18 @@ func (i *MysqlDriverImpl) generateInsertRollbackSql(stmt *ast.InsertStmt) (strin
 				}
 			}
 			if len(where) != len(pkColumnsName) {
-				return "", NotSupportInsertWithoutPrimaryKeyRollback, nil
+				return "", plocale.ShouldLocalizeAll(plocale.NotSupportInsertWithoutPrimaryKeyRollback), nil
 			}
 			rollbackSql += fmt.Sprintf("DELETE FROM %s WHERE %s;\n",
 				i.getTableNameWithQuote(table), strings.Join(where, " AND "))
 		}
-		return rollbackSql, "", nil
+		return rollbackSql, nil, nil
 	}
 
 	// match "insert into table_name set col_name = value1, ..."
 	if stmt.Setlist != nil {
 		if 1 > i.cnf.DMLRollbackMaxRows {
-			return "", NotSupportExceedMaxRowsRollback, nil
+			return "", plocale.ShouldLocalizeAll(plocale.NotSupportExceedMaxRowsRollback), nil
 		}
 		where := []string{}
 		for _, setExpr := range stmt.Setlist {
@@ -450,12 +441,12 @@ func (i *MysqlDriverImpl) generateInsertRollbackSql(stmt *ast.InsertStmt) (strin
 			}
 		}
 		if len(where) != len(pkColumnsName) {
-			return "", "", nil
+			return "", nil, nil
 		}
 		rollbackSql = fmt.Sprintf("DELETE FROM %s WHERE %s;\n",
 			i.getTableNameWithQuote(table), strings.Join(where, " AND "))
 	}
-	return rollbackSql, "", nil
+	return rollbackSql, nil, nil
 }
 
 // 将二进制字段转化为十六进制字段
@@ -465,49 +456,49 @@ func getHexStrFromBytesStr(byteStr string) string {
 }
 
 // generateDeleteRollbackSql generate insert SQL for delete.
-func (i *MysqlDriverImpl) generateDeleteRollbackSql(stmt *ast.DeleteStmt) (string, string, error) {
+func (i *MysqlDriverImpl) generateDeleteRollbackSql(stmt *ast.DeleteStmt) (string, i18nPkg.I18nStr, error) {
 	// not support multi-table syntax
 	if stmt.IsMultiTable {
 		i.Logger().Infof("not support generate rollback sql with multi-delete statement")
-		return "", NotSupportMultiTableStatementRollback, nil
+		return "", plocale.ShouldLocalizeAll(plocale.NotSupportMultiTableStatementRollback), nil
 	}
 	// sub query statement
 	if util.WhereStmtHasSubQuery(stmt.Where) {
 		i.Logger().Infof("not support generate rollback sql with sub query")
-		return "", NotSupportSubQueryStatementRollback, nil
+		return "", plocale.ShouldLocalizeAll(plocale.NotSupportSubQueryStatementRollback), nil
 	}
 	var err error
 	tables := util.GetTables(stmt.TableRefs.TableRefs)
 	table := tables[0]
 	createTableStmt, exist, err := i.Ctx.GetCreateTableStmt(table)
 	if err != nil || !exist {
-		return "", "", err
+		return "", nil, err
 	}
 	_, hasPk, err := i.getPrimaryKey(createTableStmt)
 	if err != nil {
-		return "", "", err
+		return "", nil, err
 	}
 	if !hasPk {
-		return "", NotSupportNoPrimaryKeyTableRollback, nil
+		return "", plocale.ShouldLocalizeAll(plocale.NotSupportNoPrimaryKeyTableRollback), nil
 	}
 
 	var max = i.cnf.DMLRollbackMaxRows
 	limit, err := util.GetLimitCount(stmt.Limit, max+1)
 	if err != nil {
-		return "", "", err
+		return "", nil, err
 	}
 	if limit > max {
 		count, err := i.getRecordCount(table, "", stmt.Where, stmt.Order, limit)
 		if err != nil {
-			return "", "", err
+			return "", nil, err
 		}
 		if count > max {
-			return "", NotSupportExceedMaxRowsRollback, nil
+			return "", plocale.ShouldLocalizeAll(plocale.NotSupportExceedMaxRowsRollback), nil
 		}
 	}
 	records, err := i.getRecords(table, "", stmt.Where, stmt.Order, limit)
 	if err != nil {
-		return "", "", err
+		return "", nil, err
 	}
 	values := []string{}
 
@@ -519,7 +510,7 @@ func (i *MysqlDriverImpl) generateDeleteRollbackSql(stmt *ast.DeleteStmt) (strin
 	}
 	for _, record := range records {
 		if len(record) != len(columnsName) {
-			return "", "", nil
+			return "", nil, nil
 		}
 		vs := []string{}
 		for _, name := range columnsName {
@@ -543,21 +534,21 @@ func (i *MysqlDriverImpl) generateDeleteRollbackSql(stmt *ast.DeleteStmt) (strin
 			i.getTableNameWithQuote(table), strings.Join(columnsName, "`, `"),
 			strings.Join(values, ", "))
 	}
-	return rollbackSql, "", nil
+	return rollbackSql, nil, nil
 }
 
 // generateUpdateRollbackSql generate update SQL for update.
-func (i *MysqlDriverImpl) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (string, string, error) {
+func (i *MysqlDriverImpl) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (string, i18nPkg.I18nStr, error) {
 	tableSources := util.GetTableSources(stmt.TableRefs.TableRefs)
 	// multi table syntax
 	if len(tableSources) != 1 {
 		i.Logger().Infof("not support generate rollback sql with multi-update statement")
-		return "", NotSupportMultiTableStatementRollback, nil
+		return "", plocale.ShouldLocalizeAll(plocale.NotSupportMultiTableStatementRollback), nil
 	}
 	// sub query statement
 	if util.WhereStmtHasSubQuery(stmt.Where) {
 		i.Logger().Infof("not support generate rollback sql with sub query")
-		return "", NotSupportSubQueryStatementRollback, nil
+		return "", plocale.ShouldLocalizeAll(plocale.NotSupportSubQueryStatementRollback), nil
 	}
 	var (
 		table      *ast.TableName
@@ -570,39 +561,39 @@ func (i *MysqlDriverImpl) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (strin
 		tableAlias = tableSource.AsName.String()
 	case *ast.SelectStmt, *ast.UnionStmt:
 		i.Logger().Infof("not support generate rollback sql with update-select statement")
-		return "", NotSupportSubQueryStatementRollback, nil
+		return "", plocale.ShouldLocalizeAll(plocale.NotSupportSubQueryStatementRollback), nil
 	default:
-		return "", NotSupportStatementRollback, nil
+		return "", plocale.ShouldLocalizeAll(plocale.NotSupportStatementRollback), nil
 	}
 	createTableStmt, exist, err := i.Ctx.GetCreateTableStmt(table)
 	if err != nil || !exist {
-		return "", "", err
+		return "", nil, err
 	}
 	pkColumnsName, hasPk, err := i.getPrimaryKey(createTableStmt)
 	if err != nil {
-		return "", "", err
+		return "", nil, err
 	}
 	if !hasPk {
-		return "", NotSupportNoPrimaryKeyTableRollback, nil
+		return "", plocale.ShouldLocalizeAll(plocale.NotSupportNoPrimaryKeyTableRollback), nil
 	}
 
 	var max = i.cnf.DMLRollbackMaxRows
 	limit, err := util.GetLimitCount(stmt.Limit, max+1)
 	if err != nil {
-		return "", "", err
+		return "", nil, err
 	}
 	if limit > max {
 		count, err := i.getRecordCount(table, tableAlias, stmt.Where, stmt.Order, limit)
 		if err != nil {
-			return "", "", err
+			return "", nil, err
 		}
 		if count > max {
-			return "", NotSupportExceedMaxRowsRollback, nil
+			return "", plocale.ShouldLocalizeAll(plocale.NotSupportExceedMaxRowsRollback), nil
 		}
 	}
 	records, err := i.getRecords(table, tableAlias, stmt.Where, stmt.Order, limit)
 	if err != nil {
-		return "", "", err
+		return "", nil, err
 	}
 	rollbackSql := ""
 	colNameDefMap := make(map[string]*ast.ColumnDef)
@@ -611,7 +602,7 @@ func (i *MysqlDriverImpl) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (strin
 	}
 	for _, record := range records {
 		if len(record) != len(colNameDefMap) {
-			return "", "", nil
+			return "", nil, nil
 		}
 		where := []string{}
 		value := []string{}
@@ -657,7 +648,7 @@ func (i *MysqlDriverImpl) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (strin
 		rollbackSql += fmt.Sprintf("UPDATE %s SET %s WHERE %s;", i.getTableNameWithQuote(table),
 			strings.Join(value, ", "), strings.Join(where, " AND "))
 	}
-	return rollbackSql, "", nil
+	return rollbackSql, nil, nil
 }
 
 // getRecords select all data which will be update or delete.

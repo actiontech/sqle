@@ -1,4 +1,5 @@
-// +build darwin,cgo
+// +build darwin
+// +build cgo
 
 package mem
 

@@ -446,6 +446,7 @@ func GetInstanceTips(c echo.Context) error {
 // @router /v1/projects/{project_name}/instances/{instance_name}/rules [get]
 func GetInstanceRules(c echo.Context) error {
 	s := model.GetStorage()
+	ctx := c.Request().Context()
 
 	instanceName := c.Param("instance_name")
 	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
@@ -475,7 +476,7 @@ func GetInstanceRules(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, &GetRulesResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertRulesToRes(rules),
+		Data:    convertRulesToRes(ctx, rules),
 	})
 }
 

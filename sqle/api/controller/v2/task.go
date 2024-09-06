@@ -5,6 +5,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/labstack/echo/v4"
@@ -116,7 +117,7 @@ func GetTaskSQLs(c echo.Context) error {
 			ar := taskSQL.AuditResults[i]
 			taskSQLRes.AuditResult = append(taskSQLRes.AuditResult, &AuditResult{
 				Level:    ar.Level,
-				Message:  ar.Message,
+				Message:  ar.GetAuditMsgByLangTag(locale.GetLangTagFromCtx(c.Request().Context())),
 				RuleName: ar.RuleName,
 				DbType:   task.DBType,
 			})

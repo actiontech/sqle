@@ -11,7 +11,6 @@ import (
 // Int64Slice wraps []int64 to satisfy flag.Value
 type Int64Slice struct {
 	slice      []int64
-	separator  separatorSpec
 	hasBeenSet bool
 }
 
@@ -30,10 +29,6 @@ func (i *Int64Slice) clone() *Int64Slice {
 	return n
 }
 
-func (i *Int64Slice) WithSeparatorSpec(spec separatorSpec) {
-	i.separator = spec
-}
-
 // Set parses the value into an integer and appends it to the list of values
 func (i *Int64Slice) Set(value string) error {
 	if !i.hasBeenSet {
@@ -48,7 +43,7 @@ func (i *Int64Slice) Set(value string) error {
 		return nil
 	}
 
-	for _, s := range i.separator.flagSplitMultiValues(value) {
+	for _, s := range flagSplitMultiValues(value) {
 		tmp, err := strconv.ParseInt(strings.TrimSpace(s), 0, 64)
 		if err != nil {
 			return err
@@ -62,12 +57,7 @@ func (i *Int64Slice) Set(value string) error {
 
 // String returns a readable representation of this value (for usage defaults)
 func (i *Int64Slice) String() string {
-	v := i.slice
-	if v == nil {
-		// treat nil the same as zero length non-nil
-		v = make([]int64, 0)
-	}
-	return fmt.Sprintf("%#v", v)
+	return fmt.Sprintf("%#v", i.slice)
 }
 
 // Serialize allows Int64Slice to fulfill Serializer
@@ -89,7 +79,7 @@ func (i *Int64Slice) Get() interface{} {
 // String returns a readable representation of this value
 // (for usage defaults)
 func (f *Int64SliceFlag) String() string {
-	return FlagStringer(f)
+	return withEnvHint(f.GetEnvVars(), stringifyInt64SliceFlag(f))
 }
 
 // TakesValue returns true of the flag takes a value, otherwise false
@@ -110,13 +100,10 @@ func (f *Int64SliceFlag) GetCategory() string {
 // GetValue returns the flags value as string representation and an empty
 // string if the flag takes no value at all.
 func (f *Int64SliceFlag) GetValue() string {
-	var defaultVals []string
-	if f.Value != nil && len(f.Value.Value()) > 0 {
-		for _, i := range f.Value.Value() {
-			defaultVals = append(defaultVals, strconv.FormatInt(i, 10))
-		}
+	if f.Value != nil {
+		return f.Value.String()
 	}
-	return strings.Join(defaultVals, ", ")
+	return ""
 }
 
 // GetDefaultText returns the default text for this flag
@@ -132,67 +119,37 @@ func (f *Int64SliceFlag) GetEnvVars() []string {
 	return f.EnvVars
 }
 
-// IsSliceFlag implements DocGenerationSliceFlag.
-func (f *Int64SliceFlag) IsSliceFlag() bool {
-	return true
-}
-
 // Apply populates the flag given the flag set and environment
 func (f *Int64SliceFlag) Apply(set *flag.FlagSet) error {
-	// apply any default
-	if f.Destination != nil && f.Value != nil {
-		f.Destination.slice = make([]int64, len(f.Value.slice))
-		copy(f.Destination.slice, f.Value.slice)
-	}
+	if val, source, found := flagFromEnvOrFile(f.EnvVars, f.FilePath); found {
+		f.Value = &Int64Slice{}
 
-	// resolve setValue (what we will assign to the set)
-	var setValue *Int64Slice
-	switch {
-	case f.Destination != nil:
-		setValue = f.Destination
-	case f.Value != nil:
-		setValue = f.Value.clone()
-	default:
-		setValue = new(Int64Slice)
-		setValue.WithSeparatorSpec(f.separator)
-	}
-
-	if val, source, ok := flagFromEnvOrFile(f.EnvVars, f.FilePath); ok && val != "" {
-		for _, s := range f.separator.flagSplitMultiValues(val) {
-			if err := setValue.Set(strings.TrimSpace(s)); err != nil {
+		for _, s := range flagSplitMultiValues(val) {
+			if err := f.Value.Set(strings.TrimSpace(s)); err != nil {
 				return fmt.Errorf("could not parse %q as int64 slice value from %s for flag %s: %s", val, source, f.Name, err)
 			}
 		}
 
 		// Set this to false so that we reset the slice if we then set values from
 		// flags that have already been set by the environment.
-		setValue.hasBeenSet = false
+		f.Value.hasBeenSet = false
 		f.HasBeenSet = true
 	}
 
+	if f.Value == nil {
+		f.Value = &Int64Slice{}
+	}
+	copyValue := f.Value.clone()
 	for _, name := range f.Names() {
-		set.Var(setValue, name, f.Usage)
+		set.Var(copyValue, name, f.Usage)
 	}
 
 	return nil
-}
-
-func (f *Int64SliceFlag) WithSeparatorSpec(spec separatorSpec) {
-	f.separator = spec
 }
 
 // Get returns the flag’s value in the given Context.
 func (f *Int64SliceFlag) Get(ctx *Context) []int64 {
 	return ctx.Int64Slice(f.Name)
-}
-
-// RunAction executes flag action if set
-func (f *Int64SliceFlag) RunAction(c *Context) error {
-	if f.Action != nil {
-		return f.Action(c, c.Int64Slice(f.Name))
-	}
-
-	return nil
 }
 
 // Int64Slice looks up the value of a local Int64SliceFlag, returns
@@ -207,7 +164,7 @@ func (cCtx *Context) Int64Slice(name string) []int64 {
 func lookupInt64Slice(name string, set *flag.FlagSet) []int64 {
 	f := set.Lookup(name)
 	if f != nil {
-		if slice, ok := unwrapFlagValue(f.Value).(*Int64Slice); ok {
+		if slice, ok := f.Value.(*Int64Slice); ok {
 			return slice.Value()
 		}
 	}

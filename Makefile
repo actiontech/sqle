@@ -62,6 +62,8 @@ RPM_BUILD_IMAGE ?= rpmbuild/centos7
 ## Static Parameter, should not be overwrite
 GOBIN = ${shell pwd}/bin
 PARSER_PATH   = ${shell pwd}/vendor/github.com/pingcap/parser
+LOCALE_PATH   = ${shell pwd}/sqle/locale
+PLUGIN_LOCALE_PATH   = ${shell pwd}/sqle/driver/mysql/plocale
 
 ## Arm Build
 ARM_CGO_BUILD_FLAG =
@@ -70,6 +72,23 @@ ifeq ($(EDITION)_$(GOARCH),ee_arm64)
 endif
 
 default: install
+
+######################################## i18n ##########################################################
+install_i18n_tool:
+	GOBIN=$(GOBIN) go install -v github.com/nicksnyder/go-i18n/v2/goi18n@latest
+
+extract_i18n:
+	cd ${LOCALE_PATH} && $(GOBIN)/goi18n extract -sourceLanguage zh
+	cd ${PLUGIN_LOCALE_PATH} && $(GOBIN)/goi18n extract -sourceLanguage zh
+
+start_trans_i18n:
+	cd ${LOCALE_PATH} && touch translate.en.toml && $(GOBIN)/goi18n merge -sourceLanguage=zh active.*.toml
+	cd ${PLUGIN_LOCALE_PATH} && touch translate.en.toml && $(GOBIN)/goi18n merge -sourceLanguage=zh active.*.toml
+
+end_trans_i18n:
+	cd ${LOCALE_PATH} && $(GOBIN)/goi18n merge active.en.toml translate.en.toml && rm -rf translate.en.toml
+	cd ${PLUGIN_LOCALE_PATH} && $(GOBIN)/goi18n merge active.en.toml translate.en.toml && rm -rf translate.en.toml
+
 ######################################## Code Check ####################################################
 ## Static Code Analysis
 vet: swagger

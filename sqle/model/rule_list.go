@@ -64,7 +64,8 @@ func (s *Storage) GetRulesByReq(data map[string]interface{}) (
 		}
 	}
 	if data["fuzzy_keyword_rule"] != "" {
-		db = db.Where("rules.`desc` like ? OR rules.annotation like ?", fmt.Sprintf("%%%s%%", data["fuzzy_keyword_rule"]), fmt.Sprintf("%%%s%%", data["fuzzy_keyword_rule"]))
+		// todo i18n use json syntax to query?
+		db = db.Where("rules.`i18n_rule_info` like ?", fmt.Sprintf("%%%s%%", data["fuzzy_keyword_rule"]))
 	}
 	err = db.Find(&result).Error
 	return result, err
