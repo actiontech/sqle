@@ -1,11 +1,14 @@
 package auditplan
 
 import (
+	"context"
+
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/sirupsen/logrus"
 )
 
-func GetSqlManagerRuleTips(logger *logrus.Entry, auditPlanId uint, persist *model.Storage) []FilterTip {
+func GetSqlManagerRuleTips(ctx context.Context, logger *logrus.Entry, auditPlanId uint, persist *model.Storage) []FilterTip {
 	var ruleFilterTips []FilterTip
 	rules, err := persist.GetManagerSqlRuleTipsByAuditPlan(auditPlanId)
 	if err != nil {
@@ -16,7 +19,7 @@ func GetSqlManagerRuleTips(logger *logrus.Entry, auditPlanId uint, persist *mode
 		for _, rule := range rules {
 			ruleFilterTips = append(ruleFilterTips, FilterTip{
 				Value: rule.RuleName,
-				Desc:  rule.Desc,
+				Desc:  rule.I18nRuleInfo.GetRuleInfoByLangTag(locale.GetLangTagFromCtx(ctx)).Desc,
 				Group: rule.DbType,
 			})
 		}
@@ -58,11 +61,11 @@ func GetSqlManagerMetricTips(logger *logrus.Entry, auditPlanId uint, persist *mo
 	}
 }
 
-func GetSqlManagerPriorityTips(logger *logrus.Entry) []FilterTip {
+func GetSqlManagerPriorityTips(ctx context.Context, logger *logrus.Entry) []FilterTip {
 	return []FilterTip{
 		{
 			Value: model.PriorityHigh,
-			Desc:  "高优先级",
+			Desc:  locale.ShouldLocalizeMsg(ctx, locale.ApPriorityHigh),
 		},
 	}
 }

@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"time"
+
+	"github.com/actiontech/sqle/sqle/locale"
 )
 
 type InstanceAuditPlanListDetail struct {
@@ -113,10 +115,9 @@ type InstanceAuditPlanSQLListDetail struct {
 	Priority       sql.NullString `json:"priority"`
 }
 
-const (
-	AuditResultName = "audit_results"
-	AuditResultDesc = "审核结果"
-)
+const AuditResultName = "audit_results"
+
+var AuditResultDesc = locale.ApAuditResult
 
 type FilterName string
 

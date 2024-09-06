@@ -1,6 +1,11 @@
 package model
 
-import "github.com/actiontech/sqle/sqle/errors"
+import (
+	"context"
+
+	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/locale"
+)
 
 // NOTE: related model:
 // - model.Role
@@ -51,24 +56,24 @@ func getConfigurableOperationCodeList() []uint {
 	}
 }
 
-func GetOperationCodeDesc(opCode uint) string {
+func GetOperationCodeDesc(ctx context.Context, opCode uint) string {
 	switch opCode {
 	case OP_WORKFLOW_VIEW_OTHERS:
-		return "查看他人创建的工单"
+		return locale.ShouldLocalizeMsg(ctx, locale.OpWorkflowViewOthers)
 	case OP_WORKFLOW_SAVE:
-		return "创建/编辑工单"
+		return locale.ShouldLocalizeMsg(ctx, locale.OpWorkflowSave)
 	case OP_WORKFLOW_AUDIT:
-		return "审核/驳回工单"
+		return locale.ShouldLocalizeMsg(ctx, locale.OpWorkflowAudit)
 	case OP_WORKFLOW_EXECUTE:
-		return "上线工单"
+		return locale.ShouldLocalizeMsg(ctx, locale.OpWorkflowExecute)
 	case OP_AUDIT_PLAN_VIEW_OTHERS:
-		return "查看他人创建的扫描任务"
+		return locale.ShouldLocalizeMsg(ctx, locale.OpAuditPlanViewOthers)
 	case OP_AUDIT_PLAN_SAVE:
-		return "创建扫描任务"
+		return locale.ShouldLocalizeMsg(ctx, locale.OpAuditPlanSave)
 	case OP_SQL_QUERY_QUERY:
-		return "SQL查询"
+		return locale.ShouldLocalizeMsg(ctx, locale.OpSqlQueryQuery)
 	default:
-		return additionalOperationForEE(opCode)
+		return additionalOperationForEE(ctx, opCode)
 	}
 }
 

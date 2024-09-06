@@ -2,11 +2,15 @@ package driverV2
 
 import (
 	"context"
+	"database/sql/driver"
+	"encoding/json"
 	"fmt"
 	"sync"
 
 	protoV2 "github.com/actiontech/sqle/sqle/driver/v2/proto"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/pkg/params"
+	"golang.org/x/text/language"
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/status"
@@ -30,15 +34,39 @@ type DSN struct {
 }
 
 type Rule struct {
-	Name       string
+	Name         string
+	Level        RuleLevel
+	Params       params.Params // 仅用于ParamValue处理，展示 Param.Desc 等以 I18nRuleInfo->RuleInfo.Params 为准
+	I18nRuleInfo I18nRuleInfo
+}
+
+type I18nRuleInfo map[language.Tag]*RuleInfo
+
+// GetRuleInfoByLangTag if the lang not exists, return DefaultLang
+func (i *I18nRuleInfo) GetRuleInfoByLangTag(lang language.Tag) *RuleInfo {
+	if ruleInfo, ok := (*i)[lang]; ok {
+		return ruleInfo
+	}
+	return (*i)[locale.DefaultLang]
+}
+
+func (i I18nRuleInfo) Value() (driver.Value, error) {
+	b, err := json.Marshal(i)
+	return string(b), err
+}
+
+func (i *I18nRuleInfo) Scan(input interface{}) error {
+	return json.Unmarshal(input.([]byte), i)
+}
+
+type RuleInfo struct {
 	Desc       string
 	Annotation string
 
 	// Category is the category of the rule. Such as "Naming Conventions"...
 	// Rules will be displayed on the SQLE rule list page by category.
-	Category  string
-	Level     RuleLevel
-	Params    params.Params
+	Category string
+	//Params    params.Params // 仅用于国际化，ParamValue以 Rule.Params 为准
 	Knowledge RuleKnowledge
 }
 
@@ -87,7 +115,7 @@ func (d *DriverGrpcServer) Metas(ctx context.Context, req *protoV2.Empty) (*prot
 		DatabaseDefaultPort:      d.Meta.DatabaseDefaultPort,
 		Logo:                     d.Meta.Logo,
 		DatabaseAdditionalParams: ConvertParamToProtoParam(d.Meta.DatabaseAdditionalParams),
-		Rules:                    rules,
+		Rules:                    ConvertI18nRulesFromDriverToProto(d.Meta.Rules),
 		EnabledOptionalModule:    ms,
 	}, nil
 }
@@ -95,18 +123,26 @@ func (d *DriverGrpcServer) Metas(ctx context.Context, req *protoV2.Empty) (*prot
 func (d *DriverGrpcServer) Init(ctx context.Context, req *protoV2.InitRequest) (*protoV2.InitResponse, error) {
 	var rules = make([]*Rule, 0, len(req.GetRules()))
 	for _, rule := range req.GetRules() {
-		rules = append(rules, ConvertRuleFromProtoToDriver(rule))
+		dr, err := ConvertI18nRuleFromProtoToDriver(rule)
+		if err != nil {
+			return nil, err
+		}
+		rules = append(rules, dr)
 	}
 
 	var dsn *DSN
 	if req.GetDsn() != nil {
+		ps, err := ConvertProtoParamToParam(req.GetDsn().GetAdditionalParams())
+		if err != nil {
+			return nil, fmt.Errorf("DriverGrpcServer Init req rule param err: %w", err)
+		}
 		dsn = &DSN{
 			Host:             req.GetDsn().GetHost(),
 			Port:             req.GetDsn().GetPort(),
 			User:             req.GetDsn().GetUser(),
 			Password:         req.GetDsn().GetPassword(),
 			DatabaseName:     req.GetDsn().GetDatabase(),
-			AdditionalParams: ConvertProtoParamToParam(req.GetDsn().GetAdditionalParams()),
+			AdditionalParams: ps,
 		}
 	}
 	id := RandStr(20)
@@ -191,14 +227,10 @@ func (d *DriverGrpcServer) Audit(ctx context.Context, req *protoV2.AuditRequest)
 	resp := &protoV2.AuditResponse{}
 	for _, results := range auditResults {
 		rets := &protoV2.AuditResults{
-			Results: []*protoV2.AuditResult{},
+			Results: make([]*protoV2.AuditResult, 0, len(results.Results)),
 		}
 		for _, result := range results.Results {
-			rets.Results = append(rets.Results, &protoV2.AuditResult{
-				Level:    string(result.Level),
-				Message:  result.Message,
-				RuleName: result.RuleName,
-			})
+			rets.Results = append(rets.Results, ConvertI18nAuditResultFromDriverToProto(result))
 		}
 		resp.AuditResults = append(resp.AuditResults, rets)
 	}
@@ -354,10 +386,11 @@ func (d *DriverGrpcServer) Query(ctx context.Context, req *protoV2.QueryRequest)
 	}
 	for _, param := range res.Column {
 		resp.Column = append(resp.Column, &protoV2.Param{
-			Key:   param.Key,
-			Value: param.Value,
-			Desc:  param.Desc,
-			Type:  string(param.Type),
+			Key:      param.Key,
+			Value:    param.Value,
+			Desc:     param.GetDesc(locale.DefaultLang),
+			I18NDesc: param.I18nDesc.StrMap(),
+			Type:     string(param.Type),
 		})
 	}
 	for _, row := range res.Rows {

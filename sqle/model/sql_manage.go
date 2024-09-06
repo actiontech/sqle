@@ -2,6 +2,8 @@ package model
 
 import (
 	"time"
+
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 )
 
 type SqlManage struct {
@@ -48,9 +50,9 @@ func (sm SqlManageEndpoint) TableName() string {
 }
 
 type SqlManageRuleTips struct {
-	DbType   string `json:"db_type"`
-	RuleName string `json:"rule_name"`
-	Desc     string `json:"desc"`
+	DbType       string                `json:"db_type"`
+	RuleName     string                `json:"rule_name"`
+	I18nRuleInfo driverV2.I18nRuleInfo `json:"i18n_rule_info"`
 }
 
 const PriorityHigh = "high"

@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	e "errors"
 	"fmt"
+	"github.com/actiontech/sqle/sqle/locale"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"strings"
 	"time"
 
@@ -48,7 +50,6 @@ func DefaultWorkflowTemplate(projectId string) *WorkflowTemplate {
 	return &WorkflowTemplate{
 		ProjectId:                     ProjectUID(projectId),
 		Name:                          fmt.Sprintf("%s-WorkflowTemplate", projectId),
-		Desc:                          fmt.Sprintf("%s 默认模板", projectId),
 		AllowSubmitWhenLessAuditLevel: string(driverV2.RuleLevelWarn),
 		Steps: []*WorkflowStepTemplate{
 			{
@@ -208,14 +209,14 @@ const (
 	WorkflowModeDifferentSQLs = "different_sqls"
 )
 
-var WorkflowStatus = map[string]string{
-	WorkflowStatusWaitForAudit:     "待审核",
-	WorkflowStatusWaitForExecution: "待上线",
-	WorkflowStatusReject:           "已驳回",
-	WorkflowStatusCancel:           "已关闭",
-	WorkflowStatusExecuting:        "正在上线",
-	WorkflowStatusExecFailed:       "上线失败",
-	WorkflowStatusFinish:           "上线成功",
+var WorkflowStatus = map[string]*i18n.Message{
+	WorkflowStatusWaitForAudit:     locale.WorkflowStatusWaitForAudit,     // "待审核",
+	WorkflowStatusWaitForExecution: locale.WorkflowStatusWaitForExecution, // "待上线",
+	WorkflowStatusReject:           locale.WorkflowStatusReject,           // "已驳回",
+	WorkflowStatusCancel:           locale.WorkflowStatusCancel,           // "已关闭",
+	WorkflowStatusExecuting:        locale.WorkflowStatusExecuting,        // "正在上线",
+	WorkflowStatusExecFailed:       locale.WorkflowStatusExecFailed,       // "上线失败",
+	WorkflowStatusFinish:           locale.WorkflowStatusFinish,           // "上线成功",
 }
 
 type WorkflowRecord struct {

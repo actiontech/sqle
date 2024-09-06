@@ -265,7 +265,7 @@ func (s *Storage) GetManagerSqlMetricTipsByAuditPlan(auditPlanId uint, metricNam
 func (s *Storage) GetManagerSqlRuleTipsByAuditPlan(auditPlanId uint) ([]*SqlManageRuleTips, error) {
 	sqlManageRuleTips := make([]*SqlManageRuleTips, 0)
 	err := s.db.Table("sql_manage_records smr").
-		Select("DISTINCT iap.db_type, rules.name as rule_name, rules.desc").
+		Select("DISTINCT iap.db_type, rules.name as rule_name, rules.i18n_rule_info").
 		Joins("JOIN audit_plans_v2 ap ON ap.instance_audit_plan_id = smr.source_id AND ap.type = smr.source").
 		Joins("JOIN instance_audit_plans iap ON iap.id = ap.instance_audit_plan_id").
 		Joins("LEFT JOIN rules ON rules.db_type = iap.db_type").
