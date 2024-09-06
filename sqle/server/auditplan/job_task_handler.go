@@ -94,12 +94,12 @@ func (j *AuditPlanHandlerJob) HandlerSQL(entry *logrus.Entry) {
 		return
 	}
 
-	go handlerSQLAudit(sqlList, entry)
+	go handlerSQLAudit(entry, sqlList)
 
 }
 
 // todo: 错误处理
-func handlerSQLAudit(sqlList []*model.SQLManageRecord, entry *logrus.Entry) {
+func handlerSQLAudit(entry *logrus.Entry, sqlList []*model.SQLManageRecord) {
 	s := model.GetStorage()
 	sqlList, err := BatchAuditSQLs(sqlList, true)
 	if err != nil {
@@ -111,7 +111,11 @@ func handlerSQLAudit(sqlList []*model.SQLManageRecord, entry *logrus.Entry) {
 		entry.Warnf("set sql priority sql failed, error: %v", err)
 	}
 	for _, sql := range sqlList {
-		err = s.UpdateManagerSQLBySqlId(sql)
+		manageSqlParam := make(map[string]interface{}, 3)
+		manageSqlParam["audit_level"] = sql.AuditLevel
+		manageSqlParam["audit_results"] = sql.AuditResults
+		manageSqlParam["priority"] = sql.Priority
+		err = s.UpdateManagerSQLBySqlId(manageSqlParam, sql.SQLID)
 		if err != nil {
 			entry.Warnf("update manager sql failed, error: %v", err)
 			continue

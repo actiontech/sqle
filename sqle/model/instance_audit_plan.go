@@ -499,9 +499,9 @@ func (s *Storage) UpdateManagerSQLStatus(txDB *gorm.DB, sql *SQLManageRecord) er
 	return txDB.Exec(query, sql.SQLID).Error
 }
 
-func (s *Storage) UpdateManagerSQLBySqlId(sql *SQLManageRecord) error {
-	err := s.db.Model(&SQLManageRecord{}).Where("sql_id = ?", sql.SQLID).
-		Updates(map[string]interface{}{"audit_level": sql.AuditLevel, "audit_results": sql.AuditResults, "priority": sql.Priority}).Error
+func (s *Storage) UpdateManagerSQLBySqlId(sqlManageMap map[string]interface{}, sqlId string) error {
+	err := s.db.Model(&SQLManageRecord{}).Where("sql_id = ?", sqlId).
+		Updates(sqlManageMap).Error
 	if err != nil {
 		return err
 	}
