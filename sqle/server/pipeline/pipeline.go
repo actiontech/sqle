@@ -11,6 +11,7 @@ import (
 	"github.com/actiontech/sqle/sqle/api/controller"
 	scannerCmd "github.com/actiontech/sqle/sqle/cmd/scannerd/command"
 	"github.com/actiontech/sqle/sqle/dms"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/aliyun/credentials-go/credentials/utils"
 
@@ -31,7 +32,7 @@ func (pipe Pipeline) NodeCount() uint32 {
 	return uint32(len(pipe.PipelineNodes))
 }
 
-func (node PipelineNode) IntegrationInfo() (string, error) {
+func (node PipelineNode) IntegrationInfo(ctx context.Context) (string, error) {
 	dmsAddr := controller.GetDMSServerAddress()
 	parsedURL, err := url.Parse(dmsAddr)
 	if err != nil {
@@ -51,7 +52,7 @@ func (node PipelineNode) IntegrationInfo() (string, error) {
 
 	switch model.PipelineNodeType(node.NodeType) {
 	case model.NodeTypeAudit:
-		var cmdUsage = "#使用方法#\n1. 确保运行该命令的用户具有scannerd的执行权限。\n2. 在scannerd文件所在目录执行启动命令。\n#启动命令#\n"
+		var cmdUsage = locale.ShouldLocalizeMsg(ctx, locale.PipelineCmdUsage)
 
 		var cmd string
 		var cmdType string

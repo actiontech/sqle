@@ -3,7 +3,10 @@
 
 package auditplan
 
-import "github.com/actiontech/sqle/sqle/pkg/params"
+import (
+	"github.com/actiontech/sqle/sqle/locale"
+	"github.com/actiontech/sqle/sqle/pkg/params"
+)
 
 type TDMySQLSchemaMetaTaskV2 struct {
 	MySQLSchemaMetaTaskV2
@@ -28,10 +31,10 @@ func (at *TDMySQLSchemaMetaTaskV2) InstanceType() string {
 func (at *TDMySQLSchemaMetaTaskV2) Params(instanceId ...string) params.Params {
 	return []*params.Param{
 		{
-			Key:   paramKeyCollectIntervalMinute,
-			Desc:  "采集周期（分钟）",
-			Value: "60",
-			Type:  params.ParamTypeInt,
+			Key:      paramKeyCollectIntervalMinute,
+			Value:    "60",
+			Type:     params.ParamTypeInt,
+			I18nDesc: locale.ShouldLocalizeAll(locale.ParamCollectIntervalMinuteOracle),
 		},
 	}
 }

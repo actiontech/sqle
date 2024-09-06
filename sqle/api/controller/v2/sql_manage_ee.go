@@ -12,6 +12,7 @@ import (
 	"github.com/actiontech/sqle/sqle/api/controller"
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
 	"github.com/actiontech/sqle/sqle/dms"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/labstack/echo/v4"
 )
@@ -31,6 +32,7 @@ func getSqlManageList(c echo.Context) error {
 	if req.PageIndex > 0 {
 		offset = (req.PageIndex - 1) * req.PageSize
 	}
+	ctx := c.Request().Context()
 
 	searchSqlFingerprint := ""
 	if req.FuzzySearchSqlFingerprint != nil {
@@ -77,7 +79,7 @@ func getSqlManageList(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	sqlManageRet, err := convertToGetSqlManageListResp(sqlManage.SqlManageList)
+	sqlManageRet, err := convertToGetSqlManageListResp(ctx, sqlManage.SqlManageList)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -91,7 +93,8 @@ func getSqlManageList(c echo.Context) error {
 	})
 }
 
-func convertToGetSqlManageListResp(sqlManageList []*model.SqlManageDetail) ([]*SqlManage, error) {
+func convertToGetSqlManageListResp(ctx context.Context, sqlManageList []*model.SqlManageDetail) ([]*SqlManage, error) {
+	lang := locale.GetLangTagFromCtx(ctx)
 	sqlManageRespList := make([]*SqlManage, 0, len(sqlManageList))
 	users, err := dms.GetMapUsers(context.TODO(), nil, dms.GetDMSServerAddress())
 	if err != nil {
@@ -110,7 +113,7 @@ func convertToGetSqlManageListResp(sqlManageList []*model.SqlManageDetail) ([]*S
 			ar := sqlManage.AuditResults[i]
 			sqlMgr.AuditResult = append(sqlMgr.AuditResult, &v1.AuditResult{
 				Level:    ar.Level,
-				Message:  ar.Message,
+				Message:  ar.GetAuditMsgByLangTag(lang),
 				RuleName: ar.RuleName,
 			})
 		}
@@ -119,7 +122,7 @@ func convertToGetSqlManageListResp(sqlManageList []*model.SqlManageDetail) ([]*S
 			SqlSourceType: sqlManage.Source.String,
 			SqlSourceIDs:  sqlManage.SourceIDs,
 		}
-		sqlSourceDesc := v1.ConvertSqlSourceDescByType(sqlManage.Source.String)
+		sqlSourceDesc := v1.ConvertSqlSourceDescByType(ctx, sqlManage.Source.String)
 		source.SqlSourceDesc = sqlSourceDesc
 		sqlMgr.Source = source
 

@@ -224,7 +224,8 @@ func getRuleTypeByDBType(c echo.Context) error {
 	dbType := c.Param("db_type")
 
 	s := model.GetStorage()
-	allRuleTypes, err := s.GetRuleTypeByDBType(dbType)
+	ctx := c.Request().Context()
+	allRuleTypes, err := s.GetRuleTypeByDBType(ctx, dbType)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

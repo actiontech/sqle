@@ -50,7 +50,7 @@ const (
 )
 
 var (
-	ErrSQLTypeConflict = New(-1, fmt.Errorf("不能同时提交 DDL 和 DML 语句"))
+	ErrSQLTypeConflict = New(-1, fmt.Errorf("cannot submit both DDL and DML statements simultaneously"))
 )
 
 type CodeError struct {
@@ -118,7 +118,7 @@ func NewAccessDeniedErr(format string, a ...interface{}) error {
 }
 
 func NewUserNotPermissionError(op string) error {
-	return New(UserNotPermission, fmt.Errorf("当前用户没有 %v 的权限, 无法执行此操作", op))
+	return New(UserNotPermission, fmt.Errorf("the current user does not have permission for %v to perform this operation", op))
 }
 
 func NewAuditPlanNotExistErr() error {

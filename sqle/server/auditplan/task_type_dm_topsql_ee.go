@@ -12,6 +12,7 @@ import (
 	"github.com/actiontech/sqle/sqle/common"
 	"github.com/actiontech/sqle/sqle/dms"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/params"
@@ -34,10 +35,10 @@ func (at *DmTopSQLTaskV2) InstanceType() string {
 func (at *DmTopSQLTaskV2) Params(instanceId ...string) params.Params {
 	return []*params.Param{
 		{
-			Key:   paramKeyCollectIntervalMinute,
-			Desc:  "采集周期（分钟）",
-			Value: "60",
-			Type:  params.ParamTypeInt,
+			Key:      paramKeyCollectIntervalMinute,
+			Value:    "60",
+			Type:     params.ParamTypeInt,
+			I18nDesc: locale.ShouldLocalizeAll(locale.ParamCollectIntervalMinuteOracle),
 		},
 		{
 			Key:   "top_n",
@@ -46,10 +47,10 @@ func (at *DmTopSQLTaskV2) Params(instanceId ...string) params.Params {
 			Type:  params.ParamTypeInt,
 		},
 		{
-			Key:   "order_by_column",
-			Desc:  "排序字段",
-			Value: DmTopSQLMetricTotalExecTime,
-			Type:  params.ParamTypeString,
+			Key:      "order_by_column",
+			Value:    DmTopSQLMetricTotalExecTime,
+			Type:     params.ParamTypeString,
+			I18nDesc: locale.ShouldLocalizeAll(locale.ParamOrderByColumnGeneric),
 		},
 	}
 }
@@ -259,12 +260,12 @@ func (at *DmTopSQLTaskV2) Head(ap *AuditPlan) []Head {
 	return []Head{
 		{
 			Name: "sql",
-			Desc: "SQL语句",
+			Desc: locale.ApSQLStatement,
 			Type: "sql",
 		},
 		{
 			Name: "priority",
-			Desc: "优先级",
+			Desc: locale.ApPriority,
 		},
 		{
 			Name: model.AuditResultName,
@@ -272,27 +273,27 @@ func (at *DmTopSQLTaskV2) Head(ap *AuditPlan) []Head {
 		},
 		{
 			Name: MetricNameCounter,
-			Desc: "总执行次数",
+			Desc: locale.ApMetricNameCounter,
 		},
 		{
 			Name: MetricNameQueryTimeTotal,
-			Desc: "总执行时间(s)",
+			Desc: locale.ApMetricNameQueryTimeTotal,
 		},
 		{
 			Name: MetricNameQueryTimeAvg,
-			Desc: "平均执行时间(s)",
+			Desc: locale.ApMetricNameQueryTimeAvg,
 		},
 		{
 			Name: MetricNameCPUTimeTotal,
-			Desc: "CPU时间占用(s)",
+			Desc: locale.ApMetricNameCPUTimeTotal,
 		},
 		{
 			Name: MetricNamePhyReadPageTotal,
-			Desc: "物理读页数",
+			Desc: locale.ApMetricNamePhyReadPageTotal,
 		},
 		{
 			Name: MetricNameLogicReadPageTotal,
-			Desc: "逻辑读页数",
+			Desc: locale.ApMetricNameLogicReadPageTotal,
 		},
 	}
 }

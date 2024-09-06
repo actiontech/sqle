@@ -11,9 +11,10 @@ import (
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/dms"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/model"
-
 	"github.com/labstack/echo/v4"
 )
 
@@ -272,14 +273,13 @@ type RuleTemplateDetailResV1 struct {
 	RuleList []RuleResV1 `json:"rule_list,omitempty"`
 }
 
-func convertRuleTemplateToRes(template *model.RuleTemplate) *RuleTemplateDetailResV1 {
-
+func convertRuleTemplateToRes(ctx context.Context, template *model.RuleTemplate) *RuleTemplateDetailResV1 {
 	ruleList := make([]RuleResV1, 0, len(template.RuleList))
 	for _, r := range template.RuleList {
 		if r.Rule == nil {
 			continue
 		}
-		ruleList = append(ruleList, convertRuleToRes(r.GetRule()))
+		ruleList = append(ruleList, convertRuleToRes(ctx, r.GetRule()))
 	}
 	for _, r := range template.CustomRuleList {
 		if r.CustomRule == nil {
@@ -306,6 +306,7 @@ func convertRuleTemplateToRes(template *model.RuleTemplate) *RuleTemplateDetailR
 // @router /v1/rule_templates/{rule_template_name}/ [get]
 func GetRuleTemplate(c echo.Context) error {
 	s := model.GetStorage()
+
 	templateName := c.Param("rule_template_name")
 	req := new(GetRuleTemplateReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
@@ -319,10 +320,9 @@ func GetRuleTemplate(c echo.Context) error {
 		return c.JSON(200, controller.NewBaseReq(errors.New(errors.DataNotExist,
 			fmt.Errorf("rule template is not exist"))))
 	}
-
 	return c.JSON(http.StatusOK, &GetRuleTemplateResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertRuleTemplateToRes(template),
+		Data:    convertRuleTemplateToRes(c.Request().Context(), template),
 	})
 }
 
@@ -420,7 +420,7 @@ func GetRuleTemplates(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, &GetRuleTemplatesResV1{
 		BaseRes:   controller.NewBaseReq(nil),
-		Data:      convertRuleTemplatesToRes(ruleTemplates),
+		Data:      convertDefaultRuleTemplatesToRes(c.Request().Context(), ruleTemplates),
 		TotalNums: count,
 	})
 }
@@ -438,13 +438,13 @@ func getRuleTemplatesByReq(s *model.Storage, limit, offset uint32, projectId str
 	return
 }
 
-func convertRuleTemplatesToRes(ruleTemplates []*model.RuleTemplateDetail) []RuleTemplateResV1 {
+func convertDefaultRuleTemplatesToRes(ctx context.Context, ruleTemplates []*model.RuleTemplateDetail) []RuleTemplateResV1 {
 
 	ruleTemplatesReq := make([]RuleTemplateResV1, 0, len(ruleTemplates))
 	for _, ruleTemplate := range ruleTemplates {
 		ruleTemplateReq := RuleTemplateResV1{
 			Name:   ruleTemplate.Name,
-			Desc:   ruleTemplate.Desc,
+			Desc:   locale.ShouldLocalizeMsg(ctx, locale.DefaultRuleTemplatesDesc),
 			DBType: ruleTemplate.DBType,
 		}
 		ruleTemplatesReq = append(ruleTemplatesReq, ruleTemplateReq)
@@ -484,25 +484,31 @@ type RuleParamResV1 struct {
 	Type  string `json:"type" form:"type" enums:"string,int,bool"`
 }
 
-func convertRuleToRes(rule *model.Rule) RuleResV1 {
+func convertRuleToRes(ctx context.Context, rule *model.Rule) RuleResV1 {
+	lang := locale.GetLangTagFromCtx(ctx)
+	if rule.I18nRuleInfo == nil {
+		rule.I18nRuleInfo = make(driverV2.I18nRuleInfo) // avoid panic
+	}
+	ruleInfo := rule.I18nRuleInfo.GetRuleInfoByLangTag(lang)
 	ruleRes := RuleResV1{
 		Name:            rule.Name,
-		Desc:            rule.Desc,
-		Annotation:      rule.Annotation,
+		Desc:            ruleInfo.Desc,
+		Annotation:      ruleInfo.Annotation,
 		Level:           rule.Level,
-		Typ:             rule.Typ,
+		Typ:             ruleInfo.Category,
 		DBType:          rule.DBType,
 		HasAuditPower:   rule.HasAuditPower,
 		HasRewritePower: rule.HasRewritePower,
 	}
-	if rule.Params != nil && len(rule.Params) > 0 {
-		paramsRes := make([]RuleParamResV1, 0, len(rule.Params))
-		for _, p := range rule.Params {
+	params := rule.Params
+	if params != nil && len(params) > 0 {
+		paramsRes := make([]RuleParamResV1, 0, len(params))
+		for _, p := range params {
 			paramRes := RuleParamResV1{
 				Key:   p.Key,
-				Desc:  p.Desc,
+				Desc:  p.GetDesc(locale.GetLangTagFromCtx(ctx)),
 				Type:  string(p.Type),
-				Value: p.Value,
+				Value: rule.Params.GetParam(p.Key).Value,
 			}
 			paramsRes = append(paramsRes, paramRes)
 		}
@@ -526,12 +532,12 @@ func convertCustomRuleToRuleResV1(rule *model.CustomRule) RuleResV1 {
 	return ruleRes
 }
 
-func convertRulesToRes(rules interface{}) []RuleResV1 {
+func convertRulesToRes(ctx context.Context, rules interface{}) []RuleResV1 {
 	rulesRes := []RuleResV1{}
 	switch ruleSlice := rules.(type) {
 	case []*model.Rule:
 		for _, rule := range ruleSlice {
-			rulesRes = append(rulesRes, convertRuleToRes(rule))
+			rulesRes = append(rulesRes, convertRuleToRes(ctx, rule))
 		}
 	case []*model.CustomRule:
 		for _, rule := range ruleSlice {
@@ -557,6 +563,7 @@ func GetRules(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
+	ctx := c.Request().Context()
 	s := model.GetStorage()
 	var rules []*model.Rule
 	var customRules []*model.CustomRule
@@ -580,8 +587,8 @@ func GetRules(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	ruleRes := convertRulesToRes(rules)
-	customRuleRes := convertRulesToRes(customRules)
+	ruleRes := convertRulesToRes(ctx, rules)
+	customRuleRes := convertRulesToRes(ctx, customRules)
 	ruleRes = append(ruleRes, customRuleRes...)
 	return c.JSON(http.StatusOK, &GetRulesResV1{
 		BaseRes: controller.NewBaseReq(nil),
@@ -913,6 +920,7 @@ func GetProjectRuleTemplate(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	ctx := c.Request().Context()
 	s := model.GetStorage()
 	templateName := c.Param("rule_template_name")
 	req := new(GetRuleTemplateReqV1)
@@ -930,17 +938,17 @@ func GetProjectRuleTemplate(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, &GetProjectRuleTemplateResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertProjectRuleTemplateToRes(template),
+		Data:    convertProjectRuleTemplateToRes(ctx, template),
 	})
 }
 
-func convertProjectRuleTemplateToRes(template *model.RuleTemplate) *RuleProjectTemplateDetailResV1 {
+func convertProjectRuleTemplateToRes(ctx context.Context, template *model.RuleTemplate) *RuleProjectTemplateDetailResV1 {
 	ruleList := make([]RuleResV1, 0, len(template.RuleList))
 	for _, r := range template.RuleList {
 		if r.Rule == nil {
 			continue
 		}
-		ruleList = append(ruleList, convertRuleToRes(r.GetRule()))
+		ruleList = append(ruleList, convertRuleToRes(ctx, r.GetRule()))
 	}
 	for _, r := range template.CustomRuleList {
 		if r.CustomRule == nil {
@@ -1284,6 +1292,8 @@ func exportRuleTemplateFile(c echo.Context, projectID string, ruleTemplateName s
 		return controller.JSONBaseErrorReq(c, ErrRuleTemplateNotExist)
 	}
 
+	lang := locale.GetLangTagFromCtx(c.Request().Context())
+
 	// 补充缺失的信息(规则说明等描述信息)
 	ruleNames := []string{}
 	for _, rule := range template.RuleList {
@@ -1295,9 +1305,9 @@ func exportRuleTemplateFile(c echo.Context, projectID string, ruleTemplateName s
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	ruleCache := map[string] /*rule name*/ model.Rule{}
+	ruleCache := map[string] /*rule name*/ *model.Rule{}
 	for _, rule := range rules {
-		ruleCache[rule.Name] = rule
+		ruleCache[rule.Name] = &rule
 	}
 
 	resp := ParseProjectRuleTemplateFileResDataV1{
@@ -1307,12 +1317,13 @@ func exportRuleTemplateFile(c echo.Context, projectID string, ruleTemplateName s
 		RuleList: []RuleResV1{},
 	}
 	for _, rule := range template.RuleList {
+		ruleInfo := ruleCache[rule.RuleName].I18nRuleInfo.GetRuleInfoByLangTag(lang)
 		r := RuleResV1{
 			Name:       rule.RuleName,
-			Desc:       ruleCache[rule.RuleName].Desc,
-			Annotation: ruleCache[rule.RuleName].Annotation,
+			Desc:       ruleInfo.Desc,
+			Annotation: ruleInfo.Annotation,
 			Level:      rule.RuleLevel,
-			Typ:        ruleCache[rule.RuleName].Typ,
+			Typ:        ruleInfo.Category,
 			DBType:     rule.RuleDBType,
 			Params:     []RuleParamResV1{},
 		}
@@ -1321,7 +1332,7 @@ func exportRuleTemplateFile(c echo.Context, projectID string, ruleTemplateName s
 			r.Params = append(r.Params, RuleParamResV1{
 				Key:   param.Key,
 				Value: param.Value,
-				Desc:  param.Desc,
+				Desc:  param.GetDesc(locale.GetLangTagFromCtx(c.Request().Context())),
 				Type:  string(param.Type),
 			})
 		}

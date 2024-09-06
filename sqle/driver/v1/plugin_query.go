@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/actiontech/sqle/sqle/driver/v1/proto"
+	"github.com/actiontech/sqle/sqle/locale"
 
 	goPlugin "github.com/hashicorp/go-plugin"
 	"google.golang.org/grpc"
@@ -66,7 +67,7 @@ func (q *queryDriverGRPCServer) Query(ctx context.Context, req *proto.QueryReque
 		resp.Column = append(resp.Column, &proto.Param{
 			Key:   param.Key,
 			Value: param.Value,
-			Desc:  param.Desc,
+			Desc:  param.GetDesc(locale.DefaultLang),
 			Type:  string(param.Type),
 		})
 	}

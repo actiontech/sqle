@@ -16,6 +16,7 @@ import (
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/utils"
@@ -37,25 +38,26 @@ func (at *SlowLogTaskV2) InstanceType() string {
 func (at *SlowLogTaskV2) Params(instanceId ...string) params.Params {
 	return []*params.Param{
 		{
-			Key:   paramKeyCollectIntervalMinute,
-			Desc:  "采集周期（分钟，仅对 mysql.slow_log 有效）",
-			Value: "60",
-			Type:  params.ParamTypeInt,
+			Key:      paramKeyCollectIntervalMinute,
+			Value:    "60",
+			Type:     params.ParamTypeInt,
+			I18nDesc: locale.ShouldLocalizeAll(locale.ParamCollectIntervalMinuteMySQL),
 		},
 		{
 			Key:   paramKeySlowLogCollectInput,
-			Desc:  "采集来源",
 			Value: "0",
 			Type:  params.ParamTypeInt,
 			Enums: []params.EnumsValue{
-				{Value: "0", Desc: "从slow.log 文件采集,需要适配scanner"}, {Value: "1", Desc: "从mysql.slow_log 表采集"},
+				{Value: "0", I18nDesc: locale.ShouldLocalizeAll(locale.EnumSlowLogFileSource)},
+				{Value: "1", I18nDesc: locale.ShouldLocalizeAll(locale.EnumSlowLogTableSource)},
 			},
+			I18nDesc: locale.ShouldLocalizeAll(locale.ParamSlowLogCollectInput),
 		},
 		{
-			Key:   paramKeyFirstSqlsScrappedInLastPeriodHours,
-			Desc:  "启动任务时拉取慢日志时间范围(单位:小时，仅对 mysql.slow_log 有效)",
-			Value: "24",
-			Type:  params.ParamTypeInt,
+			Key:      paramKeyFirstSqlsScrappedInLastPeriodHours,
+			Value:    "24",
+			Type:     params.ParamTypeInt,
+			I18nDesc: locale.ShouldLocalizeAll(locale.ParamFirstSqlsScrappedHours),
 		},
 	}
 }
@@ -64,10 +66,10 @@ func (at *SlowLogTaskV2) HighPriorityParams() params.ParamsWithOperator {
 	return []*params.ParamWithOperator{
 		{
 			Param: params.Param{
-				Key:   MetricNameQueryTimeAvg,
-				Value: "10",
-				Desc:  "平均查询时间",
-				Type:  params.ParamTypeFloat64,
+				Key:      MetricNameQueryTimeAvg,
+				Value:    "10",
+				Type:     params.ParamTypeFloat64,
+				I18nDesc: locale.ShouldLocalizeAll(locale.ApMetricQueryTimeAvg),
 			},
 			Operator: params.Operator{
 				Value:      ">",
@@ -76,10 +78,10 @@ func (at *SlowLogTaskV2) HighPriorityParams() params.ParamsWithOperator {
 		},
 		{
 			Param: params.Param{
-				Key:   MetricNameRowExaminedAvg,
-				Value: "100",
-				Desc:  "平均扫描行数",
-				Type:  params.ParamTypeFloat64,
+				Key:      MetricNameRowExaminedAvg,
+				Value:    "100",
+				Type:     params.ParamTypeFloat64,
+				I18nDesc: locale.ShouldLocalizeAll(locale.ApMetricRowExaminedAvg),
 			},
 			Operator: params.Operator{
 				Value:      ">",
@@ -297,12 +299,12 @@ func (at *SlowLogTaskV2) GetSQLs(ap *AuditPlan, persist *model.Storage, args map
 	head := []Head{
 		{
 			Name: "fingerprint",
-			Desc: "SQL指纹",
+			Desc: locale.ApSQLFingerprint,
 			Type: "sql",
 		},
 		{
 			Name: "sql",
-			Desc: "SQL",
+			Desc: locale.ApSQLStatement,
 			Type: "sql",
 		},
 		{
@@ -311,31 +313,31 @@ func (at *SlowLogTaskV2) GetSQLs(ap *AuditPlan, persist *model.Storage, args map
 		},
 		{
 			Name: "counter",
-			Desc: "数量",
+			Desc: locale.ApNum,
 		},
 		{
 			Name: "last_receive_timestamp",
-			Desc: "最后匹配时间",
+			Desc: locale.ApLastMatchTime,
 		},
 		{
 			Name: "average_query_time",
-			Desc: "平均执行时间",
+			Desc: locale.ApQueryTimeAvg,
 		},
 		{
 			Name: "max_query_time",
-			Desc: "最长执行时间",
+			Desc: locale.ApQueryTimeMax,
 		},
 		{
 			Name: "row_examined_avg",
-			Desc: "平均扫描行数",
+			Desc: locale.ApRowExaminedAvg,
 		},
 		{
 			Name: "db_user",
-			Desc: "用户",
+			Desc: locale.ApMetricNameDBUser,
 		},
 		{
 			Name: "schema",
-			Desc: "Schema",
+			Desc: locale.ApSchema,
 		},
 	}
 	rows := make([]map[string]string, 0, len(auditPlanSQLs))
@@ -381,17 +383,17 @@ func (at *SlowLogTaskV2) Head(ap *AuditPlan) []Head {
 	return []Head{
 		{
 			Name: "fingerprint",
-			Desc: "SQL指纹",
+			Desc: locale.ApSQLFingerprint,
 			Type: "sql",
 		},
 		{
 			Name: "sql",
-			Desc: "SQL",
+			Desc: locale.ApSQLStatement,
 			Type: "sql",
 		},
 		{
 			Name: "priority",
-			Desc: "优先级",
+			Desc: locale.ApPriority,
 		},
 		{
 			Name: model.AuditResultName,
@@ -399,97 +401,97 @@ func (at *SlowLogTaskV2) Head(ap *AuditPlan) []Head {
 		},
 		{
 			Name:     MetricNameCounter,
-			Desc:     "出现次数",
+			Desc:     locale.ApMetricNameCounter,
 			Sortable: true,
 		},
 		{
 			Name:     MetricNameLastReceiveTimestamp,
-			Desc:     "最后匹配时间",
+			Desc:     locale.ApLastMatchTime,
 			Sortable: true,
 		},
 		{
 			Name:     MetricNameQueryTimeAvg,
-			Desc:     "平均执行时间",
+			Desc:     locale.ApMetricNameQueryTimeAvg,
 			Sortable: true,
 		},
 		{
 			Name:     MetricNameQueryTimeMax,
-			Desc:     "最长执行时间",
+			Desc:     locale.ApMetricNameQueryTimeMax,
 			Sortable: true,
 		},
 		{
 			Name:     MetricNameRowExaminedAvg,
-			Desc:     "平均扫描行数",
+			Desc:     locale.ApMetricNameRowExaminedAvg,
 			Sortable: true,
 		},
 		{
 			Name: MetricNameDBUser,
-			Desc: "用户",
+			Desc: locale.ApMetricNameDBUser,
 		},
 		{
 			Name: "schema_name",
-			Desc: "Schema",
+			Desc: locale.ApSchema,
 		},
 	}
 }
 
-func (at *SlowLogTaskV2) Filters(logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) []FilterMeta {
+func (at *SlowLogTaskV2) Filters(ctx context.Context, logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) []FilterMeta {
 	return []FilterMeta{
 		{
 			Name:            "sql", // 模糊筛选
-			Desc:            "SQL",
+			Desc:            locale.ApSQLStatement,
 			FilterInputType: FilterInputTypeString,
 			FilterOpType:    FilterOpTypeEqual,
 		},
 		{
 			Name:            "rule_name",
-			Desc:            "审核规则",
+			Desc:            locale.ApRuleName,
 			FilterInputType: FilterInputTypeString,
 			FilterOpType:    FilterOpTypeEqual,
-			FilterTips:      GetSqlManagerRuleTips(logger, ap.ID, persist),
+			FilterTips:      GetSqlManagerRuleTips(ctx, logger, ap.ID, persist),
 		},
 		{
 			Name:            "priority",
-			Desc:            "SQL优先级",
+			Desc:            locale.ApPriority,
 			FilterInputType: FilterInputTypeString,
 			FilterOpType:    FilterOpTypeEqual,
-			FilterTips:      GetSqlManagerPriorityTips(logger),
+			FilterTips:      GetSqlManagerPriorityTips(ctx, logger),
 		},
 		{
 			Name:            MetricNameDBUser,
-			Desc:            "用户",
+			Desc:            locale.ApMetricNameDBUser,
 			FilterInputType: FilterInputTypeString,
 			FilterOpType:    FilterOpTypeEqual,
 			FilterTips:      GetSqlManagerMetricTips(logger, ap.ID, persist, MetricNameDBUser),
 		},
 		{
 			Name:            "schema_name",
-			Desc:            "schema",
+			Desc:            locale.ApSchema,
 			FilterInputType: FilterInputTypeString,
 			FilterOpType:    FilterOpTypeEqual,
 			FilterTips:      GetSqlManagerSchemaNameTips(logger, ap.ID, persist),
 		},
 		{
 			Name:            MetricNameCounter, // 阈值查询
-			Desc:            "出现次数 > ",
+			Desc:            locale.ApMetricNameCounterMoreThan,
 			FilterInputType: FilterInputTypeInt,
 			FilterOpType:    FilterOpTypeEqual,
 		},
 		{
 			Name:            MetricNameQueryTimeAvg, // 阈值查询
-			Desc:            "平均执行时间 > ",
+			Desc:            locale.ApMetricNameQueryTimeAvgMoreThan,
 			FilterInputType: FilterInputTypeInt,
 			FilterOpType:    FilterOpTypeEqual,
 		},
 		{
 			Name:            MetricNameRowExaminedAvg, // 阈值查询
-			Desc:            "平均扫描行数 > ",
+			Desc:            locale.ApMetricNameRowExaminedAvgMoreThan,
 			FilterInputType: FilterInputTypeInt,
 			FilterOpType:    FilterOpTypeEqual,
 		},
 		{
 			Name:            MetricNameLastReceiveTimestamp,
-			Desc:            "最后匹配时间",
+			Desc:            locale.ApLastMatchTime,
 			FilterInputType: FilterInputTypeDateTime,
 			FilterOpType:    FilterOpTypeBetween,
 		},

@@ -14,6 +14,7 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/pkg/i18nPkg"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/agiledragon/gomonkey"
@@ -85,8 +86,8 @@ func (d *mockDriver) Audit(ctx context.Context, sqls []string) ([]*driverV2.Audi
 	return nil, nil
 }
 
-func (d *mockDriver) GenRollbackSQL(ctx context.Context, sql string) (string, string, error) {
-	return "", "", nil
+func (d *mockDriver) GenRollbackSQL(ctx context.Context, sql string) (string, i18nPkg.I18nStr, error) {
+	return "", nil, nil
 }
 
 func (d *mockDriver) Explain(ctx context.Context, conf *driverV2.ExplainConf) (*driverV2.ExplainResult, error) {

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/baidubce/bce-sdk-go/bce"
@@ -32,36 +33,36 @@ func (at *MySQLSlowLogBaiduTaskV2) InstanceType() string {
 func (at *MySQLSlowLogBaiduTaskV2) Params(instanceId ...string) params.Params {
 	return []*params.Param{
 		{
-			Key:   paramKeyDBInstanceId,
-			Desc:  "实例ID",
-			Value: "",
-			Type:  params.ParamTypeString,
+			Key:      paramKeyDBInstanceId,
+			Value:    "",
+			Type:     params.ParamTypeString,
+			I18nDesc: locale.ShouldLocalizeAll(locale.ParamDBInstanceId),
 		},
 		{
-			Key:   paramKeyAccessKeyId,
-			Desc:  "Access Key ID",
-			Value: "",
-			Type:  params.ParamTypePassword,
+			Key:      paramKeyAccessKeyId,
+			Value:    "",
+			Type:     params.ParamTypePassword,
+			I18nDesc: locale.ShouldLocalizeAll(locale.ParamAccessKeyId),
 		},
 		{
-			Key:   paramKeyAccessKeySecret,
-			Desc:  "Access Key Secret",
-			Value: "",
-			Type:  params.ParamTypePassword,
+			Key:      paramKeyAccessKeySecret,
+			Value:    "",
+			Type:     params.ParamTypePassword,
+			I18nDesc: locale.ShouldLocalizeAll(locale.ParamAccessKeySecret),
 		},
 		{
 			Key: paramKeyFirstSqlsScrappedInLastPeriodHours,
 			// 百度云RDS慢日志只能拉取最近7天的数据
 			// https://cloud.baidu.com/doc/RDS/s/Tjwvz046g
-			Desc:  "启动任务时拉取慢日志时间范围(单位:小时,最大7天)",
-			Value: "24",
-			Type:  params.ParamTypeInt,
+			Value:    "24",
+			Type:     params.ParamTypeInt,
+			I18nDesc: locale.ShouldLocalizeAllWithArgs(locale.ParamFirstCollectDurationWithMaxDays, 7),
 		},
 		{
-			Key:   paramKeyRdsPath,
-			Desc:  "RDS Open API地址",
-			Value: "rds.bj.baidubce.com",
-			Type:  params.ParamTypeString,
+			Key:      paramKeyRdsPath,
+			Value:    "rds.bj.baidubce.com",
+			Type:     params.ParamTypeString,
+			I18nDesc: locale.ShouldLocalizeAll(locale.ParamRdsPath),
 		},
 	}
 }

@@ -2,16 +2,19 @@ package auditplan
 
 import (
 	"fmt"
+
 	scannerCmd "github.com/actiontech/sqle/sqle/cmd/scannerd/command"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/pkg/params"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/sirupsen/logrus"
 )
 
 type Meta struct {
-	Type         string `json:"audit_plan_type"`
-	Desc         string `json:"audit_plan_type_desc"`
-	InstanceType string `json:"instance_type"`
+	Type         string        `json:"audit_plan_type"`
+	Desc         *i18n.Message `json:"audit_plan_type_desc"`
+	InstanceType string        `json:"instance_type"`
 	// instanceId means gen `enums` by db conn, default is a constant definition
 	Params             func(instanceId ...string) params.Params `json:"audit_plan_params,omitempty"`
 	HighPriorityParams params.ParamsWithOperator                `json:"high_priority_params,omitempty"`
@@ -22,7 +25,7 @@ type Meta struct {
 
 type MetaBuilder struct {
 	Type          string
-	Desc          string
+	Desc          *i18n.Message
 	TaskHandlerFn func() interface{}
 }
 
@@ -71,52 +74,52 @@ const (
 var MetaBuilderList = []MetaBuilder{
 	{
 		Type:          TypeDefault,
-		Desc:          "自定义",
+		Desc:          locale.ApMetaCustom,
 		TaskHandlerFn: NewDefaultTaskV2Fn(),
 	},
 	{
 		Type:          TypeMySQLSchemaMeta,
-		Desc:          "库表元数据",
+		Desc:          locale.ApMetaMySQLSchemaMeta,
 		TaskHandlerFn: NewMySQLSchemaMetaTaskV2Fn(),
 	},
 	{
 		Type:          TypeMySQLProcesslist,
-		Desc:          "processlist 列表",
+		Desc:          locale.ApMetaMySQLProcesslist,
 		TaskHandlerFn: NewMySQLProcessListTaskV2Fn(),
 	},
 	{
 		Type:          TypeAliRdsMySQLSlowLog,
-		Desc:          "阿里RDS MySQL慢日志",
+		Desc:          locale.ApMetaAliRdsMySQLSlowLog,
 		TaskHandlerFn: NewMySQLSlowLogAliTaskV2Fn(),
 	},
 	{
 		Type:          TypeAliRdsMySQLAuditLog,
-		Desc:          "阿里RDS MySQL审计日志",
+		Desc:          locale.ApMetaAliRdsMySQLAuditLog,
 		TaskHandlerFn: NewMySQLAuditLogAliTaskV2Fn(),
 	},
 	{
 		Type:          TypeBaiduRdsMySQLSlowLog,
-		Desc:          "百度云RDS MySQL慢日志",
+		Desc:          locale.ApMetaBaiduRdsMySQLSlowLog,
 		TaskHandlerFn: NewMySQLSlowLogBaiduTaskV2Fn(),
 	},
 	{
 		Type:          TypeHuaweiRdsMySQLSlowLog,
-		Desc:          "华为云RDS MySQL慢日志",
+		Desc:          locale.ApMetaHuaweiRdsMySQLSlowLog,
 		TaskHandlerFn: NewMySQLSlowLogHuaweiTaskV2Fn(),
 	},
 	{
 		Type:          TypeOracleTopSQL,
-		Desc:          "Oracle TOP SQL",
+		Desc:          locale.ApMetaOracleTopSQL,
 		TaskHandlerFn: NewOracleTopSQLTaskV2Fn(),
 	},
 	{
 		Type:          TypeAllAppExtract,
-		Desc:          "应用程序SQL抓取",
+		Desc:          locale.ApMetaAllAppExtract,
 		TaskHandlerFn: NewDefaultTaskV2Fn(),
 	},
 	{
 		Type:          TypeTiDBAuditLog,
-		Desc:          "TiDB审计日志",
+		Desc:          locale.ApMetaTiDBAuditLog,
 		TaskHandlerFn: NewTiDBAuditLogTaskV2Fn(),
 	},
 }

@@ -9,6 +9,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/im"
@@ -146,8 +147,8 @@ func testFeishuAuditConfigV1(c echo.Context) error {
 	}
 
 	for uid := range feishuUsers {
-		_, err := client.CreateApprovalInstance(c.Request().Context(), feishuCfg.ProcessCode, "测试审批", uid,
-			[]string{uid}, "", "", "这是一条测试审批,用来测试SQLE飞书审批功能是否正常", "", "")
+		_, err := client.CreateApprovalInstance(c.Request().Context(), feishuCfg.ProcessCode, locale.ShouldLocalizeMsg(c.Request().Context(), locale.ConfigTestAudit), uid,
+			[]string{uid}, "", "", locale.ShouldLocalizeMsg(c.Request().Context(), locale.ConfigFeishuTestContent), "", "")
 		if err != nil {
 			return c.JSON(http.StatusOK, &TestFeishuConfigResV1{
 				BaseRes: controller.NewBaseReq(nil),
@@ -358,7 +359,7 @@ func testWechatAuditConfigV1(c echo.Context) error {
 
 	client := wechat.NewWechatClient(wechatCfg.AppKey, wechatCfg.AppSecret)
 	_, err = client.CreateApprovalInstance(c.Request().Context(), wechatCfg.ProcessCode, "", req.WechatId, []string{req.WechatId},
-		"", "", "这是一条测试审批,用来测试SQLE飞书审批功能是否正常", nil)
+		"", "", locale.ShouldLocalizeMsg(c.Request().Context(), locale.ConfigFeishuTestContent), nil)
 
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)

@@ -10,8 +10,11 @@ import (
 
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	protoV2 "github.com/actiontech/sqle/sqle/driver/v2/proto"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/log"
+	"github.com/actiontech/sqle/sqle/pkg/i18nPkg"
 	"github.com/actiontech/sqle/sqle/pkg/params"
+	"golang.org/x/text/language"
 
 	goPlugin "github.com/hashicorp/go-plugin"
 	"github.com/sirupsen/logrus"
@@ -77,18 +80,32 @@ func (d *PluginProcessorV2) GetDriverMetas() (*driverV2.DriverMetas, error) {
 
 	rules := make([]*driverV2.Rule, 0, len(result.Rules))
 	for _, r := range result.Rules {
-		rules = append(rules, driverV2.ConvertRuleFromProtoToDriver(r))
+		if len(r.I18NRuleInfo) > 0 {
+			if _, exist := r.I18NRuleInfo[locale.DefaultLang.String()]; !exist {
+				// 多语言插件必须支持 locale.DefaultLang 用以默认展示
+				return nil, fmt.Errorf("client rule: %s not support language: %s", r.Name, locale.DefaultLang.String())
+			}
+		}
+		dr, err := driverV2.ConvertI18nRuleFromProtoToDriver(r)
+		if err != nil {
+			return nil, err
+		}
+		rules = append(rules, dr)
 	}
 
 	ms := make([]driverV2.OptionalModule, 0, len(result.EnabledOptionalModule))
 	for _, m := range result.EnabledOptionalModule {
 		ms = append(ms, driverV2.OptionalModule(m))
 	}
+	ps, err := driverV2.ConvertProtoParamToParam(result.DatabaseAdditionalParams)
+	if err != nil {
+		return nil, fmt.Errorf("plugin Metas rule param err: %w", err)
+	}
 	meta := &driverV2.DriverMetas{
 		PluginName:               result.PluginName,
 		DatabaseDefaultPort:      result.DatabaseDefaultPort,
 		Logo:                     result.Logo,
-		DatabaseAdditionalParams: driverV2.ConvertProtoParamToParam(result.DatabaseAdditionalParams),
+		DatabaseAdditionalParams: ps,
 		Rules:                    rules,
 		EnabledOptionalModule:    ms,
 	}
@@ -118,14 +135,10 @@ func (d *PluginProcessorV2) Open(l *logrus.Entry, cfgV2 *driverV2.Config) (Plugi
 		}
 	}
 
-	var rules = make([]*protoV2.Rule, 0, len(cfgV2.Rules))
-	for _, rule := range cfgV2.Rules {
-		rules = append(rules, driverV2.ConvertRuleFromDriverToProto(rule))
-	}
 	l.Infof("starting call plugin interface [Init]")
 	result, err := c.Init(context.TODO(), &protoV2.InitRequest{
 		Dsn:   dsn,
-		Rules: rules,
+		Rules: driverV2.ConvertI18nRulesFromDriverToProto(cfgV2.Rules),
 	})
 	if err != nil {
 		l.Errorf("fail to call plugin interface [Init], error: %v", err)
@@ -237,22 +250,20 @@ func (s *PluginImplV2) Audit(ctx context.Context, sqls []string) ([]*driverV2.Au
 		return nil, err
 	}
 
-	rets := []*driverV2.AuditResults{}
+	rets := make([]*driverV2.AuditResults, 0, len(resp.AuditResults))
 	for _, results := range resp.AuditResults {
-		ret := &driverV2.AuditResults{}
-		for _, result := range results.Results {
-			ret.Results = append(ret.Results, &driverV2.AuditResult{
-				Level:    driverV2.RuleLevel(result.Level),
-				Message:  result.Message,
-				RuleName: result.RuleName,
-			})
+		dResult, err := driverV2.ConvertI18nAuditResultsFromProtoToDriver(results.Results)
+		if err != nil {
+			return nil, err
 		}
+		ret := driverV2.NewAuditResults()
+		ret.SetResults(dResult)
 		rets = append(rets, ret)
 	}
 	return rets, nil
 }
 
-func (s *PluginImplV2) GenRollbackSQL(ctx context.Context, sql string) (string, string, error) {
+func (s *PluginImplV2) GenRollbackSQL(ctx context.Context, sql string) (string, i18nPkg.I18nStr, error) {
 	api := "GenRollbackSQL"
 	s.preLog(api)
 	resp, err := s.client.GenRollbackSQL(ctx, &protoV2.GenRollbackSQLRequest{
@@ -263,9 +274,23 @@ func (s *PluginImplV2) GenRollbackSQL(ctx context.Context, sql string) (string, 
 	})
 	s.afterLog(api, err)
 	if err != nil {
-		return "", "", err
+		return "", nil, err
 	}
-	return resp.Sql.Query, resp.Sql.Message, nil
+
+	var i18nReason i18nPkg.I18nStr
+	if resp.Sql.Message != "" && len(resp.Sql.I18NRollbackSQLInfo) == 0 {
+		i18nReason = i18nPkg.ConvertStr2I18nAsDefaultLang(resp.Sql.Message)
+	} else if len(resp.Sql.I18NRollbackSQLInfo) > 0 {
+		i18nReason = make(i18nPkg.I18nStr, len(resp.Sql.I18NRollbackSQLInfo))
+		for langTag, v := range resp.Sql.I18NRollbackSQLInfo {
+			tag, err := language.Parse(langTag)
+			if err != nil {
+				return "", nil, fmt.Errorf("fail to parse I18NRollbackSQLInfo tag [%s], error: %v", langTag, err)
+			}
+			i18nReason[tag] = v.Message
+		}
+	}
+	return resp.Sql.Query, i18nReason, nil
 }
 
 // executor
@@ -376,11 +401,16 @@ func (s *PluginImplV2) Query(ctx context.Context, sql string, conf *driverV2.Que
 		Rows:   []*driverV2.QueryResultRow{},
 	}
 	for _, p := range res.GetColumn() {
+		i18nDesc, err := i18nPkg.ConvertStrMap2I18nStr(p.I18NDesc)
+		if err != nil {
+			return nil, fmt.Errorf("PluginImplV2 Query fail to convert i18nDesc to I18nStrMap, error: %v", err)
+		}
 		result.Column = append(result.Column, &params.Param{
-			Key:   p.GetKey(),
-			Value: p.GetValue(),
-			Desc:  p.GetDesc(),
-			Type:  params.ParamType(p.GetType()),
+			Key:      p.GetKey(),
+			Value:    p.GetValue(),
+			Desc:     p.GetDesc(),
+			I18nDesc: i18nDesc,
+			Type:     params.ParamType(p.GetType()),
 		})
 	}
 	for _, row := range res.GetRows() {
