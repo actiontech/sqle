@@ -1201,6 +1201,10 @@ func GetProjectRuleTemplateTips(c echo.Context) error {
 	return getRuleTemplateTips(c, projectUid, req.FilterDBType)
 }
 
+type ParseProjectRuleTemplateFileReqV1 struct {
+	FileType string `json:"file_type" form:"file_type" enums:"csv,json" valid:"required,oneof=csv json"`
+}
+
 type ParseProjectRuleTemplateFileResV1 struct {
 	controller.BaseRes
 	Data ParseProjectRuleTemplateFileResDataV1 `json:"data"`
@@ -1220,8 +1224,10 @@ type ParseProjectRuleTemplateFileResDataV1 struct {
 // @Tags rule_template
 // @Accept mpfd
 // @Security ApiKeyAuth
+// @Param file_type formData string true "file type" Enums(csv,json)
 // @Param rule_template_file formData file true "SQLE rule template file"
 // @Success 200 {object} v1.ParseProjectRuleTemplateFileResV1
+// @Success 400 file 1 "return error file"
 // @router /v1/rule_templates/parse [post]
 func ParseProjectRuleTemplateFile(c echo.Context) error {
 	// 读取+解析文件
@@ -1245,11 +1251,35 @@ func ParseProjectRuleTemplateFile(c echo.Context) error {
 	})
 }
 
+type GetRuleTemplateFileReqV1 struct {
+	InstanceType string `json:"instance_type" query:"instance_type" valid:"required"`
+	FileType     string `json:"file_type" query:"file_type" enums:"csv,json" valid:"required,oneof=csv json"`
+}
+
+// GetRuleTemplateFile
+// @Summary 获取规则模板文件
+// @Description get rule template file
+// @Id getRuleTemplateFileV1
+// @Tags rule_template
+// @Security ApiKeyAuth
+// @Param instance_type query string true "instance type"
+// @Param file_type query string true "file type" Enums(csv,json)
+// @Success 200 file 1 "sqle rule template file"
+// @router /v1/import_rule_template [get]
+func GetRuleTemplateFile(c echo.Context) error {
+	return nil
+}
+
+type ExportRuleTemplateFileReqV1 struct {
+	ExportType string `json:"export_type" query:"export_type" enums:"csv,json" valid:"required,oneof=csv json"`
+}
+
 // ExportRuleTemplateFile
 // @Summary 导出全局规则模板
 // @Description export rule template
 // @Id exportRuleTemplateV1
 // @Tags rule_template
+// @Param export_type query string true "export type" Enums(csv,json)
 // @Param rule_template_name path string true "rule template name"
 // @Security ApiKeyAuth
 // @Success 200 file 1 "sqle rule template file"
@@ -1259,6 +1289,10 @@ func ExportRuleTemplateFile(c echo.Context) error {
 	return exportRuleTemplateFile(c, model.ProjectIdForGlobalRuleTemplate, templateName)
 }
 
+type ExportProjectRuleTemplateFileReqV1 struct {
+	ExportType string `json:"export_type" query:"export_type" enums:"csv,json" valid:"required,oneof=csv json"`
+}
+
 // ExportProjectRuleTemplateFile
 // @Summary 导出项目规则模板
 // @Description export rule template in a project
@@ -1266,6 +1300,7 @@ func ExportRuleTemplateFile(c echo.Context) error {
 // @Tags rule_template
 // @Param project_name path string true "project name"
 // @Param rule_template_name path string true "rule template name"
+// @Param export_type query string true "export type" Enums(csv,json)
 // @Security ApiKeyAuth
 // @Success 200 file 1 "sqle rule template file"
 // @router /v1/projects/{project_name}/rule_templates/{rule_template_name}/export [get]
