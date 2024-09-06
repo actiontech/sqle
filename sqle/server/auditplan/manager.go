@@ -133,12 +133,12 @@ func GetSQLHead(ap *AuditPlan, persist *model.Storage) ([]Head, error) {
 	return meta.Handler.Head(ap), nil
 }
 
-func GetSQLFilterMeta(ap *AuditPlan, persist *model.Storage) ([]FilterMeta, error) {
+func GetSQLFilterMeta(ctx context.Context, ap *AuditPlan, persist *model.Storage) ([]FilterMeta, error) {
 	meta, err := GetMeta(ap.Type)
 	if err != nil {
 		return nil, err
 	}
-	return meta.Handler.Filters(log.NewEntry(), ap, persist), nil
+	return meta.Handler.Filters(ctx, log.NewEntry(), ap, persist), nil
 }
 
 func GetSQLData(ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {

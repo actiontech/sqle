@@ -10,6 +10,7 @@ import (
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/sirupsen/logrus"
@@ -32,18 +33,19 @@ func (at *MySQLProcessListTaskV2) InstanceType() string {
 func (at *MySQLProcessListTaskV2) Params(instanceId ...string) params.Params {
 	return []*params.Param{
 		{
-			Key:   paramKeyCollectIntervalSecond,
-			Desc:  "采集周期（秒）",
-			Value: "60",
-			Type:  params.ParamTypeInt,
+			Key:      paramKeyCollectIntervalSecond,
+			Value:    "60",
+			Type:     params.ParamTypeInt,
+			I18nDesc: locale.ShouldLocalizeAll(locale.ParamCollectIntervalSecond),
 		},
 		{
-			Key:   paramKeySQLMinSecond,
-			Desc:  "SQL 最小执行时间（秒）",
-			Value: "0",
-			Type:  params.ParamTypeInt,
+			Key:      paramKeySQLMinSecond,
+			Value:    "0",
+			Type:     params.ParamTypeInt,
+			I18nDesc: locale.ShouldLocalizeAll(locale.ParamSQLMinSecond),
 		},
 	}
+
 }
 
 func (at *MySQLProcessListTaskV2) Audit(sqls []*model.SQLManageRecord) (*AuditResultResp, error) {

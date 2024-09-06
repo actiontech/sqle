@@ -19,6 +19,7 @@ import (
 	"github.com/actiontech/sqle/sqle/driver"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/notification"
@@ -49,19 +50,38 @@ type GetAuditPlanMetasResV1 struct {
 }
 
 type AuditPlanMetaV1 struct {
-	Type                   string                  `json:"audit_plan_type"`
-	Desc                   string                  `json:"audit_plan_type_desc"`
-	InstanceType           string                  `json:"instance_type"`
-	Params                 []AuditPlanParamResV1   `json:"audit_plan_params,omitempty"`
-	HighPriorityConditions []HighPriorityCondition `json:"high_priority_conditions"`
+	Type                   string                       `json:"audit_plan_type"`
+	Desc                   string                       `json:"audit_plan_type_desc"`
+	InstanceType           string                       `json:"instance_type"`
+	Params                 []AuditPlanParamResV1        `json:"audit_plan_params,omitempty"`
+	HighPriorityConditions []HighPriorityConditionResV1 `json:"high_priority_conditions"`
+}
+
+type HighPriorityConditionResV1 struct {
+	Key         string            `json:"key"`
+	Desc        string            `json:"desc"`
+	Value       string            `json:"value"`
+	Type        string            `json:"type" enums:"string,int,bool,password"`
+	EnumsValues []EnumsValueResV1 `json:"enums_value"`
+	Operator    OperatorResV1     `json:"operator"`
+}
+
+type OperatorResV1 struct {
+	Value      string            `json:"operator_value"`
+	EnumsValue []EnumsValueResV1 `json:"operator_enums_value"`
+}
+
+type EnumsValueResV1 struct {
+	Value string `json:"value"`
+	Desc  string `json:"desc"`
 }
 
 type AuditPlanParamResV1 struct {
-	Key         string              `json:"key"`
-	Desc        string              `json:"desc"`
-	Value       string              `json:"value"`
-	Type        string              `json:"type" enums:"string,int,bool,password"`
-	EnumsValues []params.EnumsValue `json:"enums_value"`
+	Key         string            `json:"key"`
+	Desc        string            `json:"desc"`
+	Value       string            `json:"value"`
+	Type        string            `json:"type" enums:"string,int,bool,password"`
+	EnumsValues []EnumsValueResV1 `json:"enums_value"`
 }
 
 type HighPriorityCondition struct {
@@ -78,10 +98,10 @@ type Operator struct {
 	EnumsValue []params.EnumsValue `json:"operator_enums_value"`
 }
 
-func ConvertAuditPlanMetaWithInstanceIdToRes(meta auditplan.Meta, instanceId string) AuditPlanMetaV1 {
+func ConvertAuditPlanMetaWithInstanceIdToRes(ctx context.Context, meta auditplan.Meta, instanceId string) AuditPlanMetaV1 {
 	res := AuditPlanMetaV1{
 		Type:         meta.Type,
-		Desc:         meta.Desc,
+		Desc:         locale.ShouldLocalizeMsg(ctx, meta.Desc),
 		InstanceType: meta.InstanceType,
 	}
 	if meta.Params != nil && len(meta.Params()) > 0 {
@@ -93,27 +113,27 @@ func ConvertAuditPlanMetaWithInstanceIdToRes(meta auditplan.Meta, instanceId str
 			}
 			paramsRes = append(paramsRes, AuditPlanParamResV1{
 				Key:         p.Key,
-				Desc:        p.Desc,
+				Desc:        p.GetDesc(locale.GetLangTagFromCtx(ctx)),
 				Type:        string(p.Type),
 				Value:       val,
-				EnumsValues: p.Enums,
+				EnumsValues: ConvertEnumsValuesToRes(ctx, p.Enums),
 			})
 		}
 		res.Params = paramsRes
 	}
 	// 高优先级参数
 	if len(meta.HighPriorityParams) > 0 {
-		highPriorityparamsRes := make([]HighPriorityCondition, 0, len(meta.HighPriorityParams))
+		highPriorityparamsRes := make([]HighPriorityConditionResV1, 0, len(meta.HighPriorityParams))
 		for _, hpc := range meta.HighPriorityParams {
-			highPriorityparamsRes = append(highPriorityparamsRes, HighPriorityCondition{
+			highPriorityparamsRes = append(highPriorityparamsRes, HighPriorityConditionResV1{
 				Key:         hpc.Key,
-				Desc:        hpc.Desc,
+				Desc:        hpc.GetDesc(locale.GetLangTagFromCtx(ctx)),
 				Type:        string(hpc.Type),
 				Value:       hpc.Value,
-				EnumsValues: hpc.Enums,
-				Operator: Operator{
+				EnumsValues: ConvertEnumsValuesToRes(ctx, hpc.Enums),
+				Operator: OperatorResV1{
 					string(hpc.Operator.Value),
-					hpc.Operator.EnumsValue,
+					ConvertEnumsValuesToRes(ctx, hpc.Operator.EnumsValue),
 				},
 			})
 		}
@@ -122,10 +142,10 @@ func ConvertAuditPlanMetaWithInstanceIdToRes(meta auditplan.Meta, instanceId str
 	return res
 }
 
-func ConvertAuditPlanMetaToRes(meta auditplan.Meta) AuditPlanMetaV1 {
+func ConvertAuditPlanMetaToRes(ctx context.Context, meta auditplan.Meta) AuditPlanMetaV1 {
 	res := AuditPlanMetaV1{
 		Type:         meta.Type,
-		Desc:         meta.Desc,
+		Desc:         locale.ShouldLocalizeMsg(ctx, meta.Desc),
 		InstanceType: meta.InstanceType,
 	}
 	if meta.Params != nil && len(meta.Params()) > 0 {
@@ -137,16 +157,37 @@ func ConvertAuditPlanMetaToRes(meta auditplan.Meta) AuditPlanMetaV1 {
 			}
 			paramRes := AuditPlanParamResV1{
 				Key:         p.Key,
-				Desc:        p.Desc,
+				Desc:        p.GetDesc(locale.GetLangTagFromCtx(ctx)),
 				Type:        string(p.Type),
 				Value:       val,
-				EnumsValues: p.Enums,
+				EnumsValues: ConvertEnumsValuesToRes(ctx, p.Enums),
 			}
 			paramsRes = append(paramsRes, paramRes)
 		}
 		res.Params = paramsRes
 	}
 	return res
+}
+
+func ConvertEnumsValuesToRes(ctx context.Context, ems []params.EnumsValue) []EnumsValueResV1 {
+	if ems == nil {
+		return nil
+	}
+	res := make([]EnumsValueResV1, 0, len(ems))
+	for _, em := range ems {
+		res = append(res, ConvertEnumsValueToRes(ctx, em))
+	}
+	return res
+}
+
+func ConvertEnumsValueToRes(ctx context.Context, ems params.EnumsValue) EnumsValueResV1 {
+	if ems.Desc != "" {
+		ems.I18nDesc.SetStrInLang(locale.DefaultLang, ems.Desc)
+	}
+	return EnumsValueResV1{
+		Value: ems.Value,
+		Desc:  ems.I18nDesc.GetStrInLang(locale.GetLangTagFromCtx(ctx)),
+	}
 }
 
 // @Summary 获取扫描任务元信息
@@ -169,7 +210,7 @@ func GetAuditPlanMetas(c echo.Context) error {
 		if req.FilterInstanceType == nil ||
 			meta.InstanceType == auditplan.InstanceTypeAll ||
 			meta.InstanceType == *req.FilterInstanceType {
-			metas = append(metas, ConvertAuditPlanMetaWithInstanceIdToRes(meta, req.FilterInstanceID))
+			metas = append(metas, ConvertAuditPlanMetaWithInstanceIdToRes(c.Request().Context(), meta, req.FilterInstanceID))
 		}
 	}
 	return c.JSON(http.StatusOK, &GetAuditPlanMetasResV1{
@@ -202,7 +243,7 @@ func GetAuditPlanTypes(c echo.Context) error {
 	for _, meta := range auditplan.Metas {
 		auditPlanTypesV1 = append(auditPlanTypesV1, AuditPlanTypesV1{
 			Type:         meta.Type,
-			Desc:         meta.Desc,
+			Desc:         locale.ShouldLocalizeMsg(c.Request().Context(), meta.Desc),
 			InstanceType: meta.InstanceType,
 		})
 	}
@@ -340,7 +381,7 @@ func CreateAuditPlan(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 		if !canCreateAuditPlan {
-			return controller.JSONBaseErrorReq(c, errors.NewUserNotPermissionError(model.GetOperationCodeDesc(uint(model.OP_AUDIT_PLAN_SAVE))))
+			return controller.JSONBaseErrorReq(c, errors.NewUserNotPermissionError(model.GetOperationCodeDesc(c.Request().Context(), uint(model.OP_AUDIT_PLAN_SAVE))))
 		}
 	} else {
 		instanceType = req.InstanceType
@@ -649,7 +690,7 @@ func GetAuditPlans(c echo.Context) error {
 			InstanceDatabase: ap.InstanceDatabase,
 			RuleTemplateName: ap.RuleTemplateName.String,
 			Token:            ap.Token,
-			Meta:             ConvertAuditPlanMetaToRes(meta),
+			Meta:             ConvertAuditPlanMetaToRes(c.Request().Context(), meta),
 		}
 	}
 	return c.JSON(http.StatusOK, &GetAuditPlansResV1{
@@ -704,7 +745,7 @@ func GetAuditPlan(c echo.Context) error {
 			InstanceDatabase: ap.InstanceDatabase,
 			RuleTemplateName: ap.RuleTemplateName,
 			Token:            ap.Token,
-			Meta:             ConvertAuditPlanMetaToRes(meta),
+			Meta:             ConvertAuditPlanMetaToRes(c.Request().Context(), meta),
 		},
 	})
 }
@@ -1383,7 +1424,7 @@ func GetAuditPlanSQLs(c echo.Context) error {
 	for _, v := range head {
 		res.Head = append(res.Head, AuditPlanSQLHeadV1{
 			Name: v.Name,
-			Desc: v.Desc,
+			Desc: locale.ShouldLocalizeMsg(c.Request().Context(), v.Desc),
 			Type: v.Type,
 		})
 	}
@@ -1463,7 +1504,7 @@ func GetAuditPlanReportSQLsV1(c echo.Context) error {
 	for i, auditPlanReportSQL := range auditPlanReportSQLs {
 		auditPlanReportSQLsResV1[i] = AuditPlanReportSQLResV1{
 			SQL:         auditPlanReportSQL.SQL,
-			AuditResult: auditPlanReportSQL.AuditResults.String(),
+			AuditResult: auditPlanReportSQL.AuditResults.String(c.Request().Context()),
 			Number:      auditPlanReportSQL.Number,
 		}
 	}
@@ -1474,10 +1515,13 @@ func GetAuditPlanReportSQLsV1(c echo.Context) error {
 	})
 }
 
-func spliceAuditResults(auditResults []model.AuditResult) string {
+func spliceAuditResults(ctx context.Context, auditResults []model.AuditResult) string {
+	lang := locale.GetLangTagFromCtx(ctx)
 	results := []string{}
 	for _, auditResult := range auditResults {
-		results = append(results, fmt.Sprintf("[%v]%v", auditResult.Level, auditResult.Message))
+		results = append(results,
+			fmt.Sprintf("[%v]%v", auditResult.Level, auditResult.GetAuditMsgByLangTag(lang)),
+		)
 	}
 	return strings.Join(results, "\n")
 }
@@ -1517,16 +1561,17 @@ func ExportAuditPlanReportV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, fmt.Errorf("the audit plan corresponding to the report was not found"))
 	}
 
+	ctx := c.Request().Context()
 	baseInfo := [][]string{
-		{"扫描任务名称", auditPlanName},
-		{"报告生成时间", reportInfo.CreatedAt.Format("2006/01/02 15:04")},
-		{"审核结果评分", strconv.FormatInt(int64(reportInfo.Score), 10)},
-		{"审核通过率", fmt.Sprintf("%v%%", reportInfo.PassRate*100)},
-		{"所属项目", projectName},
-		{"扫描任务创建人", dms.GetUserNameWithDelTag(reportInfo.AuditPlan.CreateUserID)},
-		{"扫描任务类型", reportInfo.AuditPlan.Type},
-		{"数据库类型", reportInfo.AuditPlan.DBType},
-		{"审核的数据库", reportInfo.AuditPlan.InstanceDatabase},
+		{locale.ShouldLocalizeMsg(ctx, locale.APExportTaskName), auditPlanName},
+		{locale.ShouldLocalizeMsg(ctx, locale.APExportGenerationTime), reportInfo.CreatedAt.Format("2006/01/02 15:04")},
+		{locale.ShouldLocalizeMsg(ctx, locale.APExportResultRating), strconv.FormatInt(int64(reportInfo.Score), 10)},
+		{locale.ShouldLocalizeMsg(ctx, locale.APExportApprovalRate), fmt.Sprintf("%v%%", reportInfo.PassRate*100)},
+		{locale.ShouldLocalizeMsg(ctx, locale.APExportBelongingProject), projectName},
+		{locale.ShouldLocalizeMsg(ctx, locale.APExportCreator), dms.GetUserNameWithDelTag(reportInfo.AuditPlan.CreateUserID)},
+		{locale.ShouldLocalizeMsg(ctx, locale.APExportType), reportInfo.AuditPlan.Type},
+		{locale.ShouldLocalizeMsg(ctx, locale.APExportDbType), reportInfo.AuditPlan.DBType},
+		{locale.ShouldLocalizeMsg(ctx, locale.APExportDatabase), reportInfo.AuditPlan.InstanceDatabase},
 	}
 	err = csvWriter.WriteAll(baseInfo)
 	if err != nil {
@@ -1539,14 +1584,18 @@ func ExportAuditPlanReportV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	err = csvWriter.Write([]string{"编号", "SQL", "审核结果"})
+	err = csvWriter.Write([]string{
+		locale.ShouldLocalizeMsg(ctx, locale.APExportNumber), // 编号
+		"SQL",
+		locale.ShouldLocalizeMsg(ctx, locale.APExportAuditResult), // 审核结果
+	})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	sqlInfo := [][]string{}
 	for idx, sql := range reportInfo.AuditPlanReportSQLs {
-		sqlInfo = append(sqlInfo, []string{strconv.Itoa(idx + 1), sql.SQL, spliceAuditResults(sql.AuditResults)})
+		sqlInfo = append(sqlInfo, []string{strconv.Itoa(idx + 1), sql.SQL, spliceAuditResults(ctx, sql.AuditResults)})
 	}
 
 	err = csvWriter.WriteAll(sqlInfo)
@@ -1556,7 +1605,7 @@ func ExportAuditPlanReportV1(c echo.Context) error {
 
 	csvWriter.Flush()
 
-	fileName := fmt.Sprintf("扫描任务报告_%s_%s.csv", auditPlanName, time.Now().Format("20060102150405"))
+	fileName := fmt.Sprintf("audit_plan_report_%s_%s.csv", auditPlanName, time.Now().Format("20060102150405"))
 	c.Response().Header().Set(echo.HeaderContentDisposition, mime.FormatMediaType("attachment", map[string]string{
 		"filename": fileName,
 	}))

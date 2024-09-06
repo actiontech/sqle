@@ -7,6 +7,7 @@ import (
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/driver"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/params"
@@ -31,14 +32,14 @@ func (at *DefaultTaskV2) Params(instanceId ...string) params.Params {
 
 var defaultOperatorEnums = []params.EnumsValue{
 	{
-		Value: ">",
-		Desc:  "大于",
+		Value:    ">",
+		I18nDesc: locale.ShouldLocalizeAll(locale.OperatorGreaterThan),
 	}, {
-		Value: "=",
-		Desc:  "等于",
+		Value:    "=",
+		I18nDesc: locale.ShouldLocalizeAll(locale.OperatorEqualTo),
 	}, {
-		Value: "<",
-		Desc:  "小于",
+		Value:    "<",
+		I18nDesc: locale.ShouldLocalizeAll(locale.OperatorLessThan),
 	},
 }
 
@@ -46,7 +47,6 @@ var defaultAuditLevelOperateParams = &params.ParamWithOperator{
 	Param: params.Param{
 		Key:   OperationParamAuditLevel,
 		Value: "2",
-		Desc:  "触发审核级别",
 		Type:  params.ParamTypeInt,
 		Enums: []params.EnumsValue{
 			{
@@ -61,6 +61,7 @@ var defaultAuditLevelOperateParams = &params.ParamWithOperator{
 				Desc:  string(driverV2.RuleLevelError),
 			},
 		},
+		I18nDesc: locale.ShouldLocalizeAll(locale.OperationParamAuditLevel),
 	},
 	Operator: params.Operator{
 		Value:      ">",
@@ -118,17 +119,17 @@ func (at *DefaultTaskV2) Head(ap *AuditPlan) []Head {
 	return []Head{
 		{
 			Name: "fingerprint",
-			Desc: "SQL指纹",
+			Desc: locale.ApSQLFingerprint,
 			Type: "sql",
 		},
 		{
 			Name: "sql",
-			Desc: "最后一次匹配到该指纹的语句",
+			Desc: locale.ApLastSQL,
 			Type: "sql",
 		},
 		{
 			Name: "priority",
-			Desc: "优先级",
+			Desc: locale.ApPriority,
 		},
 		{
 			Name: model.AuditResultName,
@@ -136,36 +137,36 @@ func (at *DefaultTaskV2) Head(ap *AuditPlan) []Head {
 		},
 		{
 			Name: MetricNameCounter,
-			Desc: "匹配到该指纹的语句数量",
+			Desc: locale.ApMetricNameCounter,
 		},
 		{
 			Name: MetricNameLastReceiveTimestamp,
-			Desc: "最后一次匹配到该指纹的时间",
+			Desc: locale.ApMetricNameLastReceiveTimestamp,
 		},
 	}
 }
 
-func (at *DefaultTaskV2) Filters(logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) []FilterMeta {
+func (at *DefaultTaskV2) Filters(ctx context.Context, logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) []FilterMeta {
 	return []FilterMeta{
 		{
 			Name:            "sql", // 模糊筛选
-			Desc:            "SQL",
+			Desc:            locale.ApSQLStatement,
 			FilterInputType: FilterInputTypeString,
 			FilterOpType:    FilterOpTypeEqual,
 		},
 		{
 			Name:            "rule_name",
-			Desc:            "审核规则",
+			Desc:            locale.ApRuleName,
 			FilterInputType: FilterInputTypeString,
 			FilterOpType:    FilterOpTypeEqual,
-			FilterTips:      GetSqlManagerRuleTips(logger, ap.ID, persist),
+			FilterTips:      GetSqlManagerRuleTips(ctx, logger, ap.ID, persist),
 		},
 		{
 			Name:            "priority",
-			Desc:            "SQL优先级",
+			Desc:            locale.ApPriority,
 			FilterInputType: FilterInputTypeString,
 			FilterOpType:    FilterOpTypeEqual,
-			FilterTips:      GetSqlManagerPriorityTips(logger),
+			FilterTips:      GetSqlManagerPriorityTips(ctx, logger),
 		}}
 }
 

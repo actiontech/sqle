@@ -23,6 +23,7 @@ import (
 	"github.com/actiontech/sqle/sqle/config"
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server"
@@ -495,6 +496,7 @@ func GetTaskSQLs(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
+	ctx := c.Request().Context()
 	s := model.GetStorage()
 	taskId := c.Param("task_id")
 	task, err := getTaskById(c.Request().Context(), taskId)
@@ -529,7 +531,7 @@ func GetTaskSQLs(c echo.Context) error {
 			Number:      taskSQL.Number,
 			Description: taskSQL.Description,
 			ExecSQL:     taskSQL.ExecSQL,
-			AuditResult: taskSQL.GetAuditResults(),
+			AuditResult: taskSQL.GetAuditResults(ctx),
 			AuditLevel:  taskSQL.AuditLevel,
 			AuditStatus: taskSQL.AuditStatus,
 			ExecResult:  taskSQL.ExecResult,
@@ -585,10 +587,21 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+
+	ctx := c.Request().Context()
 	buff := &bytes.Buffer{}
 	buff.WriteString("\xEF\xBB\xBF") // 写入UTF-8 BOM
 	cw := csv.NewWriter(buff)
-	err = cw.Write([]string{"序号", "SQL", "SQL审核状态", "SQL审核结果", "SQL执行状态", "SQL执行结果", "SQL对应的回滚语句", "SQL描述"})
+	err = cw.Write([]string{
+		locale.ShouldLocalizeMsg(ctx, locale.TaskSQLReportIndex),       // "序号",
+		locale.ShouldLocalizeMsg(ctx, locale.TaskSQLReportSQL),         // "SQL",
+		locale.ShouldLocalizeMsg(ctx, locale.TaskSQLReportAuditStatus), // "SQL审核状态",
+		locale.ShouldLocalizeMsg(ctx, locale.TaskSQLReportAuditResult), // "SQL审核结果",
+		locale.ShouldLocalizeMsg(ctx, locale.TaskSQLReportExecStatus),  // "SQL执行状态",
+		locale.ShouldLocalizeMsg(ctx, locale.TaskSQLReportExecResult),  // "SQL执行结果",
+		locale.ShouldLocalizeMsg(ctx, locale.TaskSQLReportRollbackSQL), // "SQL对应的回滚语句",
+		locale.ShouldLocalizeMsg(ctx, locale.TaskSQLReportDescription), // "SQL描述",
+	})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.WriteDataToTheFileError, err))
 	}
@@ -601,9 +614,9 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 		err := cw.Write([]string{
 			strconv.FormatUint(uint64(td.Number), 10),
 			td.ExecSQL,
-			taskSql.GetAuditStatusDesc(),
-			taskSql.GetAuditResultDesc(),
-			taskSql.GetExecStatusDesc(),
+			taskSql.GetAuditStatusDesc(ctx),
+			taskSql.GetAuditResultDesc(ctx),
+			taskSql.GetExecStatusDesc(ctx),
 			td.ExecResult,
 			td.RollbackSQL.String,
 			td.Description,
@@ -613,7 +626,7 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 		}
 	}
 	cw.Flush()
-	fileName := fmt.Sprintf("SQL审核报告_%v_%v.csv", task.InstanceName(), taskId)
+	fileName := fmt.Sprintf("SQL_audit_report_%v_%v.csv", task.InstanceName(), taskId)
 	c.Response().Header().Set(echo.HeaderContentDisposition,
 		mime.FormatMediaType("attachment", map[string]string{"filename": fileName}))
 	return c.Blob(http.StatusOK, "text/csv", buff.Bytes())

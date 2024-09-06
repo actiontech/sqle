@@ -7,6 +7,9 @@ import (
 	"strconv"
 
 	dmsCommonAes "github.com/actiontech/dms/pkg/dms-common/pkg/aes"
+	"github.com/actiontech/sqle/sqle/locale"
+	"github.com/actiontech/sqle/sqle/pkg/i18nPkg"
+	"golang.org/x/text/language"
 )
 
 type Params []*Param
@@ -22,16 +25,25 @@ const (
 )
 
 type Param struct {
-	Key   string       `json:"key"`
-	Value string       `json:"value"`
-	Desc  string       `json:"desc"`
-	Type  ParamType    `json:"type"`
-	Enums []EnumsValue `json:"enums"`
+	Key      string          `json:"key"`
+	Value    string          `json:"value"`
+	Desc     string          `json:"desc"` // Deprecated: use I18nDesc instead
+	I18nDesc i18nPkg.I18nStr `json:"i18n_desc"`
+	Type     ParamType       `json:"type"`
+	Enums    []EnumsValue    `json:"enums"`
 }
 
 type EnumsValue struct {
-	Value string `json:"value"`
-	Desc  string `json:"desc"`
+	Value    string          `json:"value"`
+	Desc     string          `json:"desc"` // Deprecated: use I18nDesc instead
+	I18nDesc i18nPkg.I18nStr `json:"i18n_desc"`
+}
+
+func (e EnumsValue) GetDesc(lang language.Tag) string {
+	if e.Desc != "" {
+		e.I18nDesc.SetStrInLang(locale.DefaultLang, e.Desc)
+	}
+	return e.I18nDesc.GetStrInLang(lang)
 }
 
 func (r *Params) SetParamValue(key, value string) error {
@@ -112,6 +124,16 @@ func (r *Param) Bool() bool {
 	return b
 }
 
+func (r *Param) GetDesc(lang language.Tag) string {
+	if r == nil {
+		return ""
+	}
+	if r.Desc != "" {
+		r.I18nDesc.SetStrInLang(locale.DefaultLang, r.Desc)
+	}
+	return r.I18nDesc.GetStrInLang(lang)
+}
+
 // Scan impl sql.Scanner interface
 func (r *Params) Scan(value interface{}) error {
 	if value == nil {
@@ -150,10 +172,11 @@ func (r Params) Value() (driver.Value, error) {
 
 	for _, p := range r {
 		param := Param{
-			Key:   p.Key,
-			Value: p.Value,
-			Desc:  p.Desc,
-			Type:  p.Type,
+			Key:      p.Key,
+			Value:    p.Value,
+			Desc:     p.Desc,
+			I18nDesc: p.I18nDesc,
+			Type:     p.Type,
 		}
 
 		if param.Type == ParamTypePassword {
@@ -179,10 +202,11 @@ func (r *Params) Copy() Params {
 	ps := make(Params, 0, len(*r))
 	for _, p := range *r {
 		ps = append(ps, &Param{
-			Key:   p.Key,
-			Value: p.Value,
-			Desc:  p.Desc,
-			Type:  p.Type,
+			Key:      p.Key,
+			Value:    p.Value,
+			Desc:     p.Desc,
+			I18nDesc: p.I18nDesc.Copy(),
+			Type:     p.Type,
 		})
 	}
 	return ps
@@ -233,10 +257,11 @@ func (r ParamsWithOperator) Value() (driver.Value, error) {
 	for _, p := range r {
 		param := ParamWithOperator{
 			Param: Param{
-				Key:   p.Key,
-				Value: p.Value,
-				Desc:  p.Desc,
-				Type:  p.Type,
+				Key:      p.Key,
+				Value:    p.Value,
+				Desc:     p.Desc,
+				I18nDesc: p.I18nDesc,
+				Type:     p.Type,
 			},
 			Operator: Operator{
 				Value:      p.Operator.Value,
