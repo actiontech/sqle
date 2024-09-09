@@ -213,7 +213,7 @@ func (at *OracleTopSQLTaskV2) Head(ap *AuditPlan) []Head {
 	}
 }
 
-func (at *OracleTopSQLTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {
+func (at *OracleTopSQLTaskV2) GetSQLData(ctx context.Context, ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {
 	auditPlanSQLs, count, err := persist.GetInstanceAuditPlanSQLsByReqV2(ap.ID, ap.Type, limit, offset, checkAndGetOrderByName(at.Head(ap), orderBy), isAsc, genArgsByFilters(filters))
 	if err != nil {
 		return nil, count, err
@@ -235,7 +235,7 @@ func (at *OracleTopSQLTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, 
 			MetricNameDiskReadTotal:       strconv.Itoa(int(info.Get(MetricNameDiskReadTotal).Int())),
 			MetricNameBufferGetCounter:    strconv.Itoa(int(info.Get(MetricNameBufferGetCounter).Int())),
 			MetricNameUserIOWaitTimeTotal: fmt.Sprintf("%v", utils.Round(info.Get(MetricNameUserIOWaitTimeTotal).Float()/1000, 3)),
-			model.AuditResultName:         sql.AuditResult.String,
+			model.AuditResultName:         sql.AuditResult.GetAuditJsonStrByLangTag(locale.GetLangTagFromCtx(ctx)),
 		})
 	}
 	return rows, count, nil
