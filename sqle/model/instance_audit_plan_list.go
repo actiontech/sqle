@@ -111,7 +111,7 @@ type InstanceAuditPlanSQLListDetail struct {
 	SQLContent     string         `json:"sql_text"`
 	Schema         string         `json:"schema_name"`
 	Info           JSON           `json:"info"`
-	AuditResult    sql.NullString `json:"audit_results"`
+	AuditResult    AuditResults   `json:"audit_results"`
 	Priority       sql.NullString `json:"priority"`
 }
 

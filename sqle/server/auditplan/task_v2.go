@@ -104,7 +104,7 @@ type AuditPlanHandler interface {
 
 	// todo: 放到 AuditPlanMeta 里, 原因是meta里未保存 AuditPlanMeta, 其他开发者也在改造等合并后在处理。
 	Filters(ctx context.Context, logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) []FilterMeta
-	GetSQLData(ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error)
+	GetSQLData(ctx context.Context, ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error)
 }
 
 func auditSQLs(sqls []*model.SQLManageRecord) (*AuditResultResp, error) {

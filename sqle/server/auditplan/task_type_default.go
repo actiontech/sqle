@@ -218,7 +218,7 @@ func genArgsByFilters(filters []Filter) map[model.FilterName]interface{} {
 	return args
 }
 
-func (at *DefaultTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {
+func (at *DefaultTaskV2) GetSQLData(ctx context.Context, ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {
 	args := make(map[model.FilterName]interface{}, len(filters))
 	for _, filter := range filters {
 		switch filter.Name {
@@ -250,7 +250,7 @@ func (at *DefaultTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filte
 			"priority":                     sql.Priority.String,
 			MetricNameCounter:              strconv.Itoa(int(info.Get(MetricNameCounter).Int())),
 			MetricNameLastReceiveTimestamp: info.Get(MetricNameLastReceiveTimestamp).String(),
-			model.AuditResultName:          sql.AuditResult.String,
+			model.AuditResultName:          sql.AuditResult.GetAuditJsonStrByLangTag(locale.GetLangTagFromCtx(ctx)),
 		})
 	}
 	return rows, count, nil

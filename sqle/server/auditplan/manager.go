@@ -141,12 +141,12 @@ func GetSQLFilterMeta(ctx context.Context, ap *AuditPlan, persist *model.Storage
 	return meta.Handler.Filters(ctx, log.NewEntry(), ap, persist), nil
 }
 
-func GetSQLData(ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {
+func GetSQLData(ctx context.Context, ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {
 	meta, err := GetMeta(ap.Type)
 	if err != nil {
 		return nil, 0, err
 	}
-	return meta.Handler.GetSQLData(ap, persist, filters, orderBy, isAsc, limit, offset)
+	return meta.Handler.GetSQLData(ctx, ap, persist, filters, orderBy, isAsc, limit, offset)
 }
 
 func init() {
