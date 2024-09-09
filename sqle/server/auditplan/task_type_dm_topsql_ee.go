@@ -298,7 +298,7 @@ func (at *DmTopSQLTaskV2) Head(ap *AuditPlan) []Head {
 	}
 }
 
-func (at *DmTopSQLTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {
+func (at *DmTopSQLTaskV2) GetSQLData(ctx context.Context, ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {
 	auditPlanSQLs, count, err := persist.GetInstanceAuditPlanSQLsByReqV2(ap.ID, ap.Type, limit, offset, checkAndGetOrderByName(at.Head(ap), orderBy), isAsc, genArgsByFilters(filters))
 	if err != nil {
 		return nil, count, err
@@ -320,7 +320,7 @@ func (at *DmTopSQLTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filt
 			MetricNameCPUTimeTotal:       fmt.Sprintf("%v", utils.Round(float64(info.Get(MetricNameCPUTimeTotal).Float())/1000, 3)),   //视图中时间单位是毫秒，所以除以1000得到秒
 			MetricNamePhyReadPageTotal:   strconv.Itoa(int(info.Get(MetricNamePhyReadPageTotal).Int())),
 			MetricNameLogicReadPageTotal: strconv.Itoa(int(info.Get(MetricNameLogicReadPageTotal).Int())),
-			model.AuditResultName:        sql.AuditResult.String,
+			model.AuditResultName:        sql.AuditResult.GetAuditJsonStrByLangTag(locale.GetLangTagFromCtx(ctx)),
 		})
 	}
 	return rows, count, nil

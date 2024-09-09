@@ -476,7 +476,7 @@ func (at *ObForMysqlTopSQLTaskV2) Head(ap *AuditPlan) []Head {
 	return []Head{}
 }
 
-func (at *ObForMysqlTopSQLTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {
+func (at *ObForMysqlTopSQLTaskV2) GetSQLData(ctx context.Context, ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {
 	auditPlanSQLs, count, err := persist.GetInstanceAuditPlanSQLsByReqV2(ap.ID, ap.Type, limit, offset, checkAndGetOrderByName(at.Head(ap), orderBy), isAsc, genArgsByFilters(filters))
 	if err != nil {
 		return nil, count, err
@@ -487,7 +487,7 @@ func (at *ObForMysqlTopSQLTaskV2) GetSQLData(ap *AuditPlan, persist *model.Stora
 			"sql":                 planSQL.SQLContent,
 			"id":                  planSQL.AuditPlanSqlId,
 			"priority":            planSQL.Priority.String,
-			model.AuditResultName: planSQL.AuditResult.String,
+			model.AuditResultName: planSQL.AuditResult.GetAuditJsonStrByLangTag(locale.GetLangTagFromCtx(ctx)),
 		}
 
 		origin, err := planSQL.Info.OriginValue()
