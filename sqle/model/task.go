@@ -193,7 +193,14 @@ func (i I18nAuditResultInfo) Value() (driver.Value, error) {
 }
 
 func (i *I18nAuditResultInfo) Scan(input interface{}) error {
-	return json.Unmarshal(input.([]byte), i)
+	if input == nil {
+		return nil
+	}
+	if data, ok := input.([]byte); !ok {
+		return fmt.Errorf("I18nAuditResultInfo Scan input is not bytes")
+	} else {
+		return json.Unmarshal(data, i)
+	}
 }
 
 func ConvertI18NAuditResultInfoMapToI18nStr(m I18nAuditResultInfo) i18nPkg.I18nStr {
@@ -240,7 +247,14 @@ func (a AuditResults) Value() (driver.Value, error) {
 }
 
 func (a *AuditResults) Scan(input interface{}) error {
-	return json.Unmarshal(input.([]byte), a)
+	if input == nil {
+		return nil
+	}
+	if data, ok := input.([]byte); !ok {
+		return fmt.Errorf("AuditResults Scan input is not bytes")
+	} else {
+		return json.Unmarshal(data, a)
+	}
 }
 
 // todo check somewhere fmt Sprint AuditResults to frontend?

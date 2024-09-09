@@ -56,7 +56,14 @@ func (i I18nRuleInfo) Value() (driver.Value, error) {
 }
 
 func (i *I18nRuleInfo) Scan(input interface{}) error {
-	return json.Unmarshal(input.([]byte), i)
+	if input == nil {
+		return nil
+	}
+	if data, ok := input.([]byte); !ok {
+		return fmt.Errorf("I18nRuleInfo Scan input is not bytes")
+	} else {
+		return json.Unmarshal(data, i)
+	}
 }
 
 type RuleInfo struct {
