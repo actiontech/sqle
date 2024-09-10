@@ -379,7 +379,7 @@ func (at *DB2TopSQLTaskV2) Head(ap *AuditPlan) []Head {
 	}
 }
 
-func (at *DB2TopSQLTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {
+func (at *DB2TopSQLTaskV2) GetSQLData(ctx context.Context, ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {
 	auditPlanSQLs, count, err := persist.GetInstanceAuditPlanSQLsByReqV2(ap.ID, ap.Type, limit, offset, checkAndGetOrderByName(at.Head(ap), orderBy), isAsc, genArgsByFilters(filters))
 	if err != nil {
 		return nil, count, err
@@ -392,7 +392,7 @@ func (at *DB2TopSQLTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, fil
 			"sql":                 auditPlanSQLs[i].SQLContent,
 			"id":                  auditPlanSQLs[i].AuditPlanSqlId,
 			"priority":            auditPlanSQLs[i].Priority.String,
-			model.AuditResultName: auditPlanSQLs[i].AuditResult.String,
+			model.AuditResultName: auditPlanSQLs[i].AuditResult.GetAuditJsonStrByLangTag(locale.GetLangTagFromCtx(ctx)),
 		}
 
 		origin, err := auditPlanSQLs[i].Info.OriginValue()

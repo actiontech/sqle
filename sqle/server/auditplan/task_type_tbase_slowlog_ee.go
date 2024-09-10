@@ -4,6 +4,7 @@
 package auditplan
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -159,7 +160,7 @@ func (at *TBaseSlowLogTaskV2) Head(ap *AuditPlan) []Head {
 	}
 }
 
-func (at *TBaseSlowLogTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {
+func (at *TBaseSlowLogTaskV2) GetSQLData(ctx context.Context, ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {
 	auditPlanSQLs, count, err := persist.GetInstanceAuditPlanSQLsByReqV2(ap.ID, ap.Type, limit, offset, checkAndGetOrderByName(at.Head(ap), orderBy), isAsc, genArgsByFilters(filters))
 	if err != nil {
 		return nil, count, err
@@ -187,7 +188,7 @@ func (at *TBaseSlowLogTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, 
 			"last_receive_timestamp": info.LastReceiveTimestamp,
 			"db_user":                info.DBUser,
 			"schema":                 sql.Schema,
-			model.AuditResultName:    sql.AuditResult.String,
+			model.AuditResultName:    sql.AuditResult.GetAuditJsonStrByLangTag(locale.GetLangTagFromCtx(ctx)),
 		}
 
 		if info.RowExaminedAvg != nil {

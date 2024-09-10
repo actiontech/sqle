@@ -291,7 +291,7 @@ func (at *SlowLogTaskV2) Audit(sqls []*model.SQLManageRecord) (*AuditResultResp,
 	return auditSQLs(sqls)
 }
 
-func (at *SlowLogTaskV2) GetSQLs(ap *AuditPlan, persist *model.Storage, args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
+func (at *SlowLogTaskV2) GetSQLs(ctx context.Context, ap *AuditPlan, persist *model.Storage, args map[string]interface{}) ([]Head, []map[string] /* head name */ string, uint64, error) {
 	auditPlanSQLs, count, err := persist.GetInstanceAuditPlanSQLsByReq(args)
 	if err != nil {
 		return nil, nil, count, err
@@ -361,7 +361,7 @@ func (at *SlowLogTaskV2) GetSQLs(ap *AuditPlan, persist *model.Storage, args map
 			"last_receive_timestamp": info.LastReceiveTimestamp,
 			"db_user":                info.DBUser,
 			"schema":                 sql.Schema,
-			model.AuditResultName:    sql.AuditResult.String,
+			model.AuditResultName:    sql.AuditResult.GetAuditJsonStrByLangTag(locale.GetLangTagFromCtx(ctx)),
 		}
 
 		if info.RowExaminedAvg != nil {
@@ -498,7 +498,7 @@ func (at *SlowLogTaskV2) Filters(ctx context.Context, logger *logrus.Entry, ap *
 	}
 }
 
-func (at *SlowLogTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {
+func (at *SlowLogTaskV2) GetSQLData(ctx context.Context, ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {
 	// todo: 需要过滤掉	MetricNameRecordDeleted = true 的记录，因为有分页所以需要在db里过滤，还要考虑概览界面统计的问题
 	auditPlanSQLs, count, err := persist.GetInstanceAuditPlanSQLsByReqV2(ap.ID, ap.Type, limit, offset, checkAndGetOrderByName(at.Head(ap), orderBy), isAsc, genArgsByFilters(filters))
 	if err != nil {
@@ -516,7 +516,7 @@ func (at *SlowLogTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filte
 			"sql":                          sql.SQLContent,
 			"id":                           sql.AuditPlanSqlId,
 			"priority":                     sql.Priority.String,
-			model.AuditResultName:          sql.AuditResult.String,
+			model.AuditResultName:          sql.AuditResult.GetAuditJsonStrByLangTag(locale.GetLangTagFromCtx(ctx)),
 			MetricNameCounter:              fmt.Sprint(info.Get(MetricNameCounter).Int()),
 			MetricNameLastReceiveTimestamp: info.Get(MetricNameLastReceiveTimestamp).String(),
 			MetricNameQueryTimeAvg:         fmt.Sprint(utils.Round(info.Get(MetricNameQueryTimeAvg).Float(), 2)),
