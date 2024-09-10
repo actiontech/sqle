@@ -1183,7 +1183,7 @@ func GetInstanceAuditPlanSQLData(c echo.Context) error {
 	}
 	ap := auditplan.ConvertModelToAuditPlanV2(apDetail)
 
-	data, count, err := auditplan.GetSQLData(ap, s, ConvertReqToAuditPlanFilter(req.Filters), req.OrderBy, req.IsAsc, int(req.PageSize), int((req.PageIndex-1)*req.PageSize))
+	data, count, err := auditplan.GetSQLData(c.Request().Context(), ap, s, ConvertReqToAuditPlanFilter(req.Filters), req.OrderBy, req.IsAsc, int(req.PageSize), int((req.PageIndex-1)*req.PageSize))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1252,7 +1252,7 @@ func GetInstanceAuditPlanSQLExport(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	rows, _, err := auditplan.GetSQLData(ap, s, ConvertReqToAuditPlanFilter(req.Filters), req.OrderBy, req.IsAsc, 0, 0)
+	rows, _, err := auditplan.GetSQLData(c.Request().Context(), ap, s, ConvertReqToAuditPlanFilter(req.Filters), req.OrderBy, req.IsAsc, 0, 0)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
