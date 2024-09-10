@@ -516,13 +516,18 @@ func (s *Storage) GetAuditPlanNamesByRuleTemplateAndProject(
 func (s *Storage) GetRuleTypeByDBType(ctx context.Context, DBType string) ([]string, error) {
 	lang := locale.GetLangTagFromCtx(ctx)
 	rules := []*Rule{}
-	err := s.db.Select("type").Where("db_type = ?", DBType).Group("type").Find(&rules).Error
+	err := s.db.Where("db_type = ?", DBType).Find(&rules).Error
 	if err != nil {
 		return nil, errors.New(errors.ConnectStorageError, err)
 	}
-	ruleDBTypes := make([]string, len(rules))
-	for i := range rules {
-		ruleDBTypes[i] = rules[i].I18nRuleInfo.GetRuleInfoByLangTag(lang).Category
+	var ruleDBTypes []string
+	categoryMap := make(map[string]struct{})
+	for _, v := range rules {
+		category := v.I18nRuleInfo.GetRuleInfoByLangTag(lang).Category
+		if _, exist := categoryMap[category]; !exist {
+			ruleDBTypes = append(ruleDBTypes, category)
+			categoryMap[category] = struct{}{}
+		}
 	}
 	return ruleDBTypes, nil
 }

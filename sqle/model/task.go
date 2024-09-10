@@ -193,7 +193,14 @@ func (i I18nAuditResultInfo) Value() (driver.Value, error) {
 }
 
 func (i *I18nAuditResultInfo) Scan(input interface{}) error {
-	return json.Unmarshal(input.([]byte), i)
+	if input == nil {
+		return nil
+	}
+	if data, ok := input.([]byte); !ok {
+		return fmt.Errorf("I18nAuditResultInfo Scan input is not bytes")
+	} else {
+		return json.Unmarshal(data, i)
+	}
 }
 
 func ConvertI18NAuditResultInfoMapToI18nStr(m I18nAuditResultInfo) i18nPkg.I18nStr {
@@ -216,13 +223,38 @@ func ConvertI18nStrToI18NAuditResultInfoMap(s i18nPkg.I18nStr) I18nAuditResultIn
 
 type AuditResults []AuditResult
 
+func (a *AuditResults) GetAuditJsonStrByLangTag(lang language.Tag) string {
+	type AuditResultRes struct {
+		Level    string `json:"level"`
+		Message  string `json:"message"`
+		RuleName string `json:"rule_name"`
+	}
+	results := make([]AuditResultRes, len(*a))
+	for k, v := range *a {
+		results[k] = AuditResultRes{
+			Level:    v.Level,
+			Message:  v.GetAuditMsgByLangTag(lang),
+			RuleName: v.RuleName,
+		}
+	}
+	data, _ := json.Marshal(results)
+	return string(data)
+}
+
 func (a AuditResults) Value() (driver.Value, error) {
 	b, err := json.Marshal(a)
 	return string(b), err
 }
 
 func (a *AuditResults) Scan(input interface{}) error {
-	return json.Unmarshal(input.([]byte), a)
+	if input == nil {
+		return nil
+	}
+	if data, ok := input.([]byte); !ok {
+		return fmt.Errorf("AuditResults Scan input is not bytes")
+	} else {
+		return json.Unmarshal(data, a)
+	}
 }
 
 // todo check somewhere fmt Sprint AuditResults to frontend?

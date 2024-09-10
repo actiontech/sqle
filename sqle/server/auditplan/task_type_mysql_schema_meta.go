@@ -333,7 +333,7 @@ func (at *BaseSchemaMetaTaskV2) Filters(ctx context.Context, logger *logrus.Entr
 	}
 }
 
-func (at *BaseSchemaMetaTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {
+func (at *BaseSchemaMetaTaskV2) GetSQLData(ctx context.Context, ap *AuditPlan, persist *model.Storage, filters []Filter, orderBy string, isAsc bool, limit, offset int) ([]map[string] /* head name */ string, uint64, error) {
 	// todo: 需要过滤掉	MetricNameRecordDeleted = true 的记录，因为有分页所以需要在db里过滤，还要考虑概览界面统计的问题
 	auditPlanSQLs, count, err := persist.GetInstanceAuditPlanSQLsByReqV2(ap.ID, ap.Type, limit, offset, checkAndGetOrderByName(at.Head(ap), orderBy), isAsc, genArgsByFilters(filters))
 	if err != nil {
@@ -354,7 +354,7 @@ func (at *BaseSchemaMetaTaskV2) GetSQLData(ap *AuditPlan, persist *model.Storage
 			"id":                  sql.AuditPlanSqlId,
 			MetricNameMetaName:    info.Get(MetricNameMetaName).String(),
 			MetricNameMetaType:    info.Get(MetricNameMetaType).String(),
-			model.AuditResultName: sql.AuditResult.String,
+			model.AuditResultName: sql.AuditResult.GetAuditJsonStrByLangTag(locale.GetLangTagFromCtx(ctx)),
 		})
 	}
 	return rows, count, nil
