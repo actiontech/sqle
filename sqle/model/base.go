@@ -6,6 +6,7 @@ package model
 import (
 	"database/sql/driver"
 	"encoding/json"
+	"fmt"
 )
 
 const (
@@ -18,9 +19,15 @@ const (
 
 type Strings []string
 
-func (t *Strings) Scan(value interface{}) error {
-	bytesValue, _ := value.([]byte)
-	return json.Unmarshal(bytesValue, t)
+func (t *Strings) Scan(input interface{}) error {
+	if input == nil {
+		return nil
+	}
+	if data, ok := input.([]byte); !ok {
+		return fmt.Errorf("strings Scan input is not bytes")
+	} else {
+		return json.Unmarshal(data, t)
+	}
 }
 
 func (t Strings) Value() (driver.Value, error) {
