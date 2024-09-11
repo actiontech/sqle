@@ -43,10 +43,11 @@ type AuditTaskSQLResV2 struct {
 }
 
 type AuditResult struct {
-	Level    string `json:"level" example:"warn"`
-	Message  string `json:"message" example:"避免使用不必要的内置函数md5()"`
-	RuleName string `json:"rule_name"`
-	DbType   string `json:"db_type"`
+	Level               string                    `json:"level" example:"warn"`
+	Message             string                    `json:"message" example:"避免使用不必要的内置函数md5()"`
+	RuleName            string                    `json:"rule_name"`
+	DbType              string                    `json:"db_type"`
+	I18nAuditResultInfo model.I18nAuditResultInfo `json:"i18n_audit_result_info"`
 }
 
 // @Summary 获取指定扫描任务的SQLs信息
@@ -116,10 +117,11 @@ func GetTaskSQLs(c echo.Context) error {
 		for i := range taskSQL.AuditResults {
 			ar := taskSQL.AuditResults[i]
 			taskSQLRes.AuditResult = append(taskSQLRes.AuditResult, &AuditResult{
-				Level:    ar.Level,
-				Message:  ar.GetAuditMsgByLangTag(locale.GetLangTagFromCtx(c.Request().Context())),
-				RuleName: ar.RuleName,
-				DbType:   task.DBType,
+				Level:               ar.Level,
+				Message:             ar.GetAuditMsgByLangTag(locale.GetLangTagFromCtx(c.Request().Context())),
+				RuleName:            ar.RuleName,
+				DbType:              task.DBType,
+				I18nAuditResultInfo: ar.I18nAuditResultInfo,
 			})
 		}
 

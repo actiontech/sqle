@@ -226,10 +226,11 @@ func GetAuditPlanReportSQLs(c echo.Context) error {
 		for j := range auditPlanReportSQL.AuditResults {
 			ar := auditPlanReportSQL.AuditResults[j]
 			auditPlanReportSQLsRes[i].AuditResult = append(auditPlanReportSQLsRes[i].AuditResult, &AuditResult{
-				Level:    ar.Level,
-				Message:  ar.GetAuditMsgByLangTag(lang),
-				RuleName: ar.RuleName,
-				DbType:   ap.DBType,
+				Level:               ar.Level,
+				Message:             ar.GetAuditMsgByLangTag(lang),
+				RuleName:            ar.RuleName,
+				DbType:              ap.DBType,
+				I18nAuditResultInfo: ar.I18nAuditResultInfo,
 			})
 		}
 	}
