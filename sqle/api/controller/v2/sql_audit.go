@@ -91,10 +91,11 @@ func convertTaskResultToAuditResV2(ctx context.Context, task *model.Task) *Audit
 		ar := make([]*AuditResult, len(sql.AuditResults))
 		for j := range sql.AuditResults {
 			ar[j] = &AuditResult{
-				Level:    sql.AuditResults[j].Level,
-				Message:  sql.AuditResults[j].GetAuditMsgByLangTag(lang),
-				RuleName: sql.AuditResults[j].RuleName,
-				DbType:   task.DBType,
+				Level:               sql.AuditResults[j].Level,
+				Message:             sql.AuditResults[j].GetAuditMsgByLangTag(lang),
+				RuleName:            sql.AuditResults[j].RuleName,
+				DbType:              task.DBType,
+				I18nAuditResultInfo: sql.AuditResults[j].I18nAuditResultInfo,
 			}
 		}
 
@@ -240,9 +241,10 @@ func convertAuditResultToAuditResV2(ctx context.Context, auditResults model.Audi
 	ar := make([]AuditResult, len(auditResults))
 	for i := range auditResults {
 		ar[i] = AuditResult{
-			Level:    auditResults[i].Level,
-			Message:  auditResults[i].GetAuditMsgByLangTag(lang),
-			RuleName: auditResults[i].RuleName,
+			Level:               auditResults[i].Level,
+			Message:             auditResults[i].GetAuditMsgByLangTag(lang),
+			RuleName:            auditResults[i].RuleName,
+			I18nAuditResultInfo: auditResults[i].I18nAuditResultInfo,
 		}
 	}
 	return ar
