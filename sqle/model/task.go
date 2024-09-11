@@ -179,12 +179,12 @@ func (i *I18nAuditResultInfo) GetAuditResultInfoByLangTag(lang language.Tag) *Au
 		return &AuditResultInfo{}
 	}
 
-	if ruleInfo, ok := (*i)[lang]; ok {
-		return &ruleInfo
+	if info, ok := (*i)[lang]; ok {
+		return &info
 	}
 
-	ruleInfo := (*i)[locale.DefaultLang]
-	return &ruleInfo
+	info := (*i)[locale.DefaultLang]
+	return &info
 }
 
 func (i I18nAuditResultInfo) Value() (driver.Value, error) {
