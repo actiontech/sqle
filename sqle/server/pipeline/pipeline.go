@@ -66,15 +66,18 @@ func (node PipelineNode) IntegrationInfo(ctx context.Context, projectName string
 		if err != nil {
 			return "", err
 		}
-		cmd, err = sqlfile.GenCommand("./scannerd", map[string]string{
-			scannerCmd.FlagHost:         ip,
-			scannerCmd.FlagPort:         port,
-			scannerCmd.FlagToken:        node.Token,
-			scannerCmd.FlagDirectory:    node.ObjectPath,
-			scannerCmd.FlagDbType:       node.InstanceType,
-			scannerCmd.FlagInstanceName: node.InstanceName,
-			scannerCmd.FlagProject:      projectName,
-		})
+		params := map[string]string{
+			scannerCmd.FlagHost:      ip,
+			scannerCmd.FlagPort:      port,
+			scannerCmd.FlagToken:     node.Token,
+			scannerCmd.FlagDirectory: node.ObjectPath,
+			scannerCmd.FlagDbType:    node.InstanceType,
+			scannerCmd.FlagProject:   projectName,
+		}
+		if node.InstanceName != "" {
+			params[scannerCmd.FlagInstanceName] = node.InstanceName
+		}
+		cmd, err = sqlfile.GenCommand("./scannerd", params)
 		if err != nil {
 			return "", err
 		}
