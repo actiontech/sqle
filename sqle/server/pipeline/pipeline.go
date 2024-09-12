@@ -32,7 +32,7 @@ func (pipe Pipeline) NodeCount() uint32 {
 	return uint32(len(pipe.PipelineNodes))
 }
 
-func (node PipelineNode) IntegrationInfo(ctx context.Context) (string, error) {
+func (node PipelineNode) IntegrationInfo(ctx context.Context, projectName string) (string, error) {
 	dmsAddr := controller.GetDMSServerAddress()
 	parsedURL, err := url.Parse(dmsAddr)
 	if err != nil {
@@ -73,6 +73,7 @@ func (node PipelineNode) IntegrationInfo(ctx context.Context) (string, error) {
 			scannerCmd.FlagDirectory:    node.ObjectPath,
 			scannerCmd.FlagDbType:       node.InstanceType,
 			scannerCmd.FlagInstanceName: node.InstanceName,
+			scannerCmd.FlagProject:      projectName,
 		})
 		if err != nil {
 			return "", err

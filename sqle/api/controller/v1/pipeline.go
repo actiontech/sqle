@@ -48,11 +48,11 @@ type pipelineNodeDetail struct {
 	pipelineNodeBase
 }
 
-func (p *pipelineNodeDetail) fillWith(ctx context.Context, node *pipeline.PipelineNode) {
+func (p *pipelineNodeDetail) fillWith(ctx context.Context, node *pipeline.PipelineNode, projectName string) {
 	if node == nil {
 		return
 	}
-	integrationInfo, err := node.IntegrationInfo(ctx)
+	integrationInfo, err := node.IntegrationInfo(ctx, projectName)
 	if err != nil {
 		integrationInfo = err.Error()
 	}
@@ -269,7 +269,7 @@ func GetPipelineDetail(c echo.Context) error {
 	pipelineDetail.fillWith(pipe)
 	nodeDetails := make([]pipelineNodeDetail, len(pipe.PipelineNodes))
 	for i, node := range pipe.PipelineNodes {
-		nodeDetails[i].fillWith(c.Request().Context(), node)
+		nodeDetails[i].fillWith(c.Request().Context(), node, c.Param("project_name"))
 	}
 
 	return c.JSON(http.StatusOK, &GetPipelineDetailResV1{
