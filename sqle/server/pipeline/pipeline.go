@@ -32,7 +32,7 @@ func (pipe Pipeline) NodeCount() uint32 {
 	return uint32(len(pipe.PipelineNodes))
 }
 
-func (node PipelineNode) IntegrationInfo(ctx context.Context) (string, error) {
+func (node PipelineNode) IntegrationInfo(ctx context.Context, projectName string) (string, error) {
 	dmsAddr := controller.GetDMSServerAddress()
 	parsedURL, err := url.Parse(dmsAddr)
 	if err != nil {
@@ -66,14 +66,18 @@ func (node PipelineNode) IntegrationInfo(ctx context.Context) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		cmd, err = sqlfile.GenCommand("./scannerd", map[string]string{
-			scannerCmd.FlagHost:         ip,
-			scannerCmd.FlagPort:         port,
-			scannerCmd.FlagToken:        node.Token,
-			scannerCmd.FlagDirectory:    node.ObjectPath,
-			scannerCmd.FlagDbType:       node.InstanceType,
-			scannerCmd.FlagInstanceName: node.InstanceName,
-		})
+		params := map[string]string{
+			scannerCmd.FlagHost:      ip,
+			scannerCmd.FlagPort:      port,
+			scannerCmd.FlagToken:     node.Token,
+			scannerCmd.FlagDirectory: node.ObjectPath,
+			scannerCmd.FlagDbType:    node.InstanceType,
+			scannerCmd.FlagProject:   projectName,
+		}
+		if node.InstanceName != "" {
+			params[scannerCmd.FlagInstanceName] = node.InstanceName
+		}
+		cmd, err = sqlfile.GenCommand("./scannerd", params)
 		if err != nil {
 			return "", err
 		}
