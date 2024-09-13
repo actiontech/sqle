@@ -9,12 +9,12 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
 	"github.com/actiontech/sqle/sqle/driver"
 	_ "github.com/actiontech/sqle/sqle/driver/mysql"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
-	"github.com/actiontech/sqle/sqle/pkg/i18nPkg"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/agiledragon/gomonkey"

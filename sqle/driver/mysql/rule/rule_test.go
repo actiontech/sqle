@@ -3,6 +3,7 @@ package rule
 import (
 	"testing"
 
+	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
 	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/stretchr/testify/assert"
@@ -11,19 +12,19 @@ import (
 func TestInspectResults(t *testing.T) {
 	results := driverV2.NewAuditResults()
 	handler := RuleHandlerMap[DDLCheckPKWithoutIfNotExists]
-	results.Add(handler.Rule.Level, handler.Rule.Name, plocale.ShouldLocalizeAll(plocale.DDLCheckPKWithoutIfNotExistsMessage))
+	results.Add(handler.Rule.Level, handler.Rule.Name, plocale.Bundle.LocalizeAll(plocale.DDLCheckPKWithoutIfNotExistsMessage))
 	assert.Equal(t, driverV2.RuleLevelError, results.Level())
 	assert.Equal(t, "[error]新建表建议加入 IF NOT EXISTS，保证重复执行不报错", results.Message())
 
-	results.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAllWithArgs(plocale.TableNotExistMessage, "not_exist_tb"))
+	results.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAllWithArgs(plocale.TableNotExistMessage, "not_exist_tb"))
 	assert.Equal(t, driverV2.RuleLevelError, results.Level())
 	assert.Equal(t,
 		`[error]新建表建议加入 IF NOT EXISTS，保证重复执行不报错
 [error]表 not_exist_tb 不存在`, results.Message())
 
 	results2 := driverV2.NewAuditResults()
-	results2.Add(results.Level(), "", plocale.ConvertStr2I18n(results.Message()))
-	results2.Add(driverV2.RuleLevelNotice, "", plocale.ConvertStr2I18n("test"))
+	results2.Add(results.Level(), "", i18nPkg.ConvertStr2I18nAsDefaultLang(results.Message()))
+	results2.Add(driverV2.RuleLevelNotice, "", i18nPkg.ConvertStr2I18nAsDefaultLang("test"))
 	assert.Equal(t, driverV2.RuleLevelError, results2.Level())
 	assert.Equal(t,
 		`[error]新建表建议加入 IF NOT EXISTS，保证重复执行不报错
@@ -31,8 +32,8 @@ func TestInspectResults(t *testing.T) {
 [notice]test`, results2.Message())
 
 	results3 := driverV2.NewAuditResults()
-	results3.Add(results2.Level(), "", plocale.ConvertStr2I18n(results2.Message()))
-	results3.Add(driverV2.RuleLevelNotice, "", plocale.ConvertStr2I18n("[osc]test"))
+	results3.Add(results2.Level(), "", i18nPkg.ConvertStr2I18nAsDefaultLang(results2.Message()))
+	results3.Add(driverV2.RuleLevelNotice, "", i18nPkg.ConvertStr2I18nAsDefaultLang("[osc]test"))
 	assert.Equal(t, driverV2.RuleLevelError, results3.Level())
 	assert.Equal(t,
 		`[error]新建表建议加入 IF NOT EXISTS，保证重复执行不报错
@@ -41,16 +42,16 @@ func TestInspectResults(t *testing.T) {
 [osc]test`, results3.Message())
 
 	results4 := driverV2.NewAuditResults()
-	results4.Add(driverV2.RuleLevelNotice, "", plocale.ConvertStr2I18n("[notice]test"))
-	results4.Add(driverV2.RuleLevelError, "", plocale.ConvertStr2I18n("[osc]test"))
+	results4.Add(driverV2.RuleLevelNotice, "", i18nPkg.ConvertStr2I18nAsDefaultLang("[notice]test"))
+	results4.Add(driverV2.RuleLevelError, "", i18nPkg.ConvertStr2I18nAsDefaultLang("[osc]test"))
 	assert.Equal(t, driverV2.RuleLevelError, results4.Level())
 	assert.Equal(t,
 		`[osc]test
 [notice]test`, results4.Message())
 
 	results5 := driverV2.NewAuditResults()
-	results5.Add(driverV2.RuleLevelWarn, "", plocale.ConvertStr2I18n("[warn]test"))
-	results5.Add(driverV2.RuleLevelNotice, "", plocale.ConvertStr2I18n("[osc]test"))
+	results5.Add(driverV2.RuleLevelWarn, "", i18nPkg.ConvertStr2I18nAsDefaultLang("[warn]test"))
+	results5.Add(driverV2.RuleLevelNotice, "", i18nPkg.ConvertStr2I18nAsDefaultLang("[osc]test"))
 	assert.Equal(t, driverV2.RuleLevelWarn, results5.Level())
 	assert.Equal(t,
 		`[warn]test

@@ -50,7 +50,7 @@ func (i *MysqlDriverImpl) CheckInvalid(node ast.Node) error {
 	if err != nil && session.IsParseShowCreateTableContentErr(err) {
 		return err // todo #1630 直接返回原始错误类型，方便跳过
 	} else if err != nil {
-		return fmt.Errorf(plocale.ShouldLocalizeMsgByLang(language.English, plocale.CheckInvalidErrorFormat), err)
+		return fmt.Errorf(plocale.Bundle.LocalizeMsgByLang(language.English, plocale.CheckInvalidErrorFormat), err)
 	}
 	return nil
 
@@ -67,7 +67,7 @@ func (i *MysqlDriverImpl) CheckExplain(node ast.Node) error {
 	}
 	if err != nil {
 		i.result.Add(driverV2.RuleLevelWarn, rulepkg.ConfigDMLExplainPreCheckEnable,
-			plocale.ShouldLocalizeAll(plocale.CheckInvalidErrorFormat), err)
+			plocale.Bundle.LocalizeAll(plocale.CheckInvalidErrorFormat), err)
 	}
 	return nil
 
@@ -88,7 +88,7 @@ func (i *MysqlDriverImpl) CheckInvalidOffline(node ast.Node) error {
 		err = i.checkUnparsedStmt(stmt)
 	}
 	if err != nil {
-		return fmt.Errorf(plocale.ShouldLocalizeMsgByLang(language.English, plocale.CheckInvalidErrorFormat), err)
+		return fmt.Errorf(plocale.Bundle.LocalizeMsgByLang(language.English, plocale.CheckInvalidErrorFormat), err)
 	}
 	return nil
 }
@@ -109,14 +109,14 @@ func (i *MysqlDriverImpl) checkInvalidCreateTable(stmt *ast.CreateTableStmt) err
 		return err
 	}
 	if !schemaExist {
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.SchemaNotExistMessage), schemaName)
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.SchemaNotExistMessage), schemaName)
 	} else {
 		tableExist, err := i.Ctx.IsTableExist(stmt.Table)
 		if err != nil {
 			return err
 		}
 		if tableExist && !stmt.IfNotExists {
-			i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.TableExistMessage),
+			i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.TableExistMessage),
 				i.getTableName(stmt.Table))
 		}
 		if stmt.ReferTable != nil {
@@ -125,7 +125,7 @@ func (i *MysqlDriverImpl) checkInvalidCreateTable(stmt *ast.CreateTableStmt) err
 				return err
 			}
 			if !referTableExist {
-				i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.TableNotExistMessage),
+				i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.TableNotExistMessage),
 					i.getTableName(stmt.ReferTable))
 			}
 		}
@@ -170,7 +170,7 @@ func (i *MysqlDriverImpl) checkInvalidCreateTableOffline(stmt *ast.CreateTableSt
 			}
 			duplicateName := utils.GetDuplicate(names)
 			if len(duplicateName) > 0 {
-				i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.DuplicatePrimaryKeyedColumnMessage),
+				i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.DuplicatePrimaryKeyedColumnMessage),
 					strings.Join(duplicateName, ","))
 			}
 		case ast.ConstraintIndex, ast.ConstraintUniq, ast.ConstraintFulltext:
@@ -178,7 +178,7 @@ func (i *MysqlDriverImpl) checkInvalidCreateTableOffline(stmt *ast.CreateTableSt
 			if constraintName != "" {
 				indexesName = append(indexesName, constraint.Name)
 			} else {
-				constraintName = plocale.ShouldLocalizeMsgByLang(language.English, plocale.AnonymousMark)
+				constraintName = plocale.Bundle.LocalizeMsgByLang(language.English, plocale.AnonymousMark)
 			}
 			names := []string{}
 			for _, col := range constraint.Keys {
@@ -188,23 +188,23 @@ func (i *MysqlDriverImpl) checkInvalidCreateTableOffline(stmt *ast.CreateTableSt
 			}
 			duplicateName := utils.GetDuplicate(names)
 			if len(duplicateName) > 0 {
-				i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.DuplicateIndexedColumnMessage), constraintName,
+				i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.DuplicateIndexedColumnMessage), constraintName,
 					strings.Join(duplicateName, ","))
 			}
 		}
 	}
 	if d := utils.GetDuplicate(colsName); len(d) > 0 {
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.DuplicateColumnsMessage),
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.DuplicateColumnsMessage),
 			strings.Join(d, ","))
 	}
 
 	if d := utils.GetDuplicate(indexesName); len(d) > 0 {
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.DuplicateIndexesMessage),
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.DuplicateIndexesMessage),
 			strings.Join(d, ","))
 	}
 
 	if pkCounter > 1 {
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.MultiPrimaryKeyMessage))
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.MultiPrimaryKeyMessage))
 	}
 	notExistKeyColsName := []string{}
 	for _, colName := range keyColsName {
@@ -213,7 +213,7 @@ func (i *MysqlDriverImpl) checkInvalidCreateTableOffline(stmt *ast.CreateTableSt
 		}
 	}
 	if len(notExistKeyColsName) > 0 {
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.KeyedColumnNotExistMessage),
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.KeyedColumnNotExistMessage),
 			strings.Join(utils.RemoveDuplicate(notExistKeyColsName), ","))
 	}
 	return nil
@@ -242,7 +242,7 @@ func (i *MysqlDriverImpl) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error
 		return err
 	}
 	if !schemaExist {
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.SchemaNotExistMessage), schemaName)
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.SchemaNotExistMessage), schemaName)
 		return nil
 	}
 	createTableStmt, tableExist, err := i.Ctx.GetCreateTableStmt(stmt.Table)
@@ -250,7 +250,7 @@ func (i *MysqlDriverImpl) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error
 		return err
 	}
 	if !tableExist {
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.TableNotExistMessage),
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.TableNotExistMessage),
 			i.getTableName(stmt.Table))
 		return nil
 	}
@@ -320,7 +320,7 @@ func (i *MysqlDriverImpl) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error
 			} else {
 				colNameMap[colName] = struct{}{}
 				if hasPk && util.HasOneInOptions(col.Options, ast.ColumnOptionPrimaryKey) {
-					i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.PrimaryKeyExistMessage))
+					i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.PrimaryKeyExistMessage))
 				} else {
 					hasPk = true
 				}
@@ -344,7 +344,7 @@ func (i *MysqlDriverImpl) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error
 
 	if len(util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableDropPrimaryKey)) > 0 && !hasPk {
 		// primary key not exist, can not drop primary key
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.PrimaryKeyNotExistMessage))
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.PrimaryKeyNotExistMessage))
 	}
 
 	for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableDropIndex) {
@@ -379,7 +379,7 @@ func (i *MysqlDriverImpl) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error
 		case ast.ConstraintPrimaryKey:
 			if hasPk {
 				// primary key has exist, can not add primary key
-				i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.PrimaryKeyExistMessage))
+				i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.PrimaryKeyExistMessage))
 			} else {
 				hasPk = true
 			}
@@ -393,7 +393,7 @@ func (i *MysqlDriverImpl) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error
 			}
 			duplicateColumn := utils.GetDuplicate(names)
 			if len(duplicateColumn) > 0 {
-				i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.DuplicatePrimaryKeyedColumnMessage),
+				i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.DuplicatePrimaryKeyedColumnMessage),
 					strings.Join(duplicateColumn, ","))
 			}
 		case ast.ConstraintUniq, ast.ConstraintIndex, ast.ConstraintFulltext:
@@ -405,7 +405,7 @@ func (i *MysqlDriverImpl) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error
 					indexLowerCaseNameMap.Add(indexName)
 				}
 			} else {
-				indexName = plocale.ShouldLocalizeMsgByLang(language.English, plocale.AnonymousMark)
+				indexName = plocale.Bundle.LocalizeMsgByLang(language.English, plocale.AnonymousMark)
 			}
 			names := []string{}
 			for _, col := range spec.Constraint.Keys {
@@ -417,30 +417,30 @@ func (i *MysqlDriverImpl) checkInvalidAlterTable(stmt *ast.AlterTableStmt) error
 			}
 			duplicateColumn := utils.GetDuplicate(names)
 			if len(duplicateColumn) > 0 {
-				i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.DuplicateIndexedColumnMessage), indexName,
+				i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.DuplicateIndexedColumnMessage), indexName,
 					strings.Join(duplicateColumn, ","))
 			}
 		}
 	}
 
 	if len(needExistsColsName) > 0 {
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.ColumnNotExistMessage),
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.ColumnNotExistMessage),
 			strings.Join(utils.RemoveDuplicate(needExistsColsName), ","))
 	}
 	if len(needNotExistsColsName) > 0 {
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.ColumnExistMessage),
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.ColumnExistMessage),
 			strings.Join(utils.RemoveDuplicate(needNotExistsColsName), ","))
 	}
 	if len(needExistsIndexesName) > 0 {
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.IndexNotExistMessage),
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.IndexNotExistMessage),
 			strings.Join(utils.RemoveDuplicate(needExistsIndexesName), ","))
 	}
 	if len(needNotExistsIndexesName) > 0 {
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.IndexExistMessage),
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.IndexExistMessage),
 			strings.Join(utils.RemoveDuplicate(needNotExistsIndexesName), ","))
 	}
 	if len(needExistsKeyColsName) > 0 {
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.KeyedColumnNotExistMessage),
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.KeyedColumnNotExistMessage),
 			strings.Join(utils.RemoveDuplicate(needExistsKeyColsName), ","))
 	}
 	return nil
@@ -461,7 +461,7 @@ func (i *MysqlDriverImpl) checkInvalidAlterTableOffline(stmt *ast.AlterTableStmt
 	for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns) {
 		for _, col := range spec.NewColumns {
 			if hasPk && util.HasOneInOptions(col.Options, ast.ColumnOptionPrimaryKey) {
-				i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.PrimaryKeyExistMessage))
+				i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.PrimaryKeyExistMessage))
 			} else {
 				hasPk = true
 			}
@@ -474,7 +474,7 @@ func (i *MysqlDriverImpl) checkInvalidAlterTableOffline(stmt *ast.AlterTableStmt
 		case ast.ConstraintPrimaryKey:
 			if hasPk {
 				// primary key has exist, can not add primary key
-				i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.PrimaryKeyExistMessage))
+				i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.PrimaryKeyExistMessage))
 			} else {
 				hasPk = true
 			}
@@ -485,13 +485,13 @@ func (i *MysqlDriverImpl) checkInvalidAlterTableOffline(stmt *ast.AlterTableStmt
 			}
 			duplicateColumn := utils.GetDuplicate(names)
 			if len(duplicateColumn) > 0 {
-				i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.DuplicatePrimaryKeyedColumnMessage),
+				i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.DuplicatePrimaryKeyedColumnMessage),
 					strings.Join(duplicateColumn, ","))
 			}
 		case ast.ConstraintUniq, ast.ConstraintIndex, ast.ConstraintFulltext:
 			indexName := spec.Constraint.Name
 			if indexName == "" {
-				indexName = plocale.ShouldLocalizeMsgByLang(language.English, plocale.AnonymousMark)
+				indexName = plocale.Bundle.LocalizeMsgByLang(language.English, plocale.AnonymousMark)
 			}
 			names := []string{}
 			for _, col := range spec.Constraint.Keys {
@@ -500,7 +500,7 @@ func (i *MysqlDriverImpl) checkInvalidAlterTableOffline(stmt *ast.AlterTableStmt
 			}
 			duplicateColumn := utils.GetDuplicate(names)
 			if len(duplicateColumn) > 0 {
-				i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.DuplicateIndexedColumnMessage), indexName,
+				i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.DuplicateIndexedColumnMessage), indexName,
 					strings.Join(duplicateColumn, ","))
 			}
 		}
@@ -541,11 +541,11 @@ func (i *MysqlDriverImpl) checkInvalidDropTable(stmt *ast.DropTableStmt) error {
 		}
 	}
 	if len(needExistsSchemasName) > 0 {
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.SchemaNotExistMessage),
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.SchemaNotExistMessage),
 			strings.Join(utils.RemoveDuplicate(needExistsSchemasName), ","))
 	}
 	if len(needExistsTablesName) > 0 {
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.TableNotExistMessage),
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.TableNotExistMessage),
 			strings.Join(utils.RemoveDuplicate(needExistsTablesName), ","))
 	}
 	return nil
@@ -564,7 +564,7 @@ func (i *MysqlDriverImpl) checkInvalidUse(stmt *ast.UseStmt) error {
 		return err
 	}
 	if !schemaExist {
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.SchemaNotExistMessage), stmt.DBName)
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.SchemaNotExistMessage), stmt.DBName)
 	}
 	return nil
 }
@@ -586,7 +586,7 @@ func (i *MysqlDriverImpl) checkInvalidCreateDatabase(stmt *ast.CreateDatabaseStm
 		return err
 	}
 	if schemaExist {
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.SchemaExistMessage), schemaName)
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.SchemaExistMessage), schemaName)
 	}
 	return nil
 }
@@ -608,7 +608,7 @@ func (i *MysqlDriverImpl) checkInvalidDropDatabase(stmt *ast.DropDatabaseStmt) e
 		return err
 	}
 	if !schemaExist {
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.SchemaNotExistMessage), schemaName)
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.SchemaNotExistMessage), schemaName)
 	}
 	return nil
 }
@@ -630,7 +630,7 @@ func (i *MysqlDriverImpl) checkInvalidCreateIndex(stmt *ast.CreateIndexStmt) err
 		return err
 	}
 	if !schemaExist {
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.SchemaNotExistMessage), schemaName)
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.SchemaNotExistMessage), schemaName)
 		return nil
 	}
 	createTableStmt, tableExist, err := i.Ctx.GetCreateTableStmt(stmt.Table)
@@ -638,7 +638,7 @@ func (i *MysqlDriverImpl) checkInvalidCreateIndex(stmt *ast.CreateIndexStmt) err
 		return err
 	}
 	if !tableExist {
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.TableNotExistMessage),
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.TableNotExistMessage),
 			i.getTableName(stmt.Table))
 		return nil
 	}
@@ -653,7 +653,7 @@ func (i *MysqlDriverImpl) checkInvalidCreateIndex(stmt *ast.CreateIndexStmt) err
 		}
 	}
 	if _, ok := indexNameMap[stmt.IndexName]; ok {
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.IndexExistMessage), stmt.IndexName)
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.IndexExistMessage), stmt.IndexName)
 	}
 	keyColsName := []string{}
 	keyColNeedExist := []string{}
@@ -666,12 +666,12 @@ func (i *MysqlDriverImpl) checkInvalidCreateIndex(stmt *ast.CreateIndexStmt) err
 	}
 	duplicateName := utils.GetDuplicate(keyColsName)
 	if len(duplicateName) > 0 {
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.DuplicateIndexedColumnMessage), stmt.IndexName,
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.DuplicateIndexedColumnMessage), stmt.IndexName,
 			strings.Join(duplicateName, ","))
 	}
 
 	if len(keyColNeedExist) > 0 {
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.KeyedColumnNotExistMessage),
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.KeyedColumnNotExistMessage),
 			strings.Join(utils.RemoveDuplicate(keyColNeedExist), ","))
 	}
 	return nil
@@ -692,7 +692,7 @@ func (i *MysqlDriverImpl) checkInvalidCreateIndexOffline(stmt *ast.CreateIndexSt
 	}
 	duplicateName := utils.GetDuplicate(keyColsName)
 	if len(duplicateName) > 0 {
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.DuplicateIndexedColumnMessage), stmt.IndexName,
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.DuplicateIndexedColumnMessage), stmt.IndexName,
 			strings.Join(duplicateName, ","))
 	}
 	return nil
@@ -717,7 +717,7 @@ func (i *MysqlDriverImpl) checkInvalidDropIndex(stmt *ast.DropIndexStmt) error {
 		return err
 	}
 	if !schemaExist {
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.SchemaNotExistMessage), schemaName)
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.SchemaNotExistMessage), schemaName)
 		return nil
 	}
 	createTableStmt, tableExist, err := i.Ctx.GetCreateTableStmt(stmt.Table)
@@ -725,7 +725,7 @@ func (i *MysqlDriverImpl) checkInvalidDropIndex(stmt *ast.DropIndexStmt) error {
 		return err
 	}
 	if !tableExist {
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.TableNotExistMessage),
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.TableNotExistMessage),
 			i.getTableName(stmt.Table))
 		return nil
 	}
@@ -736,7 +736,7 @@ func (i *MysqlDriverImpl) checkInvalidDropIndex(stmt *ast.DropIndexStmt) error {
 		}
 	}
 	if _, ok := indexNameMap[stmt.IndexName]; !ok {
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.IndexNotExistMessage), stmt.IndexName)
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.IndexNotExistMessage), stmt.IndexName)
 	}
 	return nil
 }
@@ -761,7 +761,7 @@ func (i *MysqlDriverImpl) checkInvalidInsert(stmt *ast.InsertStmt) error {
 		return err
 	}
 	if !schemaExist {
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.SchemaNotExistMessage), schemaName)
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.SchemaNotExistMessage), schemaName)
 		return nil
 	}
 	createTableStmt, tableExist, err := i.Ctx.GetCreateTableStmt(table)
@@ -769,7 +769,7 @@ func (i *MysqlDriverImpl) checkInvalidInsert(stmt *ast.InsertStmt) error {
 		return err
 	}
 	if !tableExist {
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.TableNotExistMessage),
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.TableNotExistMessage),
 			i.getTableName(table))
 		return nil
 	}
@@ -795,7 +795,7 @@ func (i *MysqlDriverImpl) checkInvalidInsert(stmt *ast.InsertStmt) error {
 		}
 	}
 	if d := utils.GetDuplicate(insertColsName); len(d) > 0 {
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.DuplicateColumnsMessage), strings.Join(d, ","))
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.DuplicateColumnsMessage), strings.Join(d, ","))
 	}
 
 	needExistColsName := []string{}
@@ -805,14 +805,14 @@ func (i *MysqlDriverImpl) checkInvalidInsert(stmt *ast.InsertStmt) error {
 		}
 	}
 	if len(needExistColsName) > 0 {
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.ColumnNotExistMessage),
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.ColumnNotExistMessage),
 			strings.Join(utils.RemoveDuplicate(needExistColsName), ","))
 	}
 
 	if stmt.Lists != nil {
 		for _, list := range stmt.Lists {
 			if len(list) != len(insertColsName) {
-				i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.ColumnsValuesNotMatchMessage))
+				i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.ColumnsValuesNotMatchMessage))
 				break
 			}
 		}
@@ -841,13 +841,13 @@ func (i *MysqlDriverImpl) checkInvalidInsertOffline(stmt *ast.InsertStmt) error 
 		}
 	}
 	if d := utils.GetDuplicate(insertColsName); len(d) > 0 {
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.DuplicateColumnsMessage), strings.Join(d, ","))
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.DuplicateColumnsMessage), strings.Join(d, ","))
 	}
 
 	if stmt.Lists != nil && len(insertColsName) > 0 {
 		for _, list := range stmt.Lists {
 			if len(list) != len(insertColsName) {
-				i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.ColumnsValuesNotMatchMessage))
+				i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.ColumnsValuesNotMatchMessage))
 				break
 			}
 		}
@@ -906,11 +906,11 @@ func (i *MysqlDriverImpl) checkInvalidUpdate(stmt *ast.UpdateStmt) error {
 		}
 	}
 	if len(needExistsSchemasName) > 0 {
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.SchemaNotExistMessage),
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.SchemaNotExistMessage),
 			strings.Join(utils.RemoveDuplicate(needExistsSchemasName), ","))
 	}
 	if len(needExistsTablesName) > 0 {
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.TableNotExistMessage),
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.TableNotExistMessage),
 			strings.Join(utils.RemoveDuplicate(needExistsTablesName), ","))
 	}
 
@@ -971,12 +971,12 @@ func (i *MysqlDriverImpl) checkInvalidUpdate(stmt *ast.UpdateStmt) error {
 	}, stmt.Where)
 
 	if len(needExistColsName) > 0 {
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.ColumnNotExistMessage),
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.ColumnNotExistMessage),
 			strings.Join(utils.RemoveDuplicate(needExistColsName), ","))
 	}
 
 	if len(ambiguousColsName) > 0 {
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.ColumnIsAmbiguousMessage),
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.ColumnIsAmbiguousMessage),
 			strings.Join(utils.RemoveDuplicate(ambiguousColsName), ","))
 	}
 	return nil
@@ -1034,11 +1034,11 @@ func (i *MysqlDriverImpl) checkInvalidDelete(stmt *ast.DeleteStmt) error {
 		}
 	}
 	if len(needExistsSchemasName) > 0 {
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.SchemaNotExistMessage),
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.SchemaNotExistMessage),
 			strings.Join(utils.RemoveDuplicate(needExistsSchemasName), ","))
 	}
 	if len(needExistsTablesName) > 0 {
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.TableNotExistMessage),
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.TableNotExistMessage),
 			strings.Join(utils.RemoveDuplicate(needExistsTablesName), ","))
 	}
 	if len(needExistsSchemasName) > 0 || len(needExistsTablesName) > 0 {
@@ -1086,12 +1086,12 @@ func (i *MysqlDriverImpl) checkInvalidDelete(stmt *ast.DeleteStmt) error {
 	}, stmt.Where)
 
 	if len(needExistColsName) > 0 {
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.ColumnNotExistMessage),
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.ColumnNotExistMessage),
 			strings.Join(utils.RemoveDuplicate(needExistColsName), ","))
 	}
 
 	if len(ambiguousColsName) > 0 {
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.ColumnIsAmbiguousMessage),
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.ColumnIsAmbiguousMessage),
 			strings.Join(utils.RemoveDuplicate(ambiguousColsName), ","))
 	}
 	return nil
@@ -1145,11 +1145,11 @@ func (i *MysqlDriverImpl) checkInvalidSelect(stmt *ast.SelectStmt) error {
 		}
 	}
 	if len(needExistsSchemasName) > 0 {
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.SchemaNotExistMessage),
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.SchemaNotExistMessage),
 			strings.Join(utils.RemoveDuplicate(needExistsSchemasName), ","))
 	}
 	if len(needExistsTablesName) > 0 {
-		i.result.Add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeAll(plocale.TableNotExistMessage),
+		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.TableNotExistMessage),
 			strings.Join(utils.RemoveDuplicate(needExistsTablesName), ","))
 	}
 	return nil
@@ -1157,6 +1157,6 @@ func (i *MysqlDriverImpl) checkInvalidSelect(stmt *ast.SelectStmt) error {
 
 // checkUnparsedStmt might add more check in future.
 func (i *MysqlDriverImpl) checkUnparsedStmt(stmt *ast.UnparsedStmt) error {
-	i.result.Add(driverV2.RuleLevelWarn, "", plocale.ShouldLocalizeAll(plocale.UnsupportedSyntaxError))
+	i.result.Add(driverV2.RuleLevelWarn, "", plocale.Bundle.LocalizeAll(plocale.UnsupportedSyntaxError))
 	return nil
 }

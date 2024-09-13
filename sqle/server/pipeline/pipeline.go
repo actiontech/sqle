@@ -52,7 +52,7 @@ func (node PipelineNode) IntegrationInfo(ctx context.Context, projectName string
 
 	switch model.PipelineNodeType(node.NodeType) {
 	case model.NodeTypeAudit:
-		var cmdUsage = locale.ShouldLocalizeMsg(ctx, locale.PipelineCmdUsage)
+		var cmdUsage = locale.Bundle.LocalizeMsgByCtx(ctx, locale.PipelineCmdUsage)
 
 		var cmd string
 		var cmdType string

@@ -334,6 +334,7 @@ message IndexesInfo {
 message TabularDataHead {
   string name = 1;
   string desc = 2;
+  map<string, string> i18nDesc = 3;
 }
 
 message TabularDataRows {

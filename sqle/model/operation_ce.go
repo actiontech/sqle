@@ -14,5 +14,5 @@ func getConfigurableOperationCodeListForEE() []uint {
 }
 
 func additionalOperationForEE(ctx context.Context, opCode uint) string {
-	return locale.ShouldLocalizeMsg(ctx, locale.OpUnknown)
+	return locale.Bundle.LocalizeMsgByCtx(ctx, locale.OpUnknown)
 }
