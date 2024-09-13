@@ -11,13 +11,13 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/driver/mysql/keyword"
 	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 	"github.com/actiontech/sqle/sqle/driver/mysql/session"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
-	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/utils"
@@ -305,8 +305,8 @@ func ConvertSourceRule(sr *SourceRule) *driverV2.Rule {
 		r.Params = append(r.Params, &params.Param{
 			Key:      v.Key,
 			Value:    v.Value,
-			Desc:     plocale.ShouldLocalizeMsgByLang(locale.DefaultLang, v.Desc),
-			I18nDesc: plocale.ShouldLocalizeAll(v.Desc),
+			Desc:     plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, v.Desc),
+			I18nDesc: plocale.Bundle.LocalizeAll(v.Desc),
 			Type:     v.Type,
 			Enums:    nil, // all nil now
 		})
@@ -319,9 +319,9 @@ func genAllI18nRuleInfo(sr *SourceRule) map[language.Tag]*driverV2.RuleInfo {
 	result := make(map[language.Tag]*driverV2.RuleInfo, len(plocale.Bundle.LanguageTags()))
 	for _, langTag := range plocale.Bundle.LanguageTags() {
 		newInfo := &driverV2.RuleInfo{
-			Desc:       plocale.ShouldLocalizeMsgByLang(langTag, sr.Desc),
-			Annotation: plocale.ShouldLocalizeMsgByLang(langTag, sr.Annotation),
-			Category:   plocale.ShouldLocalizeMsgByLang(langTag, sr.Category),
+			Desc:       plocale.Bundle.LocalizeMsgByLang(langTag, sr.Desc),
+			Annotation: plocale.Bundle.LocalizeMsgByLang(langTag, sr.Annotation),
+			Category:   plocale.Bundle.LocalizeMsgByLang(langTag, sr.Category),
 			//Level:      sr.Level,
 			Knowledge: driverV2.RuleKnowledge{Content: sr.Knowledge.Content}, //todo i18n Knowledge
 		}
@@ -340,7 +340,7 @@ func init() {
 	for i, rh := range RuleHandlers {
 		if knowledge, ok := defaultRulesKnowledge[rh.Rule.Name]; ok {
 			// todo i18n Knowledge
-			rh.Rule.I18nRuleInfo[locale.DefaultLang].Knowledge = driverV2.RuleKnowledge{Content: knowledge}
+			rh.Rule.I18nRuleInfo[i18nPkg.DefaultLang].Knowledge = driverV2.RuleKnowledge{Content: knowledge}
 			RuleHandlers[i] = rh
 		}
 		RuleHandlerMap[rh.Rule.Name] = rh
@@ -359,7 +359,7 @@ func addResult(result *driverV2.AuditResults, currentRule driverV2.Rule, ruleNam
 	}
 	level := currentRule.Level
 	message := RuleHandlerMap[ruleName].Message
-	result.Add(level, ruleName, plocale.ShouldLocalizeAll(message), args...)
+	result.Add(level, ruleName, plocale.Bundle.LocalizeAll(message), args...)
 }
 
 func (rh *RuleHandler) IsAllowOfflineRule(node ast.Node) bool {

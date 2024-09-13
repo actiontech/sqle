@@ -883,8 +883,8 @@ func GetSQLAuditRecordTagTipsV1(c echo.Context) error {
 	return c.JSON(http.StatusOK, &GetSQLAuditRecordTagTipsResV1{
 		BaseRes: controller.BaseRes{},
 		Tags: []string{
-			locale.ShouldLocalizeMsg(c.Request().Context(), locale.AuditRecordTagFull),      // 全量
-			locale.ShouldLocalizeMsg(c.Request().Context(), locale.AuditRecordTagIncrement), // 增量
+			locale.Bundle.LocalizeMsgByCtx(c.Request().Context(), locale.AuditRecordTagFull),      // 全量
+			locale.Bundle.LocalizeMsgByCtx(c.Request().Context(), locale.AuditRecordTagIncrement), // 增量
 		},
 	})
 }

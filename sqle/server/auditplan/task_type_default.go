@@ -33,13 +33,13 @@ func (at *DefaultTaskV2) Params(instanceId ...string) params.Params {
 var defaultOperatorEnums = []params.EnumsValue{
 	{
 		Value:    ">",
-		I18nDesc: locale.ShouldLocalizeAll(locale.OperatorGreaterThan),
+		I18nDesc: locale.Bundle.LocalizeAll(locale.OperatorGreaterThan),
 	}, {
 		Value:    "=",
-		I18nDesc: locale.ShouldLocalizeAll(locale.OperatorEqualTo),
+		I18nDesc: locale.Bundle.LocalizeAll(locale.OperatorEqualTo),
 	}, {
 		Value:    "<",
-		I18nDesc: locale.ShouldLocalizeAll(locale.OperatorLessThan),
+		I18nDesc: locale.Bundle.LocalizeAll(locale.OperatorLessThan),
 	},
 }
 
@@ -61,7 +61,7 @@ var defaultAuditLevelOperateParams = &params.ParamWithOperator{
 				Desc:  string(driverV2.RuleLevelError),
 			},
 		},
-		I18nDesc: locale.ShouldLocalizeAll(locale.OperationParamAuditLevel),
+		I18nDesc: locale.Bundle.LocalizeAll(locale.OperationParamAuditLevel),
 	},
 	Operator: params.Operator{
 		Value:      ">",
@@ -250,7 +250,7 @@ func (at *DefaultTaskV2) GetSQLData(ctx context.Context, ap *AuditPlan, persist 
 			"priority":                     sql.Priority.String,
 			MetricNameCounter:              strconv.Itoa(int(info.Get(MetricNameCounter).Int())),
 			MetricNameLastReceiveTimestamp: info.Get(MetricNameLastReceiveTimestamp).String(),
-			model.AuditResultName:          sql.AuditResult.GetAuditJsonStrByLangTag(locale.GetLangTagFromCtx(ctx)),
+			model.AuditResultName:          sql.AuditResult.GetAuditJsonStrByLangTag(locale.Bundle.GetLangTagFromCtx(ctx)),
 		})
 	}
 	return rows, count, nil

@@ -129,13 +129,13 @@ func (at *BaseSchemaMetaTaskV2) Params(instanceId ...string) params.Params {
 			Key:      paramKeyCollectIntervalMinute,
 			Value:    "60",
 			Type:     params.ParamTypeInt,
-			I18nDesc: locale.ShouldLocalizeAll(locale.ParamCollectIntervalMinuteOracle),
+			I18nDesc: locale.Bundle.LocalizeAll(locale.ParamCollectIntervalMinuteOracle),
 		},
 		{
 			Key:      "collect_view",
 			Value:    "0",
 			Type:     params.ParamTypeBool,
-			I18nDesc: locale.ShouldLocalizeAll(locale.ParamCollectView),
+			I18nDesc: locale.Bundle.LocalizeAll(locale.ParamCollectView),
 		},
 	}
 }
@@ -354,7 +354,7 @@ func (at *BaseSchemaMetaTaskV2) GetSQLData(ctx context.Context, ap *AuditPlan, p
 			"id":                  sql.AuditPlanSqlId,
 			MetricNameMetaName:    info.Get(MetricNameMetaName).String(),
 			MetricNameMetaType:    info.Get(MetricNameMetaType).String(),
-			model.AuditResultName: sql.AuditResult.GetAuditJsonStrByLangTag(locale.GetLangTagFromCtx(ctx)),
+			model.AuditResultName: sql.AuditResult.GetAuditJsonStrByLangTag(locale.Bundle.GetLangTagFromCtx(ctx)),
 		})
 	}
 	return rows, count, nil

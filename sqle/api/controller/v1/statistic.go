@@ -355,7 +355,7 @@ func GetLicenseUsageV1(c echo.Context) error {
 		Data: &LicenseUsageV1{
 			UsersUsage: LicenseUsageItem{
 				ResourceType:     "user",
-				ResourceTypeDesc: locale.ShouldLocalizeMsg(c.Request().Context(), locale.StatisticResourceTypeUser),
+				ResourceTypeDesc: locale.Bundle.LocalizeMsgByCtx(c.Request().Context(), locale.StatisticResourceTypeUser),
 				Used:             0,
 				Limit:            0,
 				IsLimited:        false,
@@ -680,7 +680,7 @@ func StatisticAuditPlanV1(c echo.Context) error {
 		newAuditPlanCount := &AuditPlanCount{
 			Count: dBTypeAuditPlanCounts[i].AuditPlanCount,
 			Type:  dBTypeAuditPlanCounts[i].Type,
-			Desc:  locale.ShouldLocalizeMsg(c.Request().Context(), meta.Desc),
+			Desc:  locale.Bundle.LocalizeMsgByCtx(c.Request().Context(), meta.Desc),
 		}
 		dbTypeAuditPlanCountSliceMap[dbType] = append(auditPlanCountSlice, newAuditPlanCount)
 	}

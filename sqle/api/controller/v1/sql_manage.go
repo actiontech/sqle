@@ -1,7 +1,10 @@
 package v1
 
 import (
+	"context"
+
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/labstack/echo/v4"
 )
 
@@ -233,7 +236,7 @@ func GetSqlManageSqlAnalysisV1(c echo.Context) error {
 	return getSqlManageSqlAnalysisV1(c)
 }
 
-func convertSQLAnalysisResultToRes(res *AnalysisResult, rawSQL string) *SqlAnalysis {
+func convertSQLAnalysisResultToRes(ctx context.Context, res *AnalysisResult, rawSQL string) *SqlAnalysis {
 	data := &SqlAnalysis{}
 
 	// explain
@@ -251,7 +254,7 @@ func convertSQLAnalysisResultToRes(res *AnalysisResult, rawSQL string) *SqlAnaly
 			for i := range res.ExplainResult.ClassicResult.Columns {
 				col := res.ExplainResult.ClassicResult.Columns[i]
 				classicResult.Head[i].FieldName = col.Name
-				classicResult.Head[i].Desc = col.Desc
+				classicResult.Head[i].Desc = col.I18nDesc.GetStrInLang(locale.Bundle.GetLangTagFromCtx(ctx))
 			}
 
 			// rows
@@ -293,7 +296,7 @@ func convertSQLAnalysisResultToRes(res *AnalysisResult, rawSQL string) *SqlAnaly
 				for j := range tableMetaColumnsInfo.Columns {
 					col := tableMetaColumnsInfo.Columns[j]
 					tableMetaColumnData.Head[j].FieldName = col.Name
-					tableMetaColumnData.Head[j].Desc = col.Desc
+					tableMetaColumnData.Head[j].Desc = col.I18nDesc.GetStrInLang(locale.Bundle.GetLangTagFromCtx(ctx))
 				}
 
 				for j := range tableMetaColumnsInfo.Rows {
@@ -307,7 +310,7 @@ func convertSQLAnalysisResultToRes(res *AnalysisResult, rawSQL string) *SqlAnaly
 				tableMetaIndexData := tableMetaItemsData[i].Indexes
 				for j := range tableMetaIndexInfo.Columns {
 					tableMetaIndexData.Head[j].FieldName = tableMetaIndexInfo.Columns[j].Name
-					tableMetaIndexData.Head[j].Desc = tableMetaIndexInfo.Columns[j].Desc
+					tableMetaIndexData.Head[j].Desc = tableMetaIndexInfo.Columns[j].I18nDesc.GetStrInLang(locale.Bundle.GetLangTagFromCtx(ctx))
 				}
 
 				for j := range tableMetaIndexInfo.Rows {
