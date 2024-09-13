@@ -77,7 +77,7 @@ func getSqlDEVRecordList(c echo.Context) error {
 }
 
 func convertToGetSqlDEVRecordListResp(ctx context.Context, sqlDEVRecordList []*model.SQLDevRecord) ([]*SqlDEVRecord, error) {
-	lang := locale.GetLangTagFromCtx(ctx)
+	lang := locale.Bundle.GetLangTagFromCtx(ctx)
 	sqlDEVRecordRespList := make([]*SqlDEVRecord, 0, len(sqlDEVRecordList))
 	for _, sqlDEVRecord := range sqlDEVRecordList {
 		sqlDEV := new(SqlDEVRecord)

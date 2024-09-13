@@ -38,7 +38,7 @@ func (at *DmTopSQLTaskV2) Params(instanceId ...string) params.Params {
 			Key:      paramKeyCollectIntervalMinute,
 			Value:    "60",
 			Type:     params.ParamTypeInt,
-			I18nDesc: locale.ShouldLocalizeAll(locale.ParamCollectIntervalMinuteOracle),
+			I18nDesc: locale.Bundle.LocalizeAll(locale.ParamCollectIntervalMinuteOracle),
 		},
 		{
 			Key:   "top_n",
@@ -50,7 +50,7 @@ func (at *DmTopSQLTaskV2) Params(instanceId ...string) params.Params {
 			Key:      "order_by_column",
 			Value:    DmTopSQLMetricTotalExecTime,
 			Type:     params.ParamTypeString,
-			I18nDesc: locale.ShouldLocalizeAll(locale.ParamOrderByColumnGeneric),
+			I18nDesc: locale.Bundle.LocalizeAll(locale.ParamOrderByColumnGeneric),
 		},
 	}
 }
@@ -320,7 +320,7 @@ func (at *DmTopSQLTaskV2) GetSQLData(ctx context.Context, ap *AuditPlan, persist
 			MetricNameCPUTimeTotal:       fmt.Sprintf("%v", utils.Round(float64(info.Get(MetricNameCPUTimeTotal).Float())/1000, 3)),   //视图中时间单位是毫秒，所以除以1000得到秒
 			MetricNamePhyReadPageTotal:   strconv.Itoa(int(info.Get(MetricNamePhyReadPageTotal).Int())),
 			MetricNameLogicReadPageTotal: strconv.Itoa(int(info.Get(MetricNameLogicReadPageTotal).Int())),
-			model.AuditResultName:        sql.AuditResult.GetAuditJsonStrByLangTag(locale.GetLangTagFromCtx(ctx)),
+			model.AuditResultName:        sql.AuditResult.GetAuditJsonStrByLangTag(locale.Bundle.GetLangTagFromCtx(ctx)),
 		})
 	}
 	return rows, count, nil

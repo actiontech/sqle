@@ -226,7 +226,7 @@ func convertRulesToOptimizationReqRules(templateRules []*model.Rule, dbType stri
 }
 
 func convertRuleNameAndMessage(ctx context.Context, ruleCode string, ruleMessage string, dbType string) (string, string) {
-	lang := locale.GetLangTagFromCtx(ctx)
+	lang := locale.Bundle.GetLangTagFromCtx(ctx)
 	name, message := ruleCode, ruleMessage
 	// 获取对应的重写规则
 	rule, exist := opt.GetOptimizationRuleByRuleCode(ruleCode, dbType)

@@ -147,8 +147,8 @@ func testFeishuAuditConfigV1(c echo.Context) error {
 	}
 
 	for uid := range feishuUsers {
-		_, err := client.CreateApprovalInstance(c.Request().Context(), feishuCfg.ProcessCode, locale.ShouldLocalizeMsg(c.Request().Context(), locale.ConfigTestAudit), uid,
-			[]string{uid}, "", "", locale.ShouldLocalizeMsg(c.Request().Context(), locale.ConfigFeishuTestContent), "", "")
+		_, err := client.CreateApprovalInstance(c.Request().Context(), feishuCfg.ProcessCode, locale.Bundle.LocalizeMsgByCtx(c.Request().Context(), locale.ConfigTestAudit), uid,
+			[]string{uid}, "", "", locale.Bundle.LocalizeMsgByCtx(c.Request().Context(), locale.ConfigFeishuTestContent), "", "")
 		if err != nil {
 			return c.JSON(http.StatusOK, &TestFeishuConfigResV1{
 				BaseRes: controller.NewBaseReq(nil),
@@ -359,7 +359,7 @@ func testWechatAuditConfigV1(c echo.Context) error {
 
 	client := wechat.NewWechatClient(wechatCfg.AppKey, wechatCfg.AppSecret)
 	_, err = client.CreateApprovalInstance(c.Request().Context(), wechatCfg.ProcessCode, "", req.WechatId, []string{req.WechatId},
-		"", "", locale.ShouldLocalizeMsg(c.Request().Context(), locale.ConfigFeishuTestContent), nil)
+		"", "", locale.Bundle.LocalizeMsgByCtx(c.Request().Context(), locale.ConfigFeishuTestContent), nil)
 
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)

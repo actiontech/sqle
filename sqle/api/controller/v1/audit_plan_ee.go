@@ -15,6 +15,7 @@ import (
 	"github.com/actiontech/sqle/sqle/driver"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/labstack/echo/v4"
@@ -54,7 +55,7 @@ func getAuditPlanAnalysisData(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, &GetAuditPlanAnalysisDataResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    explainAndMetaDataToRes(explainResult, explainMessage, tableMetaResult, auditPlanReportSQLV2.SQL),
+		Data:    explainAndMetaDataToRes(c.Request().Context(), explainResult, explainMessage, tableMetaResult, auditPlanReportSQLV2.SQL),
 	})
 }
 
@@ -101,7 +102,7 @@ func getSQLAnalysisResultFromDriver(l *logrus.Entry, database, sql string, insta
 	return explainResult, explainMessage, tableMetaResult, nil
 }
 
-func explainAndMetaDataToRes(explainResultInput *driverV2.ExplainResult, explainMessage string, metaDataResultInput *driver.GetTableMetaBySQLResult,
+func explainAndMetaDataToRes(ctx context.Context, explainResultInput *driverV2.ExplainResult, explainMessage string, metaDataResultInput *driver.GetTableMetaBySQLResult,
 	rawSql string) GetSQLAnalysisDataResItemV1 {
 
 	explainResult := explainResultInput
@@ -126,7 +127,7 @@ func explainAndMetaDataToRes(explainResultInput *driverV2.ExplainResult, explain
 	explainResItemV1 := analysisDataResItemV1.SQLExplain.ClassicResult
 	for i, column := range explainResult.ClassicResult.Columns {
 		explainResItemV1.Head[i].FieldName = column.Name
-		explainResItemV1.Head[i].Desc = column.Desc
+		explainResItemV1.Head[i].Desc = column.I18nDesc.GetStrInLang(locale.Bundle.GetLangTagFromCtx(ctx))
 	}
 
 	for i, rows := range explainResult.ClassicResult.Rows {
@@ -156,7 +157,7 @@ func explainAndMetaDataToRes(explainResultInput *driverV2.ExplainResult, explain
 		tableMetaColumnRes := analysisDataResItemV1.TableMetas[i].Columns
 		for i2, column := range tableMetaColumnsInfo.Columns {
 			tableMetaColumnRes.Head[i2].FieldName = column.Name
-			tableMetaColumnRes.Head[i2].Desc = column.Desc
+			tableMetaColumnRes.Head[i2].Desc = column.I18nDesc.GetStrInLang(locale.Bundle.GetLangTagFromCtx(ctx))
 		}
 
 		for i2, rows := range tableMetaColumnsInfo.Rows {
@@ -170,7 +171,7 @@ func explainAndMetaDataToRes(explainResultInput *driverV2.ExplainResult, explain
 		tableMetaIndexRes := analysisDataResItemV1.TableMetas[i].Indexes
 		for i2, column := range tableMetaIndexInfo.Columns {
 			tableMetaIndexRes.Head[i2].FieldName = column.Name
-			tableMetaIndexRes.Head[i2].Desc = column.Desc
+			tableMetaIndexRes.Head[i2].Desc = column.I18nDesc.GetStrInLang(locale.Bundle.GetLangTagFromCtx(ctx))
 		}
 
 		for i2, rows := range tableMetaIndexInfo.Rows {

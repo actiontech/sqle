@@ -41,23 +41,23 @@ func (at *SlowLogTaskV2) Params(instanceId ...string) params.Params {
 			Key:      paramKeyCollectIntervalMinute,
 			Value:    "60",
 			Type:     params.ParamTypeInt,
-			I18nDesc: locale.ShouldLocalizeAll(locale.ParamCollectIntervalMinuteMySQL),
+			I18nDesc: locale.Bundle.LocalizeAll(locale.ParamCollectIntervalMinuteMySQL),
 		},
 		{
 			Key:   paramKeySlowLogCollectInput,
 			Value: "0",
 			Type:  params.ParamTypeInt,
 			Enums: []params.EnumsValue{
-				{Value: "0", I18nDesc: locale.ShouldLocalizeAll(locale.EnumSlowLogFileSource)},
-				{Value: "1", I18nDesc: locale.ShouldLocalizeAll(locale.EnumSlowLogTableSource)},
+				{Value: "0", I18nDesc: locale.Bundle.LocalizeAll(locale.EnumSlowLogFileSource)},
+				{Value: "1", I18nDesc: locale.Bundle.LocalizeAll(locale.EnumSlowLogTableSource)},
 			},
-			I18nDesc: locale.ShouldLocalizeAll(locale.ParamSlowLogCollectInput),
+			I18nDesc: locale.Bundle.LocalizeAll(locale.ParamSlowLogCollectInput),
 		},
 		{
 			Key:      paramKeyFirstSqlsScrappedInLastPeriodHours,
 			Value:    "24",
 			Type:     params.ParamTypeInt,
-			I18nDesc: locale.ShouldLocalizeAll(locale.ParamFirstSqlsScrappedHours),
+			I18nDesc: locale.Bundle.LocalizeAll(locale.ParamFirstSqlsScrappedHours),
 		},
 	}
 }
@@ -69,7 +69,7 @@ func (at *SlowLogTaskV2) HighPriorityParams() params.ParamsWithOperator {
 				Key:      MetricNameQueryTimeAvg,
 				Value:    "10",
 				Type:     params.ParamTypeFloat64,
-				I18nDesc: locale.ShouldLocalizeAll(locale.ApMetricQueryTimeAvg),
+				I18nDesc: locale.Bundle.LocalizeAll(locale.ApMetricQueryTimeAvg),
 			},
 			Operator: params.Operator{
 				Value:      ">",
@@ -81,7 +81,7 @@ func (at *SlowLogTaskV2) HighPriorityParams() params.ParamsWithOperator {
 				Key:      MetricNameRowExaminedAvg,
 				Value:    "100",
 				Type:     params.ParamTypeFloat64,
-				I18nDesc: locale.ShouldLocalizeAll(locale.ApMetricRowExaminedAvg),
+				I18nDesc: locale.Bundle.LocalizeAll(locale.ApMetricRowExaminedAvg),
 			},
 			Operator: params.Operator{
 				Value:      ">",
@@ -361,7 +361,7 @@ func (at *SlowLogTaskV2) GetSQLs(ctx context.Context, ap *AuditPlan, persist *mo
 			"last_receive_timestamp": info.LastReceiveTimestamp,
 			"db_user":                info.DBUser,
 			"schema":                 sql.Schema,
-			model.AuditResultName:    sql.AuditResult.GetAuditJsonStrByLangTag(locale.GetLangTagFromCtx(ctx)),
+			model.AuditResultName:    sql.AuditResult.GetAuditJsonStrByLangTag(locale.Bundle.GetLangTagFromCtx(ctx)),
 		}
 
 		if info.RowExaminedAvg != nil {
@@ -516,7 +516,7 @@ func (at *SlowLogTaskV2) GetSQLData(ctx context.Context, ap *AuditPlan, persist 
 			"sql":                          sql.SQLContent,
 			"id":                           sql.AuditPlanSqlId,
 			"priority":                     sql.Priority.String,
-			model.AuditResultName:          sql.AuditResult.GetAuditJsonStrByLangTag(locale.GetLangTagFromCtx(ctx)),
+			model.AuditResultName:          sql.AuditResult.GetAuditJsonStrByLangTag(locale.Bundle.GetLangTagFromCtx(ctx)),
 			MetricNameCounter:              fmt.Sprint(info.Get(MetricNameCounter).Int()),
 			MetricNameLastReceiveTimestamp: info.Get(MetricNameLastReceiveTimestamp).String(),
 			MetricNameQueryTimeAvg:         fmt.Sprint(utils.Round(info.Get(MetricNameQueryTimeAvg).Float(), 2)),

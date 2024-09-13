@@ -94,7 +94,7 @@ func getSqlManageList(c echo.Context) error {
 }
 
 func convertToGetSqlManageListResp(ctx context.Context, sqlManageList []*model.SqlManageDetail) ([]*SqlManage, error) {
-	lang := locale.GetLangTagFromCtx(ctx)
+	lang := locale.Bundle.GetLangTagFromCtx(ctx)
 	sqlManageRespList := make([]*SqlManage, 0, len(sqlManageList))
 	users, err := dms.GetMapUsers(context.TODO(), nil, dms.GetDMSServerAddress())
 	if err != nil {
