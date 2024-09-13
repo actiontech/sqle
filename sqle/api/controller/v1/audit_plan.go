@@ -13,6 +13,7 @@ import (
 
 	v1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	dmsCommonJwt "github.com/actiontech/dms/pkg/dms-common/api/jwt"
+	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/common"
 	dms "github.com/actiontech/sqle/sqle/dms"
@@ -101,7 +102,7 @@ type Operator struct {
 func ConvertAuditPlanMetaWithInstanceIdToRes(ctx context.Context, meta auditplan.Meta, instanceId string) AuditPlanMetaV1 {
 	res := AuditPlanMetaV1{
 		Type:         meta.Type,
-		Desc:         locale.ShouldLocalizeMsg(ctx, meta.Desc),
+		Desc:         locale.Bundle.LocalizeMsgByCtx(ctx, meta.Desc),
 		InstanceType: meta.InstanceType,
 	}
 	if meta.Params != nil && len(meta.Params()) > 0 {
@@ -113,7 +114,7 @@ func ConvertAuditPlanMetaWithInstanceIdToRes(ctx context.Context, meta auditplan
 			}
 			paramsRes = append(paramsRes, AuditPlanParamResV1{
 				Key:         p.Key,
-				Desc:        p.GetDesc(locale.GetLangTagFromCtx(ctx)),
+				Desc:        p.GetDesc(locale.Bundle.GetLangTagFromCtx(ctx)),
 				Type:        string(p.Type),
 				Value:       val,
 				EnumsValues: ConvertEnumsValuesToRes(ctx, p.Enums),
@@ -127,7 +128,7 @@ func ConvertAuditPlanMetaWithInstanceIdToRes(ctx context.Context, meta auditplan
 		for _, hpc := range meta.HighPriorityParams {
 			highPriorityparamsRes = append(highPriorityparamsRes, HighPriorityConditionResV1{
 				Key:         hpc.Key,
-				Desc:        hpc.GetDesc(locale.GetLangTagFromCtx(ctx)),
+				Desc:        hpc.GetDesc(locale.Bundle.GetLangTagFromCtx(ctx)),
 				Type:        string(hpc.Type),
 				Value:       hpc.Value,
 				EnumsValues: ConvertEnumsValuesToRes(ctx, hpc.Enums),
@@ -145,7 +146,7 @@ func ConvertAuditPlanMetaWithInstanceIdToRes(ctx context.Context, meta auditplan
 func ConvertAuditPlanMetaToRes(ctx context.Context, meta auditplan.Meta) AuditPlanMetaV1 {
 	res := AuditPlanMetaV1{
 		Type:         meta.Type,
-		Desc:         locale.ShouldLocalizeMsg(ctx, meta.Desc),
+		Desc:         locale.Bundle.LocalizeMsgByCtx(ctx, meta.Desc),
 		InstanceType: meta.InstanceType,
 	}
 	if meta.Params != nil && len(meta.Params()) > 0 {
@@ -157,7 +158,7 @@ func ConvertAuditPlanMetaToRes(ctx context.Context, meta auditplan.Meta) AuditPl
 			}
 			paramRes := AuditPlanParamResV1{
 				Key:         p.Key,
-				Desc:        p.GetDesc(locale.GetLangTagFromCtx(ctx)),
+				Desc:        p.GetDesc(locale.Bundle.GetLangTagFromCtx(ctx)),
 				Type:        string(p.Type),
 				Value:       val,
 				EnumsValues: ConvertEnumsValuesToRes(ctx, p.Enums),
@@ -182,11 +183,11 @@ func ConvertEnumsValuesToRes(ctx context.Context, ems []params.EnumsValue) []Enu
 
 func ConvertEnumsValueToRes(ctx context.Context, ems params.EnumsValue) EnumsValueResV1 {
 	if ems.Desc != "" {
-		ems.I18nDesc.SetStrInLang(locale.DefaultLang, ems.Desc)
+		ems.I18nDesc.SetStrInLang(i18nPkg.DefaultLang, ems.Desc)
 	}
 	return EnumsValueResV1{
 		Value: ems.Value,
-		Desc:  ems.I18nDesc.GetStrInLang(locale.GetLangTagFromCtx(ctx)),
+		Desc:  ems.I18nDesc.GetStrInLang(locale.Bundle.GetLangTagFromCtx(ctx)),
 	}
 }
 
@@ -243,7 +244,7 @@ func GetAuditPlanTypes(c echo.Context) error {
 	for _, meta := range auditplan.Metas {
 		auditPlanTypesV1 = append(auditPlanTypesV1, AuditPlanTypesV1{
 			Type:         meta.Type,
-			Desc:         locale.ShouldLocalizeMsg(c.Request().Context(), meta.Desc),
+			Desc:         locale.Bundle.LocalizeMsgByCtx(c.Request().Context(), meta.Desc),
 			InstanceType: meta.InstanceType,
 		})
 	}
@@ -1424,7 +1425,7 @@ func GetAuditPlanSQLs(c echo.Context) error {
 	for _, v := range head {
 		res.Head = append(res.Head, AuditPlanSQLHeadV1{
 			Name: v.Name,
-			Desc: locale.ShouldLocalizeMsg(c.Request().Context(), v.Desc),
+			Desc: locale.Bundle.LocalizeMsgByCtx(c.Request().Context(), v.Desc),
 			Type: v.Type,
 		})
 	}
@@ -1516,7 +1517,7 @@ func GetAuditPlanReportSQLsV1(c echo.Context) error {
 }
 
 func spliceAuditResults(ctx context.Context, auditResults []model.AuditResult) string {
-	lang := locale.GetLangTagFromCtx(ctx)
+	lang := locale.Bundle.GetLangTagFromCtx(ctx)
 	results := []string{}
 	for _, auditResult := range auditResults {
 		results = append(results,
@@ -1563,15 +1564,15 @@ func ExportAuditPlanReportV1(c echo.Context) error {
 
 	ctx := c.Request().Context()
 	baseInfo := [][]string{
-		{locale.ShouldLocalizeMsg(ctx, locale.APExportTaskName), auditPlanName},
-		{locale.ShouldLocalizeMsg(ctx, locale.APExportGenerationTime), reportInfo.CreatedAt.Format("2006/01/02 15:04")},
-		{locale.ShouldLocalizeMsg(ctx, locale.APExportResultRating), strconv.FormatInt(int64(reportInfo.Score), 10)},
-		{locale.ShouldLocalizeMsg(ctx, locale.APExportApprovalRate), fmt.Sprintf("%v%%", reportInfo.PassRate*100)},
-		{locale.ShouldLocalizeMsg(ctx, locale.APExportBelongingProject), projectName},
-		{locale.ShouldLocalizeMsg(ctx, locale.APExportCreator), dms.GetUserNameWithDelTag(reportInfo.AuditPlan.CreateUserID)},
-		{locale.ShouldLocalizeMsg(ctx, locale.APExportType), reportInfo.AuditPlan.Type},
-		{locale.ShouldLocalizeMsg(ctx, locale.APExportDbType), reportInfo.AuditPlan.DBType},
-		{locale.ShouldLocalizeMsg(ctx, locale.APExportDatabase), reportInfo.AuditPlan.InstanceDatabase},
+		{locale.Bundle.LocalizeMsgByCtx(ctx, locale.APExportTaskName), auditPlanName},
+		{locale.Bundle.LocalizeMsgByCtx(ctx, locale.APExportGenerationTime), reportInfo.CreatedAt.Format("2006/01/02 15:04")},
+		{locale.Bundle.LocalizeMsgByCtx(ctx, locale.APExportResultRating), strconv.FormatInt(int64(reportInfo.Score), 10)},
+		{locale.Bundle.LocalizeMsgByCtx(ctx, locale.APExportApprovalRate), fmt.Sprintf("%v%%", reportInfo.PassRate*100)},
+		{locale.Bundle.LocalizeMsgByCtx(ctx, locale.APExportBelongingProject), projectName},
+		{locale.Bundle.LocalizeMsgByCtx(ctx, locale.APExportCreator), dms.GetUserNameWithDelTag(reportInfo.AuditPlan.CreateUserID)},
+		{locale.Bundle.LocalizeMsgByCtx(ctx, locale.APExportType), reportInfo.AuditPlan.Type},
+		{locale.Bundle.LocalizeMsgByCtx(ctx, locale.APExportDbType), reportInfo.AuditPlan.DBType},
+		{locale.Bundle.LocalizeMsgByCtx(ctx, locale.APExportDatabase), reportInfo.AuditPlan.InstanceDatabase},
 	}
 	err = csvWriter.WriteAll(baseInfo)
 	if err != nil {
@@ -1585,9 +1586,9 @@ func ExportAuditPlanReportV1(c echo.Context) error {
 	}
 
 	err = csvWriter.Write([]string{
-		locale.ShouldLocalizeMsg(ctx, locale.APExportNumber), // 编号
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.APExportNumber), // 编号
 		"SQL",
-		locale.ShouldLocalizeMsg(ctx, locale.APExportAuditResult), // 审核结果
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.APExportAuditResult), // 审核结果
 	})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)

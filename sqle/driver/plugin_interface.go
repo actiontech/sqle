@@ -4,8 +4,8 @@ import (
 	"context"
 	"database/sql/driver"
 
+	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
-	"github.com/actiontech/sqle/sqle/pkg/i18nPkg"
 
 	"github.com/sirupsen/logrus"
 )

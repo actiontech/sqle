@@ -5,11 +5,10 @@ import (
 	sqlDriver "database/sql/driver"
 	"fmt"
 
+	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
 	driverV1 "github.com/actiontech/sqle/sqle/driver/v1"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
-	"github.com/actiontech/sqle/sqle/locale"
-	"github.com/actiontech/sqle/sqle/pkg/i18nPkg"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	goPlugin "github.com/hashicorp/go-plugin"
 	"github.com/sirupsen/logrus"
@@ -40,7 +39,7 @@ func convertRuleFromV1ToV2(rule *driverV1.Rule) *driverV2.Rule {
 		Level:  driverV2.RuleLevel(rule.Level),
 		Params: ps,
 		I18nRuleInfo: map[language.Tag]*driverV2.RuleInfo{
-			locale.DefaultLang: {
+			i18nPkg.DefaultLang: {
 				Desc:       rule.Desc,
 				Annotation: rule.Annotation,
 				Category:   rule.Category,
@@ -105,9 +104,9 @@ func (d *PluginProcessorV1) Open(l *logrus.Entry, cfgV2 *driverV2.Config) (Plugi
 	for _, rule := range cfgV2.Rules {
 		cfg.Rules = append(cfg.Rules, &driverV1.Rule{
 			Name:       rule.Name,
-			Desc:       rule.I18nRuleInfo.GetRuleInfoByLangTag(locale.DefaultLang).Desc,
-			Annotation: rule.I18nRuleInfo.GetRuleInfoByLangTag(locale.DefaultLang).Annotation,
-			Category:   rule.I18nRuleInfo.GetRuleInfoByLangTag(locale.DefaultLang).Category,
+			Desc:       rule.I18nRuleInfo.GetRuleInfoByLangTag(i18nPkg.DefaultLang).Desc,
+			Annotation: rule.I18nRuleInfo.GetRuleInfoByLangTag(i18nPkg.DefaultLang).Annotation,
+			Category:   rule.I18nRuleInfo.GetRuleInfoByLangTag(i18nPkg.DefaultLang).Category,
 			Level:      driverV1.RuleLevel(rule.Level),
 			Params:     rule.Params,
 		})
@@ -174,7 +173,7 @@ func (p *PluginImplV1) Audit(ctx context.Context, sqls []string) ([]*driverV2.Au
 			resultV2.Results = append(resultV2.Results, &driverV2.AuditResult{
 				Level: driverV2.RuleLevel(result.Level),
 				I18nAuditResultInfo: map[language.Tag]driverV2.AuditResultInfo{
-					locale.DefaultLang: {
+					i18nPkg.DefaultLang: {
 						Message: result.Message,
 					},
 				},
@@ -263,8 +262,8 @@ func (p *PluginImplV1) Explain(ctx context.Context, conf *driverV2.ExplainConf) 
 	columnsV2 := []driverV2.TabularDataHead{}
 	for _, column := range resultV1.ClassicResult.Columns {
 		columnsV2 = append(columnsV2, driverV2.TabularDataHead{
-			Name: column.Name,
-			Desc: column.Desc,
+			Name:     column.Name,
+			I18nDesc: i18nPkg.ConvertStr2I18nAsDefaultLang(column.Desc),
 		})
 	}
 
@@ -306,8 +305,8 @@ func (p *PluginImplV1) GetTableMetaBySQL(ctx context.Context, conf *GetTableMeta
 		columnV2 := []driverV2.TabularDataHead{}
 		for _, column := range tm.ColumnsInfo.Columns {
 			columnV2 = append(columnV2, driverV2.TabularDataHead{
-				Name: column.Name,
-				Desc: column.Desc,
+				Name:     column.Name,
+				I18nDesc: i18nPkg.ConvertStr2I18nAsDefaultLang(column.Desc),
 			})
 		}
 		tmV2.ColumnsInfo.Columns = columnV2
@@ -316,8 +315,8 @@ func (p *PluginImplV1) GetTableMetaBySQL(ctx context.Context, conf *GetTableMeta
 		indexesColV2 := []driverV2.TabularDataHead{}
 		for _, column := range tm.IndexesInfo.Columns {
 			indexesColV2 = append(indexesColV2, driverV2.TabularDataHead{
-				Name: column.Name,
-				Desc: column.Desc,
+				Name:     column.Name,
+				I18nDesc: i18nPkg.ConvertStr2I18nAsDefaultLang(column.Desc),
 			})
 
 		}

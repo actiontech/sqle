@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
 	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 	"golang.org/x/text/language"
 
@@ -36,7 +37,7 @@ func newTestResult() *testResult {
 }
 
 func (t *testResult) add(level driverV2.RuleLevel, ruleName string, message string, args ...interface{}) *testResult {
-	t.Results.Add(level, ruleName, plocale.ConvertStr2I18n(message), args...)
+	t.Results.Add(level, ruleName, i18nPkg.ConvertStr2I18nAsDefaultLang(message), args...)
 	return t
 }
 
@@ -48,7 +49,7 @@ func (t *testResult) addResult(ruleName string, args ...interface{}) *testResult
 	level := handler.Rule.Level
 	var m string
 	if handler.Message != nil {
-		m = plocale.ShouldLocalizeMsgByLang(language.Chinese, handler.Message)
+		m = plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, handler.Message)
 	}
 	return t.add(level, ruleName, m, args...)
 }
@@ -219,7 +220,7 @@ func inspectCase(t *testing.T, desc string, i *MysqlDriverImpl, sql string, resu
 			t.Errorf("%s test failed, \n\nsql:\n %s\n\nexpect level: %s\nexpect result:\n%s\n\nactual level: %s\nactual result:\n%s\n",
 				desc, stmt.Text(), results[idx].level(), results[idx].message(), actualResults[idx].Level(), actualResults[idx].Message())
 		} else {
-			t.Logf("\n\ncase:%s\nactual level: %s\nactual result:\n%s\n\n", desc, actualResults[idx].Level(), actualResults[idx].Message())
+			//t.Logf("\n\ncase:%s\nactual level: %s\nactual result:\n%s\n\n", desc, actualResults[idx].Level(), actualResults[idx].Message())
 		}
 	}
 }
@@ -232,7 +233,7 @@ func TestMessage(t *testing.T) {
 func TestCheckInvalidUse(t *testing.T) {
 	runDefaultRulesInspectCase(t, "use_database: database not exist", DefaultMysqlInspect(),
 		"use no_exist_db",
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.SchemaNotExistMessage), "no_exist_db"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.SchemaNotExistMessage), "no_exist_db"),
 	)
 
 	inspect1 := DefaultMysqlInspect()
@@ -248,7 +249,7 @@ func TestCaseSensitive(t *testing.T) {
 		`
 select id from exist_db.EXIST_TB_1 where id = 1 limit 1;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.TableNotExistMessage), "exist_db.EXIST_TB_1").
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.TableNotExistMessage), "exist_db.EXIST_TB_1").
 			add(driverV2.RuleLevelNotice, "", "LIMIT 查询建议使用ORDER BY"))
 
 	inspect1 := DefaultMysqlInspect()
@@ -272,7 +273,7 @@ func TestDDLCheckTableSize(t *testing.T) {
 	runSingleRuleInspectCase(rule, t, "drop_table: table4 oversized", DefaultMysqlInspect(),
 		`drop table exist_db.exist_tb_4;`, newTestResult().addResult(rulepkg.DDLCheckTableSize, "exist_tb_4", 16))
 	runSingleRuleInspectCase(rule, t, "alter_table: table4 oversized", DefaultMysqlInspect(),
-		`alter table exist_db.exist_tb_4;`, newTestResult().addResult(rulepkg.DDLCheckTableSize, "exist_tb_4", 16) /*.addResult(rulepkg.ConfigDDLOSCMinSize, plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.PTOSCNoUniqueIndexOrPrimaryKey))*/)
+		`alter table exist_db.exist_tb_4;`, newTestResult().addResult(rulepkg.DDLCheckTableSize, "exist_tb_4", 16) /*.addResult(rulepkg.ConfigDDLOSCMinSize, plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.PTOSCNoUniqueIndexOrPrimaryKey))*/)
 
 }
 
@@ -329,7 +330,7 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.SchemaNotExistMessage), "not_exist_db"),
+		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.SchemaNotExistMessage), "not_exist_db"),
 	)
 
 	runDefaultRulesInspectCase(t, "create_table: table is exist(1)", DefaultMysqlInspect(),
@@ -361,14 +362,14 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.TableExistMessage), "exist_db.exist_tb_1"),
+		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.TableExistMessage), "exist_db.exist_tb_1"),
 	)
 
 	runDefaultRulesInspectCase(t, "create_table: refer table not exist", DefaultMysqlInspect(),
 		`
 CREATE TABLE exist_db.not_exist_tb_1 like exist_db.not_exist_tb_2;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.TableNotExistMessage), "exist_db.not_exist_tb_2"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.TableNotExistMessage), "exist_db.not_exist_tb_2"),
 	)
 
 	runDefaultRulesInspectCase(t, "create_table: multi pk(1)", DefaultMysqlInspect(),
@@ -382,7 +383,7 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.MultiPrimaryKeyMessage)))
+		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.MultiPrimaryKeyMessage)))
 
 	runDefaultRulesInspectCase(t, "create_table: multi pk(2)", DefaultMysqlInspect(),
 		`
@@ -396,7 +397,7 @@ PRIMARY KEY (id),
 PRIMARY KEY (v1)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.MultiPrimaryKeyMessage)))
+		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.MultiPrimaryKeyMessage)))
 
 	runDefaultRulesInspectCase(t, "create_table: duplicate column", DefaultMysqlInspect(),
 		`
@@ -409,7 +410,7 @@ v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.DuplicateColumnsMessage),
+		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.DuplicateColumnsMessage),
 			"v1"))
 
 	runDefaultRulesInspectCase(t, "create_table: duplicate index", DefaultMysqlInspect(),
@@ -425,7 +426,7 @@ INDEX idx_1 (v1),
 INDEX idx_1 (v2)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.DuplicateIndexesMessage),
+		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.DuplicateIndexesMessage),
 			"idx_1"))
 
 	runDefaultRulesInspectCase(t, "create_table: key column not exist", DefaultMysqlInspect(),
@@ -441,7 +442,7 @@ INDEX idx_1 (v3),
 INDEX idx_2 (v4,v5)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.KeyedColumnNotExistMessage),
+		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.KeyedColumnNotExistMessage),
 			"v3,v4,v5").add(driverV2.RuleLevelWarn, rulepkg.DDLCheckIndexNotNullConstraint, "这些索引字段(v3,v4,v5)需要有非空约束"))
 
 	runDefaultRulesInspectCase(t, "create_table: pk column not exist", DefaultMysqlInspect(),
@@ -455,7 +456,7 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id11)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.KeyedColumnNotExistMessage),
+		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.KeyedColumnNotExistMessage),
 			"id11").addResult(rulepkg.DDLCheckFieldNotNUllMustContainDefaultValue, "id").addResult(rulepkg.DDLCheckIndexNotNullConstraint, "id11"))
 
 	runDefaultRulesInspectCase(t, "create_table: pk column is duplicate", DefaultMysqlInspect(),
@@ -469,7 +470,7 @@ v2 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test",
 PRIMARY KEY (id,id)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.DuplicatePrimaryKeyedColumnMessage), "id"))
+		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.DuplicatePrimaryKeyedColumnMessage), "id"))
 
 	runDefaultRulesInspectCase(t, "create_table: index column is duplicate", DefaultMysqlInspect(),
 		`
@@ -483,7 +484,7 @@ PRIMARY KEY (id),
 INDEX idx_1 (v1,v1)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.DuplicateIndexedColumnMessage), "idx_1",
+		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.DuplicateIndexedColumnMessage), "idx_1",
 			"v1"))
 
 	runDefaultRulesInspectCase(t, "create_table: index column is duplicate(2)", DefaultMysqlInspect(),
@@ -498,7 +499,7 @@ PRIMARY KEY (id),
 INDEX (v1,v1)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.DuplicateIndexedColumnMessage), plocale.ShouldLocalizeMsgByLang(language.English, plocale.AnonymousMark),
+		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.DuplicateIndexedColumnMessage), plocale.Bundle.LocalizeMsgByLang(language.English, plocale.AnonymousMark),
 			"v1").addResult(rulepkg.DDLCheckIndexPrefix, "idx_"))
 
 	runDefaultRulesInspectCase(t, "create_table: index column is duplicate(3)", DefaultMysqlInspect(),
@@ -514,8 +515,8 @@ INDEX idx_1 (v1,v1),
 INDEX idx_2 (v1,v2,v2)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
-		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.DuplicateIndexedColumnMessage), "idx_1", "v1").
-			add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.DuplicateIndexedColumnMessage), "idx_2", "v2"))
+		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.DuplicateIndexedColumnMessage), "idx_1", "v1").
+			add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.DuplicateIndexedColumnMessage), "idx_2", "v2"))
 }
 
 func TestCheckInvalidAlterTable(t *testing.T) {
@@ -535,7 +536,7 @@ func TestCheckInvalidAlterTable(t *testing.T) {
 	runDefaultRulesInspectCase(t, "alter_table: schema not exist", DefaultMysqlInspect(),
 		`ALTER TABLE not_exist_db.exist_tb_1 add column v5 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.SchemaNotExistMessage),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.SchemaNotExistMessage),
 			"not_exist_db"),
 	)
 
@@ -543,7 +544,7 @@ func TestCheckInvalidAlterTable(t *testing.T) {
 		`
 ALTER TABLE exist_db.not_exist_tb_1 add column v5 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.TableNotExistMessage),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.TableNotExistMessage),
 			"exist_db.not_exist_tb_1"),
 	)
 
@@ -551,14 +552,14 @@ ALTER TABLE exist_db.not_exist_tb_1 add column v5 varchar(255) NOT NULL DEFAULT 
 		`
 ALTER TABLE exist_db.exist_tb_1 Add column v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.ColumnExistMessage), "v1"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.ColumnExistMessage), "v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: drop a not exist column", DefaultMysqlInspect(),
 		`
 ALTER TABLE exist_db.exist_tb_1 drop column v5;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.ColumnNotExistMessage),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.ColumnNotExistMessage),
 			"v5"),
 	)
 
@@ -566,7 +567,7 @@ ALTER TABLE exist_db.exist_tb_1 drop column v5;
 		`
 ALTER TABLE exist_db.exist_tb_1 alter column v5 set default 'v5';
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.ColumnNotExistMessage),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.ColumnNotExistMessage),
 			"v5"),
 	)
 
@@ -581,7 +582,7 @@ ALTER TABLE exist_db.exist_tb_1 change column v1 v1 varchar(255) NOT NULL DEFAUL
 		`
 ALTER TABLE exist_db.exist_tb_1 change column v5 v5 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.ColumnNotExistMessage),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.ColumnNotExistMessage),
 			"v5"),
 	)
 
@@ -589,7 +590,7 @@ ALTER TABLE exist_db.exist_tb_1 change column v5 v5 varchar(255) NOT NULL DEFAUL
 		`
 ALTER TABLE exist_db.exist_tb_1 change column v2 v1 varchar(255) NOT NULL DEFAULT "unit test" COMMENT "unit test";
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.ColumnExistMessage),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.ColumnExistMessage),
 			"v1"),
 	)
 
@@ -605,7 +606,7 @@ ALTER TABLE exist_db.exist_tb_2 Add primary key(id);
 ALTER TABLE exist_db.exist_tb_1 Add primary key(v1);
 `,
 		newTestResult().addResult(rulepkg.DDLCheckPKName).
-			add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.PrimaryKeyExistMessage)).
+			add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.PrimaryKeyExistMessage)).
 			addResult(rulepkg.DDLCheckPKWithoutAutoIncrement).
 			addResult(rulepkg.DDLCheckPKWithoutBigintUnsigned),
 	)
@@ -614,14 +615,14 @@ ALTER TABLE exist_db.exist_tb_1 Add primary key(v1);
 		`
 ALTER TABLE exist_db.exist_tb_2 Add primary key(id11);
 `,
-		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.KeyedColumnNotExistMessage), "id11").addResult(rulepkg.DDLCheckIndexNotNullConstraint, "id11"),
+		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.KeyedColumnNotExistMessage), "id11").addResult(rulepkg.DDLCheckIndexNotNullConstraint, "id11"),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: Add pk but key column is duplicate", DefaultMysqlInspect(),
 		`
 ALTER TABLE exist_db.exist_tb_2 Add primary key(id,id);
 `,
-		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.DuplicatePrimaryKeyedColumnMessage),
+		newTestResult().addResult(rulepkg.DDLCheckPKName).add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.DuplicatePrimaryKeyedColumnMessage),
 			"id"),
 	)
 
@@ -629,28 +630,28 @@ ALTER TABLE exist_db.exist_tb_2 Add primary key(id,id);
 		`
 ALTER TABLE exist_db.exist_tb_1 Add index idx_1 (v1);
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.IndexExistMessage), "idx_1"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.IndexExistMessage), "idx_1"),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: drop a not exist index", DefaultMysqlInspect(),
 		`
 ALTER TABLE exist_db.exist_tb_1 drop index idx_2;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.IndexNotExistMessage), "idx_2"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.IndexNotExistMessage), "idx_2"),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: Add index but key column not exist", DefaultMysqlInspect(),
 		`
 ALTER TABLE exist_db.exist_tb_1 Add index idx_2 (v3);
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.KeyedColumnNotExistMessage), "v3").addResult(rulepkg.DDLCheckIndexNotNullConstraint, "v3"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.KeyedColumnNotExistMessage), "v3").addResult(rulepkg.DDLCheckIndexNotNullConstraint, "v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "alter_table: Add index but key column is duplicate", DefaultMysqlInspect(),
 		`
 ALTER TABLE exist_db.exist_tb_1 Add index idx_2 (id,id);
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.DuplicateIndexedColumnMessage), "idx_2",
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.DuplicateIndexedColumnMessage), "idx_2",
 			"id"),
 	)
 
@@ -658,7 +659,7 @@ ALTER TABLE exist_db.exist_tb_1 Add index idx_2 (id,id);
 		`
 ALTER TABLE exist_db.exist_tb_1 Add index (id,id);
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.DuplicateIndexedColumnMessage), plocale.ShouldLocalizeMsgByLang(language.English, plocale.AnonymousMark),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.DuplicateIndexedColumnMessage), plocale.Bundle.LocalizeMsgByLang(language.English, plocale.AnonymousMark),
 			"id").addResult(rulepkg.DDLCheckIndexPrefix, "idx_"),
 	)
 }
@@ -675,7 +676,7 @@ CREATE DATABASE if not exists exist_db;
 		`
 CREATE DATABASE exist_db;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.SchemaExistMessage), "exist_db"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.SchemaExistMessage), "exist_db"),
 	)
 }
 
@@ -684,42 +685,42 @@ func TestCheckInvalidCreateIndex(t *testing.T) {
 		`
 CREATE INDEX idx_1 ON not_exist_db.not_exist_tb(v1);
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.SchemaNotExistMessage), "not_exist_db").addResult(rulepkg.DDLCheckIndexNotNullConstraint, "v1"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.SchemaNotExistMessage), "not_exist_db").addResult(rulepkg.DDLCheckIndexNotNullConstraint, "v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "create_index: table not exist", DefaultMysqlInspect(),
 		`
 CREATE INDEX idx_1 ON exist_db.not_exist_tb(v1);
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.TableNotExistMessage), "exist_db.not_exist_tb").addResult(rulepkg.DDLCheckIndexNotNullConstraint, "v1"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.TableNotExistMessage), "exist_db.not_exist_tb").addResult(rulepkg.DDLCheckIndexNotNullConstraint, "v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "create_index: index exist", DefaultMysqlInspect(),
 		`
 CREATE INDEX idx_1 ON exist_db.exist_tb_1(v1);
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.IndexExistMessage), "idx_1"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.IndexExistMessage), "idx_1"),
 	)
 
 	runDefaultRulesInspectCase(t, "create_index: key column not exist", DefaultMysqlInspect(),
 		`
 CREATE INDEX idx_2 ON exist_db.exist_tb_1(v3);
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.KeyedColumnNotExistMessage), "v3").addResult(rulepkg.DDLCheckIndexNotNullConstraint, "v3"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.KeyedColumnNotExistMessage), "v3").addResult(rulepkg.DDLCheckIndexNotNullConstraint, "v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "create_index: key column is duplicate", DefaultMysqlInspect(),
 		`
 CREATE INDEX idx_2 ON exist_db.exist_tb_1(id,id);
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.DuplicateIndexedColumnMessage), "idx_2", "id"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.DuplicateIndexedColumnMessage), "idx_2", "id"),
 	)
 
 	runDefaultRulesInspectCase(t, "create_index: key column is duplicate", DefaultMysqlInspect(),
 		`
 CREATE INDEX idx_2 ON exist_db.exist_tb_1(id,id,v1);
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.DuplicateIndexedColumnMessage), "idx_2", "id"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.DuplicateIndexedColumnMessage), "idx_2", "id"),
 	)
 }
 
@@ -747,7 +748,7 @@ DROP DATABASE if exists not_exist_db;
 		`
 DROP DATABASE not_exist_db;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.SchemaNotExistMessage), "not_exist_db"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.SchemaNotExistMessage), "not_exist_db"),
 	)
 
 	runDefaultRulesInspectCase(t, "drop_table: ok", DefaultMysqlInspect(),
@@ -768,14 +769,14 @@ DROP TABLE if exists not_exist_db.not_exist_tb_1;
 		`
 DROP TABLE not_exist_db.not_exist_tb_1;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.SchemaNotExistMessage), "not_exist_db"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.SchemaNotExistMessage), "not_exist_db"),
 	)
 
 	runDefaultRulesInspectCase(t, "drop_table: table not exist", DefaultMysqlInspect(),
 		`
 DROP TABLE exist_db.not_exist_tb_1;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.TableNotExistMessage), "exist_db.not_exist_tb_1"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.TableNotExistMessage), "exist_db.not_exist_tb_1"),
 	)
 
 	runDefaultRulesInspectCase(t, "drop_index: ok", DefaultMysqlInspect(),
@@ -789,7 +790,7 @@ DROP INDEX idx_1 ON exist_db.exist_tb_1;
 		`
 DROP INDEX idx_2 ON exist_db.exist_tb_1;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.IndexNotExistMessage), "idx_2"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.IndexNotExistMessage), "idx_2"),
 	)
 
 	runDefaultRulesInspectCase(t, "drop_index: if exists and index not exist", DefaultMysqlInspect(),
@@ -805,49 +806,49 @@ func TestCheckInvalidInsert(t *testing.T) {
 		`
 insert into not_exist_db.not_exist_tb values (1,"1","1");
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.SchemaNotExistMessage), "not_exist_db"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.SchemaNotExistMessage), "not_exist_db"),
 	)
 
 	runDefaultRulesInspectCase(t, "insert: table not exist", DefaultMysqlInspect(),
 		`
 insert into exist_db.not_exist_tb values (1,"1","1");
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.TableNotExistMessage), "exist_db.not_exist_tb"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.TableNotExistMessage), "exist_db.not_exist_tb"),
 	)
 
 	runDefaultRulesInspectCase(t, "insert: column not exist(1)", DefaultMysqlInspect(),
 		`
 insert into exist_db.exist_tb_1 (id,v1,v3) values (1,"1","1");
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.ColumnNotExistMessage), "v3"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.ColumnNotExistMessage), "v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "insert: column not exist(2)", DefaultMysqlInspect(),
 		`
 insert into exist_db.exist_tb_1 set id=1,v1="1",v3="1";
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.ColumnNotExistMessage), "v3"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.ColumnNotExistMessage), "v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "insert: column is duplicate(1)", DefaultMysqlInspect(),
 		`
 insert into exist_db.exist_tb_1 (id,v1,v1) values (1,"1","1");
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.DuplicateColumnsMessage), "v1"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.DuplicateColumnsMessage), "v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "insert: column is duplicate(2)", DefaultMysqlInspect(),
 		`
 insert into exist_db.exist_tb_1 set id=1,v1="1",v1="1";
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.DuplicateColumnsMessage), "v1"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.DuplicateColumnsMessage), "v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "insert: do not match values and columns", DefaultMysqlInspect(),
 		`
 insert into exist_db.exist_tb_1 (id,v1,v2) values (1,"1","1"),(2,"2","2","2");
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.ColumnsValuesNotMatchMessage)),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.ColumnsValuesNotMatchMessage)),
 	)
 }
 
@@ -982,28 +983,28 @@ update exist_tb_1 set v1="2" where exist_db.exist_tb_1.id=1;
 		`
 update not_exist_db.not_exist_tb set v1="2" where id=1;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.SchemaNotExistMessage), "not_exist_db"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.SchemaNotExistMessage), "not_exist_db"),
 	)
 
 	runDefaultRulesInspectCase(t, "update: table not exist", DefaultMysqlInspect(),
 		`
 update exist_db.not_exist_tb set v1="2" where id=1;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.TableNotExistMessage), "exist_db.not_exist_tb"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.TableNotExistMessage), "exist_db.not_exist_tb"),
 	)
 
 	runDefaultRulesInspectCase(t, "update: column not exist", DefaultMysqlInspect(),
 		`
 update exist_db.exist_tb_1 set v3="2" where id=1;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.ColumnNotExistMessage), "v3"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.ColumnNotExistMessage), "v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "update: where column not exist", DefaultMysqlInspect(),
 		`
 update exist_db.exist_tb_1 set v1="2" where v3=1;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.ColumnNotExistMessage), "v3"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.ColumnNotExistMessage), "v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "update with alias: ok", DefaultMysqlInspect(),
@@ -1016,28 +1017,28 @@ update exist_tb_1 as t set t.v1 = "1" where t.id = 1;
 		`
 update exist_db.not_exist_tb as t set t.v3 = "1" where t.id = 1;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.TableNotExistMessage), "exist_db.not_exist_tb"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.TableNotExistMessage), "exist_db.not_exist_tb"),
 	)
 
 	runDefaultRulesInspectCase(t, "update with alias: column not exist", DefaultMysqlInspect(),
 		`
 update exist_tb_1 as t set t.v3 = "1" where t.id = 1;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.ColumnNotExistMessage), "t.v3"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.ColumnNotExistMessage), "t.v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "update with alias: column not exist", DefaultMysqlInspect(),
 		`
 update exist_tb_1 as t set t.v1 = "1" where t.v3 = 1;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.ColumnNotExistMessage), "t.v3"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.ColumnNotExistMessage), "t.v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "update with alias: column not exist", DefaultMysqlInspect(),
 		`
 update exist_tb_1 as t set exist_tb_1.v1 = "1" where t.id = 1;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.ColumnNotExistMessage), "exist_tb_1.v1"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.ColumnNotExistMessage), "exist_tb_1.v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: ok", DefaultMysqlInspect(),
@@ -1058,28 +1059,28 @@ update exist_tb_1 inner join exist_tb_2 on exist_tb_1.id = exist_tb_2.id set exi
 		`
 update exist_db.not_exist_tb set exist_tb_1.v2 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.TableNotExistMessage), "exist_db.not_exist_tb"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.TableNotExistMessage), "exist_db.not_exist_tb"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not exist 1", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set exist_tb_1.v3 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.ColumnNotExistMessage), "exist_tb_1.v3"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.ColumnNotExistMessage), "exist_tb_1.v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not exist 2", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set exist_tb_2.v3 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.ColumnNotExistMessage), "exist_tb_2.v3"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.ColumnNotExistMessage), "exist_tb_2.v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not exist 3", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set exist_tb_1.v1 = "1" where exist_tb_1.v3 = exist_tb_2.v3;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.ColumnNotExistMessage), "exist_tb_1.v3,exist_tb_2.v3").
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.ColumnNotExistMessage), "exist_tb_1.v3,exist_tb_2.v3").
 			addResult(rulepkg.DMLCheckJoinFieldUseIndex),
 	)
 
@@ -1087,7 +1088,7 @@ update exist_tb_1,exist_tb_2 set exist_tb_1.v1 = "1" where exist_tb_1.v3 = exist
 		`
 update exist_db.exist_tb_1,exist_db.exist_tb_2 set exist_tb_3.v1 = "1" where exist_tb_1.v1 = exist_tb_2.v1;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.ColumnNotExistMessage), "exist_tb_3.v1").
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.ColumnNotExistMessage), "exist_tb_3.v1").
 			addResult(rulepkg.DMLCheckJoinFieldUseIndex),
 	)
 
@@ -1095,7 +1096,7 @@ update exist_db.exist_tb_1,exist_db.exist_tb_2 set exist_tb_3.v1 = "1" where exi
 		`
 update exist_db.exist_tb_1,exist_db.exist_tb_2 set not_exist_db.exist_tb_1.v1 = "1" where exist_tb_1.v1 = exist_tb_2.v1;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.ColumnNotExistMessage), "not_exist_db.exist_tb_1.v1").
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.ColumnNotExistMessage), "not_exist_db.exist_tb_1.v1").
 			addResult(rulepkg.DMLCheckJoinFieldUseIndex),
 	)
 
@@ -1110,21 +1111,21 @@ update exist_tb_1,exist_tb_2 set user_id = "1" where exist_tb_1.id = exist_tb_2.
 		`
 update exist_tb_1,exist_tb_2 set v1 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.ColumnIsAmbiguousMessage), "v1"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.ColumnIsAmbiguousMessage), "v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: column not ambiguous", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set v1 = "1" where exist_tb_1.id = exist_tb_2.id;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.ColumnIsAmbiguousMessage), "v1"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.ColumnIsAmbiguousMessage), "v1"),
 	)
 
 	runDefaultRulesInspectCase(t, "multi-update: where column not ambiguous", DefaultMysqlInspect(),
 		`
 update exist_tb_1,exist_tb_2 set exist_tb_1.v1 = "1" where v1 = 1;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.ColumnIsAmbiguousMessage), "v1").addResult(rulepkg.DMLCheckHasJoinCondition),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.ColumnIsAmbiguousMessage), "v1").addResult(rulepkg.DMLCheckHasJoinCondition),
 	)
 }
 
@@ -1140,35 +1141,35 @@ delete from exist_db.exist_tb_1 where id=1;
 		`
 delete from not_exist_db.not_exist_tb where id=1;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.SchemaNotExistMessage), "not_exist_db"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.SchemaNotExistMessage), "not_exist_db"),
 	)
 
 	runDefaultRulesInspectCase(t, "delete: table not exist", DefaultMysqlInspect(),
 		`
 delete from exist_db.not_exist_tb where id=1;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.TableNotExistMessage), "exist_db.not_exist_tb"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.TableNotExistMessage), "exist_db.not_exist_tb"),
 	)
 
 	runDefaultRulesInspectCase(t, "delete: where column not exist", DefaultMysqlInspect(),
 		`
 delete from exist_db.exist_tb_1 where v3=1;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.ColumnNotExistMessage), "v3"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.ColumnNotExistMessage), "v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "delete: where column not exist", DefaultMysqlInspect(),
 		`
 delete from exist_db.exist_tb_1 where exist_tb_1.v3=1;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.ColumnNotExistMessage), "exist_tb_1.v3"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.ColumnNotExistMessage), "exist_tb_1.v3"),
 	)
 
 	runDefaultRulesInspectCase(t, "delete: where column not exist", DefaultMysqlInspect(),
 		`
 delete from exist_db.exist_tb_1 where exist_tb_2.id=1;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.ColumnNotExistMessage), "exist_tb_2.id"),
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.ColumnNotExistMessage), "exist_tb_2.id"),
 	)
 }
 
@@ -1177,7 +1178,7 @@ func TestCheckInvalidSelect(t *testing.T) {
 		`
 select id from not_exist_db.not_exist_tb where id=1 limit 1;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.SchemaNotExistMessage), "not_exist_db").
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.SchemaNotExistMessage), "not_exist_db").
 			add(driverV2.RuleLevelNotice, "", "LIMIT 查询建议使用ORDER BY"),
 	)
 
@@ -1185,7 +1186,7 @@ select id from not_exist_db.not_exist_tb where id=1 limit 1;
 		`
 select id from exist_db.not_exist_tb where id=1 limit 1;
 `,
-		newTestResult().add(driverV2.RuleLevelError, "", plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.TableNotExistMessage), "exist_db.not_exist_tb").
+		newTestResult().add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.TableNotExistMessage), "exist_db.not_exist_tb").
 			add(driverV2.RuleLevelNotice, "", "LIMIT 查询建议使用ORDER BY"),
 	)
 }
@@ -4716,12 +4717,12 @@ func Test_LowerCaseTableNameOpen(t *testing.T) {
 		runEmptyRuleInspectCase(t, "test lower case table name open 1-1", getLowerCaseOpenInspect(),
 			`use not_exist_db;`,
 			newTestResult().add(driverV2.RuleLevelError, "",
-				plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.SchemaNotExistMessage), "not_exist_db"))
+				plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.SchemaNotExistMessage), "not_exist_db"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name open 1-2", getLowerCaseOpenInspect(),
 			`use NOT_EXIST_DB;`,
 			newTestResult().add(driverV2.RuleLevelError, "",
-				plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.SchemaNotExistMessage), "NOT_EXIST_DB"))
+				plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.SchemaNotExistMessage), "NOT_EXIST_DB"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name open 1-3", getLowerCaseOpenInspect(),
 			`use EXIST_DB;`,
@@ -4740,12 +4741,12 @@ func Test_LowerCaseTableNameOpen(t *testing.T) {
 		runEmptyRuleInspectCase(t, "test lower case table name open 2-1", getLowerCaseOpenInspect(),
 			`create database EXIST_DB;`,
 			newTestResult().add(driverV2.RuleLevelError, "",
-				plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.SchemaExistMessage), "EXIST_DB"))
+				plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.SchemaExistMessage), "EXIST_DB"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name open 2-2", getLowerCaseOpenInspect(),
 			`create database exist_db;`,
 			newTestResult().add(driverV2.RuleLevelError, "",
-				plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.SchemaExistMessage), "exist_db"))
+				plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.SchemaExistMessage), "exist_db"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name open 2-3", getLowerCaseOpenInspect(),
 			`create database not_exist_db;`,
@@ -4760,45 +4761,45 @@ func Test_LowerCaseTableNameOpen(t *testing.T) {
 create database NOT_EXIST_DB;`,
 			newTestResult(),
 			newTestResult().add(driverV2.RuleLevelError, "",
-				plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.SchemaExistMessage), "NOT_EXIST_DB"))
+				plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.SchemaExistMessage), "NOT_EXIST_DB"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name open 2-6", getLowerCaseOpenInspect(),
 			`create database NOT_EXIST_DB;
 create database not_exist_db;`,
 			newTestResult(),
 			newTestResult().add(driverV2.RuleLevelError, "",
-				plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.SchemaExistMessage), "not_exist_db"))
+				plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.SchemaExistMessage), "not_exist_db"))
 	}
 	// check table
 	{
 		runEmptyRuleInspectCase(t, "test lower case table name open 3-1", getLowerCaseOpenInspect(),
 			`create table EXIST_DB.exist_tb_1 (id int);`,
 			newTestResult().add(driverV2.RuleLevelError, "",
-				plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.TableExistMessage), "EXIST_DB.exist_tb_1"))
+				plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.TableExistMessage), "EXIST_DB.exist_tb_1"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name open 3-2", getLowerCaseOpenInspect(),
 			`create table exist_db.exist_tb_1 (id int);`,
 			newTestResult().add(driverV2.RuleLevelError, "",
-				plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.TableExistMessage), "exist_db.exist_tb_1"))
+				plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.TableExistMessage), "exist_db.exist_tb_1"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name open 3-3", getLowerCaseOpenInspect(),
 			`create table EXIST_DB.EXIST_TB_1 (id int);`,
 			newTestResult().add(driverV2.RuleLevelError, "",
-				plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.TableExistMessage), "EXIST_DB.EXIST_TB_1"))
+				plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.TableExistMessage), "EXIST_DB.EXIST_TB_1"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name open 3-4", getLowerCaseOpenInspect(),
 			`create table EXIST_DB.EXIST_TB_2 (id int);
 create table EXIST_DB.exist_tb_2 (id int);`,
 			newTestResult(),
 			newTestResult().add(driverV2.RuleLevelError, "",
-				plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.TableExistMessage), "EXIST_DB.exist_tb_2"))
+				plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.TableExistMessage), "EXIST_DB.exist_tb_2"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name open 3-5", getLowerCaseOpenInspect(),
 			`create table EXIST_DB.exist_tb_2 (id int);
 create table EXIST_DB.EXIST_TB_2 (id int);`,
 			newTestResult(),
 			newTestResult().add(driverV2.RuleLevelError, "",
-				plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.TableExistMessage), "EXIST_DB.EXIST_TB_2"))
+				plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.TableExistMessage), "EXIST_DB.EXIST_TB_2"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name open 3-6", getLowerCaseOpenInspect(),
 			`alter table exist_db.EXIST_TB_1 add column v3 varchar(255) COMMENT "unit test";`,
@@ -4810,7 +4811,7 @@ alter table exist_db.EXIST_TB_1 add column v3 varchar(255) COMMENT "unit test";
 `,
 			newTestResult(),
 			newTestResult().add(driverV2.RuleLevelError, "",
-				plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.TableNotExistMessage), "exist_db.EXIST_TB_1"))
+				plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.TableNotExistMessage), "exist_db.EXIST_TB_1"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name open 3-8", getLowerCaseOpenInspect(),
 			`alter table exist_db.EXIST_TB_1 rename AS exist_tb_2;
@@ -4832,12 +4833,12 @@ alter table exist_db.EXIST_TB_2 add column v3 varchar(255) COMMENT "unit test";
 		runEmptyRuleInspectCase(t, "test lower case table name open 4-1", getLowerCaseOpenInspect(),
 			`select id from exist_db.EXIST_TB_2 where id = 1;`,
 			newTestResult().add(driverV2.RuleLevelError, "",
-				plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.TableNotExistMessage), "exist_db.EXIST_TB_2"))
+				plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.TableNotExistMessage), "exist_db.EXIST_TB_2"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name open 4-2", getLowerCaseOpenInspect(),
 			`select id from exist_db.exist_tb_2 where id = 1;`,
 			newTestResult().add(driverV2.RuleLevelError, "",
-				plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.TableNotExistMessage), "exist_db.exist_tb_2"))
+				plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.TableNotExistMessage), "exist_db.exist_tb_2"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name open 4-3", getLowerCaseOpenInspect(),
 			`select id from exist_db.EXIST_TB_1 where id = 1;`, newTestResult())
@@ -4858,12 +4859,12 @@ func Test_LowerCaseTableNameClose(t *testing.T) {
 		runEmptyRuleInspectCase(t, "test lower case table name close 1-1", getLowerCaseCloseInspect(),
 			`use not_exist_db;`,
 			newTestResult().add(driverV2.RuleLevelError, "",
-				plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.SchemaNotExistMessage), "not_exist_db"))
+				plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.SchemaNotExistMessage), "not_exist_db"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name close 1-2", getLowerCaseCloseInspect(),
 			`use NOT_EXIST_DB;`,
 			newTestResult().add(driverV2.RuleLevelError, "",
-				plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.SchemaNotExistMessage), "NOT_EXIST_DB"))
+				plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.SchemaNotExistMessage), "NOT_EXIST_DB"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name close 1-3", getLowerCaseCloseInspect(),
 			`use exist_db_1;`,
@@ -4872,12 +4873,12 @@ func Test_LowerCaseTableNameClose(t *testing.T) {
 		runEmptyRuleInspectCase(t, "test lower case table name close 1-4", getLowerCaseCloseInspect(),
 			`use EXIST_DB_1;`,
 			newTestResult().add(driverV2.RuleLevelError, "",
-				plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.SchemaNotExistMessage), "EXIST_DB_1"))
+				plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.SchemaNotExistMessage), "EXIST_DB_1"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name close 1-5", getLowerCaseCloseInspect(),
 			`use exist_DB_1;`,
 			newTestResult().add(driverV2.RuleLevelError, "",
-				plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.SchemaNotExistMessage), "exist_DB_1"))
+				plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.SchemaNotExistMessage), "exist_DB_1"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name close 1-6", getLowerCaseCloseInspect(),
 			`use EXIST_DB_2;`,
@@ -4886,14 +4887,14 @@ func Test_LowerCaseTableNameClose(t *testing.T) {
 		runEmptyRuleInspectCase(t, "test lower case table name close 1-7", getLowerCaseCloseInspect(),
 			`use exist_db_2;`,
 			newTestResult().add(driverV2.RuleLevelError, "",
-				plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.SchemaNotExistMessage), "exist_db_2"))
+				plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.SchemaNotExistMessage), "exist_db_2"))
 	}
 	// check schema
 	{
 		runEmptyRuleInspectCase(t, "test lower case table name close 2-1", getLowerCaseCloseInspect(),
 			`create database exist_db_1;`,
 			newTestResult().add(driverV2.RuleLevelError, "",
-				plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.SchemaExistMessage), "exist_db_1"))
+				plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.SchemaExistMessage), "exist_db_1"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name close 2-2", getLowerCaseCloseInspect(),
 			`create database EXIST_DB_1;`,
@@ -4914,14 +4915,14 @@ create database not_exist_db;`,
 create database NOT_EXIST_DB;`,
 			newTestResult(),
 			newTestResult().add(driverV2.RuleLevelError, "",
-				plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.SchemaExistMessage), "NOT_EXIST_DB"))
+				plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.SchemaExistMessage), "NOT_EXIST_DB"))
 	}
 	// check table
 	{
 		runEmptyRuleInspectCase(t, "test lower case table name close 3-1", getLowerCaseCloseInspect(),
 			`create table exist_db_1.exist_tb_1 (id int);`,
 			newTestResult().add(driverV2.RuleLevelError, "",
-				plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.TableExistMessage), "exist_db_1.exist_tb_1"))
+				plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.TableExistMessage), "exist_db_1.exist_tb_1"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name close 3-2", getLowerCaseCloseInspect(),
 			`create table exist_db_1.EXIST_TB_1 (id int);`,
@@ -4931,7 +4932,7 @@ create database NOT_EXIST_DB;`,
 			`alter table exist_db_1.EXIST_TB_1 rename AS exist_tb_2;
 `,
 			newTestResult().add(driverV2.RuleLevelError, "",
-				plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.TableNotExistMessage), "exist_db_1.EXIST_TB_1"))
+				plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.TableNotExistMessage), "exist_db_1.EXIST_TB_1"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name close 3-4", getLowerCaseCloseInspect(),
 			`alter table exist_db_1.exist_tb_1 rename AS exist_tb_2;
@@ -4939,7 +4940,7 @@ alter table exist_db_1.exist_tb_1 add column v3 varchar(255) COMMENT "unit test"
 `,
 			newTestResult(),
 			newTestResult().add(driverV2.RuleLevelError, "",
-				plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.TableNotExistMessage), "exist_db_1.exist_tb_1"))
+				plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.TableNotExistMessage), "exist_db_1.exist_tb_1"))
 
 		runEmptyRuleInspectCase(t, "test lower case table name close 3-5", getLowerCaseCloseInspect(),
 			`alter table exist_db_1.exist_tb_1 rename AS exist_tb_2;
@@ -4954,7 +4955,7 @@ alter table exist_db_1.EXIST_TB_2 add column v3 varchar(255) COMMENT "unit test"
 `,
 			newTestResult(),
 			newTestResult().add(driverV2.RuleLevelError, "",
-				plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.TableNotExistMessage), "exist_db_1.EXIST_TB_2"))
+				plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, plocale.TableNotExistMessage), "exist_db_1.EXIST_TB_2"))
 	}
 }
 
@@ -7164,7 +7165,7 @@ func TestMustMatchLeftMostPrefix(t *testing.T) {
 		t.Run(arg.Name, func(t *testing.T) {
 			res := newTestResult()
 			if arg.TriggerRule {
-				res = newTestResult().add(rule.Level, rule.Name, plocale.ShouldLocalizeMsgByLang(language.Chinese, rulepkg.RuleHandlerMap[rulepkg.DMLMustMatchLeftMostPrefix].Message))
+				res = newTestResult().add(rule.Level, rule.Name, plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, rulepkg.RuleHandlerMap[rulepkg.DMLMustMatchLeftMostPrefix].Message))
 			}
 			runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLMustMatchLeftMostPrefix].Rule, t, "", inspect, arg.Sql, res)
 		})
@@ -7443,7 +7444,7 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 		t.Run(arg.Name, func(t *testing.T) {
 			res := newTestResult()
 			if arg.TriggerRule {
-				res = newTestResult().add(rule.Level, rule.Name, plocale.ShouldLocalizeMsgByLang(language.Chinese, rulepkg.RuleHandlerMap[rulepkg.DMLMustUseLeftMostPrefix].Message))
+				res = newTestResult().add(rule.Level, rule.Name, plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, rulepkg.RuleHandlerMap[rulepkg.DMLMustUseLeftMostPrefix].Message))
 			}
 			runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLMustUseLeftMostPrefix].Rule, t, "", inspect, arg.Sql, res)
 		})
@@ -7670,7 +7671,7 @@ func TestDDLCheckCharLength(t *testing.T) {
 		t.Run(arg.Name, func(t *testing.T) {
 			res := newTestResult()
 			if arg.TriggerRule {
-				res = newTestResult().add(rule.Level, rule.Name, plocale.ShouldLocalizeMsgByLang(language.Chinese, rulepkg.RuleHandlerMap[rulepkg.DDLCheckCharLength].Message), arg.Param)
+				res = newTestResult().add(rule.Level, rule.Name, plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, rulepkg.RuleHandlerMap[rulepkg.DDLCheckCharLength].Message), arg.Param)
 			}
 			runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckCharLength].Rule, t, "", inspect, arg.Sql, res)
 		})

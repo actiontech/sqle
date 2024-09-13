@@ -7,13 +7,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/driver/mysql/onlineddl"
 	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
-	"github.com/actiontech/sqle/sqle/locale"
-	"github.com/actiontech/sqle/sqle/pkg/i18nPkg"
-
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	"github.com/actiontech/sqle/sqle/driver/mysql/session"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
@@ -350,7 +348,7 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 		i.Logger().Errorf("check invalid failed: %v", err)
 		i.result.Add(driverV2.RuleLevelWarn,
 			"pre_check_err", // todo i18n 预检查失败规则名称
-			plocale.ShouldLocalizeAllWithFmt(plocale.CheckInvalidErrorFormat, plocale.ParseDDLError),
+			plocale.Bundle.LocalizeAllWithArgs(plocale.CheckInvalidErrorFormat, plocale.ParseDDLError),
 		)
 	} else if err != nil {
 		return nil, err
@@ -399,7 +397,7 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 		if err := handler.Func(input); err != nil {
 			// todo #1630 临时跳过解析建表语句失败导致的规则
 			if session.IsParseShowCreateTableContentErr(err) {
-				i.Logger().Errorf("skip rule, rule_desc_name=%v rule_desc=%v err:%v", rule.Name, rule.I18nRuleInfo[locale.DefaultLang].Desc, err.Error())
+				i.Logger().Errorf("skip rule, rule_desc_name=%v rule_desc=%v err:%v", rule.Name, rule.I18nRuleInfo[i18nPkg.DefaultLang].Desc, err.Error())
 				continue
 			}
 			return nil, err
@@ -437,9 +435,9 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 	if useGhost {
 		if _, err := i.executeByGhost(ctx, sql, true); err != nil {
 			// todo
-			i.result.Add(driverV2.RuleLevelError, ghostRule.Name, plocale.ShouldLocalizeAll(plocale.GhostDryRunError), i.cnf.DDLGhostMinSize, err)
+			i.result.Add(driverV2.RuleLevelError, ghostRule.Name, plocale.Bundle.LocalizeAll(plocale.GhostDryRunError), i.cnf.DDLGhostMinSize, err)
 		} else {
-			i.result.Add(ghostRule.Level, ghostRule.Name, plocale.ShouldLocalizeAll(plocale.GhostDryRunNotice), i.cnf.DDLGhostMinSize)
+			i.result.Add(ghostRule.Level, ghostRule.Name, plocale.Bundle.LocalizeAll(plocale.GhostDryRunNotice), i.cnf.DDLGhostMinSize)
 		}
 	}
 

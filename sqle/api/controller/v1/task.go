@@ -593,14 +593,14 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 	buff.WriteString("\xEF\xBB\xBF") // 写入UTF-8 BOM
 	cw := csv.NewWriter(buff)
 	err = cw.Write([]string{
-		locale.ShouldLocalizeMsg(ctx, locale.TaskSQLReportIndex),       // "序号",
-		locale.ShouldLocalizeMsg(ctx, locale.TaskSQLReportSQL),         // "SQL",
-		locale.ShouldLocalizeMsg(ctx, locale.TaskSQLReportAuditStatus), // "SQL审核状态",
-		locale.ShouldLocalizeMsg(ctx, locale.TaskSQLReportAuditResult), // "SQL审核结果",
-		locale.ShouldLocalizeMsg(ctx, locale.TaskSQLReportExecStatus),  // "SQL执行状态",
-		locale.ShouldLocalizeMsg(ctx, locale.TaskSQLReportExecResult),  // "SQL执行结果",
-		locale.ShouldLocalizeMsg(ctx, locale.TaskSQLReportRollbackSQL), // "SQL对应的回滚语句",
-		locale.ShouldLocalizeMsg(ctx, locale.TaskSQLReportDescription), // "SQL描述",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.TaskSQLReportIndex),       // "序号",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.TaskSQLReportSQL),         // "SQL",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.TaskSQLReportAuditStatus), // "SQL审核状态",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.TaskSQLReportAuditResult), // "SQL审核结果",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.TaskSQLReportExecStatus),  // "SQL执行状态",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.TaskSQLReportExecResult),  // "SQL执行结果",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.TaskSQLReportRollbackSQL), // "SQL对应的回滚语句",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.TaskSQLReportDescription), // "SQL描述",
 	})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.WriteDataToTheFileError, err))
