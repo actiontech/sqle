@@ -60,7 +60,7 @@ func directGetSQLAnalysis(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 
-		metaData := convertExplainAndMetaDataToRes(explainResult, explainMessage, metaDataResult, sql)
+		metaData := convertExplainAndMetaDataToRes(c.Request().Context(), explainResult, explainMessage, metaDataResult, sql)
 		resp = append(resp, &SqlAnalysisResDataV1{
 			SQLExplain: metaData.SQLExplain,
 			TableMetas: metaData.TableMetas,

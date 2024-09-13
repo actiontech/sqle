@@ -368,7 +368,7 @@ func getSqlManageSqlAnalysisV1(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, &GetSqlManageSqlAnalysisResp{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertSQLAnalysisResultToRes(analysisResp, omg.SqlText),
+		Data:    convertSQLAnalysisResultToRes(c.Request().Context(), analysisResp, omg.SqlText),
 	})
 }
 
@@ -384,7 +384,6 @@ func getAuditPlanUnsolvedSQLCount(auditPlanId uint) (int64, error) {
 	return count, nil
 }
 
-// todo i18n
 func ConvertSqlSourceDescByType(ctx context.Context, source string) string {
 	if source == model.SQLManageSourceSqlAuditRecord {
 		return locale.ShouldLocalizeMsg(ctx, model.SqlManageSourceMap[source])

@@ -4,6 +4,7 @@
 package v1
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"path/filepath"
@@ -66,11 +67,11 @@ func getTaskAnalysisData(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, &GetTaskAnalysisDataResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertExplainAndMetaDataToRes(explainResult, explainMessage, metaDataResult, taskSql.Content),
+		Data:    convertExplainAndMetaDataToRes(c.Request().Context(), explainResult, explainMessage, metaDataResult, taskSql.Content),
 	})
 }
 
-func convertExplainAndMetaDataToRes(explainResultInput *driverV2.ExplainResult, explainMessage string, metaDataResultInput *driver.GetTableMetaBySQLResult,
+func convertExplainAndMetaDataToRes(ctx context.Context, explainResultInput *driverV2.ExplainResult, explainMessage string, metaDataResultInput *driver.GetTableMetaBySQLResult,
 	rawSql string) GetTaskAnalysisDataResItemV1 {
 
 	explainResult := explainResultInput
@@ -95,7 +96,7 @@ func convertExplainAndMetaDataToRes(explainResultInput *driverV2.ExplainResult, 
 	explainResItemV1 := analysisDataResItemV1.SQLExplain.ClassicResult
 	for i, column := range explainResult.ClassicResult.Columns {
 		explainResItemV1.Head[i].FieldName = column.Name
-		explainResItemV1.Head[i].Desc = column.Desc
+		explainResItemV1.Head[i].Desc = column.I18nDesc.GetStrInLang(locale.Bundle.GetLangTagFromCtx(ctx))
 	}
 
 	for i, rows := range explainResult.ClassicResult.Rows {
@@ -125,7 +126,7 @@ func convertExplainAndMetaDataToRes(explainResultInput *driverV2.ExplainResult, 
 		tableMetaColumnRes := analysisDataResItemV1.TableMetas[i].Columns
 		for i2, column := range tableMetaColumnsInfo.Columns {
 			tableMetaColumnRes.Head[i2].FieldName = column.Name
-			tableMetaColumnRes.Head[i2].Desc = column.Desc
+			tableMetaColumnRes.Head[i2].Desc = column.I18nDesc.GetStrInLang(locale.Bundle.GetLangTagFromCtx(ctx))
 		}
 
 		for i2, rows := range tableMetaColumnsInfo.Rows {
@@ -139,7 +140,7 @@ func convertExplainAndMetaDataToRes(explainResultInput *driverV2.ExplainResult, 
 		tableMetaIndexRes := analysisDataResItemV1.TableMetas[i].Indexes
 		for i2, column := range tableMetaIndexInfo.Columns {
 			tableMetaIndexRes.Head[i2].FieldName = column.Name
-			tableMetaIndexRes.Head[i2].Desc = column.Desc
+			tableMetaIndexRes.Head[i2].Desc = column.I18nDesc.GetStrInLang(locale.Bundle.GetLangTagFromCtx(ctx))
 		}
 
 		for i2, rows := range tableMetaIndexInfo.Rows {
