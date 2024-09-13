@@ -2,6 +2,7 @@ package model
 
 import (
 	"context"
+	e "errors"
 	"fmt"
 	"strings"
 
@@ -435,26 +436,29 @@ func (s *Storage) GetRulesByNamesAndDBType(names []string, dbType string) ([]Rul
 	return rules, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetAndCheckRuleExist(ruleNames []string, dbType string) (map[string]Rule, error) {
+var ErrRuleNotExist = e.New("rule not exist")
+
+func (s *Storage) GetAndCheckRuleExist(ruleNames []string, dbType string) (map[string]Rule, map[string]struct{}, error) {
 	rules, err := s.GetRulesByNamesAndDBType(ruleNames, dbType)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	existRules := map[string]Rule{}
 	for _, rule := range rules {
 		existRules[rule.Name] = rule
 	}
-	notExistRuleNames := []string{}
-	for _, userName := range ruleNames {
-		if _, ok := existRules[userName]; !ok {
-			notExistRuleNames = append(notExistRuleNames, userName)
+	notExistRuleNames := make(map[string]struct{})
+	for _, ruleName := range ruleNames {
+		if _, ok := existRules[ruleName]; !ok {
+			notExistRuleNames[ruleName] = struct{}{}
 		}
 	}
+
 	if len(notExistRuleNames) > 0 {
-		return nil, errors.New(errors.DataNotExist,
-			fmt.Errorf("rule %s not exist", strings.Join(notExistRuleNames, ", ")))
+		return nil, notExistRuleNames, fmt.Errorf("rule %v not exist:%w", notExistRuleNames, ErrRuleNotExist)
 	}
-	return existRules, nil
+
+	return existRules, notExistRuleNames, nil
 }
 
 func (s *Storage) IsRuleTemplateExist(ruleTemplateName string, projectIds []string) (bool, error) {
