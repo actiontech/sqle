@@ -1251,54 +1251,13 @@ func ParseProjectRuleTemplateFile(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if e.Is(err, ErrRule) {
-		return exportTemplateFileErr(c, ExportType(req.FileType), ruleExportTemplate, templateFile.Name)
+		return exportTemplateFile(c, ExportType(req.FileType), ruleExportTemplate, templateFile.Name)
 	}
 
 	return c.JSON(http.StatusOK, &ParseProjectRuleTemplateFileResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    *templateFile,
 	})
-}
-
-func exportTemplateFileErr(c echo.Context, exportType ExportType, templateFile *RuleTemplateExportErr, templateName string) error {
-	switch exportType {
-	case CsvExportType:
-		buf := new(bytes.Buffer)
-		buf.WriteString("\xEF\xBB\xBF") // 写入UTF-8 BOM
-
-		writer := gocsv.DefaultCSVWriter(buf)
-		//nolint:errcheck
-		writer.Write([]string{"规则模版名", "描述", "数据源类型"})
-		//nolint:errcheck
-		writer.WriteAll([][]string{{templateFile.Name, templateFile.Desc, templateFile.DBType}})
-		if writer.Error() != nil {
-			return controller.JSONBaseErrorReq(c, writer.Error())
-		}
-
-		data, err := gocsv.MarshalBytes(templateFile.RuleList)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-		buf.Write(data)
-
-		c.Response().Header().Set(echo.HeaderContentDisposition,
-			mime.FormatMediaType("attachment", map[string]string{"filename": fmt.Sprintf("RuleTemplate-%v.csv", templateName)}))
-		return c.Blob(http.StatusOK, "text/plain;charset=utf-8", buf.Bytes())
-	case JsonExportType:
-		buf, err := json.Marshal(templateFile)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-
-		buff := &bytes.Buffer{}
-		buff.Write(buf)
-
-		c.Response().Header().Set(echo.HeaderContentDisposition,
-			mime.FormatMediaType("attachment", map[string]string{"filename": fmt.Sprintf("RuleTemplate-%v.json", templateName)}))
-		return c.Blob(http.StatusOK, "text/plain;charset=utf-8", buff.Bytes())
-	default:
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("export type is invalid")))
-	}
 }
 
 var ErrRule = e.New("rule has error")
@@ -1377,20 +1336,14 @@ func parseRuleTemplate(c echo.Context, fileType ExportType) (*ParseProjectRuleTe
 	resp := &ParseProjectRuleTemplateFileResDataV1{}
 	switch fileType {
 	case CsvExportType:
+		// csv文件样例
+		// 规则模版名,描述,数据源类型
+		// default_MySQL,默认规则模板,MySQL
+		// 规则名,描述,规则注解,规则等级,规则分类,数据源类型,Params
+		// ddl_avoid_full_text,禁止使用全文索引,全文索引的使用会增加存储开销，并对写操作性能产生一定影响。,error,使用建议,MySQL,[]
 		csvReader := csv.NewReader(bytes.NewReader([]byte(file)))
 		index := 0
 		for {
-			if index == 0 {
-				index++
-				continue
-			}
-
-			var ruleResp RuleResV1
-			if index == 3 {
-				// 因为csv文件的列数自第三行开始列的数量发生变化，所以重置FieldsPerRecord
-				csvReader.FieldsPerRecord = 0
-			}
-
 			rule, err := csvReader.Read()
 			if err != nil && e.Is(err, io.EOF) {
 				break
@@ -1399,7 +1352,13 @@ func parseRuleTemplate(c echo.Context, fileType ExportType) (*ParseProjectRuleTe
 				return nil, err
 			}
 
-			if len(rule) == 3 && index == 2 {
+			var ruleResp RuleResV1
+			if index == 1 {
+				// 因为csv文件的列数自第三行开始列的数量发生变化，所以重置FieldsPerRecord
+				csvReader.FieldsPerRecord = 0
+			}
+
+			if len(rule) == 3 && index == 1 {
 				resp.Name = rule[0]
 				resp.Desc = rule[1]
 				resp.DBType = rule[2]
@@ -1407,7 +1366,8 @@ func parseRuleTemplate(c echo.Context, fileType ExportType) (*ParseProjectRuleTe
 				continue
 			}
 
-			if index < 4 {
+			// 跳过除规则外的行
+			if index < 3 {
 				index++
 				continue
 			}
@@ -1442,7 +1402,7 @@ func parseRuleTemplate(c echo.Context, fileType ExportType) (*ParseProjectRuleTe
 					if i == 0 {
 						key = rulepkg.DefaultMultiParamsFirstKeyName
 					}
-					if i == 2 {
+					if i == 1 {
 						key = rulepkg.DefaultMultiParamsSecondKeyName
 					}
 
@@ -1540,22 +1500,35 @@ func ExportRuleTemplateFile(c echo.Context) error {
 	return exportTemplateFile(c, ExportType(req.ExportType), templateFile, templateName)
 }
 
-func exportTemplateFile(c echo.Context, exportType ExportType, templateFile *RuleTemplateExport, templateName string) error {
+func exportTemplateFile(c echo.Context, exportType ExportType, templateFile interface{}, templateName string) error {
+	var name, desc, dbType string
+	var content interface{}
+	if ruleTemplateExport, ok := templateFile.(*RuleTemplateExport); ok {
+		name = ruleTemplateExport.Name
+		desc = ruleTemplateExport.Desc
+		dbType = ruleTemplateExport.DBType
+		content = ruleTemplateExport.RuleList
+	} else if ruleTemplateExportErr, ok := templateFile.(*RuleTemplateExportErr); ok {
+		name = ruleTemplateExportErr.Name
+		desc = ruleTemplateExportErr.Desc
+		dbType = ruleTemplateExportErr.DBType
+		content = ruleTemplateExportErr.RuleList
+	} else {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("template file is invalid")))
+	}
+
 	switch exportType {
 	case CsvExportType:
 		buf := new(bytes.Buffer)
 		buf.WriteString("\xEF\xBB\xBF") // 写入UTF-8 BOM
 
 		writer := gocsv.DefaultCSVWriter(buf)
-		//nolint:errcheck
-		writer.Write([]string{"规则模版名", "描述", "数据源类型"})
-		//nolint:errcheck
-		//writer.WriteAll([][]string{{templateFile.Name, templateFile.Desc, templateFile.DBType}})
-		if writer.Error() != nil {
-			return controller.JSONBaseErrorReq(c, writer.Error())
+		err := writer.WriteAll([][]string{{"规则模版名", "描述", "数据源类型"}, {name, desc, dbType}})
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
 		}
 
-		data, err := gocsv.MarshalBytes(templateFile.RuleList)
+		data, err := gocsv.MarshalBytes(content)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
