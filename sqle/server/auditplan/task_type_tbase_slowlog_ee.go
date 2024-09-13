@@ -188,7 +188,7 @@ func (at *TBaseSlowLogTaskV2) GetSQLData(ctx context.Context, ap *AuditPlan, per
 			"last_receive_timestamp": info.LastReceiveTimestamp,
 			"db_user":                info.DBUser,
 			"schema":                 sql.Schema,
-			model.AuditResultName:    sql.AuditResult.GetAuditJsonStrByLangTag(locale.GetLangTagFromCtx(ctx)),
+			model.AuditResultName:    sql.AuditResult.GetAuditJsonStrByLangTag(locale.Bundle.GetLangTagFromCtx(ctx)),
 		}
 
 		if info.RowExaminedAvg != nil {

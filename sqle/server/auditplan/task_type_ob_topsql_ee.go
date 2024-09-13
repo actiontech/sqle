@@ -37,7 +37,7 @@ func (at *ObForMysqlTopSQLTaskV2) Params(instanceId ...string) params.Params {
 			Key:      paramKeyCollectIntervalMinute,
 			Value:    "60",
 			Type:     params.ParamTypeInt,
-			I18nDesc: locale.ShouldLocalizeAll(locale.ParamCollectIntervalMinute),
+			I18nDesc: locale.Bundle.LocalizeAll(locale.ParamCollectIntervalMinute),
 		},
 		{
 			Key:   paramKeyTopN,
@@ -49,7 +49,7 @@ func (at *ObForMysqlTopSQLTaskV2) Params(instanceId ...string) params.Params {
 			Key:      paramKeyIndicator,
 			Value:    DB2IndicatorAverageElapsedTime,
 			Type:     params.ParamTypeString,
-			I18nDesc: locale.ShouldLocalizeAll(locale.ParamIndicator),
+			I18nDesc: locale.Bundle.LocalizeAll(locale.ParamIndicator),
 		},
 	}
 }
@@ -487,7 +487,7 @@ func (at *ObForMysqlTopSQLTaskV2) GetSQLData(ctx context.Context, ap *AuditPlan,
 			"sql":                 planSQL.SQLContent,
 			"id":                  planSQL.AuditPlanSqlId,
 			"priority":            planSQL.Priority.String,
-			model.AuditResultName: planSQL.AuditResult.GetAuditJsonStrByLangTag(locale.GetLangTagFromCtx(ctx)),
+			model.AuditResultName: planSQL.AuditResult.GetAuditJsonStrByLangTag(locale.Bundle.GetLangTagFromCtx(ctx)),
 		}
 
 		origin, err := planSQL.Info.OriginValue()

@@ -6,14 +6,14 @@ package model
 import (
 	"context"
 
+	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/locale"
-	"github.com/actiontech/sqle/sqle/pkg/i18nPkg"
 	"gorm.io/gorm"
 )
 
 func (s *Storage) CreateOrUpdateRuleKnowledgeContent(ctx context.Context, ruleName, dbType, content string) error {
-	lang := locale.GetLangTagFromCtx(ctx)
+	lang := locale.Bundle.GetLangTagFromCtx(ctx)
 	rule := Rule{
 		Name:   ruleName,
 		DBType: dbType,
@@ -32,7 +32,7 @@ func (s *Storage) CreateOrUpdateRuleKnowledgeContent(ctx context.Context, ruleNa
 }
 
 func (s *Storage) CreateOrUpdateCustomRuleKnowledgeContent(ctx context.Context, ruleName, dbType, content string) error {
-	lang := locale.GetLangTagFromCtx(ctx)
+	lang := locale.Bundle.GetLangTagFromCtx(ctx)
 	rule := CustomRule{}
 	if err := s.db.Preload("Knowledge").Where("rule_id = ?", ruleName).Where("db_type = ?", dbType).Find(&rule).Error; err != nil {
 		return errors.New(errors.ConnectStorageError, err)

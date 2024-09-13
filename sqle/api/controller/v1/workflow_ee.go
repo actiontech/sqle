@@ -81,32 +81,32 @@ func exportWorkflowV1(c echo.Context) error {
 	buff.WriteString("\xEF\xBB\xBF") // 写入UTF-8 BOM
 	csvWriter := csv.NewWriter(buff)
 	if err := csvWriter.Write([]string{
-		locale.ShouldLocalizeMsg(ctx, locale.WFExportWorkflowNumber),      // "工单编号",
-		locale.ShouldLocalizeMsg(ctx, locale.WFExportWorkflowName),        // "工单名称",
-		locale.ShouldLocalizeMsg(ctx, locale.WFExportWorkflowDescription), // "工单描述",
-		locale.ShouldLocalizeMsg(ctx, locale.WFExportDataSource),          // "数据源",
-		locale.ShouldLocalizeMsg(ctx, locale.WFExportCreateTime),          // "创建时间",
-		locale.ShouldLocalizeMsg(ctx, locale.WFExportCreator),             // "创建人 ",
-		locale.ShouldLocalizeMsg(ctx, locale.WFExportTaskOrderStatus),     // "工单状态",
-		locale.ShouldLocalizeMsg(ctx, locale.WFExportOperator),            // "操作人",
-		locale.ShouldLocalizeMsg(ctx, locale.WFExportExecutionTime),       // "工单执行时间",
-		locale.ShouldLocalizeMsg(ctx, locale.WFExportSQLContent),          // "具体执行SQL内容",
-		locale.ShouldLocalizeMsg(ctx, locale.WFExportNode1Auditor),        // "[节点1]审核人",
-		locale.ShouldLocalizeMsg(ctx, locale.WFExportNode1AuditTime),      // "[节点1]审核时间",
-		locale.ShouldLocalizeMsg(ctx, locale.WFExportNode1AuditResult),    // "[节点1]审核结果",
-		locale.ShouldLocalizeMsg(ctx, locale.WFExportNode2Auditor),        // "[节点2]审核人",
-		locale.ShouldLocalizeMsg(ctx, locale.WFExportNode2AuditTime),      // "[节点2]审核时间",
-		locale.ShouldLocalizeMsg(ctx, locale.WFExportNode2AuditResult),    // "[节点2]审核结果",
-		locale.ShouldLocalizeMsg(ctx, locale.WFExportNode3Auditor),        // "[节点3]审核人",
-		locale.ShouldLocalizeMsg(ctx, locale.WFExportNode3AuditTime),      // "[节点3]审核时间",
-		locale.ShouldLocalizeMsg(ctx, locale.WFExportNode3AuditResult),    // "[节点3]审核结果",
-		locale.ShouldLocalizeMsg(ctx, locale.WFExportNode4Auditor),        // "[节点4]审核人",
-		locale.ShouldLocalizeMsg(ctx, locale.WFExportNode4AuditTime),      // "[节点4]审核时间",
-		locale.ShouldLocalizeMsg(ctx, locale.WFExportNode4AuditResult),    // "[节点4]审核结果",
-		locale.ShouldLocalizeMsg(ctx, locale.WFExportExecutor),            // "上线人",
-		locale.ShouldLocalizeMsg(ctx, locale.WFExportExecutionStartTime),  // "上线开始时间",
-		locale.ShouldLocalizeMsg(ctx, locale.WFExportExecutionEndTime),    // "上线结束时间",
-		locale.ShouldLocalizeMsg(ctx, locale.WFExportExecutionStatus),     // "上线结果",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportWorkflowNumber),      // "工单编号",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportWorkflowName),        // "工单名称",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportWorkflowDescription), // "工单描述",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportDataSource),          // "数据源",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportCreateTime),          // "创建时间",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportCreator),             // "创建人 ",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportTaskOrderStatus),     // "工单状态",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportOperator),            // "操作人",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportExecutionTime),       // "工单执行时间",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportSQLContent),          // "具体执行SQL内容",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportNode1Auditor),        // "[节点1]审核人",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportNode1AuditTime),      // "[节点1]审核时间",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportNode1AuditResult),    // "[节点1]审核结果",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportNode2Auditor),        // "[节点2]审核人",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportNode2AuditTime),      // "[节点2]审核时间",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportNode2AuditResult),    // "[节点2]审核结果",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportNode3Auditor),        // "[节点3]审核人",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportNode3AuditTime),      // "[节点3]审核时间",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportNode3AuditResult),    // "[节点3]审核结果",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportNode4Auditor),        // "[节点4]审核人",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportNode4AuditTime),      // "[节点4]审核时间",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportNode4AuditResult),    // "[节点4]审核结果",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportExecutor),            // "上线人",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportExecutionStartTime),  // "上线开始时间",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportExecutionEndTime),    // "上线结束时间",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportExecutionStatus),     // "上线结果",
 	}); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -149,7 +149,7 @@ func exportWorkflowV1(c echo.Context) error {
 				utils.AddDelTag(nil, instanceRecord.Instance.Name),
 				workflow.Model.CreatedAt.Format("2006-01-02 15:04:05"),
 				dms.GetUserNameWithDelTag(workflow.CreateUserId),
-				locale.ShouldLocalizeMsg(ctx, model.WorkflowStatus[workflow.Record.Status]),
+				locale.Bundle.LocalizeMsgByCtx(ctx, model.WorkflowStatus[workflow.Record.Status]),
 				dms.GetUserNameWithDelTag(instanceRecord.ExecutionUserId),
 				instanceRecord.Task.TaskExecEndAt(),
 				getExecuteSqlList(instanceRecord.Task.ExecuteSQLs),
@@ -193,7 +193,7 @@ func getAuditAndExecuteList(ctx context.Context, workflow *model.Workflow, insta
 		dms.GetUserNameWithDelTag(instanceRecord.ExecutionUserId),
 		instanceRecord.Task.TaskExecStartAt(),
 		instanceRecord.Task.TaskExecEndAt(),
-		locale.ShouldLocalizeMsg(ctx, executeStateMap[instanceRecord.Task.Status]),
+		locale.Bundle.LocalizeMsgByCtx(ctx, executeStateMap[instanceRecord.Task.Status]),
 	)
 	return auditAndExecuteList
 }
@@ -215,7 +215,7 @@ func getAuditList(ctx context.Context, workflow *model.Workflow) (workflowList [
 		stepIndex := i * stepSize
 		auditNodeList[stepIndex] = dms.GetUserNameWithDelTag(step.OperationUserId)
 		auditNodeList[stepIndex+1] = step.OperationTime()
-		auditNodeList[stepIndex+2] = locale.ShouldLocalizeMsg(ctx, workflowStepStateMap[step.State])
+		auditNodeList[stepIndex+2] = locale.Bundle.LocalizeMsgByCtx(ctx, workflowStepStateMap[step.State])
 	}
 	return auditNodeList
 }
@@ -239,7 +239,7 @@ func getWorkflowTemplate(c echo.Context) error {
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
-		td.Desc = fmt.Sprintf(locale.ShouldLocalizeMsg(c.Request().Context(), locale.DefaultTemplatesDesc), projectUid)
+		td.Desc = fmt.Sprintf(locale.Bundle.LocalizeMsgByCtx(c.Request().Context(), locale.DefaultTemplatesDesc), projectUid)
 	} else {
 		td, err = getWorkflowTemplateDetailByTemplate(template)
 		if err != nil {

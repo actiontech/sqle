@@ -87,7 +87,7 @@ func getSqlManageList(c echo.Context) error {
 }
 
 func convertToGetSqlManageListResp(ctx context.Context, sqlManageList []*model.SqlManageDetail) ([]*SqlManage, error) {
-	lang := locale.GetLangTagFromCtx(ctx)
+	lang := locale.Bundle.GetLangTagFromCtx(ctx)
 	sqlManageRespList := make([]*SqlManage, 0, len(sqlManageList))
 	users, err := dms.GetMapUsers(context.TODO(), nil, dms.GetDMSServerAddress())
 	if err != nil {
@@ -232,25 +232,25 @@ func exportSqlManagesV1(c echo.Context) error {
 	csvWriter := csv.NewWriter(buff)
 
 	err = csvWriter.WriteAll([][]string{
-		{locale.ShouldLocalizeMsg(ctx, locale.SMExportTotalSQLCount), strconv.FormatUint(sqlManageResp.SqlManageTotalNum, 10)},         // SQL总数
-		{locale.ShouldLocalizeMsg(ctx, locale.SMExportProblemSQLCount), strconv.FormatUint(sqlManageResp.SqlManageBadNum, 10)},         // 问题SQL数
-		{locale.ShouldLocalizeMsg(ctx, locale.SMExportOptimizedSQLCount), strconv.FormatUint(sqlManageResp.SqlManageOptimizedNum, 10)}, // 已优化SQL数
+		{locale.Bundle.LocalizeMsgByCtx(ctx, locale.SMExportTotalSQLCount), strconv.FormatUint(sqlManageResp.SqlManageTotalNum, 10)},         // SQL总数
+		{locale.Bundle.LocalizeMsgByCtx(ctx, locale.SMExportProblemSQLCount), strconv.FormatUint(sqlManageResp.SqlManageBadNum, 10)},         // 问题SQL数
+		{locale.Bundle.LocalizeMsgByCtx(ctx, locale.SMExportOptimizedSQLCount), strconv.FormatUint(sqlManageResp.SqlManageOptimizedNum, 10)}, // 已优化SQL数
 	})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	if err := csvWriter.Write([]string{
-		locale.ShouldLocalizeMsg(ctx, locale.SMExportSQLFingerprint), // "SQL指纹",
-		locale.ShouldLocalizeMsg(ctx, locale.SMExportSQL),            // "SQL",
-		locale.ShouldLocalizeMsg(ctx, locale.SMExportSource),         // "来源",
-		locale.ShouldLocalizeMsg(ctx, locale.SMExportDataSource),     // "数据源",
-		locale.ShouldLocalizeMsg(ctx, locale.SMExportSCHEMA),         // "SCHEMA",
-		locale.ShouldLocalizeMsg(ctx, locale.SMExportAuditResult),    // "审核结果",
-		locale.ShouldLocalizeMsg(ctx, locale.SMExportEndpoint),       // "端点信息",
-		locale.ShouldLocalizeMsg(ctx, locale.SMExportPersonInCharge), // "负责人",
-		locale.ShouldLocalizeMsg(ctx, locale.SMExportState),          // "状态",
-		locale.ShouldLocalizeMsg(ctx, locale.SMExportRemarks),        // "备注",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.SMExportSQLFingerprint), // "SQL指纹",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.SMExportSQL),            // "SQL",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.SMExportSource),         // "来源",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.SMExportDataSource),     // "数据源",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.SMExportSCHEMA),         // "SCHEMA",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.SMExportAuditResult),    // "审核结果",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.SMExportEndpoint),       // "端点信息",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.SMExportPersonInCharge), // "负责人",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.SMExportState),          // "状态",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.SMExportRemarks),        // "备注",
 	}); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -278,7 +278,7 @@ func exportSqlManagesV1(c echo.Context) error {
 			spliceAuditResults(ctx, sqlManage.AuditResults),
 			sqlManage.Endpoints.String,
 			strings.Join(assignees, ","),
-			locale.ShouldLocalizeMsg(ctx, model.SqlManageStatusMap[sqlManage.Status.String]),
+			locale.Bundle.LocalizeMsgByCtx(ctx, model.SqlManageStatusMap[sqlManage.Status.String]),
 			sqlManage.Remark.String,
 		)
 
@@ -325,7 +325,7 @@ func convertRuleTipsToResp(ctx context.Context, tips []*model.SqlManageRuleTips)
 	for _, tip := range tips {
 		m[tip.DbType] = append(m[tip.DbType], RuleRespV1{
 			RuleName: tip.RuleName,
-			Desc:     tip.I18nRuleInfo.GetRuleInfoByLangTag(locale.GetLangTagFromCtx(ctx)).Desc,
+			Desc:     tip.I18nRuleInfo.GetRuleInfoByLangTag(locale.Bundle.GetLangTagFromCtx(ctx)).Desc,
 		})
 	}
 
@@ -386,11 +386,11 @@ func getAuditPlanUnsolvedSQLCount(auditPlanId uint) (int64, error) {
 
 func ConvertSqlSourceDescByType(ctx context.Context, source string) string {
 	if source == model.SQLManageSourceSqlAuditRecord {
-		return locale.ShouldLocalizeMsg(ctx, model.SqlManageSourceMap[source])
+		return locale.Bundle.LocalizeMsgByCtx(ctx, model.SqlManageSourceMap[source])
 	}
 	for _, meta := range auditplan.Metas {
 		if meta.Type == source {
-			return locale.ShouldLocalizeMsg(ctx, meta.Desc)
+			return locale.Bundle.LocalizeMsgByCtx(ctx, meta.Desc)
 		}
 	}
 	return ""

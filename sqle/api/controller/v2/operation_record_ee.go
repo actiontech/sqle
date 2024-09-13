@@ -11,13 +11,13 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
 	sqleMiddleware "github.com/actiontech/sqle/sqle/api/middleware"
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/model"
-	"github.com/actiontech/sqle/sqle/pkg/i18nPkg"
 	"github.com/labstack/echo/v4"
 )
 
@@ -111,9 +111,9 @@ func getProjectAndContentFromSchedulingWorkflow(c echo.Context) (string, i18nPkg
 	}
 
 	if req.ScheduleTime != nil {
-		return projectName, locale.ShouldLocalizeAllWithArgs(locale.OprAddSchedulingWorkflowWithNameAndDB, workflow.Subject, task.InstanceName()), nil
+		return projectName, locale.Bundle.LocalizeAllWithArgs(locale.OprAddSchedulingWorkflowWithNameAndDB, workflow.Subject, task.InstanceName()), nil
 	} else {
-		return projectName, locale.ShouldLocalizeAllWithArgs(locale.OprDelSchedulingWorkflowWithNameAndDB, workflow.Subject, task.InstanceName()), nil
+		return projectName, locale.Bundle.LocalizeAllWithArgs(locale.OprDelSchedulingWorkflowWithNameAndDB, workflow.Subject, task.InstanceName()), nil
 	}
 }
 
@@ -133,7 +133,7 @@ func getProjectAndContentFromBatchExecutingWorkflow(c echo.Context) (string, i18
 	if !exist {
 		return "", nil, v1.ErrWorkflowNoAccess
 	}
-	return projectName, locale.ShouldLocalizeAllWithArgs(locale.OprBatchExecutingWorkflowWithName, workflow.Subject), nil
+	return projectName, locale.Bundle.LocalizeAllWithArgs(locale.OprBatchExecutingWorkflowWithName, workflow.Subject), nil
 }
 
 func getProjectAndContentFromExecutingWorkflow(c echo.Context) (string, i18nPkg.I18nStr, error) {
@@ -159,7 +159,7 @@ func getProjectAndContentFromExecutingWorkflow(c echo.Context) (string, i18nPkg.
 		return "", nil, fmt.Errorf("get task failed: %v", err)
 	}
 
-	return projectName, locale.ShouldLocalizeAllWithArgs(locale.OprExecutingWorkflowWithNameAndDB, workflow.Subject, task.InstanceName()), nil
+	return projectName, locale.Bundle.LocalizeAllWithArgs(locale.OprExecutingWorkflowWithNameAndDB, workflow.Subject, task.InstanceName()), nil
 }
 
 func getProjectAndContentFromBatchCancelingWorkflow(c echo.Context) (string, i18nPkg.I18nStr, error) {
@@ -173,7 +173,7 @@ func getProjectAndContentFromBatchCancelingWorkflow(c echo.Context) (string, i18
 	if err != nil {
 		return "", nil, err
 	}
-	return projectName, locale.ShouldLocalizeAllWithArgs(locale.OprBatchCancelingWorkflowWithName, workflowNames), nil
+	return projectName, locale.Bundle.LocalizeAllWithArgs(locale.OprBatchCancelingWorkflowWithName, workflowNames), nil
 }
 
 func getProjectAndContentFromCancelingWorkflow(c echo.Context) (string, i18nPkg.I18nStr, error) {
@@ -191,7 +191,7 @@ func getProjectAndContentFromCancelingWorkflow(c echo.Context) (string, i18nPkg.
 	if !exist {
 		return "", nil, v1.ErrWorkflowNoAccess
 	}
-	return projectName, locale.ShouldLocalizeAllWithArgs(locale.OprCancelingWorkflowWithName, workflow.Subject), nil
+	return projectName, locale.Bundle.LocalizeAllWithArgs(locale.OprCancelingWorkflowWithName, workflow.Subject), nil
 }
 
 func getProjectAndContentFromApprovingWorkflow(c echo.Context) (string, i18nPkg.I18nStr, error) {
@@ -209,7 +209,7 @@ func getProjectAndContentFromApprovingWorkflow(c echo.Context) (string, i18nPkg.
 	if !exist {
 		return "", nil, v1.ErrWorkflowNoAccess
 	}
-	return projectName, locale.ShouldLocalizeAllWithArgs(locale.OprApprovingWorkflowWithName, workflow.Subject), nil
+	return projectName, locale.Bundle.LocalizeAllWithArgs(locale.OprApprovingWorkflowWithName, workflow.Subject), nil
 }
 
 func getProjectAndContentFromRejectingWorkflow(c echo.Context) (string, i18nPkg.I18nStr, error) {
@@ -227,7 +227,7 @@ func getProjectAndContentFromRejectingWorkflow(c echo.Context) (string, i18nPkg.
 	if !exist {
 		return "", nil, v1.ErrWorkflowNoAccess
 	}
-	return projectName, locale.ShouldLocalizeAllWithArgs(locale.OprRejectingWorkflowWithName, workflow.Subject), nil
+	return projectName, locale.Bundle.LocalizeAllWithArgs(locale.OprRejectingWorkflowWithName, workflow.Subject), nil
 }
 
 func getProjectAndContentFromCreatingWorkflow(c echo.Context) (string, i18nPkg.I18nStr, error) {
@@ -236,7 +236,7 @@ func getProjectAndContentFromCreatingWorkflow(c echo.Context) (string, i18nPkg.I
 	if err != nil {
 		return "", nil, err
 	}
-	return c.Param("project_name"), locale.ShouldLocalizeAllWithArgs(locale.OprCreatingWorkflowWithName, req.Subject), nil
+	return c.Param("project_name"), locale.Bundle.LocalizeAllWithArgs(locale.OprCreatingWorkflowWithName, req.Subject), nil
 }
 
 func marshalRequestBody(c echo.Context, pattern interface{}) error {

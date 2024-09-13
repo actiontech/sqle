@@ -77,7 +77,7 @@ func getRuleKnowledge(c echo.Context) error {
 	ruleName := c.Param("rule_name")
 	dbType := c.Param("db_type")
 	s := model.GetStorage()
-	lang := locale.GetLangTagFromCtx(c.Request().Context())
+	lang := locale.Bundle.GetLangTagFromCtx(c.Request().Context())
 
 	rule, err := s.GetRuleWithKnowledge(ruleName, dbType)
 	if err != nil {
@@ -131,7 +131,7 @@ func getCustomRuleKnowledge(c echo.Context) error {
 				Desc:       rule.Desc,
 				Annotation: rule.Annotation,
 			},
-			KnowledgeContent: rule.Knowledge.GetContentByLangTag(locale.GetLangTagFromCtx(c.Request().Context())),
+			KnowledgeContent: rule.Knowledge.GetContentByLangTag(locale.Bundle.GetLangTagFromCtx(c.Request().Context())),
 		},
 	})
 }

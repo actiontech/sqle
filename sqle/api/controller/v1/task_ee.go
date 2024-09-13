@@ -186,7 +186,7 @@ func getSqlFileOrderMethod(c echo.Context) error {
 	for _, method := range FileOrderMethods {
 		methods = append(methods, SqlFileOrderMethod{
 			OrderMethod: method.Method,
-			Desc:        locale.ShouldLocalizeMsg(c.Request().Context(), method.Desc),
+			Desc:        locale.Bundle.LocalizeMsgByCtx(c.Request().Context(), method.Desc),
 		})
 	}
 	return c.JSON(http.StatusOK, GetSqlFileOrderMethodResV1{

@@ -34,7 +34,7 @@ func (at *TDMySQLSchemaMetaTaskV2) Params(instanceId ...string) params.Params {
 			Key:      paramKeyCollectIntervalMinute,
 			Value:    "60",
 			Type:     params.ParamTypeInt,
-			I18nDesc: locale.ShouldLocalizeAll(locale.ParamCollectIntervalMinuteOracle),
+			I18nDesc: locale.Bundle.LocalizeAll(locale.ParamCollectIntervalMinuteOracle),
 		},
 	}
 }

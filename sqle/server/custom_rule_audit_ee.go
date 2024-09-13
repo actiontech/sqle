@@ -6,8 +6,8 @@ package server
 import (
 	"regexp"
 
+	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
-	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/model"
 	"golang.org/x/text/language"
 
@@ -37,7 +37,7 @@ func CustomRuleAudit(l *logrus.Entry, task *model.Task, sqls []string, results [
 					RuleName: customRule.RuleId,
 					Level:    driverV2.RuleLevel(customRule.Level),
 					I18nAuditResultInfo: map[language.Tag]driverV2.AuditResultInfo{
-						locale.DefaultLang: {Message: customRule.Desc},
+						i18nPkg.DefaultLang: {Message: customRule.Desc},
 					},
 				}
 				result := results[i]

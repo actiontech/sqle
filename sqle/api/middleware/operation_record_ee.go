@@ -9,11 +9,11 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
-	"github.com/actiontech/sqle/sqle/pkg/i18nPkg"
 
 	"github.com/labstack/echo/v4"
 )

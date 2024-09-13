@@ -15,10 +15,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
 	sqleMiddleware "github.com/actiontech/sqle/sqle/api/middleware"
 	dms "github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/locale"
-	"github.com/actiontech/sqle/sqle/pkg/i18nPkg"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
@@ -44,7 +44,7 @@ func init() {
 			OperationType:   model.OperationRecordTypeProjectRuleTemplate,
 			OperationAction: model.OperationRecordActionDeleteProjectRuleTemplate,
 			GetProjectAndContentFunc: func(c echo.Context) (string, i18nPkg.I18nStr, error) {
-				return c.Param("project_name"), locale.ShouldLocalizeAllWithArgs(locale.OprDelRuleTemplateWithName, c.Param("rule_template_name")), nil
+				return c.Param("project_name"), locale.Bundle.LocalizeAllWithArgs(locale.OprDelRuleTemplateWithName, c.Param("rule_template_name")), nil
 			},
 		},
 		{
@@ -53,7 +53,7 @@ func init() {
 			OperationType:   model.OperationRecordTypeProjectRuleTemplate,
 			OperationAction: model.OperationRecordActionUpdateProjectRuleTemplate,
 			GetProjectAndContentFunc: func(c echo.Context) (string, i18nPkg.I18nStr, error) {
-				return c.Param("project_name"), locale.ShouldLocalizeAllWithArgs(locale.OprEditRuleTemplateWithName, c.Param("rule_template_name")), nil
+				return c.Param("project_name"), locale.Bundle.LocalizeAllWithArgs(locale.OprEditRuleTemplateWithName, c.Param("rule_template_name")), nil
 			},
 		},
 		// 流程模板
@@ -63,7 +63,7 @@ func init() {
 			OperationType:   model.OperationRecordTypeWorkflowTemplate,
 			OperationAction: model.OperationRecordActionUpdateWorkflowTemplate,
 			GetProjectAndContentFunc: func(c echo.Context) (string, i18nPkg.I18nStr, error) {
-				return c.Param("project_name"), locale.ShouldLocalizeAll(locale.OprEditProcedureTemplate), nil
+				return c.Param("project_name"), locale.Bundle.LocalizeAll(locale.OprEditProcedureTemplate), nil
 			},
 		},
 		// 智能扫描
@@ -80,7 +80,7 @@ func init() {
 			OperationType:   model.OperationRecordTypeAuditPlan,
 			OperationAction: model.OperationRecordActionDeleteAuditPlan,
 			GetProjectAndContentFunc: func(c echo.Context) (string, i18nPkg.I18nStr, error) {
-				return c.Param("project_name"), locale.ShouldLocalizeAllWithArgs(locale.OprDelAuditPlanWithName, c.Param("audit_plan_name")), nil
+				return c.Param("project_name"), locale.Bundle.LocalizeAllWithArgs(locale.OprDelAuditPlanWithName, c.Param("audit_plan_name")), nil
 			},
 		},
 		{
@@ -89,7 +89,7 @@ func init() {
 			OperationType:   model.OperationRecordTypeAuditPlan,
 			OperationAction: model.OperationRecordActionUpdateAuditPlan,
 			GetProjectAndContentFunc: func(c echo.Context) (string, i18nPkg.I18nStr, error) {
-				return c.Param("project_name"), locale.ShouldLocalizeAllWithArgs(locale.OprEditAuditPlanWithName, c.Param("audit_plan_name")), nil
+				return c.Param("project_name"), locale.Bundle.LocalizeAllWithArgs(locale.OprEditAuditPlanWithName, c.Param("audit_plan_name")), nil
 			},
 		},
 		// 全局规则模板
@@ -106,7 +106,7 @@ func init() {
 			OperationType:   model.OperationRecordTypeGlobalRuleTemplate,
 			OperationAction: model.OperationRecordActionUpdateGlobalRuleTemplate,
 			GetProjectAndContentFunc: func(c echo.Context) (string, i18nPkg.I18nStr, error) {
-				return "", locale.ShouldLocalizeAllWithArgs(locale.OprEditGlobalRuleTemplateWithName, c.Param("rule_template_name")), nil
+				return "", locale.Bundle.LocalizeAllWithArgs(locale.OprEditGlobalRuleTemplateWithName, c.Param("rule_template_name")), nil
 			},
 		},
 		{
@@ -115,7 +115,7 @@ func init() {
 			OperationType:   model.OperationRecordTypeGlobalRuleTemplate,
 			OperationAction: model.OperationRecordActionDeleteGlobalRuleTemplate,
 			GetProjectAndContentFunc: func(c echo.Context) (string, i18nPkg.I18nStr, error) {
-				return "", locale.ShouldLocalizeAllWithArgs(locale.OprDelGlobalRuleTemplateWithName, c.Param("rule_template_name")), nil
+				return "", locale.Bundle.LocalizeAllWithArgs(locale.OprDelGlobalRuleTemplateWithName, c.Param("rule_template_name")), nil
 			},
 		},
 		// 系统配置
@@ -125,7 +125,7 @@ func init() {
 			OperationType:   model.OperationRecordTypeSystemConfiguration,
 			OperationAction: model.OperationRecordActionUpdateDingTalkConfiguration,
 			GetProjectAndContentFunc: func(c echo.Context) (string, i18nPkg.I18nStr, error) {
-				return "", locale.ShouldLocalizeAll(locale.OprEditDingConfig), nil
+				return "", locale.Bundle.LocalizeAll(locale.OprEditDingConfig), nil
 			},
 		},
 		{
@@ -134,7 +134,7 @@ func init() {
 			OperationType:   model.OperationRecordTypeSystemConfiguration,
 			OperationAction: model.OperationRecordActionUpdateSystemVariables,
 			GetProjectAndContentFunc: func(c echo.Context) (string, i18nPkg.I18nStr, error) {
-				return "", locale.ShouldLocalizeAll(locale.OprEditGlobalConfig), nil
+				return "", locale.Bundle.LocalizeAll(locale.OprEditGlobalConfig), nil
 			},
 		},
 		// 工单
@@ -153,7 +153,7 @@ func getProjectAndContentFromCreateRuleTemplate(c echo.Context) (string, i18nPkg
 	if err := marshalRequestBody(c, req); err != nil {
 		return "", nil, err
 	}
-	return "", locale.ShouldLocalizeAllWithArgs(locale.OprAddGlobalRuleTemplateWithName, req.Name), nil
+	return "", locale.Bundle.LocalizeAllWithArgs(locale.OprAddGlobalRuleTemplateWithName, req.Name), nil
 }
 
 func getProjectAndContentFromCreatingAuditPlan(c echo.Context) (string, i18nPkg.I18nStr, error) {
@@ -162,7 +162,7 @@ func getProjectAndContentFromCreatingAuditPlan(c echo.Context) (string, i18nPkg.
 	if err != nil {
 		return "", nil, err
 	}
-	return c.Param("project_name"), locale.ShouldLocalizeAllWithArgs(locale.OprAddAuditPlanWithName, req.Name), nil
+	return c.Param("project_name"), locale.Bundle.LocalizeAllWithArgs(locale.OprAddAuditPlanWithName, req.Name), nil
 }
 
 func getProjectAndContentFromCreatingProjectRuleTemplate(c echo.Context) (string, i18nPkg.I18nStr, error) {
@@ -171,7 +171,7 @@ func getProjectAndContentFromCreatingProjectRuleTemplate(c echo.Context) (string
 	if err != nil {
 		return "", nil, err
 	}
-	return c.Param("project_name"), locale.ShouldLocalizeAllWithArgs(locale.OprAddRuleTemplateWithName, req.Name), nil
+	return c.Param("project_name"), locale.Bundle.LocalizeAllWithArgs(locale.OprAddRuleTemplateWithName, req.Name), nil
 }
 
 func getProjectAndContentFromUpdatingFilesOrder(c echo.Context) (string, i18nPkg.I18nStr, error) {
@@ -213,7 +213,7 @@ func getProjectAndContentFromUpdatingFilesOrder(c echo.Context) (string, i18nPkg
 	if !exist {
 		return "", nil, ErrWorkflowNoAccess
 	}
-	content := locale.ShouldLocalizeAllWithArgs(locale.OprUpdateFilesOrderWithOrderAndName, strings.Join(contents, "，"), workflow.Subject)
+	content := locale.Bundle.LocalizeAllWithArgs(locale.OprUpdateFilesOrderWithOrderAndName, strings.Join(contents, "，"), workflow.Subject)
 	return projectName, content, nil
 }
 
@@ -276,7 +276,7 @@ func getOperationTypeNameList(c echo.Context) error {
 	for _, operationType := range distinctOperationTypeList {
 		operationTypeNameList = append(operationTypeNameList, OperationTypeNameList{
 			OperationTypeName: operationType,
-			Desc:              locale.ShouldLocalizeMsg(c.Request().Context(), typeNameDescMap[operationType]),
+			Desc:              locale.Bundle.LocalizeMsgByCtx(c.Request().Context(), typeNameDescMap[operationType]),
 		})
 	}
 
@@ -351,7 +351,7 @@ func getOperationActionList(c echo.Context) error {
 		operationActionNameList = append(operationActionNameList, OperationActionList{
 			OperationType:   operationAction.OperationType,
 			OperationAction: operationAction.OperationAction,
-			Desc:            locale.ShouldLocalizeMsg(c.Request().Context(), actionNameDescMap[operationAction.OperationAction]),
+			Desc:            locale.Bundle.LocalizeMsgByCtx(c.Request().Context(), actionNameDescMap[operationAction.OperationAction]),
 		})
 	}
 
@@ -402,9 +402,9 @@ func getOperationRecordList(c echo.Context) error {
 				UserName: operationRecord.OperationUserName,
 				IP:       operationRecord.OperationReqIP,
 			},
-			OperationTypeName: locale.ShouldLocalizeMsg(ctx, typeNameDescMap[operationRecord.OperationTypeName]),
-			OperationAction:   locale.ShouldLocalizeMsg(ctx, actionNameDescMap[operationRecord.OperationAction]),
-			OperationContent:  operationRecord.GetOperationContentByLangTag(locale.GetLangTagFromCtx(ctx)),
+			OperationTypeName: locale.Bundle.LocalizeMsgByCtx(ctx, typeNameDescMap[operationRecord.OperationTypeName]),
+			OperationAction:   locale.Bundle.LocalizeMsgByCtx(ctx, actionNameDescMap[operationRecord.OperationAction]),
+			OperationContent:  operationRecord.GetOperationContentByLangTag(locale.Bundle.GetLangTagFromCtx(ctx)),
 			ProjectName:       operationRecord.OperationProjectName,
 			Status:            operationRecord.OperationStatus,
 		})
@@ -452,12 +452,12 @@ func exportOperationRecordList(c echo.Context) error {
 	csvWriter := csv.NewWriter(buff)
 
 	csvColumnNameList := []string{
-		locale.ShouldLocalizeMsg(ctx, locale.OprOperationTime),        //"操作时间",
-		locale.ShouldLocalizeMsg(ctx, locale.OprOperationProjectName), //"项目",
-		locale.ShouldLocalizeMsg(ctx, locale.OprOperationUserName),    //"操作人",
-		locale.ShouldLocalizeMsg(ctx, locale.OprOperationAction),      //"操作对象",
-		locale.ShouldLocalizeMsg(ctx, locale.OprOperationContent),     //"操作内容",
-		locale.ShouldLocalizeMsg(ctx, locale.OprOperationStatus),      //"状态",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.OprOperationTime),        //"操作时间",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.OprOperationProjectName), //"项目",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.OprOperationUserName),    //"操作人",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.OprOperationAction),      //"操作对象",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.OprOperationContent),     //"操作内容",
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.OprOperationStatus),      //"状态",
 	}
 	err = csvWriter.Write(csvColumnNameList)
 	if err != nil {
@@ -469,9 +469,9 @@ func exportOperationRecordList(c echo.Context) error {
 			record.OperationTime.Format("2006-01-02 15:04:05"),
 			record.OperationProjectName,
 			record.OperationUserName,
-			locale.ShouldLocalizeMsg(ctx, actionNameDescMap[record.OperationAction]),
-			record.GetOperationContentByLangTag(locale.GetLangTagFromCtx(ctx)),
-			locale.ShouldLocalizeMsg(ctx, operationRecordStatusMap[record.OperationStatus]),
+			locale.Bundle.LocalizeMsgByCtx(ctx, actionNameDescMap[record.OperationAction]),
+			record.GetOperationContentByLangTag(locale.Bundle.GetLangTagFromCtx(ctx)),
+			locale.Bundle.LocalizeMsgByCtx(ctx, operationRecordStatusMap[record.OperationStatus]),
 		}
 		err = csvWriter.Write(csvLine)
 		if err != nil {
