@@ -120,9 +120,9 @@ func (cmd scannerCmd) Type() string {
 
 /*
 	根据params中传递的命令标志生成scannerd的启动命令
-	1. 若检测到params中未传递必要参数，或传递必要参数但值为空，则会自动填充<请在此处填写必要参数>
+	1. 若检测到params中未传递必要参数，或传递必要参数但值为空，则会自动填充<Please provide the required parameters here>
 	2. 若检测到params中传递的参数不在启动参数中，则不会添加到命令中
-	3. 若检测到params中传递的参数在scannerd的非必要启动参数中，但值为空，则会自动填充<请在此处填写可选参数>
+	3. 若检测到params中传递的参数在scannerd的非必要启动参数中，但值为空，则会自动填充<Please provide the optional parameters here>
 	4. 若检测到params中传递的参数在scannerd的非必要启动参数中，且值非空，则根据参数的标志和参数值进行填充
 	5. 若检测到params中传递的参数，数值类型错误，属于开发时没有正确处理的参数，返回错误
 */
@@ -134,13 +134,13 @@ func (cmd scannerCmd) GenCommand(path string, params map[string] /* flag name */
 	for _, father := range cmd.FatherCmds {
 		for _, requiredFlag := range father.RequiredFlags {
 			if value, exist := params[requiredFlag]; !exist || value == "" {
-				command = fmt.Sprintf(addParamTpl, command, requiredFlag, "<请在此处填写必要参数>")
+				command = fmt.Sprintf(addParamTpl, command, requiredFlag, "<Please provide the required parameters here>")
 			}
 		}
 	}
 	for _, requiredFlag := range cmd.RequiredFlags {
 		if value, exist := params[requiredFlag]; !exist || value == "" {
-			command = fmt.Sprintf(addParamTpl, command, requiredFlag, "<请在此处填写必要参数>")
+			command = fmt.Sprintf(addParamTpl, command, requiredFlag, "<Please provide the required parameters here>")
 		}
 	}
 	// check is flag valid and add flag
@@ -167,7 +167,7 @@ func (cmd scannerCmd) GenCommand(path string, params map[string] /* flag name */
 		// add flag if flag exist
 		if exist {
 			if flagValue == "" {
-				flagValue = "<请在此处填写可选参数>"
+				flagValue = "<Please provide the optional parameters here>"
 			}
 			command = fmt.Sprintf(addParamTpl, command, flagName, flagValue)
 		}
