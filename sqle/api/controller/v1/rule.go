@@ -1256,7 +1256,7 @@ type GetRuleTemplateFileReqV1 struct {
 	FileType     string `json:"file_type" query:"file_type" enums:"csv,json" valid:"required,oneof=csv json"`
 }
 
-// GetRuleTemplateFile
+// GetImportRuleTemplateFile
 // @Summary 获取规则模板文件
 // @Description get rule template file
 // @Id getRuleTemplateFileV1
@@ -1266,8 +1266,21 @@ type GetRuleTemplateFileReqV1 struct {
 // @Param file_type query string true "file type" Enums(csv,json)
 // @Success 200 file 1 "sqle rule template file"
 // @router /v1/import_rule_template [get]
-func GetRuleTemplateFile(c echo.Context) error {
-	return nil
+func GetImportRuleTemplateFile(c echo.Context) error {
+	req := new(GetRuleTemplateFileReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+	templateName := s.GetDefaultRuleTemplateName(req.InstanceType)
+
+	templateFile, err := getRuleTemplateFile(c.Request().Context(), model.ProjectIdForGlobalRuleTemplate, templateName)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return exportTemplateFile(c, ExportType(req.FileType), templateFile, templateName)
 }
 
 type ExportRuleTemplateFileReqV1 struct {
@@ -1316,28 +1329,28 @@ func ExportProjectRuleTemplateFile(c echo.Context) error {
 	return exportRuleTemplateFile(c, projectUid, templateName)
 }
 
-func exportRuleTemplateFile(c echo.Context, projectID string, ruleTemplateName string) error {
+func getRuleTemplateFile(ctx context.Context, projectID string, ruleTemplateName string) (*RuleTemplateExport, error) {
 	// 获取规则模板详情
 	s := model.GetStorage()
 	template, exist, err := s.GetRuleTemplateDetailByNameAndProjectIds([]string{projectID}, ruleTemplateName, "")
 	if err != nil {
-		return c.JSON(200, controller.NewBaseReq(err))
+		return nil, err
 	}
 	if !exist {
-		return controller.JSONBaseErrorReq(c, ErrRuleTemplateNotExist)
+		return nil, ErrRuleTemplateNotExist
 	}
 
-	lang := locale.Bundle.GetLangTagFromCtx(c.Request().Context())
+	lang := locale.Bundle.GetLangTagFromCtx(ctx)
 
 	// 补充缺失的信息(规则说明等描述信息)
-	ruleNames := []string{}
+	ruleNames := make([]string, 0, len(template.RuleList))
 	for _, rule := range template.RuleList {
 		ruleNames = append(ruleNames, rule.RuleName)
 	}
 
 	rules, err := model.GetStorage().GetRulesByNamesAndDBType(ruleNames, template.DBType)
 	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+		return nil, err
 	}
 
 	ruleCache := map[string] /*rule name*/ *model.Rule{}
@@ -1345,29 +1358,32 @@ func exportRuleTemplateFile(c echo.Context, projectID string, ruleTemplateName s
 		ruleCache[rule.Name] = &rule
 	}
 
-	resp := ParseProjectRuleTemplateFileResDataV1{
-		Name:     template.Name,
-		Desc:     template.Desc,
-		DBType:   template.DBType,
-		RuleList: []RuleResV1{},
+	resp := &RuleTemplateExport{
+		RuleTemplate: RuleTemplate{
+			Name:   template.Name,
+			Desc:   template.Desc,
+			DBType: template.DBType,
+		},
+		RuleList: []RuleTemplateRes{},
 	}
 	for _, rule := range template.RuleList {
 		ruleInfo := ruleCache[rule.RuleName].I18nRuleInfo.GetRuleInfoByLangTag(lang)
-		r := RuleResV1{
-			Name:       rule.RuleName,
-			Desc:       ruleInfo.Desc,
-			Annotation: ruleInfo.Annotation,
-			Level:      rule.RuleLevel,
-			Typ:        ruleInfo.Category,
-			DBType:     rule.RuleDBType,
-			Params:     []RuleParamResV1{},
+		r := RuleTemplateRes{
+			RuleTemplateRuleInfo: RuleTemplateRuleInfo{
+				Name:       rule.RuleName,
+				Desc:       ruleInfo.Desc,
+				Annotation: ruleInfo.Annotation,
+				Level:      rule.RuleLevel,
+				Typ:        ruleInfo.Category,
+				DBType:     rule.RuleDBType,
+				Params:     []RuleParamRes{},
+			},
 		}
 
 		for _, param := range rule.RuleParams {
-			r.Params = append(r.Params, RuleParamResV1{
-				Key:   param.Key,
+			r.Params = append(r.Params, RuleParamRes{
 				Value: param.Value,
-				Desc:  param.GetDesc(locale.Bundle.GetLangTagFromCtx(c.Request().Context())),
+				Desc:  param.GetDesc(locale.Bundle.GetLangTagFromCtx(ctx)),
 				Type:  string(param.Type),
 			})
 		}
@@ -1375,16 +1391,7 @@ func exportRuleTemplateFile(c echo.Context, projectID string, ruleTemplateName s
 		resp.RuleList = append(resp.RuleList, r)
 	}
 
-	bt, err := json.Marshal(resp)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	buff := &bytes.Buffer{}
-	buff.Write(bt)
-	c.Response().Header().Set(echo.HeaderContentDisposition,
-		mime.FormatMediaType("attachment", map[string]string{"filename": fmt.Sprintf("RuleTemplate-%v.json", ruleTemplateName)}))
-	return c.Blob(http.StatusOK, "text/plain;charset=utf-8", buff.Bytes())
+	return resp, nil
 }
 
 type CustomRuleResV1 struct {
