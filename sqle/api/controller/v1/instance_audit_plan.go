@@ -1358,7 +1358,7 @@ func GetAuditPlanSqlAnalysisData(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, &GetSqlManageSqlAnalysisResp{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertSQLAnalysisResultToRes(res, originSQL.SqlText),
+		Data:    convertSQLAnalysisResultToRes(c.Request().Context(), res, originSQL.SqlText),
 	})
 }
 

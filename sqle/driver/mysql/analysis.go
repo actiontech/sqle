@@ -5,11 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
-	"golang.org/x/text/language"
-
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/utils"
@@ -88,29 +86,29 @@ func (i *MysqlDriverImpl) getTableMetaByTableName(ctx context.Context, schema, t
 func (i *MysqlDriverImpl) getTableColumnsInfo(conn *executor.Executor, schema, tableName string) (driverV2.ColumnsInfo, error) {
 	columns := []driverV2.TabularDataHead{
 		{
-			Name: "COLUMN_NAME",
-			Desc: plocale.ShouldLocalizeMsgByLang(language.English, plocale.AnalysisDescColumnName),
+			Name:     "COLUMN_NAME",
+			I18nDesc: plocale.ShouldLocalizeAll(plocale.AnalysisDescColumnName),
 		}, {
-			Name: "COLUMN_TYPE",
-			Desc: plocale.ShouldLocalizeMsgByLang(language.English, plocale.AnalysisDescColumnType),
+			Name:     "COLUMN_TYPE",
+			I18nDesc: plocale.ShouldLocalizeAll(plocale.AnalysisDescColumnType),
 		}, {
-			Name: "CHARACTER_SET_NAME",
-			Desc: plocale.ShouldLocalizeMsgByLang(language.English, plocale.AnalysisDescCharacterSetName),
+			Name:     "CHARACTER_SET_NAME",
+			I18nDesc: plocale.ShouldLocalizeAll(plocale.AnalysisDescCharacterSetName),
 		}, {
-			Name: "IS_NULLABLE",
-			Desc: plocale.ShouldLocalizeMsgByLang(language.English, plocale.AnalysisDescIsNullable),
+			Name:     "IS_NULLABLE",
+			I18nDesc: plocale.ShouldLocalizeAll(plocale.AnalysisDescIsNullable),
 		}, {
-			Name: "COLUMN_KEY",
-			Desc: plocale.ShouldLocalizeMsgByLang(language.English, plocale.AnalysisDescColumnKey),
+			Name:     "COLUMN_KEY",
+			I18nDesc: plocale.ShouldLocalizeAll(plocale.AnalysisDescColumnKey),
 		}, {
-			Name: "COLUMN_DEFAULT",
-			Desc: plocale.ShouldLocalizeMsgByLang(language.English, plocale.AnalysisDescColumnDefault),
+			Name:     "COLUMN_DEFAULT",
+			I18nDesc: plocale.ShouldLocalizeAll(plocale.AnalysisDescColumnDefault),
 		}, {
-			Name: "EXTRA",
-			Desc: plocale.ShouldLocalizeMsgByLang(language.English, plocale.AnalysisDescExtra),
+			Name:     "EXTRA",
+			I18nDesc: plocale.ShouldLocalizeAll(plocale.AnalysisDescExtra),
 		}, {
-			Name: "COLUMN_COMMENT",
-			Desc: plocale.ShouldLocalizeMsgByLang(language.English, plocale.AnalysisDescColumnComment),
+			Name:     "COLUMN_COMMENT",
+			I18nDesc: plocale.ShouldLocalizeAll(plocale.AnalysisDescColumnComment),
 		},
 	}
 
@@ -147,31 +145,31 @@ func (i *MysqlDriverImpl) getTableColumnsInfo(conn *executor.Executor, schema, t
 func (i *MysqlDriverImpl) getTableIndexesInfo(conn *executor.Executor, schema, tableName string) (driverV2.IndexesInfo, error) {
 	columns := []driverV2.TabularDataHead{
 		{
-			Name: "Column_name",
-			Desc: plocale.ShouldLocalizeMsgByLang(language.English, plocale.AnalysisDescColumnName),
+			Name:     "Column_name",
+			I18nDesc: plocale.ShouldLocalizeAll(plocale.AnalysisDescColumnName),
 		}, {
-			Name: "Key_name",
-			Desc: plocale.ShouldLocalizeMsgByLang(language.English, plocale.AnalysisDescKeyName),
+			Name:     "Key_name",
+			I18nDesc: plocale.ShouldLocalizeAll(plocale.AnalysisDescKeyName),
 		}, {
 			// set the row's value as Yes if Non_unique is 0 and No if Non_unique is 1
-			Name: "Unique",
-			Desc: plocale.ShouldLocalizeMsgByLang(language.English, plocale.AnalysisDescUnique),
+			Name:     "Unique",
+			I18nDesc: plocale.ShouldLocalizeAll(plocale.AnalysisDescUnique),
 		}, {
-			Name: "Seq_in_index",
-			Desc: plocale.ShouldLocalizeMsgByLang(language.English, plocale.AnalysisDescSeqInIndex),
+			Name:     "Seq_in_index",
+			I18nDesc: plocale.ShouldLocalizeAll(plocale.AnalysisDescSeqInIndex),
 		}, {
-			Name: "Cardinality",
-			Desc: plocale.ShouldLocalizeMsgByLang(language.English, plocale.AnalysisDescCardinality),
+			Name:     "Cardinality",
+			I18nDesc: plocale.ShouldLocalizeAll(plocale.AnalysisDescCardinality),
 		}, {
 			// set the row's value as Yes if the column may contain NULL values and No if not
-			Name: "Null",
-			Desc: plocale.ShouldLocalizeMsgByLang(language.English, plocale.AnalysisDescIsNullable),
+			Name:     "Null",
+			I18nDesc: plocale.ShouldLocalizeAll(plocale.AnalysisDescIsNullable),
 		}, {
-			Name: "Index_type",
-			Desc: plocale.ShouldLocalizeMsgByLang(language.English, plocale.AnalysisDescIndexType),
+			Name:     "Index_type",
+			I18nDesc: plocale.ShouldLocalizeAll(plocale.AnalysisDescIndexType),
 		}, {
-			Name: "Comment",
-			Desc: plocale.ShouldLocalizeMsgByLang(language.English, plocale.AnalysisDescComment),
+			Name:     "Comment",
+			I18nDesc: plocale.ShouldLocalizeAll(plocale.AnalysisDescComment),
 		},
 	}
 

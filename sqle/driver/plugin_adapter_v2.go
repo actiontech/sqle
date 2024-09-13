@@ -444,9 +444,13 @@ func (s *PluginImplV2) Explain(ctx context.Context, conf *driverV2.ExplainConf) 
 		return nil, err
 	}
 
+	td, err := driverV2.ConvertProtoTabularDataToDriver(res.ClassicResult.Data)
+	if err != nil {
+		return nil, fmt.Errorf("ClassicResult: %w", err)
+	}
 	return &driverV2.ExplainResult{
 		ClassicResult: driverV2.ExplainClassicResult{
-			TabularData: driverV2.ConvertProtoTabularDataToDriver(res.ClassicResult.Data),
+			TabularData: td,
 		},
 	}, nil
 }
@@ -484,7 +488,7 @@ func (s *PluginImplV2) getTableMeta(ctx context.Context, table *driverV2.Table) 
 	if err != nil {
 		return nil, err
 	}
-	return driverV2.ConvertProtoTableMetaToDriver(result.TableMeta), nil
+	return driverV2.ConvertProtoTableMetaToDriver(result.TableMeta)
 }
 
 func (s *PluginImplV2) extractTableFromSQL(ctx context.Context, sql string) ([]*driverV2.Table, error) {

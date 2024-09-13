@@ -289,8 +289,8 @@ type QueryResultValue struct {
 	| Rows[1][0] | Rows[1][1] | Rows[1][2] |
 */
 type TabularDataHead struct {
-	Name string
-	Desc string
+	Name     string
+	I18nDesc i18nPkg.I18nStr
 }
 
 type TabularData struct {
