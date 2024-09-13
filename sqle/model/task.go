@@ -186,7 +186,7 @@ func (i *I18nAuditResultInfo) GetAuditResultInfoByLangTag(lang language.Tag) *Au
 	info := (*i)[i18nPkg.DefaultLang]
 	return &info
 }
-
+                            //
 func (i I18nAuditResultInfo) Value() (driver.Value, error) {
 	b, err := json.Marshal(i)
 	return string(b), err
