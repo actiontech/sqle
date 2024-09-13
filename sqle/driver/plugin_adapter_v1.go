@@ -263,8 +263,8 @@ func (p *PluginImplV1) Explain(ctx context.Context, conf *driverV2.ExplainConf) 
 	columnsV2 := []driverV2.TabularDataHead{}
 	for _, column := range resultV1.ClassicResult.Columns {
 		columnsV2 = append(columnsV2, driverV2.TabularDataHead{
-			Name: column.Name,
-			Desc: column.Desc,
+			Name:     column.Name,
+			I18nDesc: i18nPkg.ConvertStr2I18nAsDefaultLang(column.Desc),
 		})
 	}
 
@@ -306,8 +306,8 @@ func (p *PluginImplV1) GetTableMetaBySQL(ctx context.Context, conf *GetTableMeta
 		columnV2 := []driverV2.TabularDataHead{}
 		for _, column := range tm.ColumnsInfo.Columns {
 			columnV2 = append(columnV2, driverV2.TabularDataHead{
-				Name: column.Name,
-				Desc: column.Desc,
+				Name:     column.Name,
+				I18nDesc: i18nPkg.ConvertStr2I18nAsDefaultLang(column.Desc),
 			})
 		}
 		tmV2.ColumnsInfo.Columns = columnV2
@@ -316,8 +316,8 @@ func (p *PluginImplV1) GetTableMetaBySQL(ctx context.Context, conf *GetTableMeta
 		indexesColV2 := []driverV2.TabularDataHead{}
 		for _, column := range tm.IndexesInfo.Columns {
 			indexesColV2 = append(indexesColV2, driverV2.TabularDataHead{
-				Name: column.Name,
-				Desc: column.Desc,
+				Name:     column.Name,
+				I18nDesc: i18nPkg.ConvertStr2I18nAsDefaultLang(column.Desc),
 			})
 
 		}

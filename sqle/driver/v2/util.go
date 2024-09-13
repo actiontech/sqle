@@ -112,9 +112,9 @@ func ConvertI18nAuditResultFromProtoToDriver(par *protoV2.AuditResult) (*AuditRe
 			locale.DefaultLang: {Message: par.Message},
 		}
 	} else {
-		if _, exist := par.I18NAuditResultInfo[locale.DefaultLang.String()]; !exist {
-			// 多语言的插件 审核结果需包含 locale.DefaultLang
-			return nil, fmt.Errorf("client audit results must support language: %s", locale.DefaultLang)
+		if _, exist := par.I18NAuditResultInfo[i18nPkg.DefaultLang.String()]; !exist {
+			// 多语言的插件 需包含 locale.DefaultLang
+			return nil, fmt.Errorf("client audit results must support language: %s", i18nPkg.DefaultLang.String())
 		}
 	}
 	for langTag, ruleInfo := range par.I18NAuditResultInfo {
@@ -163,6 +163,7 @@ func ConvertI18nRuleFromProtoToDriver(rule *protoV2.Rule) (*Rule, error) {
 		dRule.I18nRuleInfo[tag] = ConvertI18nRuleInfoFromProtoToDriver(ruleInfo)
 	}
 	if len(rule.I18NRuleInfo) == 0 {
+		// 对非多语言的插件支持
 		ruleInfo := &RuleInfo{
 			Desc:       rule.Desc,
 			Annotation: rule.Annotation,
@@ -173,6 +174,11 @@ func ConvertI18nRuleFromProtoToDriver(rule *protoV2.Rule) (*Rule, error) {
 		}
 		dRule.I18nRuleInfo = I18nRuleInfo{
 			locale.DefaultLang: ruleInfo,
+		}
+	} else {
+		if _, exist := rule.I18NRuleInfo[i18nPkg.DefaultLang.String()]; !exist {
+			// 多语言的插件 需包含 locale.DefaultLang
+			return nil, fmt.Errorf("client rule: %s does not support language: %s", rule.Name, i18nPkg.DefaultLang.String())
 		}
 	}
 	return dRule, nil
@@ -329,8 +335,9 @@ func ConvertTabularDataToProto(td TabularData) *protoV2.TabularData {
 	columns := make([]*protoV2.TabularDataHead, 0, len(td.Columns))
 	for _, c := range td.Columns {
 		columns = append(columns, &protoV2.TabularDataHead{
-			Name: c.Name,
-			Desc: c.Desc,
+			Name:     c.Name,
+			I18NDesc: c.I18nDesc.StrMap(),
+			Desc:     c.I18nDesc.GetStrInLang(i18nPkg.DefaultLang),
 		})
 	}
 
@@ -347,13 +354,28 @@ func ConvertTabularDataToProto(td TabularData) *protoV2.TabularData {
 	}
 }
 
-func ConvertProtoTabularDataToDriver(pTd *protoV2.TabularData) TabularData {
+func ConvertProtoTabularDataToDriver(pTd *protoV2.TabularData) (TabularData, error) {
 	columns := make([]TabularDataHead, 0, len(pTd.Columns))
 	for _, c := range pTd.Columns {
-		columns = append(columns, TabularDataHead{
-			Name: c.Name,
-			Desc: c.Desc,
-		})
+		h := TabularDataHead{
+			Name:     c.Name,
+			I18nDesc: nil,
+		}
+		if len(c.I18NDesc) > 0 {
+			if _, exist := c.I18NDesc[i18nPkg.DefaultLang.String()]; !exist {
+				// 多语言的插件 需包含 locale.DefaultLang
+				return TabularData{}, fmt.Errorf("client TabularDataHead: %s does not support language: %s", c.Name, i18nPkg.DefaultLang.String())
+			}
+			i18nDesc, err := i18nPkg.ConvertStrMap2I18nStr(c.I18NDesc)
+			if err != nil {
+				return TabularData{}, fmt.Errorf("TabularData: %w", err)
+			}
+			h.I18nDesc = i18nDesc
+		} else {
+			// 对非多语言的插件支持
+			h.I18nDesc.SetStrInLang(i18nPkg.DefaultLang, c.Desc)
+		}
+		columns = append(columns, h)
 	}
 
 	rows := make([][]string, 0, len(pTd.Rows))
@@ -364,7 +386,7 @@ func ConvertProtoTabularDataToDriver(pTd *protoV2.TabularData) TabularData {
 	return TabularData{
 		Columns: columns,
 		Rows:    rows,
-	}
+	}, nil
 }
 
 func ConvertTableMetaToProto(meta *TableMeta) *protoV2.TableMeta {
@@ -375,12 +397,20 @@ func ConvertTableMetaToProto(meta *TableMeta) *protoV2.TableMeta {
 	}
 }
 
-func ConvertProtoTableMetaToDriver(meta *protoV2.TableMeta) *TableMeta {
-	return &TableMeta{
-		ColumnsInfo:    ColumnsInfo{TabularData: ConvertProtoTabularDataToDriver(meta.ColumnsInfo.Data)},
-		IndexesInfo:    IndexesInfo{TabularData: ConvertProtoTabularDataToDriver(meta.IndexesInfo.Data)},
-		CreateTableSQL: meta.CreateTableSQL,
+func ConvertProtoTableMetaToDriver(meta *protoV2.TableMeta) (*TableMeta, error) {
+	columnsInfo, err := ConvertProtoTabularDataToDriver(meta.ColumnsInfo.Data)
+	if err != nil {
+		return nil, fmt.Errorf("ColumnsInfo: %w", err)
 	}
+	indexesInfo, err := ConvertProtoTabularDataToDriver(meta.IndexesInfo.Data)
+	if err != nil {
+		return nil, fmt.Errorf("IndexesInfo: %w", err)
+	}
+	return &TableMeta{
+		ColumnsInfo:    ColumnsInfo{TabularData: columnsInfo},
+		IndexesInfo:    IndexesInfo{TabularData: indexesInfo},
+		CreateTableSQL: meta.CreateTableSQL,
+	}, nil
 }
 
 func RandStr(length int) string {
