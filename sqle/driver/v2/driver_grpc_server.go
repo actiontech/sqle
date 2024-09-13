@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
 	protoV2 "github.com/actiontech/sqle/sqle/driver/v2/proto"
-	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"golang.org/x/text/language"
 
@@ -47,7 +47,7 @@ func (i *I18nRuleInfo) GetRuleInfoByLangTag(lang language.Tag) *RuleInfo {
 	if ruleInfo, ok := (*i)[lang]; ok {
 		return ruleInfo
 	}
-	return (*i)[locale.DefaultLang]
+	return (*i)[i18nPkg.DefaultLang]
 }
 
 func (i I18nRuleInfo) Value() (driver.Value, error) {
@@ -395,7 +395,7 @@ func (d *DriverGrpcServer) Query(ctx context.Context, req *protoV2.QueryRequest)
 		resp.Column = append(resp.Column, &protoV2.Param{
 			Key:      param.Key,
 			Value:    param.Value,
-			Desc:     param.GetDesc(locale.DefaultLang),
+			Desc:     param.GetDesc(i18nPkg.DefaultLang),
 			I18NDesc: param.I18nDesc.StrMap(),
 			Type:     string(param.Type),
 		})

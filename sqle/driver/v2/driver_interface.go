@@ -8,10 +8,9 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
 	"github.com/actiontech/sqle/sqle/driver/common"
 	protoV2 "github.com/actiontech/sqle/sqle/driver/v2/proto"
-	"github.com/actiontech/sqle/sqle/locale"
-	"github.com/actiontech/sqle/sqle/pkg/i18nPkg"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"golang.org/x/text/language"
 
@@ -183,7 +182,7 @@ func (rs *AuditResults) Message() string {
 	repeatCheck := map[string]struct{}{}
 	messages := []string{}
 	for _, result := range rs.Results {
-		token := result.I18nAuditResultInfo[locale.DefaultLang].Message + string(result.Level)
+		token := result.I18nAuditResultInfo[i18nPkg.DefaultLang].Message + string(result.Level)
 		if _, ok := repeatCheck[token]; ok {
 			continue
 		}
@@ -192,11 +191,11 @@ func (rs *AuditResults) Message() string {
 		var message string
 		match, _ := regexp.MatchString(fmt.Sprintf(`^\[%s|%s|%s|%s|%s\]`,
 			RuleLevelError, RuleLevelWarn, RuleLevelNotice, RuleLevelNormal, "osc"),
-			result.I18nAuditResultInfo[locale.DefaultLang].Message)
+			result.I18nAuditResultInfo[i18nPkg.DefaultLang].Message)
 		if match {
-			message = result.I18nAuditResultInfo[locale.DefaultLang].Message
+			message = result.I18nAuditResultInfo[i18nPkg.DefaultLang].Message
 		} else {
-			message = fmt.Sprintf("[%s]%s", result.Level, result.I18nAuditResultInfo[locale.DefaultLang].Message)
+			message = fmt.Sprintf("[%s]%s", result.Level, result.I18nAuditResultInfo[i18nPkg.DefaultLang].Message)
 		}
 		messages = append(messages, message)
 	}

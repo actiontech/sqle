@@ -74,7 +74,7 @@ func convertListUserToModel(user *dmsV1.ListUser) *model.User {
 		Phone:    user.Phone,
 		WeChatID: user.WxID,
 	}
-	if user.Stat != dmsV1.StatOK {
+	if user.Stat != "正常" && user.Stat != "Normal" { // todo i18n user Stat
 		ret.Stat = 1
 	}
 	return ret
@@ -100,7 +100,7 @@ func convertUserToModel(user *dmsV1.GetUser) *model.User {
 		WeChatID:           user.WxID,
 		ThirdPartyUserInfo: user.ThirdPartyUserInfo,
 	}
-	if user.Stat != dmsV1.StatOK {
+	if user.Stat != "正常" && user.Stat != "Normal" { // todo i18n user Stat
 		ret.Stat = 1
 	}
 	return ret

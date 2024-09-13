@@ -5,9 +5,8 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
 	protoV2 "github.com/actiontech/sqle/sqle/driver/v2/proto"
-	"github.com/actiontech/sqle/sqle/locale"
-	"github.com/actiontech/sqle/sqle/pkg/i18nPkg"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"golang.org/x/text/language"
 )
@@ -109,11 +108,11 @@ func ConvertI18nAuditResultFromProtoToDriver(par *protoV2.AuditResult) (*AuditRe
 	if len(par.I18NAuditResultInfo) == 0 {
 		// 对非多语言的插件支持
 		ar.I18nAuditResultInfo = map[language.Tag]AuditResultInfo{
-			locale.DefaultLang: {Message: par.Message},
+			i18nPkg.DefaultLang: {Message: par.Message},
 		}
 	} else {
 		if _, exist := par.I18NAuditResultInfo[i18nPkg.DefaultLang.String()]; !exist {
-			// 多语言的插件 需包含 locale.DefaultLang
+			// 多语言的插件 需包含 i18nPkg.DefaultLang
 			return nil, fmt.Errorf("client audit results must support language: %s", i18nPkg.DefaultLang.String())
 		}
 	}
@@ -131,7 +130,7 @@ func ConvertI18nAuditResultFromProtoToDriver(par *protoV2.AuditResult) (*AuditRe
 
 func ConvertI18nAuditResultFromDriverToProto(ar *AuditResult) *protoV2.AuditResult {
 	par := &protoV2.AuditResult{
-		Message:             ar.I18nAuditResultInfo[locale.DefaultLang].Message,
+		Message:             ar.I18nAuditResultInfo[i18nPkg.DefaultLang].Message,
 		RuleName:            ar.RuleName,
 		Level:               string(ar.Level),
 		I18NAuditResultInfo: make(map[string]*protoV2.I18NAuditResultInfo, len(ar.I18nAuditResultInfo)),
@@ -173,11 +172,11 @@ func ConvertI18nRuleFromProtoToDriver(rule *protoV2.Rule) (*Rule, error) {
 			ruleInfo.Knowledge = RuleKnowledge{Content: rule.Knowledge.Content}
 		}
 		dRule.I18nRuleInfo = I18nRuleInfo{
-			locale.DefaultLang: ruleInfo,
+			i18nPkg.DefaultLang: ruleInfo,
 		}
 	} else {
 		if _, exist := rule.I18NRuleInfo[i18nPkg.DefaultLang.String()]; !exist {
-			// 多语言的插件 需包含 locale.DefaultLang
+			// 多语言的插件 需包含 i18nPkg.DefaultLang
 			return nil, fmt.Errorf("client rule: %s does not support language: %s", rule.Name, i18nPkg.DefaultLang.String())
 		}
 	}
@@ -205,13 +204,13 @@ func ConvertI18nRuleFromDriverToProto(rule *Rule) *protoV2.Rule {
 	// 填充默认语言以支持非多语言插件
 	pRule := &protoV2.Rule{
 		Name:       rule.Name,
-		Desc:       rule.I18nRuleInfo[locale.DefaultLang].Desc,
+		Desc:       rule.I18nRuleInfo[i18nPkg.DefaultLang].Desc,
 		Level:      string(rule.Level),
-		Category:   rule.I18nRuleInfo[locale.DefaultLang].Category,
+		Category:   rule.I18nRuleInfo[i18nPkg.DefaultLang].Category,
 		Params:     ConvertParamToProtoParam(rule.Params),
-		Annotation: rule.I18nRuleInfo[locale.DefaultLang].Annotation,
+		Annotation: rule.I18nRuleInfo[i18nPkg.DefaultLang].Annotation,
 		Knowledge: &protoV2.Knowledge{
-			Content: rule.I18nRuleInfo[locale.DefaultLang].Knowledge.Content,
+			Content: rule.I18nRuleInfo[i18nPkg.DefaultLang].Knowledge.Content,
 		},
 		I18NRuleInfo: make(map[string]*protoV2.I18NRuleInfo, len(rule.I18nRuleInfo)),
 	}
@@ -302,7 +301,7 @@ func ConvertParamToProtoParam(p params.Params) []*protoV2.Param {
 		pp[i] = &protoV2.Param{
 			Key:      v.Key,
 			Value:    v.Value,
-			Desc:     v.GetDesc(locale.DefaultLang),
+			Desc:     v.GetDesc(i18nPkg.DefaultLang),
 			I18NDesc: v.I18nDesc.StrMap(),
 			Type:     string(v.Type),
 		}
@@ -363,7 +362,7 @@ func ConvertProtoTabularDataToDriver(pTd *protoV2.TabularData) (TabularData, err
 		}
 		if len(c.I18NDesc) > 0 {
 			if _, exist := c.I18NDesc[i18nPkg.DefaultLang.String()]; !exist {
-				// 多语言的插件 需包含 locale.DefaultLang
+				// 多语言的插件 需包含 i18nPkg.DefaultLang
 				return TabularData{}, fmt.Errorf("client TabularDataHead: %s does not support language: %s", c.Name, i18nPkg.DefaultLang.String())
 			}
 			i18nDesc, err := i18nPkg.ConvertStrMap2I18nStr(c.I18NDesc)

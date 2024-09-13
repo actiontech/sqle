@@ -180,7 +180,7 @@ func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHoo
 		}
 		if whitelistMatch {
 			result := driverV2.NewAuditResults()
-			result.Add(driverV2.RuleLevelNormal, "", plocale.ShouldLocalizeAll(plocale.AuditResultMsgExcludedSQL))
+			result.Add(driverV2.RuleLevelNormal, "", plocale.Bundle.LocalizeAll(plocale.AuditResultMsgExcludedSQL))
 			executeSQL.AuditStatus = model.SQLAuditStatusFinished
 			executeSQL.AuditLevel = string(result.Level())
 			executeSQL.AuditFingerprint = utils.Md5String(string(append([]byte(result.Message()), []byte(node.Fingerprint)...)))

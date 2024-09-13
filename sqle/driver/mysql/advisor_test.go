@@ -6,15 +6,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
-	"github.com/nicksnyder/go-i18n/v2/i18n"
-	"golang.org/x/text/language"
-
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 	"github.com/actiontech/sqle/sqle/driver/mysql/session"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	"github.com/actiontech/sqle/sqle/pkg/params"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"github.com/pingcap/parser/ast"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -34,7 +32,7 @@ func newPrefixOptimizeResult(columns []string, tableName string) *OptimizeResult
 	return &OptimizeResult{
 		TableName:      tableName,
 		IndexedColumns: columns,
-		Reason:         plocale.ShouldLocalizeAll(plocale.PrefixIndexAdviceFormat),
+		Reason:         plocale.Bundle.LocalizeAll(plocale.PrefixIndexAdviceFormat),
 	}
 }
 
@@ -43,12 +41,12 @@ func mockThreeStarOptimizeResult(caseName string, c optimizerTestContent, t *tes
 }
 
 func newThreeStarOptimizeResult(columns []string, tableName string) *OptimizeResult {
-	var indexType = plocale.ShouldLocalizeMsgByLang(language.English, plocale.AdvisorIndexTypeComposite)
+	var indexType = plocale.AdvisorIndexTypeComposite
 	if len(columns) == 1 {
-		indexType = plocale.ShouldLocalizeMsgByLang(language.English, plocale.AdvisorIndexTypeSingle)
+		indexType = plocale.AdvisorIndexTypeSingle
 	}
 	return &OptimizeResult{
-		Reason:         plocale.ShouldLocalizeAllWithArgs(plocale.ThreeStarIndexAdviceFormat, tableName, indexType, strings.Join(columns, "，")),
+		Reason:         plocale.Bundle.LocalizeAllWithArgs(plocale.ThreeStarIndexAdviceFormat, tableName, indexType, strings.Join(columns, "，")),
 		IndexedColumns: columns,
 		TableName:      tableName,
 	}
@@ -62,7 +60,7 @@ func newFunctionIndexOptimizeResult(format *i18n.Message, columns []string, tabl
 	return &OptimizeResult{
 		TableName:      tableName,
 		IndexedColumns: columns,
-		Reason:         plocale.ShouldLocalizeAllWithArgs(format, tableName, strings.Join(columns, "，")),
+		Reason:         plocale.Bundle.LocalizeAllWithArgs(format, tableName, strings.Join(columns, "，")),
 	}
 }
 
@@ -74,7 +72,7 @@ func newExtremalIndexOptimizeResult(column string, tableName string) *OptimizeRe
 	return &OptimizeResult{
 		TableName:      tableName,
 		IndexedColumns: []string{column},
-		Reason:         plocale.ShouldLocalizeAllWithArgs(plocale.ExtremalIndexAdviceFormat, tableName, column),
+		Reason:         plocale.Bundle.LocalizeAllWithArgs(plocale.ExtremalIndexAdviceFormat, tableName, column),
 	}
 }
 
@@ -84,7 +82,7 @@ func mockJoinOptimizeResult(caseName string, c optimizerTestContent, t *testing.
 
 func newJoinIndexOptimizeResult(indexColumn []string, drivenTableName string) *OptimizeResult {
 	return &OptimizeResult{
-		Reason:         plocale.ShouldLocalizeAllWithArgs(plocale.JoinIndexAdviceFormat, strings.Join(indexColumn, "，"), drivenTableName, drivenTableName, strings.Join(indexColumn, "，")),
+		Reason:         plocale.Bundle.LocalizeAllWithArgs(plocale.JoinIndexAdviceFormat, strings.Join(indexColumn, "，"), drivenTableName, drivenTableName, strings.Join(indexColumn, "，")),
 		IndexedColumns: indexColumn,
 		TableName:      drivenTableName,
 	}

@@ -112,7 +112,7 @@ func convertInstanceToRes(ctx context.Context, instance *model.Instance) Instanc
 	for _, param := range instance.AdditionalParams {
 		instanceResV2.AdditionalParams = append(instanceResV2.AdditionalParams, &v1.InstanceAdditionalParamResV1{
 			Name:        param.Key,
-			Description: param.GetDesc(locale.GetLangTagFromCtx(ctx)),
+			Description: param.GetDesc(locale.Bundle.GetLangTagFromCtx(ctx)),
 			Type:        string(param.Type),
 			Value:       fmt.Sprintf("%v", param.Value),
 		})

@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
 	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
-	"github.com/actiontech/sqle/sqle/locale"
 	"golang.org/x/text/language"
 
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
@@ -42,7 +42,7 @@ func TestRollbackWithVariable(t *testing.T) {
 		i := DefaultMysqlInspect()
 		rollbackSQL, reason, err := i.GenRollbackSQL(context.Background(), sql)
 		assert.NoError(t, err)
-		assert.Equal(t, plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.NotSupportHasVariableRollback), reason[locale.DefaultLang])
+		assert.Equal(t, plocale.Bundle.LocalizeMsgByLang(language.Chinese, plocale.NotSupportHasVariableRollback), reason[i18nPkg.DefaultLang])
 		assert.Equal(t, "", rollbackSQL)
 	}
 }

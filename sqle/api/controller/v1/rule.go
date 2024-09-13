@@ -444,7 +444,7 @@ func convertDefaultRuleTemplatesToRes(ctx context.Context, ruleTemplates []*mode
 	for _, ruleTemplate := range ruleTemplates {
 		ruleTemplateReq := RuleTemplateResV1{
 			Name:   ruleTemplate.Name,
-			Desc:   locale.ShouldLocalizeMsg(ctx, locale.DefaultRuleTemplatesDesc),
+			Desc:   locale.Bundle.LocalizeMsgByCtx(ctx, locale.DefaultRuleTemplatesDesc),
 			DBType: ruleTemplate.DBType,
 		}
 		ruleTemplatesReq = append(ruleTemplatesReq, ruleTemplateReq)
@@ -485,7 +485,7 @@ type RuleParamResV1 struct {
 }
 
 func convertRuleToRes(ctx context.Context, rule *model.Rule) RuleResV1 {
-	lang := locale.GetLangTagFromCtx(ctx)
+	lang := locale.Bundle.GetLangTagFromCtx(ctx)
 	if rule.I18nRuleInfo == nil {
 		rule.I18nRuleInfo = make(driverV2.I18nRuleInfo) // avoid panic
 	}
@@ -506,7 +506,7 @@ func convertRuleToRes(ctx context.Context, rule *model.Rule) RuleResV1 {
 		for _, p := range params {
 			paramRes := RuleParamResV1{
 				Key:   p.Key,
-				Desc:  p.GetDesc(locale.GetLangTagFromCtx(ctx)),
+				Desc:  p.GetDesc(locale.Bundle.GetLangTagFromCtx(ctx)),
 				Type:  string(p.Type),
 				Value: rule.Params.GetParam(p.Key).Value,
 			}
@@ -1327,7 +1327,7 @@ func exportRuleTemplateFile(c echo.Context, projectID string, ruleTemplateName s
 		return controller.JSONBaseErrorReq(c, ErrRuleTemplateNotExist)
 	}
 
-	lang := locale.GetLangTagFromCtx(c.Request().Context())
+	lang := locale.Bundle.GetLangTagFromCtx(c.Request().Context())
 
 	// 补充缺失的信息(规则说明等描述信息)
 	ruleNames := []string{}
@@ -1367,7 +1367,7 @@ func exportRuleTemplateFile(c echo.Context, projectID string, ruleTemplateName s
 			r.Params = append(r.Params, RuleParamResV1{
 				Key:   param.Key,
 				Value: param.Value,
-				Desc:  param.GetDesc(locale.GetLangTagFromCtx(c.Request().Context())),
+				Desc:  param.GetDesc(locale.Bundle.GetLangTagFromCtx(c.Request().Context())),
 				Type:  string(param.Type),
 			})
 		}

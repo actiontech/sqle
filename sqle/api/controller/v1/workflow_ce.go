@@ -35,7 +35,7 @@ func getWorkflowTemplate(c echo.Context) error {
 	}
 
 	td := model.DefaultWorkflowTemplate(projectUid)
-	td.Desc = fmt.Sprintf(locale.ShouldLocalizeMsg(c.Request().Context(), locale.DefaultTemplatesDesc), projectUid)
+	td.Desc = fmt.Sprintf(locale.Bundle.LocalizeMsgByCtx(c.Request().Context(), locale.DefaultTemplatesDesc), projectUid)
 
 	return c.JSON(http.StatusOK, &GetWorkflowTemplateResV1{
 		BaseRes: controller.NewBaseReq(nil),

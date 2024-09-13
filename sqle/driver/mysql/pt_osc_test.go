@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
 	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
-	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/text/language"
 )
@@ -16,19 +16,19 @@ func TestPTOSC(t *testing.T) {
 
 	runOSCCase(t, "add column not null no default",
 		"alter table exist_tb_1 add column v3 varchar(255) NOT NULL;",
-		plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.PTOSCAvoidNoDefaultValueOnNotNullColumn))
+		plocale.Bundle.LocalizeMsgByLang(language.Chinese, plocale.PTOSCAvoidNoDefaultValueOnNotNullColumn))
 
 	runOSCCase(t, "not pk and unique key",
 		"alter table exist_tb_3 add column v3 varchar(255);",
-		plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.PTOSCNoUniqueIndexOrPrimaryKey))
+		plocale.Bundle.LocalizeMsgByLang(language.Chinese, plocale.PTOSCNoUniqueIndexOrPrimaryKey))
 
 	runOSCCase(t, "rename table",
 		"alter table exist_tb_1 rename as not_exist_tb_1;",
-		plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.PTOSCAvoidRenameTable))
+		plocale.Bundle.LocalizeMsgByLang(language.Chinese, plocale.PTOSCAvoidRenameTable))
 
 	runOSCCase(t, "add unique index",
 		"alter table exist_tb_1 add unique index u_1 (v1) ",
-		plocale.ShouldLocalizeMsgByLang(language.Chinese, plocale.PTOSCAvoidUniqueIndex))
+		plocale.Bundle.LocalizeMsgByLang(language.Chinese, plocale.PTOSCAvoidUniqueIndex))
 
 	runOSCCase(t, "add column ok",
 		"alter table exist_tb_1 add column v3 varchar(255);",
@@ -60,5 +60,5 @@ func runOSCCase(t *testing.T, desc string, sql, expect string) {
 		t.Error(err)
 		return
 	}
-	assert.Equal(t, expect, actual[locale.DefaultLang], desc)
+	assert.Equal(t, expect, actual[i18nPkg.DefaultLang], desc)
 }

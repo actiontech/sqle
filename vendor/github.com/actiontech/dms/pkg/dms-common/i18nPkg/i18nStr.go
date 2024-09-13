@@ -9,12 +9,14 @@ import (
 )
 
 func ConvertStr2I18nAsDefaultLang(s string) I18nStr {
+	if s == "" {
+		return nil
+	}
 	return map[language.Tag]string{DefaultLang: s}
 }
 
 func ConvertStrMap2I18nStr(s map[string]string) (I18nStr, error) {
 	if len(s) == 0 {
-		// todo i18n old plugin
 		return nil, nil
 	}
 	if _, exist := s[DefaultLang.String()]; !exist {
