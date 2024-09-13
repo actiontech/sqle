@@ -204,7 +204,7 @@ func GetAuditPlanReportSQLs(c echo.Context) error {
 	}
 
 	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
-	lang := locale.GetLangTagFromCtx(c.Request().Context())
+	lang := locale.Bundle.GetLangTagFromCtx(c.Request().Context())
 
 	data := map[string]interface{}{
 		"audit_plan_report_id": c.Param("audit_plan_report_id"),

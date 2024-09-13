@@ -36,13 +36,13 @@ func (at *MySQLProcessListTaskV2) Params(instanceId ...string) params.Params {
 			Key:      paramKeyCollectIntervalSecond,
 			Value:    "60",
 			Type:     params.ParamTypeInt,
-			I18nDesc: locale.ShouldLocalizeAll(locale.ParamCollectIntervalSecond),
+			I18nDesc: locale.Bundle.LocalizeAll(locale.ParamCollectIntervalSecond),
 		},
 		{
 			Key:      paramKeySQLMinSecond,
 			Value:    "0",
 			Type:     params.ParamTypeInt,
-			I18nDesc: locale.ShouldLocalizeAll(locale.ParamSQLMinSecond),
+			I18nDesc: locale.Bundle.LocalizeAll(locale.ParamSQLMinSecond),
 		},
 	}
 

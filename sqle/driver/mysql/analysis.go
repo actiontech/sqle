@@ -87,28 +87,28 @@ func (i *MysqlDriverImpl) getTableColumnsInfo(conn *executor.Executor, schema, t
 	columns := []driverV2.TabularDataHead{
 		{
 			Name:     "COLUMN_NAME",
-			I18nDesc: plocale.ShouldLocalizeAll(plocale.AnalysisDescColumnName),
+			I18nDesc: plocale.Bundle.LocalizeAll(plocale.AnalysisDescColumnName),
 		}, {
 			Name:     "COLUMN_TYPE",
-			I18nDesc: plocale.ShouldLocalizeAll(plocale.AnalysisDescColumnType),
+			I18nDesc: plocale.Bundle.LocalizeAll(plocale.AnalysisDescColumnType),
 		}, {
 			Name:     "CHARACTER_SET_NAME",
-			I18nDesc: plocale.ShouldLocalizeAll(plocale.AnalysisDescCharacterSetName),
+			I18nDesc: plocale.Bundle.LocalizeAll(plocale.AnalysisDescCharacterSetName),
 		}, {
 			Name:     "IS_NULLABLE",
-			I18nDesc: plocale.ShouldLocalizeAll(plocale.AnalysisDescIsNullable),
+			I18nDesc: plocale.Bundle.LocalizeAll(plocale.AnalysisDescIsNullable),
 		}, {
 			Name:     "COLUMN_KEY",
-			I18nDesc: plocale.ShouldLocalizeAll(plocale.AnalysisDescColumnKey),
+			I18nDesc: plocale.Bundle.LocalizeAll(plocale.AnalysisDescColumnKey),
 		}, {
 			Name:     "COLUMN_DEFAULT",
-			I18nDesc: plocale.ShouldLocalizeAll(plocale.AnalysisDescColumnDefault),
+			I18nDesc: plocale.Bundle.LocalizeAll(plocale.AnalysisDescColumnDefault),
 		}, {
 			Name:     "EXTRA",
-			I18nDesc: plocale.ShouldLocalizeAll(plocale.AnalysisDescExtra),
+			I18nDesc: plocale.Bundle.LocalizeAll(plocale.AnalysisDescExtra),
 		}, {
 			Name:     "COLUMN_COMMENT",
-			I18nDesc: plocale.ShouldLocalizeAll(plocale.AnalysisDescColumnComment),
+			I18nDesc: plocale.Bundle.LocalizeAll(plocale.AnalysisDescColumnComment),
 		},
 	}
 
@@ -146,30 +146,30 @@ func (i *MysqlDriverImpl) getTableIndexesInfo(conn *executor.Executor, schema, t
 	columns := []driverV2.TabularDataHead{
 		{
 			Name:     "Column_name",
-			I18nDesc: plocale.ShouldLocalizeAll(plocale.AnalysisDescColumnName),
+			I18nDesc: plocale.Bundle.LocalizeAll(plocale.AnalysisDescColumnName),
 		}, {
 			Name:     "Key_name",
-			I18nDesc: plocale.ShouldLocalizeAll(plocale.AnalysisDescKeyName),
+			I18nDesc: plocale.Bundle.LocalizeAll(plocale.AnalysisDescKeyName),
 		}, {
 			// set the row's value as Yes if Non_unique is 0 and No if Non_unique is 1
 			Name:     "Unique",
-			I18nDesc: plocale.ShouldLocalizeAll(plocale.AnalysisDescUnique),
+			I18nDesc: plocale.Bundle.LocalizeAll(plocale.AnalysisDescUnique),
 		}, {
 			Name:     "Seq_in_index",
-			I18nDesc: plocale.ShouldLocalizeAll(plocale.AnalysisDescSeqInIndex),
+			I18nDesc: plocale.Bundle.LocalizeAll(plocale.AnalysisDescSeqInIndex),
 		}, {
 			Name:     "Cardinality",
-			I18nDesc: plocale.ShouldLocalizeAll(plocale.AnalysisDescCardinality),
+			I18nDesc: plocale.Bundle.LocalizeAll(plocale.AnalysisDescCardinality),
 		}, {
 			// set the row's value as Yes if the column may contain NULL values and No if not
 			Name:     "Null",
-			I18nDesc: plocale.ShouldLocalizeAll(plocale.AnalysisDescIsNullable),
+			I18nDesc: plocale.Bundle.LocalizeAll(plocale.AnalysisDescIsNullable),
 		}, {
 			Name:     "Index_type",
-			I18nDesc: plocale.ShouldLocalizeAll(plocale.AnalysisDescIndexType),
+			I18nDesc: plocale.Bundle.LocalizeAll(plocale.AnalysisDescIndexType),
 		}, {
 			Name:     "Comment",
-			I18nDesc: plocale.ShouldLocalizeAll(plocale.AnalysisDescComment),
+			I18nDesc: plocale.Bundle.LocalizeAll(plocale.AnalysisDescComment),
 		},
 	}
 

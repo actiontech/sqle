@@ -564,7 +564,7 @@ func ConvertAuditPlanTypeToResByID(ctx context.Context, id string) (AuditPlanTyp
 		if meta.Type == auditPlan.Type {
 			return AuditPlanTypeResBase{
 				AuditPlanType:     auditPlan.Type,
-				AuditPlanTypeDesc: locale.ShouldLocalizeMsg(ctx, meta.Desc),
+				AuditPlanTypeDesc: locale.Bundle.LocalizeMsgByCtx(ctx, meta.Desc),
 				AuditPlanId:       auditPlan.ID,
 			}, nil
 		}
@@ -577,7 +577,7 @@ func ConvertAuditPlanTypeToRes(ctx context.Context, id uint, auditPlanType strin
 		if meta.Type == auditPlanType {
 			return AuditPlanTypeResBase{
 				AuditPlanType:     auditPlanType,
-				AuditPlanTypeDesc: locale.ShouldLocalizeMsg(ctx, meta.Desc),
+				AuditPlanTypeDesc: locale.Bundle.LocalizeMsgByCtx(ctx, meta.Desc),
 				AuditPlanId:       id,
 			}
 		}
@@ -670,7 +670,7 @@ func ConvertAuditPlansToRes(ctx context.Context, auditPlans []*model.AuditPlanV2
 				}
 				paramRes := AuditPlanParamResV1{
 					Key:   p.Key,
-					Desc:  p.GetDesc(locale.GetLangTagFromCtx(ctx)),
+					Desc:  p.GetDesc(locale.Bundle.GetLangTagFromCtx(ctx)),
 					Type:  string(p.Type),
 					Value: val,
 				}
@@ -688,7 +688,7 @@ func ConvertAuditPlansToRes(ctx context.Context, auditPlans []*model.AuditPlanV2
 					}
 					highParamRes := HighPriorityCondition{
 						Key:   metaHpp.Key,
-						Desc:  metaHpp.GetDesc(locale.GetLangTagFromCtx(ctx)),
+						Desc:  metaHpp.GetDesc(locale.Bundle.GetLangTagFromCtx(ctx)),
 						Value: hpp.Value,
 						Type:  string(metaHpp.Type),
 						Operator: Operator{
@@ -1002,7 +1002,7 @@ func GetInstanceAuditPlanSQLs(c echo.Context) error {
 	for _, v := range head {
 		res.Head = append(res.Head, AuditPlanSQLHeadV1{
 			Name: v.Name,
-			Desc: locale.ShouldLocalizeMsg(c.Request().Context(), v.Desc),
+			Desc: locale.Bundle.LocalizeMsgByCtx(c.Request().Context(), v.Desc),
 			Type: v.Type,
 		})
 	}
@@ -1096,7 +1096,7 @@ func GetInstanceAuditPlanSQLMeta(c echo.Context) error {
 	for _, v := range head {
 		data.Head = append(data.Head, AuditPlanSQLHeadV1{
 			Name:     v.Name,
-			Desc:     locale.ShouldLocalizeMsg(ctx, v.Desc),
+			Desc:     locale.Bundle.LocalizeMsgByCtx(ctx, v.Desc),
 			Type:     v.Type,
 			Sortable: v.Sortable,
 		})
@@ -1104,7 +1104,7 @@ func GetInstanceAuditPlanSQLMeta(c echo.Context) error {
 	for _, v := range filter {
 		data.FilterMetaList = append(data.FilterMetaList, FilterMeta{
 			Name:            v.Name,
-			Desc:            locale.ShouldLocalizeMsg(ctx, v.Desc),
+			Desc:            locale.Bundle.LocalizeMsgByCtx(ctx, v.Desc),
 			FilterInputType: string(v.FilterInputType),
 			FilterOpType:    string(v.FilterOpType),
 			FilterTips:      ConvertFilterTipsToRes(v.FilterTips),
@@ -1262,7 +1262,7 @@ func GetInstanceAuditPlanSQLExport(c echo.Context) error {
 	csvWriter := csv.NewWriter(buff)
 	toWrite := make([]string, len(head))
 	for col, h := range head {
-		toWrite[col] = locale.ShouldLocalizeMsg(c.Request().Context(), h.Desc)
+		toWrite[col] = locale.Bundle.LocalizeMsgByCtx(c.Request().Context(), h.Desc)
 	}
 	if err = csvWriter.Write(toWrite); err != nil {
 		return controller.JSONBaseErrorReq(c, err)

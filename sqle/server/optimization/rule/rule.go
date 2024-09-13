@@ -1,8 +1,8 @@
 package optimization
 
 import (
+	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
-	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/log"
 )
 
@@ -88,7 +88,7 @@ func init() {
 		for i, rule := range optimizationRule {
 			if knowledge, ok := defaultRulesKnowledge[rule.RuleCode]; ok {
 				// todo i18n rewrite rule Knowledge
-				rule.Rule.I18nRuleInfo[locale.DefaultLang].Knowledge = driverV2.RuleKnowledge{Content: knowledge}
+				rule.Rule.I18nRuleInfo[i18nPkg.DefaultLang].Knowledge = driverV2.RuleKnowledge{Content: knowledge}
 				optimizationRule[i] = rule
 			}
 		}

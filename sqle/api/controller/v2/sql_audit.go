@@ -84,7 +84,7 @@ func DirectAudit(c echo.Context) error {
 }
 
 func convertTaskResultToAuditResV2(ctx context.Context, task *model.Task) *AuditResDataV2 {
-	lang := locale.GetLangTagFromCtx(ctx)
+	lang := locale.Bundle.GetLangTagFromCtx(ctx)
 	results := make([]AuditSQLResV2, len(task.ExecuteSQLs))
 	for i, sql := range task.ExecuteSQLs {
 
@@ -237,7 +237,7 @@ func convertFileAuditTaskResultToAuditResV2(ctx context.Context, task *model.Tas
 }
 
 func convertAuditResultToAuditResV2(ctx context.Context, auditResults model.AuditResults) []AuditResult {
-	lang := locale.GetLangTagFromCtx(ctx)
+	lang := locale.Bundle.GetLangTagFromCtx(ctx)
 	ar := make([]AuditResult, len(auditResults))
 	for i := range auditResults {
 		ar[i] = AuditResult{
