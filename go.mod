@@ -79,8 +79,10 @@ require (
 require golang.org/x/sys v0.15.0
 
 require (
+	github.com/BurntSushi/toml v1.3.2
 	github.com/aliyun/credentials-go v1.1.2
 	github.com/fsnotify/fsnotify v1.6.0
+	github.com/gocarina/gocsv v0.0.0-20240520201108-78e41c74b4b1
 	github.com/guregu/null v0.0.0-20160228005316-41961cea0328
 	github.com/hashicorp/go-version v1.7.0
 	github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.1.69
@@ -94,7 +96,6 @@ require (
 
 require (
 	dario.cat/mergo v1.0.0 // indirect
-	github.com/BurntSushi/toml v1.3.2 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/ProtonMail/go-crypto v0.0.0-20230828082145-3c4c8a2d2371 // indirect
