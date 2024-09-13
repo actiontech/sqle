@@ -59,19 +59,19 @@ func getConfigurableOperationCodeList() []uint {
 func GetOperationCodeDesc(ctx context.Context, opCode uint) string {
 	switch opCode {
 	case OP_WORKFLOW_VIEW_OTHERS:
-		return locale.ShouldLocalizeMsg(ctx, locale.OpWorkflowViewOthers)
+		return locale.Bundle.LocalizeMsgByCtx(ctx, locale.OpWorkflowViewOthers)
 	case OP_WORKFLOW_SAVE:
-		return locale.ShouldLocalizeMsg(ctx, locale.OpWorkflowSave)
+		return locale.Bundle.LocalizeMsgByCtx(ctx, locale.OpWorkflowSave)
 	case OP_WORKFLOW_AUDIT:
-		return locale.ShouldLocalizeMsg(ctx, locale.OpWorkflowAudit)
+		return locale.Bundle.LocalizeMsgByCtx(ctx, locale.OpWorkflowAudit)
 	case OP_WORKFLOW_EXECUTE:
-		return locale.ShouldLocalizeMsg(ctx, locale.OpWorkflowExecute)
+		return locale.Bundle.LocalizeMsgByCtx(ctx, locale.OpWorkflowExecute)
 	case OP_AUDIT_PLAN_VIEW_OTHERS:
-		return locale.ShouldLocalizeMsg(ctx, locale.OpAuditPlanViewOthers)
+		return locale.Bundle.LocalizeMsgByCtx(ctx, locale.OpAuditPlanViewOthers)
 	case OP_AUDIT_PLAN_SAVE:
-		return locale.ShouldLocalizeMsg(ctx, locale.OpAuditPlanSave)
+		return locale.Bundle.LocalizeMsgByCtx(ctx, locale.OpAuditPlanSave)
 	case OP_SQL_QUERY_QUERY:
-		return locale.ShouldLocalizeMsg(ctx, locale.OpSqlQueryQuery)
+		return locale.Bundle.LocalizeMsgByCtx(ctx, locale.OpSqlQueryQuery)
 	default:
 		return additionalOperationForEE(ctx, opCode)
 	}

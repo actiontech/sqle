@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/locale"
-	"github.com/actiontech/sqle/sqle/pkg/i18nPkg"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
@@ -514,7 +514,7 @@ func (s *Storage) GetAuditPlanNamesByRuleTemplateAndProject(
 }
 
 func (s *Storage) GetRuleTypeByDBType(ctx context.Context, DBType string) ([]string, error) {
-	lang := locale.GetLangTagFromCtx(ctx)
+	lang := locale.Bundle.GetLangTagFromCtx(ctx)
 	rules := []*Rule{}
 	err := s.db.Where("db_type = ?", DBType).Find(&rules).Error
 	if err != nil {

@@ -204,7 +204,7 @@ func GetAuditPlanReportSQLs(c echo.Context) error {
 	}
 
 	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
-	lang := locale.GetLangTagFromCtx(c.Request().Context())
+	lang := locale.Bundle.GetLangTagFromCtx(c.Request().Context())
 
 	data := map[string]interface{}{
 		"audit_plan_report_id": c.Param("audit_plan_report_id"),
@@ -226,10 +226,11 @@ func GetAuditPlanReportSQLs(c echo.Context) error {
 		for j := range auditPlanReportSQL.AuditResults {
 			ar := auditPlanReportSQL.AuditResults[j]
 			auditPlanReportSQLsRes[i].AuditResult = append(auditPlanReportSQLsRes[i].AuditResult, &AuditResult{
-				Level:    ar.Level,
-				Message:  ar.GetAuditMsgByLangTag(lang),
-				RuleName: ar.RuleName,
-				DbType:   ap.DBType,
+				Level:               ar.Level,
+				Message:             ar.GetAuditMsgByLangTag(lang),
+				RuleName:            ar.RuleName,
+				DbType:              ap.DBType,
+				I18nAuditResultInfo: ar.I18nAuditResultInfo,
 			})
 		}
 	}
@@ -296,7 +297,7 @@ func GetAuditPlanAnalysisData(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, &GetAuditPlanAnalysisDataResV2{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertSQLAnalysisResultToRes(res, auditPlanReportSQLV2.SQL),
+		Data:    convertSQLAnalysisResultToRes(c.Request().Context(), res, auditPlanReportSQLV2.SQL),
 	})
 }
 

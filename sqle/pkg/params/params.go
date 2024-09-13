@@ -6,9 +6,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
 	dmsCommonAes "github.com/actiontech/dms/pkg/dms-common/pkg/aes"
-	"github.com/actiontech/sqle/sqle/locale"
-	"github.com/actiontech/sqle/sqle/pkg/i18nPkg"
 	"golang.org/x/text/language"
 )
 
@@ -41,7 +40,7 @@ type EnumsValue struct {
 
 func (e EnumsValue) GetDesc(lang language.Tag) string {
 	if e.Desc != "" {
-		e.I18nDesc.SetStrInLang(locale.DefaultLang, e.Desc)
+		e.I18nDesc.SetStrInLang(i18nPkg.DefaultLang, e.Desc)
 	}
 	return e.I18nDesc.GetStrInLang(lang)
 }
@@ -129,7 +128,7 @@ func (r *Param) GetDesc(lang language.Tag) string {
 		return ""
 	}
 	if r.Desc != "" {
-		r.I18nDesc.SetStrInLang(locale.DefaultLang, r.Desc)
+		r.I18nDesc.SetStrInLang(i18nPkg.DefaultLang, r.Desc)
 	}
 	return r.I18nDesc.GetStrInLang(lang)
 }

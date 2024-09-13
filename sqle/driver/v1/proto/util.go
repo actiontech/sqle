@@ -1,7 +1,7 @@
 package proto
 
 import (
-	"github.com/actiontech/sqle/sqle/locale"
+	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 )
 
@@ -14,7 +14,7 @@ func ConvertParamToProtoParam(p params.Params) []*Param {
 		pp[i] = &Param{
 			Key:   v.Key,
 			Value: v.Value,
-			Desc:  v.GetDesc(locale.DefaultLang),
+			Desc:  v.GetDesc(i18nPkg.DefaultLang),
 			Type:  string(v.Type),
 		}
 	}

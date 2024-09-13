@@ -6,7 +6,6 @@ import (
 )
 
 type Log interface {
-	//Warnf(string, ...any)
 	Errorf(string, ...any)
 }
 

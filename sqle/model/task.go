@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/locale"
-	"github.com/actiontech/sqle/sqle/pkg/i18nPkg"
 	"github.com/actiontech/sqle/sqle/utils"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
@@ -139,17 +139,17 @@ type BaseSQL struct {
 func (s *BaseSQL) GetExecStatusDesc(ctx context.Context) string {
 	switch s.ExecStatus {
 	case SQLExecuteStatusInitialized:
-		return locale.ShouldLocalizeMsg(ctx, locale.SQLExecuteStatusInitialized)
+		return locale.Bundle.LocalizeMsgByCtx(ctx, locale.SQLExecuteStatusInitialized)
 	case SQLExecuteStatusDoing:
-		return locale.ShouldLocalizeMsg(ctx, locale.SQLExecuteStatusDoing)
+		return locale.Bundle.LocalizeMsgByCtx(ctx, locale.SQLExecuteStatusDoing)
 	case SQLExecuteStatusFailed:
-		return locale.ShouldLocalizeMsg(ctx, locale.SQLExecuteStatusFailed)
+		return locale.Bundle.LocalizeMsgByCtx(ctx, locale.SQLExecuteStatusFailed)
 	case SQLExecuteStatusSucceeded:
-		return locale.ShouldLocalizeMsg(ctx, locale.SQLExecuteStatusSucceeded)
+		return locale.Bundle.LocalizeMsgByCtx(ctx, locale.SQLExecuteStatusSucceeded)
 	case SQLExecuteStatusManuallyExecuted:
-		return locale.ShouldLocalizeMsg(ctx, locale.SQLExecuteStatusManuallyExecuted)
+		return locale.Bundle.LocalizeMsgByCtx(ctx, locale.SQLExecuteStatusManuallyExecuted)
 	default:
-		return locale.ShouldLocalizeMsg(ctx, locale.SQLExecuteStatusUnknown)
+		return locale.Bundle.LocalizeMsgByCtx(ctx, locale.SQLExecuteStatusUnknown)
 	}
 }
 
@@ -179,12 +179,12 @@ func (i *I18nAuditResultInfo) GetAuditResultInfoByLangTag(lang language.Tag) *Au
 		return &AuditResultInfo{}
 	}
 
-	if ruleInfo, ok := (*i)[lang]; ok {
-		return &ruleInfo
+	if info, ok := (*i)[lang]; ok {
+		return &info
 	}
 
-	ruleInfo := (*i)[locale.DefaultLang]
-	return &ruleInfo
+	info := (*i)[i18nPkg.DefaultLang]
+	return &info
 }
 
 func (i I18nAuditResultInfo) Value() (driver.Value, error) {
@@ -259,7 +259,7 @@ func (a *AuditResults) Scan(input interface{}) error {
 
 // todo check somewhere fmt Sprint AuditResults to frontend?
 func (a *AuditResults) String(ctx context.Context) string {
-	lang := locale.GetLangTagFromCtx(ctx)
+	lang := locale.Bundle.GetLangTagFromCtx(ctx)
 	msgs := make([]string, len(*a))
 	for i := range *a {
 		res := (*a)[i]
@@ -325,13 +325,13 @@ func (s ExecuteSQL) TableName() string {
 func (s *ExecuteSQL) GetAuditStatusDesc(ctx context.Context) string {
 	switch s.AuditStatus {
 	case SQLAuditStatusInitialized:
-		return locale.ShouldLocalizeMsg(ctx, locale.SQLAuditStatusInitialized)
+		return locale.Bundle.LocalizeMsgByCtx(ctx, locale.SQLAuditStatusInitialized)
 	case SQLAuditStatusDoing:
-		return locale.ShouldLocalizeMsg(ctx, locale.SQLAuditStatusDoing)
+		return locale.Bundle.LocalizeMsgByCtx(ctx, locale.SQLAuditStatusDoing)
 	case SQLAuditStatusFinished:
-		return locale.ShouldLocalizeMsg(ctx, locale.SQLAuditStatusFinished)
+		return locale.Bundle.LocalizeMsgByCtx(ctx, locale.SQLAuditStatusFinished)
 	default:
-		return locale.ShouldLocalizeMsg(ctx, locale.SQLAuditStatusUnknown)
+		return locale.Bundle.LocalizeMsgByCtx(ctx, locale.SQLAuditStatusUnknown)
 	}
 }
 
@@ -345,7 +345,7 @@ func (s *ExecuteSQL) GetAuditResults(ctx context.Context) string {
 
 func (s *ExecuteSQL) GetAuditResultDesc(ctx context.Context) string {
 	if len(s.AuditResults) == 0 {
-		return locale.ShouldLocalizeMsg(ctx, locale.SQLAuditResultDescPass)
+		return locale.Bundle.LocalizeMsgByCtx(ctx, locale.SQLAuditResultDescPass)
 	}
 
 	return s.AuditResults.String(ctx)

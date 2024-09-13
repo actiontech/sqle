@@ -38,31 +38,31 @@ func (at *MySQLSlowLogAliTaskV2) Params(instanceId ...string) params.Params {
 			Key:      paramKeyDBInstanceId,
 			Value:    "",
 			Type:     params.ParamTypeString,
-			I18nDesc: locale.ShouldLocalizeAll(locale.ParamDBInstanceId),
+			I18nDesc: locale.Bundle.LocalizeAll(locale.ParamDBInstanceId),
 		},
 		{
 			Key:      paramKeyAccessKeyId,
 			Value:    "",
 			Type:     params.ParamTypePassword,
-			I18nDesc: locale.ShouldLocalizeAll(locale.ParamAccessKeyId),
+			I18nDesc: locale.Bundle.LocalizeAll(locale.ParamAccessKeyId),
 		},
 		{
 			Key:      paramKeyAccessKeySecret,
 			Value:    "",
 			Type:     params.ParamTypePassword,
-			I18nDesc: locale.ShouldLocalizeAll(locale.ParamAccessKeySecret),
+			I18nDesc: locale.Bundle.LocalizeAll(locale.ParamAccessKeySecret),
 		},
 		{
 			Key:      paramKeyFirstSqlsScrappedInLastPeriodHours,
 			Value:    "24",
 			Type:     params.ParamTypeInt,
-			I18nDesc: locale.ShouldLocalizeAllWithArgs(locale.ParamFirstCollectDurationWithMaxDays, 31),
+			I18nDesc: locale.Bundle.LocalizeAllWithArgs(locale.ParamFirstCollectDurationWithMaxDays, 31),
 		},
 		{
 			Key:      paramKeyRdsPath,
 			Value:    "rds.aliyuncs.com",
 			Type:     params.ParamTypeString,
-			I18nDesc: locale.ShouldLocalizeAll(locale.ParamRdsPath),
+			I18nDesc: locale.Bundle.LocalizeAll(locale.ParamRdsPath),
 		},
 	}
 }

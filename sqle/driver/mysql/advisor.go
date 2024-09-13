@@ -6,11 +6,11 @@ import (
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
+	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 	"github.com/actiontech/sqle/sqle/driver/mysql/session"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
-	"github.com/actiontech/sqle/sqle/pkg/i18nPkg"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/format"
@@ -18,7 +18,6 @@ import (
 	"github.com/pingcap/parser/opcode"
 	parser_driver "github.com/pingcap/tidb/types/parser_driver"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/text/language"
 )
 
 const (
@@ -352,14 +351,14 @@ func (a *threeStarIndexAdvisor) GiveAdvices() []*OptimizeResult {
 	}
 	tableName := util.GetTableNameFromTableSource(a.drivingTableSource)
 	indexColumns := a.adviceColumns.stringSlice()
-	var indexType = plocale.ShouldLocalizeMsgByLang(language.English, plocale.AdvisorIndexTypeComposite)
+	var indexType = plocale.AdvisorIndexTypeComposite
 	if len(indexColumns) == 1 {
-		indexType = plocale.ShouldLocalizeMsgByLang(language.English, plocale.AdvisorIndexTypeSingle)
+		indexType = plocale.AdvisorIndexTypeSingle
 	}
 	return []*OptimizeResult{{
 		TableName:      tableName,
 		IndexedColumns: indexColumns,
-		Reason:         plocale.ShouldLocalizeAllWithArgs(plocale.ThreeStarIndexAdviceFormat, tableName, indexType, strings.Join(indexColumns, "，")),
+		Reason:         plocale.Bundle.LocalizeAllWithArgs(plocale.ThreeStarIndexAdviceFormat, tableName, indexType, strings.Join(indexColumns, "，")),
 	}}
 }
 
@@ -891,7 +890,7 @@ func (a *joinIndexAdvisor) giveAdvice() {
 	a.advices = append(a.advices, &OptimizeResult{
 		TableName:      drivenTableName,
 		IndexedColumns: indexColumn,
-		Reason:         plocale.ShouldLocalizeAllWithArgs(plocale.JoinIndexAdviceFormat, strings.Join(indexColumn, "，"), drivenTableName, drivenTableName, strings.Join(indexColumn, "，")),
+		Reason:         plocale.Bundle.LocalizeAllWithArgs(plocale.JoinIndexAdviceFormat, strings.Join(indexColumn, "，"), drivenTableName, drivenTableName, strings.Join(indexColumn, "，")),
 	})
 }
 
@@ -1031,7 +1030,7 @@ func (a *functionIndexAdvisor) giveAdvice() {
 		a.advices = append(a.advices, &OptimizeResult{
 			TableName:      tableName,
 			IndexedColumns: columns,
-			Reason:         plocale.ShouldLocalizeAllWithArgs(plocale.FunctionIndexAdviceFormatV57, tableName, strings.Join(columns, "，")),
+			Reason:         plocale.Bundle.LocalizeAllWithArgs(plocale.FunctionIndexAdviceFormatV57, tableName, strings.Join(columns, "，")),
 		})
 		return
 	}
@@ -1039,7 +1038,7 @@ func (a *functionIndexAdvisor) giveAdvice() {
 		a.advices = append(a.advices, &OptimizeResult{
 			TableName:      tableName,
 			IndexedColumns: columns,
-			Reason:         plocale.ShouldLocalizeAllWithArgs(plocale.FunctionIndexAdviceFormatV80, tableName, strings.Join(columns, "，")),
+			Reason:         plocale.Bundle.LocalizeAllWithArgs(plocale.FunctionIndexAdviceFormatV80, tableName, strings.Join(columns, "，")),
 		})
 		return
 	}
@@ -1047,7 +1046,7 @@ func (a *functionIndexAdvisor) giveAdvice() {
 	a.advices = append(a.advices, &OptimizeResult{
 		TableName:      tableName,
 		IndexedColumns: columns,
-		Reason:         plocale.ShouldLocalizeAllWithArgs(plocale.FunctionIndexAdviceFormatAll, tableName, strings.Join(columns, "，")),
+		Reason:         plocale.Bundle.LocalizeAllWithArgs(plocale.FunctionIndexAdviceFormatAll, tableName, strings.Join(columns, "，")),
 	})
 }
 
@@ -1144,7 +1143,7 @@ func (a *extremalIndexAdvisor) giveAdvice() {
 	a.advices = append(a.advices, &OptimizeResult{
 		TableName:      tableName,
 		IndexedColumns: []string{indexColumn},
-		Reason:         plocale.ShouldLocalizeAllWithArgs(plocale.ExtremalIndexAdviceFormat, tableName, indexColumn),
+		Reason:         plocale.Bundle.LocalizeAllWithArgs(plocale.ExtremalIndexAdviceFormat, tableName, indexColumn),
 	})
 }
 
@@ -1236,6 +1235,6 @@ func (a *prefixIndexAdvisor) giveAdvice() {
 	a.advices = append(a.advices, &OptimizeResult{
 		TableName:      tableName,
 		IndexedColumns: []string{column.Name.Name.L},
-		Reason:         plocale.ShouldLocalizeAll(plocale.PrefixIndexAdviceFormat),
+		Reason:         plocale.Bundle.LocalizeAll(plocale.PrefixIndexAdviceFormat),
 	})
 }

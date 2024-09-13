@@ -19,7 +19,7 @@ func GetSqlManagerRuleTips(ctx context.Context, logger *logrus.Entry, auditPlanI
 		for _, rule := range rules {
 			ruleFilterTips = append(ruleFilterTips, FilterTip{
 				Value: rule.RuleName,
-				Desc:  rule.I18nRuleInfo.GetRuleInfoByLangTag(locale.GetLangTagFromCtx(ctx)).Desc,
+				Desc:  rule.I18nRuleInfo.GetRuleInfoByLangTag(locale.Bundle.GetLangTagFromCtx(ctx)).Desc,
 				Group: rule.DbType,
 			})
 		}
@@ -65,7 +65,7 @@ func GetSqlManagerPriorityTips(ctx context.Context, logger *logrus.Entry) []Filt
 	return []FilterTip{
 		{
 			Value: model.PriorityHigh,
-			Desc:  locale.ShouldLocalizeMsg(ctx, locale.ApPriorityHigh),
+			Desc:  locale.Bundle.LocalizeMsgByCtx(ctx, locale.ApPriorityHigh),
 		},
 	}
 }

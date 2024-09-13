@@ -9,9 +9,9 @@ import (
 	"sync"
 	"text/template"
 
+	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
 	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
-	"github.com/actiontech/sqle/sqle/pkg/i18nPkg"
 	"github.com/pingcap/parser/ast"
 )
 
@@ -61,12 +61,12 @@ func (i *MysqlDriverImpl) generateOSCCommandLine(node ast.Node) (i18nPkg.I18nStr
 	// This is necessary because the tool creates a DELETE trigger to keep the new table
 	// updated while the process is running.
 	if !util.HasPrimaryKey(createTableStmt) && !util.HasUniqIndex(createTableStmt) {
-		return plocale.ShouldLocalizeAll(plocale.PTOSCNoUniqueIndexOrPrimaryKey), nil
+		return plocale.Bundle.LocalizeAll(plocale.PTOSCNoUniqueIndexOrPrimaryKey), nil
 	}
 
 	// The RENAME clause cannot be used to rename the table.
 	if len(util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableRenameTable)) > 0 {
-		return plocale.ShouldLocalizeAll(plocale.PTOSCAvoidRenameTable), nil
+		return plocale.Bundle.LocalizeAll(plocale.PTOSCAvoidRenameTable), nil
 	}
 
 	// If you add a column without a default value and make it NOT NULL, the tool will fail,
@@ -75,7 +75,7 @@ func (i *MysqlDriverImpl) generateOSCCommandLine(node ast.Node) (i18nPkg.I18nStr
 		for _, col := range spec.NewColumns {
 			if util.HasOneInOptions(col.Options, ast.ColumnOptionNotNull) {
 				if !util.HasOneInOptions(col.Options, ast.ColumnOptionDefaultValue) {
-					return plocale.ShouldLocalizeAll(plocale.PTOSCAvoidNoDefaultValueOnNotNullColumn), nil
+					return plocale.Bundle.LocalizeAll(plocale.PTOSCAvoidNoDefaultValueOnNotNullColumn), nil
 				}
 			}
 		}
@@ -87,7 +87,7 @@ func (i *MysqlDriverImpl) generateOSCCommandLine(node ast.Node) (i18nPkg.I18nStr
 	for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
 		switch spec.Constraint.Tp {
 		case ast.ConstraintUniq:
-			return plocale.ShouldLocalizeAll(plocale.PTOSCAvoidUniqueIndex), nil
+			return plocale.Bundle.LocalizeAll(plocale.PTOSCAvoidUniqueIndex), nil
 		}
 	}
 

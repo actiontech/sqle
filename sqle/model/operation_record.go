@@ -3,8 +3,7 @@ package model
 import (
 	"time"
 
-	"github.com/actiontech/sqle/sqle/locale"
-	"github.com/actiontech/sqle/sqle/pkg/i18nPkg"
+	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
 	"golang.org/x/text/language"
 )
 
@@ -24,7 +23,7 @@ type OperationRecord struct {
 func (o *OperationRecord) GetOperationContentByLangTag(lang language.Tag) string {
 	if o.OperationContent != "" {
 		// 兼容老sqle的数据
-		o.OperationI18nContent.SetStrInLang(locale.DefaultLang, o.OperationContent)
+		o.OperationI18nContent.SetStrInLang(i18nPkg.DefaultLang, o.OperationContent)
 	}
 	return o.OperationI18nContent.GetStrInLang(lang)
 }

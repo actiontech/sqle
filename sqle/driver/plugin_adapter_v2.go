@@ -8,11 +8,10 @@ import (
 	"os"
 	"sync"
 
+	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	protoV2 "github.com/actiontech/sqle/sqle/driver/v2/proto"
-	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/log"
-	"github.com/actiontech/sqle/sqle/pkg/i18nPkg"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"golang.org/x/text/language"
 
@@ -81,9 +80,9 @@ func (d *PluginProcessorV2) GetDriverMetas() (*driverV2.DriverMetas, error) {
 	rules := make([]*driverV2.Rule, 0, len(result.Rules))
 	for _, r := range result.Rules {
 		if len(r.I18NRuleInfo) > 0 {
-			if _, exist := r.I18NRuleInfo[locale.DefaultLang.String()]; !exist {
-				// 多语言插件必须支持 locale.DefaultLang 用以默认展示
-				return nil, fmt.Errorf("client rule: %s not support language: %s", r.Name, locale.DefaultLang.String())
+			if _, exist := r.I18NRuleInfo[i18nPkg.DefaultLang.String()]; !exist {
+				// 多语言插件必须支持 i18nPkg.DefaultLang 用以默认展示
+				return nil, fmt.Errorf("client rule: %s not support language: %s", r.Name, i18nPkg.DefaultLang.String())
 			}
 		}
 		dr, err := driverV2.ConvertI18nRuleFromProtoToDriver(r)
@@ -444,9 +443,13 @@ func (s *PluginImplV2) Explain(ctx context.Context, conf *driverV2.ExplainConf) 
 		return nil, err
 	}
 
+	td, err := driverV2.ConvertProtoTabularDataToDriver(res.ClassicResult.Data)
+	if err != nil {
+		return nil, fmt.Errorf("ClassicResult: %w", err)
+	}
 	return &driverV2.ExplainResult{
 		ClassicResult: driverV2.ExplainClassicResult{
-			TabularData: driverV2.ConvertProtoTabularDataToDriver(res.ClassicResult.Data),
+			TabularData: td,
 		},
 	}, nil
 }
@@ -484,7 +487,7 @@ func (s *PluginImplV2) getTableMeta(ctx context.Context, table *driverV2.Table) 
 	if err != nil {
 		return nil, err
 	}
-	return driverV2.ConvertProtoTableMetaToDriver(result.TableMeta), nil
+	return driverV2.ConvertProtoTableMetaToDriver(result.TableMeta)
 }
 
 func (s *PluginImplV2) extractTableFromSQL(ctx context.Context, sql string) ([]*driverV2.Table, error) {
