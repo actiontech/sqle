@@ -121,6 +121,15 @@ func (e *EmptyAuditHook) BeforeAudit(sql *model.ExecuteSQL) {}
 
 func (e *EmptyAuditHook) AfterAudit(sql *model.ExecuteSQL) {}
 
+func isEmptySQL(sql string) bool {
+	// 去除首尾空白字符
+	trimmedSQL := strings.TrimSpace(sql)
+	// 去除所有的分号
+	noSemicolonSQL := strings.ReplaceAll(trimmedSQL, ";", "")
+	// 如果去除空白字符和分号后字符串长度为0，则认为是空SQL
+	return len(noSemicolonSQL) == 0
+}
+
 func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHook, customRules []*model.CustomRule) (err error) {
 	defer func() {
 		if errRecover := recover(); errRecover != nil {
@@ -189,6 +198,10 @@ func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHoo
 				l.Errorf("update sql whitelist matched info error: %v", err)
 			}
 		} else {
+			// if sql is an empty sql skip
+			if isEmptySQL(executeSQL.Content) {
+				continue
+			}
 			auditSqls = append(auditSqls, executeSQL)
 			sqls = append(sqls, executeSQL.Content)
 			nodes = append(nodes, node)
@@ -198,20 +211,22 @@ func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHoo
 		hook.BeforeAudit(sql)
 	}
 
-	results, err := p.Audit(context.TODO(), sqls)
-	if err != nil {
-		return err
-	}
-	if len(results) != len(sqls) {
-		return fmt.Errorf("audit results [%d] does not match the number of SQL [%d]", len(results), len(sqls))
-	}
-	CustomRuleAudit(l, task, sqls, results, customRules)
-	for i, sql := range auditSqls {
-		hook.AfterAudit(sql)
-		sql.AuditStatus = model.SQLAuditStatusFinished
-		sql.AuditLevel = string(results[i].Level())
-		sql.AuditFingerprint = utils.Md5String(string(append([]byte(results[i].Message()), []byte(nodes[i].Fingerprint)...)))
-		appendExecuteSqlResults(sql, results[i])
+	if len(sqls) > 0 {
+		results, err := p.Audit(context.TODO(), sqls)
+		if err != nil {
+			return err
+		}
+		if len(results) != len(sqls) {
+			return fmt.Errorf("audit results [%d] does not match the number of SQL [%d]", len(results), len(sqls))
+		}
+		CustomRuleAudit(l, task, sqls, results, customRules)
+		for i, sql := range auditSqls {
+			hook.AfterAudit(sql)
+			sql.AuditStatus = model.SQLAuditStatusFinished
+			sql.AuditLevel = string(results[i].Level())
+			sql.AuditFingerprint = utils.Md5String(string(append([]byte(results[i].Message()), []byte(nodes[i].Fingerprint)...)))
+			appendExecuteSqlResults(sql, results[i])
+		}
 	}
 
 	ReplenishTaskStatistics(task)
