@@ -84,13 +84,9 @@ func (r *RuleKnowledge) GetContentByLangTag(lang language.Tag) string {
 }
 
 type Rule struct {
-	Name   string `json:"name" gorm:"primary_key; not null;type:varchar(255)"`
-	DBType string `json:"db_type" gorm:"primary_key; not null; default:\"mysql\";type:varchar(255)"`
-	// todo i18n 规则应该不用兼容老sqle数据
-	//Desc            string                `json:"desc" gorm:"type:varchar(255)"`                          // Deprecated: use driverV2.RuleInfo .Desc in I18nRuleInfo instead
-	//Annotation      string                `json:"annotation" gorm:"column:annotation;type:varchar(1024)"` // Deprecated: use driverV2.RuleInfo .Annotation in I18nRuleInfo instead
-	Level string `json:"level" example:"error" gorm:"type:varchar(255)"` // notice, warn, error
-	//Typ             string                `json:"type" gorm:"column:type; not null;type:varchar(255)"`    // Deprecated: use driverV2.RuleInfo .Category in I18nRuleInfo instead
+	Name            string                `json:"name" gorm:"primary_key; not null;type:varchar(255)"`
+	DBType          string                `json:"db_type" gorm:"primary_key; not null; default:\"mysql\";type:varchar(255)"`
+	Level           string                `json:"level" example:"error" gorm:"type:varchar(255)"` // notice, warn, error
 	Params          params.Params         `json:"params" gorm:"type:varchar(1000)"`
 	KnowledgeId     uint                  `json:"knowledge_id"`
 	Knowledge       *RuleKnowledge        `json:"knowledge" gorm:"foreignkey:KnowledgeId"`
