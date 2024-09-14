@@ -36,7 +36,7 @@ type DSN struct {
 type Rule struct {
 	Name         string
 	Level        RuleLevel
-	Params       params.Params // 仅用于ParamValue处理，展示 Param.Desc 等以 I18nRuleInfo->RuleInfo.Params 为准
+	Params       params.Params
 	I18nRuleInfo I18nRuleInfo
 }
 
@@ -72,8 +72,7 @@ type RuleInfo struct {
 
 	// Category is the category of the rule. Such as "Naming Conventions"...
 	// Rules will be displayed on the SQLE rule list page by category.
-	Category string
-	//Params    params.Params // 仅用于国际化，ParamValue以 Rule.Params 为准
+	Category  string
 	Knowledge RuleKnowledge
 }
 
