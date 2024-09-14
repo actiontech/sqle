@@ -520,6 +520,7 @@ type WorkflowDetailResV1 struct {
 	Name                    string     `json:"workflow_name"`
 	WorkflowId              string     `json:"workflow_id" `
 	Desc                    string     `json:"desc"`
+	SqlVersionName          string     `json:"sql_version_name"`
 	CreateUser              string     `json:"create_user_name"`
 	CreateTime              *time.Time `json:"create_time"`
 	CurrentStepType         string     `json:"current_step_type,omitempty" enums:"sql_review,sql_execute"`
