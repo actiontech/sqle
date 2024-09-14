@@ -1,0 +1,29 @@
+package ai
+
+import (
+	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
+	util "github.com/actiontech/sqle/sqle/driver/mysql/rule/ai/util"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/pingcap/parser/ast"
+)
+
+const (
+	SQLE{{ rule_id }} = "SQLE{{ rule_id }}"
+)
+
+{{ init_func }}
+
+/*
+==== Prompt start ====
+在 MySQL 中，您应该检查 SQL 是否违反了规则(SQLE{{ rule_id }}): "{{ title }}.{{params}}"
+您应遵循以下逻辑：
+{{ check_logic }}
+==== Prompt end ====
+*/
+
+// ==== Rule code start ====
+func RuleSQLE{{ rule_id }}(input *rulepkg.RuleHandlerInput) error {
+	return mt.Errorf("RuleSQLE{{ rule_id }} not implemented")
+}
+
+// ==== Rule code end ====

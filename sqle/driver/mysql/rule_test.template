@@ -1,0 +1,15 @@
+package mysql
+
+import (
+	"testing"
+
+	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
+	"github.com/actiontech/sqle/sqle/driver/mysql/rule/ai"
+)
+
+// ==== Rule test code start ====
+func TestRuleSQLE{{ rule_id }}(t *testing.T) {
+
+}
+
+// ==== Rule test code end ====
