@@ -9,9 +9,21 @@ definitions:
         example: ok
         type: string
     type: object
+  model.AuditResultInfo:
+    properties:
+      message:
+        type: string
+    type: object
+  model.I18nAuditResultInfo:
+    additionalProperties:
+      $ref: '#/definitions/model.AuditResultInfo'
+    type: object
   params.EnumsValue:
     properties:
       desc:
+        description: 'Deprecated: use I18nDesc instead'
+        type: string
+      i18n_desc:
         type: string
       value:
         type: string
@@ -68,7 +80,7 @@ definitions:
         type: string
       high_priority_conditions:
         items:
-          $ref: '#/definitions/v1.HighPriorityCondition'
+          $ref: '#/definitions/v1.HighPriorityConditionResV1'
         type: array
       instance_type:
         type: string
@@ -86,7 +98,7 @@ definitions:
         type: string
       enums_value:
         items:
-          $ref: '#/definitions/params.EnumsValue'
+          $ref: '#/definitions/v1.EnumsValueResV1'
         type: array
       key:
         type: string
@@ -480,6 +492,13 @@ definitions:
           type: string
         type: array
     type: object
+  v1.BatchExecuteTasksOnWorkflowReqV1:
+    properties:
+      workflow_ids:
+        items:
+          type: string
+        type: array
+    type: object
   v1.BatchGetInstanceConnectionsResV1:
     properties:
       code:
@@ -492,6 +511,13 @@ definitions:
       message:
         example: ok
         type: string
+    type: object
+  v1.BatchReleaseWorkflowReqV1:
+    properties:
+      release_workflows:
+        items:
+          $ref: '#/definitions/v1.ReleaseWorkflows'
+        type: array
     type: object
   v1.BatchUpdateSqlManageReq:
     properties:
@@ -967,6 +993,13 @@ definitions:
         items:
           type: string
         type: array
+    type: object
+  v1.EnumsValueResV1:
+    properties:
+      desc:
+        type: string
+      value:
+        type: string
     type: object
   v1.ExplainClassicResult:
     properties:
@@ -2052,6 +2085,34 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetSqlVersionDetailResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.SqlVersionDetailResV1'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetSqlVersionListResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.SqlVersionResV1'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_nums:
+        type: integer
+    type: object
   v1.GetSystemVariablesResV1:
     properties:
       code:
@@ -2384,6 +2445,29 @@ definitions:
       value:
         type: string
     type: object
+  v1.HighPriorityConditionResV1:
+    properties:
+      desc:
+        type: string
+      enums_value:
+        items:
+          $ref: '#/definitions/v1.EnumsValueResV1'
+        type: array
+      key:
+        type: string
+      operator:
+        $ref: '#/definitions/v1.OperatorResV1'
+        type: object
+      type:
+        enum:
+        - string
+        - int
+        - bool
+        - password
+        type: string
+      value:
+        type: string
+    type: object
   v1.InstanceAdditionalParamResV1:
     properties:
       description:
@@ -2605,6 +2689,11 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.LockSqlVersionReqV1:
+    properties:
+      is_locked:
+        type: boolean
+    type: object
   v1.MaintenanceTimeResV1:
     properties:
       maintenance_start_time:
@@ -2677,6 +2766,15 @@ definitions:
       operator_enums_value:
         items:
           $ref: '#/definitions/params.EnumsValue'
+        type: array
+      operator_value:
+        type: string
+    type: object
+  v1.OperatorResV1:
+    properties:
+      operator_enums_value:
+        items:
+          $ref: '#/definitions/v1.EnumsValueResV1'
         type: array
       operator_value:
         type: string
@@ -2898,6 +2996,15 @@ definitions:
       reason:
         type: string
     type: object
+  v1.ReleaseWorkflows:
+    properties:
+      target_release_instances:
+        items:
+          $ref: '#/definitions/v1.TargetReleaseInstance'
+        type: array
+      workflow_id:
+        type: string
+    type: object
   v1.ReportPushConfigList:
     properties:
       enabled:
@@ -2923,6 +3030,15 @@ definitions:
         - timing
         type: string
       type:
+        type: string
+    type: object
+  v1.RetryExecWorkflowReqV1:
+    properties:
+      task_ids:
+        items:
+          type: integer
+        type: array
+      workflow_ids:
         type: string
     type: object
   v1.RewriteRule:
@@ -3348,6 +3464,65 @@ definitions:
         - manual_audited
         type: string
     type: object
+  v1.SqlVersionDetailResV1:
+    properties:
+      stage_id:
+        type: integer
+      stage_name:
+        type: string
+      stage_sequence:
+        type: integer
+      workflow_details:
+        items:
+          $ref: '#/definitions/v1.WorkflowDetailWithInstance'
+        type: array
+    type: object
+  v1.SqlVersionReqV1:
+    properties:
+      desc:
+        type: string
+      sql_version_stage:
+        items:
+          $ref: '#/definitions/v1.SqlVersionStage'
+        type: array
+      version_number:
+        example: "2.23"
+        type: string
+    type: object
+  v1.SqlVersionResV1:
+    properties:
+      created_at:
+        type: string
+      desc:
+        type: string
+      has_associated_workflow:
+        type: boolean
+      lock_time:
+        type: string
+      status:
+        type: string
+      version_number:
+        type: string
+    type: object
+  v1.SqlVersionStage:
+    properties:
+      name:
+        example: 生产
+        type: string
+      stage_sequence:
+        type: integer
+      stages_dependency:
+        items:
+          $ref: '#/definitions/v1.SqlVersionStagesDependency'
+        type: array
+    type: object
+  v1.SqlVersionStagesDependency:
+    properties:
+      source_instance_id:
+        type: integer
+      target_instance_id:
+        type: integer
+    type: object
   v1.StatisticAuditPlanResV1:
     properties:
       code:
@@ -3462,6 +3637,17 @@ definitions:
         items:
           $ref: '#/definitions/v1.TableMeta'
         type: array
+    type: object
+  v1.TargetReleaseInstance:
+    properties:
+      instance_id:
+        type: string
+      instance_schema:
+        type: string
+      target_instance_id:
+        type: string
+      target_instance_schema:
+        type: string
     type: object
   v1.TestAuditPlanNotifyConfigResDataV1:
     properties:
@@ -3956,6 +4142,8 @@ definitions:
         type: string
       project_name:
         type: string
+      sql_version_name:
+        type: string
       status:
         enum:
         - wait_for_audit
@@ -3969,6 +4157,38 @@ definitions:
       workflow_id:
         type: string
       workflow_name:
+        type: string
+    type: object
+  v1.WorkflowDetailWithInstance:
+    properties:
+      desc:
+        type: string
+      status:
+        enum:
+        - wait_for_audit
+        - wait_for_execution
+        - rejected
+        - canceled
+        - exec_failed
+        - executing
+        - finished
+        type: string
+      workflow_id:
+        type: string
+      workflow_instances:
+        items:
+          $ref: '#/definitions/v1.WorkflowInstance'
+        type: array
+      workflow_name:
+        type: string
+    type: object
+  v1.WorkflowInstance:
+    properties:
+      instance_schema:
+        type: string
+      instances_id:
+        type: string
+      instances_name:
         type: string
     type: object
   v1.WorkflowPassPercentV1:
@@ -4058,6 +4278,11 @@ definitions:
           $ref: '#/definitions/v1.WorkflowRecordResV1'
         type: array
       workflow_name:
+        type: string
+    type: object
+  v1.WorkflowSqlVersionReqV1:
+    properties:
+      sql_version_id:
         type: string
     type: object
   v1.WorkflowStageDuration:
@@ -4331,6 +4556,27 @@ definitions:
       err_message:
         type: string
     type: object
+  v2.AssociatedWorkflow:
+    properties:
+      sql_version_stage_id:
+        type: integer
+      stage_sequence:
+        type: integer
+      status:
+        enum:
+        - wait_for_audit
+        - wait_for_execution
+        - rejected
+        - canceled
+        - exec_failed
+        - executing
+        - finished
+        type: string
+      workflow_id:
+        type: string
+      workflow_name:
+        type: string
+    type: object
   v2.AuditFileExecStatistic:
     properties:
       exec_result_count:
@@ -4457,6 +4703,9 @@ definitions:
     properties:
       db_type:
         type: string
+      i18n_audit_result_info:
+        $ref: '#/definitions/model.I18nAuditResultInfo'
+        type: object
       level:
         example: warn
         type: string
@@ -4536,6 +4785,8 @@ definitions:
   v2.CreateWorkflowReqV2:
     properties:
       desc:
+        type: string
+      sql_version_id:
         type: string
       task_ids:
         items:
@@ -5056,6 +5307,9 @@ definitions:
     type: object
   v2.WorkflowResV2:
     properties:
+      associated_workflow:
+        $ref: '#/definitions/v2.AssociatedWorkflow'
+        type: object
       create_time:
         type: string
       create_user_name:
@@ -5079,6 +5333,8 @@ definitions:
         items:
           $ref: '#/definitions/v2.WorkflowRecordResV2'
         type: array
+      sql_version_name:
+        type: string
       workflow_id:
         type: string
       workflow_name:
@@ -8507,6 +8763,349 @@ paths:
       summary: 获取SQL优化语句详情
       tags:
       - sql_optimization
+  /v1/projects/{project_name}/sql_version:
+    get:
+      consumes:
+      - application/json
+      description: sql version list
+      operationId: getSqlVersionListV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: filter by created at from
+        in: query
+        name: filter_by_created_at_from
+        type: string
+      - description: filter by created at to
+        in: query
+        name: filter_by_created_at_to
+        type: string
+      - description: filter by lock time from
+        in: query
+        name: filter_by_lock_time_from
+        type: string
+      - description: filter by lock time to
+        in: query
+        name: filter_by_lock_time_to
+        type: string
+      - description: fuzzy search
+        in: query
+        name: fuzzy_search
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        required: true
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetSqlVersionListResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取sql版本列表
+      tags:
+      - sql_version
+    post:
+      consumes:
+      - application/json
+      description: create sql version
+      operationId: createSqlVersionV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: create sql version request
+        in: body
+        name: sql_version
+        required: true
+        schema:
+          $ref: '#/definitions/v1.SqlVersionReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 创建sql版本记录
+      tags:
+      - sql_version
+  /v1/projects/{project_name}/sql_version/{sql_version_id}/:
+    delete:
+      description: delete sql version
+      operationId: deleteSqlVersionV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: sql version id
+        in: path
+        name: sql_version_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 删除sql版本
+      tags:
+      - sql_version
+    get:
+      description: get sql version detail
+      operationId: getSqlVersionDetailV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: sql version id
+        in: path
+        name: sql_version_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetSqlVersionDetailResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取sql版本详情
+      tags:
+      - sql_version
+    put:
+      description: update sql version
+      operationId: updateSqlVersionV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: sql version id
+        in: path
+        name: sql_version_id
+        required: true
+        type: string
+      - description: update sql version request
+        in: body
+        name: sql_version
+        required: true
+        schema:
+          $ref: '#/definitions/v1.SqlVersionReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新sql版本信息
+      tags:
+      - sql_version
+  /v1/projects/{project_name}/sql_version/{sql_version_id}/lock:
+    patch:
+      description: lock sql version
+      operationId: lockSqlVersionV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: sql version id
+        in: path
+        name: sql_version_id
+        required: true
+        type: string
+      - description: lock sql version request
+        in: body
+        name: sql_version
+        required: true
+        schema:
+          $ref: '#/definitions/v1.LockSqlVersionReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 锁定sql版本
+      tags:
+      - sql_version
+  /v1/projects/{project_name}/sql_version/{sql_version_id}/sql_version_stage/{sql_version_stage_id}/dependencies:
+    get:
+      description: get dependencies between stage instance
+      operationId: getInstanceTipListV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: sql version id
+        in: path
+        name: sql_version_id
+        required: true
+        type: string
+      - description: sql version stage id
+        in: path
+        name: sql_version_stage_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetInstanceTipsResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取当前阶段与下一阶段实例的依赖信息
+      tags:
+      - sql_version
+  /v1/projects/{project_name}/sql_version/{sql_version_id}/workflow/batch_execute:
+    post:
+      description: batch execute tasks on workflow
+      operationId: batchExecuteTasksOnWorkflow
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: sql version id
+        in: path
+        name: sql_version_id
+        required: true
+        type: string
+      - description: batch execute tasks on workflow request
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/v1.BatchExecuteTasksOnWorkflowReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 工单批量上线
+      tags:
+      - sql_version
+  /v1/projects/{project_name}/sql_version/{sql_version_id}/workflow/batch_release:
+    post:
+      description: batch release workflow
+      operationId: batchReleaseWorkflowV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: sql version id
+        in: path
+        name: sql_version_id
+        required: true
+        type: string
+      - description: batch release workflow request
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/v1.BatchReleaseWorkflowReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 批量发布工单
+      tags:
+      - sql_version
+  /v1/projects/{project_name}/sql_version/{sql_version_id}/workflow/execute_retry:
+    post:
+      description: reject exec failed workflow
+      operationId: rejectExecFailedWorkflow
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: sql version id
+        in: path
+        name: sql_version_id
+        required: true
+        type: string
+      - description: reject exec failed workflow request
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/v1.RetryExecWorkflowReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 工单重试
+      tags:
+      - sql_version
+  /v1/projects/{project_name}/sql_version/workflow/{workflow_id}/:
+    post:
+      description: workflow sql version
+      operationId: workflowSqlVersion
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: workflow id
+        in: path
+        name: workflow_id
+        required: true
+        type: string
+      - description: workflow sql version request
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/v1.WorkflowSqlVersionReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 工单与版本建立关联
+      tags:
+      - sql_version
   /v1/projects/{project_name}/statistic/audit_plans:
     get:
       description: statistic audit plan
