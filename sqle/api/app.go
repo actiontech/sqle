@@ -250,6 +250,19 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1ProjectRouter.POST("/:project_name/workflows/:workflow_id/tasks/:task_id/order_file", v1.UpdateSqlFileOrderByWorkflowV1)
 		v1ProjectRouter.GET("/:project_name/workflows/:workflow_id/tasks/:task_id/attachment", v1.GetWorkflowTaskAuditFile)
 
+		// sql version
+		v1ProjectRouter.POST("/:project_name/sql_version", v1.CreateSqlVersion)
+		v1ProjectRouter.GET("/:project_name/sql_version", v1.GetSqlVersionList)
+		v1ProjectRouter.GET("/:project_name/sql_version/:sql_version_id/", v1.GetSqlVersionDetail)
+		v1ProjectRouter.PUT("/:project_name/sql_version/:sql_version_id/", v1.UpdateSqlVersion)
+		v1ProjectRouter.DELETE("/:project_name/sql_version/:sql_version_id/", v1.DeleteSqlVersion)
+		v1ProjectRouter.PATCH("/:project_name/sql_version/:sql_version_id/lock", v1.LockSqlVersion)
+		v1ProjectRouter.GET("/:project_name/sql_version/:sql_version_id/sql_version_stage/:sql_version_stage_id/dependencies", v1.GetDependenciesBetweenStageInstance)
+		v1ProjectRouter.POST("/:project_name/sql_version/:sql_version_id/workflow/batch_release", v1.BatchReleaseWorkflows)
+		v1ProjectRouter.POST("/:project_name/sql_version/:sql_version_id/workflow/batch_execute", v1.BatchExecuteTasksOnWorkflow)
+		v1ProjectRouter.POST("/:project_name/sql_version/:sql_version_id/workflow/execute_retry", v1.RetryExecWorkflow)
+		v1ProjectRouter.POST("/:project_name/sql_version/workflow/:workflow_id/", v1.WorkflowSqlVersion)
+
 		// audit plan; 智能扫描任务
 		v1ProjectRouter.POST("/:project_name/audit_plans", v1.CreateAuditPlan)
 		v1ProjectRouter.GET("/:project_name/audit_plans", v1.GetAuditPlans)
