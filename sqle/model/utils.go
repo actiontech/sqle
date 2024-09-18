@@ -13,7 +13,6 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
@@ -215,12 +214,8 @@ func (s *Storage) CreateRulesIfNotExist(rulesMap map[string][]*Rule) error {
 					return err
 				}
 			} else {
-				//isRuleDescSame := existedRule.Desc == rule.Desc
-				//isRuleAnnotationSame := existedRule.Annotation == rule.Annotation
 				isRuleLevelSame := existedRule.Level == rule.Level
-				//isRuleTypSame := existedRule.Typ == rule.Typ
 				isI18nInfoSame := reflect.DeepEqual(existedRule.I18nRuleInfo, rule.I18nRuleInfo)
-				isOldKnowledge := existedRule.Knowledge.Content != ""
 				isHasAuditPowerSame := existedRule.HasAuditPower == rule.HasAuditPower
 				isHasRewritePowerSame := existedRule.HasRewritePower == rule.HasRewritePower
 				existRuleParam, err := existedRule.Params.Value()
@@ -233,12 +228,7 @@ func (s *Storage) CreateRulesIfNotExist(rulesMap map[string][]*Rule) error {
 				}
 				isParamSame := reflect.DeepEqual(existRuleParam, pluginRuleParam)
 
-				if !isI18nInfoSame || isOldKnowledge || !isRuleLevelSame || !isParamSame || !isHasAuditPowerSame || !isHasRewritePowerSame {
-					if isOldKnowledge {
-						// 兼容老sqle的数据，将其移动到默认Key下
-						existedRule.Knowledge.I18nContent = i18nPkg.ConvertStr2I18nAsDefaultLang(existedRule.Knowledge.Content)
-						existedRule.Knowledge.Content = ""
-					}
+				if !isI18nInfoSame || !isRuleLevelSame || !isParamSame || !isHasAuditPowerSame || !isHasRewritePowerSame {
 					if existedRule.Knowledge != nil && existedRule.Knowledge.I18nContent != nil {
 						for lang, content := range existedRule.Knowledge.I18nContent {
 							if content != "" {
