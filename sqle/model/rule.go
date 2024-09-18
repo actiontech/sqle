@@ -68,7 +68,6 @@ func ConvertRuleToDriverRule(r *Rule) *driverV2.Rule {
 
 type RuleKnowledge struct {
 	Model
-	Content     string          `gorm:"type:longtext"` // Deprecated: use I18nContent instead
 	I18nContent i18nPkg.I18nStr `gorm:"type:json"`
 }
 
