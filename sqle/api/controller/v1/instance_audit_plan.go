@@ -607,6 +607,15 @@ type AuditPlanRes struct {
 	HighPriorityConditions  []HighPriorityCondition `json:"high_priority_conditions"`
 }
 
+type HighPriorityCondition struct {
+	Key         string              `json:"key"`
+	Desc        string              `json:"desc"`
+	Value       string              `json:"value"`
+	Type        string              `json:"type" enums:"string,int,bool,password"`
+	EnumsValues []params.EnumsValue `json:"enums_value"`
+	Operator    Operator            `json:"operator"`
+}
+
 // @Summary 获取实例扫描任务详情
 // @Description get instance audit plan detail
 // @Id getInstanceAuditPlanDetailV1
