@@ -194,24 +194,26 @@ func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHoo
 			nodes = append(nodes, node)
 		}
 	}
-	for _, sql := range auditSqls {
-		hook.BeforeAudit(sql)
-	}
+	if len(sqls) > 0 {
+		for _, sql := range auditSqls {
+			hook.BeforeAudit(sql)
+		}
 
-	results, err := p.Audit(context.TODO(), sqls)
-	if err != nil {
-		return err
-	}
-	if len(results) != len(sqls) {
-		return fmt.Errorf("audit results [%d] does not match the number of SQL [%d]", len(results), len(sqls))
-	}
-	CustomRuleAudit(l, task, sqls, results, customRules)
-	for i, sql := range auditSqls {
-		hook.AfterAudit(sql)
-		sql.AuditStatus = model.SQLAuditStatusFinished
-		sql.AuditLevel = string(results[i].Level())
-		sql.AuditFingerprint = utils.Md5String(string(append([]byte(results[i].Message()), []byte(nodes[i].Fingerprint)...)))
-		appendExecuteSqlResults(sql, results[i])
+		results, err := p.Audit(context.TODO(), sqls)
+		if err != nil {
+			return err
+		}
+		if len(results) != len(sqls) {
+			return fmt.Errorf("audit results [%d] does not match the number of SQL [%d]", len(results), len(sqls))
+		}
+		CustomRuleAudit(l, task, sqls, results, customRules)
+		for i, sql := range auditSqls {
+			hook.AfterAudit(sql)
+			sql.AuditStatus = model.SQLAuditStatusFinished
+			sql.AuditLevel = string(results[i].Level())
+			sql.AuditFingerprint = utils.Md5String(string(append([]byte(results[i].Message()), []byte(nodes[i].Fingerprint)...)))
+			appendExecuteSqlResults(sql, results[i])
+		}
 	}
 
 	ReplenishTaskStatistics(task)
