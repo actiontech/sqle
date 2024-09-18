@@ -256,7 +256,7 @@ func (s *PluginImplV2) Audit(ctx context.Context, sqls []string) ([]*driverV2.Au
 			return nil, err
 		}
 		ret := driverV2.NewAuditResults()
-		ret.SetResults(dResult)
+		ret.Results = dResult
 		rets = append(rets, ret)
 	}
 	return rets, nil

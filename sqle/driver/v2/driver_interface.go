@@ -146,8 +146,7 @@ func RuleLevelLessOrEqual(a, b string) bool {
 }
 
 type AuditResults struct {
-	Results       []*AuditResult
-	ruleNameIndex map[string]int
+	Results []*AuditResult
 }
 
 type AuditResult struct {
@@ -162,8 +161,7 @@ type AuditResultInfo struct {
 
 func NewAuditResults() *AuditResults {
 	return &AuditResults{
-		Results:       []*AuditResult{},
-		ruleNameIndex: map[string]int{},
+		Results: []*AuditResult{},
 	}
 }
 
@@ -207,39 +205,41 @@ func (rs *AuditResults) Add(level RuleLevel, ruleName string, i18nMsgPattern i18
 		return
 	}
 
-	if rs.ruleNameIndex == nil {
-		rs.ruleNameIndex = make(map[string]int)
+	defer rs.SortByLevel()
+
+	if ruleName != "" {
+		for _, v := range rs.Results {
+			// 审核结果规则存在则更新
+			if v.RuleName == ruleName {
+				v.Level = level
+				for langTag, msg := range i18nMsgPattern {
+					if len(args) > 0 {
+						msg = fmt.Sprintf(msg, args...)
+					}
+					v.I18nAuditResultInfo[langTag] = AuditResultInfo{
+						Message: msg,
+					}
+				}
+				return
+			}
+		}
 	}
 
-	if index, exist := rs.ruleNameIndex[ruleName]; exist {
-		rs.Results[index].Level = level
-		for langTag, msg := range i18nMsgPattern {
-			rs.Results[index].I18nAuditResultInfo[langTag] = AuditResultInfo{
-				Message: msg,
-			}
-		}
-	} else {
-		ar := &AuditResult{
-			Level:               level,
-			RuleName:            ruleName,
-			I18nAuditResultInfo: make(map[language.Tag]AuditResultInfo, len(i18nMsgPattern)),
-		}
-		for langTag, msg := range i18nMsgPattern {
-			ari := AuditResultInfo{
-				Message: msg,
-			}
-			if len(args) > 0 {
-				ari.Message = fmt.Sprintf(msg, args...)
-			}
-			ar.I18nAuditResultInfo[langTag] = ari
-		}
-		if ruleName != "" {
-			rs.ruleNameIndex[ruleName] = len(rs.Results)
-		}
-		rs.Results = append(rs.Results, ar)
+	ar := &AuditResult{
+		Level:               level,
+		RuleName:            ruleName,
+		I18nAuditResultInfo: make(map[language.Tag]AuditResultInfo, len(i18nMsgPattern)),
 	}
-
-	rs.SortByLevel()
+	for langTag, msg := range i18nMsgPattern {
+		if len(args) > 0 {
+			msg = fmt.Sprintf(msg, args...)
+		}
+		ari := AuditResultInfo{
+			Message: msg,
+		}
+		ar.I18nAuditResultInfo[langTag] = ari
+	}
+	rs.Results = append(rs.Results, ar)
 }
 
 func (rs *AuditResults) SortByLevel() {
@@ -250,14 +250,6 @@ func (rs *AuditResults) SortByLevel() {
 
 func (rs *AuditResults) HasResult() bool {
 	return len(rs.Results) != 0
-}
-
-func (rs *AuditResults) SetResults(ars []*AuditResult) {
-	rs.Results = ars
-	rs.ruleNameIndex = make(map[string]int, len(ars))
-	for k, v := range ars {
-		rs.ruleNameIndex[v.RuleName] = k
-	}
 }
 
 type QueryConf struct {
