@@ -5216,7 +5216,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_name}/sql_version": {
+        "/v1/projects/{project_name}/sql_versions": {
             "get": {
                 "security": [
                     {
@@ -5230,7 +5230,7 @@ var doc = `{
                 "tags": [
                     "sql_version"
                 ],
-                "summary": "获取sql版本列表",
+                "summary": "获取SQL版本列表",
                 "operationId": "getSqlVersionListV1",
                 "parameters": [
                     {
@@ -5307,7 +5307,7 @@ var doc = `{
                 "tags": [
                     "sql_version"
                 ],
-                "summary": "创建sql版本记录",
+                "summary": "创建SQL版本记录",
                 "operationId": "createSqlVersionV1",
                 "parameters": [
                     {
@@ -5323,7 +5323,7 @@ var doc = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/v1.SqlVersionReqV1"
+                            "$ref": "#/definitions/v1.CreateSqlVersionReqV1"
                         }
                     }
                 ],
@@ -5337,7 +5337,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_name}/sql_version/workflow/{workflow_id}/": {
+        "/v1/projects/{project_name}/sql_versions/associated_workflow": {
             "post": {
                 "security": [
                     {
@@ -5348,8 +5348,8 @@ var doc = `{
                 "tags": [
                     "sql_version"
                 ],
-                "summary": "工单与版本建立关联",
-                "operationId": "workflowSqlVersion",
+                "summary": "工单与版本关联",
+                "operationId": "workflowSqlVersionV1",
                 "parameters": [
                     {
                         "type": "string",
@@ -5385,7 +5385,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_name}/sql_version/{sql_version_id}/": {
+        "/v1/projects/{project_name}/sql_versions/{sql_version_id}/": {
             "get": {
                 "security": [
                     {
@@ -5396,7 +5396,7 @@ var doc = `{
                 "tags": [
                     "sql_version"
                 ],
-                "summary": "获取sql版本详情",
+                "summary": "获取SQL版本详情",
                 "operationId": "getSqlVersionDetailV1",
                 "parameters": [
                     {
@@ -5423,52 +5423,6 @@ var doc = `{
                     }
                 }
             },
-            "put": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "update sql version",
-                "tags": [
-                    "sql_version"
-                ],
-                "summary": "更新sql版本信息",
-                "operationId": "updateSqlVersionV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "project name",
-                        "name": "project_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "sql version id",
-                        "name": "sql_version_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "update sql version request",
-                        "name": "sql_version",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.SqlVersionReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            },
             "delete": {
                 "security": [
                     {
@@ -5479,7 +5433,7 @@ var doc = `{
                 "tags": [
                     "sql_version"
                 ],
-                "summary": "删除sql版本",
+                "summary": "删除SQL版本",
                 "operationId": "deleteSqlVersionV1",
                 "parameters": [
                     {
@@ -5505,10 +5459,151 @@ var doc = `{
                         }
                     }
                 }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update sql version",
+                "tags": [
+                    "sql_version"
+                ],
+                "summary": "更新SQL版本信息",
+                "operationId": "updateSqlVersionV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "sql version id",
+                        "name": "sql_version_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "update sql version request",
+                        "name": "sql_version",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateSqlVersionReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
             }
         },
-        "/v1/projects/{project_name}/sql_version/{sql_version_id}/lock": {
-            "patch": {
+        "/v1/projects/{project_name}/sql_versions/{sql_version_id}/batch_execute_workflows": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "batch execute tasks on workflow",
+                "tags": [
+                    "sql_version"
+                ],
+                "summary": "工单批量上线",
+                "operationId": "batchExecuteTasksOnWorkflowV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "sql version id",
+                        "name": "sql_version_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "batch execute tasks on workflow request",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.BatchExecuteTasksOnWorkflowReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/sql_versions/{sql_version_id}/batch_release_workflows": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "batch release workflow",
+                "tags": [
+                    "sql_version"
+                ],
+                "summary": "批量发布工单（在版本的下一阶段创建工单）",
+                "operationId": "batchReleaseWorkflowsV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "sql version id",
+                        "name": "sql_version_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "batch release workflow request",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.BatchReleaseWorkflowReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/sql_versions/{sql_version_id}/lock": {
+            "post": {
                 "security": [
                     {
                         "ApiKeyAuth": []
@@ -5518,7 +5613,7 @@ var doc = `{
                 "tags": [
                     "sql_version"
                 ],
-                "summary": "锁定sql版本",
+                "summary": "锁定SQL版本",
                 "operationId": "lockSqlVersionV1",
                 "parameters": [
                     {
@@ -5555,7 +5650,55 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_name}/sql_version/{sql_version_id}/sql_version_stage/{sql_version_stage_id}/dependencies": {
+        "/v1/projects/{project_name}/sql_versions/{sql_version_id}/retry_workflow": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "reject exec failed workflow",
+                "tags": [
+                    "sql_version"
+                ],
+                "summary": "工单重试（上线失败修改sql重试上线）",
+                "operationId": "retryExecWorkflowV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "sql version id",
+                        "name": "sql_version_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "retry execute workflow request",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.RetryExecWorkflowReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/sql_versions/{sql_version_id}/sql_version_stages/{sql_version_stage_id}/dependencies": {
             "get": {
                 "security": [
                     {
@@ -5567,7 +5710,7 @@ var doc = `{
                     "sql_version"
                 ],
                 "summary": "获取当前阶段与下一阶段实例的依赖信息",
-                "operationId": "getInstanceTipListV1",
+                "operationId": "getDependenciesBetweenStageInstanceV1",
                 "parameters": [
                     {
                         "type": "string",
@@ -5595,151 +5738,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.GetInstanceTipsResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/projects/{project_name}/sql_version/{sql_version_id}/workflow/batch_execute": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "batch execute tasks on workflow",
-                "tags": [
-                    "sql_version"
-                ],
-                "summary": "工单批量上线",
-                "operationId": "batchExecuteTasksOnWorkflow",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "project name",
-                        "name": "project_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "sql version id",
-                        "name": "sql_version_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "batch execute tasks on workflow request",
-                        "name": "data",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.BatchExecuteTasksOnWorkflowReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/projects/{project_name}/sql_version/{sql_version_id}/workflow/batch_release": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "batch release workflow",
-                "tags": [
-                    "sql_version"
-                ],
-                "summary": "批量发布工单",
-                "operationId": "batchReleaseWorkflowV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "project name",
-                        "name": "project_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "sql version id",
-                        "name": "sql_version_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "batch release workflow request",
-                        "name": "data",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.BatchReleaseWorkflowReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/projects/{project_name}/sql_version/{sql_version_id}/workflow/execute_retry": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "reject exec failed workflow",
-                "tags": [
-                    "sql_version"
-                ],
-                "summary": "工单重试",
-                "operationId": "rejectExecFailedWorkflow",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "project name",
-                        "name": "project_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "sql version id",
-                        "name": "sql_version_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "reject exec failed workflow request",
-                        "name": "data",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.RetryExecWorkflowReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
+                            "$ref": "#/definitions/v1.GetDepBetweenStageInstanceResV1"
                         }
                     }
                 }
@@ -11602,6 +11601,53 @@ var doc = `{
                 }
             }
         },
+        "v1.CreateSqlVersionReqV1": {
+            "type": "object",
+            "properties": {
+                "create_sql_version_stage": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.CreateSqlVersionStage"
+                    }
+                },
+                "desc": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string",
+                    "example": "2.23"
+                }
+            }
+        },
+        "v1.CreateSqlVersionStage": {
+            "type": "object",
+            "properties": {
+                "create_stages_instance_dep": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.CreateStagesInstanceDep"
+                    }
+                },
+                "name": {
+                    "type": "string",
+                    "example": "生产"
+                },
+                "stage_sequence": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.CreateStagesInstanceDep": {
+            "type": "object",
+            "properties": {
+                "next_stage_instance_id": {
+                    "type": "string"
+                },
+                "stage_instance_id": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.CreateWorkflowReqV1": {
             "type": "object",
             "properties": {
@@ -11707,6 +11753,17 @@ var doc = `{
                 "workflow_statistics": {
                     "type": "object",
                     "$ref": "#/definitions/v1.WorkflowStatisticsResV1"
+                }
+            }
+        },
+        "v1.DepBetweenStageInstance": {
+            "type": "object",
+            "properties": {
+                "next_stage_instance_id": {
+                    "type": "string"
+                },
+                "stage_instance_id": {
+                    "type": "string"
                 }
             }
         },
@@ -12473,6 +12530,25 @@ var doc = `{
                 "data": {
                     "type": "object",
                     "$ref": "#/definitions/v1.DashboardResV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetDepBetweenStageInstanceResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.DepBetweenStageInstance"
+                    }
                 },
                 "message": {
                     "type": "string",
@@ -15490,24 +15566,6 @@ var doc = `{
                 }
             }
         },
-        "v1.SqlVersionReqV1": {
-            "type": "object",
-            "properties": {
-                "desc": {
-                    "type": "string"
-                },
-                "sql_version_stage": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.SqlVersionStage"
-                    }
-                },
-                "version_number": {
-                    "type": "string",
-                    "example": "2.23"
-                }
-            }
-        },
         "v1.SqlVersionResV1": {
             "type": "object",
             "properties": {
@@ -15526,37 +15584,8 @@ var doc = `{
                 "status": {
                     "type": "string"
                 },
-                "version_number": {
+                "version": {
                     "type": "string"
-                }
-            }
-        },
-        "v1.SqlVersionStage": {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string",
-                    "example": "生产"
-                },
-                "stage_sequence": {
-                    "type": "integer"
-                },
-                "stages_dependency": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.SqlVersionStagesDependency"
-                    }
-                }
-            }
-        },
-        "v1.SqlVersionStagesDependency": {
-            "type": "object",
-            "properties": {
-                "source_instance_id": {
-                    "type": "integer"
-                },
-                "target_instance_id": {
-                    "type": "integer"
                 }
             }
         },
@@ -16252,6 +16281,56 @@ var doc = `{
                 }
             }
         },
+        "v1.UpdateSqlVersionReqV1": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string"
+                },
+                "update_sql_version_stage": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.UpdateSqlVersionStage"
+                    }
+                },
+                "version": {
+                    "type": "string",
+                    "example": "2.23"
+                }
+            }
+        },
+        "v1.UpdateSqlVersionStage": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "example": "生产"
+                },
+                "stage_id": {
+                    "type": "integer"
+                },
+                "stage_sequence": {
+                    "type": "integer"
+                },
+                "update_stages_instance_dep": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.UpdateStagesInstanceDep"
+                    }
+                }
+            }
+        },
+        "v1.UpdateStagesInstanceDep": {
+            "type": "object",
+            "properties": {
+                "next_stage_instance_id": {
+                    "type": "string"
+                },
+                "stage_instance_id": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.UpdateSystemVariablesReqV1": {
             "type": "object",
             "properties": {
@@ -16684,6 +16763,9 @@ var doc = `{
             "properties": {
                 "sql_version_id": {
                     "type": "string"
+                },
+                "workflow_id": {
+                    "type": "string"
                 }
             }
         },
@@ -17073,7 +17155,7 @@ var doc = `{
                 }
             }
         },
-        "v2.AssociatedWorkflow": {
+        "v2.AssociationVersionStageWorkflows": {
             "type": "object",
             "properties": {
                 "sql_version_stage_id": {
@@ -18161,9 +18243,9 @@ var doc = `{
         "v2.WorkflowResV2": {
             "type": "object",
             "properties": {
-                "associated_workflow": {
+                "association_version_stage_workflows": {
                     "type": "object",
-                    "$ref": "#/definitions/v2.AssociatedWorkflow"
+                    "$ref": "#/definitions/v2.AssociationVersionStageWorkflows"
                 },
                 "create_time": {
                     "type": "string"
