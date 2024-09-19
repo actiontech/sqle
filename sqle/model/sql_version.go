@@ -47,3 +47,29 @@ type WorkflowVersionStage struct {
 
 	Workflow *Workflow `gorm:"foreignkey:WorkflowID"`
 }
+// TODO @WinfredLin 
+func (s *Storage) GetStagesOfSqlVersion(sqlVersionID string) ([]SqlVersionStage, error) {
+	var stages []SqlVersionStage
+	err := s.db.Model(&WorkflowVersionStage{}).
+		Preload("SqlVersionStagesDependency").
+		Preload("WorkflowVersionStage").
+		Where("sql_version_id = ?", sqlVersionID).
+		Find(&stages).Error
+	if err != nil {
+		return nil, err
+	}
+	return stages, err
+}
+// TODO @WinfredLin 
+func (s *Storage) CreateWorkflowVersionStage(workflowID string, sqlVersionID uint) error {
+	// get workflow version stage by
+	var currentWorkflowCountInThisStage int64
+	var stageID uint
+	s.db.Model(&WorkflowVersionStage{}).Where("sql_version_id = ?  AND sql_version_stage_id = ?", sqlVersionID, stageID).Count(&currentWorkflowCountInThisStage)
+	versionStage := WorkflowVersionStage{
+		WorkflowID:   workflowID,
+		SqlVersionID: sqlVersionID,
+	}
+	s.db.Model(&WorkflowVersionStage{}).Create(&versionStage)
+	return nil
+}
