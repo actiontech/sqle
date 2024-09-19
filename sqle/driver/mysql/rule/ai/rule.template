@@ -23,7 +23,7 @@ const (
 
 // ==== Rule code start ====
 func RuleSQLE{{ rule_id }}(input *rulepkg.RuleHandlerInput) error {
-	return mt.Errorf("RuleSQLE{{ rule_id }} not implemented")
+	return fmt.Errorf("RuleSQLE{{ rule_id }} not implemented")
 }
 
 // ==== Rule code end ====
