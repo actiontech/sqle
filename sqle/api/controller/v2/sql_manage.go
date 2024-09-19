@@ -29,7 +29,7 @@ type SqlManage struct {
 	Assignees            []string          `json:"assignees"`
 	Status               string            `json:"status" enums:"unhandled,solved,ignored,manual_audited"`
 	Remark               string            `json:"remark"`
-	Endpoints            string            `json:"endpoints"`
+	Endpoints            []string          `json:"endpoints"`
 	Priority             string            `json:"priority"`
 }
 

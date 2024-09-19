@@ -9882,10 +9882,28 @@ var doc = `{
                 }
             }
         },
+        "model.AuditResultInfo": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.I18nAuditResultInfo": {
+            "type": "object",
+            "additionalProperties": {
+                "$ref": "#/definitions/model.AuditResultInfo"
+            }
+        },
         "params.EnumsValue": {
             "type": "object",
             "properties": {
                 "desc": {
+                    "description": "Deprecated: use I18nDesc instead",
+                    "type": "string"
+                },
+                "i18n_desc": {
                     "type": "string"
                 },
                 "value": {
@@ -9972,7 +9990,7 @@ var doc = `{
                 "high_priority_conditions": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.HighPriorityCondition"
+                        "$ref": "#/definitions/v1.HighPriorityConditionResV1"
                     }
                 },
                 "instance_type": {
@@ -10000,7 +10018,7 @@ var doc = `{
                 "enums_value": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/params.EnumsValue"
+                        "$ref": "#/definitions/v1.EnumsValueResV1"
                     }
                 },
                 "key": {
@@ -11271,6 +11289,17 @@ var doc = `{
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "v1.EnumsValueResV1": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
                 }
             }
         },
@@ -13328,6 +13357,39 @@ var doc = `{
                 }
             }
         },
+        "v1.HighPriorityConditionResV1": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string"
+                },
+                "enums_value": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.EnumsValueResV1"
+                    }
+                },
+                "key": {
+                    "type": "string"
+                },
+                "operator": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.OperatorResV1"
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "string",
+                        "int",
+                        "bool",
+                        "password"
+                    ]
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.InstanceAdditionalParamResV1": {
             "type": "object",
             "properties": {
@@ -13766,6 +13828,20 @@ var doc = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/params.EnumsValue"
+                    }
+                },
+                "operator_value": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.OperatorResV1": {
+            "type": "object",
+            "properties": {
+                "operator_enums_value": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.EnumsValueResV1"
                     }
                 },
                 "operator_value": {
@@ -16384,6 +16460,10 @@ var doc = `{
                 "db_type": {
                     "type": "string"
                 },
+                "i18n_audit_result_info": {
+                    "type": "object",
+                    "$ref": "#/definitions/model.I18nAuditResultInfo"
+                },
                 "level": {
                     "type": "string",
                     "example": "warn"
@@ -17104,7 +17184,10 @@ var doc = `{
                     ]
                 },
                 "endpoints": {
-                    "type": "string"
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "first_appear_timestamp": {
                     "type": "string"

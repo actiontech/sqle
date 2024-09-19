@@ -9,9 +9,21 @@ definitions:
         example: ok
         type: string
     type: object
+  model.AuditResultInfo:
+    properties:
+      message:
+        type: string
+    type: object
+  model.I18nAuditResultInfo:
+    additionalProperties:
+      $ref: '#/definitions/model.AuditResultInfo'
+    type: object
   params.EnumsValue:
     properties:
       desc:
+        description: 'Deprecated: use I18nDesc instead'
+        type: string
+      i18n_desc:
         type: string
       value:
         type: string
@@ -68,7 +80,7 @@ definitions:
         type: string
       high_priority_conditions:
         items:
-          $ref: '#/definitions/v1.HighPriorityCondition'
+          $ref: '#/definitions/v1.HighPriorityConditionResV1'
         type: array
       instance_type:
         type: string
@@ -86,7 +98,7 @@ definitions:
         type: string
       enums_value:
         items:
-          $ref: '#/definitions/params.EnumsValue'
+          $ref: '#/definitions/v1.EnumsValueResV1'
         type: array
       key:
         type: string
@@ -967,6 +979,13 @@ definitions:
         items:
           type: string
         type: array
+    type: object
+  v1.EnumsValueResV1:
+    properties:
+      desc:
+        type: string
+      value:
+        type: string
     type: object
   v1.ExplainClassicResult:
     properties:
@@ -2384,6 +2403,29 @@ definitions:
       value:
         type: string
     type: object
+  v1.HighPriorityConditionResV1:
+    properties:
+      desc:
+        type: string
+      enums_value:
+        items:
+          $ref: '#/definitions/v1.EnumsValueResV1'
+        type: array
+      key:
+        type: string
+      operator:
+        $ref: '#/definitions/v1.OperatorResV1'
+        type: object
+      type:
+        enum:
+        - string
+        - int
+        - bool
+        - password
+        type: string
+      value:
+        type: string
+    type: object
   v1.InstanceAdditionalParamResV1:
     properties:
       description:
@@ -2677,6 +2719,15 @@ definitions:
       operator_enums_value:
         items:
           $ref: '#/definitions/params.EnumsValue'
+        type: array
+      operator_value:
+        type: string
+    type: object
+  v1.OperatorResV1:
+    properties:
+      operator_enums_value:
+        items:
+          $ref: '#/definitions/v1.EnumsValueResV1'
         type: array
       operator_value:
         type: string
@@ -4457,6 +4508,9 @@ definitions:
     properties:
       db_type:
         type: string
+      i18n_audit_result_info:
+        $ref: '#/definitions/model.I18nAuditResultInfo'
+        type: object
       level:
         example: warn
         type: string
@@ -4952,7 +5006,9 @@ definitions:
         - being_audited
         type: string
       endpoints:
-        type: string
+        items:
+          type: string
+        type: array
       first_appear_timestamp:
         type: string
       fp_count:
