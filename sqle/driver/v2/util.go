@@ -53,6 +53,7 @@ const (
 	OptionalModuleEstimateSQLAffectRows
 	OptionalModuleKillProcess
 	OptionalExecBatch
+	OptionalModuleI18n
 )
 
 func (m OptionalModule) String() string {
@@ -73,6 +74,8 @@ func (m OptionalModule) String() string {
 		return "KillProcess"
 	case OptionalExecBatch:
 		return "ExecBatch"
+	case OptionalModuleI18n:
+		return "I18n"
 	default:
 		return "Unknown"
 	}
@@ -87,10 +90,22 @@ type DriverMetas struct {
 	EnabledOptionalModule    []OptionalModule
 }
 
-func ConvertI18nAuditResultsFromProtoToDriver(pars []*protoV2.AuditResult) ([]*AuditResult, error) {
+func (d *DriverMetas) IsOptionalModuleEnabled(expectModule OptionalModule) bool {
+	if d == nil {
+		return false
+	}
+	for _, m := range d.EnabledOptionalModule {
+		if m == expectModule {
+			return true
+		}
+	}
+	return false
+}
+
+func ConvertI18nAuditResultsFromProtoToDriver(pars []*protoV2.AuditResult, isI18n bool) ([]*AuditResult, error) {
 	ars := make([]*AuditResult, len(pars))
 	for k, par := range pars {
-		ar, err := ConvertI18nAuditResultFromProtoToDriver(par)
+		ar, err := ConvertI18nAuditResultFromProtoToDriver(par, isI18n)
 		if err != nil {
 			return nil, err
 		}
@@ -99,13 +114,13 @@ func ConvertI18nAuditResultsFromProtoToDriver(pars []*protoV2.AuditResult) ([]*A
 	return ars, nil
 }
 
-func ConvertI18nAuditResultFromProtoToDriver(par *protoV2.AuditResult) (*AuditResult, error) {
+func ConvertI18nAuditResultFromProtoToDriver(par *protoV2.AuditResult, isI18n bool) (*AuditResult, error) {
 	ar := &AuditResult{
 		RuleName:            par.RuleName,
 		Level:               RuleLevel(par.Level),
 		I18nAuditResultInfo: make(map[language.Tag]AuditResultInfo, len(par.I18NAuditResultInfo)),
 	}
-	if len(par.I18NAuditResultInfo) == 0 {
+	if !isI18n {
 		// 对非多语言的插件支持
 		ar.I18nAuditResultInfo = map[language.Tag]AuditResultInfo{
 			i18nPkg.DefaultLang: {Message: par.Message},
@@ -143,7 +158,7 @@ func ConvertI18nAuditResultFromDriverToProto(ar *AuditResult) *protoV2.AuditResu
 	return par
 }
 
-func ConvertI18nRuleFromProtoToDriver(rule *protoV2.Rule) (*Rule, error) {
+func ConvertI18nRuleFromProtoToDriver(rule *protoV2.Rule, isI18n bool) (*Rule, error) {
 	ps, err := ConvertProtoParamToParam(rule.Params)
 	if err != nil {
 		return nil, err
@@ -161,7 +176,7 @@ func ConvertI18nRuleFromProtoToDriver(rule *protoV2.Rule) (*Rule, error) {
 		}
 		dRule.I18nRuleInfo[tag] = ConvertI18nRuleInfoFromProtoToDriver(ruleInfo)
 	}
-	if len(rule.I18NRuleInfo) == 0 {
+	if !isI18n {
 		// 对非多语言的插件支持
 		ruleInfo := &RuleInfo{
 			Desc:       rule.Desc,
@@ -273,11 +288,11 @@ func ConvertRuleFromProtoToDriver(rule *protoV2.Rule) (*Rule, error) {
 func ConvertRuleFromDriverToProto(rule *Rule) *protoV2.Rule {
 	pr := &protoV2.Rule{
 		Name:         rule.Name,
-		Desc:         "",
+		Desc:         rule.I18nRuleInfo[i18nPkg.DefaultLang].Desc,
 		Level:        string(rule.Level),
-		Category:     "",
+		Category:     rule.I18nRuleInfo[i18nPkg.DefaultLang].Category,
 		Params:       ConvertParamToProtoParam(rule.Params),
-		Annotation:   "",
+		Annotation:   rule.I18nRuleInfo[i18nPkg.DefaultLang].Annotation,
 		Knowledge:    nil,
 		I18NRuleInfo: make(map[string]*protoV2.I18NRuleInfo, len(rule.I18nRuleInfo)),
 	}
@@ -353,14 +368,14 @@ func ConvertTabularDataToProto(td TabularData) *protoV2.TabularData {
 	}
 }
 
-func ConvertProtoTabularDataToDriver(pTd *protoV2.TabularData) (TabularData, error) {
+func ConvertProtoTabularDataToDriver(pTd *protoV2.TabularData, isI18n bool) (TabularData, error) {
 	columns := make([]TabularDataHead, 0, len(pTd.Columns))
 	for _, c := range pTd.Columns {
 		h := TabularDataHead{
 			Name:     c.Name,
 			I18nDesc: nil,
 		}
-		if len(c.I18NDesc) > 0 {
+		if isI18n {
 			if _, exist := c.I18NDesc[i18nPkg.DefaultLang.String()]; !exist {
 				// 多语言的插件 需包含 i18nPkg.DefaultLang
 				return TabularData{}, fmt.Errorf("client TabularDataHead: %s does not support language: %s", c.Name, i18nPkg.DefaultLang.String())
@@ -396,12 +411,12 @@ func ConvertTableMetaToProto(meta *TableMeta) *protoV2.TableMeta {
 	}
 }
 
-func ConvertProtoTableMetaToDriver(meta *protoV2.TableMeta) (*TableMeta, error) {
-	columnsInfo, err := ConvertProtoTabularDataToDriver(meta.ColumnsInfo.Data)
+func ConvertProtoTableMetaToDriver(meta *protoV2.TableMeta, isI18n bool) (*TableMeta, error) {
+	columnsInfo, err := ConvertProtoTabularDataToDriver(meta.ColumnsInfo.Data, isI18n)
 	if err != nil {
 		return nil, fmt.Errorf("ColumnsInfo: %w", err)
 	}
-	indexesInfo, err := ConvertProtoTabularDataToDriver(meta.IndexesInfo.Data)
+	indexesInfo, err := ConvertProtoTabularDataToDriver(meta.IndexesInfo.Data, isI18n)
 	if err != nil {
 		return nil, fmt.Errorf("IndexesInfo: %w", err)
 	}
