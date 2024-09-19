@@ -63,8 +63,8 @@ func WithAuditPlanName(name string) CustomClaimOption {
 	})
 }
 
-// ParseAuditPlanName used by echo middleware which only verify api request to audit plan related.
-func ParseAuditPlanName(tokenString string) (string, error) {
+// ParseAuditPlanToken used by echo middleware which only verify api request to audit plan related.
+func ParseAuditPlanToken(tokenString string) (string, string, error) {
 	keyFunc := func(t *jwt.Token) (interface{}, error) {
 		return JWTSecretKey, nil
 	}
@@ -72,7 +72,7 @@ func ParseAuditPlanName(tokenString string) (string, error) {
 	if err != nil {
 		if e, ok := err.(*jwt.ValidationError); ok {
 			if e.Errors != jwt.ValidationErrorExpired {
-				return "", err
+				return "", "", err
 			}
 		}
 	}
@@ -81,9 +81,13 @@ func ParseAuditPlanName(tokenString string) (string, error) {
 	claims := token.Claims.(jwt.MapClaims)
 	apn, ok := claims["apn"]
 	if !ok {
-		return "", jwt.NewValidationError("unknown token", jwt.ValidationErrorClaimsInvalid)
+		return "", "", jwt.NewValidationError("unknown token", jwt.ValidationErrorClaimsInvalid)
 	}
-	return apn.(string), nil
+	userName, ok := claims["name"]
+	if !ok {
+		return "", "", jwt.NewValidationError("unknown token", jwt.ValidationErrorClaimsInvalid)
+	}
+	return apn.(string), userName.(string), nil
 }
 
 func GetUserNameFromJWTToken(token string) (string, error) {

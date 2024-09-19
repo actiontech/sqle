@@ -58,12 +58,24 @@ func ScannerVerifier() echo.MiddlewareFunc {
 				token = parts[1]
 			}
 
-			apnInToken, err := utils.ParseAuditPlanName(token)
+			apnInToken, userName, err := utils.ParseAuditPlanToken(token)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
 			projectName := c.Param("project_name")
 			apnInParam := c.Param("audit_plan_name")
+			// verify user
+			user, isExist, err := model.GetStorage().GetUserByName(userName)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
+			if !isExist {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("user is not exist"))
+			}
+			if user.IsDisabled() {
+				return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("current user is disabled"))
+			}
+			// verify audit plan
 			// 由于对生成的JWT Token的负载使用MD5算法进行预处理，因此在验证的时候也需要对param中的apn使用MD5处理
 			// 为了兼容老版本的JWT Token需要增加不经MD5处理的apnInParam和apnInToken的判断
 			if apnInToken != apnInParam && apnInToken != utils.Md5(apnInParam) {
@@ -74,6 +86,7 @@ func ScannerVerifier() echo.MiddlewareFunc {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 			}
+			// verify token in audit plan
 			if !apnExist || apn.Token != token {
 				return echo.NewHTTPError(http.StatusInternalServerError, errAuditPlanMisMatch.Error())
 			}
