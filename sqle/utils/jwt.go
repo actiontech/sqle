@@ -70,7 +70,11 @@ func ParseAuditPlanName(tokenString string) (string, error) {
 	}
 	token, err := jwt.Parse(tokenString, keyFunc)
 	if err != nil {
-		return "", err
+		if e, ok := err.(*jwt.ValidationError); ok {
+			if e.Errors != jwt.ValidationErrorExpired {
+				return "", err
+			}
+		}
 	}
 	// claims can only be jwt.MapClaims
 	//nolint:forcetypeassert
