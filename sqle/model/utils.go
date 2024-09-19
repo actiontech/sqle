@@ -170,7 +170,7 @@ var autoMigrateList = []interface{}{
 	&SqlVersion{},
 	&SqlVersionStage{},
 	&SqlVersionStagesDependency{},
-	&WorkflowReleaseStage{},
+	&WorkflowVersionStage{},
 }
 
 func (s *Storage) AutoMigrate() error {
