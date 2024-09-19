@@ -49,6 +49,7 @@ enum OptionalModule {
   EstimateSQLAffectRows = 5;
   KillProcess = 6;
   ExecBatch = 7;
+  I18n = 8;
 }
 
 message Param {
