@@ -20,6 +20,7 @@ import (
 	"github.com/pingcap/parser/ast"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	_ "github.com/actiontech/sqle/sqle/driver/mysql/rule/ai"
 )
 
 // MysqlDriverImpl implements driver.Driver interface
