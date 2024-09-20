@@ -42,28 +42,39 @@ func TestScannerVerifier(t *testing.T) {
 	}
 
 	{ // test audit plan name don't match the token
+		mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+		assert.NoError(t, err)
+		model.InitMockStorage(mockDB)
+		mock.ExpectQuery("SELECT * FROM `users`  WHERE `users`.`deleted_at` IS NULL AND ((login_name = ?)) ORDER BY `users`.`id` ASC LIMIT 1").WithArgs(testUser).WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow(driver.Value(testUser)))
 		token, err := jwt.CreateToken(testUser, time.Now().Add(1*time.Hour).Unix(), utils.WithAuditPlanName(apName))
 		assert.NoError(t, err)
 		ctx, _ := newContextFunc(token, fmt.Sprintf("%s_modified", apName))
 		err = mw(h)(ctx)
+		mockDB.Close()
 		assert.Contains(t, err.Error(), errAuditPlanMisMatch.Error())
 	}
 
 	{ // test unknown token
+		mockDB, _, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+		assert.NoError(t, err)
+		model.InitMockStorage(mockDB)
 		token, err := jwt.CreateToken(testUser, time.Now().Add(1*time.Hour).Unix())
 		assert.NoError(t, err)
 		ctx, _ := newContextFunc(token, apName)
 		err = mw(h)(ctx)
 		assert.Contains(t, err.Error(), "unknown token")
+		mockDB.Close()
 	}
 
 	{ // test audit plan token incorrect
-		token, err := jwt.CreateToken(testUser, time.Now().Add(1*time.Hour).Unix(), utils.WithAuditPlanName(apName))
-		assert.NoError(t, err)
-
 		mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 		assert.NoError(t, err)
 		model.InitMockStorage(mockDB)
+		mock.ExpectQuery("SELECT * FROM `users`  WHERE `users`.`deleted_at` IS NULL AND ((login_name = ?)) ORDER BY `users`.`id` ASC LIMIT 1").WithArgs(testUser).WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow(driver.Value(testUser)))
+
+		token, err := jwt.CreateToken(testUser, time.Now().Add(1*time.Hour).Unix(), utils.WithAuditPlanName(apName))
+		assert.NoError(t, err)
+
 		mock.ExpectQuery("SELECT `audit_plans`.* FROM `audit_plans` LEFT JOIN projects ON projects.id = audit_plans.project_id WHERE `audit_plans`.`deleted_at` IS NULL AND ((projects.name = ? AND audit_plans.name = ?))").
 			WithArgs(projectName, apName).
 			WillReturnRows(sqlmock.NewRows([]string{"name", "token"}).AddRow(driver.Value(testUser), "test-token"))
@@ -85,6 +96,7 @@ func TestScannerVerifier(t *testing.T) {
 		mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 		assert.NoError(t, err)
 		model.InitMockStorage(mockDB)
+		mock.ExpectQuery("SELECT * FROM `users`  WHERE `users`.`deleted_at` IS NULL AND ((login_name = ?)) ORDER BY `users`.`id` ASC LIMIT 1").WithArgs(testUser).WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow(driver.Value(testUser)))
 		mock.ExpectQuery("SELECT `audit_plans`.* FROM `audit_plans` LEFT JOIN projects ON projects.id = audit_plans.project_id WHERE `audit_plans`.`deleted_at` IS NULL AND ((projects.name = ? AND audit_plans.name = ?))").
 			WithArgs(projectName, apName).
 			WillReturnError(gorm.ErrRecordNotFound)
@@ -108,6 +120,7 @@ func TestScannerVerifier(t *testing.T) {
 		mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 		assert.NoError(t, err)
 		model.InitMockStorage(mockDB)
+		mock.ExpectQuery("SELECT * FROM `users`  WHERE `users`.`deleted_at` IS NULL AND ((login_name = ?)) ORDER BY `users`.`id` ASC LIMIT 1").WithArgs(testUser).WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow(driver.Value(testUser)))
 		mock.ExpectQuery("SELECT `audit_plans`.* FROM `audit_plans` LEFT JOIN projects ON projects.id = audit_plans.project_id WHERE `audit_plans`.`deleted_at` IS NULL AND ((projects.name = ? AND audit_plans.name = ?))").
 			WithArgs(projectName, apName).
 			WillReturnRows(sqlmock.NewRows([]string{"name", "token"}).AddRow(testUser, token))
@@ -130,6 +143,7 @@ func TestScannerVerifier(t *testing.T) {
 		mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 		assert.NoError(t, err)
 		model.InitMockStorage(mockDB)
+		mock.ExpectQuery("SELECT * FROM `users`  WHERE `users`.`deleted_at` IS NULL AND ((login_name = ?)) ORDER BY `users`.`id` ASC LIMIT 1").WithArgs(testUser).WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow(driver.Value(testUser)))
 		mock.ExpectQuery("SELECT `audit_plans`.* FROM `audit_plans` LEFT JOIN projects ON projects.id = audit_plans.project_id WHERE `audit_plans`.`deleted_at` IS NULL AND ((projects.name = ? AND audit_plans.name = ?))").
 			WithArgs(projectName, apName).
 			WillReturnRows(sqlmock.NewRows([]string{"name", "token"}).AddRow(testUser, token))
@@ -170,12 +184,13 @@ func TestScannerVerifierIssue1758(t *testing.T) {
 		return ctx, res
 	}
 	{ // test check success
-		token, err := jwt.CreateToken(utils.Md5(userName), time.Now().Add(1*time.Hour).Unix(), utils.WithAuditPlanName(utils.Md5(apName120)))
+		token, err := jwt.CreateToken(userName, time.Now().Add(1*time.Hour).Unix(), utils.WithAuditPlanName(utils.Md5(apName120)))
 		assert.NoError(t, err)
 
 		mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 		assert.NoError(t, err)
 		model.InitMockStorage(mockDB)
+		mock.ExpectQuery("SELECT * FROM `users`  WHERE `users`.`deleted_at` IS NULL AND ((login_name = ?)) ORDER BY `users`.`id` ASC LIMIT 1").WithArgs(userName).WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow(driver.Value(userName)))
 		mock.ExpectQuery("SELECT `audit_plans`.* FROM `audit_plans` LEFT JOIN projects ON projects.id = audit_plans.project_id WHERE `audit_plans`.`deleted_at` IS NULL AND ((projects.name = ? AND audit_plans.name = ?))").
 			WithArgs(projectName, apName120).
 			WillReturnRows(sqlmock.NewRows([]string{"name", "token"}).AddRow(userName, token))
@@ -191,18 +206,28 @@ func TestScannerVerifierIssue1758(t *testing.T) {
 		assert.NoError(t, err)
 	}
 	{ // test audit plan name don't match the token
-		token, err := jwt.CreateToken(utils.Md5(userName), time.Now().Add(1*time.Hour).Unix(), utils.WithAuditPlanName(utils.Md5(apName120)))
+		mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+		assert.NoError(t, err)
+		model.InitMockStorage(mockDB)
+		mock.ExpectQuery("SELECT * FROM `users`  WHERE `users`.`deleted_at` IS NULL AND ((login_name = ?)) ORDER BY `users`.`id` ASC LIMIT 1").WithArgs(userName).WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow(driver.Value(userName)))
+		token, err := jwt.CreateToken(userName, time.Now().Add(1*time.Hour).Unix(), utils.WithAuditPlanName(utils.Md5(apName120)))
 		assert.NoError(t, err)
 		ctx, _ := newContextFunc(token, fmt.Sprintf("%s_modified", apName120))
 		err = mw(h)(ctx)
 		assert.Contains(t, err.Error(), errAuditPlanMisMatch.Error())
+		mockDB.Close()
 	}
 	{ // test unknown token
-		token, err := jwt.CreateToken(utils.Md5(userName), time.Now().Add(1*time.Hour).Unix())
+		mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+		assert.NoError(t, err)
+		model.InitMockStorage(mockDB)
+		mock.ExpectQuery("SELECT * FROM `users`  WHERE `users`.`deleted_at` IS NULL AND ((login_name = ?)) ORDER BY `users`.`id` ASC LIMIT 1").WithArgs(userName).WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow(driver.Value(userName)))
+		token, err := jwt.CreateToken(userName, time.Now().Add(1*time.Hour).Unix())
 		assert.NoError(t, err)
 		ctx, _ := newContextFunc(token, apName120)
 		err = mw(h)(ctx)
 		assert.Contains(t, err.Error(), "unknown token")
+		mockDB.Close()
 	}
 	{ // test old token
 		token, err := jwt.CreateToken(userName, time.Now().Add(1*time.Hour).Unix(), utils.WithAuditPlanName(apName120))
@@ -210,6 +235,7 @@ func TestScannerVerifierIssue1758(t *testing.T) {
 		mockDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 		assert.NoError(t, err)
 		model.InitMockStorage(mockDB)
+		mock.ExpectQuery("SELECT * FROM `users`  WHERE `users`.`deleted_at` IS NULL AND ((login_name = ?)) ORDER BY `users`.`id` ASC LIMIT 1").WithArgs(userName).WillReturnRows(sqlmock.NewRows([]string{"name"}).AddRow(driver.Value(userName)))
 		mock.ExpectQuery("SELECT `audit_plans`.* FROM `audit_plans` LEFT JOIN projects ON projects.id = audit_plans.project_id WHERE `audit_plans`.`deleted_at` IS NULL AND ((projects.name = ? AND audit_plans.name = ?))").
 			WithArgs(projectName, apName120).
 			WillReturnRows(sqlmock.NewRows([]string{"name", "token"}).AddRow(userName, token))
