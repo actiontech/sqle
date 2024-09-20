@@ -85,15 +85,6 @@ type AuditPlanParamResV1 struct {
 	EnumsValues []EnumsValueResV1 `json:"enums_value"`
 }
 
-type HighPriorityCondition struct {
-	Key         string              `json:"key"`
-	Desc        string              `json:"desc"`
-	Value       string              `json:"value"`
-	Type        string              `json:"type" enums:"string,int,bool,password"`
-	EnumsValues []params.EnumsValue `json:"enums_value"`
-	Operator    Operator            `json:"operator"`
-}
-
 type Operator struct {
 	Value      string              `json:"operator_value"`
 	EnumsValue []params.EnumsValue `json:"operator_enums_value"`

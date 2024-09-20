@@ -155,16 +155,11 @@ func (s *BaseSQL) GetExecStatusDesc(ctx context.Context) string {
 
 type AuditResult struct {
 	Level               string              `json:"level"`
-	Message             string              `json:"message"` // Deprecated: use I18nAuditResultInfo instead
 	RuleName            string              `json:"rule_name"`
 	I18nAuditResultInfo I18nAuditResultInfo `json:"i18n_audit_result_info"`
 }
 
 func (ar *AuditResult) GetAuditMsgByLangTag(lang language.Tag) string {
-	if len(ar.I18nAuditResultInfo) == 0 {
-		// 兼容老sqle数据
-		return ar.Message
-	}
 	return ar.I18nAuditResultInfo.GetAuditResultInfoByLangTag(lang).Message
 }
 

@@ -646,6 +646,7 @@ func (p *PluginProcessor) GetDriverMetas() (*driverV2.DriverMetas, error) {
 			driverV2.OptionalModuleEstimateSQLAffectRows,
 			driverV2.OptionalModuleKillProcess,
 			driverV2.OptionalExecBatch,
+			driverV2.OptionalModuleI18n,
 		},
 	}, nil
 }

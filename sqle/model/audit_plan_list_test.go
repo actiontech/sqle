@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
+	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -171,7 +172,7 @@ func TestStorage_GetAuditPlanReportSQLsByReq(t *testing.T) {
 	defer mockDB.Close()
 	mock.ExpectQuery("SELECT VERSION()").WillReturnRows(sqlmock.NewRows([]string{"VERSION()"}).AddRow("5.7"))
 	InitMockStorage(mockDB)
-	mockResult := []AuditResult{{Level: "error", Message: "FAKE AUDIT RESULT"}}
+	mockResult := []AuditResult{{Level: "error", I18nAuditResultInfo: I18nAuditResultInfo{i18nPkg.DefaultLang: AuditResultInfo{Message: "FAKE AUDIT RESULT"}}}}
 	mockResultBytes, _ := json.Marshal(mockResult)
 
 	mock.ExpectPrepare(fmt.Sprintf(`SELECT report_sqls.sql, report_sqls.audit_results, report_sqls.number %v LIMIT ? OFFSET ?`, tableAndRowOfSQL)).

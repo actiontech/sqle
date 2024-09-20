@@ -110,12 +110,7 @@ func (pm *pluginManager) IsOptionalModuleEnabled(pluginName string, expectModule
 	if !ok {
 		return false
 	}
-	for _, m := range meta.EnabledOptionalModule {
-		if m == expectModule {
-			return true
-		}
-	}
-	return false
+	return meta.IsOptionalModuleEnabled(expectModule)
 }
 
 func (pm *pluginManager) register(pp PluginProcessor) error {

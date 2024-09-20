@@ -26,7 +26,7 @@ type AuditPlan struct {
 	InstanceDatabase string        `json:"instance_database" gorm:"type:varchar(255)"`
 	Type             string        `json:"type" gorm:"type:varchar(255)"`
 	RuleTemplateName string        `json:"rule_template_name" gorm:"type:varchar(255)"`
-	Params           params.Params `json:"params" gorm:"type:varchar(1000)"`
+	Params           params.Params `json:"params" gorm:"type:json"`
 
 	NotifyInterval      int    `json:"notify_interval" gorm:"default:10"`
 	NotifyLevel         string `json:"notify_level" gorm:"default:'warn';type:varchar(255)"`
