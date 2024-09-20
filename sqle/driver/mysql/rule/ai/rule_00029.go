@@ -50,8 +50,7 @@ func RuleSQLE00029(input *rulepkg.RuleHandlerInput) error {
 		if createProcedureReg1.MatchString(input.Node.Text()) ||
 			createProcedureReg2.MatchString(input.Node.Text()) {
 			rulepkg.AddResult(input.Res, input.Rule, SQLE00029)
-		} else if alterProcedureReg1.MatchString(input.Node.Text()) ||
-			alterProcedureReg2.MatchString(input.Node.Text()) {
+		} else if alterProcedureReg1.MatchString(input.Node.Text()) {
 			rulepkg.AddResult(input.Res, input.Rule, SQLE00029)
 		}
 	}
@@ -62,6 +61,5 @@ var createProcedureReg1 = regexp.MustCompile(`(?i)create[\s]+procedure[\s]+[\S\s
 var createProcedureReg2 = regexp.MustCompile(`(?i)create[\s]+[\s\S]+[\s]+procedure[\s]+[\S\s]+`)
 
 var alterProcedureReg1 = regexp.MustCompile(`(?i)alter[\s]+procedure[\s]+[\S\s]+`)
-var alterProcedureReg2 = regexp.MustCompile(`(?i)alter[\s]+[\s\S]+[\s]+procedure[\s]+[\S\s]+`)
 
 // ==== Rule code end ====

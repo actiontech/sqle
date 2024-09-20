@@ -13,15 +13,15 @@ func TestRuleSQLE00032(t *testing.T) {
 	rule := rulepkg.RuleHandlerMap[ruleName].Rule
 
 	runSingleRuleInspectCase(rule, t, "Create database name without the '_DB' fixed suffix", DefaultMysqlInspect(), `
-    CREATE DATABASE testdb;
+    CREATE DATABASE no_exist;
     `, newTestResult().addResult(ruleName, "_DB"))
 
 	runSingleRuleInspectCase(rule, t, "Create database name with the fixed suffix '_DB'", DefaultMysqlInspect(), `
-    CREATE DATABASE test_DB;
+    CREATE DATABASE no_exist_DB;
     `, newTestResult())
 
 	runSingleRuleInspectCase(rule, t, "Create database name without the '_DB' fixed suffix", DefaultMysqlInspect(), `
-    CREATE DATABASE test_db;
+    CREATE DATABASE no_exist_db;
     `, newTestResult().addResult(ruleName, "_DB"))
 }
 

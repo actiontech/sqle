@@ -1,8 +1,6 @@
 package ai
 
 import (
-	"fmt"
-
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	util "github.com/actiontech/sqle/sqle/driver/mysql/rule/ai/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
@@ -54,7 +52,6 @@ func RuleSQLE00034(input *rulepkg.RuleHandlerInput) error {
 	case *ast.AlterTableStmt:
 		for _, spec := range util.GetAlterTableCommandsByTypes(stmt, ast.AlterTableAddColumns, ast.AlterTableModifyColumn, ast.AlterTableChangeColumn) {
 			for _, col := range spec.NewColumns {
-				fmt.Println("666666")
 				// if the column has "NOT NULL" constraint but no "DEFAULT" constraint
 				if util.IsColumnHasOption(col, ast.ColumnOptionNotNull) && !util.IsColumnHasOption(col, ast.ColumnOptionDefaultValue) {
 					violateColumns = append(violateColumns, col)

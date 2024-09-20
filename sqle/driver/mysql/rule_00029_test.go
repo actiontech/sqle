@@ -29,6 +29,7 @@ func TestRuleSQLE00029(t *testing.T) {
 	for _, sql := range []string{
 		`CREATE DEFINER='sqle_op'@'localhost'PROCEDURE my_procedure() BEGIN SELECT * FROM exist_db.exist_tb_1 ; END;`,
 		`CREATEDEFINER='sqle_op'@'localhost' PROCEDURE my_procedure() BEGIN SELECT * FROM exist_db.exist_tb_1 ; END;`,
+		`ALTER DEFINER='sqle_op'@'localhost' PROCEDURE my_procedure COMMENT 'Updated procedure'`,
 	} {
 		runSingleRuleInspectCase(rule, t, "",
 			DefaultMysqlInspect(), sql,
