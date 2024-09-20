@@ -167,6 +167,10 @@ var autoMigrateList = []interface{}{
 	&SQLManageQueue{},
 	&ReportPushConfig{},
 	&ReportPushConfigRecord{},
+	&SqlVersion{},
+	&SqlVersionStage{},
+	&SqlVersionStagesDependency{},
+	&WorkflowVersionStage{},
 }
 
 func (s *Storage) AutoMigrate() error {
