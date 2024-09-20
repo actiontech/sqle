@@ -10,8 +10,6 @@ import (
 	"github.com/pingcap/parser/ast"
 )
 
-var RuleHandlers = generateRuleHandlers(sourceRuleHandlers)
-
 var sourceRuleHandlers = []*SourceHandler{
 	{
 		Rule: SourceRule{

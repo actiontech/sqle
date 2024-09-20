@@ -36,7 +36,7 @@ type DSN struct {
 type Rule struct {
 	Name         string
 	Level        RuleLevel
-	Params       params.Params // 仅用于ParamValue处理，展示 Param.Desc 等以 I18nRuleInfo->RuleInfo.Params 为准
+	Params       params.Params
 	I18nRuleInfo I18nRuleInfo
 }
 
@@ -72,8 +72,7 @@ type RuleInfo struct {
 
 	// Category is the category of the rule. Such as "Naming Conventions"...
 	// Rules will be displayed on the SQLE rule list page by category.
-	Category string
-	//Params    params.Params // 仅用于国际化，ParamValue以 Rule.Params 为准
+	Category  string
 	Knowledge RuleKnowledge
 }
 
@@ -130,7 +129,7 @@ func (d *DriverGrpcServer) Metas(ctx context.Context, req *protoV2.Empty) (*prot
 func (d *DriverGrpcServer) Init(ctx context.Context, req *protoV2.InitRequest) (*protoV2.InitResponse, error) {
 	var rules = make([]*Rule, 0, len(req.GetRules()))
 	for _, rule := range req.GetRules() {
-		dr, err := ConvertI18nRuleFromProtoToDriver(rule)
+		dr, err := ConvertI18nRuleFromProtoToDriver(rule, d.Meta.IsOptionalModuleEnabled(OptionalModuleI18n))
 		if err != nil {
 			return nil, err
 		}

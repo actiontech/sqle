@@ -600,11 +600,20 @@ type InstanceAuditPlanDetailResV1 struct {
 }
 
 type AuditPlanRes struct {
-	RuleTemplateName        string                  `json:"rule_template_name" from:"rule_template_name" example:"default_MySQL"`
-	Type                    AuditPlanTypeResBase    `json:"audit_plan_type" form:"audit_plan_type"`
-	Params                  []AuditPlanParamResV1   `json:"audit_plan_params" valid:"dive,required"`
-	NeedMarkHighPrioritySQL bool                    `json:"need_mark_high_priority_sql"`
-	HighPriorityConditions  []HighPriorityCondition `json:"high_priority_conditions"`
+	RuleTemplateName        string                       `json:"rule_template_name" from:"rule_template_name" example:"default_MySQL"`
+	Type                    AuditPlanTypeResBase         `json:"audit_plan_type" form:"audit_plan_type"`
+	Params                  []AuditPlanParamResV1        `json:"audit_plan_params" valid:"dive,required"`
+	NeedMarkHighPrioritySQL bool                         `json:"need_mark_high_priority_sql"`
+	HighPriorityConditions  []HighPriorityConditionResV1 `json:"high_priority_conditions"`
+}
+
+type HighPriorityCondition struct {
+	Key         string              `json:"key"`
+	Desc        string              `json:"desc"`
+	Value       string              `json:"value"`
+	Type        string              `json:"type" enums:"string,int,bool,password"`
+	EnumsValues []params.EnumsValue `json:"enums_value"`
+	Operator    Operator            `json:"operator"`
 }
 
 // @Summary 获取实例扫描任务详情
@@ -680,20 +689,20 @@ func ConvertAuditPlansToRes(ctx context.Context, auditPlans []*model.AuditPlanV2
 		}
 
 		if v.HighPriorityParams != nil && len(v.HighPriorityParams) > 0 {
-			hppParamsRes := make([]HighPriorityCondition, len(v.HighPriorityParams))
+			hppParamsRes := make([]HighPriorityConditionResV1, len(v.HighPriorityParams))
 			for i, hpp := range v.HighPriorityParams {
 				for _, metaHpp := range meta.HighPriorityParams {
 					if metaHpp.Key != hpp.Key {
 						continue
 					}
-					highParamRes := HighPriorityCondition{
+					highParamRes := HighPriorityConditionResV1{
 						Key:   metaHpp.Key,
 						Desc:  metaHpp.GetDesc(locale.Bundle.GetLangTagFromCtx(ctx)),
 						Value: hpp.Value,
 						Type:  string(metaHpp.Type),
-						Operator: Operator{
+						Operator: OperatorResV1{
 							Value:      string(hpp.Operator.Value),
-							EnumsValue: metaHpp.Operator.EnumsValue,
+							EnumsValue: ConvertEnumsValuesToRes(ctx, metaHpp.Operator.EnumsValue),
 						},
 					}
 					hppParamsRes[i] = highParamRes

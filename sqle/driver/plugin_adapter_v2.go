@@ -77,6 +77,15 @@ func (d *PluginProcessorV2) GetDriverMetas() (*driverV2.DriverMetas, error) {
 		return nil, err
 	}
 
+	var isI18n bool
+	ms := make([]driverV2.OptionalModule, 0, len(result.EnabledOptionalModule))
+	for _, m := range result.EnabledOptionalModule {
+		ms = append(ms, driverV2.OptionalModule(m))
+		if driverV2.OptionalModule(m) == driverV2.OptionalModuleI18n {
+			isI18n = true
+		}
+	}
+
 	rules := make([]*driverV2.Rule, 0, len(result.Rules))
 	for _, r := range result.Rules {
 		if len(r.I18NRuleInfo) > 0 {
@@ -85,17 +94,13 @@ func (d *PluginProcessorV2) GetDriverMetas() (*driverV2.DriverMetas, error) {
 				return nil, fmt.Errorf("client rule: %s not support language: %s", r.Name, i18nPkg.DefaultLang.String())
 			}
 		}
-		dr, err := driverV2.ConvertI18nRuleFromProtoToDriver(r)
+		dr, err := driverV2.ConvertI18nRuleFromProtoToDriver(r, isI18n)
 		if err != nil {
 			return nil, err
 		}
 		rules = append(rules, dr)
 	}
 
-	ms := make([]driverV2.OptionalModule, 0, len(result.EnabledOptionalModule))
-	for _, m := range result.EnabledOptionalModule {
-		ms = append(ms, driverV2.OptionalModule(m))
-	}
 	ps, err := driverV2.ConvertProtoParamToParam(result.DatabaseAdditionalParams)
 	if err != nil {
 		return nil, fmt.Errorf("plugin Metas rule param err: %w", err)
@@ -148,6 +153,7 @@ func (d *PluginProcessorV2) Open(l *logrus.Entry, cfgV2 *driverV2.Config) (Plugi
 		client:  c,
 		Session: result.Session,
 		l:       l.WithField("session_id", result.Session.Id),
+		meta:    d.meta,
 	}, nil
 }
 
@@ -165,6 +171,7 @@ type PluginImplV2 struct {
 	l       *logrus.Entry
 	client  protoV2.DriverClient
 	Session *protoV2.Session
+	meta    *driverV2.DriverMetas
 }
 
 func (s *PluginImplV2) preLog(ApiName string) {
@@ -251,12 +258,12 @@ func (s *PluginImplV2) Audit(ctx context.Context, sqls []string) ([]*driverV2.Au
 
 	rets := make([]*driverV2.AuditResults, 0, len(resp.AuditResults))
 	for _, results := range resp.AuditResults {
-		dResult, err := driverV2.ConvertI18nAuditResultsFromProtoToDriver(results.Results)
+		dResult, err := driverV2.ConvertI18nAuditResultsFromProtoToDriver(results.Results, s.meta.IsOptionalModuleEnabled(driverV2.OptionalModuleI18n))
 		if err != nil {
 			return nil, err
 		}
 		ret := driverV2.NewAuditResults()
-		ret.SetResults(dResult)
+		ret.Results = dResult
 		rets = append(rets, ret)
 	}
 	return rets, nil
@@ -443,7 +450,7 @@ func (s *PluginImplV2) Explain(ctx context.Context, conf *driverV2.ExplainConf) 
 		return nil, err
 	}
 
-	td, err := driverV2.ConvertProtoTabularDataToDriver(res.ClassicResult.Data)
+	td, err := driverV2.ConvertProtoTabularDataToDriver(res.ClassicResult.Data, s.meta.IsOptionalModuleEnabled(driverV2.OptionalModuleI18n))
 	if err != nil {
 		return nil, fmt.Errorf("ClassicResult: %w", err)
 	}
@@ -487,7 +494,7 @@ func (s *PluginImplV2) getTableMeta(ctx context.Context, table *driverV2.Table) 
 	if err != nil {
 		return nil, err
 	}
-	return driverV2.ConvertProtoTableMetaToDriver(result.TableMeta)
+	return driverV2.ConvertProtoTableMetaToDriver(result.TableMeta, s.meta.IsOptionalModuleEnabled(driverV2.OptionalModuleI18n))
 }
 
 func (s *PluginImplV2) extractTableFromSQL(ctx context.Context, sql string) ([]*driverV2.Table, error) {
