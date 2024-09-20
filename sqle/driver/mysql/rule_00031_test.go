@@ -4,11 +4,12 @@ import (
 	"testing"
 
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
+	"github.com/actiontech/sqle/sqle/driver/mysql/rule/ai"
 )
 
 // ==== Rule test code start ====
 func TestRuleSQLE00031(t *testing.T) {
-	ruleName := "SQLE00031"
+	ruleName := ai.SQLE00031
 	rule := rulepkg.RuleHandlerMap[ruleName].Rule
 
 	for _, sql := range []string{
