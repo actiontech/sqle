@@ -10476,21 +10476,6 @@ var doc = `{
                 "$ref": "#/definitions/model.AuditResultInfo"
             }
         },
-        "params.EnumsValue": {
-            "type": "object",
-            "properties": {
-                "desc": {
-                    "description": "Deprecated: use I18nDesc instead",
-                    "type": "string"
-                },
-                "i18n_desc": {
-                    "type": "string"
-                },
-                "value": {
-                    "type": "string"
-                }
-            }
-        },
         "v1.AffectRows": {
             "type": "object",
             "properties": {
@@ -10694,7 +10679,7 @@ var doc = `{
                 "high_priority_conditions": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.HighPriorityCondition"
+                        "$ref": "#/definitions/v1.HighPriorityConditionResV1"
                     }
                 },
                 "need_mark_high_priority_sql": {
@@ -14072,39 +14057,6 @@ var doc = `{
                 }
             }
         },
-        "v1.HighPriorityCondition": {
-            "type": "object",
-            "properties": {
-                "desc": {
-                    "type": "string"
-                },
-                "enums_value": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/params.EnumsValue"
-                    }
-                },
-                "key": {
-                    "type": "string"
-                },
-                "operator": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.Operator"
-                },
-                "type": {
-                    "type": "string",
-                    "enum": [
-                        "string",
-                        "int",
-                        "bool",
-                        "password"
-                    ]
-                },
-                "value": {
-                    "type": "string"
-                }
-            }
-        },
         "v1.HighPriorityConditionReq": {
             "type": "object",
             "properties": {
@@ -14593,20 +14545,6 @@ var doc = `{
                     "type": "string"
                 },
                 "user_name": {
-                    "type": "string"
-                }
-            }
-        },
-        "v1.Operator": {
-            "type": "object",
-            "properties": {
-                "operator_enums_value": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/params.EnumsValue"
-                    }
-                },
-                "operator_value": {
                     "type": "string"
                 }
             }

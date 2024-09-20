@@ -49,6 +49,7 @@ enum OptionalModule {
   EstimateSQLAffectRows = 5;
   KillProcess = 6;
   ExecBatch = 7;
+  I18n = 8;
 }
 
 message Param {
@@ -80,12 +81,10 @@ message Rule {
 }
 
 message I18nRuleInfo {
-  string desc = 2;
-//  string level = 3;
-  string category = 4;
-//  repeated Param params = 5;
-  string annotation = 6;
-  Knowledge knowledge = 7;
+  string desc = 1;
+  string category = 2;
+  string annotation = 3;
+  Knowledge knowledge = 4;
 }
 
 message Knowledge {
@@ -378,3 +377,4 @@ message EstimateSQLAffectRowsResponse {
 message KillProcessResponse {
   string errMessage = 1; // 记录执行失败原因
 }
+

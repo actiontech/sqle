@@ -124,8 +124,8 @@ type AuditPlanV2 struct {
 	InstanceAuditPlanID     uint                      `json:"instance_audit_plan_id" gorm:"not null"`
 	Type                    string                    `json:"type" gorm:"type:varchar(255)"`
 	RuleTemplateName        string                    `json:"rule_template_name" gorm:"type:varchar(255)"`
-	Params                  params.Params             `json:"params" gorm:"type:varchar(1000)"`
-	HighPriorityParams      params.ParamsWithOperator `json:"high_priority_params" gorm:"type:varchar(1000)"`
+	Params                  params.Params             `json:"params" gorm:"type:json"`
+	HighPriorityParams      params.ParamsWithOperator `json:"high_priority_params" gorm:"type:json"`
 	NeedMarkHighPrioritySQL bool                      `json:"need_mark_high_priority_sql"`
 	ActiveStatus            string                    `json:"active_status" gorm:"type:varchar(255)"`
 
