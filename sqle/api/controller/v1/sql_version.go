@@ -66,13 +66,12 @@ type GetSqlVersionListResV1 struct {
 }
 
 type SqlVersionResV1 struct {
-	VersionID             uint       `json:"version_id"`
-	Version               string     `json:"version"`
-	Desc                  string     `json:"desc"`
-	Status                string     `json:"status" enums:"is_being_released,locked"`
-	LockTime              *time.Time `json:"lock_time"`
-	CreatedAt             *time.Time `json:"created_at"`
-	HasAssociatedWorkflow bool       `json:"has_associated_workflow"`
+	VersionID uint       `json:"version_id"`
+	Version   string     `json:"version"`
+	Desc      string     `json:"desc"`
+	Status    string     `json:"status" enums:"is_being_released,locked"`
+	LockTime  *time.Time `json:"lock_time"`
+	CreatedAt *time.Time `json:"created_at"`
 }
 
 // @Summary 获取SQL版本列表
@@ -100,27 +99,35 @@ func GetSqlVersionList(c echo.Context) error {
 
 type GetSqlVersionDetailResV1 struct {
 	controller.BaseRes
-	Data []*SqlVersionDetailResV1 `json:"data"`
+	Data *SqlVersionDetailResV1 `json:"data"`
 }
 
 type SqlVersionDetailResV1 struct {
+	SqlVersionID          uint                     `json:"sql_version_id"`
+	Version               string                   `json:"version"`
+	Status                string                   `json:"status" enums:"is_being_released,locked"`
+	SqlVersionDesc        string                   `json:"desc,omitempty"`
+	SqlVersionStageDetail *[]SqlVersionStageDetail `json:"sql_version_stage_detail"`
+}
+type SqlVersionStageDetail struct {
 	StageID         uint                          `json:"stage_id"`
 	StageName       string                        `json:"stage_name"`
 	StageSequence   int                           `json:"stage_sequence"`
-	WorkflowDetails []*WorkflowDetailWithInstance `json:"workflow_details"`
+	StageInstances  *[]VersionStageInstance       `json:"stage_instances"`
+	WorkflowDetails *[]WorkflowDetailWithInstance `json:"workflow_details"`
 }
 
 type WorkflowDetailWithInstance struct {
-	Name              string              `json:"workflow_name"`
-	WorkflowId        string              `json:"workflow_id"`
-	Desc              string              `json:"desc,omitempty"`
-	Status            string              `json:"status" enums:"wait_for_audit,wait_for_execution,rejected,canceled,exec_failed,executing,finished"`
-	WorkflowInstances []*WorkflowInstance `json:"workflow_instances"`
+	Name              string                  `json:"workflow_name"`
+	WorkflowId        string                  `json:"workflow_id"`
+	Desc              string                  `json:"desc,omitempty"`
+	Status            string                  `json:"status" enums:"wait_for_audit,wait_for_execution,rejected,canceled,exec_failed,executing,finished"`
+	WorkflowInstances *[]VersionStageInstance `json:"workflow_instances"`
 }
-type WorkflowInstance struct {
+type VersionStageInstance struct {
 	InstanceID     string `json:"instances_id"`
 	InstanceName   string `json:"instances_name"`
-	InstanceSchema string `json:"instance_schema"`
+	InstanceSchema string `json:"instance_schema,omitempty"`
 }
 
 // @Summary 获取SQL版本详情
@@ -149,10 +156,9 @@ type UpdateSqlVersionReqV1 struct {
 }
 
 type UpdateSqlVersionStage struct {
-	StageID                 *uint                      `json:"stage_id" form:"stage_id"`
 	Name                    *string                    `json:"name" form:"name" valid:"required" example:"生产"`
 	StageSequence           *int                       `json:"stage_sequence" form:"stage_sequence" valid:"required"`
-	CreateStagesInstanceDep *[]UpdateStagesInstanceDep `json:"update_stages_instance_dep"`
+	UpdateStagesInstanceDep *[]UpdateStagesInstanceDep `json:"update_stages_instance_dep" valid:"required"`
 }
 
 type UpdateStagesInstanceDep struct {
