@@ -1,18 +1,24 @@
 package model
 
-import "time"
+import (
+	"time"
+)
 
 type SqlVersion struct {
 	Model
-	VersionNumber string     `json:"version_number" gorm:"type:varchar(255) not null"`
-	Desc          string     `json:"desc" gorm:"type:varchar(512)"`
-	Status        string     `json:"status" gorm:"type:varchar(255)"`
-	LockTime      *time.Time `json:"lock_time" gorm:"type:datetime(3)"`
-	IsLocked      bool       `json:"is_locked" gorm:"type:bool" example:"false"`
-	ProjectId     ProjectUID `gorm:"index; not null"`
+	Version   string     `json:"version" gorm:"type:varchar(255) not null"`
+	Desc      string     `json:"desc" gorm:"type:varchar(512)"`
+	Status    string     `json:"status" gorm:"type:varchar(255)"`
+	LockTime  *time.Time `json:"lock_time" gorm:"type:datetime(3)"`
+	ProjectId ProjectUID `gorm:"index; not null"`
 
 	SqlVersionStage []*SqlVersionStage
 }
+
+const (
+	SqlVersionStatusReleased = "is_being_released"
+	SqlVersionStatusLock     = "locked"
+)
 
 type SqlVersionStage struct {
 	Model
@@ -21,20 +27,21 @@ type SqlVersionStage struct {
 	StageSequence int    `json:"stage_sequence" gorm:"type:int not null"`
 
 	SqlVersionStagesDependency []*SqlVersionStagesDependency
-	WorkflowReleaseStage       []*WorkflowReleaseStage
+	WorkflowReleaseStage       []*WorkflowVersionStage
 }
 
 type SqlVersionStagesDependency struct {
 	Model
-	SqlVersionStageID   uint `json:"sql_version_stage_id" gorm:"not null"`
-	NextStageID         uint `json:"next_stage_id"`
-	StageInstanceID     uint `json:"stage_instance_id" gorm:"not null"`
-	NextStageInstanceID uint `json:"next_stage_instance_id"`
+	SqlVersionStageID   uint   `json:"sql_version_stage_id" gorm:"not null"`
+	NextStageID         uint   `json:"next_stage_id"`
+	StageInstanceID     uint64 `json:"stage_instance_id" gorm:"not null"`
+	NextStageInstanceID uint64 `json:"next_stage_instance_id"`
 }
 
-type WorkflowReleaseStage struct {
+type WorkflowVersionStage struct {
 	Model
 	WorkflowID        string `json:"workflow_id" gorm:"not null"`
+	SqlVersionID      uint   `json:"sql_version_id"`
 	SqlVersionStageID uint   `json:"sql_version_stage_id"`
 	WorkflowSequence  int    `json:" workflow_sequence" gorm:"type:int"`
 

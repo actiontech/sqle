@@ -40,6 +40,10 @@ func batchExecuteTasksOnWorkflow(c echo.Context) error {
 func retryExecWorkflow(c echo.Context) error {
 	return ErrCommunityEditionNotSupportSqlManage
 }
-func workflowSqlVersion(c echo.Context) error {
+func batchAssociateWorkflowsWithVersion(c echo.Context) error {
+	return ErrCommunityEditionNotSupportSqlManage
+}
+
+func getWorkflowsThatCanBeAssociatedToVersion(c echo.Context) error {
 	return ErrCommunityEditionNotSupportSqlManage
 }
