@@ -1,7 +1,6 @@
 package ai
 
 import (
-	"fmt"
 	"regexp"
 
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
@@ -50,7 +49,6 @@ func RuleSQLE00029(input *rulepkg.RuleHandlerInput) error {
 	case *ast.UnparsedStmt:
 		if createProcedureReg1.MatchString(input.Node.Text()) ||
 			createProcedureReg2.MatchString(input.Node.Text()) {
-			fmt.Print("Hello, ")
 			rulepkg.AddResult(input.Res, input.Rule, SQLE00029)
 		} else if alterProcedureReg1.MatchString(input.Node.Text()) ||
 			alterProcedureReg2.MatchString(input.Node.Text()) {
