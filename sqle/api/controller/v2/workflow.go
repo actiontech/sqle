@@ -305,6 +305,8 @@ type BatchCompleteWorkflowsReqV2 struct {
 	WorkflowIDList []string `json:"workflow_id_list" form:"workflow_id_list"`
 }
 
+// TODO 支持上线失败时完成工单，需要填写备注信息，备注信息拼接到工单备注中
+
 // BatchCompleteWorkflowsV2 complete workflows.
 // @Summary 批量完成工单
 // @Description this api will directly change the work order status to finished without real online operation
@@ -567,9 +569,10 @@ func convertWorkflowToTasksSummaryRes(taskDetails []*model.WorkflowTasksSummaryD
 }
 
 type CreateWorkflowReqV2 struct {
-	Subject string `json:"workflow_subject" form:"workflow_subject" valid:"required,name"`
-	Desc    string `json:"desc" form:"desc"`
-	TaskIds []uint `json:"task_ids" form:"task_ids" valid:"required"`
+	Subject      string `json:"workflow_subject" form:"workflow_subject" valid:"required,name"`
+	Desc         string `json:"desc" form:"desc"`
+	SqlVersionID string `json:"sql_version_id" form:"sql_version_id"`
+	TaskIds      []uint `json:"task_ids" form:"task_ids" valid:"required"`
 }
 
 type CreateWorkflowResV2 struct {
@@ -1095,15 +1098,25 @@ type WorkflowRecordResV2 struct {
 }
 
 type WorkflowResV2 struct {
-	Name          string                 `json:"workflow_name"`
-	WorkflowID    string                 `json:"workflow_id"`
-	Desc          string                 `json:"desc,omitempty"`
-	Mode          string                 `json:"mode" enums:"same_sqls,different_sqls"`
-	ExecMode      string                 `json:"exec_mode" enums:"sql_file,sqls"`
-	CreateUser    string                 `json:"create_user_name"`
-	CreateTime    *time.Time             `json:"create_time"`
-	Record        *WorkflowRecordResV2   `json:"record"`
-	RecordHistory []*WorkflowRecordResV2 `json:"record_history_list,omitempty"`
+	Name                            string                           `json:"workflow_name"`
+	WorkflowID                      string                           `json:"workflow_id"`
+	Desc                            string                           `json:"desc,omitempty"`
+	Mode                            string                           `json:"mode" enums:"same_sqls,different_sqls"`
+	ExecMode                        string                           `json:"exec_mode" enums:"sql_file,sqls"`
+	CreateUser                      string                           `json:"create_user_name"`
+	CreateTime                      *time.Time                       `json:"create_time"`
+	SqlVersionName                  string                           `json:"sql_version_name"`
+	Record                          *WorkflowRecordResV2             `json:"record"`
+	RecordHistory                   []*WorkflowRecordResV2           `json:"record_history_list,omitempty"`
+	AssociatedVersionStageWorkflows *AssociatedVersionStageWorkflows `json:"associated_version_stage_workflows,omitempty"`
+}
+
+type AssociatedVersionStageWorkflows struct {
+	WorkflowID        string `json:"workflow_id"`
+	WorkflowName      string `json:"workflow_name"`
+	Status            string `json:"status" enums:"wait_for_audit,wait_for_execution,rejected,canceled,exec_failed,executing,finished"`
+	SqlVersionStageID uint   `json:"sql_version_stage_id"`
+	StageSequence     int    `json:"stage_sequence"`
 }
 
 // GetWorkflowV2
