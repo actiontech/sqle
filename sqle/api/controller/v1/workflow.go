@@ -504,6 +504,7 @@ type GetWorkflowsReqV1 struct {
 	FilterTaskInstanceId            string `json:"filter_task_instance_id" query:"filter_task_instance_id"`
 	FilterTaskExecuteStartTimeFrom  string `json:"filter_task_execute_start_time_from" query:"filter_task_execute_start_time_from"`
 	FilterTaskExecuteStartTimeTo    string `json:"filter_task_execute_start_time_to" query:"filter_task_execute_start_time_to"`
+	FilterSqlVersionID              *uint  `json:"filter_sql_version_id" query:"filter_sql_version_id"`
 	PageIndex                       uint32 `json:"page_index" query:"page_index" valid:"required"`
 	PageSize                        uint32 `json:"page_size" query:"page_size" valid:"required"`
 	FuzzyKeyword                    string `json:"fuzzy_keyword" query:"fuzzy_keyword"`

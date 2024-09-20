@@ -1098,20 +1098,20 @@ type WorkflowRecordResV2 struct {
 }
 
 type WorkflowResV2 struct {
-	Name               string                 `json:"workflow_name"`
-	WorkflowID         string                 `json:"workflow_id"`
-	Desc               string                 `json:"desc,omitempty"`
-	Mode               string                 `json:"mode" enums:"same_sqls,different_sqls"`
-	ExecMode           string                 `json:"exec_mode" enums:"sql_file,sqls"`
-	CreateUser         string                 `json:"create_user_name"`
-	CreateTime         *time.Time             `json:"create_time"`
-	SqlVersionName     string                 `json:"sql_version_name"`
-	Record             *WorkflowRecordResV2   `json:"record"`
-	RecordHistory      []*WorkflowRecordResV2 `json:"record_history_list,omitempty"`
-	AssociatedWorkflow *AssociatedWorkflow    `json:"associated_workflow,omitempty"`
+	Name                            string                           `json:"workflow_name"`
+	WorkflowID                      string                           `json:"workflow_id"`
+	Desc                            string                           `json:"desc,omitempty"`
+	Mode                            string                           `json:"mode" enums:"same_sqls,different_sqls"`
+	ExecMode                        string                           `json:"exec_mode" enums:"sql_file,sqls"`
+	CreateUser                      string                           `json:"create_user_name"`
+	CreateTime                      *time.Time                       `json:"create_time"`
+	SqlVersionName                  string                           `json:"sql_version_name"`
+	Record                          *WorkflowRecordResV2             `json:"record"`
+	RecordHistory                   []*WorkflowRecordResV2           `json:"record_history_list,omitempty"`
+	AssociatedVersionStageWorkflows *AssociatedVersionStageWorkflows `json:"associated_version_stage_workflows,omitempty"`
 }
 
-type AssociatedWorkflow struct {
+type AssociatedVersionStageWorkflows struct {
 	WorkflowID        string `json:"workflow_id"`
 	WorkflowName      string `json:"workflow_name"`
 	Status            string `json:"status" enums:"wait_for_audit,wait_for_execution,rejected,canceled,exec_failed,executing,finished"`

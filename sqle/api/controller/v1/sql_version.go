@@ -7,33 +7,33 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-type SqlVersionReqV1 struct {
-	VersionNumber   string            `json:"version_number" form:"version_number" valid:"required" example:"2.23"`
-	Desc            string            `json:"desc" form:"desc"`
-	SqlVersionStage []SqlVersionStage `json:"sql_version_stage" valid:"dive,required"`
+type CreateSqlVersionReqV1 struct {
+	Version         string                  `json:"version" form:"version" valid:"required" example:"2.23"`
+	Desc            string                  `json:"desc" form:"desc"`
+	SqlVersionStage []CreateSqlVersionStage `json:"create_sql_version_stage" valid:"dive,required"`
 }
 
-type SqlVersionStage struct {
-	Name             string                       `json:"name" form:"name" valid:"required" example:"生产"`
-	StageSequence    int                          `json:"stage_sequence" form:"stage_sequence" valid:"required"`
-	StagesDependency []SqlVersionStagesDependency `json:"stages_dependency" valid:"dive,required"`
+type CreateSqlVersionStage struct {
+	Name                    string                    `json:"name" form:"name" valid:"required" example:"生产"`
+	StageSequence           int                       `json:"stage_sequence" form:"stage_sequence" valid:"required"`
+	CreateStagesInstanceDep []CreateStagesInstanceDep `json:"create_stages_instance_dep"`
 }
 
-type SqlVersionStagesDependency struct {
-	StageInstanceID     uint `json:"source_instance_id"`
-	NextStageInstanceID uint `json:"target_instance_id"`
+type CreateStagesInstanceDep struct {
+	StageInstanceID     string `json:"stage_instance_id"`
+	NextStageInstanceID string `json:"next_stage_instance_id"`
 }
 
-// @Summary 创建sql版本记录
+// @Summary 创建SQL版本记录
 // @Description create sql version
 // @Id createSqlVersionV1
 // @Tags sql_version
 // @Security ApiKeyAuth
 // @Accept json
 // @Param project_name path string true "project name"
-// @Param sql_version body v1.SqlVersionReqV1 true "create sql version request"
+// @Param sql_version body v1.CreateSqlVersionReqV1 true "create sql version request"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/{project_name}/sql_version [post]
+// @router /v1/projects/{project_name}/sql_versions [post]
 func CreateSqlVersion(c echo.Context) error {
 
 	/**
@@ -52,6 +52,7 @@ type GetSqlVersionListReqV1 struct {
 	FilterByCreatedAtTo   *string `json:"filter_by_created_at_to,omitempty" query:"filter_by_created_at_to"`
 	FilterByLockTimeFrom  *string `json:"filter_by_lock_time_from,omitempty" query:"filter_by_lock_time_from"`
 	FilterByLockTimeTo    *string `json:"filter_by_lock_time_to,omitempty" query:"filter_by_lock_time_to"`
+	FilterByVersionStatus *string `json:"filter_by_version_status,omitempty" query:"filter_by_version_status"`
 	FuzzySearch           *string `json:"fuzzy_search,omitempty" query:"fuzzy_search"`
 
 	PageIndex uint32 `json:"page_index" query:"page_index" valid:"required"`
@@ -65,15 +66,16 @@ type GetSqlVersionListResV1 struct {
 }
 
 type SqlVersionResV1 struct {
-	VersionNumber         string     `json:"version_number"`
+	VersionID             uint       `json:"version_id"`
+	Version               string     `json:"version"`
 	Desc                  string     `json:"desc"`
-	Status                string     `json:"status"`
+	Status                string     `json:"status" enums:"is_being_released,locked"`
 	LockTime              *time.Time `json:"lock_time"`
 	CreatedAt             *time.Time `json:"created_at"`
 	HasAssociatedWorkflow bool       `json:"has_associated_workflow"`
 }
 
-// @Summary 获取sql版本列表
+// @Summary 获取SQL版本列表
 // @Description sql version list
 // @Id getSqlVersionListV1
 // @Tags sql_version
@@ -84,11 +86,12 @@ type SqlVersionResV1 struct {
 // @Param filter_by_created_at_to query string false "filter by created at to"
 // @Param filter_by_lock_time_from query string false "filter by lock time from"
 // @Param filter_by_lock_time_to query string false "filter by lock time to"
+// @Param filter_by_version_status query string false "filter by version status"
 // @Param fuzzy_search query string false "fuzzy search"
 // @Param page_index query uint32 true "page index"
 // @Param page_size query uint32 true "size of per page"
 // @Success 200 {object} v1.GetSqlVersionListResV1
-// @router /v1/projects/{project_name}/sql_version [get]
+// @router /v1/projects/{project_name}/sql_versions [get]
 func GetSqlVersionList(c echo.Context) error {
 
 	// 获取列表同时返回版本是否有关联工单
@@ -120,7 +123,7 @@ type WorkflowInstance struct {
 	InstanceSchema string `json:"instance_schema"`
 }
 
-// @Summary 获取sql版本详情
+// @Summary 获取SQL版本详情
 // @Description get sql version detail
 // @Id getSqlVersionDetailV1
 // @Tags sql_version
@@ -128,7 +131,7 @@ type WorkflowInstance struct {
 // @Param project_name path string true "project name"
 // @Param sql_version_id path string true "sql version id"
 // @Success 200 {object} v1.GetSqlVersionDetailResV1
-// @router /v1/projects/{project_name}/sql_version/{sql_version_id}/ [get]
+// @router /v1/projects/{project_name}/sql_versions/{sql_version_id}/ [get]
 func GetSqlVersionDetail(c echo.Context) error {
 
 	/**
@@ -139,24 +142,39 @@ func GetSqlVersionDetail(c echo.Context) error {
 	return getSqlVersionDetail(c)
 }
 
-// @Summary 更新sql版本信息
+type UpdateSqlVersionReqV1 struct {
+	Version         *string                  `json:"version" form:"version" example:"2.23"`
+	Desc            *string                  `json:"desc" form:"desc"`
+	SqlVersionStage *[]UpdateSqlVersionStage `json:"update_sql_version_stage"`
+}
+
+type UpdateSqlVersionStage struct {
+	StageID                 *uint                      `json:"stage_id" form:"stage_id"`
+	Name                    *string                    `json:"name" form:"name" valid:"required" example:"生产"`
+	StageSequence           *int                       `json:"stage_sequence" form:"stage_sequence" valid:"required"`
+	CreateStagesInstanceDep *[]UpdateStagesInstanceDep `json:"update_stages_instance_dep"`
+}
+
+type UpdateStagesInstanceDep struct {
+	StageInstanceID     string `json:"stage_instance_id"`
+	NextStageInstanceID string `json:"next_stage_instance_id"`
+}
+
+// @Summary 更新SQL版本信息
 // @Description update sql version
 // @Id updateSqlVersionV1
 // @Tags sql_version
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
 // @Param sql_version_id path string true "sql version id"
-// @Param sql_version body v1.SqlVersionReqV1 true "update sql version request"
+// @Param sql_version body v1.UpdateSqlVersionReqV1 false "update sql version request"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/{project_name}/sql_version/{sql_version_id}/ [put]
+// @router /v1/projects/{project_name}/sql_versions/{sql_version_id}/ [patch]
 func UpdateSqlVersion(c echo.Context) error {
 	/**
-		没有工单：
 		1、getStageBySqlVersionID
 		2、save sql version
-		3、遍历db stage，嵌套遍历req satge，根据stage顺号对比更新、删除、添加stage
-		有工单：
-		save sql version
+		3、如果要更新stage，传入完整的stage，覆盖式更新stage及dependency
 	  **/
 	return updateSqlVersion(c)
 }
@@ -165,7 +183,7 @@ type LockSqlVersionReqV1 struct {
 	IsLocked bool `json:"is_locked"`
 }
 
-// @Summary 锁定sql版本
+// @Summary 锁定SQL版本
 // @Description lock sql version
 // @Id lockSqlVersionV1
 // @Tags sql_version
@@ -174,13 +192,13 @@ type LockSqlVersionReqV1 struct {
 // @Param sql_version_id path string true "sql version id"
 // @Param sql_version body v1.LockSqlVersionReqV1 true "lock sql version request"
 // @Success 200 {object}  controller.BaseRes
-// @router /v1/projects/{project_name}/sql_version/{sql_version_id}/lock [patch]
+// @router /v1/projects/{project_name}/sql_versions/{sql_version_id}/lock [post]
 func LockSqlVersion(c echo.Context) error {
 
 	return lockSqlVersion(c)
 }
 
-// @Summary 删除sql版本
+// @Summary 删除SQL版本
 // @Description delete sql version
 // @Id deleteSqlVersionV1
 // @Tags sql_version
@@ -188,7 +206,7 @@ func LockSqlVersion(c echo.Context) error {
 // @Param project_name path string true "project name"
 // @Param sql_version_id path string true "sql version id"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/{project_name}/sql_version/{sql_version_id}/ [delete]
+// @router /v1/projects/{project_name}/sql_versions/{sql_version_id}/ [delete]
 func DeleteSqlVersion(c echo.Context) error {
 	// delete sql version
 	// delete stage
@@ -203,20 +221,22 @@ type GetDepBetweenStageInstanceResV1 struct {
 }
 
 type DepBetweenStageInstance struct {
-	StageInstanceID     string `json:"stage_instance_id"`
-	NextStageInstanceID string `json:"next_stage_instance_id"`
+	StageInstanceID       string `json:"stage_instance_id"`
+	StageInstanceName     string `json:"stage_instance_name"`
+	NextStageInstanceID   string `json:"next_stage_instance_id"`
+	NextStageInstanceName string `json:"next_stage_instance_name"`
 }
 
 // @Summary 获取当前阶段与下一阶段实例的依赖信息
 // @Description get dependencies between stage instance
 // @Tags sql_version
-// @Id getInstanceTipListV1
+// @Id getDependenciesBetweenStageInstanceV1
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
 // @Param sql_version_id path string true "sql version id"
 // @Param sql_version_stage_id path string true "sql version stage id"
-// @Success 200 {object} v1.GetInstanceTipsResV1
-// @router /v1/projects/{project_name}/sql_version/{sql_version_id}/sql_version_stage/{sql_version_stage_id}/dependencies [get]
+// @Success 200 {object} v1.GetDepBetweenStageInstanceResV1
+// @router /v1/projects/{project_name}/sql_versions/{sql_version_id}/sql_version_stages/{sql_version_stage_id}/dependencies [get]
 func GetDependenciesBetweenStageInstance(c echo.Context) error {
 	/**
 		select * from SqlVersionStagesDependency where SqlVersionStageID = sql_version_stage_id
@@ -240,16 +260,16 @@ type TargetReleaseInstance struct {
 	TargetInstanceSchema string `json:"target_instance_schema" form:"target_instance_schema"`
 }
 
-// @Summary 批量发布工单
+// @Summary 批量发布工单（在版本的下一阶段创建工单）
 // @Description batch release workflow
-// @Id batchReleaseWorkflowV1
+// @Id batchReleaseWorkflowsV1
 // @Tags sql_version
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
 // @Param sql_version_id path string true "sql version id"
 // @Param data body v1.BatchReleaseWorkflowReqV1 true "batch release workflow request"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/{project_name}/sql_version/{sql_version_id}/workflow/batch_release [post]
+// @router /v1/projects/{project_name}/sql_versions/{sql_version_id}/batch_release_workflows [post]
 func BatchReleaseWorkflows(c echo.Context) error {
 	/**
 		1、遍历获取工单信息，dms.GetWorkflowDetailByWorkflowId(projectUid, workflowID, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
@@ -270,13 +290,13 @@ type BatchExecuteTasksOnWorkflowReqV1 struct {
 // @Summary 工单批量上线
 // @Description batch execute tasks on workflow
 // @Tags sql_version
-// @Id batchExecuteTasksOnWorkflow
+// @Id batchExecuteTasksOnWorkflowV1
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
 // @Param sql_version_id path string true "sql version id"
 // @Param data body v1.BatchExecuteTasksOnWorkflowReqV1 true "batch execute tasks on workflow request"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/{project_name}/sql_version/{sql_version_id}/workflow/batch_execute [post]
+// @router /v1/projects/{project_name}/sql_versions/{sql_version_id}/batch_execute_workflows [post]
 func BatchExecuteTasksOnWorkflow(c echo.Context) error {
 	/**
 		1、遍历workflow id，获取workflow信息
@@ -290,16 +310,16 @@ type RetryExecWorkflowReqV1 struct {
 	TaskIds    []uint `json:"task_ids" form:"task_ids" valid:"required"`
 }
 
-// @Summary 工单重试
+// @Summary 工单重试（上线失败修改sql重试上线）
 // @Description reject exec failed workflow
 // @Tags sql_version
-// @Id rejectExecFailedWorkflow
+// @Id retryExecWorkflowV1
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
 // @Param sql_version_id path string true "sql version id"
-// @Param data body v1.RetryExecWorkflowReqV1 true "reject exec failed workflow request"
+// @Param data body v1.RetryExecWorkflowReqV1 true "retry execute workflow request"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/{project_name}/sql_version/{sql_version_id}/workflow/execute_retry [post]
+// @router /v1/projects/{project_name}/sql_versions/{sql_version_id}/retry_workflow [post]
 func RetryExecWorkflow(c echo.Context) error {
 	/**
 		暂不考虑重复上线问题，用户在修改sql时自行回滚或删除上线成功的sql。
@@ -312,22 +332,51 @@ func RetryExecWorkflow(c echo.Context) error {
 	return retryExecWorkflow(c)
 }
 
-type WorkflowSqlVersionReqV1 struct {
-	SqlVersionID *string `json:"sql_version_id"`
+type BatchAssociateWorkflowsWithVersionReqV1 struct {
+	StageAndWorkflows []StageAndWorkflows `json:"stage_Workflows" form:"stage_Workflows" valid:"dive,required"`
+}
+type StageAndWorkflows struct {
+	SqlVersionStageID *string `json:"sql_version_stage_id"`
+	WorkflowID        *string `json:"workflow_id" valid:"required"`
 }
 
-// @Summary 工单与版本建立关联
-// @Description workflow sql version
+// @Summary 批量关联工单到版本
+// @Description batch associate workflows with version
 // @Tags sql_version
-// @Id workflowSqlVersion
+// @Id batchAssociateWorkflowsWithVersionV1
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
-// @Param workflow_id path string true "workflow id"
-// @Param data body v1.WorkflowSqlVersionReqV1 true "workflow sql version request"
+// @Param sql_version_id path string true "sql version id"
+// @Param data body v1.BatchAssociateWorkflowsWithVersionReqV1 true "batch associate workflows with version request"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/{project_name}/sql_version/workflow/{workflow_id}/ [post]
-func WorkflowSqlVersion(c echo.Context) error {
+// @router /v1/projects/{project_name}/sql_versions/{sql_version_id}/associate_workflows [post]
+func BatchAssociateWorkflowsWithVersion(c echo.Context) error {
 
 	// 与第一个阶段进行关联
-	return workflowSqlVersion(c)
+	return batchAssociateWorkflowsWithVersion(c)
+}
+
+type GetWorkflowsThatCanBeAssociatedToVersionResV1 struct {
+	controller.BaseRes
+	Data []*AssociateWorkflows `json:"data"`
+}
+type AssociateWorkflows struct {
+	WorkflowID   string `json:"workflow_id"`
+	WorkflowName string `json:"workflow_name"`
+	WorkflowDesc string `json:"desc"`
+}
+
+// @Summary 获取可与版本关联的工单
+// @Description get workflows that can be associated to version
+// @Tags sql_version
+// @Id GetWorkflowsThatCanBeAssociatedToVersionV1
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Param sql_version_id path string true "sql version id"
+// @Param sql_version_stage_id path string true "sql version stage id"
+// @Success 200 {object} v1.GetWorkflowsThatCanBeAssociatedToVersionResV1
+// @router /v1/projects/{project_name}/sql_versions/{sql_version_id}/sql_version_stages/{sql_version_stage_id}/associate_workflows [get]
+func GetWorkflowsThatCanBeAssociatedToVersion(c echo.Context) error {
+
+	return getWorkflowsThatCanBeAssociatedToVersion(c)
 }
