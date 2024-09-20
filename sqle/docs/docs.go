@@ -13599,10 +13599,8 @@ var doc = `{
                     "example": 0
                 },
                 "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.SqlVersionDetailResV1"
-                    }
+                    "type": "object",
+                    "$ref": "#/definitions/v1.SqlVersionDetailResV1"
                 },
                 "message": {
                     "type": "string",
@@ -15651,20 +15649,27 @@ var doc = `{
         "v1.SqlVersionDetailResV1": {
             "type": "object",
             "properties": {
-                "stage_id": {
-                    "type": "integer"
-                },
-                "stage_name": {
+                "desc": {
                     "type": "string"
                 },
-                "stage_sequence": {
+                "sql_version_id": {
                     "type": "integer"
                 },
-                "workflow_details": {
+                "sql_version_stage_detail": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.WorkflowDetailWithInstance"
+                        "$ref": "#/definitions/v1.SqlVersionStageDetail"
                     }
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "is_being_released",
+                        "locked"
+                    ]
+                },
+                "version": {
+                    "type": "string"
                 }
             }
         },
@@ -15676,9 +15681,6 @@ var doc = `{
                 },
                 "desc": {
                     "type": "string"
-                },
-                "has_associated_workflow": {
-                    "type": "boolean"
                 },
                 "lock_time": {
                     "type": "string"
@@ -15695,6 +15697,32 @@ var doc = `{
                 },
                 "version_id": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.SqlVersionStageDetail": {
+            "type": "object",
+            "properties": {
+                "stage_id": {
+                    "type": "integer"
+                },
+                "stage_instances": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.VersionStageInstance"
+                    }
+                },
+                "stage_name": {
+                    "type": "string"
+                },
+                "stage_sequence": {
+                    "type": "integer"
+                },
+                "workflow_details": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.WorkflowDetailWithInstance"
+                    }
                 }
             }
         },
@@ -16426,9 +16454,6 @@ var doc = `{
                     "type": "string",
                     "example": "生产"
                 },
-                "stage_id": {
-                    "type": "integer"
-                },
                 "stage_sequence": {
                     "type": "integer"
                 },
@@ -16538,6 +16563,20 @@ var doc = `{
                     "type": "string"
                 },
                 "user_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.VersionStageInstance": {
+            "type": "object",
+            "properties": {
+                "instance_schema": {
+                    "type": "string"
+                },
+                "instances_id": {
+                    "type": "string"
+                },
+                "instances_name": {
                     "type": "string"
                 }
             }
@@ -16723,24 +16762,10 @@ var doc = `{
                 "workflow_instances": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.WorkflowInstance"
+                        "$ref": "#/definitions/v1.VersionStageInstance"
                     }
                 },
                 "workflow_name": {
-                    "type": "string"
-                }
-            }
-        },
-        "v1.WorkflowInstance": {
-            "type": "object",
-            "properties": {
-                "instance_schema": {
-                    "type": "string"
-                },
-                "instances_id": {
-                    "type": "string"
-                },
-                "instances_name": {
                     "type": "string"
                 }
             }
