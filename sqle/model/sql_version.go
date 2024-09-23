@@ -6,11 +6,11 @@ import (
 
 type SqlVersion struct {
 	Model
-	Version   string     `json:"version" gorm:"type:varchar(255) not null"`
-	Desc      string     `json:"desc" gorm:"type:varchar(512)"`
-	Status    string     `json:"status" gorm:"type:varchar(255)"`
-	LockTime  *time.Time `json:"lock_time" gorm:"type:datetime(3)"`
-	ProjectId ProjectUID `gorm:"index; not null"`
+	Version     string     `json:"version" gorm:"type:varchar(255) not null"`
+	Description string     `json:"description" gorm:"type:varchar(512)"`
+	Status      string     `json:"status" gorm:"type:varchar(255)"`
+	LockTime    *time.Time `json:"lock_time" gorm:"type:datetime(3)"`
+	ProjectId   ProjectUID `gorm:"index; not null"`
 
 	SqlVersionStage []*SqlVersionStage
 }

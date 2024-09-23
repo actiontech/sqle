@@ -121,6 +121,7 @@ type WorkflowDetailWithInstance struct {
 	Name              string                  `json:"workflow_name"`
 	WorkflowId        string                  `json:"workflow_id"`
 	Desc              string                  `json:"desc,omitempty"`
+	WorkflowSequence  int                     `json:"workflow_sequence"`
 	Status            string                  `json:"status" enums:"wait_for_audit,wait_for_execution,rejected,canceled,exec_failed,executing,finished"`
 	WorkflowInstances *[]VersionStageInstance `json:"workflow_instances"`
 }
