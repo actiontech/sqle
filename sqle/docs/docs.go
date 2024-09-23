@@ -17562,7 +17562,7 @@ var doc = `{
                     "type": "string"
                 },
                 "sql_version_id": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "task_ids": {
                     "type": "array",
