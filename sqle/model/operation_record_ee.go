@@ -70,7 +70,6 @@ SELECT o.id,
        o.operation_req_ip,
        o.operation_type_name,
        o.operation_action,
-       o.operation_content,
        o.operation_project_name,
        o.operation_status,
        o.operation_i18n_content
@@ -86,7 +85,6 @@ SELECT o.operation_time,
 	   o.operation_project_name,
        o.operation_user_name,
        o.operation_action,
-       o.operation_content,
        o.operation_status
 {{- template "body" . -}}
 ORDER BY o.operation_time DESC
