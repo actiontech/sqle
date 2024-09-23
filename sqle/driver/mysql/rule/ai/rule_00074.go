@@ -52,8 +52,8 @@ func RuleSQLE00074(input *rulepkg.RuleHandlerInput) error {
 			if cmd.OldColumnName != cmd.NewColumns[0].Name {
 				//the column name is changed
 				rulepkg.AddResult(input.Res, input.Rule, SQLE00074)
+				return nil
 			}
-			return nil
 		}
 	case *ast.RenameTableStmt:
 		//"rename table ..."
