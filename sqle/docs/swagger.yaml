@@ -4263,6 +4263,8 @@ definitions:
         type: array
       workflow_name:
         type: string
+      workflow_sequence:
+        type: integer
     type: object
   v1.WorkflowPassPercentV1:
     properties:

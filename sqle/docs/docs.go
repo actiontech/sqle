@@ -16705,6 +16705,9 @@ var doc = `{
                 },
                 "workflow_name": {
                     "type": "string"
+                },
+                "workflow_sequence": {
+                    "type": "integer"
                 }
             }
         },
