@@ -13,6 +13,7 @@ import (
 
 	"github.com/pingcap/parser/ast"
 	"github.com/pkg/errors"
+	"github.com/pingcap/parser/model"
 )
 
 type columnInfo struct {
@@ -1072,6 +1073,18 @@ func (c *Context) GetTableSize(stmt *ast.TableName) (float64, error) {
 		info.Size = size
 	}
 	return info.Size, nil
+}
+
+func (c *Context) SetTableSize(schemaName, tableName string, sizeMB float64) error {
+	tn := &ast.TableName{Schema: model.NewCIStr(schemaName), Name: model.NewCIStr(tableName)}
+
+	info, exist := c.GetTableInfo(tn)
+	if !exist {
+		return fmt.Errorf("table %s.%s not exist", schemaName, tableName)
+	}
+	info.Size = sizeMB
+	info.sizeLoad = true
+	return nil
 }
 
 // GetExecutionPlan get execution plan of SQL.

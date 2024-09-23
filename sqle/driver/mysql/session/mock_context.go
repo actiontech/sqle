@@ -547,3 +547,46 @@ PRIMARY KEY (id) USING BTREE
 	stmt, _ := node.(*ast.CreateTableStmt)
 	return stmt
 }
+
+type AIMockContext struct {
+	createContextSqls []string
+	tableSize         map[string] /*table name*/ float64 /*table size GB*/
+}
+
+// NewAIMockContext initializes an AIMockContext.
+func NewAIMockContext() *AIMockContext {
+	return &AIMockContext{
+		createContextSqls: []string{},
+		tableSize:         make(map[string]float64),
+	}
+}
+
+func (c *AIMockContext) WithSQL(sql string) *AIMockContext {
+	c.createContextSqls = append(c.createContextSqls, sql)
+	return c
+}
+
+func (c *AIMockContext) WithTableSize(tableName string, sizeGB float64) *AIMockContext {
+	c.tableSize[tableName] = sizeGB
+	return c
+}
+
+func InitializeMockContext(e *executor.Executor, context *AIMockContext) (*Context, error) {
+	ctx := NewMockContext(e)
+	if context == nil {
+		return ctx, nil
+	}
+	for _, sql := range context.createContextSqls {
+		nodes, err := util.ParseSql(sql)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range nodes {
+			ctx.UpdateContext(n)
+		}
+	}
+	for tableName, sizeGB := range context.tableSize {
+		ctx.SetTableSize(ctx.currentSchema, tableName, sizeGB*1024 /*size MB*/)
+	}
+	return ctx, nil
+}

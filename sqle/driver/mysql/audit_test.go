@@ -124,6 +124,44 @@ func runSingleRuleInspectCase(rule driverV2.Rule, t *testing.T, desc string, i *
 	inspectCase(t, desc, i, sql, results...)
 }
 
+type AIMockSQLExpectation struct {
+	Query string
+	Rows  *sqlmock.Rows
+}
+
+// 为AI生成规则新建模拟执行器
+func AIMockExecutor(expectations []*AIMockSQLExpectation) (*executor.Executor, error) {
+	e, handler, err := executor.NewMockExecutor()
+	if err != nil {
+		return nil, err
+	}
+	handler.MatchExpectationsInOrder(false)
+
+	for _, exp := range expectations {
+		handler.ExpectQuery(regexp.QuoteMeta(exp.Query)).
+			WillReturnRows(exp.Rows)
+	}
+
+	return e, nil
+}
+
+func runAIRuleCase(rule driverV2.Rule, t *testing.T, desc, sql string, mockContext *session.AIMockContext, mockSQLExpectation []*AIMockSQLExpectation ,result *testResult) {
+	e, err := AIMockExecutor(mockSQLExpectation)
+	if err != nil {
+		t.Errorf("%s test failed, mock executor error: %v\n", desc, err)
+		return
+	}
+	ctx, err := session.InitializeMockContext(e, mockContext)
+	if err != nil {
+		t.Errorf("%s test failed, mock context error: %v\n", desc, err)
+		return
+	}
+	inspect := NewMockInspect(e)
+	inspect.Ctx = ctx
+	inspect.rules = []*driverV2.Rule{&rule}
+	inspectCase(t, desc, inspect, sql, result)
+}
+
 func runDefaultRulesInspectCase(t *testing.T, desc string, i *MysqlDriverImpl, sql string, results ...*testResult) {
 	ptrRules := []*driverV2.Rule{}
 	// this rule will be test in single rule
