@@ -571,7 +571,7 @@ func convertWorkflowToTasksSummaryRes(taskDetails []*model.WorkflowTasksSummaryD
 type CreateWorkflowReqV2 struct {
 	Subject      string `json:"workflow_subject" form:"workflow_subject" valid:"required,name"`
 	Desc         string `json:"desc" form:"desc"`
-	SqlVersionID string `json:"sql_version_id" form:"sql_version_id"`
+	SqlVersionID *uint  `json:"sql_version_id" form:"sql_version_id"`
 	TaskIds      []uint `json:"task_ids" form:"task_ids" valid:"required"`
 }
 
