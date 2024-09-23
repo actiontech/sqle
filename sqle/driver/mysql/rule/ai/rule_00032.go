@@ -1,6 +1,7 @@
 package ai
 
 import (
+	"fmt"
 	"strings"
 
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
@@ -30,8 +31,9 @@ func init() {
 				},
 			},
 		},
-		Message: "在 MySQL 中, 数据库名称必须使用固定后缀结尾:%s",
-		Func:    RuleSQLE00032,
+		Message:      "在 MySQL 中, 数据库名称必须使用固定后缀结尾:%s",
+		Func:         RuleSQLE00032,
+		AllowOffline: true,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
 	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
@@ -48,11 +50,15 @@ func init() {
 
 // ==== Rule code start ====
 func RuleSQLE00032(input *rulepkg.RuleHandlerInput) error {
-
+	// get expected param value
+	param := input.Rule.Params.GetParam(rulepkg.DefaultSingleParamKeyName)
+	if param == nil {
+		return fmt.Errorf("param %s not found", rulepkg.DefaultSingleParamKeyName)
+	}
 	// 判断是否为创建数据库的语句
 	switch stmt := input.Node.(type) {
 	case *ast.CreateDatabaseStmt:
-		suffix := input.Rule.Params.GetParam(rulepkg.DefaultSingleParamKeyName).String()
+		suffix := param.String()
 		// 检查数据库对象名是否遵从固定后缀要求
 		if !strings.HasSuffix(stmt.Name, suffix) {
 			rulepkg.AddResult(input.Res, input.Rule, SQLE00032, suffix)

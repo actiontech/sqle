@@ -21,8 +21,9 @@ func init() {
 			Category:   rulepkg.RuleTypeUsageSuggestion,
 			Params:     params.Params{},
 		},
-		Message: "在 MySQL 中, 禁止使用视图",
-		Func:    RuleSQLE00031,
+		Message:      "在 MySQL 中, 禁止使用视图",
+		Func:         RuleSQLE00031,
+		AllowOffline: true,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
 	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh

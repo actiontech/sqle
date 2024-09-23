@@ -23,8 +23,9 @@ func init() {
 			Category:   rulepkg.RuleTypeDDLConvention,
 			Params:     params.Params{},
 		},
-		Message: "在 MySQL 中, 整数字段建议指定最大显示宽度",
-		Func:    RuleSQLE00026,
+		Message:      "在 MySQL 中, 整数字段建议指定最大显示宽度",
+		Func:         RuleSQLE00026,
+		AllowOffline: true,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
 	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh

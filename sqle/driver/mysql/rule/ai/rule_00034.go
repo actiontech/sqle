@@ -22,8 +22,9 @@ func init() {
 			Category:   rulepkg.RuleTypeDDLConvention,
 			Params:     params.Params{},
 		},
-		Message: "在 MySQL 中, 字段约束为NOT NULL时必须带默认值",
-		Func:    RuleSQLE00034,
+		Message:      "在 MySQL 中, 字段约束为NOT NULL时必须带默认值",
+		Func:         RuleSQLE00034,
+		AllowOffline: true,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
 	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
