@@ -18,6 +18,7 @@ import (
 	"github.com/actiontech/sqle/sqle/notification"
 	"github.com/actiontech/sqle/sqle/pkg/im"
 	"github.com/actiontech/sqle/sqle/server"
+	"github.com/actiontech/sqle/sqle/server/sqlversion"
 	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
@@ -753,6 +754,13 @@ func CreateWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	if req.SqlVersionID != nil {
+		err = sqlversion.AssociateWorkflowToTheFirstStageOfSQLVersion(projectUid, workflowId, *req.SqlVersionID)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+	
 	workflow, exist, err := s.GetLastWorkflow()
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
