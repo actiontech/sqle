@@ -4,22 +4,18 @@
 package v1
 
 import (
-	"context"
 	"net/http"
 	"strconv"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	dms "github.com/actiontech/sqle/sqle/dms"
-	"github.com/actiontech/sqle/sqle/driver"
-	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/labstack/echo/v4"
-	dry "github.com/ungerik/go-dry"
-	"gorm.io/gorm"
 )
 
 func createSqlVersion(c echo.Context) error {
+	// TODO 权限校验
 	req := new(CreateSqlVersionReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -28,102 +24,50 @@ func createSqlVersion(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	s := model.GetStorage()
 
-	err = s.Tx(func(txDB *gorm.DB) error {
-		sqlVersion := &model.SqlVersion{
-			Version:     req.Version,
-			Description: req.Desc,
-			Status:      model.SqlVersionStatusReleased,
-			ProjectId:   model.ProjectUID(projectUid),
-		}
-		err = txDB.Save(sqlVersion).Error
-		if err != nil {
-			return err
-		}
-		// 保存版本阶段
-		versionStages := make([]*model.SqlVersionStage, 0, len(req.SqlVersionStage))
-		stageDepMap := make(map[int][]CreateStagesInstanceDep)
-		for _, stage := range req.SqlVersionStage {
-			versionStages = append(versionStages, &model.SqlVersionStage{
-				SqlVersionID:  sqlVersion.ID,
-				Name:          stage.Name,
-				StageSequence: stage.StageSequence,
-			})
-			deps := make([]CreateStagesInstanceDep, 0)
-			for _, stageDep := range stage.CreateStagesInstanceDep {
-				deps = append(deps, CreateStagesInstanceDep{
-					StageInstanceID:     stageDep.StageInstanceID,
-					NextStageInstanceID: stageDep.NextStageInstanceID,
-				})
-			}
-			stageDepMap[stage.StageSequence] = deps
-		}
-		err = txDB.Save(versionStages).Error
-		if err != nil {
-			return err
-		}
-
-		// 保存阶段依赖关系
+	versionStages := make([]*model.SqlVersionStage, 0, len(req.SqlVersionStage))
+	for _, stage := range req.SqlVersionStage {
 		stageDeps := make([]*model.SqlVersionStagesDependency, 0)
-		for _, versionStage := range versionStages {
-			nextStage, exist, err := s.GetNextSatgeByVersionIdAndSequence(txDB, versionStage.SqlVersionID, versionStage.StageSequence)
+		for _, dep := range stage.CreateStagesInstanceDep {
+			stageInstID, err := strconv.ParseUint(dep.StageInstanceID, 10, 64)
 			if err != nil {
 				return err
 			}
-			for _, dep := range stageDepMap[versionStage.StageSequence] {
-				stageInst, err := getInstanceByStageInstanceID(c.Request().Context(), dep.StageInstanceID)
+			var nextStageInstID uint64
+			if dep.NextStageInstanceID != "" {
+				nextStageInstID, err = strconv.ParseUint(dep.NextStageInstanceID, 10, 64)
 				if err != nil {
 					return err
 				}
-				nextStageInst, err := getInstanceByStageInstanceID(c.Request().Context(), dep.NextStageInstanceID)
-				if err != nil {
-					return err
-				}
-				sqlVersionStagesDep := &model.SqlVersionStagesDependency{}
-				if exist {
-					sqlVersionStagesDep.SqlVersionStageID = versionStage.ID
-					sqlVersionStagesDep.NextStageID = nextStage.ID
-					sqlVersionStagesDep.StageInstanceID = stageInst.ID
-					sqlVersionStagesDep.NextStageInstanceID = nextStageInst.ID
-				} else {
-					sqlVersionStagesDep.SqlVersionStageID = versionStage.ID
-					sqlVersionStagesDep.StageInstanceID = stageInst.ID
-				}
-				stageDeps = append(stageDeps, sqlVersionStagesDep)
 			}
+			stageDeps = append(stageDeps, &model.SqlVersionStagesDependency{
+				StageInstanceID:     stageInstID,
+				NextStageInstanceID: nextStageInstID,
+			})
 		}
-		err = txDB.Save(stageDeps).Error
-		if err != nil {
-			return err
-		}
-		return nil
-	})
+		versionStages = append(versionStages, &model.SqlVersionStage{
+			Name:                       stage.Name,
+			StageSequence:              stage.StageSequence,
+			SqlVersionStagesDependency: stageDeps,
+		})
+	}
+	sqlVersion := &model.SqlVersion{
+		Version:         req.Version,
+		Description:     req.Desc,
+		Status:          model.SqlVersionStatusReleased,
+		ProjectId:       model.ProjectUID(projectUid),
+		SqlVersionStage: versionStages,
+	}
+	s := model.GetStorage()
+	err = s.BatchSaveSqlVersion(sqlVersion)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	return controller.JSONBaseErrorReq(c, nil)
 }
 
-func getInstanceByStageInstanceID(ctx context.Context, instanceID string) (*model.Instance, error) {
-	if instanceID == "" || instanceID == "0" {
-		return nil, nil
-	}
-	inst, exist, err := dms.GetInstancesById(ctx, instanceID)
-	if !exist {
-		return nil, errors.New(errors.DataConflict, ErrInstanceNotExist)
-	} else if err != nil {
-		return nil, errors.New(errors.DataConflict, err)
-	}
-
-	if !dry.StringInSlice(inst.DbType, driver.GetPluginManager().AllDrivers()) {
-		return nil, errors.New(errors.DriverNotExist, &driverV2.DriverNotSupportedError{DriverTyp: inst.DbType})
-	}
-	return inst, nil
-}
-
 func getSqlVersionList(c echo.Context) error {
-
+	// TODO 权限校验
 	req := new(GetSqlVersionListReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -149,7 +93,7 @@ func getSqlVersionList(c echo.Context) error {
 		"filter_by_lock_time_to":    req.FilterByLockTimeTo,
 		"filter_by_version_status":  req.FilterByVersionStatus,
 		"fuzzy_search":              req.FuzzySearch,
-		"filter_project_id":         projectUid,
+		"filter_by_project_id":      projectUid,
 		"current_user_id":           userId,
 		"current_user_is_admin":     up.IsAdmin(),
 		"limit":                     limit,
@@ -185,7 +129,7 @@ func getSqlVersionList(c echo.Context) error {
 }
 
 func getSqlVersionDetail(c echo.Context) error {
-
+	// TODO 权限校验
 	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -203,17 +147,17 @@ func getSqlVersionDetail(c echo.Context) error {
 	for _, stage := range version.SqlVersionStage {
 		stageInstances := make([]VersionStageInstance, 0, len(stage.SqlVersionStagesDependency))
 		for _, dep := range stage.SqlVersionStagesDependency {
-			stageInst, err := getInstanceByStageInstanceID(c.Request().Context(), strconv.FormatUint(dep.StageInstanceID, 10))
+			instanceIdNameMap, err := dms.GetInstanceIdNameMapByIds(c.Request().Context(), []uint64{dep.StageInstanceID})
 			if err != nil {
 				return controller.JSONBaseErrorReq(c, err)
 			}
 			stageInstances = append(stageInstances, VersionStageInstance{
-				InstanceID:   stageInst.GetIDStr(),
-				InstanceName: stageInst.Name,
+				InstanceID:   strconv.FormatUint(dep.StageInstanceID, 10),
+				InstanceName: instanceIdNameMap[dep.StageInstanceID],
 			})
 		}
-		workflows := make([]WorkflowDetailWithInstance, 0, len(stage.WorkflowReleaseStage))
-		for _, workflowStage := range stage.WorkflowReleaseStage {
+		workflows := make([]WorkflowDetailWithInstance, 0, len(stage.WorkflowVersionStage))
+		for _, workflowStage := range stage.WorkflowVersionStage {
 			workflow, err := dms.GetWorkflowDetailByWorkflowId(projectUid, workflowStage.WorkflowID, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
 			if err != nil {
 				return controller.JSONBaseErrorReq(c, err)
@@ -273,6 +217,8 @@ func deleteSqlVersion(c echo.Context) error {
 }
 
 func getDependenciesBetweenStageInstance(c echo.Context) error {
+	// TODO 权限校验
+
 	// projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
 	// if err != nil {
 	// 	return controller.JSONBaseErrorReq(c, err)
@@ -285,21 +231,17 @@ func getDependenciesBetweenStageInstance(c echo.Context) error {
 	}
 	resData := make([]*DepBetweenStageInstance, 0, len(dependencies))
 	for _, dep := range dependencies {
-		stageInst, err := getInstanceByStageInstanceID(c.Request().Context(), strconv.FormatUint(dep.StageInstanceID, 10))
+		instanceIdNameMap, err := dms.GetInstanceIdNameMapByIds(c.Request().Context(), []uint64{dep.StageInstanceID, dep.NextStageInstanceID})
 		if err != nil {
-			return err
-		}
-		nextStageInst, err := getInstanceByStageInstanceID(c.Request().Context(), strconv.FormatUint(dep.NextStageInstanceID, 10))
-		if err != nil {
-			return err
+			return controller.JSONBaseErrorReq(c, err)
 		}
 		depInst := &DepBetweenStageInstance{
-			StageInstanceID:   stageInst.GetIDStr(),
-			StageInstanceName: stageInst.Name,
+			StageInstanceID:   strconv.FormatUint(dep.StageInstanceID, 10),
+			StageInstanceName: instanceIdNameMap[dep.StageInstanceID],
 		}
-		if nextStageInst != nil {
-			depInst.NextStageInstanceID = nextStageInst.GetIDStr()
-			depInst.NextStageInstanceName = nextStageInst.Name
+		if dep.NextStageInstanceID != 0 {
+			depInst.NextStageInstanceID = strconv.FormatUint(dep.NextStageInstanceID, 10)
+			depInst.NextStageInstanceName = instanceIdNameMap[dep.NextStageInstanceID]
 		}
 		resData = append(resData, depInst)
 	}

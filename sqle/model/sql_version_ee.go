@@ -104,7 +104,7 @@ func (s *Storage) GetSqlVersionByReq(data map[string]interface{}) (
 
 func (s *Storage) GetSqlVersionDetailByVersionId(versionId string) (*SqlVersion, bool, error) {
 	version := &SqlVersion{}
-	err := s.db.Preload("SqlVersionStage").Preload("SqlVersionStage.SqlVersionStagesDependency").Preload("SqlVersionStage.WorkflowReleaseStage").Where("id=?", versionId).First(version).Error
+	err := s.db.Preload("SqlVersionStage").Preload("SqlVersionStage.SqlVersionStagesDependency").Preload("SqlVersionStage.WorkflowVersionStage").Where("id=?", versionId).First(version).Error
 	if err == gorm.ErrRecordNotFound {
 		return version, false, nil
 	}
@@ -117,22 +117,89 @@ func (s *Storage) GetStageDependenciesByStageId(stageId string) ([]*SqlVersionSt
 	return dependencies, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetNextSatgeByVersionIdAndSequence(txDB *gorm.DB, versionId uint, sequence int) (*SqlVersionStage, bool, error) {
-	stage := &SqlVersionStage{}
-	// next stage sequence
-	next := sequence + 1
-	err := txDB.Where("sql_version_id = ? AND stage_sequence = ?", versionId, next).First(stage).Error
-	if err == gorm.ErrRecordNotFound {
-		return nil, false, nil
-	} else if err != nil {
-		return nil, false, err
+func (s *Storage) BatchSaveSqlVersion(reqSqlVersion *SqlVersion) error {
+	err := s.Tx(func(txDB *gorm.DB) error {
+		sqlVersion := &SqlVersion{
+			Version:     reqSqlVersion.Version,
+			Description: reqSqlVersion.Description,
+			Status:      SqlVersionStatusReleased,
+			ProjectId:   reqSqlVersion.ProjectId,
+		}
+		err := txDB.Save(sqlVersion).Error
+		if err != nil {
+			return err
+		}
+		// 保存版本阶段
+		versionStages := make([]*SqlVersionStage, 0, len(reqSqlVersion.SqlVersionStage))
+		stageDepMap := make(map[int][]SqlVersionStagesDependency)
+		for _, stage := range reqSqlVersion.SqlVersionStage {
+			versionStages = append(versionStages, &SqlVersionStage{
+				SqlVersionID:  sqlVersion.ID,
+				Name:          stage.Name,
+				StageSequence: stage.StageSequence,
+			})
+			deps := make([]SqlVersionStagesDependency, 0)
+			for _, stageDep := range stage.SqlVersionStagesDependency {
+				deps = append(deps, SqlVersionStagesDependency{
+					StageInstanceID:     stageDep.StageInstanceID,
+					NextStageInstanceID: stageDep.NextStageInstanceID,
+				})
+			}
+			stageDepMap[stage.StageSequence] = deps
+		}
+		err = txDB.Save(versionStages).Error
+		if err != nil {
+			return err
+		}
+
+		// 保存阶段依赖关系
+		stageDeps := make([]*SqlVersionStagesDependency, 0)
+		for _, versionStage := range versionStages {
+			nextStage, exist, err := func(versionId uint, sequence int) (*SqlVersionStage, bool, error) {
+				stage := &SqlVersionStage{}
+				// next stage sequence
+				next := sequence + 1
+				err := txDB.Where("sql_version_id = ? AND stage_sequence = ?", versionId, next).First(stage).Error
+				if err == gorm.ErrRecordNotFound {
+					return nil, false, nil
+				} else if err != nil {
+					return nil, false, err
+				}
+				return stage, true, nil
+			}(versionStage.SqlVersionID, versionStage.StageSequence)
+			if err != nil {
+				return err
+			}
+
+			for _, dep := range stageDepMap[versionStage.StageSequence] {
+				sqlVersionStagesDep := &SqlVersionStagesDependency{}
+				if exist {
+					sqlVersionStagesDep.SqlVersionStageID = versionStage.ID
+					sqlVersionStagesDep.NextStageID = nextStage.ID
+					sqlVersionStagesDep.StageInstanceID = dep.StageInstanceID
+					sqlVersionStagesDep.NextStageInstanceID = dep.NextStageInstanceID
+				} else {
+					sqlVersionStagesDep.SqlVersionStageID = versionStage.ID
+					sqlVersionStagesDep.StageInstanceID = dep.StageInstanceID
+				}
+				stageDeps = append(stageDeps, sqlVersionStagesDep)
+			}
+		}
+		err = txDB.Save(stageDeps).Error
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return err
 	}
-	return stage, true, nil
+	return nil
 }
 
 func (s *Storage) GetFirstStageOfSQLVersion(sqlVersionID uint) (*SqlVersionStage, error) {
 	firstStage := &SqlVersionStage{}
-	err := s.db.Model(&SqlVersionStage{}).Preload("SqlVersionStagesDependency").Preload("WorkflowReleaseStage").Where("sql_version_id = ?", sqlVersionID).Order("stage_sequence ASC").First(firstStage).Error
+	err := s.db.Model(&SqlVersionStage{}).Preload("SqlVersionStagesDependency").Preload("WorkflowVersionStage").Where("sql_version_id = ?", sqlVersionID).Order("stage_sequence ASC").First(firstStage).Error
 	if err != nil {
 		return nil, err
 	}
