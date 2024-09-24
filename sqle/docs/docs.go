@@ -16648,7 +16648,10 @@ var doc = `{
                     "type": "string"
                 },
                 "sql_version_name": {
-                    "type": "string"
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "status": {
                     "type": "string",
