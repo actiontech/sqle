@@ -122,7 +122,7 @@ func (s *Storage) BatchSaveSqlVersion(reqSqlVersion *SqlVersion) error {
 		sqlVersion := &SqlVersion{
 			Version:     reqSqlVersion.Version,
 			Description: reqSqlVersion.Description,
-			Status:      SqlVersionStatusReleased,
+			Status:      reqSqlVersion.Status,
 			ProjectId:   reqSqlVersion.ProjectId,
 		}
 		err := txDB.Save(sqlVersion).Error
