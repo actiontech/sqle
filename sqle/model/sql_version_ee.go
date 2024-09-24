@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/errors"
 	"gorm.io/gorm"
 )
 
@@ -99,6 +100,15 @@ func (s *Storage) GetSqlVersionByReq(data map[string]interface{}) (
 		return nil, 0, err
 	}
 	return
+}
+
+func (s *Storage) GetSqlVersionDetailByVersionId(versionId string) (*SqlVersion, bool, error) {
+	version := &SqlVersion{}
+	err := s.db.Preload("SqlVersionStage").Preload("SqlVersionStage.SqlVersionStagesDependency").Preload("SqlVersionStage.WorkflowReleaseStage").Where("id=?", versionId).First(version).Error
+	if err == gorm.ErrRecordNotFound {
+		return version, false, nil
+	}
+	return version, true, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetNextSatgeByVersionIdAndSequence(txDB *gorm.DB, versionId uint, sequence int) (*SqlVersionStage, bool, error) {

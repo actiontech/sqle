@@ -6,6 +6,7 @@ package v1
 import (
 	"context"
 	"net/http"
+	"strconv"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	dms "github.com/actiontech/sqle/sqle/dms"
@@ -184,7 +185,79 @@ func getSqlVersionList(c echo.Context) error {
 }
 
 func getSqlVersionDetail(c echo.Context) error {
-	return nil
+
+	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	sqlVersionId := c.Param("sql_version_id")
+	s := model.GetStorage()
+	version, exist, err := s.GetSqlVersionDetailByVersionId(sqlVersionId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.NewDataNotExistErr("sql version not found"))
+	}
+	stages := make([]SqlVersionStageDetail, 0, len(version.SqlVersionStage))
+	for _, stage := range version.SqlVersionStage {
+		stageInstances := make([]VersionStageInstance, 0, len(stage.SqlVersionStagesDependency))
+		for _, dep := range stage.SqlVersionStagesDependency {
+			stageInst, err := getInstanceByStageInstanceID(c.Request().Context(), strconv.FormatUint(dep.StageInstanceID, 10))
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
+			stageInstances = append(stageInstances, VersionStageInstance{
+				InstanceID:   stageInst.GetIDStr(),
+				InstanceName: stageInst.Name,
+			})
+		}
+		workflows := make([]WorkflowDetailWithInstance, 0, len(stage.WorkflowReleaseStage))
+		for _, workflowStage := range stage.WorkflowReleaseStage {
+			workflow, err := dms.GetWorkflowDetailByWorkflowId(projectUid, workflowStage.WorkflowID, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
+
+			workflowInstances := make([]VersionStageInstance, 0, len(workflow.Record.InstanceRecords))
+			for _, workflowInstance := range workflow.Record.InstanceRecords {
+				workflowInstances = append(workflowInstances, VersionStageInstance{
+					InstanceID:     workflowInstance.Instance.GetIDStr(),
+					InstanceName:   workflowInstance.Instance.Name,
+					InstanceSchema: workflowInstance.Task.Schema,
+				})
+			}
+
+			workflows = append(workflows, WorkflowDetailWithInstance{
+				Name:              workflow.Subject,
+				WorkflowId:        workflow.WorkflowId,
+				Desc:              workflow.Desc,
+				WorkflowSequence:  workflowStage.WorkflowSequence,
+				Status:            workflow.Record.Status,
+				WorkflowInstances: &workflowInstances,
+			})
+		}
+
+		versionStage := SqlVersionStageDetail{
+			StageID:         stage.ID,
+			StageName:       stage.Name,
+			StageSequence:   stage.StageSequence,
+			StageInstances:  &stageInstances,
+			WorkflowDetails: &workflows,
+		}
+		stages = append(stages, versionStage)
+	}
+	resData := &SqlVersionDetailResV1{
+		SqlVersionID:          version.ID,
+		Version:               version.Version,
+		Status:                version.Status,
+		SqlVersionDesc:        version.Description,
+		SqlVersionStageDetail: &stages,
+	}
+	return c.JSON(http.StatusOK, &GetSqlVersionDetailResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    resData,
+	})
 }
 
 func updateSqlVersion(c echo.Context) error {
