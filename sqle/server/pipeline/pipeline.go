@@ -14,8 +14,6 @@ import (
 	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/aliyun/credentials-go/credentials/utils"
-
-	"gorm.io/gorm"
 )
 
 type Pipeline struct {
@@ -348,100 +346,80 @@ func (svc PipelineSvc) needUpdateToken(oldNode *model.PipelineNode, newNode *Pip
 */
 func (svc PipelineSvc) UpdatePipeline(pipe *Pipeline, userId string) error {
 	s := model.GetStorage()
-	return s.Tx(func(txDB *gorm.DB) error {
-		// 4.1 更新 pipeline
-		err := txDB.Model(&model.Pipeline{}).
-			Where("id = ? AND project_uid = ?", pipe.ID, pipe.ProjectUID).
-			Updates(model.Pipeline{
-				Name:        pipe.Name,
-				Description: pipe.Description,
-				Address:     pipe.Address,
-			}).Error
-		if err != nil {
-			return fmt.Errorf("failed to update pipeline: %w", err)
-		}
-		nodes := []model.PipelineNode{}
-		if err := txDB.Where("pipeline_id = ?", pipe.ID).Find(&nodes).Error; err != nil {
-			return fmt.Errorf("failed to delete old pipeline nodes: %w", err)
-		}
-		oldNodeMap := make(map[uint] /* node id */ *model.PipelineNode, len(nodes))
-		for idx, node := range nodes {
-			oldNodeMap[node.ID] = &nodes[idx]
-		}
-		// 4.2 删除旧的 pipeline nodes
-		if err := txDB.Where("pipeline_id = ?", pipe.ID).Delete(&model.PipelineNode{}).Error; err != nil {
-			return fmt.Errorf("failed to delete old pipeline nodes: %w", err)
-		}
-		v := svc.newVersion()
-		// 4.3 添加新的 pipeline nodes
-		var newToken string
-		var newUuid string
-		var newVersion string
-		for _, newNode := range pipe.PipelineNodes {
-			/*
-				若节点命令不变更，则节点继承原有节点对应的token uuid和version
-				若节点命令变更，则节点使用新的token uuid和version
-			*/
-			// 节点不变
-			oldNode, exist := oldNodeMap[newNode.ID]
-			if exist {
-				newToken = oldNode.Token
-				newUuid = oldNode.UUID
-				newVersion = oldNode.NodeVersion
-			}
-			// 更新节点
-			if exist && svc.needUpdateToken(oldNode, newNode) {
-				newVersion = v
-				newToken, err = svc.newToken(userId, newVersion, newUuid)
-				if err != nil {
-					return err
-				}
-			}
-			// 新建节点
-			if !exist {
-				newVersion = v
-				newUuid = utils.GetUUID()
-				newToken, err = svc.newToken(userId, newVersion, newUuid)
-				if err != nil {
-					return err
-				}
-			}
-			node := model.PipelineNode{
-				PipelineID:       pipe.ID,
-				Name:             newNode.Name,
-				NodeType:         newNode.NodeType,
-				InstanceID:       newNode.InstanceID,
-				InstanceType:     newNode.InstanceType,
-				ObjectPath:       newNode.ObjectPath,
-				ObjectType:       newNode.ObjectType,
-				AuditMethod:      newNode.AuditMethod,
-				RuleTemplateName: newNode.RuleTemplateName,
-				NodeVersion:      newVersion,
-				Token:            newToken,
-				UUID:             newUuid,
-			}
-
-			if err := txDB.Create(&node).Error; err != nil {
-				return fmt.Errorf("failed to update pipeline node: %w", err)
+	currentNodes, err := s.GetPipelineNodes(pipe.ID)
+	if err != nil {
+		return err
+	}
+	oldNodeMap := make(map[uint] /* node id */ *model.PipelineNode, len(currentNodes))
+	for idx, node := range currentNodes {
+		oldNodeMap[node.ID] = currentNodes[idx]
+	}
+	v := svc.newVersion()
+	var newToken string
+	var newUuid string
+	var newVersion string
+	newNodes := make([]*model.PipelineNode, 0, len(pipe.PipelineNodes))
+	for _, newNode := range pipe.PipelineNodes {
+		/*
+			若节点命令不变更，则节点继承原有节点对应的token uuid和version
+			若节点命令变更，则节点使用新的token uuid和version
+		*/
+		// 节点不变
+		oldNode, exist := oldNodeMap[newNode.ID]
+		if exist {
+			newToken = oldNode.Token
+			newUuid = oldNode.UUID
+			newVersion = oldNode.NodeVersion
+			// 当节点为在线审核，没有选择数据源时，当且仅当在更新时，用户没有修改数据源，才会出现，此时默认为原来的数据源id
+			if newNode.AuditMethod == string(model.AuditMethodOnline) && newNode.InstanceID == 0 {
+				newNode.InstanceID = oldNode.InstanceID
 			}
 		}
-		return nil
-	})
+		// 更新节点
+		if exist && svc.needUpdateToken(oldNode, newNode) {
+			newVersion = v
+			newToken, err = svc.newToken(userId, newVersion, newUuid)
+			if err != nil {
+				return err
+			}
+		}
+		// 新建节点
+		if !exist {
+			newVersion = v
+			newUuid = utils.GetUUID()
+			newToken, err = svc.newToken(userId, newVersion, newUuid)
+			if err != nil {
+				return err
+			}
+		}
+		newNodes = append(newNodes, &model.PipelineNode{
+			PipelineID:       pipe.ID,
+			Name:             newNode.Name,
+			NodeType:         newNode.NodeType,
+			InstanceID:       newNode.InstanceID,
+			InstanceType:     newNode.InstanceType,
+			ObjectPath:       newNode.ObjectPath,
+			ObjectType:       newNode.ObjectType,
+			AuditMethod:      newNode.AuditMethod,
+			RuleTemplateName: newNode.RuleTemplateName,
+			NodeVersion:      newVersion,
+			Token:            newToken,
+			UUID:             newUuid,
+		})
+	}
+	newPipe := &model.Pipeline{
+		Model: model.Model{
+			ID: pipe.ID,
+		},
+		ProjectUid:  model.ProjectUID(pipe.ProjectUID),
+		Name:        pipe.Name,
+		Description: pipe.Description,
+		Address:     pipe.Address,
+	}
+	return s.UpdatePipeline(newPipe, newNodes)
 }
 
 func (svc PipelineSvc) DeletePipeline(projectUID string, pipelineID uint) error {
 	s := model.GetStorage()
-	return s.Tx(func(txDB *gorm.DB) error {
-		// 删除 pipeline 相关的所有 nodes
-		if err := txDB.Model(&model.PipelineNode{}).Where("pipeline_id = ?", pipelineID).Delete(&model.PipelineNode{}).Error; err != nil {
-			return fmt.Errorf("failed to delete pipeline nodes: %w", err)
-		}
-
-		// 删除 pipeline
-		if err := txDB.Model(&model.Pipeline{}).Where("project_uid = ? AND id = ?", projectUID, pipelineID).Delete(&model.Pipeline{}).Error; err != nil {
-			return fmt.Errorf("failed to delete pipeline: %w", err)
-		}
-
-		return nil
-	})
+	return s.DeletePipeline(model.ProjectUID(projectUID), pipelineID)
 }

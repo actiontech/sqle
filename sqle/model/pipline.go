@@ -168,3 +168,38 @@ func (s *Storage) CreatePipeline(pipeline *Pipeline, nodes []*PipelineNode) erro
 		return nil
 	})
 }
+
+func (s *Storage) DeletePipeline(projectUID ProjectUID, pipelineID uint) error {
+	return s.Tx(func(txDB *gorm.DB) error {
+		// 删除 pipeline 相关的所有 nodes
+		if err := txDB.Model(&PipelineNode{}).Where("pipeline_id = ?", pipelineID).Delete(&PipelineNode{}).Error; err != nil {
+			return fmt.Errorf("failed to delete pipeline nodes: %w", err)
+		}
+
+		// 删除 pipeline
+		if err := txDB.Model(&Pipeline{}).Where("project_uid = ? AND id = ?", projectUID, pipelineID).Delete(&Pipeline{}).Error; err != nil {
+			return fmt.Errorf("failed to delete pipeline: %w", err)
+		}
+
+		return nil
+	})
+}
+
+func (s *Storage) UpdatePipeline(pipe *Pipeline, newNodes []*PipelineNode) error {
+	return s.Tx(func(txDB *gorm.DB) error {
+		// 1 更新 pipeline
+		err := txDB.Model(&Pipeline{}).Where("id = ? AND project_uid = ?", pipe.ID, pipe.ProjectUid).Updates(&pipe).Error
+		if err != nil {
+			return fmt.Errorf("failed to update pipeline: %w", err)
+		}
+		// 2 删除旧的 pipeline nodes
+		if err := txDB.Where("pipeline_id = ?", pipe.ID).Delete(&PipelineNode{}).Error; err != nil {
+			return fmt.Errorf("failed to delete old pipeline nodes: %w", err)
+		}
+		// 3 添加新的 pipeline nodes
+		if err := txDB.CreateInBatches(&newNodes, 100).Error; err != nil {
+			return fmt.Errorf("failed to update pipeline node: %w", err)
+		}
+		return nil
+	})
+}
