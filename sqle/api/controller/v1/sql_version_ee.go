@@ -5,6 +5,7 @@ package v1
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	dms "github.com/actiontech/sqle/sqle/dms"
@@ -121,7 +122,65 @@ func getInstanceByStageInstanceID(ctx context.Context, instanceID string) (*mode
 }
 
 func getSqlVersionList(c echo.Context) error {
-	return nil
+
+	req := new(GetSqlVersionListReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
+
+	userId := controller.GetUserID(c)
+
+	up, err := dms.NewUserPermission(userId, projectUid)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	data := map[string]interface{}{
+		"filter_by_created_at_from": req.FilterByCreatedAtFrom,
+		"filter_by_created_at_to":   req.FilterByCreatedAtTo,
+		"filter_by_lock_time_from":  req.FilterByLockTimeFrom,
+		"filter_by_lock_time_to":    req.FilterByLockTimeTo,
+		"filter_by_version_status":  req.FilterByVersionStatus,
+		"fuzzy_search":              req.FuzzySearch,
+		"filter_project_id":         projectUid,
+		"current_user_id":           userId,
+		"current_user_is_admin":     up.IsAdmin(),
+		"limit":                     limit,
+		"offset":                    offset,
+	}
+	if !up.IsAdmin() {
+
+	}
+	s := model.GetStorage()
+
+	sqlVersions, count, err := s.GetSqlVersionByReq(data)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	resData := make([]*SqlVersionResV1, len(sqlVersions))
+	for i, v := range sqlVersions {
+
+		resData[i] = &SqlVersionResV1{
+			VersionID: v.Id,
+			Version:   v.Version.String,
+			Desc:      v.Desc.String,
+			Status:    v.Status.String,
+			LockTime:  v.LockTime,
+			CreatedAt: v.CreatedAt,
+		}
+	}
+	return c.JSON(http.StatusOK, &GetSqlVersionListResV1{
+		BaseRes:   controller.NewBaseReq(nil),
+		Data:      resData,
+		TotalNums: count,
+	})
 }
 
 func getSqlVersionDetail(c echo.Context) error {
