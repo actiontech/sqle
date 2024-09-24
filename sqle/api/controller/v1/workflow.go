@@ -657,6 +657,7 @@ func GetWorkflowsV1(c echo.Context) error {
 	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
 	data := map[string]interface{}{
 		"filter_workflow_id":                   req.FilterWorkflowID,
+		"filter_sql_version_id":                req.FilterSqlVersionID,
 		"filter_subject":                       req.FilterSubject,
 		"filter_create_time_from":              req.FilterCreateTimeFrom,
 		"filter_create_time_to":                req.FilterCreateTimeTo,
@@ -705,6 +706,7 @@ func GetWorkflowsV1(c echo.Context) error {
 			CurrentStepType:         workflow.CurrentStepType.String,
 			CurrentStepAssigneeUser: CurrentStepAssigneeUserNames,
 			Status:                  workflow.Status,
+			SqlVersionName:          workflow.SqlVersionName,
 		}
 		workflowsResV1 = append(workflowsResV1, workflowRes)
 	}
