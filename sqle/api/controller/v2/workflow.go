@@ -641,19 +641,19 @@ func CreateWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
 	}
 
-	instanceIds := make([]uint64, 0, len(tasks))
+	instanceIdsOfWorkflowTasks := make([]uint64, 0, len(tasks))
 	for _, task := range tasks {
-		instanceIds = append(instanceIds, task.InstanceId)
+		instanceIdsOfWorkflowTasks = append(instanceIdsOfWorkflowTasks, task.InstanceId)
 	}
 
-	instances, err := dms.GetInstancesInProjectByIds(c.Request().Context(), projectUid, instanceIds)
+	instancesOfWorkflowInProject, err := dms.GetInstancesInProjectByIds(c.Request().Context(), projectUid, instanceIdsOfWorkflowTasks)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	instanceMap := map[uint64]*model.Instance{}
-	for _, instance := range instances {
-		instanceMap[instance.ID] = instance
+	projectInstanceMap := map[uint64]*model.Instance{}
+	for _, instance := range instancesOfWorkflowInProject {
+		projectInstanceMap[instance.ID] = instance
 	}
 
 	workflowTemplate, exist, err := s.GetWorkflowTemplateByProjectId(model.ProjectUID(projectUid))
@@ -665,7 +665,7 @@ func CreateWorkflowV2(c echo.Context) error {
 	}
 
 	for _, task := range tasks {
-		if instance, ok := instanceMap[task.InstanceId]; ok {
+		if instance, ok := projectInstanceMap[task.InstanceId]; ok {
 			task.Instance = instance
 		}
 
@@ -736,7 +736,7 @@ func CreateWorkflowV2(c echo.Context) error {
 	}
 	
 	if req.SqlVersionID != nil {
-		err = sqlversion.CheckInstanceInWorkflowCanAssociateToTheFirstStageOfVersion(*req.SqlVersionID, instanceIds)
+		err = sqlversion.CheckInstanceInWorkflowCanAssociateToTheFirstStageOfVersion(*req.SqlVersionID, instanceIdsOfWorkflowTasks)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
