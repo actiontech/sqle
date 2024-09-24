@@ -27,7 +27,7 @@ type SqlVersionStage struct {
 	StageSequence int    `json:"stage_sequence" gorm:"type:int not null"`
 
 	SqlVersionStagesDependency []*SqlVersionStagesDependency
-	WorkflowReleaseStage       []*WorkflowVersionStage
+	WorkflowVersionStage       []*WorkflowVersionStage
 }
 
 type SqlVersionStagesDependency struct {
@@ -40,10 +40,18 @@ type SqlVersionStagesDependency struct {
 
 type WorkflowVersionStage struct {
 	Model
-	WorkflowID        string `json:"workflow_id" gorm:"not null"`
-	SqlVersionID      uint   `json:"sql_version_id"`
-	SqlVersionStageID uint   `json:"sql_version_stage_id"`
-	WorkflowSequence  int    `json:" workflow_sequence" gorm:"type:int"`
+	WorkflowID            string     `json:"workflow_id" gorm:"not null"`
+	SqlVersionID          uint       `json:"sql_version_id"`
+	SqlVersionStageID     uint       `json:"sql_version_stage_id"`
+	WorkflowSequence      int        `json:"workflow_sequence" gorm:"type:int"`
+	WorkflowReleaseStatus string     `json:"workflow_release_status" gorm:"type:varchar(255) not null"`
+	WorkflowExecTime      *time.Time `json:"workflow_exec_time" gorm:"type:datetime(3)"`
 
 	Workflow *Workflow `gorm:"foreignkey:WorkflowID"`
 }
+
+const (
+	WorkflowReleaseStatusIsBingReleased   = "wait_for_release"
+	WorkflowReleaseStatusHaveBeenReleased = "released"
+	WorkflowReleaseStatusNotNeedReleased  = "not_need_release"
+)
