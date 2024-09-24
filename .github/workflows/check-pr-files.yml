@@ -14,3 +14,23 @@ jobs:
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           pattern: ^(?!.*_ee\/.*$)(?!.*_ee\.go$)(?!.*_ee_test\.go$)(?!.*_rel\.go$)(?!.*_rel_test\.go$)(?!go\.mod$)(?!go\.sum$)(?!\.github\/workflows\/check-pr-files\.yml$)(?!vendor\/.*)(?!.*_qa\.go$).*
           trustedAuthors: xalvarez
+
+  # 禁止actions自动提交commit
+  check-commits:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0  # 检出完整历史
+
+      - name: Check commit authors
+        run: |
+          # 获取所有提交的作者
+          authors=$(git log --pretty=format:"%an" origin/main..HEAD)
+
+          # 检查是否包含不允许的用户
+          if echo "$authors" | grep -q "actions-user"; then
+            echo "Error: actions-user has made a commit in this PR."
+            exit 1
+          fi
