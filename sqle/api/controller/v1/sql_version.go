@@ -118,12 +118,14 @@ type SqlVersionStageDetail struct {
 }
 
 type WorkflowDetailWithInstance struct {
-	Name              string                  `json:"workflow_name"`
-	WorkflowId        string                  `json:"workflow_id"`
-	Desc              string                  `json:"desc,omitempty"`
-	WorkflowSequence  int                     `json:"workflow_sequence"`
-	Status            string                  `json:"status" enums:"wait_for_audit,wait_for_execution,rejected,canceled,exec_failed,executing,finished"`
-	WorkflowInstances *[]VersionStageInstance `json:"workflow_instances"`
+	Name                  string                  `json:"workflow_name"`
+	WorkflowId            string                  `json:"workflow_id"`
+	Desc                  string                  `json:"desc,omitempty"`
+	WorkflowSequence      int                     `json:"workflow_sequence"`
+	Status                string                  `json:"status" enums:"wait_for_audit,wait_for_execution,rejected,canceled,exec_failed,executing,finished"`
+	WorkflowExecTime      *time.Time              `json:"workflow_exec_time"`
+	WorkflowReleaseStatus string                  `json:"workflow_release_status" enums:"wait_for_release,released,not_need_release"`
+	WorkflowInstances     *[]VersionStageInstance `json:"workflow_instances"`
 }
 type VersionStageInstance struct {
 	InstanceID     string `json:"instances_id"`
@@ -313,7 +315,7 @@ func BatchExecuteTasksOnWorkflow(c echo.Context) error {
 }
 
 type RetryExecWorkflowReqV1 struct {
-	WorkflowID string `json:"workflow_ids" valid:"required"`
+	WorkflowID string `json:"workflow_id" valid:"required"`
 	TaskIds    []uint `json:"task_ids" form:"task_ids" valid:"required"`
 }
 
@@ -340,11 +342,7 @@ func RetryExecWorkflow(c echo.Context) error {
 }
 
 type BatchAssociateWorkflowsWithVersionReqV1 struct {
-	StageAndWorkflows []StageAndWorkflows `json:"stage_Workflows" form:"stage_Workflows" valid:"dive,required"`
-}
-type StageAndWorkflows struct {
-	SqlVersionStageID *string `json:"sql_version_stage_id"`
-	WorkflowID        *string `json:"workflow_id" valid:"required"`
+	WorkflowIDs []string `json:"workflow_ids" valid:"required"`
 }
 
 // @Summary 批量关联工单到版本
@@ -354,9 +352,10 @@ type StageAndWorkflows struct {
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
 // @Param sql_version_id path string true "sql version id"
+// @Param sql_version_stage_id path string true "sql version stage id"
 // @Param data body v1.BatchAssociateWorkflowsWithVersionReqV1 true "batch associate workflows with version request"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/{project_name}/sql_versions/{sql_version_id}/associate_workflows [post]
+// @router /v1/projects/{project_name}/sql_versions/{sql_version_id}/sql_version_stages/{sql_version_stage_id}/associate_workflows [post]
 func BatchAssociateWorkflowsWithVersion(c echo.Context) error {
 
 	// 与第一个阶段进行关联
