@@ -97,26 +97,12 @@ type Workflow struct {
 	workflow    *model.Workflow
 }
 
-func AssociateWorkflowToTheFirstStageOfSQLVersion(projectUID, workflowID string, versionID uint) error {
+
+func CheckInstanceInWorkflowCanAssociateToTheFirstStageOfVersion(versionID uint, instanceId []uint64) error {
 	db := model.GetStorage()
 
-	_, exist, err := db.GetWorkflowByProjectAndWorkflowId(projectUID, workflowID)
-	if err != nil {
-		return err
-	}
-	if !exist {
-		return fmt.Errorf("workflow does not exist")
-	}
-
-	instanceIds, err := db.GetInstanceIdsByWorkflowID(workflowID)
-	if err != nil {
-		return err
-	}
-	if len(instanceIds) == 0 {
-		return fmt.Errorf("the workflow does not use any instance")
-	}
-	workflowInstances := make([]*Instance, 0, len(instanceIds))
-	for _, instanceId := range instanceIds {
+	workflowInstances := make([]*Instance, 0, len(instanceId))
+	for _, instanceId := range instanceId {
 		workflowInstances = append(workflowInstances, &Instance{
 			InstanceID: instanceId,
 		})
@@ -133,13 +119,5 @@ func AssociateWorkflowToTheFirstStageOfSQLVersion(projectUID, workflowID string,
 		return fmt.Errorf("can not attach workflow with sql version, instances of the workflow does not belong entirely to the first stage")
 	}
 
-	// create sql version relation
-	workflowVersionStageRelation := &model.WorkflowVersionStage{
-		WorkflowID:        workflowID,
-		SqlVersionID:      versionID,
-		SqlVersionStageID: firstStage.ID,
-		WorkflowSequence:  len(firstStage.Workflows) + 1,
-	}
-
-	return db.Create(workflowVersionStageRelation)
+	return nil
 }
