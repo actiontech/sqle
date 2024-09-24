@@ -111,6 +111,12 @@ func (s *Storage) GetSqlVersionDetailByVersionId(versionId string) (*SqlVersion,
 	return version, true, errors.New(errors.ConnectStorageError, err)
 }
 
+func (s *Storage) GetStageDependenciesByStageId(stageId string) ([]*SqlVersionStagesDependency, error) {
+	var dependencies []*SqlVersionStagesDependency
+	err := s.db.Model(SqlVersionStagesDependency{}).Where("sql_version_stage_id = ?", stageId).Find(&dependencies).Error
+	return dependencies, errors.New(errors.ConnectStorageError, err)
+}
+
 func (s *Storage) GetNextSatgeByVersionIdAndSequence(txDB *gorm.DB, versionId uint, sequence int) (*SqlVersionStage, bool, error) {
 	stage := &SqlVersionStage{}
 	// next stage sequence
@@ -122,4 +128,13 @@ func (s *Storage) GetNextSatgeByVersionIdAndSequence(txDB *gorm.DB, versionId ui
 		return nil, false, err
 	}
 	return stage, true, nil
+}
+
+func (s *Storage) GetFirstStageOfSQLVersion(sqlVersionID uint) (*SqlVersionStage, error) {
+	firstStage := &SqlVersionStage{}
+	err := s.db.Model(&SqlVersionStage{}).Preload("SqlVersionStagesDependency").Preload("WorkflowReleaseStage").Where("sql_version_id = ?", sqlVersionID).Order("stage_sequence ASC").First(firstStage).Error
+	if err != nil {
+		return nil, err
+	}
+	return firstStage, nil
 }

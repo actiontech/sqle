@@ -273,7 +273,40 @@ func deleteSqlVersion(c echo.Context) error {
 }
 
 func getDependenciesBetweenStageInstance(c echo.Context) error {
-	return nil
+	// projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
+	// if err != nil {
+	// 	return controller.JSONBaseErrorReq(c, err)
+	// }
+	stageId := c.Param("sql_version_stage_id")
+	s := model.GetStorage()
+	dependencies, err := s.GetStageDependenciesByStageId(stageId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	resData := make([]*DepBetweenStageInstance, 0, len(dependencies))
+	for _, dep := range dependencies {
+		stageInst, err := getInstanceByStageInstanceID(c.Request().Context(), strconv.FormatUint(dep.StageInstanceID, 10))
+		if err != nil {
+			return err
+		}
+		nextStageInst, err := getInstanceByStageInstanceID(c.Request().Context(), strconv.FormatUint(dep.NextStageInstanceID, 10))
+		if err != nil {
+			return err
+		}
+		depInst := &DepBetweenStageInstance{
+			StageInstanceID:   stageInst.GetIDStr(),
+			StageInstanceName: stageInst.Name,
+		}
+		if nextStageInst != nil {
+			depInst.NextStageInstanceID = nextStageInst.GetIDStr()
+			depInst.NextStageInstanceName = nextStageInst.Name
+		}
+		resData = append(resData, depInst)
+	}
+	return c.JSON(http.StatusOK, &GetDepBetweenStageInstanceResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    resData,
+	})
 }
 
 func batchReleaseWorkflows(c echo.Context) error {
