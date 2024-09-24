@@ -472,9 +472,9 @@ definitions:
     type: object
   v1.BatchAssociateWorkflowsWithVersionReqV1:
     properties:
-      stage_Workflows:
+      workflow_ids:
         items:
-          $ref: '#/definitions/v1.StageAndWorkflows'
+          type: string
         type: array
     type: object
   v1.BatchCancelWorkflowsReqV1:
@@ -3079,7 +3079,7 @@ definitions:
         items:
           type: integer
         type: array
-      workflow_ids:
+      workflow_id:
         type: string
     type: object
   v1.RewriteRule:
@@ -3557,13 +3557,6 @@ definitions:
         items:
           $ref: '#/definitions/v1.WorkflowDetailWithInstance'
         type: array
-    type: object
-  v1.StageAndWorkflows:
-    properties:
-      sql_version_stage_id:
-        type: string
-      workflow_id:
-        type: string
     type: object
   v1.StatisticAuditPlanResV1:
     properties:
@@ -4255,6 +4248,8 @@ definitions:
         - executing
         - finished
         type: string
+      workflow_exec_time:
+        type: string
       workflow_id:
         type: string
       workflow_instances:
@@ -4262,6 +4257,12 @@ definitions:
           $ref: '#/definitions/v1.VersionStageInstance'
         type: array
       workflow_name:
+        type: string
+      workflow_release_status:
+        enum:
+        - wait_for_release
+        - released
+        - not_need_release
         type: string
       workflow_sequence:
         type: integer
@@ -8996,37 +8997,6 @@ paths:
       summary: 更新SQL版本信息
       tags:
       - sql_version
-  /v1/projects/{project_name}/sql_versions/{sql_version_id}/associate_workflows:
-    post:
-      description: batch associate workflows with version
-      operationId: batchAssociateWorkflowsWithVersionV1
-      parameters:
-      - description: project name
-        in: path
-        name: project_name
-        required: true
-        type: string
-      - description: sql version id
-        in: path
-        name: sql_version_id
-        required: true
-        type: string
-      - description: batch associate workflows with version request
-        in: body
-        name: data
-        required: true
-        schema:
-          $ref: '#/definitions/v1.BatchAssociateWorkflowsWithVersionReqV1'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 批量关联工单到版本
-      tags:
-      - sql_version
   /v1/projects/{project_name}/sql_versions/{sql_version_id}/batch_execute_workflows:
     post:
       description: batch execute tasks on workflow
@@ -9179,6 +9149,41 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取可与版本关联的工单
+      tags:
+      - sql_version
+    post:
+      description: batch associate workflows with version
+      operationId: batchAssociateWorkflowsWithVersionV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: sql version id
+        in: path
+        name: sql_version_id
+        required: true
+        type: string
+      - description: sql version stage id
+        in: path
+        name: sql_version_stage_id
+        required: true
+        type: string
+      - description: batch associate workflows with version request
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/v1.BatchAssociateWorkflowsWithVersionReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 批量关联工单到版本
       tags:
       - sql_version
   /v1/projects/{project_name}/sql_versions/{sql_version_id}/sql_version_stages/{sql_version_stage_id}/dependencies:
