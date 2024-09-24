@@ -734,8 +734,15 @@ func CreateWorkflowV2(c echo.Context) error {
 	if err != nil {
 		return err
 	}
+	
+	if req.SqlVersionID != nil {
+		err = sqlversion.CheckInstanceInWorkflowCanAssociateToTheFirstStageOfVersion(*req.SqlVersionID, instanceIds)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
 
-	err = s.CreateWorkflowV2(req.Subject, workflowId, req.Desc, user, tasks, stepTemplates, model.ProjectUID(projectUid), func(tasks []*model.Task) (auditWorkflowUsers, canExecUser [][]*model.User) {
+	err = s.CreateWorkflowV2(req.Subject, workflowId, req.Desc, user, tasks, stepTemplates, model.ProjectUID(projectUid), req.SqlVersionID, func(tasks []*model.Task) (auditWorkflowUsers, canExecUser [][]*model.User) {
 		auditWorkflowUsers = make([][]*model.User, len(tasks))
 		executorWorkflowUsers := make([][]*model.User, len(tasks))
 		for i, task := range tasks {
@@ -754,13 +761,6 @@ func CreateWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	if req.SqlVersionID != nil {
-		err = sqlversion.AssociateWorkflowToTheFirstStageOfSQLVersion(projectUid, workflowId, *req.SqlVersionID)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-	}
-	
 	workflow, exist, err := s.GetLastWorkflow()
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)

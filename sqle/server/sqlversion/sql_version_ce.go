@@ -9,6 +9,6 @@ import (
 	"github.com/actiontech/sqle/sqle/errors"
 )
 
-func AssociateWorkflowToTheFirstStageOfSQLVersion(projectUID, workflowID string, versionID uint) error {
+func CheckInstanceInWorkflowCanAssociateToTheFirstStageOfVersion(versionID uint, instanceId []uint64) error {
 	return errors.New(errors.EnterpriseEditionFeatures, e.New("sql version is enterprise version feature"))
 }
