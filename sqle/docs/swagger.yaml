@@ -4218,7 +4218,9 @@ definitions:
       project_name:
         type: string
       sql_version_name:
-        type: string
+        items:
+          type: string
+        type: array
       status:
         enum:
         - wait_for_audit
