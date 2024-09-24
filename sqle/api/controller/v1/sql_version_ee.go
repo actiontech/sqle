@@ -173,12 +173,14 @@ func getSqlVersionDetail(c echo.Context) error {
 			}
 
 			workflows = append(workflows, WorkflowDetailWithInstance{
-				Name:              workflow.Subject,
-				WorkflowId:        workflow.WorkflowId,
-				Desc:              workflow.Desc,
-				WorkflowSequence:  workflowStage.WorkflowSequence,
-				Status:            workflow.Record.Status,
-				WorkflowInstances: &workflowInstances,
+				Name:                  workflow.Subject,
+				WorkflowId:            workflow.WorkflowId,
+				Desc:                  workflow.Desc,
+				WorkflowSequence:      workflowStage.WorkflowSequence,
+				Status:                workflow.Record.Status,
+				WorkflowReleaseStatus: workflowStage.WorkflowReleaseStatus,
+				WorkflowExecTime:      workflowStage.WorkflowExecTime,
+				WorkflowInstances:     &workflowInstances,
 			})
 		}
 
