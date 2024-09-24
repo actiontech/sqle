@@ -428,6 +428,15 @@ func GetTableSizeMB(context *session.Context, tableName string) (int64, error) {
 	return int64(math.Floor(size)), nil
 }
 
+// a helper function to get if the table is a temporary table in MySQL
+func IsTemporaryTable(context *session.Context, tableName *ast.TableName) (bool, error) {
+	t, exist := context.GetTableInfo(tableName)
+	if !exist {
+		return false, fmt.Errorf("table %s not exist", tableName.Name.String())
+	}
+	return t.OriginalTable.IsTemporary, nil
+}
+
 // a helper function to check if the where clause is a constant true
 func IsExprConstTrue(where ast.ExprNode) bool {
 	notAlwaysTrue := false
@@ -542,6 +551,16 @@ func ScanWhereStmt(fn func(expr ast.ExprNode) (skip bool), exprs ...ast.ExprNode
 			ScanWhereStmt(fn, x.Expr)
 		}
 	}
+}
+
+func utilGetTableName(tableName *ast.TableName) string {
+	// 假设这是一个简单的实现
+	return tableName.Name.String()
+}
+
+func utilGetTargetObjectType(cmd *ast.AlterTableSpec) string {
+	// 假设这是一个简单的实现
+	return "TEMPORARY_TABLE"
 }
 
 // end helper function file. this line which used for ai scanner should be at the end of the file, please do not delete it
