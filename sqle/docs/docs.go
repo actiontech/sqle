@@ -5464,54 +5464,6 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_name}/sql_versions/{sql_version_id}/associate_workflows": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "batch associate workflows with version",
-                "tags": [
-                    "sql_version"
-                ],
-                "summary": "批量关联工单到版本",
-                "operationId": "batchAssociateWorkflowsWithVersionV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "project name",
-                        "name": "project_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "sql version id",
-                        "name": "sql_version_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "batch associate workflows with version request",
-                        "name": "data",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.BatchAssociateWorkflowsWithVersionReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/projects/{project_name}/sql_versions/{sql_version_id}/batch_execute_workflows": {
             "post": {
                 "security": [
@@ -5745,6 +5697,59 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetWorkflowsThatCanBeAssociatedToVersionResV1"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "batch associate workflows with version",
+                "tags": [
+                    "sql_version"
+                ],
+                "summary": "批量关联工单到版本",
+                "operationId": "batchAssociateWorkflowsWithVersionV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "sql version id",
+                        "name": "sql_version_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "sql version stage id",
+                        "name": "sql_version_stage_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "batch associate workflows with version request",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.BatchAssociateWorkflowsWithVersionReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
                         }
                     }
                 }
@@ -11141,10 +11146,10 @@ var doc = `{
         "v1.BatchAssociateWorkflowsWithVersionReqV1": {
             "type": "object",
             "properties": {
-                "stage_Workflows": {
+                "workflow_ids": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.StageAndWorkflows"
+                        "type": "string"
                     }
                 }
             }
@@ -14947,7 +14952,7 @@ var doc = `{
                         "type": "integer"
                     }
                 },
-                "workflow_ids": {
+                "workflow_id": {
                     "type": "string"
                 }
             }
@@ -15661,17 +15666,6 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v1.WorkflowDetailWithInstance"
                     }
-                }
-            }
-        },
-        "v1.StageAndWorkflows": {
-            "type": "object",
-            "properties": {
-                "sql_version_stage_id": {
-                    "type": "string"
-                },
-                "workflow_id": {
-                    "type": "string"
                 }
             }
         },
@@ -16694,6 +16688,9 @@ var doc = `{
                         "finished"
                     ]
                 },
+                "workflow_exec_time": {
+                    "type": "string"
+                },
                 "workflow_id": {
                     "type": "string"
                 },
@@ -16705,6 +16702,14 @@ var doc = `{
                 },
                 "workflow_name": {
                     "type": "string"
+                },
+                "workflow_release_status": {
+                    "type": "string",
+                    "enum": [
+                        "wait_for_release",
+                        "released",
+                        "not_need_release"
+                    ]
                 },
                 "workflow_sequence": {
                     "type": "integer"
