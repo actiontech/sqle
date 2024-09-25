@@ -205,3 +205,16 @@ func (s *Storage) GetFirstStageOfSQLVersion(sqlVersionID uint) (*SqlVersionStage
 	}
 	return firstStage, nil
 }
+
+func (s *Storage) GetStageOfSQLVersion(sqlVersionID, stageID uint) (*SqlVersionStage, error) {
+	stage := &SqlVersionStage{}
+	err := s.db.Model(&SqlVersionStage{}).
+		Preload("SqlVersionStagesDependency").
+		Preload("WorkflowVersionStage").
+		Where("id = ? AND sql_version_id = ? ", stageID, sqlVersionID).
+		First(stage).Error
+	if err != nil {
+		return nil, err
+	}
+	return stage, nil
+}
