@@ -1,9 +1,9 @@
 //go:build enterprise
 // +build enterprise
+
 package model
 
 import "github.com/actiontech/sqle/sqle/errors"
-
 
 type WorkflowWithInstanceID struct {
 	ID          uint    `json:"id"`
