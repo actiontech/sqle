@@ -6477,6 +6477,12 @@ var doc = `{
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "filter sql version id",
+                        "name": "filter_sql_version_id",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
                         "description": "page index",
                         "name": "page_index",
