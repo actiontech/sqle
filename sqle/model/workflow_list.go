@@ -17,6 +17,7 @@ type WorkflowListDetail struct {
 	CurrentStepAssigneeUserIds sql.NullString `json:"current_step_assignee_user_id_list"`
 	Status                     string         `json:"status"`
 	TaskInstanceType           RowList        `json:"task_instance_type"`
+	SqlVersionName             RowList        `json:"version"`
 }
 
 var workflowsQueryTpl = `
@@ -30,7 +31,8 @@ SELECT
        w.created_at                                                  AS create_time,
        curr_wst.type                                                 AS current_step_type,
        curr_ws.assignees											 AS current_step_assignee_user_id_list,
-       wr.status
+       wr.status,
+	   GROUP_CONCAT(versions.version SEPARATOR ',') AS version
 {{- template "body" . -}}
 GROUP BY w.id
 ORDER BY w.id DESC
@@ -59,6 +61,8 @@ LEFT JOIN workflow_instance_records wir on wir.workflow_record_id = wr.id
 LEFT JOIN tasks ON wir.task_id = tasks.id
 LEFT JOIN workflow_steps AS curr_ws ON wr.current_workflow_step_id = curr_ws.id
 LEFT JOIN workflow_step_templates AS curr_wst ON curr_ws.workflow_step_template_id = curr_wst.id
+LEFT JOIN workflow_version_stages AS stages ON stages.workflow_id = w.workflow_id
+LEFT JOIN sql_versions AS versions ON stages.sql_version_id = versions.id
 
 {{- if .check_user_can_access }}
 LEFT JOIN workflow_steps AS all_ws ON w.id = all_ws.workflow_id AND all_ws.state !='initialized'
@@ -133,6 +137,10 @@ AND tasks.instance_id = :filter_task_instance_id
 
 {{- if .filter_workflow_id }}
 AND w.workflow_id = :filter_workflow_id
+{{- end }}
+
+{{- if .filter_sql_version_id }}
+AND versions.id = :filter_sql_version_id
 {{- end }}
 
 {{- if .filter_project_id }}
