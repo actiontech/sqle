@@ -9651,6 +9651,10 @@ paths:
         in: query
         name: filter_task_instance_id
         type: string
+      - description: filter sql version id
+        in: query
+        name: filter_sql_version_id
+        type: string
       - description: page index
         in: query
         name: page_index
