@@ -12,6 +12,7 @@ import (
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/labstack/echo/v4"
+	"github.com/actiontech/sqle/sqle/server/sqlversion"
 )
 
 func createSqlVersion(c echo.Context) error {
@@ -268,9 +269,35 @@ func batchAssociateWorkflowsWithVersion(c echo.Context) error {
 }
 
 func getWorkflowsThatCanBeAssociatedToVersion(c echo.Context) error {
-	// projectID := c.Param("project_name")
-	// versionID := c.Param("sql_version_id")
-	// stageID := c.Param("sql_version_stage_id")
-
-	return nil
+	versionIDStr := c.Param("sql_version_id")
+	versionId, err := strconv.Atoi(versionIDStr)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	stageIDStr := c.Param("sql_version_stage_id")
+	stageID, err := strconv.Atoi(stageIDStr)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	workflows, err := sqlversion.GetWorkflowsThatCanBeAssociatedToVersionStage(uint(versionId), uint(stageID))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return c.JSON(http.StatusOK, &GetWorkflowsThatCanBeAssociatedToVersionResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    convertWorkflowToAssociateWorkflows(workflows),
+	})
 }
+
+func convertWorkflowToAssociateWorkflows(workflows []*sqlversion.Workflow) []*AssociateWorkflows {
+	ret := make([]*AssociateWorkflows, 0, len(workflows))
+	for _, workflow := range workflows {
+		ret = append(ret, &AssociateWorkflows{
+			WorkflowID:   workflow.WorkflowID,
+			WorkflowName: workflow.Subject,
+			WorkflowDesc: workflow.Description,
+		})
+	}
+	return ret
+}
+

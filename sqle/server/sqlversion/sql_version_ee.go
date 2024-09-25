@@ -5,6 +5,7 @@ package sqlversion
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/model"
@@ -97,7 +98,6 @@ type Workflow struct {
 	workflow    *model.Workflow
 }
 
-
 func CheckInstanceInWorkflowCanAssociateToTheFirstStageOfVersion(versionID uint, instanceId []uint64) error {
 	db := model.GetStorage()
 
@@ -120,4 +120,50 @@ func CheckInstanceInWorkflowCanAssociateToTheFirstStageOfVersion(versionID uint,
 	}
 
 	return nil
+}
+
+func GetWorkflowsThatCanBeAssociatedToVersionStage(versionID, stageID uint) ([]*Workflow, error) {
+	db := model.GetStorage()
+	modelStage, err := db.GetStageOfSQLVersion(versionID, stageID)
+	if err != nil {
+		return nil, err
+	}
+	stage := ToServiceStage(modelStage)
+	instanceIdRange := make([]uint64, 0, len(stage.Instances))
+	for _, instance := range stage.Instances {
+		instanceIdRange = append(instanceIdRange, instance.InstanceID)
+	}
+	if len(instanceIdRange) == 0 {
+		return nil, fmt.Errorf("when get workflows that can be associated to version stage, can not load instances of stage, version id %v stage id %v", versionID, stageID)
+	}
+	excludeWorkflowIds := make([]string, 0, len(stage.Workflows))
+	for _, workflow := range stage.Workflows {
+		excludeWorkflowIds = append(excludeWorkflowIds, workflow.WorkflowID)
+	}
+
+	modelWorkflows, err := db.GetWorkflowsThatCanBeAssociatedToStage(instanceIdRange, excludeWorkflowIds)
+	if err != nil {
+		return nil, err
+	}
+	workflows := make([]*Workflow, 0, len(modelWorkflows))
+	for _, modelWorkflow := range modelWorkflows {
+		var instances []*Instance
+		for _, instanceIDStr := range modelWorkflow.InstanceIDs {
+			instanceID, err := strconv.Atoi(instanceIDStr)
+			if err != nil {
+				return nil, fmt.Errorf("when get workflows that can be attatch with version, convert instance id failed %w, instance id %v", err, instanceID)
+			}
+			instances = append(instances, &Instance{InstanceID: uint64(instanceID)})
+		}
+		if !stage.ContainsInstances(instances) {
+			continue
+		}
+		workflows = append(workflows, &Workflow{
+			ID:          modelWorkflow.ID,
+			WorkflowID:  modelWorkflow.WorkFlowID,
+			Subject:     modelWorkflow.Subject,
+			Description: modelWorkflow.Desc,
+		})
+	}
+	return workflows, nil
 }
