@@ -5383,8 +5383,9 @@ definitions:
   v2.WorkflowResV2:
     properties:
       associated_version_stage_workflows:
-        $ref: '#/definitions/v2.AssociatedVersionStageWorkflows'
-        type: object
+        items:
+          $ref: '#/definitions/v2.AssociatedVersionStageWorkflows'
+        type: array
       create_time:
         type: string
       create_user_name:

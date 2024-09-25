@@ -18336,8 +18336,10 @@ var doc = `{
             "type": "object",
             "properties": {
                 "associated_version_stage_workflows": {
-                    "type": "object",
-                    "$ref": "#/definitions/v2.AssociatedVersionStageWorkflows"
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.AssociatedVersionStageWorkflows"
+                    }
                 },
                 "create_time": {
                     "type": "string"
