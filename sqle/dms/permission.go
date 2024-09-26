@@ -35,6 +35,59 @@ func (p *UserPermission) IsAdmin() bool {
 	return p.isAdmin
 }
 
+func (p *UserPermission) CanOpGlobal() bool {
+	if p.IsAdmin() {
+		return true
+	}
+
+	for _, permission := range p.opPermissionItem {
+		if permission.OpPermissionType == v1.OpPermissionTypeGlobalManagement {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (p *UserPermission) CanOpProject() bool {
+	if p.CanOpGlobal() {
+		return true
+	}
+
+	if p.IsProjectAdmin() {
+		return true
+	}
+
+	return false
+}
+
+func (p *UserPermission) CanViewGlobal() bool {
+	if p.IsAdmin() {
+		return true
+	}
+
+	for _, permission := range p.opPermissionItem {
+		permissionType := permission.OpPermissionType
+		if permissionType == v1.OpPermissionTypeGlobalManagement || permissionType == v1.OpPermissionTypeGlobalView {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (p *UserPermission) CanViewProject() bool {
+	if p.CanViewGlobal() {
+		return true
+	}
+
+	if p.IsProjectAdmin() {
+		return true
+	}
+
+	return false
+}
+
 func (p *UserPermission) IsProjectAdmin() bool {
 	for _, userOpPermission := range p.opPermissionItem {
 		if userOpPermission.RangeType == v1.OpRangeTypeProject {
