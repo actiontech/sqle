@@ -218,3 +218,18 @@ func (s *Storage) GetStageOfSQLVersion(sqlVersionID, stageID uint) (*SqlVersionS
 	}
 	return stage, nil
 }
+
+func (s *Storage) BatchCreateWorkflowVerionRelation(stage *SqlVersionStage, workflowIds []string) error {
+	workflowVersionModels := make([]*WorkflowVersionStage, 0, len(workflowIds))
+	for index, woworkflowId := range workflowIds {
+		workflowVersionModels = append(workflowVersionModels, &WorkflowVersionStage{
+			WorkflowID:            woworkflowId,
+			SqlVersionID:          stage.SqlVersionID,
+			SqlVersionStageID:     stage.ID,
+			WorkflowSequence:      len(stage.WorkflowVersionStage) + index + 1,
+			WorkflowReleaseStatus: WorkflowReleaseStatusIsBingReleased,
+			WorkflowExecTime:      nil,
+		})
+	}
+	return s.db.Model(&WorkflowVersionStage{}).CreateInBatches(&workflowVersionModels, 100).Error
+}

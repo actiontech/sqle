@@ -80,6 +80,21 @@ func (s Stage) CheckStageContainsInstances(instanceIds []uint64) error {
 	return nil
 }
 
+func (s Stage) CheckWorkflowExistInStage(workflow *model.Workflow) error {
+
+	workflowIdMap := make(map[string]struct{})
+
+	for _, workflow := range s.Workflows {
+		workflowIdMap[workflow.WorkflowID] = struct{}{}
+	}
+
+	if _, exists := workflowIdMap[workflow.WorkflowId]; exists {
+		return fmt.Errorf("can not associate workflow to stage, workflow already exist in this stage. stage name: %v, workflow subject: %v", s.Name, workflow.Subject)
+	}
+	return nil
+}
+
+
 // 数据源，数据源为SQL版本阶段中涉及的数据源，以关联关系的方式保存，SQL版本阶段:数据源 = 1:n
 type Instance struct {
 	ID             uint
@@ -150,4 +165,42 @@ func GetWorkflowsThatCanBeAssociatedToVersionStage(versionID, stageID uint) ([]*
 		})
 	}
 	return workflows, nil
+}
+
+
+func BatchAssociateWorkflowsWithStage(projectUid string, versionID, stageID uint, workflowIds []string) error {
+	db := model.GetStorage()
+	modelStage, err := db.GetStageOfSQLVersion(versionID, stageID)
+	if err != nil {
+		return err
+	}
+	stage := ToServiceStage(modelStage)
+	for _, workflowID := range workflowIds {
+		// check if instance of workflow are entirely belongs to stage
+		instanceIds, err := db.GetInstanceIdsByWorkflowID(workflowID)
+		if err != nil {
+			return err
+		}
+		if len(instanceIds) == 0 {
+			return fmt.Errorf("the workflow does not use any instance")
+		}
+		err = stage.CheckStageContainsInstances(instanceIds)
+		if err != nil {
+			return err
+		}
+		// check if workflow exist in this stage
+		workflow, exist, err := db.GetWorkflowByProjectAndWorkflowId(projectUid, workflowID)
+		if err != nil {
+			return err
+		}
+		if !exist {
+			return fmt.Errorf("can not associate a non-existent workflow with stage, workflow id: %v", workflowID)
+		}
+		err = stage.CheckWorkflowExistInStage(workflow)
+		if err != nil {
+			return err
+		}
+	}
+
+	return db.BatchCreateWorkflowVerionRelation(modelStage, workflowIds)
 }
