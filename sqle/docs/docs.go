@@ -6477,6 +6477,12 @@ var doc = `{
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "filter sql version id",
+                        "name": "filter_sql_version_id",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
                         "description": "page index",
                         "name": "page_index",
@@ -17238,7 +17244,7 @@ var doc = `{
                 }
             }
         },
-        "v2.AssociatedVersionStageWorkflows": {
+        "v2.AssociatedOtherStageWorkflows": {
             "type": "object",
             "properties": {
                 "sql_version_stage_id": {
@@ -18329,9 +18335,11 @@ var doc = `{
         "v2.WorkflowResV2": {
             "type": "object",
             "properties": {
-                "associated_version_stage_workflows": {
-                    "type": "object",
-                    "$ref": "#/definitions/v2.AssociatedVersionStageWorkflows"
+                "associated_other_stage_workflows": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.AssociatedOtherStageWorkflows"
+                    }
                 },
                 "create_time": {
                     "type": "string"

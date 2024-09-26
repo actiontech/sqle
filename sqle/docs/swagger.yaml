@@ -4629,7 +4629,7 @@ definitions:
       err_message:
         type: string
     type: object
-  v2.AssociatedVersionStageWorkflows:
+  v2.AssociatedOtherStageWorkflows:
     properties:
       sql_version_stage_id:
         type: integer
@@ -5382,9 +5382,10 @@ definitions:
     type: object
   v2.WorkflowResV2:
     properties:
-      associated_version_stage_workflows:
-        $ref: '#/definitions/v2.AssociatedVersionStageWorkflows'
-        type: object
+      associated_other_stage_workflows:
+        items:
+          $ref: '#/definitions/v2.AssociatedOtherStageWorkflows'
+        type: array
       create_time:
         type: string
       create_user_name:
@@ -9650,6 +9651,10 @@ paths:
       - description: filter instance id
         in: query
         name: filter_task_instance_id
+        type: string
+      - description: filter sql version id
+        in: query
+        name: filter_sql_version_id
         type: string
       - description: page index
         in: query
