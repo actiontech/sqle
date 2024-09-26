@@ -599,12 +599,14 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 			// get the first stage
 			err = tx.Model(&SqlVersionStage{}).
 				Preload("WorkflowVersionStage").
+				Preload("SqlVersionStagesDependency").
 				Where("sql_version_id = ?", sqlVersionId).
 				Order("stage_sequence ASC").First(stage).Error
 		} else {
 			// get specific stage
 			err = tx.Model(&SqlVersionStage{}).
 				Preload("WorkflowVersionStage").
+				Preload("SqlVersionStagesDependency").
 				Where("sql_version_id = ? AND id = ?", sqlVersionId, versionStageId).
 				First(stage).Error
 		}
@@ -618,7 +620,7 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 			SqlVersionID:          *sqlVersionId,
 			SqlVersionStageID:     stage.ID,
 			WorkflowSequence:      len(stage.WorkflowVersionStage) + 1,
-			WorkflowReleaseStatus: WorkflowReleaseStatusIsBingReleased,
+			WorkflowReleaseStatus: stage.InitialStatusOfWorkflow(),
 		}
 
 		err = tx.Create(workflowVersionStageRelation).Error
