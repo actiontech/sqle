@@ -11,8 +11,8 @@ import (
 	dms "github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
-	"github.com/labstack/echo/v4"
 	"github.com/actiontech/sqle/sqle/server/sqlversion"
+	"github.com/labstack/echo/v4"
 )
 
 func createSqlVersion(c echo.Context) error {
@@ -264,8 +264,31 @@ func batchExecuteTasksOnWorkflow(c echo.Context) error {
 func retryExecWorkflow(c echo.Context) error {
 	return nil
 }
+
 func batchAssociateWorkflowsWithVersion(c echo.Context) error {
-	return nil
+	req := new(BatchAssociateWorkflowsWithVersionReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	versionIDStr := c.Param("sql_version_id")
+	versionId, err := strconv.Atoi(versionIDStr)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	stageIDStr := c.Param("sql_version_stage_id")
+	stageID, err := strconv.Atoi(stageIDStr)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	err = sqlversion.BatchAssociateWorkflowsWithStage(projectUid, uint(versionId), uint(stageID), req.WorkflowIDs)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return controller.JSONBaseErrorReq(c, nil)
 }
 
 func getWorkflowsThatCanBeAssociatedToVersion(c echo.Context) error {
@@ -300,4 +323,3 @@ func convertWorkflowToAssociateWorkflows(workflows []*sqlversion.Workflow) []*As
 	}
 	return ret
 }
-
