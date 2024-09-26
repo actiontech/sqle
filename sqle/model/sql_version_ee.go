@@ -233,3 +233,17 @@ func (s *Storage) BatchCreateWorkflowVerionRelation(stage *SqlVersionStage, work
 	}
 	return s.db.Model(&WorkflowVersionStage{}).CreateInBatches(&workflowVersionModels, 100).Error
 }
+
+func (s *Storage) GetWorkflowVersionRelationByWorkflowId(workflowId string) (relation *WorkflowVersionStage, exist bool, err error) {
+	relation = &WorkflowVersionStage{}
+	err = s.db.Model(&WorkflowVersionStage{}).
+		Where("workflow_id = ? ", workflowId).
+		Find(relation).Error
+	if err != nil {
+		return nil, false, err
+	}
+	if relation.ID == 0 {
+		return nil, false, nil
+	}
+	return relation, true, nil
+}
