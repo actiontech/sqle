@@ -614,10 +614,11 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 		}
 		// associate sql version with workflow
 		workflowVersionStageRelation := &WorkflowVersionStage{
-			WorkflowID:        workflowId,
-			SqlVersionID:      *sqlVersionId,
-			SqlVersionStageID: stage.ID,
-			WorkflowSequence:  len(stage.WorkflowVersionStage) + 1,
+			WorkflowID:            workflowId,
+			SqlVersionID:          *sqlVersionId,
+			SqlVersionStageID:     stage.ID,
+			WorkflowSequence:      len(stage.WorkflowVersionStage) + 1,
+			WorkflowReleaseStatus: WorkflowReleaseStatusIsBingReleased,
 		}
 
 		err = tx.Create(workflowVersionStageRelation).Error
