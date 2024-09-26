@@ -260,7 +260,7 @@ func buildOnlineTaskForAudit(c echo.Context, s *model.Storage, userId uint64, in
 	if !exist {
 		return nil, ErrInstanceNoAccess
 	}
-	can, err := CheckCurrentUserCanAccessInstances(c.Request().Context(), projectUid, controller.GetUserID(c), []*model.Instance{instance})
+	can, err := CheckCurrentUserCanOpInstances(c.Request().Context(), projectUid, controller.GetUserID(c), []*model.Instance{instance})
 	if err != nil {
 		return nil, err
 	}
@@ -582,12 +582,9 @@ func UpdateSQLAuditRecordV1(c echo.Context) error {
 	if req.Tags != nil {
 		up, err := dms.NewUserPermission(user.GetIDStr(), projectUid)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusForbidden)
-		}
-		if err != nil {
 			return errors.New(errors.ConnectStorageError, fmt.Errorf("check project manager failed: %v", err))
 		}
-		if !up.IsProjectAdmin() {
+		if !up.CanViewProject() {
 			if yes, err := s.IsSQLAuditRecordBelongToCurrentUser(user.GetIDStr(), projectUid, auditRecordId); err != nil {
 				return controller.JSONBaseErrorReq(c, fmt.Errorf("check privilege failed: %v", err))
 			} else if !yes {
@@ -682,9 +679,6 @@ func GetSQLAuditRecordsV1(c echo.Context) error {
 	}
 	up, err := dms.NewUserPermission(user.GetIDStr(), projectUid)
 	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if err != nil {
 		return controller.JSONBaseErrorReq(c, fmt.Errorf("check project manager failed: %v", err))
 	}
 
@@ -697,7 +691,7 @@ func GetSQLAuditRecordsV1(c echo.Context) error {
 		"filter_instance_id":      req.FilterInstanceId,
 		"filter_create_time_from": req.FilterCreateTimeFrom,
 		"filter_create_time_to":   req.FilterCreateTimeTo,
-		"check_user_can_access":   !up.IsProjectAdmin(),
+		"check_user_can_access":   !up.CanViewProject(),
 		"filter_audit_record_ids": req.FilterSqlAuditRecordIDs,
 		"limit":                   limit,
 		"offset":                  offset,
@@ -802,15 +796,12 @@ func GetSQLAuditRecordV1(c echo.Context) error {
 
 	up, err := dms.NewUserPermission(user.GetIDStr(), projectUid)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusForbidden)
-	}
-	if err != nil {
 		return errors.New(errors.ConnectStorageError, fmt.Errorf("check project manager failed: %v", err))
 	}
 
 	s := model.GetStorage()
 
-	if !up.IsProjectAdmin() {
+	if !up.CanViewProject() {
 		if yes, err := s.IsSQLAuditRecordBelongToCurrentUser(user.GetIDStr(), projectUid, auditRecordId); err != nil {
 			return controller.JSONBaseErrorReq(c, fmt.Errorf("check privilege failed: %v", err))
 		} else if !yes {

@@ -175,7 +175,7 @@ func ProjectMemberViewAllowed() echo.MiddlewareFunc {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusForbidden)
 			}
-			if up.IsAdmin() || up.IsProjectAdmin() || up.IsProjectMember() {
+			if up.CanViewProject() || up.IsProjectMember() {
 				return next(c)
 			}
 			return echo.NewHTTPError(http.StatusForbidden)
