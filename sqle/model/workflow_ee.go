@@ -3,7 +3,11 @@
 
 package model
 
-import "github.com/actiontech/sqle/sqle/errors"
+import (
+	"fmt"
+
+	"github.com/actiontech/sqle/sqle/errors"
+)
 
 type WorkflowWithInstanceID struct {
 	ID          uint    `json:"id"`
@@ -14,6 +18,9 @@ type WorkflowWithInstanceID struct {
 }
 
 func (s *Storage) GetWorkflowsThatCanBeAssociatedToStage(instanceIdRange []uint64, excludeWorkflowIds []string) ([]*WorkflowWithInstanceID, error) {
+	if len(instanceIdRange) == 0 {
+		return nil, fmt.Errorf("can not get workflow that need to associate to stage without instance id")
+	}
 	workflows := []*WorkflowWithInstanceID{}
 	data := map[string]interface{}{
 		"filter_instance_id": instanceIdRange,
