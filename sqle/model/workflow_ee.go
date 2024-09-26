@@ -10,7 +10,7 @@ import (
 )
 
 type WorkflowWithInstanceID struct {
-	ID          uint    `json:"id"`
+	Model
 	WorkFlowID  string  `json:"workflow_id"`
 	Subject     string  `json:"subject"`
 	Desc        string  `json:"desc"`
