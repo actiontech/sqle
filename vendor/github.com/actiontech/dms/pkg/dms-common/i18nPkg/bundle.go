@@ -134,14 +134,27 @@ func (b *Bundle) LocalizeAllWithArgs(fmtMsg *i18n.Message, args ...any) I18nStr 
 	return result
 }
 
-func (b *Bundle) EchoMiddlewareByAcceptLanguage() echo.MiddlewareFunc {
+func GetLangByAcceptLanguage(c echo.Context) string {
+	return c.Request().Header.Get(AcceptLanguageKey)
+}
+
+func (b *Bundle) EchoMiddlewareByCustomFunc(getLang ...func(c echo.Context) string) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			acceptLang := c.Request().Header.Get(AcceptLanguageKey)
+			var acceptLang string
+			for _, f := range getLang {
+				if lang := f(c); lang != "" {
+					acceptLang = lang
+					break
+				}
+			}
 			langTag := DefaultLang
-			for _, lang := range b.Bundle.LanguageTags() {
-				if strings.HasPrefix(acceptLang, lang.String()) {
-					langTag = lang
+			if acceptLang != "" {
+				for _, lang := range b.Bundle.LanguageTags() {
+					if strings.HasPrefix(acceptLang, lang.String()) {
+						langTag = lang
+						break
+					}
 				}
 			}
 
