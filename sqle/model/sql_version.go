@@ -55,3 +55,10 @@ const (
 	WorkflowReleaseStatusHaveBeenReleased = "released"
 	WorkflowReleaseStatusNotNeedReleased  = "not_need_release"
 )
+
+func (stage SqlVersionStage) InitialStatusOfWorkflow() string {
+	if len(stage.SqlVersionStagesDependency) > 0 && stage.SqlVersionStagesDependency[0].NextStageID == 0 {
+		return WorkflowReleaseStatusNotNeedReleased
+	}
+	return WorkflowReleaseStatusIsBingReleased
+}
