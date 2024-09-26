@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	v1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	dmsJWT "github.com/actiontech/dms/pkg/dms-common/api/jwt"
 	dmsObject "github.com/actiontech/dms/pkg/dms-common/dmsobject"
 	"github.com/actiontech/sqle/sqle/api/controller"
@@ -19,7 +20,7 @@ func VerifyUserIsDisabled() echo.MiddlewareFunc {
 			if err != nil {
 				return controller.JSONBaseErrorReq(c, err)
 			}
-			if user.Stat != "正常" && user.Stat != "Normal" { // todo i18n user Stat
+			if user.Stat != v1.StatOK && user.Stat != v1.StatOKEn {
 				return controller.JSONBaseErrorReq(c, errors.NewUserDisabledErr("current user status is %s", user.Stat))
 			}
 			return next(c)
