@@ -33,6 +33,7 @@ type User struct {
 	Email                  string
 	Phone                  string                 `json:"phone" gorm:"column:phone"`
 	WeChatID               string                 `json:"wechat_id" gorm:"column:wechat_id"`
+	Language               string                 `json:"language" gorm:"column:language"`
 	Password               string                 `json:"-" gorm:"-"`
 	SecretPassword         string                 `json:"secret_password" gorm:"not null;column:password"`
 	UserAuthenticationType UserAuthenticationType `json:"user_authentication_type" gorm:"not null"`
