@@ -4629,7 +4629,7 @@ definitions:
       err_message:
         type: string
     type: object
-  v2.AssociatedVersionStageWorkflows:
+  v2.AssociatedOtherStageWorkflows:
     properties:
       sql_version_stage_id:
         type: integer
@@ -5382,9 +5382,9 @@ definitions:
     type: object
   v2.WorkflowResV2:
     properties:
-      associated_version_stage_workflows:
+      associated_other_stage_workflows:
         items:
-          $ref: '#/definitions/v2.AssociatedVersionStageWorkflows'
+          $ref: '#/definitions/v2.AssociatedOtherStageWorkflows'
         type: array
       create_time:
         type: string

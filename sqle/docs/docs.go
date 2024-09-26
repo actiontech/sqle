@@ -17244,7 +17244,7 @@ var doc = `{
                 }
             }
         },
-        "v2.AssociatedVersionStageWorkflows": {
+        "v2.AssociatedOtherStageWorkflows": {
             "type": "object",
             "properties": {
                 "sql_version_stage_id": {
@@ -18335,10 +18335,10 @@ var doc = `{
         "v2.WorkflowResV2": {
             "type": "object",
             "properties": {
-                "associated_version_stage_workflows": {
+                "associated_other_stage_workflows": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v2.AssociatedVersionStageWorkflows"
+                        "$ref": "#/definitions/v2.AssociatedOtherStageWorkflows"
                     }
                 },
                 "create_time": {
