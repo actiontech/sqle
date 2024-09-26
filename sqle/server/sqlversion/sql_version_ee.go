@@ -194,14 +194,14 @@ func BatchAssociateWorkflowsWithStage(projectUid string, versionID, stageID uint
 			return err
 		}
 		// TODO At present, a workflow only supports binding to one stage, so it is only necessary to check whether the work order has been bound to a stage and annotate and retain the original code to detect whether the work order exists in this stage.
-		// check if workflow exist
-		_, exist, err := db.GetWorkflowByProjectAndWorkflowId(projectUid, workflowID)
-		if err != nil {
-			return err
-		}
-		if !exist {
-			return fmt.Errorf("can not associate a non-existent workflow with stage, workflow id: %v", workflowID)
-		}
+		// // check if workflow exist
+		// _, exist, err := db.GetWorkflowByProjectAndWorkflowId(projectUid, workflowID)
+		// if err != nil {
+		// 	return err
+		// }
+		// if !exist {
+		// 	return fmt.Errorf("can not associate a non-existent workflow with stage, workflow id: %v", workflowID)
+		// }
 		// // check if workflow exist in this stage
 		// err = stage.CheckWorkflowExistInStage(workflow)
 		// if err != nil {
