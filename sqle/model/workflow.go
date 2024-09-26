@@ -472,7 +472,7 @@ func (w *Workflow) GetNeedSendOATaskIds(entry *logrus.Entry) ([]uint, error) {
 	return taskIds, nil
 }
 
-func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User, tasks []*Task, stepTemplates []*WorkflowStepTemplate, projectId ProjectUID, sqlVersionId *uint, getOpExecUser func([]*Task) (canAuditUsers [][]*User, canExecUsers [][]*User)) error {
+func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User, tasks []*Task, stepTemplates []*WorkflowStepTemplate, projectId ProjectUID, sqlVersionId, versionStageId *uint, getOpExecUser func([]*Task) (canAuditUsers [][]*User, canExecUsers [][]*User)) error {
 	if len(tasks) <= 0 {
 		return errors.New(errors.DataConflict, fmt.Errorf("there is no task for creating workflow"))
 	}
@@ -594,13 +594,20 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 	}
 
 	if sqlVersionId != nil {
-		// get the first stage of sql version
-		firstStage := &SqlVersionStage{}
-		err := tx.Model(&SqlVersionStage{}).
-			Preload("SqlVersionStagesDependency").
-			Preload("WorkflowVersionStage").
-			Where("sql_version_id = ?", sqlVersionId).
-			Order("stage_sequence ASC").First(firstStage).Error
+		stage := &SqlVersionStage{}
+		if versionStageId == nil {
+			// get the first stage
+			err = tx.Model(&SqlVersionStage{}).
+				Preload("WorkflowVersionStage").
+				Where("sql_version_id = ?", sqlVersionId).
+				Order("stage_sequence ASC").First(stage).Error
+		} else {
+			// get specific stage
+			err = tx.Model(&SqlVersionStage{}).
+				Preload("WorkflowVersionStage").
+				Where("sql_version_id = ? AND id = ?", sqlVersionId, versionStageId).
+				First(stage).Error
+		}
 		if err != nil {
 			tx.Rollback()
 			return errors.New(errors.ConnectStorageError, err)
@@ -609,8 +616,8 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 		workflowVersionStageRelation := &WorkflowVersionStage{
 			WorkflowID:        workflowId,
 			SqlVersionID:      *sqlVersionId,
-			SqlVersionStageID: firstStage.ID,
-			WorkflowSequence:  len(firstStage.WorkflowVersionStage) + 1,
+			SqlVersionStageID: stage.ID,
+			WorkflowSequence:  len(stage.WorkflowVersionStage) + 1,
 		}
 
 		err = tx.Create(workflowVersionStageRelation).Error

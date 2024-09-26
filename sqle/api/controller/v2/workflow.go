@@ -742,7 +742,7 @@ func CreateWorkflowV2(c echo.Context) error {
 		}
 	}
 
-	err = s.CreateWorkflowV2(req.Subject, workflowId, req.Desc, user, tasks, stepTemplates, model.ProjectUID(projectUid), req.SqlVersionID, func(tasks []*model.Task) (auditWorkflowUsers, canExecUser [][]*model.User) {
+	err = s.CreateWorkflowV2(req.Subject, workflowId, req.Desc, user, tasks, stepTemplates, model.ProjectUID(projectUid), req.SqlVersionID, nil, func(tasks []*model.Task) (auditWorkflowUsers, canExecUser [][]*model.User) {
 		auditWorkflowUsers = make([][]*model.User, len(tasks))
 		executorWorkflowUsers := make([][]*model.User, len(tasks))
 		for i, task := range tasks {
