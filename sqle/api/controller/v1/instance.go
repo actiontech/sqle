@@ -120,7 +120,7 @@ func CheckInstanceIsConnectableByName(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
 	}
 
-	can, err := CheckCurrentUserCanAccessInstances(c.Request().Context(), projectUid, controller.GetUserID(c), []*model.Instance{instance})
+	can, err := CheckCurrentUserCanViewInstances(c.Request().Context(), projectUid, controller.GetUserID(c), []*model.Instance{instance})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -195,7 +195,7 @@ func BatchCheckInstanceConnections(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
 	}
 
-	can, err := CheckCurrentUserCanAccessInstances(c.Request().Context(), projectUid, controller.GetUserID(c), instances)
+	can, err := CheckCurrentUserCanViewInstances(c.Request().Context(), projectUid, controller.GetUserID(c), instances)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -301,7 +301,7 @@ func GetInstanceSchemas(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
 	}
 
-	can, err := CheckCurrentUserCanAccessInstances(c.Request().Context(), projectUid, controller.GetUserID(c), []*model.Instance{instance})
+	can, err := CheckCurrentUserCanViewInstances(c.Request().Context(), projectUid, controller.GetUserID(c), []*model.Instance{instance})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -462,7 +462,7 @@ func GetInstanceRules(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist")))
 	}
 
-	can, err := CheckCurrentUserCanAccessInstances(c.Request().Context(), projectUid, controller.GetUserID(c), []*model.Instance{instance})
+	can, err := CheckCurrentUserCanViewInstances(c.Request().Context(), projectUid, controller.GetUserID(c), []*model.Instance{instance})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

@@ -82,7 +82,7 @@ func CheckCurrentUserCanOperateTasks(c echo.Context, projectUid string, workflow
 	if err != nil {
 		return err
 	}
-	if up.IsAdmin() {
+	if up.CanOpProject() {
 		return nil
 	}
 
@@ -171,7 +171,7 @@ func checkCurrentUserCanOpTask(c echo.Context, task *model.Task, ops []dmsV1.OpP
 	if err != nil {
 		return err
 	}
-	if up.IsAdmin() {
+	if up.CanOpProject() {
 		return nil
 	}
 	if userId == fmt.Sprintf("%d", task.CreateUserId) {
@@ -201,7 +201,7 @@ func checkCurrentUserCanOpTask(c echo.Context, task *model.Task, ops []dmsV1.OpP
 	return errors.NewTaskNoExistOrNoAccessErr()
 }
 
-func GetAuditPlanIfCurrentUserCanAccess(c echo.Context, projectId, auditPlanName string, opType v1.OpPermissionType) (*model.AuditPlan, bool, error) {
+func GetAuditPlanIfCurrentUserCanView(c echo.Context, projectId, auditPlanName string, opType v1.OpPermissionType) (*model.AuditPlan, bool, error) {
 	storage := model.GetStorage()
 
 	ap, exist, err := dms.GetAuditPlanWithInstanceFromProjectByName(projectId, auditPlanName, storage.GetAuditPlanFromProjectByName)
@@ -218,12 +218,18 @@ func GetAuditPlanIfCurrentUserCanAccess(c echo.Context, projectId, auditPlanName
 		return ap, true, nil
 	}
 
-	_, isAdmin, err := dmsobject.GetUserOpPermission(c.Request().Context(), projectId, user.GetIDStr(), controller.GetDMSServerAddress())
+	userOpPermissions, isAdmin, err := dmsobject.GetUserOpPermission(c.Request().Context(), projectId, user.GetIDStr(), controller.GetDMSServerAddress())
 	if err != nil {
 		return nil, false, err
 	}
 	if isAdmin {
 		return ap, true, nil
+	}
+
+	for _, permission := range userOpPermissions {
+		if permission.OpPermissionType == dmsV1.OpPermissionTypeGlobalView || permission.OpPermissionType == dmsV1.OpPermissionTypeGlobalManagement {
+			return ap, true, nil
+		}
 	}
 
 	if opType != "" {
@@ -308,12 +314,18 @@ func GetInstanceAuditPlanIfCurrentUserCanView(c echo.Context, projectId, instanc
 		return ap, true, nil
 	}
 
-	_, isAdmin, err := dmsobject.GetUserOpPermission(c.Request().Context(), projectId, user.GetIDStr(), controller.GetDMSServerAddress())
+	permissionList, isAdmin, err := dmsobject.GetUserOpPermission(c.Request().Context(), projectId, user.GetIDStr(), controller.GetDMSServerAddress())
 	if err != nil {
 		return nil, false, err
 	}
 	if isAdmin {
 		return ap, true, nil
+	}
+
+	for _, permission := range permissionList {
+		if permission.OpPermissionType == dmsV1.OpPermissionTypeGlobalManagement || permission.OpPermissionType == dmsV1.OpPermissionTypeGlobalView {
+			return ap, true, nil
+		}
 	}
 
 	if opType != "" {
@@ -385,7 +397,7 @@ func GetAuditPlantReportAndInstanceIfCurrentUserCanView(c echo.Context, projectI
 	auditPlanReport *model.AuditPlanReportV2, auditPlanReportSQLV2 *model.AuditPlanReportSQLV2, instance *model.Instance,
 	err error) {
 
-	ap, exist, err := GetAuditPlanIfCurrentUserCanAccess(c, projectId, auditPlanName, v1.OpPermissionTypeViewOtherAuditPlan)
+	ap, exist, err := GetAuditPlanIfCurrentUserCanView(c, projectId, auditPlanName, v1.OpPermissionTypeViewOtherAuditPlan)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -441,7 +453,7 @@ func CheckCurrentUserCanOpInstances(ctx context.Context, projectUID string, user
 	if err != nil {
 		return false, fmt.Errorf("get user op permission from dms error: %v", err)
 	}
-	if up.IsAdmin() {
+	if up.CanOpProject() {
 		return true, nil
 	}
 	for _, instance := range instances {
@@ -457,7 +469,7 @@ func CheckCurrentUserCanCreateWorkflow(ctx context.Context, projectUID string, u
 	if err != nil {
 		return false, err
 	}
-	if up.IsAdmin() {
+	if up.CanOpProject() {
 		return true, nil
 	}
 
@@ -478,7 +490,7 @@ func CheckUserCanCreateAuditPlan(ctx context.Context, projectUID string, user *m
 	if err != nil {
 		return false, err
 	}
-	if up.IsAdmin() {
+	if up.CanOpProject() {
 		return true, nil
 	}
 	for _, instance := range instances {
@@ -494,7 +506,7 @@ func CheckUserCanCreateOptimization(ctx context.Context, projectUID string, user
 	if err != nil {
 		return false, err
 	}
-	if up.IsAdmin() {
+	if up.CanOpProject() {
 		return true, nil
 	}
 	for _, instance := range instances {
@@ -554,6 +566,11 @@ func GetCanOpInstanceUsers(memberWithPermissions []*dmsV1.ListMembersForInternal
 
 func CanOperationInstance(userOpPermissions []dmsV1.OpPermissionItem, needOpPermissionTypes []dmsV1.OpPermissionType, instance *model.Instance) bool {
 	for _, userOpPermission := range userOpPermissions {
+		// 全局操作权限用户
+		if userOpPermission.OpPermissionType == dmsV1.OpPermissionTypeGlobalManagement {
+			return true
+		}
+
 		// 对象权限(当前空间内所有对象)
 		if userOpPermission.RangeType == dmsV1.OpRangeTypeProject {
 			return true

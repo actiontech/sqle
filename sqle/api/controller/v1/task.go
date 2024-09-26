@@ -736,7 +736,7 @@ func UpdateAuditTaskSQLs(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	err = CheckCurrentUserCanViewTask(c, task)
+	err = CheckCurrentUserCanOpTask(c, task)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -754,7 +754,11 @@ func UpdateAuditTaskSQLs(c echo.Context) error {
 }
 
 func CheckCurrentUserCanViewTask(c echo.Context, task *model.Task) (err error) {
-	return checkCurrentUserCanAccessTask(c, task, []dmsV1.OpPermissionType{dmsV1.OpPermissionTypeViewOthersWorkflow})
+	return checkCurrentUserCanViewTask(c, task, []dmsV1.OpPermissionType{dmsV1.OpPermissionTypeViewOthersWorkflow})
+}
+
+func CheckCurrentUserCanOpTask(c echo.Context, task *model.Task) (err error) {
+	return checkCurrentUserCanOpTask(c, task, []dmsV1.OpPermissionType{dmsV1.OpPermissionTypeViewOthersWorkflow})
 }
 
 // TODO 使用DMS的权限校验
@@ -880,7 +884,7 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
 		}
 
-		can, err := CheckCurrentUserCanAccessInstances(c.Request().Context(), projectUid, user.GetIDStr(), instances)
+		can, err := CheckCurrentUserCanOpInstances(c.Request().Context(), projectUid, user.GetIDStr(), instances)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -983,7 +987,7 @@ func AuditTaskGroupV1(c echo.Context) error {
 
 	// 因为这个接口数据源属于同一个项目,取第一个DB所属项目
 	projectId := instances[0].ProjectId
-	can, err := CheckCurrentUserCanAccessInstances(c.Request().Context(), projectId, controller.GetUserID(c), instances)
+	can, err := CheckCurrentUserCanOpInstances(c.Request().Context(), projectId, controller.GetUserID(c), instances)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

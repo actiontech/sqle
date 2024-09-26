@@ -343,8 +343,8 @@ func CheckCurrentUserCanOperateWorkflowByUser(user *model.User, projectUid strin
 	if err != nil {
 		return err
 	}
-	isManager := up.IsProjectAdmin()
-	if isManager {
+	canOpProject := up.CanOpProject()
+	if canOpProject {
 		return nil
 	}
 
