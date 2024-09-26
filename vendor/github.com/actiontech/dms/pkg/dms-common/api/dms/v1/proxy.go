@@ -1,6 +1,10 @@
 package v1
 
-import base "github.com/actiontech/dms/pkg/dms-common/api/base/v1"
+import (
+	"fmt"
+
+	base "github.com/actiontech/dms/pkg/dms-common/api/base/v1"
+)
 
 // swagger:model
 type RegisterDMSProxyTargetReq struct {
@@ -23,6 +27,10 @@ type DMSProxyTarget struct {
 	ProxyUrlPrefixs []string `json:"proxy_url_prefixs" validate:"required"`
 	// the scenario is used to differentiate scenarios
 	Scenario ProxyScenario `json:"scenario"`
+}
+
+func (s *DMSProxyTarget) String() string {
+	return fmt.Sprintf("{name: %v, addr: %v, version: %v, Scenario %v}", s.Name, s.Addr, s.Version, s.Scenario)
 }
 
 // swagger:enum ProxyScenario

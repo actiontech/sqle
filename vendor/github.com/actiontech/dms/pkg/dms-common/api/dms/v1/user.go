@@ -25,6 +25,8 @@ type GetUser struct {
 	Phone string `json:"phone"`
 	// user wxid
 	WxID string `json:"wxid"`
+	// user language
+	Language string `json:"language"`
 	// user stat
 	Stat Stat `json:"stat"`
 	// user authentication type
@@ -56,6 +58,15 @@ type UserBindProject struct {
 
 // swagger:enum Stat
 type Stat string
+
+const (
+	StatOK        Stat = "正常"
+	StatDisable   Stat = "被禁用"
+	StatUnknown   Stat = "未知"
+	StatOKEn      Stat = "Normal"
+	StatDisableEn Stat = "Disabled"
+	StatUnknownEn Stat = "Unknown"
+)
 
 type UidWithName struct {
 	Uid  string `json:"uid"`

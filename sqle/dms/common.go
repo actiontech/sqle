@@ -8,11 +8,13 @@ import (
 
 	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"github.com/actiontech/dms/pkg/dms-common/dmsobject"
+	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
 	dmsRegister "github.com/actiontech/dms/pkg/dms-common/register"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/config"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
 )
 
@@ -74,7 +76,7 @@ func convertListUserToModel(user *dmsV1.ListUser) *model.User {
 		Phone:    user.Phone,
 		WeChatID: user.WxID,
 	}
-	if user.Stat != "正常" && user.Stat != "Normal" { // todo i18n user Stat
+	if user.Stat != dmsV1.StatOK && user.Stat != dmsV1.StatOKEn {
 		ret.Stat = 1
 	}
 	return ret
@@ -89,6 +91,18 @@ func GetUser(ctx context.Context, userUid string, dmsAddr string) (*model.User, 
 
 }
 
+func GetCurrentUserLanguage(c echo.Context) string {
+	user, err := controller.GetCurrentUser(c, GetUser)
+	if err != nil {
+		return ""
+	}
+	if user.Name == model.DefaultSysUser {
+		// 系统用户直接通过请求头AcceptLanguage确定语言
+		return i18nPkg.GetLangByAcceptLanguage(c)
+	}
+	return user.Language
+}
+
 func convertUserToModel(user *dmsV1.GetUser) *model.User {
 	id, _ := strconv.Atoi(user.UserUid)
 	model_ := model.Model{ID: uint(id)}
@@ -98,9 +112,10 @@ func convertUserToModel(user *dmsV1.GetUser) *model.User {
 		Email:              user.Email,
 		Phone:              user.Phone,
 		WeChatID:           user.WxID,
+		Language:           user.Language,
 		ThirdPartyUserInfo: user.ThirdPartyUserInfo,
 	}
-	if user.Stat != "正常" && user.Stat != "Normal" { // todo i18n user Stat
+	if user.Stat != dmsV1.StatOK && user.Stat != dmsV1.StatOKEn {
 		ret.Stat = 1
 	}
 	return ret

@@ -8,8 +8,9 @@ import (
 	"github.com/actiontech/dms/pkg/dms-common/api/accesstoken"
 	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	jwtPkg "github.com/actiontech/dms/pkg/dms-common/api/jwt"
+	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/locale"
-
 	// "github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
@@ -108,9 +109,9 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 	})
 
 	v1Router := e.Group(apiV1)
-	v1Router.Use(sqleMiddleware.JWTTokenAdapter(), sqleMiddleware.JWTWithConfig(dmsV1.JwtSigningKey), sqleMiddleware.VerifyUserIsDisabled(), locale.Bundle.EchoMiddlewareByAcceptLanguage(), sqleMiddleware.OperationLogRecord(), accesstoken.CheckLatestAccessToken(controller.GetDMSServerAddress(), jwtPkg.GetTokenDetailFromContextWithOldJwt))
+	v1Router.Use(sqleMiddleware.JWTTokenAdapter(), sqleMiddleware.JWTWithConfig(dmsV1.JwtSigningKey), sqleMiddleware.VerifyUserIsDisabled(), locale.Bundle.EchoMiddlewareByCustomFunc(dms.GetCurrentUserLanguage, i18nPkg.GetLangByAcceptLanguage), sqleMiddleware.OperationLogRecord(), accesstoken.CheckLatestAccessToken(controller.GetDMSServerAddress(), jwtPkg.GetTokenDetailFromContextWithOldJwt))
 	v2Router := e.Group(apiV2)
-	v2Router.Use(sqleMiddleware.JWTTokenAdapter(), sqleMiddleware.JWTWithConfig(dmsV1.JwtSigningKey), sqleMiddleware.VerifyUserIsDisabled(), locale.Bundle.EchoMiddlewareByAcceptLanguage(), sqleMiddleware.OperationLogRecord(), accesstoken.CheckLatestAccessToken(controller.GetDMSServerAddress(), jwtPkg.GetTokenDetailFromContextWithOldJwt))
+	v2Router.Use(sqleMiddleware.JWTTokenAdapter(), sqleMiddleware.JWTWithConfig(dmsV1.JwtSigningKey), sqleMiddleware.VerifyUserIsDisabled(), locale.Bundle.EchoMiddlewareByCustomFunc(dms.GetCurrentUserLanguage, i18nPkg.GetLangByAcceptLanguage), sqleMiddleware.OperationLogRecord(), accesstoken.CheckLatestAccessToken(controller.GetDMSServerAddress(), jwtPkg.GetTokenDetailFromContextWithOldJwt))
 
 	// v1 admin api, just admin user can access.
 	{
