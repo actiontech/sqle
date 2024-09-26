@@ -169,7 +169,7 @@ func getOptimizationRecords(c echo.Context) error {
 		"filter_create_time_to":   req.FilterCreateTimeTo,
 		"limit":                   req.PageSize,
 		"offset":                  offset,
-		"current_user_is_admin":   up.IsProjectAdmin(),
+		"current_user_is_admin":   up.CanViewProject(),
 		"current_user":            user.Name,
 	}
 

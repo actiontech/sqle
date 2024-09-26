@@ -11,8 +11,8 @@ import (
 	dms "github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
-	"github.com/labstack/echo/v4"
 	"github.com/actiontech/sqle/sqle/server/sqlversion"
+	"github.com/labstack/echo/v4"
 )
 
 func createSqlVersion(c echo.Context) error {
@@ -96,7 +96,7 @@ func getSqlVersionList(c echo.Context) error {
 		"fuzzy_search":              req.FuzzySearch,
 		"filter_by_project_id":      projectUid,
 		"current_user_id":           userId,
-		"current_user_is_admin":     up.IsAdmin(),
+		"current_user_is_admin":     up.CanViewProject(),
 		"limit":                     limit,
 		"offset":                    offset,
 	}
@@ -300,4 +300,3 @@ func convertWorkflowToAssociateWorkflows(workflows []*sqlversion.Workflow) []*As
 	}
 	return ret
 }
-
