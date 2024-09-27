@@ -498,7 +498,7 @@ definitions:
           type: string
         type: array
     type: object
-  v1.BatchExecuteTasksOnWorkflowReqV1:
+  v1.BatchExecuteWorkflowsReqV1:
     properties:
       workflow_ids:
         items:
@@ -9002,8 +9002,8 @@ paths:
       - sql_version
   /v1/projects/{project_name}/sql_versions/{sql_version_id}/batch_execute_workflows:
     post:
-      description: batch execute tasks on workflow
-      operationId: batchExecuteTasksOnWorkflowV1
+      description: batch execute workflows
+      operationId: batchExecuteWorkflowsV1
       parameters:
       - description: project name
         in: path
@@ -9015,12 +9015,12 @@ paths:
         name: sql_version_id
         required: true
         type: string
-      - description: batch execute tasks on workflow request
+      - description: batch execute workflows request
         in: body
         name: data
         required: true
         schema:
-          $ref: '#/definitions/v1.BatchExecuteTasksOnWorkflowReqV1'
+          $ref: '#/definitions/v1.BatchExecuteWorkflowsReqV1'
       responses:
         "200":
           description: OK

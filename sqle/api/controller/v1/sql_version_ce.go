@@ -37,7 +37,7 @@ func batchReleaseWorkflows(c echo.Context) error {
 	return ErrCommunityEditionNotSupportSqlManage
 }
 
-func batchExecuteTasksOnWorkflow(c echo.Context) error {
+func batchExecuteWorkflows(c echo.Context) error {
 	return ErrCommunityEditionNotSupportSqlManage
 }
 func retryExecWorkflow(c echo.Context) error {

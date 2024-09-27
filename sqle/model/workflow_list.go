@@ -32,7 +32,7 @@ SELECT
        curr_wst.type                                                 AS current_step_type,
        curr_ws.assignees											 AS current_step_assignee_user_id_list,
        wr.status,
-	   GROUP_CONCAT(versions.version SEPARATOR ',') AS version
+	   GROUP_CONCAT(DISTINCT versions.version SEPARATOR ',') AS version
 {{- template "body" . -}}
 GROUP BY w.id
 ORDER BY w.id DESC

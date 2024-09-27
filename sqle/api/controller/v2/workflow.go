@@ -443,7 +443,7 @@ func ExecuteOneTaskOnWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, fmt.Errorf("task has no need to be executed. taskId=%v workflowId=%v", taskId, workflow.WorkflowId))
 	}
 
-	err = server.ExecuteWorkflow(workflow, map[uint]string{uint(taskId): user.GetIDStr()})
+	_, err = server.ExecuteWorkflow(workflow, map[uint]string{uint(taskId): user.GetIDStr()})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -742,7 +742,7 @@ func CreateWorkflowV2(c echo.Context) error {
 		}
 	}
 
-	err = s.CreateWorkflowV2(req.Subject, workflowId, req.Desc, user, tasks, stepTemplates, model.ProjectUID(projectUid), req.SqlVersionID, func(tasks []*model.Task) (auditWorkflowUsers, canExecUser [][]*model.User) {
+	err = s.CreateWorkflowV2(req.Subject, workflowId, req.Desc, user, tasks, stepTemplates, model.ProjectUID(projectUid), req.SqlVersionID, nil, nil, func(tasks []*model.Task) (auditWorkflowUsers, canExecUser [][]*model.User) {
 		auditWorkflowUsers = make([][]*model.User, len(tasks))
 		executorWorkflowUsers := make([][]*model.User, len(tasks))
 		for i, task := range tasks {
@@ -1079,7 +1079,7 @@ func ExecuteTasksOnWorkflowV2(c echo.Context) error {
 		return err
 	}
 
-	err = server.ExecuteTasksProcess(workflow.WorkflowId, projectUid, user)
+	_, err = server.ExecuteTasksProcess(workflow.WorkflowId, projectUid, user)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

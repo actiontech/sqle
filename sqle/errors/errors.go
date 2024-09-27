@@ -45,6 +45,8 @@ const (
 
 	SQLOptimizationCommunityNotSupported = 8004
 
+	SQLVersionNotAllTasksExecutedSuccess = 8005
+
 	// 需要隐藏所有错误细节或不确定时使用
 	GenericError ErrorCode = 9999
 )

@@ -5,7 +5,7 @@ package sqlversion
 
 import (
 	"fmt"
-	"strconv"
+
 	"time"
 
 	"github.com/actiontech/sqle/sqle/model"
@@ -62,23 +62,48 @@ func ToServiceStage(modelStage *model.SqlVersionStage) *Stage {
 }
 
 // 判断输入的数据源是否属于当前阶段的数据源的子集
-func (s Stage) ContainsInstances(instances []*Instance) bool {
-	// 创建一个 map 来存储 Stage 中的 InstanceID
+func (s Stage) CheckStageContainsInstances(instanceIds []uint64) error {
+
 	instanceMap := make(map[uint64]struct{})
 
-	// 将 Stage 中的所有 Instance 的 ID 存入 map
 	for _, instance := range s.Instances {
 		instanceMap[instance.InstanceID] = struct{}{}
 	}
 
 	// 检查传入的 instances 是否都是 Stage 中的子集
-	for _, inst := range instances {
-		if _, exists := instanceMap[inst.InstanceID]; !exists {
-			return false // 只要有一个实例不在 Stage 中，返回 false
+	for _, instanceId := range instanceIds {
+		if _, exists := instanceMap[instanceId]; !exists {
+			return fmt.Errorf("can not attach workflow with sql version, instances of the workflow does not belong entirely to the first stage.")
 		}
 	}
 
-	return true // 所有实例都在 Stage 中，返回 true
+	return nil
+}
+
+func (s Stage) CheckWorkflowExistInStage(workflow *model.Workflow) error {
+
+	workflowIdMap := make(map[string]struct{})
+
+	for _, workflow := range s.Workflows {
+		workflowIdMap[workflow.WorkflowID] = struct{}{}
+	}
+
+	if _, exists := workflowIdMap[workflow.WorkflowId]; exists {
+		return fmt.Errorf("can not associate workflow to stage, workflow already exist in this stage. stage name: %v, workflow subject: %v", s.Name, workflow.Subject)
+	}
+	return nil
+}
+
+func CheckWorkflowHasBoundWithStage(workflowID string) error {
+	db := model.GetStorage()
+	relation, exist, err := db.GetWorkflowVersionRelationByWorkflowId(workflowID)
+	if err != nil {
+		return err
+	}
+	if exist {
+		return fmt.Errorf("workflow can only be bound with a stage, this workflow has bound with another stage of version, version id %v stage id %v", relation.SqlVersionID, relation.SqlVersionStageID)
+	}
+	return nil
 }
 
 // 数据源，数据源为SQL版本阶段中涉及的数据源，以关联关系的方式保存，SQL版本阶段:数据源 = 1:n
@@ -98,30 +123,6 @@ type Workflow struct {
 	workflow    *model.Workflow
 }
 
-func CheckInstanceInWorkflowCanAssociateToTheFirstStageOfVersion(versionID uint, instanceId []uint64) error {
-	db := model.GetStorage()
-
-	workflowInstances := make([]*Instance, 0, len(instanceId))
-	for _, instanceId := range instanceId {
-		workflowInstances = append(workflowInstances, &Instance{
-			InstanceID: instanceId,
-		})
-	}
-
-	// get the first stage of sql version
-	modelFirstStage, err := db.GetFirstStageOfSQLVersion(versionID)
-	if err != nil {
-		return fmt.Errorf("when get first stage of sql version error: %w", err)
-	}
-	firstStage := ToServiceStage(modelFirstStage)
-
-	if !firstStage.ContainsInstances(workflowInstances) {
-		return fmt.Errorf("can not attach workflow with sql version, instances of the workflow does not belong entirely to the first stage")
-	}
-
-	return nil
-}
-
 func GetWorkflowsThatCanBeAssociatedToVersionStage(versionID, stageID uint) ([]*Workflow, error) {
 	db := model.GetStorage()
 	modelStage, err := db.GetStageOfSQLVersion(versionID, stageID)
@@ -133,31 +134,13 @@ func GetWorkflowsThatCanBeAssociatedToVersionStage(versionID, stageID uint) ([]*
 	for _, instance := range stage.Instances {
 		instanceIdRange = append(instanceIdRange, instance.InstanceID)
 	}
-	if len(instanceIdRange) == 0 {
-		return nil, fmt.Errorf("when get workflows that can be associated to version stage, can not load instances of stage, version id %v stage id %v", versionID, stageID)
-	}
-	excludeWorkflowIds := make([]string, 0, len(stage.Workflows))
-	for _, workflow := range stage.Workflows {
-		excludeWorkflowIds = append(excludeWorkflowIds, workflow.WorkflowID)
-	}
 
-	modelWorkflows, err := db.GetWorkflowsThatCanBeAssociatedToStage(instanceIdRange, excludeWorkflowIds)
+	modelWorkflows, err := db.GetWorkflowsThatCanBeAssociatedToStage(instanceIdRange)
 	if err != nil {
 		return nil, err
 	}
 	workflows := make([]*Workflow, 0, len(modelWorkflows))
 	for _, modelWorkflow := range modelWorkflows {
-		var instances []*Instance
-		for _, instanceIDStr := range modelWorkflow.InstanceIDs {
-			instanceID, err := strconv.Atoi(instanceIDStr)
-			if err != nil {
-				return nil, fmt.Errorf("when get workflows that can be attatch with version, convert instance id failed %w, instance id %v", err, instanceID)
-			}
-			instances = append(instances, &Instance{InstanceID: uint64(instanceID)})
-		}
-		if !stage.ContainsInstances(instances) {
-			continue
-		}
 		workflows = append(workflows, &Workflow{
 			ID:          modelWorkflow.ID,
 			WorkflowID:  modelWorkflow.WorkFlowID,
@@ -166,4 +149,70 @@ func GetWorkflowsThatCanBeAssociatedToVersionStage(versionID, stageID uint) ([]*
 		})
 	}
 	return workflows, nil
+}
+
+func CheckInstanceInWorkflowCanAssociateToTheFirstStageOfVersion(versionID uint, instanceId []uint64) error {
+	db := model.GetStorage()
+
+	workflowInstanceIds := make([]uint64, 0, len(instanceId))
+	for _, instanceId := range instanceId {
+		workflowInstanceIds = append(workflowInstanceIds, instanceId)
+	}
+
+	// get the first stage of sql version
+	modelFirstStage, err := db.GetFirstStageOfSQLVersion(versionID)
+	if err != nil {
+		return fmt.Errorf("when get first stage of sql version error: %w", err)
+	}
+	firstStage := ToServiceStage(modelFirstStage)
+	err = firstStage.CheckStageContainsInstances(workflowInstanceIds)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func BatchAssociateWorkflowsWithStage(projectUid string, versionID, stageID uint, workflowIds []string) error {
+	db := model.GetStorage()
+	modelStage, err := db.GetStageOfSQLVersion(versionID, stageID)
+	if err != nil {
+		return err
+	}
+	stage := ToServiceStage(modelStage)
+	for _, workflowID := range workflowIds {
+		// check if instance of workflow are entirely belongs to stage
+		instanceIds, err := db.GetInstanceIdsByWorkflowID(workflowID)
+		if err != nil {
+			return err
+		}
+		if len(instanceIds) == 0 {
+			return fmt.Errorf("the workflow does not use any instance")
+		}
+		err = stage.CheckStageContainsInstances(instanceIds)
+		if err != nil {
+			return err
+		}
+		// TODO At present, a workflow only supports binding to one stage, so it is only necessary to check whether the work order has been bound to a stage and annotate and retain the original code to detect whether the work order exists in this stage.
+		// // check if workflow exist
+		// _, exist, err := db.GetWorkflowByProjectAndWorkflowId(projectUid, workflowID)
+		// if err != nil {
+		// 	return err
+		// }
+		// if !exist {
+		// 	return fmt.Errorf("can not associate a non-existent workflow with stage, workflow id: %v", workflowID)
+		// }
+		// // check if workflow exist in this stage
+		// err = stage.CheckWorkflowExistInStage(workflow)
+		// if err != nil {
+		// 	return err
+		// }
+		// check if workflow has bound to other stage
+		err = CheckWorkflowHasBoundWithStage(workflowID)
+		if err != nil {
+			return err
+		}
+	}
+
+	return db.BatchCreateWorkflowVerionRelation(modelStage, workflowIds)
 }

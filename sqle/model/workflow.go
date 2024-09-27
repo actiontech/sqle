@@ -4,10 +4,11 @@ import (
 	"database/sql"
 	e "errors"
 	"fmt"
-	"github.com/actiontech/sqle/sqle/locale"
-	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"strings"
 	"time"
+
+	"github.com/actiontech/sqle/sqle/locale"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
@@ -472,7 +473,7 @@ func (w *Workflow) GetNeedSendOATaskIds(entry *logrus.Entry) ([]uint, error) {
 	return taskIds, nil
 }
 
-func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User, tasks []*Task, stepTemplates []*WorkflowStepTemplate, projectId ProjectUID, sqlVersionId *uint, getOpExecUser func([]*Task) (canAuditUsers [][]*User, canExecUsers [][]*User)) error {
+func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User, tasks []*Task, stepTemplates []*WorkflowStepTemplate, projectId ProjectUID, sqlVersionId, versionStageId *uint, workflowStageSequence *int, getOpExecUser func([]*Task) (canAuditUsers [][]*User, canExecUsers [][]*User)) error {
 	if len(tasks) <= 0 {
 		return errors.New(errors.DataConflict, fmt.Errorf("there is no task for creating workflow"))
 	}
@@ -594,25 +595,41 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 	}
 
 	if sqlVersionId != nil {
-		// get the first stage of sql version
-		firstStage := &SqlVersionStage{}
-		err := tx.Model(&SqlVersionStage{}).
-			Preload("SqlVersionStagesDependency").
-			Preload("WorkflowVersionStage").
-			Where("sql_version_id = ?", sqlVersionId).
-			Order("stage_sequence ASC").First(firstStage).Error
+		stage := &SqlVersionStage{}
+		if versionStageId == nil {
+			// get the first stage
+			err = tx.Model(&SqlVersionStage{}).
+				Preload("WorkflowVersionStage").
+				Preload("SqlVersionStagesDependency").
+				Where("sql_version_id = ?", sqlVersionId).
+				Order("stage_sequence ASC").First(stage).Error
+		} else {
+			// get specific stage
+			err = tx.Model(&SqlVersionStage{}).
+				Preload("WorkflowVersionStage").
+				Preload("SqlVersionStagesDependency").
+				Where("sql_version_id = ? AND id = ?", sqlVersionId, versionStageId).
+				First(stage).Error
+		}
 		if err != nil {
 			tx.Rollback()
 			return errors.New(errors.ConnectStorageError, err)
 		}
 		// associate sql version with workflow
 		workflowVersionStageRelation := &WorkflowVersionStage{
-			WorkflowID:        workflowId,
-			SqlVersionID:      *sqlVersionId,
-			SqlVersionStageID: firstStage.ID,
-			WorkflowSequence:  len(firstStage.WorkflowVersionStage) + 1,
+			WorkflowID:            workflowId,
+			SqlVersionID:          *sqlVersionId,
+			SqlVersionStageID:     stage.ID,
+			WorkflowReleaseStatus: stage.InitialStatusOfWorkflow(),
 		}
 
+		if workflowStageSequence != nil {
+			// 当在版本中发布工单时，工单发布到下一阶段所在的占位由当前阶段决定
+			workflowVersionStageRelation.WorkflowSequence = *workflowStageSequence
+		} else {
+			// 当在版本中新建工单时，该工单的顺序为该阶段的最后一条工单
+			workflowVersionStageRelation.WorkflowSequence = len(stage.WorkflowVersionStage) + 1
+		}
 		err = tx.Create(workflowVersionStageRelation).Error
 		if err != nil {
 			tx.Rollback()

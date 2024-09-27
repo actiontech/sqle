@@ -8,6 +8,8 @@ import (
 	"github.com/actiontech/dms/pkg/dms-common/api/accesstoken"
 	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	jwtPkg "github.com/actiontech/dms/pkg/dms-common/api/jwt"
+	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/locale"
 
 	// "github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper"
@@ -108,9 +110,9 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 	})
 
 	v1Router := e.Group(apiV1)
-	v1Router.Use(sqleMiddleware.JWTTokenAdapter(), sqleMiddleware.JWTWithConfig(dmsV1.JwtSigningKey), sqleMiddleware.VerifyUserIsDisabled(), locale.Bundle.EchoMiddlewareByAcceptLanguage(), sqleMiddleware.OperationLogRecord(), accesstoken.CheckLatestAccessToken(controller.GetDMSServerAddress(), jwtPkg.GetTokenDetailFromContextWithOldJwt))
+	v1Router.Use(sqleMiddleware.JWTTokenAdapter(), sqleMiddleware.JWTWithConfig(dmsV1.JwtSigningKey), sqleMiddleware.VerifyUserIsDisabled(), locale.Bundle.EchoMiddlewareByCustomFunc(dms.GetCurrentUserLanguage, i18nPkg.GetLangByAcceptLanguage), sqleMiddleware.OperationLogRecord(), accesstoken.CheckLatestAccessToken(controller.GetDMSServerAddress(), jwtPkg.GetTokenDetailFromContextWithOldJwt))
 	v2Router := e.Group(apiV2)
-	v2Router.Use(sqleMiddleware.JWTTokenAdapter(), sqleMiddleware.JWTWithConfig(dmsV1.JwtSigningKey), sqleMiddleware.VerifyUserIsDisabled(), locale.Bundle.EchoMiddlewareByAcceptLanguage(), sqleMiddleware.OperationLogRecord(), accesstoken.CheckLatestAccessToken(controller.GetDMSServerAddress(), jwtPkg.GetTokenDetailFromContextWithOldJwt))
+	v2Router.Use(sqleMiddleware.JWTTokenAdapter(), sqleMiddleware.JWTWithConfig(dmsV1.JwtSigningKey), sqleMiddleware.VerifyUserIsDisabled(), locale.Bundle.EchoMiddlewareByCustomFunc(dms.GetCurrentUserLanguage, i18nPkg.GetLangByAcceptLanguage), sqleMiddleware.OperationLogRecord(), accesstoken.CheckLatestAccessToken(controller.GetDMSServerAddress(), jwtPkg.GetTokenDetailFromContextWithOldJwt))
 
 	// v1 admin api, just admin user can access.
 	{
@@ -259,7 +261,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1ProjectRouter.POST("/:project_name/sql_versions/:sql_version_id/lock", v1.LockSqlVersion)
 		v1ProjectRouter.GET("/:project_name/sql_versions/:sql_version_id/sql_version_stages/:sql_version_stage_id/dependencies", v1.GetDependenciesBetweenStageInstance)
 		v1ProjectRouter.POST("/:project_name/sql_versions/:sql_version_id/batch_release_workflows", v1.BatchReleaseWorkflows)
-		v1ProjectRouter.POST("/:project_name/sql_versions/:sql_version_id/batch_execute_workflows", v1.BatchExecuteTasksOnWorkflow)
+		v1ProjectRouter.POST("/:project_name/sql_versions/:sql_version_id/batch_execute_workflows", v1.BatchExecuteWorkflows)
 		v1ProjectRouter.POST("/:project_name/sql_versions/:sql_version_id/retry_workflow ", v1.RetryExecWorkflow)
 		v1ProjectRouter.POST("/:project_name/sql_versions/:sql_version_id/sql_version_stages/:sql_version_stage_id/associate_workflows", v1.BatchAssociateWorkflowsWithVersion)
 		v1ProjectRouter.GET("/:project_name/sql_versions/:sql_version_id/sql_version_stages/:sql_version_stage_id/associate_workflows", v1.GetWorkflowsThatCanBeAssociatedToVersion)
