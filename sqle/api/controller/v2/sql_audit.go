@@ -150,7 +150,7 @@ func DirectAuditFiles(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if !up.IsProjectMember() {
+	if !up.CanOpProject() && !up.IsProjectMember() {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.ErrAccessDeniedError, e.New("you are not the project member")))
 	}
 

@@ -167,6 +167,10 @@ const (
 	// 创建项目；创建项目的用户自动拥有该项目管理权限
 	OpPermissionTypeCreateProject OpPermissionType = "create_project"
 	// 项目管理；拥有该权限的用户可以管理项目下的所有资源
+	OpPermissionTypeGlobalView OpPermissionType = "global_view"
+	// 全局浏览；拥有该权限的用户可以浏览全局的资源
+	OpPermissionTypeGlobalManagement OpPermissionType = "global_management"
+	// 全局管理；拥有该权限的用户可以浏览和管理全局的资源
 	OpPermissionTypeProjectAdmin OpPermissionType = "project_admin"
 	// 创建/编辑工单；拥有该权限的用户可以创建/编辑工单
 	OpPermissionTypeCreateWorkflow OpPermissionType = "create_workflow"
@@ -198,6 +202,10 @@ const (
 
 func ParseOpPermissionType(typ string) (OpPermissionType, error) {
 	switch typ {
+	case string(OpPermissionTypeGlobalView):
+		return OpPermissionTypeGlobalView, nil
+	case string(OpPermissionTypeGlobalManagement):
+		return OpPermissionTypeGlobalManagement, nil
 	case string(OpPermissionTypeCreateProject):
 		return OpPermissionTypeCreateProject, nil
 	case string(OpPermissionTypeProjectAdmin):
