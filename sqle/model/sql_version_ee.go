@@ -197,6 +197,48 @@ func (s *Storage) BatchSaveSqlVersion(reqSqlVersion *SqlVersion) error {
 	return nil
 }
 
+func (s *Storage) GetStageWorkflowsByWorkflowIds(sqlVersionId uint, workflowIds []string) ([]*WorkflowVersionStage, error) {
+	var stagesWorkflows []*WorkflowVersionStage
+	err := s.db.Model(WorkflowVersionStage{}).Where("sql_version_id = ? AND workflow_id in (?)", sqlVersionId, workflowIds).Find(&stagesWorkflows).Error
+	return stagesWorkflows, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) UpdateStageWorkflowExecTimeIfNeed(workflowId string) error {
+	stage, exist, err := s.GetStageOfTheWorkflow(workflowId)
+	if err != nil {
+		return err
+	}
+	if !exist {
+		// 工单没有关联版本阶段信息，不需要更新上线时间
+		return nil
+	}
+	stagesWorkflows, err := s.GetStageWorkflowsByWorkflowIds(stage.SqlVersionID, []string{workflowId})
+	if err != nil {
+		return err
+	}
+	// 若上线时间已经有，则不进行更新，防止tasks定时上线覆盖该时间
+	if stagesWorkflows[0].WorkflowExecTime == nil {
+		err = s.db.Model(WorkflowVersionStage{}).Where("workflow_id = ?", workflowId).Update("workflow_exec_time", time.Now()).Error
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *Storage) GetStageOfTheWorkflow(workflowId string) (*SqlVersionStage, bool, error) {
+	stage := &SqlVersionStage{}
+	err := s.db.Model(&SqlVersionStage{}).
+		Joins("JOIN workflow_version_stages ON sql_version_stages.id = workflow_version_stages.sql_version_stage_id").
+		Where("workflow_version_stages.workflow_id = ?", workflowId).First(stage).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, false, nil
+	} else if err != nil {
+		return nil, false, err
+	}
+	return stage, true, nil
+}
+
 func (stage SqlVersionStage) InitialStatusOfWorkflow() string {
 	if len(stage.SqlVersionStagesDependency) > 0 && stage.SqlVersionStagesDependency[0].NextStageID == 0 {
 		return WorkflowReleaseStatusNotNeedReleased

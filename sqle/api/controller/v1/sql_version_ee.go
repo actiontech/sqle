@@ -4,13 +4,17 @@
 package v1
 
 import (
+	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	dms "github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/pkg/im"
+	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/server/sqlversion"
 	"github.com/labstack/echo/v4"
 )
@@ -259,8 +263,60 @@ func batchReleaseWorkflows(c echo.Context) error {
 }
 
 func batchExecuteTasksOnWorkflow(c echo.Context) error {
-	return nil
+	req := new(BatchExecuteTasksOnWorkflowReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	sqlVersionId, err := strconv.ParseInt(c.Param("sql_version_id"), 10, 64)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	s := model.GetStorage()
+	stageWorkflows, err := s.GetStageWorkflowsByWorkflowIds(uint(sqlVersionId), req.WorkflowIDs)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if len(stageWorkflows) != len(req.WorkflowIDs) {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, fmt.Errorf("unfound workflow")))
+	}
+
+	// sort by workflow sequence
+	sort.Slice(stageWorkflows, func(i, j int) bool {
+		return stageWorkflows[i].WorkflowSequence < stageWorkflows[j].WorkflowSequence
+	})
+
+	for _, execWorkflow := range stageWorkflows {
+		workflow, err := dms.GetWorkflowDetailByWorkflowId(projectUid, execWorkflow.WorkflowID, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+
+		user, err := controller.GetCurrentUser(c, dms.GetUser)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if err := PrepareForWorkflowExecution(c, projectUid, workflow, user); err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		workflowStatusChan, err := server.ExecuteTasksProcess(workflow.WorkflowId, projectUid, user)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		im.UpdateApprove(workflow.WorkflowId, user, model.ApproveStatusAgree, "")
+
+		// 阻塞继续上线，直到获取到工单上线结果(状态)
+		if <-workflowStatusChan != model.WorkflowStatusFinish {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("workflow %s execution status is not finished and stop execution", workflow.Subject)))
+		}
+
+	}
+	return controller.JSONBaseErrorReq(c, nil)
 }
+
 func retryExecWorkflow(c echo.Context) error {
 	return nil
 }
