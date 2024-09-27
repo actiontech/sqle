@@ -443,7 +443,7 @@ func ExecuteOneTaskOnWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, fmt.Errorf("task has no need to be executed. taskId=%v workflowId=%v", taskId, workflow.WorkflowId))
 	}
 
-	err = server.ExecuteWorkflow(workflow, map[uint]string{uint(taskId): user.GetIDStr()})
+	_, err = server.ExecuteWorkflow(workflow, map[uint]string{uint(taskId): user.GetIDStr()})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1079,7 +1079,7 @@ func ExecuteTasksOnWorkflowV2(c echo.Context) error {
 		return err
 	}
 
-	err = server.ExecuteTasksProcess(workflow.WorkflowId, projectUid, user)
+	_, err = server.ExecuteTasksProcess(workflow.WorkflowId, projectUid, user)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
