@@ -622,9 +622,12 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 			SqlVersionStageID:     stage.ID,
 			WorkflowReleaseStatus: stage.InitialStatusOfWorkflow(),
 		}
+
 		if workflowStageSequence != nil {
+			// 当在版本中发布工单时，工单发布到下一阶段所在的占位由当前阶段决定
 			workflowVersionStageRelation.WorkflowSequence = *workflowStageSequence
 		} else {
+			// 当在版本中新建工单时，该工单的顺序为该阶段的最后一条工单
 			workflowVersionStageRelation.WorkflowSequence = len(stage.WorkflowVersionStage) + 1
 		}
 		err = tx.Create(workflowVersionStageRelation).Error
