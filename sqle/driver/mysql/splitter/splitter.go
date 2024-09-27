@@ -22,16 +22,22 @@ func NewSplitter() *splitter {
 }
 
 func (s *splitter) ParseSqlText(sqlText string) ([]ast.StmtNode, error) {
-	s.delimiter.reset()
+	err := s.delimiter.reset()
+	if err != nil {
+		return nil, err
+	}
 	results, err := s.splitSqlText(sqlText)
 	if err != nil {
 		return nil, err
 	}
-	return s.processToExecutableNodes(results), nil
+	return s.processToExecutableNodes(results)
 }
 
-func (s *splitter) processToExecutableNodes(results []*sqlWithLineNumber) []ast.StmtNode {
-	s.delimiter.reset()
+func (s *splitter) processToExecutableNodes(results []*sqlWithLineNumber) ([]ast.StmtNode, error) {
+	err := s.delimiter.reset()
+	if err != nil {
+		return nil, err
+	}
 
 	var executableNodes []ast.StmtNode
 	for _, result := range results {
@@ -62,7 +68,7 @@ func (s *splitter) processToExecutableNodes(results []*sqlWithLineNumber) []ast.
 			executableNodes = append(executableNodes, unParsedStmt)
 		}
 	}
-	return executableNodes
+	return executableNodes, nil
 }
 
 type sqlWithLineNumber struct {
