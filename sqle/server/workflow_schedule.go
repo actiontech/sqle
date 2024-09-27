@@ -55,7 +55,7 @@ func (j *WorkflowScheduleJob) WorkflowSchedule(entry *logrus.Entry) {
 		if len(needExecuteTaskIds) == 0 {
 			entry.Warnf("workflow %s need to execute scheduled, but no task find", w.Subject)
 		}
-		err = ExecuteWorkflow(w, needExecuteTaskIds)
+		_, err = ExecuteWorkflow(w, needExecuteTaskIds)
 		if err != nil {
 			entry.Errorf("execute scheduled workflow %s error: %v", w.Subject, err)
 		} else {
@@ -64,41 +64,45 @@ func (j *WorkflowScheduleJob) WorkflowSchedule(entry *logrus.Entry) {
 	}
 }
 
-func ExecuteWorkflow(workflow *model.Workflow, needExecTaskIdToUserId map[uint]string) error {
+func ExecuteWorkflow(workflow *model.Workflow, needExecTaskIdToUserId map[uint]string) (chan string, error) {
 	s := model.GetStorage()
-
+	l := log.NewEntry()
+	err := s.UpdateStageWorkflowExecTimeIfNeed(workflow.WorkflowId)
+	if err != nil {
+		l.Errorf("update workflow execute time for version stage error: %v", err)
+	}
 	// get task and check connection before to execute it.
 	for taskId := range needExecTaskIdToUserId {
 		taskId := fmt.Sprintf("%d", taskId)
 		task, exist, err := s.GetTaskDetailById(taskId)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if !exist {
-			return errors.New(errors.DataNotExist, fmt.Errorf("task is not exist. taskID=%v", taskId))
+			return nil, errors.New(errors.DataNotExist, fmt.Errorf("task is not exist. taskID=%v", taskId))
 		}
 		instance, exist, err := dms.GetInstancesById(context.Background(), fmt.Sprintf("%d", task.InstanceId))
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if !exist {
-			return errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist. instanceId=%v", task.InstanceId))
+			return nil, errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist. instanceId=%v", task.InstanceId))
 		}
 		task.Instance = instance
 		if task.Instance == nil {
-			return errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist"))
+			return nil, errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist"))
 		}
 
 		// if instance is not connectable, exec sql must be failed;
 		// commit action unable to retry, so don't to exec it.
 		if err = common.CheckInstanceIsConnectable(task.Instance); err != nil {
-			return errors.New(errors.ConnectRemoteDatabaseError, err)
+			return nil, errors.New(errors.ConnectRemoteDatabaseError, err)
 		}
 	}
 
 	currentStep := workflow.CurrentStep()
 	if currentStep == nil {
-		return fmt.Errorf("workflow current step not found")
+		return nil, fmt.Errorf("workflow current step not found")
 	}
 
 	// update workflow
@@ -128,12 +132,11 @@ func ExecuteWorkflow(workflow *model.Workflow, needExecTaskIdToUserId map[uint]s
 		operateStep = nil
 	}
 
-	err := s.UpdateWorkflowExecInstanceRecord(workflow, operateStep, needExecTaskRecords)
+	err = s.UpdateWorkflowExecInstanceRecord(workflow, operateStep, needExecTaskRecords)
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	l := log.NewEntry()
+	workflowStatusChan := make(chan string)
 	var lock sync.Mutex
 	for taskId := range needExecTaskIdToUserId {
 		id := taskId
@@ -143,7 +146,7 @@ func ExecuteWorkflow(workflow *model.Workflow, needExecTaskIdToUserId map[uint]s
 
 			{ // NOTE: Update the workflow status before sending notifications to ensure that the notification content reflects the latest information.
 				lock.Lock()
-				updateStatus(s, workflow, l)
+				updateStatus(s, workflow, l, workflowStatusChan)
 				lock.Unlock()
 			}
 
@@ -156,10 +159,10 @@ func ExecuteWorkflow(workflow *model.Workflow, needExecTaskIdToUserId map[uint]s
 		}()
 	}
 
-	return nil
+	return workflowStatusChan, nil
 }
 
-func updateStatus(s *model.Storage, workflow *model.Workflow, l *logrus.Entry) {
+func updateStatus(s *model.Storage, workflow *model.Workflow, l *logrus.Entry, workflowStatusChan chan string) {
 	tasks, err := s.GetTasksByWorkFlowRecordID(workflow.Record.ID)
 	if err != nil {
 		l.Errorf("get tasks by workflow record id error: %v", err)
@@ -206,6 +209,9 @@ func updateStatus(s *model.Storage, workflow *model.Workflow, l *logrus.Entry) {
 		})
 		if err != nil {
 			l.Errorf("update workflow record status failed: %v", err)
+		}
+		if workflowStatusChan != nil && workFlowStatus != model.WorkflowStatusExecuting {
+			workflowStatusChan <- workFlowStatus
 		}
 	}
 }
@@ -258,28 +264,28 @@ func RejectWorkflowProcess(workflow *model.Workflow, reason string, user *model.
 	return nil
 }
 
-func ExecuteTasksProcess(workflowId string, projectUid string, user *model.User) error {
+func ExecuteTasksProcess(workflowId string, projectUid string, user *model.User) (chan string, error) {
 	s := model.GetStorage()
 	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectUid, workflowId, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if err = PrepareForWorkflowExecution(projectUid, workflow, user); err != nil {
-		return err
+		return nil, err
 	}
 
 	needExecTaskIds, err := GetNeedExecTaskIds(workflow, user)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	err = ExecuteWorkflow(workflow, needExecTaskIds)
+	workflowExecResultChan, err := ExecuteWorkflow(workflow, needExecTaskIds)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return workflowExecResultChan, nil
 }
 
 func PrepareForWorkflowExecution(projectUid string, workflow *model.Workflow, user *model.User) error {
