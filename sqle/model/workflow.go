@@ -4,10 +4,11 @@ import (
 	"database/sql"
 	e "errors"
 	"fmt"
-	"github.com/actiontech/sqle/sqle/locale"
-	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"strings"
 	"time"
+
+	"github.com/actiontech/sqle/sqle/locale"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
@@ -472,7 +473,7 @@ func (w *Workflow) GetNeedSendOATaskIds(entry *logrus.Entry) ([]uint, error) {
 	return taskIds, nil
 }
 
-func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User, tasks []*Task, stepTemplates []*WorkflowStepTemplate, projectId ProjectUID, sqlVersionId, versionStageId *uint, getOpExecUser func([]*Task) (canAuditUsers [][]*User, canExecUsers [][]*User)) error {
+func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User, tasks []*Task, stepTemplates []*WorkflowStepTemplate, projectId ProjectUID, sqlVersionId, versionStageId *uint, workflowStageSequence *int, getOpExecUser func([]*Task) (canAuditUsers [][]*User, canExecUsers [][]*User)) error {
 	if len(tasks) <= 0 {
 		return errors.New(errors.DataConflict, fmt.Errorf("there is no task for creating workflow"))
 	}
@@ -619,10 +620,13 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 			WorkflowID:            workflowId,
 			SqlVersionID:          *sqlVersionId,
 			SqlVersionStageID:     stage.ID,
-			WorkflowSequence:      len(stage.WorkflowVersionStage) + 1,
 			WorkflowReleaseStatus: stage.InitialStatusOfWorkflow(),
 		}
-
+		if workflowStageSequence != nil {
+			workflowVersionStageRelation.WorkflowSequence = *workflowStageSequence
+		} else {
+			workflowVersionStageRelation.WorkflowSequence = len(stage.WorkflowVersionStage) + 1
+		}
 		err = tx.Create(workflowVersionStageRelation).Error
 		if err != nil {
 			tx.Rollback()
