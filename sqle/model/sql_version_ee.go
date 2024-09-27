@@ -220,7 +220,7 @@ func (s *Storage) UpdateStageWorkflowExecTimeIfNeed(workflowId string) error {
 	if err != nil {
 		return err
 	}
-	// 若上线时间已经有，则不进行更新，防止tasks定时上线覆盖该时间
+	// 若上线时间已经有，则不进行更新，记录工单中第一个task的上线时间
 	if stagesWorkflows[0].WorkflowExecTime == nil {
 		err = s.db.Model(WorkflowVersionStage{}).Where("workflow_id = ?", workflowId).Update("workflow_exec_time", time.Now()).Error
 		if err != nil {

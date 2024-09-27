@@ -289,12 +289,12 @@ func batchReleaseWorkflows(c echo.Context) error {
 		tasks := make([]*model.Task, 0)
 		for _, instRecords := range workflow.Record.InstanceRecords {
 			// 根据阶段间数据源对应关系，获发布到取下一阶段数据源
-			targetInst, targetScheam, err := getReleaseTargetInstanceByRelation(c, projectUid, strconv.FormatUint(instRecords.InstanceId, 10), instRecords.Task.Schema, releaseWorkflow.TargetReleaseInstances)
+			targetInst, targetSchema, err := getReleaseTargetInstanceByRelation(c, projectUid, strconv.FormatUint(instRecords.InstanceId, 10), instRecords.Task.Schema, releaseWorkflow.TargetReleaseInstances)
 			if err != nil {
 				return controller.JSONBaseErrorReq(c, err)
 			}
 			// 根据当前工单的task构建发布工单的task信息
-			task := buildNewTaskByOriginalTask(uint64(user.ID), targetScheam, targetInst, instRecords.Task)
+			task := buildNewTaskByOriginalTask(uint64(user.ID), targetSchema, targetInst, instRecords.Task)
 			tasks = append(tasks, task)
 		}
 		taskIds, err := batchCreateTask(tasks)
@@ -312,18 +312,19 @@ func batchReleaseWorkflows(c echo.Context) error {
 		}
 		err = createWorkFlow(c, s, nextSubject, workflow.Desc, projectUid, uint(sqlVersionId), nextSatgeId, stageWorkflow.WorkflowSequence, user, taskIds)
 		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
+			return controller.JSONBaseErrorReq(c, errors.New(errors.SQLVersionNotAllTasksExecutedSuccess, fmt.Errorf("workflow %s release fail and stop release", workflow.Subject)))
 		}
 		err = s.UpdateWorkflowReleaseStatus(releaseWorkflow.WorkFlowID, model.WorkflowReleaseStatusHaveBeenReleased, uint(sqlVersionId))
 	}
 	return controller.JSONBaseErrorReq(c, nil)
 }
 
-func getReleaseTargetInstanceByRelation(c echo.Context, projectUid, originalInstanceId, originalSchema string, instanceRelations []TargetReleaseInstance) (targetInstance *model.Instance, targetScheam string, err error) {
-	targetInstId, targetScheam, err := getInstanceIdAndScheamByRelation(originalInstanceId, originalSchema, instanceRelations)
+func getReleaseTargetInstanceByRelation(c echo.Context, projectUid, originalInstanceId, originalSchema string, instanceRelations []TargetReleaseInstance) (targetInstance *model.Instance, targetSchema string, err error) {
+	targetInstId, targetSchema, err := getInstanceIdAndSchemaByRelation(originalInstanceId, originalSchema, instanceRelations)
 	if err != nil {
 		return nil, "", err
 	}
+	// TODO 改为批量获取数据源
 	targetInstance, exist, err := dms.GetInstancesById(c.Request().Context(), targetInstId)
 	if err != nil {
 		return nil, "", err
@@ -338,12 +339,12 @@ func getReleaseTargetInstanceByRelation(c echo.Context, projectUid, originalInst
 	if !can {
 		return nil, "", ErrInstanceNoAccess
 	}
-	return targetInstance, targetScheam, nil
+	return targetInstance, targetSchema, nil
 }
 
-func buildNewTaskByOriginalTask(userId uint64, scheam string, instance *model.Instance, oldTask *model.Task) *model.Task {
+func buildNewTaskByOriginalTask(userId uint64, schema string, instance *model.Instance, oldTask *model.Task) *model.Task {
 	task := &model.Task{
-		Schema:          scheam,
+		Schema:          schema,
 		InstanceId:      instance.ID,
 		Instance:        instance,
 		CreateUserId:    userId,
@@ -396,7 +397,7 @@ func batchCreateTask(tasks []*model.Task) ([]uint, error) {
 	return taskIds, nil
 }
 
-func getInstanceIdAndScheamByRelation(originalInstanceId, originalSchema string, instanceRelations []TargetReleaseInstance) (instance string, scheam string, err error) {
+func getInstanceIdAndSchemaByRelation(originalInstanceId, originalSchema string, instanceRelations []TargetReleaseInstance) (instance string, schema string, err error) {
 	for _, instRelation := range instanceRelations {
 		if originalInstanceId == instRelation.InstanceID {
 			if originalSchema == "" {
@@ -425,6 +426,7 @@ func genNextStageForWorkflow(s *model.Storage, sqlVersionID uint, workflowId str
 
 func createWorkFlow(c echo.Context, s *model.Storage, subject, desc, projectUid string, sqlVersionId, nextSatgeId uint, workflowStageSequence int, user *model.User, taskIds []uint) error {
 	// dms-todo: 与 dms 生成uid保持一致
+	// TODO 抽取与创建工单接口共同的方法
 	workflowId, err := utils.GenUid()
 	if err != nil {
 		return err
@@ -514,8 +516,8 @@ func createWorkFlow(c echo.Context, s *model.Storage, subject, desc, projectUid 
 	return nil
 }
 
-func batchExecuteTasksOnWorkflow(c echo.Context) error {
-	req := new(BatchExecuteTasksOnWorkflowReqV1)
+func batchExecuteWorkflows(c echo.Context) error {
+	req := new(BatchExecuteWorkflowsReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -562,7 +564,7 @@ func batchExecuteTasksOnWorkflow(c echo.Context) error {
 
 		// 阻塞继续上线，直到获取到工单上线结果(状态)
 		if <-workflowStatusChan != model.WorkflowStatusFinish {
-			return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("workflow %s execution status is not finished and stop execution", workflow.Subject)))
+			return controller.JSONBaseErrorReq(c, errors.New(errors.SQLVersionNotAllTasksExecutedSuccess, fmt.Errorf("workflow %s execution status is not finished and stop execution", workflow.Subject)))
 		}
 
 	}
