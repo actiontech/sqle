@@ -218,6 +218,7 @@ func GetValueExprStr(expr ast.ExprNode) string {
 	return ""
 }
 
+// a helper function to get the offset value of the limit in Select
 func GetLimitOffsetValue(stmt *ast.SelectStmt) int64 {
 	if stmt.Limit != nil && stmt.Limit.Offset != nil {
 		offsetVal, ok := stmt.Limit.Offset.(*parser.ValueExpr)
@@ -229,6 +230,7 @@ func GetLimitOffsetValue(stmt *ast.SelectStmt) int64 {
 	return -1
 }
 
+// a helper function to get the offset value of the limit in the Union query
 func GetLimitOffsetValueByUnionStmt(stmt *ast.UnionStmt) int64 {
 	if stmt.Limit != nil && stmt.Limit.Offset != nil {
 		offsetVal, ok := stmt.Limit.Offset.(*parser.ValueExpr)
