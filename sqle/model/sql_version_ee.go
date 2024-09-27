@@ -197,6 +197,13 @@ func (s *Storage) BatchSaveSqlVersion(reqSqlVersion *SqlVersion) error {
 	return nil
 }
 
+func (stage SqlVersionStage) InitialStatusOfWorkflow() string {
+	if len(stage.SqlVersionStagesDependency) > 0 && stage.SqlVersionStagesDependency[0].NextStageID == 0 {
+		return WorkflowReleaseStatusNotNeedReleased
+	}
+	return WorkflowReleaseStatusIsBingReleased
+}
+
 func (s *Storage) GetFirstStageOfSQLVersion(sqlVersionID uint) (*SqlVersionStage, error) {
 	firstStage := &SqlVersionStage{}
 	err := s.db.Model(&SqlVersionStage{}).Preload("SqlVersionStagesDependency").Preload("WorkflowVersionStage").Where("sql_version_id = ?", sqlVersionID).Order("stage_sequence ASC").First(firstStage).Error
