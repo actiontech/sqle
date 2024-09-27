@@ -2,6 +2,7 @@ package model
 
 import (
 	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/errors"
@@ -237,6 +238,64 @@ func (s *Storage) GetStageOfTheWorkflow(workflowId string) (*SqlVersionStage, bo
 		return nil, false, err
 	}
 	return stage, true, nil
+}
+
+func (s *Storage) GetStageWorkflowByWorkflowId(sqlVersionId uint, workflowId string) (*WorkflowVersionStage, error) {
+	var stagesWorkflow *WorkflowVersionStage
+	err := s.db.Model(WorkflowVersionStage{}).Where("sql_version_id = ? AND workflow_id = ?", sqlVersionId, workflowId).Find(&stagesWorkflow).Error
+	return stagesWorkflow, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetWorkflowOfFirstStage(sqlVersionID uint, workflowId string) (*Workflow, error) {
+	workflow := &Workflow{}
+	err := s.db.Model(&Workflow{}).
+		Joins("JOIN workflow_version_stages ON workflows.workflow_id = workflow_version_stages.workflow_id").
+		Joins("JOIN sql_version_stages ON sql_version_stages.sql_version_id = workflow_version_stages.sql_version_id ").
+		Where("workflow_version_stages.sql_version_id = ? AND workflow_version_stages.workflow_sequence IN "+
+			"(SELECT workflow_sequence from workflow_version_stages WHERE workflow_id = ?)", sqlVersionID, workflowId).
+		Order("sql_version_stages.stage_sequence ASC").First(workflow).Error
+	if err != nil {
+		return nil, err
+	}
+	return workflow, nil
+}
+
+func (s *Storage) GetWorkflowOfNextStage(versionId uint, workflowId string) (*SqlVersionStage, error) {
+	stage, exist, err := s.GetStageOfTheWorkflow(workflowId)
+	if err != nil {
+		return nil, err
+	}
+	if !exist {
+		return nil, errors.New(errors.DataNotExist, fmt.Errorf("workflow current stage not found"))
+	}
+	nextStage, exist, err := s.GetNextStageByStageSequence(versionId, stage.StageSequence)
+	if err != nil {
+		return nil, err
+	}
+	if !exist {
+		return nil, errors.New(errors.DataNotExist, fmt.Errorf("workflow next stage not found"))
+	}
+	return nextStage, nil
+}
+
+func (s *Storage) GetNextStageByStageSequence(versionId uint, sequence int) (*SqlVersionStage, bool, error) {
+	stage := &SqlVersionStage{}
+	// next stage sequence
+	next := sequence + 1
+	err := s.db.Where("sql_version_id = ? AND stage_sequence = ?", versionId, next).First(stage).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, false, nil
+	} else if err != nil {
+		return nil, false, err
+	}
+	return stage, true, nil
+}
+func (s *Storage) UpdateWorkflowReleaseStatus(workflowId, status string, sqlVersionId uint) error {
+	err := s.db.Model(WorkflowVersionStage{}).Where("sql_version_id = ? AND workflow_id = ?", sqlVersionId, workflowId).Update("workflow_release_status", status).Error
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (stage SqlVersionStage) InitialStatusOfWorkflow() string {
