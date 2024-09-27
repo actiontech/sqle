@@ -23,7 +23,7 @@ func (parser *Parser) PerfectParse(sql, charset, collation string) (stmt []ast.S
 		}
 		stmt = append(stmt, stmts...)
 	}
-	parser.startLineOffset = parser.lexer.r.pos().Line - 1
+	parser.startLineOffset += parser.lexer.r.pos().Line - 1
 	// The origin SQL text(input args `sql`) consists of many SQL segments,
 	// each SQL segments is a complete SQL and be parsed into `ast.StmtNode`.
 	//
