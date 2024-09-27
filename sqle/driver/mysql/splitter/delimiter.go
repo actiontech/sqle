@@ -131,9 +131,8 @@ func isReservedKeyWord(input string) bool {
 	return tokenType != parser.Identifier && tokenType > parser.YyEOFCode && tokenType < parser.YyDefault
 }
 
-func (d *Delimiter) reset() {
+func (d *Delimiter) reset() error {
 	d.line = 0
 	d.startPos = 0
-	//nolint:errcheck
-	d.setDelimiter(DefaultDelimiterString)
+	return d.setDelimiter(DefaultDelimiterString)
 }
