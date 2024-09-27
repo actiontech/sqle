@@ -5471,12 +5471,12 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "batch execute tasks on workflow",
+                "description": "batch execute workflows",
                 "tags": [
                     "sql_version"
                 ],
                 "summary": "工单批量上线",
-                "operationId": "batchExecuteTasksOnWorkflowV1",
+                "operationId": "batchExecuteWorkflowsV1",
                 "parameters": [
                     {
                         "type": "string",
@@ -5493,12 +5493,12 @@ var doc = `{
                         "required": true
                     },
                     {
-                        "description": "batch execute tasks on workflow request",
+                        "description": "batch execute workflows request",
                         "name": "data",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/v1.BatchExecuteTasksOnWorkflowReqV1"
+                            "$ref": "#/definitions/v1.BatchExecuteWorkflowsReqV1"
                         }
                     }
                 ],
@@ -11193,7 +11193,7 @@ var doc = `{
                 }
             }
         },
-        "v1.BatchExecuteTasksOnWorkflowReqV1": {
+        "v1.BatchExecuteWorkflowsReqV1": {
             "type": "object",
             "properties": {
                 "workflow_ids": {
