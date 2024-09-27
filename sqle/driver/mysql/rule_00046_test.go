@@ -20,6 +20,11 @@ func TestRuleSQL00046(t *testing.T) {
 	rule := rulepkg.RuleHandlerMap[ruleName].Rule
 
 	// ===== CREATE
+	// CREATE USER
+	runSingleRuleInspectCase(rule, t, "CREATE USER", DefaultMysqlInspect(), `
+	CREATE USER 'Test'@'localhost' REQUIRE NONE;
+	`, newTestResult().addResult(ruleName))
+
 	// CREATE DATABASE
 	runSingleRuleInspectCase(rule, t, "CREATE DATABASE ...", DefaultMysqlInspect(), `
 	CREATE DATABASE No_exist_db;

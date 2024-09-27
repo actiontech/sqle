@@ -86,6 +86,10 @@ func RuleSQLE00047(input *rulepkg.RuleHandlerInput) error {
 		objectNames = append(objectNames, stmt.ViewName.Name.String())
 	case *ast.CreateIndexStmt:
 		objectNames = append(objectNames, stmt.IndexName)
+	case *ast.CreateUserStmt:
+		for _, spec := range stmt.Specs {
+			objectNames = append(objectNames, spec.User.Username)
+		}
 	case *ast.AlterTableStmt:
 		for _, spec := range stmt.Specs {
 			switch spec.Tp {

@@ -14,6 +14,17 @@ func TestRuleSQL00048(t *testing.T) {
 	ruleName := ai.SQLE00048
 	rule := rulepkg.RuleHandlerMap[ruleName].Rule
 	// ===== CREATE
+	// CREATE USER
+	runSingleRuleInspectCase(rule, t, "CREATE USER", DefaultMysqlInspect(), `
+	CREATE USER '2test'@'localhost' REQUIRE NONE;
+	`, newTestResult().addResult(ruleName))
+	runSingleRuleInspectCase(rule, t, "CREATE USER", DefaultMysqlInspect(), `
+	CREATE USER '_test'@'localhost' REQUIRE NONE;
+	`, newTestResult().addResult(ruleName))
+	runSingleRuleInspectCase(rule, t, "CREATE USER", DefaultMysqlInspect(), `
+	CREATE USER 'test'@'localhost' REQUIRE NONE;
+	`, newTestResult())
+
 	// CREATE DATABASE
 	runSingleRuleInspectCase(rule, t, "CREATE DATABASE no_exist_db;", DefaultMysqlInspect(), `
 	CREATE DATABASE No_exist_db;
