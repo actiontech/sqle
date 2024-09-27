@@ -292,26 +292,26 @@ func BatchReleaseWorkflows(c echo.Context) error {
 	return batchReleaseWorkflows(c)
 }
 
-type BatchExecuteTasksOnWorkflowReqV1 struct {
+type BatchExecuteWorkflowsReqV1 struct {
 	WorkflowIDs []string `json:"workflow_ids" valid:"required"`
 }
 
 // @Summary 工单批量上线
-// @Description batch execute tasks on workflow
+// @Description batch execute workflows
 // @Tags sql_version
-// @Id batchExecuteTasksOnWorkflowV1
+// @Id batchExecuteWorkflowsV1
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
 // @Param sql_version_id path string true "sql version id"
-// @Param data body v1.BatchExecuteTasksOnWorkflowReqV1 true "batch execute tasks on workflow request"
+// @Param data body v1.BatchExecuteWorkflowsReqV1 true "batch execute workflows request"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/sql_versions/{sql_version_id}/batch_execute_workflows [post]
-func BatchExecuteTasksOnWorkflow(c echo.Context) error {
+func BatchExecuteWorkflows(c echo.Context) error {
 	/**
 		1、遍历workflow id，获取workflow信息
 		2、参考func ExecuteTasksOnWorkflowV2(c echo.Context) error 执行上线
 	**/
-	return batchExecuteTasksOnWorkflow(c)
+	return batchExecuteWorkflows(c)
 }
 
 type RetryExecWorkflowReqV1 struct {
