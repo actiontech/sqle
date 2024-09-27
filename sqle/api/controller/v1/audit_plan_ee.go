@@ -43,7 +43,7 @@ func getAuditPlanAnalysisData(c echo.Context) error {
 		return errors.NewDataInvalidErr("parse number failed: %v", err)
 	}
 
-	auditPlanReport, auditPlanReportSQLV2, instance, err := GetAuditPlantReportAndInstance(c, projectUid, apName, reportIdInt, numberInt)
+	auditPlanReport, auditPlanReportSQLV2, instance, err := GetAuditPlantReportAndInstanceIfCurrentUserCanView(c, projectUid, apName, reportIdInt, numberInt)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

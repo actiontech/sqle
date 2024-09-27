@@ -33,7 +33,7 @@ func directGetSQLAnalysis(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, ErrInstanceNoAccess)
 	}
 
-	can, err := CheckCurrentUserCanAccessInstances(c.Request().Context(), projectUid, controller.GetUserID(c), []*model.Instance{inst})
+	can, err := CheckCurrentUserCanOpInstances(c.Request().Context(), projectUid, controller.GetUserID(c), []*model.Instance{inst})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
