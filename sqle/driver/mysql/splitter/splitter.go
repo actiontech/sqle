@@ -87,12 +87,12 @@ func (s *splitter) splitSqlText(sqlText string) (results []*sqlWithLineNumber, e
 }
 
 func (s *splitter) getNextSql(sqlText string) (*sqlWithLineNumber, error) {
-	matcheDelimiterCommand, err := s.matchAndSetCustomDelimiter(sqlText)
+	matchedDelimiterCommand, err := s.matchAndSetCustomDelimiter(sqlText)
 	if err != nil {
 		return nil, err
 	}
 	// 若匹配到自定义分隔符语法，则输出结果，否则匹配分隔符，输出结果
-	if matcheDelimiterCommand || s.matcheSql(sqlText) {
+	if matchedDelimiterCommand || s.matcheSql(sqlText) {
 		buff := bytes.Buffer{}
 		buff.WriteString(sqlText[:s.scanner.Offset()])
 		lineBeforeStart := strings.Count(sqlText[:s.delimiter.startPos], "\n")
