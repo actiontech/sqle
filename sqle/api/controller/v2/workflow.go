@@ -215,7 +215,7 @@ func CancelWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	if !(controller.GetUserID(c) == workflow.CreateUserId || up.IsAdmin()) {
+	if !(controller.GetUserID(c) == workflow.CreateUserId || up.CanOpProject()) {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
 			fmt.Errorf("you are not allow to operate the workflow")))
 	}
@@ -347,7 +347,7 @@ func BatchCompleteWorkflowsV2(c echo.Context) error {
 
 		// 执行上线的人可以决定真的上线这个工单还是直接标记完成
 		lastStep := workflow.Record.Steps[len(workflow.Record.Steps)-1]
-		canFinishWorkflow := up.IsAdmin()
+		canFinishWorkflow := up.CanOpProject()
 		if !canFinishWorkflow {
 			for _, assignee := range strings.Split(lastStep.Assignees, ",") {
 				if assignee == user.GetIDStr() {
@@ -496,7 +496,7 @@ func GetSummaryOfWorkflowTasksV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, v1.ErrWorkflowNoAccess)
 	}
 
-	err = v1.CheckCurrentUserCanOperateWorkflow(c, projectUid, workflow, []dmsV1.OpPermissionType{dmsV1.OpPermissionTypeViewOthersWorkflow})
+	err = v1.CheckCurrentUserCanViewWorkflow(c, projectUid, workflow, []dmsV1.OpPermissionType{dmsV1.OpPermissionTypeViewOthersWorkflow})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -866,7 +866,7 @@ func UpdateWorkflowV2(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("task's execute sql is null. taskId=%v", task.ID)))
 		}
 
-		err = v1.CheckCurrentUserCanViewTask(c, task)
+		err = v1.CheckCurrentUserCanOpTask(c, task)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -1150,7 +1150,7 @@ func GetWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	err = v1.CheckCurrentUserCanOperateWorkflow(c, projectUid, workflow, []dmsV1.OpPermissionType{dmsV1.OpPermissionTypeViewOthersWorkflow})
+	err = v1.CheckCurrentUserCanViewWorkflow(c, projectUid, workflow, []dmsV1.OpPermissionType{dmsV1.OpPermissionTypeViewOthersWorkflow})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

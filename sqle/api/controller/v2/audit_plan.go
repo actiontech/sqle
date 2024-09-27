@@ -195,7 +195,7 @@ func GetAuditPlanReportSQLs(c echo.Context) error {
 	}
 	apName := c.Param("audit_plan_name")
 
-	ap, exist, err := v1.GetAuditPlanIfCurrentUserCanAccess(c, projectUid, apName, dmsV1.OpPermissionTypeViewOtherAuditPlan)
+	ap, exist, err := v1.GetAuditPlanIfCurrentUserCanView(c, projectUid, apName, dmsV1.OpPermissionTypeViewOtherAuditPlan)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -279,7 +279,7 @@ func GetAuditPlanAnalysisData(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("parse number failed: %v", err)))
 	}
 
-	auditPlanReport, auditPlanReportSQLV2, instance, err := v1.GetAuditPlantReportAndInstance(c, projectUid, apName, reportIdInt, sqlNumberInt)
+	auditPlanReport, auditPlanReportSQLV2, instance, err := v1.GetAuditPlantReportAndInstanceIfCurrentUserCanView(c, projectUid, apName, reportIdInt, sqlNumberInt)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

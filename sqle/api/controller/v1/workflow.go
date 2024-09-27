@@ -670,7 +670,7 @@ func GetWorkflowsV1(c echo.Context) error {
 		"filter_task_instance_id":              req.FilterTaskInstanceId,
 		"filter_project_id":                    projectUid,
 		"current_user_id":                      user.ID,
-		"check_user_can_access":                !up.IsAdmin(),
+		"check_user_can_access":                !up.CanViewProject(),
 		"limit":                                limit,
 		"offset":                               offset,
 	}
@@ -678,7 +678,7 @@ func GetWorkflowsV1(c echo.Context) error {
 		data["fuzzy_keyword"] = fmt.Sprintf("%%%s%%", req.FuzzyKeyword)
 	}
 
-	if !up.IsAdmin() {
+	if !up.CanViewProject() {
 		data["viewable_instance_ids"] = strings.Join(up.GetInstancesByOP(dmsV1.OpPermissionTypeViewOthersWorkflow), ",")
 	}
 
