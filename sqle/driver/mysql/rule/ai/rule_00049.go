@@ -1,7 +1,6 @@
 package ai
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/driver/mysql/keyword"
@@ -111,7 +110,6 @@ func RuleSQLE00049(input *rulepkg.RuleHandlerInput) error {
 			// create event ...
 			match1 := createEventReg.FindStringSubmatch(input.Node.Text())
 			if len(match1) > 1 {
-				fmt.Printf("sql '%s': %s\n", input.Node.Text(), match1[1])
 				objectNames = append(objectNames, match1[1])
 				break
 			}
@@ -119,7 +117,6 @@ func RuleSQLE00049(input *rulepkg.RuleHandlerInput) error {
 			// alter event ...
 			match2 := alterEventReg.FindStringSubmatch(input.Node.Text())
 			if len(match2) > 2 {
-				fmt.Printf("sql '%s': %s\n", input.Node.Text(), match2[2])
 				objectNames = append(objectNames, match2[2])
 				break
 			}
@@ -152,11 +149,6 @@ func RuleSQLE00049(input *rulepkg.RuleHandlerInput) error {
 			break
 		}
 
-		if _, contains := keyword.ReservedKeywords[strings.ToUpper(name)]; contains {
-			rulepkg.AddResult(input.Res, input.Rule, SQLE00049)
-			break
-		}
-		fmt.Printf("check2: '%s'", strings.ToUpper(name))
 		if util.IsStrInSlice(strings.ToUpper(name), reservedWords2) {
 			rulepkg.AddResult(input.Res, input.Rule, SQLE00049)
 			break

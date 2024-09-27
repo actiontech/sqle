@@ -122,7 +122,6 @@ func RuleSQLE00047(input *rulepkg.RuleHandlerInput) error {
 			// create event ...
 			match1 := createEventReg.FindStringSubmatch(input.Node.Text())
 			if len(match1) > 1 {
-				fmt.Printf("sql '%s': %s\n", input.Node.Text(), match1[1])
 				objectNames = append(objectNames, match1[1])
 				break
 			}
@@ -130,7 +129,6 @@ func RuleSQLE00047(input *rulepkg.RuleHandlerInput) error {
 			// alter event ...
 			match2 := alterEventReg.FindStringSubmatch(input.Node.Text())
 			if len(match2) > 2 {
-				fmt.Printf("sql '%s': %s\n", input.Node.Text(), match2[2])
 				objectNames = append(objectNames, match2[2])
 				break
 			}

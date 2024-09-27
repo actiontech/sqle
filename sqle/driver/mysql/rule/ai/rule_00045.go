@@ -70,75 +70,44 @@ func RuleSQLE00045(input *rulepkg.RuleHandlerInput) error {
 		return fmt.Errorf("parameter 'max_offset_size' must be an integer, got '%s'", param.Value)
 	}
 
-	// 定义一个集合用于存储 LIMIT 子句中的偏移量
-	var offsetCollection []int
-
 	// 根据输入节点的类型进行不同的处理
 	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt:
 		// 处理 SELECT 语句
 		for _, selectStmt := range util.GetSelectStmt(stmt) {
-			if selectStmt.Limit != nil && selectStmt.Limit.Offset != nil {
-				offset, err := getOffsetValue(selectStmt.Limit.Offset)
-				if err != nil {
-					continue
-				}
-				offsetCollection = append(offsetCollection, offset)
+			offset := util.GetLimitOffsetValue(selectStmt)
+			if offset > int64(maxOffsetSize) {
+				rulepkg.AddResult(input.Res, input.Rule, SQLE00045, maxOffsetSize)
+				return nil
 			}
 		}
 
 	case *ast.InsertStmt:
 		// 处理 INSERT ... SELECT 语句
 		for _, selectStmt := range util.GetSelectStmt(stmt) {
-			if selectStmt.Limit != nil && selectStmt.Limit.Offset != nil {
-				offset, err := getOffsetValue(selectStmt.Limit.Offset)
-				if err != nil {
-					continue
-				}
-				offsetCollection = append(offsetCollection, offset)
+			offset := util.GetLimitOffsetValue(selectStmt)
+			if offset > int64(maxOffsetSize) {
+				rulepkg.AddResult(input.Res, input.Rule, SQLE00045, maxOffsetSize)
+				return nil
 			}
 		}
 
 	case *ast.UnionStmt:
 		// 处理 UNION 和 UNION ALL 语句
 		for _, selectStmt := range util.GetSelectStmt(stmt) {
-			if selectStmt.Limit != nil && selectStmt.Limit.Offset != nil {
-				offset, err := getOffsetValue(selectStmt.Limit.Offset)
-				if err != nil {
-					continue
-				}
-				offsetCollection = append(offsetCollection, offset)
+			offset := util.GetLimitOffsetValue(selectStmt)
+			if offset > int64(maxOffsetSize) {
+				rulepkg.AddResult(input.Res, input.Rule, SQLE00045, maxOffsetSize)
+				return nil
 			}
 		}
-		offset, err := getOffsetValue(stmt.Limit.Offset)
-		if err != nil {
-			// ignore
-		}
-		offsetCollection = append(offsetCollection, offset)
-	}
-
-	// 遍历集合中的偏移量，与 max_offset_size 进行比较
-	for _, offset := range offsetCollection {
-		if offset > maxOffsetSize {
-			// 如果偏移量大于最大允许值，则报告违反规则
+		offset := util.GetLimitOffsetValueByUnionStmt(stmt)
+		if offset > int64(maxOffsetSize) {
 			rulepkg.AddResult(input.Res, input.Rule, SQLE00045, maxOffsetSize)
 			return nil
 		}
 	}
-
 	return nil
-}
-
-func getOffsetValue(offeset ast.ExprNode) (int, error) {
-	offsetVal, ok := offeset.(ast.ValueExpr)
-	if !ok {
-		return 0, fmt.Errorf("expression offset node is nil")
-	}
-	offset, err := strconv.Atoi(fmt.Sprintf("%v", offsetVal.GetValue()))
-	if err != nil {
-		return 0, fmt.Errorf("offset value value is invalid")
-	}
-	return offset, nil
 }
 
 // ==== Rule code end ====

@@ -1,8 +1,6 @@
 package ai
 
 import (
-	"strings"
-
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/pkg/params"
@@ -63,13 +61,4 @@ func RuleSQLE00062(input *rulepkg.RuleHandlerInput) error {
 }
 
 // 规则函数实现结束
-
-// 辅助函数实现开始
-// a helper function to check if the isolation level is READ COMMITTED for MySQL
-func utilIsIsolationLevelReadCommitted(level string) bool {
-	// Check for standard MySQL isolation level strings
-	return strings.EqualFold(level, "READ COMMITTED") || strings.EqualFold(level, "READ-COMMITTED")
-}
-
-// 辅助函数实现结束
 // ==== Rule code end ====
