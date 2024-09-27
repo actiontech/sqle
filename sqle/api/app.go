@@ -11,6 +11,7 @@ import (
 	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/locale"
+
 	// "github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
@@ -260,7 +261,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1ProjectRouter.POST("/:project_name/sql_versions/:sql_version_id/lock", v1.LockSqlVersion)
 		v1ProjectRouter.GET("/:project_name/sql_versions/:sql_version_id/sql_version_stages/:sql_version_stage_id/dependencies", v1.GetDependenciesBetweenStageInstance)
 		v1ProjectRouter.POST("/:project_name/sql_versions/:sql_version_id/batch_release_workflows", v1.BatchReleaseWorkflows)
-		v1ProjectRouter.POST("/:project_name/sql_versions/:sql_version_id/batch_execute_workflows", v1.BatchExecuteTasksOnWorkflow)
+		v1ProjectRouter.POST("/:project_name/sql_versions/:sql_version_id/batch_execute_workflows", v1.BatchExecuteWorkflows)
 		v1ProjectRouter.POST("/:project_name/sql_versions/:sql_version_id/retry_workflow ", v1.RetryExecWorkflow)
 		v1ProjectRouter.POST("/:project_name/sql_versions/:sql_version_id/sql_version_stages/:sql_version_stage_id/associate_workflows", v1.BatchAssociateWorkflowsWithVersion)
 		v1ProjectRouter.GET("/:project_name/sql_versions/:sql_version_id/sql_version_stages/:sql_version_stage_id/associate_workflows", v1.GetWorkflowsThatCanBeAssociatedToVersion)
