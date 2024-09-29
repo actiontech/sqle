@@ -5337,7 +5337,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
+                            "$ref": "#/definitions/v1.CreateSqlVersionResV1"
                         }
                     }
                 }
@@ -10456,6 +10456,18 @@ var doc = `{
                 "desc": {
                     "type": "string"
                 },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "wait_for_audit",
+                        "wait_for_execution",
+                        "rejected",
+                        "canceled",
+                        "exec_failed",
+                        "executing",
+                        "finished"
+                    ]
+                },
                 "workflow_id": {
                     "type": "string"
                 },
@@ -11641,6 +11653,31 @@ var doc = `{
                 "version": {
                     "type": "string",
                     "example": "2.23"
+                }
+            }
+        },
+        "v1.CreateSqlVersionRes": {
+            "type": "object",
+            "properties": {
+                "sql_version_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.CreateSqlVersionResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.CreateSqlVersionRes"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },

@@ -24,6 +24,15 @@ type CreateStagesInstanceDep struct {
 	NextStageInstanceID string `json:"next_stage_instance_id"`
 }
 
+type CreateSqlVersionResV1 struct {
+	controller.BaseRes
+	Data CreateSqlVersionRes `json:"data"`
+}
+
+type CreateSqlVersionRes struct {
+	SqlversionId uint `json:"sql_version_id"`
+}
+
 // @Summary 创建SQL版本记录
 // @Description create sql version
 // @Id createSqlVersionV1
@@ -32,7 +41,7 @@ type CreateStagesInstanceDep struct {
 // @Accept json
 // @Param project_name path string true "project name"
 // @Param sql_version body v1.CreateSqlVersionReqV1 true "create sql version request"
-// @Success 200 {object} controller.BaseRes
+// @Success 200 {object} v1.CreateSqlVersionResV1
 // @router /v1/projects/{project_name}/sql_versions [post]
 func CreateSqlVersion(c echo.Context) error {
 
@@ -342,6 +351,7 @@ type GetWorkflowsThatCanBeAssociatedToVersionResV1 struct {
 type AssociateWorkflows struct {
 	WorkflowID   string `json:"workflow_id"`
 	WorkflowName string `json:"workflow_name"`
+	Status       string `json:"status" enums:"wait_for_audit,wait_for_execution,rejected,canceled,exec_failed,executing,finished"`
 	WorkflowDesc string `json:"desc"`
 }
 
