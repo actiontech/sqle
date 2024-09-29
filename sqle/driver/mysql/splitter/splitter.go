@@ -2,9 +2,11 @@ package splitter
 
 import (
 	"bytes"
+
+	"strings"
+
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
-	"strings"
 )
 
 type splitter struct {
@@ -217,6 +219,7 @@ func (s *splitter) matchAndSetCustomDelimiter(sql string) (bool, error) {
 	// 重置扫描器
 	s.scanner.Reset(sql)
 	var sqlAfterDelimiter string
+	// 根据token的类型判断是否是分隔符语法的开始
 	token := s.scanner.NextToken()
 	switch token.TokenType() {
 	case BackSlash:
@@ -234,19 +237,15 @@ func (s *splitter) matchAndSetCustomDelimiter(sql string) (bool, error) {
 	default:
 		return false, nil
 	}
-	// 处理自定义分隔符
+	// 若定义分隔符命令后仍有文本，则需要获取和设置自定义分隔符的值，并重置游标
 	if sqlAfterDelimiter != "" {
-		restOfThisLine := strings.Index(sqlAfterDelimiter, "\n")
-		if restOfThisLine == -1 {
-			restOfThisLine = len(sqlAfterDelimiter)
-		}
-		newDelimiter := getDelimiter(sqlAfterDelimiter[:restOfThisLine])
-		if err := s.delimiter.setDelimiter(newDelimiter); err != nil {
+		// 获取分隔符定义语法后的自定义分隔符，并设置自定义分隔符
+		newDelimiterValue, endPos := getDelimiterValueAndEndPos(sqlAfterDelimiter)
+		if err := s.delimiter.setDelimiter(newDelimiterValue); err != nil {
 			return false, err
 		}
-		// 若识别到分隔符，则这一整行都为定义分隔符的sql，
-		// 例如 delimiter ;; xx 其中;;为分隔符，而xx不产生任何影响，但属于这条语句
-		s.scanner.SetCursor(s.scanner.Offset() + restOfThisLine)
+		// 重置游标到分隔符语法后
+		s.scanner.SetCursor(s.scanner.Offset() + endPos)
 		return true, nil
 	}
 	return false, nil

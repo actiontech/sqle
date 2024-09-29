@@ -44,25 +44,26 @@ func (d *Delimiter) isDelimiterCommand(token string) bool {
 	return strings.ToUpper(token) == DelimiterCommand
 }
 
+// 获取下一个参数及其参数的结束位置
 // 该函数翻译自MySQL Client获取delimiter值的代码，参考：https://github.com/mysql/mysql-server/blob/824e2b4064053f7daf17d7f3f84b7a3ed92e5fb4/client/mysql.cc#L4866
-func getDelimiter(line string) string {
+func getDelimiterValueAndEndPos(sqlAfterDelimiter string) (string, int) {
 	ptr := 0
 	start := 0
 	quoted := false
 	qtype := byte(0)
 
 	// 跳过开头的空格
-	for ptr < len(line) && isSpace(line[ptr]) {
+	for ptr < len(sqlAfterDelimiter) && isWhitespace(sqlAfterDelimiter[ptr]) {
 		ptr++
 	}
 
-	if ptr == len(line) {
-		return ""
+	if ptr == len(sqlAfterDelimiter) {
+		return "", -1
 	}
 
 	// 检查是否为引号字符串
-	if line[ptr] == '\'' || line[ptr] == '"' || line[ptr] == '`' {
-		qtype = line[ptr]
+	if sqlAfterDelimiter[ptr] == '\'' || sqlAfterDelimiter[ptr] == '"' || sqlAfterDelimiter[ptr] == '`' {
+		qtype = sqlAfterDelimiter[ptr]
 		quoted = true
 		ptr++
 	}
@@ -70,21 +71,21 @@ func getDelimiter(line string) string {
 	start = ptr
 
 	// 找到字符串结尾
-	for ptr < len(line) {
-		if !quoted && line[ptr] == '\\' && ptr+1 < len(line) { // 跳过转义字符
+	for ptr < len(sqlAfterDelimiter) {
+		if !quoted && sqlAfterDelimiter[ptr] == '\\' && ptr+1 < len(sqlAfterDelimiter) { // 跳过转义字符
 			ptr += 2
-		} else if (!quoted && isSpace(line[ptr])) || (quoted && line[ptr] == qtype) {
+		} else if (!quoted && isWhitespace(sqlAfterDelimiter[ptr])) || (quoted && sqlAfterDelimiter[ptr] == qtype) {
 			break
 		} else {
 			ptr++
 		}
 	}
 
-	return line[start:ptr]
+	return sqlAfterDelimiter[start:ptr], ptr
 }
 
 // 辅助函数,判断字符是否为空格
-func isSpace(c byte) bool {
+func isWhitespace(c byte) bool {
 	return c == ' ' || c == '\t' || c == '\n' || c == '\r'
 }
 
