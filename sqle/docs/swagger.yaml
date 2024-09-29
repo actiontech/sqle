@@ -29,6 +29,16 @@ definitions:
     properties:
       desc:
         type: string
+      status:
+        enum:
+        - wait_for_audit
+        - wait_for_execution
+        - rejected
+        - canceled
+        - exec_failed
+        - executing
+        - finished
+        type: string
       workflow_id:
         type: string
       workflow_name:
@@ -841,6 +851,23 @@ definitions:
         type: string
       version:
         example: "2.23"
+        type: string
+    type: object
+  v1.CreateSqlVersionRes:
+    properties:
+      sql_version_id:
+        type: integer
+    type: object
+  v1.CreateSqlVersionResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.CreateSqlVersionRes'
+        type: object
+      message:
+        example: ok
         type: string
     type: object
   v1.CreateSqlVersionStage:
@@ -8907,7 +8934,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/controller.BaseRes'
+            $ref: '#/definitions/v1.CreateSqlVersionResV1'
       security:
       - ApiKeyAuth: []
       summary: 创建SQL版本记录
