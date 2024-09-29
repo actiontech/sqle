@@ -21,7 +21,6 @@ import (
 	"github.com/actiontech/sqle/sqle/server/sqlversion"
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4"
 )
 
 func createSqlVersion(c echo.Context) error {
@@ -333,7 +332,7 @@ func getReleaseTargetInstanceByRelation(c echo.Context, projectUid, originalInst
 	if !exist {
 		return nil, "", ErrInstanceNoAccess
 	}
-	can, err := CheckCurrentUserCanAccessInstances(c.Request().Context(), projectUid, controller.GetUserID(c), []*model.Instance{targetInstance})
+	can, err := CheckCurrentUserCanOpInstances(c.Request().Context(), projectUid, controller.GetUserID(c), []*model.Instance{targetInstance})
 	if err != nil {
 		return nil, "", err
 	}
