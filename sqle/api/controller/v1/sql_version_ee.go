@@ -571,10 +571,6 @@ func batchExecuteWorkflows(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, nil)
 }
 
-func retryExecWorkflow(c echo.Context) error {
-	return nil
-}
-
 func batchAssociateWorkflowsWithVersion(c echo.Context) error {
 	req := new(BatchAssociateWorkflowsWithVersionReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
