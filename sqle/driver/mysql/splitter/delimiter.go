@@ -27,9 +27,16 @@ func NewDelimiter() *Delimiter {
 	return &Delimiter{}
 }
 
-// \\d会被识别为三个token \ \ d 不能使用Lex，Lex可能会跳过空格和注释，因此这里使用字符串匹配
+/*
+	根据传入的SQL和位置，判断当前位置开始是否是一个缩写分隔符的语法
+
+判断依据：从当前位置开始是否紧跟着一个\\d
+不使用Lex的原因：
+ 1. \\d会被识别为三个token，即： \ \ d
+ 2. Lex可能会跳过空格和注释，因此这里使用字符串匹配
+*/
 func (d *Delimiter) isSortDelimiterCommand(sql string, index int) bool {
-	return index+2 < len(sql) && sql[index+1] == 'd'
+	return index+2 < len(sql) && sql[index:index+2] == "\\d"
 }
 
 // DELIMITER会被识别为identifier，因此这里仅需识别其值是否相等
