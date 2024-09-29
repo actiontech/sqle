@@ -143,9 +143,12 @@ func getSqlVersionDetail(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	sqlVersionId := c.Param("sql_version_id")
+	sqlVersionId, err := strconv.ParseInt(c.Param("sql_version_id"), 10, 64)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 	s := model.GetStorage()
-	version, exist, err := s.GetSqlVersionDetailByVersionId(sqlVersionId)
+	version, exist, err := s.GetSqlVersionDetailByVersionId(uint(sqlVersionId))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -216,7 +219,81 @@ func getSqlVersionDetail(c echo.Context) error {
 }
 
 func updateSqlVersion(c echo.Context) error {
-	return nil
+	// TODO 权限校验
+	req := new(UpdateSqlVersionReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	sqlVersionId, err := strconv.ParseInt(c.Param("sql_version_id"), 10, 64)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	// projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
+	// if err != nil {
+	// 	return controller.JSONBaseErrorReq(c, err)
+	// }
+	s := model.GetStorage()
+	if req.Desc != nil || req.Version != nil {
+		sqlVersionParam := make(map[string]interface{}, 2)
+		if req.Desc != nil {
+			sqlVersionParam["description"] = req.Desc
+		}
+		if req.Version != nil {
+			sqlVersionParam["version"] = req.Version
+		}
+		err := s.UpdateSQLVersionById(sqlVersionParam, uint(sqlVersionId))
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+	if req.SqlVersionStage != nil {
+		version, exist, err := s.GetSqlVersionDetailByVersionId(uint(sqlVersionId))
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if !exist {
+			return controller.JSONBaseErrorReq(c, errors.NewDataNotExistErr("sql version not found"))
+		}
+		deleteStageIds := make([]uint, 0, len(version.SqlVersionStage))
+		for _, stage := range version.SqlVersionStage {
+			if len(stage.WorkflowVersionStage) > 0 {
+				return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, fmt.Errorf("workflow already exists in %s stage and no modification allowed", stage.Name)))
+			}
+			deleteStageIds = append(deleteStageIds, stage.ID)
+		}
+		versionStages := make([]*model.SqlVersionStage, 0, len(*req.SqlVersionStage))
+		for _, stage := range *req.SqlVersionStage {
+			stageDeps := make([]*model.SqlVersionStagesDependency, 0)
+			for _, dep := range *stage.UpdateStagesInstanceDep {
+				stageInstID, err := strconv.ParseUint(dep.StageInstanceID, 10, 64)
+				if err != nil {
+					return err
+				}
+				var nextStageInstID uint64
+				if dep.NextStageInstanceID != "" {
+					nextStageInstID, err = strconv.ParseUint(dep.NextStageInstanceID, 10, 64)
+					if err != nil {
+						return err
+					}
+				}
+				stageDeps = append(stageDeps, &model.SqlVersionStagesDependency{
+					StageInstanceID:     stageInstID,
+					NextStageInstanceID: nextStageInstID,
+				})
+			}
+			versionStages = append(versionStages, &model.SqlVersionStage{
+				Name:                       *stage.Name,
+				StageSequence:              *stage.StageSequence,
+				SqlVersionStagesDependency: stageDeps,
+			})
+		}
+		err = s.UpdateSQLVersionStageByVersionId(uint(sqlVersionId), deleteStageIds, versionStages)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+	return controller.JSONBaseErrorReq(c, nil)
 }
 
 func lockSqlVersion(c echo.Context) error {
