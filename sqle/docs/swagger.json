@@ -5592,54 +5592,6 @@
                 }
             }
         },
-        "/v1/projects/{project_name}/sql_versions/{sql_version_id}/retry_workflow": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "reject exec failed workflow",
-                "tags": [
-                    "sql_version"
-                ],
-                "summary": "工单重试（上线失败修改sql重试上线）",
-                "operationId": "retryExecWorkflowV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "project name",
-                        "name": "project_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "sql version id",
-                        "name": "sql_version_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "retry execute workflow request",
-                        "name": "data",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.RetryExecWorkflowReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/projects/{project_name}/sql_versions/{sql_version_id}/sql_version_stages/{sql_version_stage_id}/associate_workflows": {
             "get": {
                 "security": [
@@ -14929,20 +14881,6 @@
                     ]
                 },
                 "type": {
-                    "type": "string"
-                }
-            }
-        },
-        "v1.RetryExecWorkflowReqV1": {
-            "type": "object",
-            "properties": {
-                "task_ids": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "workflow_id": {
                     "type": "string"
                 }
             }
