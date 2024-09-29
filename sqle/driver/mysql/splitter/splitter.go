@@ -51,21 +51,21 @@ func (s *splitter) processToExecutableNodes(results []*sqlWithLineNumber) ([]ast
 			}
 			result.sql = trimmedSQL + ";"
 		}
-		// 根据解析结果生成得到sql的抽象语法树，这里不需要检查error
-		//nolint:errcheck
-		s.parser.Parse(result.sql, "", "")
-		if len(s.parser.Result()) == 1 {
-			// 若结果集长度为1，则为单条且可解析的SQL
-			stmt := s.parser.Result()[0]
-			stmt.SetStartLine(result.line)
-			executableNodes = append(executableNodes, stmt)
-		} else {
-			// 若结果集长度大于1，则为多条合并的SQL
-			// 若结果集长度为0，则不可解析的SQL
+		// 根据解析结果生成得到sql的抽象语法树
+		_, _, err := s.parser.Parse(result.sql, "", "")
+		if err != nil {
+			// 若解析结果为错误，则将分割后的SQL作为不可解析的SQL添加到executableNodes中
 			unParsedStmt := &ast.UnparsedStmt{}
 			unParsedStmt.SetStartLine(result.line)
 			unParsedStmt.SetText(result.sql)
 			executableNodes = append(executableNodes, unParsedStmt)
+		} else {
+			// 若能成功解析，则将解析的结果添加到executableNodes中
+			stmts := s.parser.Result()
+			for _, stmt := range stmts {
+				stmt.SetStartLine(result.line)
+				executableNodes = append(executableNodes, stmt)
+			}
 		}
 	}
 	return executableNodes, nil
