@@ -892,8 +892,8 @@ func UpdateWorkflowV2(c echo.Context) error {
 	if count > 0 {
 		return controller.JSONBaseErrorReq(c, errTaskHasBeenUsed)
 	}
-
-	if workflow.Record.Status != model.WorkflowStatusReject {
+	// When workflow status is rejected or exec failed, the user can recommit workflow. And the workflow becomes waiting for the audit process.
+	if workflow.Record.Status != model.WorkflowStatusReject && workflow.Record.Status != model.WorkflowStatusExecFailed {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
 			fmt.Errorf("workflow status is %s, not allow operate it", workflow.Record.Status)))
 	}

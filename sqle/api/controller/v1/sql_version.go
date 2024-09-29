@@ -314,33 +314,6 @@ func BatchExecuteWorkflows(c echo.Context) error {
 	return batchExecuteWorkflows(c)
 }
 
-type RetryExecWorkflowReqV1 struct {
-	WorkflowID string `json:"workflow_id" valid:"required"`
-	TaskIds    []uint `json:"task_ids" form:"task_ids" valid:"required"`
-}
-
-// @Summary 工单重试（上线失败修改sql重试上线）
-// @Description reject exec failed workflow
-// @Tags sql_version
-// @Id retryExecWorkflowV1
-// @Security ApiKeyAuth
-// @Param project_name path string true "project name"
-// @Param sql_version_id path string true "sql version id"
-// @Param data body v1.RetryExecWorkflowReqV1 true "retry execute workflow request"
-// @Success 200 {object} controller.BaseRes
-// @router /v1/projects/{project_name}/sql_versions/{sql_version_id}/retry_workflow [post]
-func RetryExecWorkflow(c echo.Context) error {
-	/**
-		暂不考虑重复上线问题，用户在修改sql时自行回滚或删除上线成功的sql。
-		发起人有权限重试并提交修改的sql，
-		1、参考驳回后修改sql重新审核提交工单逻辑
-		2、不过滤上线失败的工单
-		3、调整工单上线逻辑，上线失败current_workflow_step_id不要置为0（考虑影响）
-		4、workflow record history调整，可以在工单详情中查看到上线失败的history
-	**/
-	return retryExecWorkflow(c)
-}
-
 type BatchAssociateWorkflowsWithVersionReqV1 struct {
 	WorkflowIDs []string `json:"workflow_ids" valid:"required"`
 }

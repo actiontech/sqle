@@ -227,7 +227,6 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1ProjectOpRouter.POST("/:project_name/sql_versions/:sql_version_id/lock", v1.LockSqlVersion)
 		v1ProjectOpRouter.POST("/:project_name/sql_versions/:sql_version_id/batch_release_workflows", v1.BatchReleaseWorkflows)
 		v1ProjectOpRouter.POST("/:project_name/sql_versions/:sql_version_id/batch_execute_workflows", v1.BatchExecuteWorkflows)
-		v1ProjectOpRouter.POST("/:project_name/sql_versions/:sql_version_id/retry_workflow ", v1.RetryExecWorkflow)
 		v1ProjectOpRouter.POST("/:project_name/sql_versions/:sql_version_id/sql_version_stages/:sql_version_stage_id/associate_workflows", v1.BatchAssociateWorkflowsWithVersion)
 
 		// audit plan; 智能扫描任务

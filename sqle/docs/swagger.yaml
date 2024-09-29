@@ -3073,15 +3073,6 @@ definitions:
       type:
         type: string
     type: object
-  v1.RetryExecWorkflowReqV1:
-    properties:
-      task_ids:
-        items:
-          type: integer
-        type: array
-      workflow_id:
-        type: string
-    type: object
   v1.RewriteRule:
     properties:
       message:
@@ -9091,37 +9082,6 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 锁定SQL版本
-      tags:
-      - sql_version
-  /v1/projects/{project_name}/sql_versions/{sql_version_id}/retry_workflow:
-    post:
-      description: reject exec failed workflow
-      operationId: retryExecWorkflowV1
-      parameters:
-      - description: project name
-        in: path
-        name: project_name
-        required: true
-        type: string
-      - description: sql version id
-        in: path
-        name: sql_version_id
-        required: true
-        type: string
-      - description: retry execute workflow request
-        in: body
-        name: data
-        required: true
-        schema:
-          $ref: '#/definitions/v1.RetryExecWorkflowReqV1'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 工单重试（上线失败修改sql重试上线）
       tags:
       - sql_version
   /v1/projects/{project_name}/sql_versions/{sql_version_id}/sql_version_stages/{sql_version_stage_id}/associate_workflows:
