@@ -6,6 +6,7 @@ package model
 import (
 	"database/sql"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/errors"
@@ -121,19 +122,13 @@ func (s *Storage) GetStageDependenciesByStageId(stageId string) ([]*SqlVersionSt
 	return dependencies, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) BatchSaveSqlVersion(reqSqlVersion *SqlVersion) error {
+func (s *Storage) SaveSqlVersion(sqlVersion *SqlVersion) error {
 	err := s.Tx(func(txDB *gorm.DB) error {
-		sqlVersion := &SqlVersion{
-			Version:     reqSqlVersion.Version,
-			Description: reqSqlVersion.Description,
-			Status:      reqSqlVersion.Status,
-			ProjectId:   reqSqlVersion.ProjectId,
-		}
-		err := txDB.Save(sqlVersion).Error
+		err := txDB.Model(&SqlVersion{}).Omit("SqlVersionStage.SqlVersionStagesDependency").Save(sqlVersion).Error
 		if err != nil {
 			return err
 		}
-		err = s.TxSaveVersionStageAndDependency(txDB, sqlVersion.ID, reqSqlVersion.SqlVersionStage)
+		err = s.SaveVersionStageDependency(txDB, sqlVersion.SqlVersionStage)
 		if err != nil {
 			return err
 		}
@@ -145,16 +140,9 @@ func (s *Storage) BatchSaveSqlVersion(reqSqlVersion *SqlVersion) error {
 	return nil
 }
 
-func (s *Storage) TxSaveVersionStageAndDependency(txDB *gorm.DB, sqlVersionId uint, versionStages []*SqlVersionStage) error {
-	// 保存版本阶段
-	stages := make([]*SqlVersionStage, 0, len(versionStages))
+func (s *Storage) SaveVersionStageDependency(txDB *gorm.DB, stages []*SqlVersionStage) error {
 	stageDepMap := make(map[int][]SqlVersionStagesDependency)
-	for _, stage := range versionStages {
-		stages = append(stages, &SqlVersionStage{
-			SqlVersionID:  sqlVersionId,
-			Name:          stage.Name,
-			StageSequence: stage.StageSequence,
-		})
+	for _, stage := range stages {
 		deps := make([]SqlVersionStagesDependency, 0)
 		for _, stageDep := range stage.SqlVersionStagesDependency {
 			deps = append(deps, SqlVersionStagesDependency{
@@ -164,33 +152,13 @@ func (s *Storage) TxSaveVersionStageAndDependency(txDB *gorm.DB, sqlVersionId ui
 		}
 		stageDepMap[stage.StageSequence] = deps
 	}
-	err := txDB.Save(stages).Error
-	if err != nil {
-		return err
-	}
-
 	// 保存阶段依赖关系
 	stageDeps := make([]*SqlVersionStagesDependency, 0)
 	for _, versionStage := range stages {
-		nextStage, exist, err := func(versionId uint, sequence int) (*SqlVersionStage, bool, error) {
-			stage := &SqlVersionStage{}
-			// next stage sequence
-			next := sequence + 1
-			err := txDB.Where("sql_version_id = ? AND stage_sequence = ?", versionId, next).First(stage).Error
-			if err == gorm.ErrRecordNotFound {
-				return nil, false, nil
-			} else if err != nil {
-				return nil, false, err
-			}
-			return stage, true, nil
-		}(versionStage.SqlVersionID, versionStage.StageSequence)
-		if err != nil {
-			return err
-		}
-
+		nextStage := GetNextStageBySqlVersionStage(stages, versionStage.StageSequence)
 		for _, dep := range stageDepMap[versionStage.StageSequence] {
 			sqlVersionStagesDep := &SqlVersionStagesDependency{}
-			if exist {
+			if nextStage != nil {
 				sqlVersionStagesDep.SqlVersionStageID = versionStage.ID
 				sqlVersionStagesDep.NextStageID = nextStage.ID
 				sqlVersionStagesDep.StageInstanceID = dep.StageInstanceID
@@ -202,9 +170,24 @@ func (s *Storage) TxSaveVersionStageAndDependency(txDB *gorm.DB, sqlVersionId ui
 			stageDeps = append(stageDeps, sqlVersionStagesDep)
 		}
 	}
-	err = txDB.Save(stageDeps).Error
+	err := txDB.Save(stageDeps).Error
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+func GetNextStageBySqlVersionStage(stages []*SqlVersionStage, currentSequence int) *SqlVersionStage {
+	sort.Slice(stages, func(i, j int) bool {
+		return stages[i].StageSequence < stages[j].StageSequence
+	})
+	for i, stage := range stages {
+		if stage.StageSequence == currentSequence {
+			if i+1 < len(stages) {
+				return stages[i+1]
+			}
+			break
+		}
 	}
 	return nil
 }
@@ -338,7 +321,11 @@ func (s *Storage) UpdateSQLVersionStageByVersionId(versionId uint, deleteStageId
 		if err != nil {
 			return err
 		}
-		err = s.TxSaveVersionStageAndDependency(txDB, versionId, addVersionStages)
+		err = s.db.Model(&SqlVersionStage{}).Omit("SqlVersionStagesDependency").Save(addVersionStages).Error
+		if err != nil {
+			return err
+		}
+		err = s.SaveVersionStageDependency(txDB, addVersionStages)
 		if err != nil {
 			return err
 		}

@@ -68,7 +68,7 @@ func createSqlVersion(c echo.Context) error {
 		SqlVersionStage: versionStages,
 	}
 	s := model.GetStorage()
-	err = s.BatchSaveSqlVersion(sqlVersion)
+	err = s.SaveSqlVersion(sqlVersion)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -143,7 +143,7 @@ func getSqlVersionDetail(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	sqlVersionId, err := strconv.ParseInt(c.Param("sql_version_id"), 10, 64)
+	sqlVersionId, err := strconv.Atoi(c.Param("sql_version_id"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -224,7 +224,7 @@ func updateSqlVersion(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	sqlVersionId, err := strconv.ParseInt(c.Param("sql_version_id"), 10, 64)
+	sqlVersionId, err := strconv.Atoi(c.Param("sql_version_id"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -247,6 +247,8 @@ func updateSqlVersion(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
+
+	// 更新版本信息
 	if req.SqlVersionStage != nil {
 		version, exist, err := s.GetSqlVersionDetailByVersionId(uint(sqlVersionId))
 		if err != nil {
@@ -262,6 +264,8 @@ func updateSqlVersion(c echo.Context) error {
 			}
 			deleteStageIds = append(deleteStageIds, stage.ID)
 		}
+
+		// 更新阶段信息
 		versionStages := make([]*model.SqlVersionStage, 0, len(*req.SqlVersionStage))
 		for _, stage := range *req.SqlVersionStage {
 			stageDeps := make([]*model.SqlVersionStagesDependency, 0)
@@ -283,6 +287,7 @@ func updateSqlVersion(c echo.Context) error {
 				})
 			}
 			versionStages = append(versionStages, &model.SqlVersionStage{
+				SqlVersionID:               uint(sqlVersionId),
 				Name:                       *stage.Name,
 				StageSequence:              *stage.StageSequence,
 				SqlVersionStagesDependency: stageDeps,
@@ -344,7 +349,7 @@ func batchReleaseWorkflows(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	sqlVersionId, err := strconv.ParseInt(c.Param("sql_version_id"), 10, 64)
+	sqlVersionId, err := strconv.Atoi(c.Param("sql_version_id"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -602,7 +607,7 @@ func batchExecuteWorkflows(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	sqlVersionId, err := strconv.ParseInt(c.Param("sql_version_id"), 10, 64)
+	sqlVersionId, err := strconv.Atoi(c.Param("sql_version_id"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
