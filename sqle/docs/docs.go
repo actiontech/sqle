@@ -9711,6 +9711,7 @@ var doc = `{
                 ],
                 "summary": "批量完成工单",
                 "operationId": "batchCompleteWorkflowsV2",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -10405,6 +10406,47 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v2.GetTaskAnalysisDataResV2"
+                        }
+                    }
+                }
+            }
+        },
+        "/v3/projects/{project_name}/workflows/complete": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "this api will directly change the work order status to finished without real online operation",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "批量完成工单",
+                "operationId": "batchCompleteWorkflowsV3",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "batch complete workflows request",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v3.BatchCompleteWorkflowsReqV3"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
                         }
                     }
                 }
@@ -18411,6 +18453,28 @@ var doc = `{
             "properties": {
                 "task_id": {
                     "type": "integer"
+                }
+            }
+        },
+        "v3.BatchCompleteWorkflowsReqV3": {
+            "type": "object",
+            "properties": {
+                "workflow_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v3.CompleteWorkflowReq"
+                    }
+                }
+            }
+        },
+        "v3.CompleteWorkflowReq": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string"
+                },
+                "workflow_id": {
+                    "type": "string"
                 }
             }
         }
