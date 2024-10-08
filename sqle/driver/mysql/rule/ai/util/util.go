@@ -38,6 +38,32 @@ func IsStrInSlice(str string, list []string) bool {
 	return false
 }
 
+// a helper function to check if a string is in list
+func HasDuplicateInStrings(list []string) bool {
+	seen := make(map[string]struct{})
+	for _, element := range list {
+		if _, exists := seen[element]; exists {
+			return true
+		}
+		seen[element] = struct{}{}
+	}
+	return false
+}
+
+// a helper function to check if there are duplicates in two lists
+func HasDuplicateIn2Strings(list1, list2 []string) bool {
+	seen := make(map[string]struct{})
+	for _, element := range list1 {
+		seen[element] = struct{}{}
+	}
+	for _, element := range list2 {
+		if _, exists := seen[element]; exists {
+			return true
+		}
+	}
+	return false
+}
+
 // a helper function to get MySQL alter-table commands by command types
 func GetAlterTableCommandsByTypes(alterTableStmt *ast.AlterTableStmt, ts ...ast.AlterTableType) []*ast.AlterTableSpec {
 	s := []*ast.AlterTableSpec{}
