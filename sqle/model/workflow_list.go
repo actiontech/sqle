@@ -62,7 +62,7 @@ LEFT JOIN tasks ON wir.task_id = tasks.id
 LEFT JOIN workflow_steps AS curr_ws ON wr.current_workflow_step_id = curr_ws.id
 LEFT JOIN workflow_step_templates AS curr_wst ON curr_ws.workflow_step_template_id = curr_wst.id
 LEFT JOIN workflow_version_stages AS stages ON stages.workflow_id = w.workflow_id
-LEFT JOIN sql_versions AS versions ON stages.sql_version_id = versions.id
+LEFT JOIN sql_versions AS versions ON stages.sql_version_id = versions.id AND versions.deleted_at IS NULL
 
 {{- if .check_user_can_access }}
 LEFT JOIN workflow_steps AS all_ws ON w.id = all_ws.workflow_id AND all_ws.state !='initialized'
