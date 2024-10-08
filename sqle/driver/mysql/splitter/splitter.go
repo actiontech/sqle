@@ -153,15 +153,30 @@ func (s *splitter) skipBeginEndBlock(token *parser.Token) *parser.Token {
 				break
 			}
 		}
-		// 如果匹配到END，则需要判断END后的token是否匹配当前的Block
+		/*
+			begin...end语句块示例如下，语法都以END+对应开始标志为该语句块的结束，因此当匹配到END时，判断下一个TOKEN是否匹配该语句块，若匹配则弹出该语句块
+			BEGIN
+				IF
+				END IF
+				WIHLE
+				END WHILE
+			END
+		*/
 		if token.TokenType() == parser.End {
+			// 如果匹配到END，则需要判断END后的token是否匹配当前的Block
 			currentBlock := blockStack[len(blockStack)-1]
 			token = s.scanner.NextToken()
 			if currentBlock.MatchEnd(token) {
 				blockStack = blockStack[:len(blockStack)-1]
 			}
+			// 如果未匹配到，则为错误的begin...end语句块
 		}
 		if len(blockStack) == 0 {
+			// 语句块栈全部弹出，则begin...end语句块正确匹配，返回结束循环，返回END后一个TOKEN
+			break
+		}
+		// 如果匹配到SQL的结尾都没有结束该begin...end语句块，返回最后一个TOKEN
+		if len(s.scanner.Text()) == s.scanner.Offset() {
 			break
 		}
 	}
