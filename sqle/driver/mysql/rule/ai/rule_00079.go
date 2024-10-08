@@ -75,6 +75,8 @@ func RuleSQLE00079(input *rulepkg.RuleHandlerInput) error {
 				}
 			}
 		}
+		// 对于"WITH..."语句
+		// TODO 待实现
 	}
 
 	// 1、别名之间是否有重复的
