@@ -306,9 +306,8 @@ type BatchCompleteWorkflowsReqV2 struct {
 	WorkflowIDList []string `json:"workflow_id_list" form:"workflow_id_list"`
 }
 
-// TODO 支持上线失败时完成工单，需要填写备注信息，备注信息拼接到工单备注中
-
 // BatchCompleteWorkflowsV2 complete workflows.
+// @Deprecated
 // @Summary 批量完成工单
 // @Description this api will directly change the work order status to finished without real online operation
 // @Tags workflow
@@ -340,7 +339,7 @@ func BatchCompleteWorkflowsV2(c echo.Context) error {
 
 	workflows := make([]*model.Workflow, len(req.WorkflowIDList))
 	for i, workflowID := range req.WorkflowIDList {
-		workflow, err := checkCanCompleteWorkflow(projectUid, workflowID)
+		workflow, err := CheckCanCompleteWorkflow(projectUid, workflowID)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -383,13 +382,13 @@ func BatchCompleteWorkflowsV2(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, nil)
 }
 
-func checkCanCompleteWorkflow(projectId, workflowID string) (*model.Workflow, error) {
+func CheckCanCompleteWorkflow(projectId, workflowID string) (*model.Workflow, error) {
 	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectId, workflowID, model.GetStorage().GetWorkflowDetailWithoutInstancesByWorkflowID)
 	if err != nil {
 		return nil, err
 	}
 
-	if !(workflow.Record.Status == model.WorkflowStatusWaitForExecution) {
+	if workflow.Record.Status != model.WorkflowStatusWaitForExecution && workflow.Record.Status != model.WorkflowStatusExecFailed {
 		return nil, errors.New(errors.DataInvalid,
 			fmt.Errorf("workflow status is %s, not allow operate it", workflow.Record.Status))
 	}

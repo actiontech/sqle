@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/actiontech/sqle/sqle/locale"
+	"github.com/actiontech/sqle/sqle/log"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
@@ -798,6 +799,17 @@ func updateWorkflowInstanceRecord(tx *gorm.DB, needExecInstanceRecords []*Workfl
 	return nil
 }
 
+func updateWorkflowInstanceRecordById(tx *gorm.DB, needExecInstanceRecords []*WorkflowInstanceRecord) error {
+	for _, inst := range needExecInstanceRecords {
+		db := tx.Exec("UPDATE workflow_instance_records SET is_sql_executed = ?, execution_user_id = ? WHERE id = ?",
+			inst.IsSQLExecuted, inst.ExecutionUserId, inst.ID)
+		if db.Error != nil {
+			return db.Error
+		}
+	}
+	return nil
+}
+
 func (s *Storage) BatchUpdateWorkflowStatus(ws []*Workflow) error {
 	return s.Tx(func(tx *gorm.DB) error {
 		for _, w := range ws {
@@ -812,8 +824,9 @@ func (s *Storage) BatchUpdateWorkflowStatus(ws []*Workflow) error {
 
 func (s *Storage) CompletionWorkflow(w *Workflow, operateStep *WorkflowStep, needExecInstanceRecords []*WorkflowInstanceRecord) error {
 	return s.Tx(func(tx *gorm.DB) error {
+		l := log.NewEntry()
 		for _, inst := range needExecInstanceRecords {
-			err := updateExecuteSQLStatusByTaskId(tx, inst.TaskId, SQLExecuteStatusManuallyExecuted)
+			err := updateExecuteSQLStatusByTaskIdAndStatus(tx, inst.TaskId, []string{SQLExecuteStatusFailed, TaskStatusInit}, SQLExecuteStatusManuallyExecuted)
 			if err != nil {
 				return err
 			}
@@ -828,8 +841,24 @@ func (s *Storage) CompletionWorkflow(w *Workflow, operateStep *WorkflowStep, nee
 		if err := updateWorkflowStep(tx, operateStep); err != nil {
 			return err
 		}
-		return updateWorkflowInstanceRecord(tx, needExecInstanceRecords)
+
+		if err := updateWorkflowInstanceRecordById(tx, needExecInstanceRecords); err != nil {
+			return err
+		}
+		if err := s.UpdateStageWorkflowExecTimeIfNeed(w.WorkflowId); err != nil {
+			l.Errorf("update workflow execute time for version stage error: %v", err)
+		}
+		return nil
 	})
+}
+
+func (s *Storage) UpdateWorkflowById(workflowId uint, workflowParam map[string]interface{}) error {
+	err := s.db.Model(&Workflow{}).Where("id = ?", workflowId).
+		Updates(workflowParam).Error
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *Storage) UpdateWorkflowRecordByID(id uint, workFlow map[string]interface{}) error {
