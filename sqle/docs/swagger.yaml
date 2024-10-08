@@ -5471,6 +5471,20 @@ definitions:
       task_id:
         type: integer
     type: object
+  v3.BatchCompleteWorkflowsReqV3:
+    properties:
+      workflow_list:
+        items:
+          $ref: '#/definitions/v3.CompleteWorkflowReq'
+        type: array
+    type: object
+  v3.CompleteWorkflowReq:
+    properties:
+      desc:
+        type: string
+      workflow_id:
+        type: string
+    type: object
 info:
   contact: {}
   description: This is a sample server for dev.
@@ -12043,6 +12057,7 @@ paths:
       - workflow
   /v2/projects/{project_name}/workflows/complete:
     post:
+      deprecated: true
       description: this api will directly change the work order status to finished
         without real online operation
       operationId: batchCompleteWorkflowsV2
@@ -12237,6 +12252,33 @@ paths:
       summary: 获取task相关的SQL执行计划和表元数据
       tags:
       - task
+  /v3/projects/{project_name}/workflows/complete:
+    post:
+      description: this api will directly change the work order status to finished
+        without real online operation
+      operationId: batchCompleteWorkflowsV3
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: batch complete workflows request
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/v3.BatchCompleteWorkflowsReqV3'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 批量完成工单
+      tags:
+      - workflow
 securityDefinitions:
   ApiKeyAuth:
     in: header
