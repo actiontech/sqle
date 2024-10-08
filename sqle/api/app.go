@@ -16,6 +16,7 @@ import (
 	"github.com/actiontech/sqle/sqle/api/controller"
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
 	v2 "github.com/actiontech/sqle/sqle/api/controller/v2"
+	v3 "github.com/actiontech/sqle/sqle/api/controller/v3"
 	sqleMiddleware "github.com/actiontech/sqle/sqle/api/middleware"
 	"github.com/actiontech/sqle/sqle/config"
 	_ "github.com/actiontech/sqle/sqle/docs"
@@ -30,6 +31,7 @@ import (
 const (
 	apiV1 = "v1"
 	apiV2 = "v2"
+	apiV3 = "v3"
 )
 
 type restApi struct {
@@ -113,7 +115,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 	v1Router.Use(sqleMiddleware.JWTTokenAdapter(), sqleMiddleware.JWTWithConfig(dmsV1.JwtSigningKey), sqleMiddleware.VerifyUserIsDisabled(), locale.Bundle.EchoMiddlewareByCustomFunc(dms.GetCurrentUserLanguage, i18nPkg.GetLangByAcceptLanguage), sqleMiddleware.OperationLogRecord(), accesstoken.CheckLatestAccessToken(controller.GetDMSServerAddress(), jwtPkg.GetTokenDetailFromContextWithOldJwt))
 	v2Router := e.Group(apiV2)
 	v2Router.Use(sqleMiddleware.JWTTokenAdapter(), sqleMiddleware.JWTWithConfig(dmsV1.JwtSigningKey), sqleMiddleware.VerifyUserIsDisabled(), locale.Bundle.EchoMiddlewareByCustomFunc(dms.GetCurrentUserLanguage, i18nPkg.GetLangByAcceptLanguage), sqleMiddleware.OperationLogRecord(), accesstoken.CheckLatestAccessToken(controller.GetDMSServerAddress(), jwtPkg.GetTokenDetailFromContextWithOldJwt))
-
+	v3Router := e.Group(apiV3)
+	v3Router.Use(sqleMiddleware.JWTTokenAdapter(), sqleMiddleware.JWTWithConfig(dmsV1.JwtSigningKey), sqleMiddleware.VerifyUserIsDisabled(), locale.Bundle.EchoMiddlewareByCustomFunc(dms.GetCurrentUserLanguage, i18nPkg.GetLangByAcceptLanguage), sqleMiddleware.OperationLogRecord(), accesstoken.CheckLatestAccessToken(controller.GetDMSServerAddress(), jwtPkg.GetTokenDetailFromContextWithOldJwt))
 	// v1 admin api, just admin user can access.
 	{
 		// rule template
@@ -389,6 +392,13 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v2ProjectOpRouter.POST("/:project_name/audit_plans/:audit_plan_name/sqls/full", v2.FullSyncAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
 		v2ProjectOpRouter.POST("/:project_name/audit_plans/:audit_plan_name/sqls/partial", v2.PartialSyncAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
 		v2ProjectOpRouter.POST("/:project_name/audit_plans/:audit_plan_id/sqls/upload", v2.UploadInstanceAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
+	}
+
+	v3ProjectOpRouter := v3Router.Group("/projects", sqleMiddleware.ProjectMemberOpAllowed())
+	{
+		// workflow
+		v3ProjectOpRouter.POST("/:project_name/workflows/complete", v3.BatchCompleteWorkflowsV3)
+
 	}
 
 	v2ProjectViewRouter := v2Router.Group("/projects", sqleMiddleware.ProjectMemberViewAllowed())
