@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"sort"
 	"strconv"
+	"time"
 
 	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"github.com/actiontech/dms/pkg/dms-common/dmsobject"
@@ -68,11 +69,16 @@ func createSqlVersion(c echo.Context) error {
 		SqlVersionStage: versionStages,
 	}
 	s := model.GetStorage()
-	err = s.SaveSqlVersion(sqlVersion)
+	sqlVersionId, err := s.SaveSqlVersion(sqlVersion)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	return controller.JSONBaseErrorReq(c, nil)
+	return c.JSON(http.StatusOK, &CreateSqlVersionResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: CreateSqlVersionRes{
+			SqlversionId: sqlVersionId,
+		},
+	})
 }
 
 func getSqlVersionList(c echo.Context) error {
@@ -302,11 +308,73 @@ func updateSqlVersion(c echo.Context) error {
 }
 
 func lockSqlVersion(c echo.Context) error {
-	return nil
+	// TODO 权限校验
+	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	sqlVersionId, err := strconv.Atoi(c.Param("sql_version_id"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	s := model.GetStorage()
+	version, exist, err := s.GetSqlVersionDetailByVersionId(uint(sqlVersionId))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.NewDataNotExistErr("sql version not found"))
+	}
+	// 校验版本中工单是否都已完成（忽略关闭的工单）
+	for _, stage := range version.SqlVersionStage {
+		if len(stage.WorkflowVersionStage) == 0 {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, fmt.Errorf("there are unfinished workflows release in this version")))
+		}
+		for _, workflowStage := range stage.WorkflowVersionStage {
+			workflow, err := dms.GetWorkflowDetailByWorkflowId(projectUid, workflowStage.WorkflowID, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
+			if workflow.Record.Status != model.WorkflowStatusFinish && workflow.Record.Status != model.WorkflowStatusCancel {
+				return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, fmt.Errorf("there are unfinished workflows in this version")))
+			}
+		}
+	}
+	sqlVersionParam := make(map[string]interface{}, 2)
+	sqlVersionParam["lock_time"] = time.Now()
+	sqlVersionParam["status"] = model.SqlVersionStatusLock
+	err = s.UpdateSQLVersionById(sqlVersionParam, uint(sqlVersionId))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return controller.JSONBaseErrorReq(c, nil)
 }
 
 func deleteSqlVersion(c echo.Context) error {
-	return nil
+	// TODO 权限校验
+	sqlVersionId, err := strconv.Atoi(c.Param("sql_version_id"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	s := model.GetStorage()
+	version, exist, err := s.GetSqlVersionDetailByVersionId(uint(sqlVersionId))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.NewDataNotExistErr("sql version not found"))
+	}
+	// 不允许删除已经有工单的版本
+	for _, stage := range version.SqlVersionStage {
+		if len(stage.WorkflowVersionStage) > 0 {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, fmt.Errorf("workflow already exists in %s stage and no deleted allowed", stage.Name)))
+		}
+	}
+	err = s.DeleteSqlVersionById(uint(sqlVersionId))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return controller.JSONBaseErrorReq(c, nil)
 }
 
 func getDependenciesBetweenStageInstance(c echo.Context) error {
