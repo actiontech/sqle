@@ -34,7 +34,7 @@ func TestSplitSqlText(t *testing.T) {
 			if err != nil {
 				t.Fatalf(err.Error())
 			}
-			assert.Equal(t, len(splitResults), testCase.expectedLength)
+			assert.Equal(t, testCase.expectedLength, len(splitResults))
 		})
 	}
 }
@@ -61,7 +61,7 @@ func TestSplitterProcess(t *testing.T) {
 			if err != nil {
 				t.Fatalf(err.Error())
 			}
-			assert.Equal(t, len(executableNodes), testCase.expectedLength)
+			assert.Equal(t, testCase.expectedLength, len(executableNodes))
 		})
 	}
 }
