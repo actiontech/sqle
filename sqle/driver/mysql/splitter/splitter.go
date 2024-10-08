@@ -97,7 +97,7 @@ func (s *splitter) getNextSql(sqlText string) (*sqlWithLineNumber, error) {
 		return nil, err
 	}
 	// 若匹配到自定义分隔符语法，则输出结果，否则匹配分隔符，输出结果
-	if matchedDelimiterCommand || s.matcheSql(sqlText) {
+	if matchedDelimiterCommand || s.matchSql(sqlText) {
 		buff := bytes.Buffer{}
 		buff.WriteString(sqlText[:s.scanner.Offset()])
 		lineBeforeStart := strings.Count(sqlText[:s.delimiter.startPos], "\n")
@@ -118,7 +118,7 @@ func (s *splitter) getNextSql(sqlText string) (*sqlWithLineNumber, error) {
 	}, nil
 }
 
-func (s *splitter) matcheSql(sql string) bool {
+func (s *splitter) matchSql(sql string) bool {
 	s.scanner.Reset(sql)
 	token := &parser.Token{}
 	var isFirstToken bool = true
