@@ -80,8 +80,12 @@ func getDelimiterValueAndEndPos(sqlAfterDelimiter string) (string, int) {
 			ptr++
 		}
 	}
-
-	return sqlAfterDelimiter[start:ptr], ptr
+	// 结束位置为分隔符后一位
+	var endPos int = ptr
+	if ptr < len(sqlAfterDelimiter) {
+		endPos++
+	}
+	return sqlAfterDelimiter[start:ptr], endPos
 }
 
 // 辅助函数,判断字符是否为空格
