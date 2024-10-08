@@ -308,6 +308,31 @@ func (s *Storage) UpdateSQLVersionById(sqlVersion map[string]interface{}, versio
 	return nil
 }
 
+func (s *Storage) DeleteSqlVersionById(versionId uint) error {
+	version, exist, err := s.GetSqlVersionDetailByVersionId(versionId)
+	if err != nil {
+		return err
+	}
+	if !exist {
+		return errors.NewDataNotExistErr("sql version not found")
+	}
+	err = s.Tx(func(txDB *gorm.DB) error {
+		err := txDB.Delete(version).Error
+		if err != nil {
+			return err
+		}
+		err = txDB.Select("SqlVersionStagesDependency").Delete(version.SqlVersionStage).Error
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *Storage) UpdateSQLVersionStageByVersionId(versionId uint, deleteStageIds []uint, addVersionStages []*SqlVersionStage) error {
 	// 因为只有未关联工单的版本才能修改阶段，所以这里可以覆盖式更新阶段及数据源的依赖关系
 	err := s.Tx(func(txDB *gorm.DB) error {

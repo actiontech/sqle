@@ -346,7 +346,30 @@ func lockSqlVersion(c echo.Context) error {
 }
 
 func deleteSqlVersion(c echo.Context) error {
-	return nil
+	// TODO 权限校验
+	sqlVersionId, err := strconv.Atoi(c.Param("sql_version_id"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	s := model.GetStorage()
+	version, exist, err := s.GetSqlVersionDetailByVersionId(uint(sqlVersionId))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.NewDataNotExistErr("sql version not found"))
+	}
+	// 不允许删除已经有工单的版本
+	for _, stage := range version.SqlVersionStage {
+		if len(stage.WorkflowVersionStage) > 0 {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, fmt.Errorf("workflow already exists in %s stage and no deleted allowed", stage.Name)))
+		}
+	}
+	err = s.DeleteSqlVersionById(uint(sqlVersionId))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return controller.JSONBaseErrorReq(c, nil)
 }
 
 func getDependenciesBetweenStageInstance(c echo.Context) error {
