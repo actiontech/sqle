@@ -521,9 +521,9 @@ func (s *Storage) UpdateTaskStatusByIDs(taskIDs []uint, attrs interface{}) error
 	return errors.ConnectStorageErrWrapper(err)
 }
 
-func updateExecuteSQLStatusByTaskId(tx *gorm.DB, taskId uint, status string) error {
-	query := "UPDATE execute_sql_detail SET exec_status=? WHERE task_id=?"
-	return tx.Exec(query, status, taskId).Error
+func updateExecuteSQLStatusByTaskIdAndStatus(tx *gorm.DB, taskId uint, status []string, updateToStatus string) error {
+	query := "UPDATE execute_sql_detail SET exec_status=? WHERE task_id=? AND exec_status IN (?)"
+	return tx.Exec(query, updateToStatus, taskId, status).Error
 }
 
 func (s *Storage) UpdateExecuteSqlStatus(baseSQL *BaseSQL, status, result string) error {
