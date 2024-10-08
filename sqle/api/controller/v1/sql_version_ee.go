@@ -69,11 +69,16 @@ func createSqlVersion(c echo.Context) error {
 		SqlVersionStage: versionStages,
 	}
 	s := model.GetStorage()
-	err = s.SaveSqlVersion(sqlVersion)
+	sqlVersionId, err := s.SaveSqlVersion(sqlVersion)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	return controller.JSONBaseErrorReq(c, nil)
+	return c.JSON(http.StatusOK, &CreateSqlVersionResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: CreateSqlVersionRes{
+			SqlversionId: sqlVersionId,
+		},
+	})
 }
 
 func getSqlVersionList(c echo.Context) error {

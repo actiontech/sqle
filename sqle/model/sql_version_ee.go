@@ -122,12 +122,14 @@ func (s *Storage) GetStageDependenciesByStageId(stageId string) ([]*SqlVersionSt
 	return dependencies, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) SaveSqlVersion(sqlVersion *SqlVersion) error {
+func (s *Storage) SaveSqlVersion(sqlVersion *SqlVersion) (uint, error) {
+	var sqlVersionId uint
 	err := s.Tx(func(txDB *gorm.DB) error {
 		err := txDB.Model(&SqlVersion{}).Omit("SqlVersionStage.SqlVersionStagesDependency").Save(sqlVersion).Error
 		if err != nil {
 			return err
 		}
+		sqlVersionId = sqlVersion.ID
 		err = s.SaveVersionStageDependency(txDB, sqlVersion.SqlVersionStage)
 		if err != nil {
 			return err
@@ -135,9 +137,9 @@ func (s *Storage) SaveSqlVersion(sqlVersion *SqlVersion) error {
 		return nil
 	})
 	if err != nil {
-		return err
+		return 0, err
 	}
-	return nil
+	return sqlVersionId, nil
 }
 
 func (s *Storage) SaveVersionStageDependency(txDB *gorm.DB, stages []*SqlVersionStage) error {
