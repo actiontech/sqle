@@ -248,7 +248,7 @@ func updateSqlVersion(c echo.Context) error {
 		if req.Version != nil {
 			sqlVersionParam["version"] = req.Version
 		}
-		err := s.UpdateSQLVersionById(sqlVersionParam, uint(sqlVersionId))
+		err := s.UpdateSQLVersionById(uint(sqlVersionId), sqlVersionParam)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -343,7 +343,7 @@ func lockSqlVersion(c echo.Context) error {
 	sqlVersionParam := make(map[string]interface{}, 2)
 	sqlVersionParam["lock_time"] = time.Now()
 	sqlVersionParam["status"] = model.SqlVersionStatusLock
-	err = s.UpdateSQLVersionById(sqlVersionParam, uint(sqlVersionId))
+	err = s.UpdateSQLVersionById(uint(sqlVersionId), sqlVersionParam)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -464,7 +464,7 @@ func batchReleaseWorkflows(c echo.Context) error {
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, errors.New(errors.SQLVersionNotAllTasksExecutedSuccess, fmt.Errorf("workflow %s release fail and stop release", workflow.Subject)))
 		}
-		err = s.UpdateWorkflowReleaseStatus(releaseWorkflow.WorkFlowID, model.WorkflowReleaseStatusHaveBeenReleased, uint(sqlVersionId))
+		err = s.UpdateWorkflowReleaseStatus(uint(sqlVersionId), releaseWorkflow.WorkFlowID, model.WorkflowReleaseStatusHaveBeenReleased)
 	}
 	return controller.JSONBaseErrorReq(c, nil)
 }

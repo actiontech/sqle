@@ -286,7 +286,7 @@ func (s *Storage) GetNextStageByStageSequence(versionId uint, sequence int) (*Sq
 	}
 	return stage, true, nil
 }
-func (s *Storage) UpdateWorkflowReleaseStatus(workflowId, status string, sqlVersionId uint) error {
+func (s *Storage) UpdateWorkflowReleaseStatus(sqlVersionId uint, workflowId, status string) error {
 	err := s.db.Model(WorkflowVersionStage{}).Where("sql_version_id = ? AND workflow_id = ?", sqlVersionId, workflowId).Update("workflow_release_status", status).Error
 	if err != nil {
 		return err
@@ -301,7 +301,7 @@ func (stage SqlVersionStage) InitialStatusOfWorkflow() string {
 	return WorkflowReleaseStatusIsBingReleased
 }
 
-func (s *Storage) UpdateSQLVersionById(sqlVersion map[string]interface{}, versionId uint) error {
+func (s *Storage) UpdateSQLVersionById(versionId uint, sqlVersion map[string]interface{}) error {
 	err := s.db.Model(&SqlVersion{}).Where("id = ?", versionId).
 		Updates(sqlVersion).Error
 	if err != nil {
