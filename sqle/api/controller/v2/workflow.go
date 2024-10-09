@@ -227,6 +227,12 @@ func CancelWorkflowV2(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	workflowStageParam := make(map[string]interface{}, 1)
+	workflowStageParam["workflow_release_status"] = model.WorkflowReleaseStatusNotNeedReleased
+	err = s.UpdateStageWorkflowIfNeed(workflow.WorkflowId, workflowStageParam)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 
 	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
