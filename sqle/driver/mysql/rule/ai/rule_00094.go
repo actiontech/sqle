@@ -27,7 +27,7 @@ func init() {
 			Params: params.Params{
 				&params.Param{
 					Key:   rulepkg.DefaultSingleParamKeyName,
-					Value: "JSON_ARRAY,GROUP_CONCAT,CONCAT_WS",
+					Value: "JSON_ARRAY,GROUP_CONCAT,CONCAT_WS,FIND_IN_SET",
 					Desc:  "函数名",
 					Type:  params.ParamTypeString,
 				},
@@ -43,7 +43,7 @@ func init() {
 
 /*
 ==== Prompt start ====
-在 MySQL 中，您应该检查 SQL 是否违反了规则(SQLE00094): "在 MySQL 中，避免使用不必要的内置函数.默认参数描述: 函数名, 默认参数值: JSON_ARRAY,GROUP_CONCAT,CONCAT_WS"
+在 MySQL 中，您应该检查 SQL 是否违反了规则(SQLE00094): "在 MySQL 中，避免使用不必要的内置函数.默认参数描述: 函数名, 默认参数值: JSON_ARRAY,GROUP_CONCAT,CONCAT_WS,FIND_IN_SET"
 您应遵循以下逻辑：
 1. 对于所有DML、DQL语句，
   1. 获取该规则指定的函数名列表，通过英文逗号拆分成一个函数集合
