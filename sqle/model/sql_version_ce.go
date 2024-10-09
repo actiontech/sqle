@@ -14,3 +14,7 @@ func (stage SqlVersionStage) InitialStatusOfWorkflow() string {
 func (s *Storage) GetAssociatedStageWorkflows(workflowId string) ([]*AssociatedStageWorkflow, error) {
 	return nil, nil
 }
+
+func (s *Storage) GetSQLVersionByWorkflowId(workflowId string) (*SqlVersion, error) {
+	return &SqlVersion{}, nil
+}
