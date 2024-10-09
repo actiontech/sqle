@@ -1180,18 +1180,24 @@ func GetWorkflowV2(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	sqlVersion, err := s.GetSQLVersionByWorkflowId(workflow.WorkflowId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	return c.JSON(http.StatusOK, &GetWorkflowResV2{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertWorkflowToRes(workflow, associatedWorkflows),
+		Data:    convertWorkflowToRes(workflow, sqlVersion, associatedWorkflows),
 	})
 }
 
-func convertWorkflowToRes(workflow *model.Workflow, associatedWorkflows []*model.AssociatedStageWorkflow) *WorkflowResV2 {
+func convertWorkflowToRes(workflow *model.Workflow, sqlVersion *model.SqlVersion, associatedWorkflows []*model.AssociatedStageWorkflow) *WorkflowResV2 {
 	workflowRes := &WorkflowResV2{
 		Name:                     workflow.Subject,
 		WorkflowID:               workflow.WorkflowId,
 		Desc:                     workflow.Desc,
 		Mode:                     workflow.Mode,
+		SqlVersionName:           sqlVersion.Version,
 		ExecMode:                 workflow.ExecMode,
 		CreateUser:               dms.GetUserNameWithDelTag(workflow.CreateUserId),
 		CreateTime:               &workflow.CreatedAt,
