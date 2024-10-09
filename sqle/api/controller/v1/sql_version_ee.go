@@ -775,6 +775,7 @@ func convertWorkflowToAssociateWorkflows(workflows []*sqlversion.Workflow) []*As
 			WorkflowID:   workflow.WorkflowID,
 			WorkflowName: workflow.Subject,
 			WorkflowDesc: workflow.Description,
+			Status:       workflow.Status,
 		})
 	}
 	return ret

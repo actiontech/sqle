@@ -146,6 +146,7 @@ func GetWorkflowsThatCanBeAssociatedToVersionStage(versionID, stageID uint) ([]*
 			WorkflowID:  modelWorkflow.WorkFlowID,
 			Subject:     modelWorkflow.Subject,
 			Description: modelWorkflow.Desc,
+			Status:      modelWorkflow.Status,
 		})
 	}
 	return workflows, nil
