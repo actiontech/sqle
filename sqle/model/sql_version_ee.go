@@ -364,6 +364,31 @@ func (s *Storage) UpdateSQLVersionStageByVersionId(versionId uint, deleteStageId
 	return nil
 }
 
+// 根据工单id获取在版本中关联阶段的工单
+func (s *Storage) GetAssociatedStageWorkflows(workflowId string) ([]*AssociatedStageWorkflow, error) {
+	var stageWorkflows []*AssociatedStageWorkflow
+	err := s.db.Model(&WorkflowVersionStage{}).Select("workflow_version_stages.workflow_id,"+
+		"refs.sql_version_stage_id,"+
+		"svs.stage_sequence ,"+
+		"w.subject AS workflow_name,"+
+		"wr.status").
+		Joins("INNER JOIN ( "+
+			"SELECT sql_version_id, workflow_sequence,workflow_id,sql_version_stage_id "+
+			"FROM workflow_version_stages "+
+			"WHERE workflow_id = ?"+
+			") AS refs ON workflow_version_stages.sql_version_id = refs.sql_version_id "+
+			"AND workflow_version_stages.workflow_sequence = refs.workflow_sequence", workflowId).
+		Joins("INNER JOIN sql_version_stages svs ON svs.id = workflow_version_stages.sql_version_stage_id").
+		Joins("INNER JOIN workflows w ON workflow_version_stages.workflow_id = w.workflow_id").
+		Joins("INNER JOIN workflow_records wr ON w.workflow_record_id = wr.id ").
+		Scan(&stageWorkflows).Error
+	if err != nil {
+		return nil, errors.ConnectStorageErrWrapper(err)
+	}
+
+	return stageWorkflows, nil
+}
+
 func (s *Storage) GetFirstStageOfSQLVersion(sqlVersionID uint) (*SqlVersionStage, error) {
 	firstStage := &SqlVersionStage{}
 	err := s.db.Model(&SqlVersionStage{}).Preload("SqlVersionStagesDependency").Preload("WorkflowVersionStage").Where("sql_version_id = ?", sqlVersionID).Order("stage_sequence ASC").First(firstStage).Error
