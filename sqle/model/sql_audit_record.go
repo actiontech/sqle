@@ -15,8 +15,8 @@ type SQLAuditRecordTags struct {
 
 type SQLAuditRecord struct {
 	Model
-	ProjectId string `gorm:"index;not null;type:varchar(255)"`
-	CreatorId string `gorm:"not null;type:varchar(255)"`
+	ProjectId     string `gorm:"index;not null;type:varchar(255)"`
+	CreatorId     string `gorm:"not null;type:varchar(255)"`
 	AuditRecordId string `gorm:"not null;type:varchar(255);index:unique"`
 	Tags          JSON
 
@@ -65,4 +65,14 @@ func (s *Storage) GetSQLAuditRecordById(projectId string, SQLAuditRecordId strin
 		return nil, false, errors.New(errors.ConnectStorageError, err)
 	}
 	return record, true, nil
+}
+
+func (s *Storage) GetSQLAuditRecordProjectIdByTaskId(taskId uint) (projectId string, err error) {
+	var record = &SQLAuditRecord{}
+	if err = s.db.Where("task_id = ?", taskId).First(&record).Error; err != nil && err == gorm.ErrRecordNotFound {
+		return "", nil
+	} else if err != nil {
+		return "", errors.New(errors.ConnectStorageError, err)
+	}
+	return record.ProjectId, nil
 }
