@@ -1101,6 +1101,8 @@ type WorkflowRecordResV2 struct {
 	Tasks             []*WorkflowTaskItem  `json:"tasks"`
 	CurrentStepNumber uint                 `json:"current_step_number,omitempty"`
 	Status            string               `json:"status" enums:"wait_for_audit,wait_for_execution,rejected,canceled,exec_failed,executing,finished"`
+	Executable        bool                 `json:"executable"`
+	ExecutableReason  string               `json:"executable_reason"`
 	Steps             []*WorkflowStepResV2 `json:"workflow_step_list,omitempty"`
 }
 
