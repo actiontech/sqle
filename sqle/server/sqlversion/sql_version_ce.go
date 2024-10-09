@@ -12,3 +12,7 @@ import (
 func CheckInstanceInWorkflowCanAssociateToTheFirstStageOfVersion(versionID uint, instanceId []uint64) error {
 	return errors.New(errors.EnterpriseEditionFeatures, e.New("sql version is enterprise version feature"))
 }
+
+func CheckWorkflowExecutable(projectUid, workflowId string) (executable bool, reason string, err error) {
+	return true, "", nil
+}

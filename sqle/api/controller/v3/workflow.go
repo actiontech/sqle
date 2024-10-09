@@ -10,6 +10,7 @@ import (
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/server/sqlversion"
 	"github.com/labstack/echo/v4"
 )
 
@@ -54,6 +55,13 @@ func BatchCompleteWorkflowsV3(c echo.Context) error {
 	s := model.GetStorage()
 	workflows := make([]*model.Workflow, len(req.WorkflowList))
 	for i, completeWorkflow := range req.WorkflowList {
+		executable, reason, err := sqlversion.CheckWorkflowExecutable(projectUid, completeWorkflow.WorkflowID)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if !executable {
+			return controller.JSONBaseErrorReq(c, fmt.Errorf(reason))
+		}
 		workflow, err := v2.CheckCanCompleteWorkflow(projectUid, completeWorkflow.WorkflowID)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
