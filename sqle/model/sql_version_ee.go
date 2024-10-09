@@ -225,7 +225,7 @@ func (s *Storage) UpdateStageWorkflowExecTimeIfNeed(workflowId string) error {
 
 func (s *Storage) GetStageOfTheWorkflow(workflowId string) (*SqlVersionStage, bool, error) {
 	stage := &SqlVersionStage{}
-	err := s.db.Model(&SqlVersionStage{}).
+	err := s.db.Model(&SqlVersionStage{}).Preload("WorkflowVersionStage").
 		Joins("JOIN workflow_version_stages ON sql_version_stages.id = workflow_version_stages.sql_version_stage_id").
 		Where("workflow_version_stages.workflow_id = ?", workflowId).First(stage).Error
 	if err == gorm.ErrRecordNotFound {
@@ -411,11 +411,11 @@ func (s *Storage) GetStageOfSQLVersion(sqlVersionID, stageID uint) (*SqlVersionS
 	return stage, nil
 }
 
-func (s *Storage) BatchCreateWorkflowVerionRelation(stage *SqlVersionStage, workflowIds []string) error {
+func (s *Storage) BatchCreateWorkflowVersionRelation(stage *SqlVersionStage, workflowIds []string) error {
 	workflowVersionModels := make([]*WorkflowVersionStage, 0, len(workflowIds))
-	for index, woworkflowId := range workflowIds {
+	for index, workflowId := range workflowIds {
 		workflowVersionModels = append(workflowVersionModels, &WorkflowVersionStage{
-			WorkflowID:            woworkflowId,
+			WorkflowID:            workflowId,
 			SqlVersionID:          stage.SqlVersionID,
 			SqlVersionStageID:     stage.ID,
 			WorkflowSequence:      len(stage.WorkflowVersionStage) + index + 1,
