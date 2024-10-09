@@ -1,6 +1,7 @@
 package model
 
 import (
+	"database/sql"
 	"time"
 )
 
@@ -58,3 +59,11 @@ const (
 	WorkflowReleaseStatusHaveBeenReleased = "released"
 	WorkflowReleaseStatusNotNeedReleased  = "not_need_release"
 )
+
+type AssociatedStageWorkflow struct {
+	WorkflowID        sql.NullString `json:"workflow_id"`
+	WorkflowName      sql.NullString `json:"workflow_name"`
+	Status            sql.NullString `json:"status"`
+	SqlVersionStageID uint           `json:"sql_version_stage_id"`
+	StageSequence     int            `json:"stage_sequence"`
+}

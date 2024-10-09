@@ -1105,20 +1105,20 @@ type WorkflowRecordResV2 struct {
 }
 
 type WorkflowResV2 struct {
-	Name                          string                           `json:"workflow_name"`
-	WorkflowID                    string                           `json:"workflow_id"`
-	Desc                          string                           `json:"desc,omitempty"`
-	Mode                          string                           `json:"mode" enums:"same_sqls,different_sqls"`
-	ExecMode                      string                           `json:"exec_mode" enums:"sql_file,sqls"`
-	CreateUser                    string                           `json:"create_user_name"`
-	CreateTime                    *time.Time                       `json:"create_time"`
-	SqlVersionName                string                           `json:"sql_version_name"`
-	Record                        *WorkflowRecordResV2             `json:"record"`
-	RecordHistory                 []*WorkflowRecordResV2           `json:"record_history_list,omitempty"`
-	AssociatedOtherStageWorkflows []*AssociatedOtherStageWorkflows `json:"associated_other_stage_workflows,omitempty"`
+	Name                     string                      `json:"workflow_name"`
+	WorkflowID               string                      `json:"workflow_id"`
+	Desc                     string                      `json:"desc,omitempty"`
+	Mode                     string                      `json:"mode" enums:"same_sqls,different_sqls"`
+	ExecMode                 string                      `json:"exec_mode" enums:"sql_file,sqls"`
+	CreateUser               string                      `json:"create_user_name"`
+	CreateTime               *time.Time                  `json:"create_time"`
+	SqlVersionName           string                      `json:"sql_version_name"`
+	Record                   *WorkflowRecordResV2        `json:"record"`
+	RecordHistory            []*WorkflowRecordResV2      `json:"record_history_list,omitempty"`
+	AssociatedStageWorkflows []*AssociatedStageWorkflows `json:"associated_stage_workflows,omitempty"`
 }
 
-type AssociatedOtherStageWorkflows struct {
+type AssociatedStageWorkflows struct {
 	WorkflowID        string `json:"workflow_id"`
 	WorkflowName      string `json:"workflow_name"`
 	Status            string `json:"status" enums:"wait_for_audit,wait_for_execution,rejected,canceled,exec_failed,executing,finished"`
@@ -1162,10 +1162,6 @@ func GetWorkflowV2(c echo.Context) error {
 			if id == "" {
 				continue
 			}
-			// user, err := dms.GetUser(c.Request().Context(), id, controller.GetDMSServerAddress())
-			// if err != nil {
-			// 	return controller.JSONBaseErrorReq(c, err)
-			// }
 			AssigneesUserNames = append(AssigneesUserNames, dms.GetUserNameWithDelTag(id))
 		}
 		step.Assignees = strings.Join(AssigneesUserNames, ",")
@@ -1180,26 +1176,26 @@ func GetWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	workflow.RecordHistory = history
-	// createUser, err := dms.GetUser(c.Request().Context(), workflow.CreateUserId, controller.GetDMSServerAddress())
-	// if err != nil {
-	// 	return controller.JSONBaseErrorReq(c, err)
-	// }
-	// workflow.CreateUser = createUser.Name
+	associatedWorkflows, err := s.GetAssociatedStageWorkflows(workflow.WorkflowId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 	return c.JSON(http.StatusOK, &GetWorkflowResV2{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertWorkflowToRes(workflow),
+		Data:    convertWorkflowToRes(workflow, associatedWorkflows),
 	})
 }
 
-func convertWorkflowToRes(workflow *model.Workflow) *WorkflowResV2 {
+func convertWorkflowToRes(workflow *model.Workflow, associatedWorkflows []*model.AssociatedStageWorkflow) *WorkflowResV2 {
 	workflowRes := &WorkflowResV2{
-		Name:       workflow.Subject,
-		WorkflowID: workflow.WorkflowId,
-		Desc:       workflow.Desc,
-		Mode:       workflow.Mode,
-		ExecMode:   workflow.ExecMode,
-		CreateUser: dms.GetUserNameWithDelTag(workflow.CreateUserId),
-		CreateTime: &workflow.CreatedAt,
+		Name:                     workflow.Subject,
+		WorkflowID:               workflow.WorkflowId,
+		Desc:                     workflow.Desc,
+		Mode:                     workflow.Mode,
+		ExecMode:                 workflow.ExecMode,
+		CreateUser:               dms.GetUserNameWithDelTag(workflow.CreateUserId),
+		CreateTime:               &workflow.CreatedAt,
+		AssociatedStageWorkflows: convertAssociatedWorkflowToRes(associatedWorkflows),
 	}
 
 	// convert workflow record
@@ -1215,6 +1211,21 @@ func convertWorkflowToRes(workflow *model.Workflow) *WorkflowResV2 {
 	workflowRes.Record = workflowRecordRes
 
 	return workflowRes
+}
+
+func convertAssociatedWorkflowToRes(associatedWorkflows []*model.AssociatedStageWorkflow) []*AssociatedStageWorkflows {
+	associatedWorkflowsRes := make([]*AssociatedStageWorkflows, 0, len(associatedWorkflows))
+	for _, associatedWorkflow := range associatedWorkflows {
+		associatedWorkflowsRes = append(associatedWorkflowsRes, &AssociatedStageWorkflows{
+			WorkflowID:        associatedWorkflow.WorkflowID.String,
+			WorkflowName:      associatedWorkflow.WorkflowName.String,
+			Status:            associatedWorkflow.Status.String,
+			SqlVersionStageID: associatedWorkflow.SqlVersionStageID,
+			StageSequence:     associatedWorkflow.StageSequence,
+		})
+	}
+
+	return associatedWorkflowsRes
 }
 
 func convertWorkflowRecordToRes(workflow *model.Workflow, record *model.WorkflowRecord) *WorkflowRecordResV2 {
