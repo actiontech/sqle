@@ -1162,10 +1162,6 @@ func GetWorkflowV2(c echo.Context) error {
 			if id == "" {
 				continue
 			}
-			// user, err := dms.GetUser(c.Request().Context(), id, controller.GetDMSServerAddress())
-			// if err != nil {
-			// 	return controller.JSONBaseErrorReq(c, err)
-			// }
 			AssigneesUserNames = append(AssigneesUserNames, dms.GetUserNameWithDelTag(id))
 		}
 		step.Assignees = strings.Join(AssigneesUserNames, ",")
@@ -1184,11 +1180,6 @@ func GetWorkflowV2(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	// createUser, err := dms.GetUser(c.Request().Context(), workflow.CreateUserId, controller.GetDMSServerAddress())
-	// if err != nil {
-	// 	return controller.JSONBaseErrorReq(c, err)
-	// }
-	// workflow.CreateUser = createUser.Name
 	return c.JSON(http.StatusOK, &GetWorkflowResV2{
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    convertWorkflowToRes(workflow, associatedWorkflows),
