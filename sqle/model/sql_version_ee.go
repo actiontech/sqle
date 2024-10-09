@@ -439,3 +439,18 @@ func (s *Storage) GetWorkflowVersionRelationByWorkflowId(workflowId string) (rel
 	}
 	return relation, true, nil
 }
+
+func (s *Storage) GetSQLVersionByWorkflowId(workflowId string) (*SqlVersion, error) {
+	var sqlVersion SqlVersion
+	err := s.db.Model(&SqlVersion{}).
+		Joins("LEFT JOIN workflow_version_stages ON sql_versions.id = workflow_version_stages.sql_version_id").
+		Where("workflow_version_stages.workflow_id = ?", workflowId).
+		First(&sqlVersion).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return &SqlVersion{}, nil
+		}
+		return nil, err
+	}
+	return &sqlVersion, nil
+}
