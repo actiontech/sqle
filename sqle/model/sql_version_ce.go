@@ -3,7 +3,7 @@
 
 package model
 
-func (s *Storage) UpdateStageWorkflowExecTimeIfNeed(workflowId string) error {
+func (s *Storage) UpdateStageWorkflowIfNeed(workflowId string, workflowStage map[string]interface{}) error {
 	return nil
 }
 

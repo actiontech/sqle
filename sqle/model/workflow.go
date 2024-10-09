@@ -812,8 +812,14 @@ func updateWorkflowInstanceRecordById(tx *gorm.DB, needExecInstanceRecords []*Wo
 
 func (s *Storage) BatchUpdateWorkflowStatus(ws []*Workflow) error {
 	return s.Tx(func(tx *gorm.DB) error {
+		workflowStageParam := make(map[string]interface{}, 1)
+		workflowStageParam["workflow_release_status"] = WorkflowReleaseStatusNotNeedReleased
 		for _, w := range ws {
 			err := updateWorkflowStatus(tx, w)
+			if err != nil {
+				return err
+			}
+			err = s.UpdateStageWorkflowIfNeed(w.WorkflowId, workflowStageParam)
 			if err != nil {
 				return err
 			}
@@ -845,7 +851,9 @@ func (s *Storage) CompletionWorkflow(w *Workflow, operateStep *WorkflowStep, nee
 		if err := updateWorkflowInstanceRecordById(tx, needExecInstanceRecords); err != nil {
 			return err
 		}
-		if err := s.UpdateStageWorkflowExecTimeIfNeed(w.WorkflowId); err != nil {
+		workflowStageParam := make(map[string]interface{}, 1)
+		workflowStageParam["workflow_exec_time"] = time.Now()
+		if err := s.UpdateStageWorkflowIfNeed(w.WorkflowId, workflowStageParam); err != nil {
 			l.Errorf("update workflow execute time for version stage error: %v", err)
 		}
 		return nil
