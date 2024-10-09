@@ -286,7 +286,7 @@ func (s *Storage) GetNextStageByStageSequence(versionId uint, sequence int) (*Sq
 	}
 	return stage, true, nil
 }
-func (s *Storage) UpdateWorkflowReleaseStatus(workflowId, status string, sqlVersionId uint) error {
+func (s *Storage) UpdateWorkflowReleaseStatus(sqlVersionId uint, workflowId, status string) error {
 	err := s.db.Model(WorkflowVersionStage{}).Where("sql_version_id = ? AND workflow_id = ?", sqlVersionId, workflowId).Update("workflow_release_status", status).Error
 	if err != nil {
 		return err
@@ -301,7 +301,7 @@ func (stage SqlVersionStage) InitialStatusOfWorkflow() string {
 	return WorkflowReleaseStatusIsBingReleased
 }
 
-func (s *Storage) UpdateSQLVersionById(sqlVersion map[string]interface{}, versionId uint) error {
+func (s *Storage) UpdateSQLVersionById(versionId uint, sqlVersion map[string]interface{}) error {
 	err := s.db.Model(&SqlVersion{}).Where("id = ?", versionId).
 		Updates(sqlVersion).Error
 	if err != nil {
@@ -362,6 +362,31 @@ func (s *Storage) UpdateSQLVersionStageByVersionId(versionId uint, deleteStageId
 		return err
 	}
 	return nil
+}
+
+// 根据工单id获取在版本中关联阶段的工单
+func (s *Storage) GetAssociatedStageWorkflows(workflowId string) ([]*AssociatedStageWorkflow, error) {
+	var stageWorkflows []*AssociatedStageWorkflow
+	err := s.db.Model(&WorkflowVersionStage{}).Select("workflow_version_stages.workflow_id,"+
+		"refs.sql_version_stage_id,"+
+		"svs.stage_sequence ,"+
+		"w.subject AS workflow_name,"+
+		"wr.status").
+		Joins("INNER JOIN ( "+
+			"SELECT sql_version_id, workflow_sequence,workflow_id,sql_version_stage_id "+
+			"FROM workflow_version_stages "+
+			"WHERE workflow_id = ?"+
+			") AS refs ON workflow_version_stages.sql_version_id = refs.sql_version_id "+
+			"AND workflow_version_stages.workflow_sequence = refs.workflow_sequence", workflowId).
+		Joins("INNER JOIN sql_version_stages svs ON svs.id = workflow_version_stages.sql_version_stage_id").
+		Joins("INNER JOIN workflows w ON workflow_version_stages.workflow_id = w.workflow_id").
+		Joins("INNER JOIN workflow_records wr ON w.workflow_record_id = wr.id ").
+		Scan(&stageWorkflows).Error
+	if err != nil {
+		return nil, errors.ConnectStorageErrWrapper(err)
+	}
+
+	return stageWorkflows, nil
 }
 
 func (s *Storage) GetFirstStageOfSQLVersion(sqlVersionID uint) (*SqlVersionStage, error) {
