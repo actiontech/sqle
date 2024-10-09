@@ -15,6 +15,7 @@ type WorkflowWithInstanceID struct {
 	Subject     string  `json:"subject"`
 	Desc        string  `json:"desc"`
 	InstanceIDs RowList `json:"instance_ids"`
+	Status      string  `json:"status"`
 }
 
 func (s *Storage) GetWorkflowsThatCanBeAssociatedToStage(instanceIdRange []uint64) ([]*WorkflowWithInstanceID, error) {
@@ -38,7 +39,8 @@ SELECT
 	workflows.workflow_id,
 	workflows.subject, 
 	workflows.desc, 
-	GROUP_CONCAT(workflow_instance_records.instance_id, "") as instance_ids
+	GROUP_CONCAT(workflow_instance_records.instance_id, "") as instance_ids,
+	workflow_records.status as status
 FROM workflows 
 LEFT JOIN workflow_records 
 ON workflows.workflow_record_id = workflow_records.id
