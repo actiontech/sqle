@@ -247,7 +247,7 @@ func (s *Storage) GetManagerSqlSchemaNameByAuditPlan(auditPlanId uint) ([]string
 	err := s.db.Table("sql_manage_records").
 		Select("DISTINCT sql_manage_records.schema_name as schema_name").
 		Joins("JOIN audit_plans_v2 ON sql_manage_records.source = audit_plans_v2.type AND sql_manage_records.source_id = audit_plans_v2.instance_audit_plan_id").
-		Where("audit_plan_v2.id = ?", auditPlanId).
+		Where("audit_plans_v2.id = ?", auditPlanId).
 		Scan(&metricValueTips).Error
 	return metricValueTips, errors.New(errors.ConnectStorageError, err)
 }
@@ -256,7 +256,7 @@ func (s *Storage) GetManagerSqlMetricTipsByAuditPlan(auditPlanId uint, metricNam
 	var metricValueTips []string
 	err := s.db.Table("sql_manage_records").
 		Select(fmt.Sprintf("DISTINCT sql_manage_records.info->>'$.%s' as metric_value", metricName)).
-		Joins("JOIN audit_plans_v2 ON sql_manage_records.source = audit_plan_v2.type AND sql_manage_records.source_id = audit_plan_v2.instance_audit_plan_id").
+		Joins("JOIN audit_plans_v2 ON sql_manage_records.source = audit_plans_v2.type AND sql_manage_records.source_id = audit_plan_v2.instance_audit_plan_id").
 		Where("audit_plans_v2.id = ?", auditPlanId).
 		Scan(&metricValueTips).Error
 	return metricValueTips, errors.New(errors.ConnectStorageError, err)

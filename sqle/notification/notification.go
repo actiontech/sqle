@@ -1,7 +1,6 @@
 package notification
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"strings"
@@ -10,16 +9,19 @@ import (
 
 	v1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"github.com/actiontech/dms/pkg/dms-common/dmsobject"
+	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/dms"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
 type Notification interface {
-	NotificationSubject() string
-	NotificationBody() string
+	NotificationSubject() i18nPkg.I18nStr
+	NotificationBody() i18nPkg.I18nStr
 }
 
 type Notifier interface {
@@ -80,72 +82,57 @@ func NewWorkflowNotification(w *model.Workflow, notifyType WorkflowNotifyType, c
 	}
 }
 
-func GetWorkflowStepTypeDesc(s string) string {
+func GetWorkflowStepTypeDesc(s string) *i18n.Message {
 	switch s {
 	case model.WorkflowStepTypeSQLExecute:
-		return "上线"
+		return locale.NotifyWorkflowStepTypeSQLExecute
 	default:
-		return "审批"
+		return locale.NotifyWorkflowStepTypeSQLAudit
 	}
 }
 
-func (w *WorkflowNotification) NotificationSubject() string {
+func (w *WorkflowNotification) NotificationSubject() i18nPkg.I18nStr {
 	switch w.notifyType {
 	case WorkflowNotifyTypeApprove, WorkflowNotifyTypeCreate:
-		return fmt.Sprintf("SQL工单待%s", GetWorkflowStepTypeDesc(w.workflow.CurrentStep().Template.Typ))
+		return locale.Bundle.LocalizeAllWithArgs(locale.NotifyWorkflowNotifyTypeWaiting, GetWorkflowStepTypeDesc(w.workflow.CurrentStep().Template.Typ))
 	case WorkflowNotifyTypeReject:
-		return "SQL工单已被驳回"
+		return locale.Bundle.LocalizeAll(locale.NotifyWorkflowNotifyTypeReject)
 	case WorkflowNotifyTypeExecuteSuccess:
-		return "SQL工单上线成功"
+		return locale.Bundle.LocalizeAll(locale.NotifyWorkflowNotifyTypeExecuteSuccess)
 	case WorkflowNotifyTypeExecuteFail:
-		return "SQL工单上线失败"
+		return locale.Bundle.LocalizeAll(locale.NotifyWorkflowNotifyTypeExecuteFail)
 	default:
-		return "SQL工单未知请求"
+		return locale.Bundle.LocalizeAll(locale.NotifyWorkflowNotifyTypeDefault)
 	}
 }
 
-func (w *WorkflowNotification) NotificationBody() string {
-	s := model.GetStorage()
-	taskIds := w.workflow.GetTaskIds()
-	tasks, _, err := s.GetTasksByIds(taskIds)
-	if err != nil || len(tasks) <= 0 {
-		return fmt.Sprintf(`
-- 工单主题: %v
-- 工单ID: %v
-- 工单描述: %v
-- 申请人: %v
-- 创建时间: %v
-- 读取工单任务内容失败，请通过SQLE界面确认工单状态
-`,
-			w.workflow.Subject,
-			w.workflow.WorkflowId,
-			w.workflow.Desc,
-			dms.GetUserNameWithDelTag(w.workflow.CreateUserId),
-			w.workflow.CreatedAt)
-	}
-
-	buf := bytes.Buffer{}
-	head := fmt.Sprintf(`
-- 工单主题: %v
-- 工单ID: %v
-- 工单描述: %v
-- 申请人: %v
-- 创建时间: %v`,
+func (w *WorkflowNotification) NotificationBody() i18nPkg.I18nStr {
+	bodyStr := make([]i18nPkg.I18nStr, 0)
+	bodyStr = append(bodyStr, locale.Bundle.LocalizeAllWithArgs(locale.NotifyWorkflowBodyHead,
 		w.workflow.Subject,
 		w.workflow.WorkflowId,
 		w.workflow.Desc,
 		dms.GetUserNameWithDelTag(w.workflow.CreateUserId),
-		w.workflow.CreatedAt)
-	buf.WriteString(head)
+		w.workflow.CreatedAt,
+	))
+
+	s := model.GetStorage()
+	taskIds := w.workflow.GetTaskIds()
+	tasks, _, err := s.GetTasksByIds(taskIds)
+	if err != nil || len(tasks) <= 0 {
+		bodyStr = append(bodyStr, locale.Bundle.LocalizeAll(locale.NotifyWorkflowBodyWorkFlowErr))
+		return locale.Bundle.JoinI18nStr(bodyStr, "\n")
+	}
 
 	if w.config.SQLEUrl != nil {
-		buf.WriteString(fmt.Sprintf("\n- 工单链接: %v/project/%v/exec-workflow/%v",
+		link := fmt.Sprintf("%v/project/%v/exec-workflow/%v",
 			strings.TrimRight(*w.config.SQLEUrl, "/"),
 			w.workflow.ProjectId,
 			w.workflow.WorkflowId,
-		))
+		)
+		bodyStr = append(bodyStr, locale.Bundle.LocalizeAllWithArgs(locale.NotifyWorkflowBodyLink, link))
 	} else {
-		buf.WriteString("\n- 工单链接: 请在系统设置-全局配置中补充全局url")
+		bodyStr = append(bodyStr, locale.Bundle.LocalizeAllWithArgs(locale.NotifyWorkflowBodyLink, locale.NotifyWorkflowBodyConfigUrl))
 	}
 
 	instanceIds := make([]uint64, 0, len(tasks))
@@ -155,8 +142,8 @@ func (w *WorkflowNotification) NotificationBody() string {
 
 	instances, err := dms.GetInstancesInProjectByIds(context.Background(), string(w.workflow.ProjectId), instanceIds)
 	if err != nil {
-		buf.WriteString(fmt.Sprintf("\n 获取数据源实例失败: %v\n", err))
-		return buf.String()
+		bodyStr = append(bodyStr, locale.Bundle.LocalizeAllWithArgs(locale.NotifyWorkflowBodyInstanceErr, err))
+		return locale.Bundle.JoinI18nStr(bodyStr, "\n")
 	}
 
 	instanceMap := map[uint64]*model.Instance{}
@@ -169,14 +156,13 @@ func (w *WorkflowNotification) NotificationBody() string {
 			t.Instance = instance
 		}
 
-		buf.WriteString("\n--------------\n")
-		buf.WriteString(w.buildNotifyBody(t))
+		bodyStr = append(bodyStr, i18nPkg.ConvertStr2I18nAsDefaultLang("--------------"), w.buildNotifyBody(t))
 	}
 
-	return buf.String()
+	return locale.Bundle.JoinI18nStr(bodyStr, "\n")
 }
 
-func (w *WorkflowNotification) buildNotifyBody(task *model.Task) string {
+func (w *WorkflowNotification) buildNotifyBody(task *model.Task) i18nPkg.I18nStr {
 	instanceName := task.InstanceName()
 	score := task.Score
 	passRate := task.PassRate
@@ -184,19 +170,12 @@ func (w *WorkflowNotification) buildNotifyBody(task *model.Task) string {
 	executeStartAt := task.ExecStartAt
 	executeEndAt := task.ExecEndAt
 
+	var res []i18nPkg.I18nStr
+	res = append(res, locale.Bundle.LocalizeAllWithArgs(locale.NotifyWorkflowBodyInstanceAndSchema, instanceName, schema))
+
 	switch w.notifyType {
 	case WorkflowNotifyTypeExecuteSuccess, WorkflowNotifyTypeExecuteFail:
-		return fmt.Sprintf(`
-- 数据源: %v
-- schema: %v
-- 上线开始时间: %v
-- 上线结束时间: %v
-`,
-			instanceName,
-			schema,
-			executeStartAt,
-			executeEndAt,
-		)
+		res = append(res, locale.Bundle.LocalizeAllWithArgs(locale.NotifyWorkflowBodyStartEnd, executeStartAt, executeEndAt))
 	case WorkflowNotifyTypeReject:
 		var reason string
 		for _, step := range w.workflow.Record.Steps {
@@ -205,28 +184,11 @@ func (w *WorkflowNotification) buildNotifyBody(task *model.Task) string {
 				break
 			}
 		}
-		return fmt.Sprintf(`
-- 数据源: %v
-- schema: %v
-- 驳回原因: %v
-`,
-			instanceName,
-			schema,
-			reason,
-		)
+		res = append(res, locale.Bundle.LocalizeAllWithArgs(locale.NotifyWorkflowBodyReason, reason))
 	default:
-		return fmt.Sprintf(`
-- 数据源: %v
-- schema: %v
-- 工单审核得分: %v
-- 工单审核通过率：%v%%
-`,
-			instanceName,
-			schema,
-			score,
-			passRate*100,
-		)
+		res = append(res, locale.Bundle.LocalizeAllWithArgs(locale.NotifyWorkflowBodyReport, score, passRate*100))
 	}
+	return locale.Bundle.JoinI18nStr(res, "\n")
 }
 
 func (w *WorkflowNotification) notifyUser() []string {
@@ -332,21 +294,23 @@ func NewAuditPlanNotification(auditPlan *model.AuditPlan, report *model.AuditPla
 	}
 }
 
-func (a *AuditPlanNotification) NotificationSubject() string {
-	return fmt.Sprintf("SQLE扫描任务[%v]扫描结果[%v]", a.auditPlan.Name, a.report.AuditLevel)
+func (a *AuditPlanNotification) NotificationSubject() i18nPkg.I18nStr {
+	return locale.Bundle.LocalizeAllWithArgs(locale.NotifyAuditPlanSubject, a.auditPlan.Name, a.report.AuditLevel)
 }
 
-func (a *AuditPlanNotification) NotificationBody() string {
-	builder := strings.Builder{}
-	builder.WriteString(fmt.Sprintf(`
-- 扫描任务: %v
-- 审核时间: %v
-- 审核类型: %v
-- 数据源: %v
-- 数据库名: %v
-- 审核得分: %v
-- 审核通过率：%v
-- 审核结果等级: %v`,
+func (a *AuditPlanNotification) NotificationBody() i18nPkg.I18nStr {
+	var linkInBody i18nPkg.I18nStr
+	if a.config.SQLEUrl != nil && a.auditPlan.ProjectId != "" {
+		link := fmt.Sprintf("%v/project/%v/auditPlan/detail/%v/report/%v",
+			strings.TrimRight(*a.config.SQLEUrl, "/"),
+			a.auditPlan.ProjectId,
+			a.auditPlan.Name,
+			a.report.ID,
+		)
+		linkInBody = locale.Bundle.LocalizeAllWithArgs(locale.NotifyAuditPlanBodyLink, link)
+	}
+
+	body := locale.Bundle.LocalizeAllWithArgs(locale.NotifyAuditPlanBody,
 		a.auditPlan.Name,
 		a.report.CreatedAt.Format(time.RFC3339),
 		a.auditPlan.Type,
@@ -355,29 +319,20 @@ func (a *AuditPlanNotification) NotificationBody() string {
 		a.report.Score,
 		a.report.PassRate,
 		a.report.AuditLevel,
-	))
-
-	if a.config.SQLEUrl != nil && a.auditPlan.ProjectId != "" {
-		builder.WriteString(fmt.Sprintf("\n- 扫描任务链接: %v/project/%v/auditPlan/detail/%v/report/%v",
-			strings.TrimRight(*a.config.SQLEUrl, "/"),
-			a.auditPlan.ProjectId,
-			a.auditPlan.Name,
-			a.report.ID,
-		))
-	}
-
-	return builder.String()
+		linkInBody,
+	)
+	return body
 }
 
 type TestNotify struct {
 }
 
-func (t *TestNotify) NotificationSubject() string {
-	return "SQLE notification test"
+func (t *TestNotify) NotificationSubject() i18nPkg.I18nStr {
+	return i18nPkg.ConvertStr2I18nAsDefaultLang("SQLE notification test")
 }
 
-func (t *TestNotify) NotificationBody() string {
-	return "This is a SQLE test notification\nIf you receive this message, it only means that the message can be pushed"
+func (t *TestNotify) NotificationBody() i18nPkg.I18nStr {
+	return i18nPkg.ConvertStr2I18nAsDefaultLang("This is a SQLE test notification\nIf you receive this message, it only means that the message can be pushed")
 }
 
 func getAPNotifyConfig() (AuditPlanNotifyConfig, error) {
