@@ -921,6 +921,20 @@ func (s *Storage) GetWorkflowByProjectAndWorkflowId(projectId, workflowId string
 	return workflow, true, errors.New(errors.ConnectStorageError, err)
 }
 
+func (s *Storage) GetWorkflowByWorkflowId(workflowId string) (workflow *Workflow, exist bool, err error) {
+	err = s.db.
+		Preload("Record").
+		Where("workflow_id = ?", workflowId).
+		First(&workflow).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return workflow, false, nil
+		}
+		return workflow, false, errors.New(errors.ConnectStorageError, err)
+	}
+	return workflow, true, nil
+}
+
 func (s *Storage) GetWorkflowExportById(workflowId string) (*Workflow, bool, error) {
 	w := new(Workflow)
 	err := s.db.Preload("Record").Where("workflow_id = ?", workflowId).First(&w).Error
