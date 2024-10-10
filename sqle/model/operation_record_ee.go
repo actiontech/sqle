@@ -85,7 +85,8 @@ SELECT o.operation_time,
 	   o.operation_project_name,
        o.operation_user_name,
        o.operation_action,
-       o.operation_status
+       o.operation_status,
+       o.operation_i18n_content
 {{- template "body" . -}}
 ORDER BY o.operation_time DESC
 `
