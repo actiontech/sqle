@@ -1655,8 +1655,8 @@ func getRuleTemplateFile(ctx context.Context, projectID string, ruleTemplateName
 	}
 
 	ruleCache := map[string] /*rule name*/ *model.Rule{}
-	for _, rule := range rules {
-		ruleCache[rule.Name] = &rule
+	for k := range rules {
+		ruleCache[rules[k].Name] = &rules[k]
 	}
 
 	resp := &RuleTemplateExport{
