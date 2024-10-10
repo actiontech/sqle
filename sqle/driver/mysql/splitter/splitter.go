@@ -35,56 +35,43 @@ func (s *splitter) ParseSqlText(sqlText string) ([]ast.StmtNode, error) {
 	return s.processToExecutableNodes(results)
 }
 
-func (s *splitter) processToExecutableNodes(results []*sqlWithLineNumber) ([]ast.StmtNode, error) {
-	err := s.delimiter.reset()
-	if err != nil {
-		return nil, err
-	}
-
+func (s *splitter) processToExecutableNodes(results []*singleSQL) ([]ast.StmtNode, error) {
 	var executableNodes []ast.StmtNode
 	for _, result := range results {
-		if matched, _ := s.matchAndSetCustomDelimiter(result.sql); matched {
-			continue
-		}
-		if strings.HasSuffix(result.sql, s.delimiter.DelimiterStr) {
-			trimmedSQL := strings.TrimSuffix(result.sql, s.delimiter.DelimiterStr)
-			if trimmedSQL == "" {
-				continue
-			}
-			result.sql = trimmedSQL + ";"
-		}
 		// 根据解析结果生成得到sql的抽象语法树
-		stmt, err := s.parser.ParseOneStmt(result.sql, "", "")
+		stmt, err := s.parser.ParseOneStmt(result.formattedSql, "", "")
 		if err != nil {
 			// 若解析结果为错误，则将分割后的SQL作为不可解析的SQL添加到executableNodes中
 			unParsedStmt := &ast.UnparsedStmt{}
-			unParsedStmt.SetStartLine(result.line)
-			unParsedStmt.SetText(result.sql)
+			unParsedStmt.SetStartLine(result.lineNumber)
+			unParsedStmt.SetText(result.formattedSql)
 			executableNodes = append(executableNodes, unParsedStmt)
 		} else {
 			// 若能成功解析，则将解析的结果添加到executableNodes中
-			stmt.SetStartLine(result.line)
+			stmt.SetStartLine(result.lineNumber)
 			executableNodes = append(executableNodes, stmt)
 		}
 	}
 	return executableNodes, nil
 }
 
-type sqlWithLineNumber struct {
-	sql  string
-	line int
+type singleSQL struct {
+	originSql          string
+	formattedSql       string // 将SQL的分隔符统一替换为封号;
+	lineNumber         int
+	isDelimiterCommand bool
 }
 
-func (s sqlWithLineNumber) IsEmpty() bool {
-	return s.sql == ""
+func (s singleSQL) IsEmpty() bool {
+	return s.originSql == ""
 }
 
-func (s *splitter) splitSqlText(sqlText string) (results []*sqlWithLineNumber, err error) {
+func (s *splitter) splitSqlText(sqlText string) (results []*singleSQL, err error) {
 	result, err := s.getNextSql(sqlText)
 	if err != nil {
 		return nil, err
 	}
-	if !result.IsEmpty() {
+	if !result.IsEmpty() && !result.isDelimiterCommand {
 		results = append(results, result)
 	}
 	// 递归切分剩余SQL
@@ -98,30 +85,47 @@ func (s *splitter) splitSqlText(sqlText string) (results []*sqlWithLineNumber, e
 	return results, nil
 }
 
-func (s *splitter) getNextSql(sqlText string) (*sqlWithLineNumber, error) {
+func (s *splitter) getNextSql(sqlText string) (*singleSQL, error) {
 	matchedDelimiterCommand, err := s.matchAndSetCustomDelimiter(sqlText)
 	if err != nil {
 		return nil, err
 	}
-	// 若匹配到自定义分隔符语法，则输出结果，否则匹配分隔符，输出结果
+	// 根据分隔符匹配到SQL结尾，输出切分后的原始SQL
 	if matchedDelimiterCommand || s.matchSql(sqlText) {
 		buff := bytes.Buffer{}
 		buff.WriteString(sqlText[:s.scanner.Offset()])
 		lineBeforeStart := strings.Count(sqlText[:s.delimiter.startPos], "\n")
-		result := &sqlWithLineNumber{
-			sql:  strings.TrimSpace(buff.String()),
-			line: s.delimiter.line + lineBeforeStart + 1,
+		originSql := strings.TrimSpace(buff.String())
+		trimmedSQL := strings.TrimSuffix(originSql, s.delimiter.DelimiterStr)
+		if trimmedSQL == "" {
+			// 跳过空SQL
+			return &singleSQL{}, nil
+		}
+		result := &singleSQL{
+			originSql:          originSql,
+			formattedSql:       trimmedSQL + ";",
+			lineNumber:         s.delimiter.line + lineBeforeStart + 1,
+			isDelimiterCommand: matchedDelimiterCommand,
 		}
 		s.delimiter.line += s.scanner.ScannedLines() // pos().Line-1表示的是该SQL中有多少换行
 		return result, nil
 	}
+	// 处理剩余SQL文本
 	restOfSql := strings.TrimSpace(sqlText)
 	if restOfSql == "" {
-		return &sqlWithLineNumber{}, nil
+		// 跳过空SQL
+		return &singleSQL{}, nil
 	}
-	return &sqlWithLineNumber{
-		sql:  restOfSql,
-		line: s.delimiter.line + strings.Count(sqlText[:s.delimiter.startPos], "\n") + 1,
+	trimmedSQL := strings.TrimSuffix(restOfSql, s.delimiter.DelimiterStr)
+	if trimmedSQL == "" {
+		// 跳过空SQL
+		return &singleSQL{}, nil
+	}
+	return &singleSQL{
+		originSql:          restOfSql,
+		formattedSql:       trimmedSQL + ";",
+		lineNumber:         s.delimiter.line + strings.Count(sqlText[:s.delimiter.startPos], "\n") + 1,
+		isDelimiterCommand: matchedDelimiterCommand,
 	}, nil
 }
 
