@@ -363,3 +363,34 @@ var (
 var (
 	PipelineCmdUsage = &i18n.Message{ID: "PipelineCmdUsage", Other: "#使用方法#\n1. 确保运行该命令的用户具有scannerd的执行权限。\n2. 在scannerd文件所在目录执行启动命令。\n#启动命令#\n"}
 )
+
+// notification
+var (
+	NotifyWorkflowStepTypeSQLExecute       = &i18n.Message{ID: "WorkflowStepTypeSQLExecute", Other: "上线"}
+	NotifyWorkflowStepTypeSQLAudit         = &i18n.Message{ID: "WorkflowStepTypeSQLAudit", Other: "审批"}
+	NotifyWorkflowNotifyTypeWaiting        = &i18n.Message{ID: "WorkflowNotifyTypeWaiting", Other: "SQL工单待%s"}
+	NotifyWorkflowNotifyTypeReject         = &i18n.Message{ID: "WorkflowNotifyTypeReject", Other: "SQL工单已被驳回"}
+	NotifyWorkflowNotifyTypeExecuteSuccess = &i18n.Message{ID: "WorkflowNotifyTypeExecuteSuccess", Other: "SQL工单上线成功"}
+	NotifyWorkflowNotifyTypeExecuteFail    = &i18n.Message{ID: "WorkflowNotifyTypeExecuteFail", Other: "SQL工单上线失败"}
+	NotifyWorkflowNotifyTypeDefault        = &i18n.Message{ID: "WorkflowNotifyTypeDefault", Other: "SQL工单未知请求"}
+
+	NotifyAuditPlanSubject  = &i18n.Message{ID: "NotifyAuditPlanSubject", Other: "SQLE扫描任务[%v]扫描结果[%v]"}
+	NotifyAuditPlanBody     = &i18n.Message{ID: "NotifyAuditPlanBody", Other: "\n- 扫描任务: %v\n- 审核时间: %v\n- 审核类型: %v\n- 数据源: %v\n- 数据库名: %v\n- 审核得分: %v\n- 审核通过率：%v\n- 审核结果等级: %v%v"}
+	NotifyAuditPlanBodyLink = &i18n.Message{ID: "NotifyAuditPlanBodyLink", Other: "\n- 扫描任务链接: %v"}
+
+	NotifyManageRecordSubject    = &i18n.Message{ID: "NotifyManageRecordSubject", Other: "SQL管控记录"}
+	NotifyManageRecordBodyLink   = &i18n.Message{ID: "NotifyManageRecordBodyLink", Other: "\n- SQL管控记录链接: %v\n"}
+	NotifyManageRecordBodyRecord = &i18n.Message{ID: "NotifyManageRecordBodyRecord", Other: "- SQL ID: %v\n- 所在数据源名称: %v\n- 所属业务: %v\n- SQL: %v\n- 触发规则级别: %v\n- SQL审核建议: %v\n================================"}
+	NotifyManageRecordBodyTime   = &i18n.Message{ID: "NotifyManageRecordBodyTime", Other: "记录时间周期: %v - %v"}
+	NotifyManageRecordBodyProj   = &i18n.Message{ID: "NotifyManageRecordBodyProj", Other: "所属项目: %v"}
+
+	NotifyWorkflowBodyHead              = &i18n.Message{ID: "NotifyWorkflowBodyHead", Other: "\n- 工单主题: %v\n- 工单ID: %v\n- 工单描述: %v\n- 申请人: %v\n- 创建时间: %v"}
+	NotifyWorkflowBodyWorkFlowErr       = &i18n.Message{ID: "NotifyWorkflowBodyWorkFlowErr", Other: "- 读取工单任务内容失败，请通过SQLE界面确认工单状态"}
+	NotifyWorkflowBodyLink              = &i18n.Message{ID: "NotifyWorkflowBodyLink", Other: "- 工单链接: %v"}
+	NotifyWorkflowBodyConfigUrl         = &i18n.Message{ID: "NotifyWorkflowBodyConfigUrl", Other: "请在系统设置-全局配置中补充全局url"}
+	NotifyWorkflowBodyInstanceErr       = &i18n.Message{ID: "NotifyWorkflowBodyInstanceErr", Other: "获取数据源实例失败: %v\n"}
+	NotifyWorkflowBodyInstanceAndSchema = &i18n.Message{ID: "NotifyWorkflowBodyInstanceAndSchema", Other: "- 数据源: %v\n- schema: %v"}
+	NotifyWorkflowBodyStartEnd          = &i18n.Message{ID: "NotifyWorkflowBodyStartEnd", Other: "- 上线开始时间: %v\n- 上线结束时间: %v"}
+	NotifyWorkflowBodyReason            = &i18n.Message{ID: "NotifyWorkflowBodyReason", Other: "- 驳回原因: %v"}
+	NotifyWorkflowBodyReport            = &i18n.Message{ID: "NotifyWorkflowBodyReport", Other: "- 工单审核得分: %v\n- 工单审核通过率：%v%%"}
+)
