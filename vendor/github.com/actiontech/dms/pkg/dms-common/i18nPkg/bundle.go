@@ -148,22 +148,36 @@ func (b *Bundle) EchoMiddlewareByCustomFunc(getLang ...func(c echo.Context) stri
 					break
 				}
 			}
-			langTag := DefaultLang
-			if acceptLang != "" {
-				for _, lang := range b.Bundle.LanguageTags() {
-					if strings.HasPrefix(acceptLang, lang.String()) {
-						langTag = lang
-						break
-					}
-				}
-			}
-
+			langTag := b.MatchLangTag(acceptLang)
 			ctx := context.WithValue(c.Request().Context(), LocalizerCtxKey, b.localizers[langTag])
 			ctx = context.WithValue(ctx, AcceptLanguageKey, langTag)
 			c.SetRequest(c.Request().WithContext(ctx))
 			return next(c)
 		}
 	}
+}
+
+func (b *Bundle) MatchLangTag(s string) language.Tag {
+	langTag := DefaultLang
+	for _, lang := range b.Bundle.LanguageTags() {
+		if strings.HasPrefix(s, lang.String()) {
+			langTag = lang
+			break
+		}
+	}
+	return langTag
+}
+
+func (b *Bundle) JoinI18nStr(elems []I18nStr, sep string) I18nStr {
+	var result = make(I18nStr, len(b.LanguageTags()))
+	for _, langTag := range b.LanguageTags() {
+		var langStr []string
+		for _, v := range elems {
+			langStr = append(langStr, v.GetStrInLang(langTag))
+		}
+		result.SetStrInLang(langTag, strings.Join(langStr, sep))
+	}
+	return result
 }
 
 func (b *Bundle) GetLangTagFromCtx(ctx context.Context) language.Tag {
