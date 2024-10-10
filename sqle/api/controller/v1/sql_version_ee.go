@@ -25,7 +25,6 @@ import (
 )
 
 func createSqlVersion(c echo.Context) error {
-	// TODO 权限校验
 	req := new(CreateSqlVersionReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -114,9 +113,7 @@ func getSqlVersionList(c echo.Context) error {
 		"limit":                     limit,
 		"offset":                    offset,
 	}
-	if !up.IsAdmin() {
 
-	}
 	s := model.GetStorage()
 
 	sqlVersions, count, err := s.GetSqlVersionByReq(data)
@@ -225,8 +222,22 @@ func getSqlVersionDetail(c echo.Context) error {
 	})
 }
 
+func checkSqlVersionIsLocked(sqlVersionId uint) (bool, error) {
+	s := model.GetStorage()
+	version, exist, err := s.GetSqlVersionByVersionId(sqlVersionId)
+	if err != nil {
+		return false, err
+	}
+	if !exist {
+		return false, errors.NewDataNotExistErr("sql version not found")
+	}
+	if version.Status == model.SqlVersionStatusLock {
+		return true, nil
+	}
+	return false, nil
+}
+
 func updateSqlVersion(c echo.Context) error {
-	// TODO 权限校验
 	req := new(UpdateSqlVersionReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -235,11 +246,13 @@ func updateSqlVersion(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
-	// projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
-	// if err != nil {
-	// 	return controller.JSONBaseErrorReq(c, err)
-	// }
+	isLocked, err := checkSqlVersionIsLocked(uint(sqlVersionId))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if isLocked {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, fmt.Errorf("the sql version is locked and no operation is allowed")))
+	}
 	s := model.GetStorage()
 	if req.Desc != nil || req.Version != nil {
 		sqlVersionParam := make(map[string]interface{}, 2)
@@ -309,7 +322,6 @@ func updateSqlVersion(c echo.Context) error {
 }
 
 func lockSqlVersion(c echo.Context) error {
-	// TODO 权限校验
 	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -317,6 +329,13 @@ func lockSqlVersion(c echo.Context) error {
 	sqlVersionId, err := strconv.Atoi(c.Param("sql_version_id"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
+	}
+	isLocked, err := checkSqlVersionIsLocked(uint(sqlVersionId))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if isLocked {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, fmt.Errorf("the sql version is locked and no operation is allowed")))
 	}
 	s := model.GetStorage()
 	version, exist, err := s.GetSqlVersionDetailByVersionId(uint(sqlVersionId))
@@ -352,10 +371,16 @@ func lockSqlVersion(c echo.Context) error {
 }
 
 func deleteSqlVersion(c echo.Context) error {
-	// TODO 权限校验
 	sqlVersionId, err := strconv.Atoi(c.Param("sql_version_id"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
+	}
+	isLocked, err := checkSqlVersionIsLocked(uint(sqlVersionId))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if isLocked {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, fmt.Errorf("the sql version is locked and no operation is allowed")))
 	}
 	s := model.GetStorage()
 	version, exist, err := s.GetSqlVersionDetailByVersionId(uint(sqlVersionId))
@@ -379,12 +404,6 @@ func deleteSqlVersion(c echo.Context) error {
 }
 
 func getDependenciesBetweenStageInstance(c echo.Context) error {
-	// TODO 权限校验
-
-	// projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
-	// if err != nil {
-	// 	return controller.JSONBaseErrorReq(c, err)
-	// }
 	stageId := c.Param("sql_version_stage_id")
 	s := model.GetStorage()
 	dependencies, err := s.GetStageDependenciesByStageId(stageId)
@@ -421,6 +440,13 @@ func batchReleaseWorkflows(c echo.Context) error {
 	sqlVersionId, err := strconv.Atoi(c.Param("sql_version_id"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
+	}
+	isLocked, err := checkSqlVersionIsLocked(uint(sqlVersionId))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if isLocked {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, fmt.Errorf("the sql version is locked and no operation is allowed")))
 	}
 	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
 	if err != nil {
@@ -680,6 +706,13 @@ func batchExecuteWorkflows(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	isLocked, err := checkSqlVersionIsLocked(uint(sqlVersionId))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if isLocked {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, fmt.Errorf("the sql version is locked and no operation is allowed")))
+	}
 	s := model.GetStorage()
 	stageWorkflows, err := s.GetStageWorkflowsByWorkflowIds(uint(sqlVersionId), req.WorkflowIDs)
 	if err != nil {
@@ -735,6 +768,13 @@ func batchAssociateWorkflowsWithVersion(c echo.Context) error {
 	versionId, err := strconv.Atoi(versionIDStr)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
+	}
+	isLocked, err := checkSqlVersionIsLocked(uint(versionId))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if isLocked {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, fmt.Errorf("the sql version is locked and no operation is allowed")))
 	}
 	stageIDStr := c.Param("sql_version_stage_id")
 	stageID, err := strconv.Atoi(stageIDStr)

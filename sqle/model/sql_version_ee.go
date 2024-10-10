@@ -101,6 +101,10 @@ AND sv.lock_time <= :filter_by_lock_time_to
 AND sv.status = :filter_by_version_status
 {{- end }}
 
+{{- if .filter_by_project_id }}
+AND sv.project_id = :filter_by_project_id
+{{- end }}
+
 {{ end }}
 `
 
@@ -120,6 +124,15 @@ func (s *Storage) GetSqlVersionByReq(data map[string]interface{}) (
 func (s *Storage) GetSqlVersionDetailByVersionId(versionId uint) (*SqlVersion, bool, error) {
 	version := &SqlVersion{}
 	err := s.db.Preload("SqlVersionStage").Preload("SqlVersionStage.SqlVersionStagesDependency").Preload("SqlVersionStage.WorkflowVersionStage").Where("id=?", versionId).First(version).Error
+	if err == gorm.ErrRecordNotFound {
+		return version, false, nil
+	}
+	return version, true, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetSqlVersionByVersionId(versionId uint) (*SqlVersion, bool, error) {
+	version := &SqlVersion{}
+	err := s.db.Model(SqlVersion{}).Where("id=?", versionId).First(version).Error
 	if err == gorm.ErrRecordNotFound {
 		return version, false, nil
 	}
