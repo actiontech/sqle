@@ -200,7 +200,7 @@ func (s *Storage) GetStageWorkflowsByWorkflowIds(sqlVersionId uint, workflowIds 
 	return stagesWorkflows, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) UpdateStageWorkflowIfNeed(workflowId string, workflowStage map[string]interface{}) error {
+func (s *Storage) UpdateStageWorkflowExecTimeIfNeed(workflowId string) error {
 	stage, exist, err := s.GetStageOfTheWorkflow(workflowId)
 	if err != nil {
 		return err
@@ -215,10 +215,26 @@ func (s *Storage) UpdateStageWorkflowIfNeed(workflowId string, workflowStage map
 	}
 	// 若上线时间已经有，则不进行更新，记录工单中第一个task的上线时间
 	if stagesWorkflows[0].WorkflowExecTime == nil {
-		err = s.db.Model(WorkflowVersionStage{}).Where("workflow_id = ?", workflowId).Updates(workflowStage).Error
+		err = s.db.Model(WorkflowVersionStage{}).Where("workflow_id = ?", workflowId).Update("workflow_exec_time", time.Now()).Error
 		if err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func (s *Storage) UpdateStageWorkflowIfNeed(workflowId string, workflowStage map[string]interface{}) error {
+	_, exist, err := s.GetStageOfTheWorkflow(workflowId)
+	if err != nil {
+		return err
+	}
+	if !exist {
+		// 工单没有关联版本阶段信息，不需要更新
+		return nil
+	}
+	err = s.db.Model(WorkflowVersionStage{}).Where("workflow_id = ?", workflowId).Updates(workflowStage).Error
+	if err != nil {
+		return err
 	}
 	return nil
 }
