@@ -440,6 +440,14 @@ func ExecuteOneTaskOnWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	executable, reason, err := sqlversion.CheckWorkflowExecutable(projectUid, workflowID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !executable {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf(reason))
+	}
+
 	isCan, err := v1.IsTaskCanExecute(s, taskIdStr)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -1033,6 +1041,14 @@ func UpdateWorkflowScheduleV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, v1.ErrWorkflowExecuteTimeIncorrect)
 	}
 
+	executable, reason, err := sqlversion.CheckWorkflowExecutable(projectUid, workflowId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !executable {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf(reason))
+	}
+
 	err = s.UpdateInstanceRecordSchedule(curTaskRecord, user.GetIDStr(), req.ScheduleTime)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -1080,8 +1096,17 @@ func ExecuteTasksOnWorkflowV2(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+
+	executable, reason, err := sqlversion.CheckWorkflowExecutable(projectUid, workflowId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !executable {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf(reason))
+	}
+
 	if err := v1.PrepareForWorkflowExecution(c, projectUid, workflow, user); err != nil {
-		return err
+		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	_, err = server.ExecuteTasksProcess(workflow.WorkflowId, projectUid, user)
@@ -1107,6 +1132,8 @@ type WorkflowRecordResV2 struct {
 	Tasks             []*WorkflowTaskItem  `json:"tasks"`
 	CurrentStepNumber uint                 `json:"current_step_number,omitempty"`
 	Status            string               `json:"status" enums:"wait_for_audit,wait_for_execution,rejected,canceled,exec_failed,executing,finished"`
+	Executable        bool                 `json:"executable"`
+	ExecutableReason  string               `json:"executable_reason"`
 	Steps             []*WorkflowStepResV2 `json:"workflow_step_list,omitempty"`
 }
 
@@ -1278,11 +1305,23 @@ func convertWorkflowRecordToRes(workflow *model.Workflow, record *model.Workflow
 		tasksRes[i] = &WorkflowTaskItem{Id: inst.TaskId}
 	}
 
+	var err error
+	var executable bool
+	var reason string = fmt.Sprintf("the status of workflow is %v", record.Status)
+	if record.Status == model.WorkflowStatusWaitForExecution {
+		executable, reason, err = sqlversion.CheckWorkflowExecutable(string(workflow.ProjectId), workflow.WorkflowId)
+		if err != nil {
+			reason = err.Error()
+		}
+	}
+
 	return &WorkflowRecordResV2{
 		Tasks:             tasksRes,
 		CurrentStepNumber: currentStepNum,
 		Status:            record.Status,
 		Steps:             steps,
+		Executable:        executable,
+		ExecutableReason:  reason,
 	}
 }
 
