@@ -18329,6 +18329,12 @@ var doc = `{
                 "current_step_number": {
                     "type": "integer"
                 },
+                "executable": {
+                    "type": "boolean"
+                },
+                "executable_reason": {
+                    "type": "string"
+                },
                 "status": {
                     "type": "string",
                     "enum": [
