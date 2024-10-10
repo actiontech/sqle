@@ -79,6 +79,8 @@ type SqlVersionResV1 struct {
 	Version   string     `json:"version"`
 	Desc      string     `json:"desc"`
 	Status    string     `json:"status" enums:"is_being_released,locked"`
+	Deletable bool       `json:"deletable"`
+	Lockable  bool       `json:"lockable"`
 	LockTime  *time.Time `json:"lock_time"`
 	CreatedAt *time.Time `json:"created_at"`
 }
