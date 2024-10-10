@@ -25,7 +25,6 @@ import (
 )
 
 func createSqlVersion(c echo.Context) error {
-	// TODO 权限校验
 	req := new(CreateSqlVersionReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -114,9 +113,7 @@ func getSqlVersionList(c echo.Context) error {
 		"limit":                     limit,
 		"offset":                    offset,
 	}
-	if !up.IsAdmin() {
 
-	}
 	s := model.GetStorage()
 
 	sqlVersions, count, err := s.GetSqlVersionByReq(data)
@@ -226,7 +223,6 @@ func getSqlVersionDetail(c echo.Context) error {
 }
 
 func updateSqlVersion(c echo.Context) error {
-	// TODO 权限校验
 	req := new(UpdateSqlVersionReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -235,11 +231,6 @@ func updateSqlVersion(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
-	// projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
-	// if err != nil {
-	// 	return controller.JSONBaseErrorReq(c, err)
-	// }
 	s := model.GetStorage()
 	if req.Desc != nil || req.Version != nil {
 		sqlVersionParam := make(map[string]interface{}, 2)
@@ -309,7 +300,6 @@ func updateSqlVersion(c echo.Context) error {
 }
 
 func lockSqlVersion(c echo.Context) error {
-	// TODO 权限校验
 	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -352,7 +342,6 @@ func lockSqlVersion(c echo.Context) error {
 }
 
 func deleteSqlVersion(c echo.Context) error {
-	// TODO 权限校验
 	sqlVersionId, err := strconv.Atoi(c.Param("sql_version_id"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -379,12 +368,6 @@ func deleteSqlVersion(c echo.Context) error {
 }
 
 func getDependenciesBetweenStageInstance(c echo.Context) error {
-	// TODO 权限校验
-
-	// projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
-	// if err != nil {
-	// 	return controller.JSONBaseErrorReq(c, err)
-	// }
 	stageId := c.Param("sql_version_stage_id")
 	s := model.GetStorage()
 	dependencies, err := s.GetStageDependenciesByStageId(stageId)
