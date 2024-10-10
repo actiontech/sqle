@@ -1643,22 +1643,6 @@ func getRuleTemplateFile(ctx context.Context, projectID string, ruleTemplateName
 
 	lang := locale.Bundle.GetLangTagFromCtx(ctx)
 
-	// 补充缺失的信息(规则说明等描述信息)
-	ruleNames := make([]string, 0, len(template.RuleList))
-	for _, rule := range template.RuleList {
-		ruleNames = append(ruleNames, rule.RuleName)
-	}
-
-	rules, err := model.GetStorage().GetRulesByNamesAndDBType(ruleNames, template.DBType)
-	if err != nil {
-		return nil, err
-	}
-
-	ruleCache := map[string] /*rule name*/ *model.Rule{}
-	for _, rule := range rules {
-		ruleCache[rule.Name] = &rule
-	}
-
 	resp := &RuleTemplateExport{
 		RuleTemplate: RuleTemplate{
 			Name:   template.Name,
@@ -1668,7 +1652,7 @@ func getRuleTemplateFile(ctx context.Context, projectID string, ruleTemplateName
 		RuleList: []RuleTemplateRes{},
 	}
 	for _, rule := range template.RuleList {
-		ruleInfo := ruleCache[rule.RuleName].I18nRuleInfo.GetRuleInfoByLangTag(lang)
+		ruleInfo := rule.Rule.I18nRuleInfo.GetRuleInfoByLangTag(lang)
 		r := RuleTemplateRes{
 			RuleTemplateRuleInfo: RuleTemplateRuleInfo{
 				Name:       rule.RuleName,
@@ -1684,7 +1668,7 @@ func getRuleTemplateFile(ctx context.Context, projectID string, ruleTemplateName
 		for _, param := range rule.RuleParams {
 			r.Params = append(r.Params, RuleParamRes{
 				Value: param.Value,
-				Desc:  param.GetDesc(locale.Bundle.GetLangTagFromCtx(ctx)),
+				Desc:  param.GetDesc(lang),
 				Type:  string(param.Type),
 			})
 		}
