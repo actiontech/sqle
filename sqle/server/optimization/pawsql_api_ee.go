@@ -47,7 +47,7 @@ type CreateWorkspace struct {
 	WorkspaceId string `json:"workspaceId"`
 }
 
-// pawsql任务超时时间为20分钟
+// pawsql平台接口均为同步调用，优化任务复杂情况下调用时间远超过默认的15s。pawsql的任务超时时间为20min，这里提供30分钟超时时间避免调用失败
 const defaultPawSQLTimeOutSecond = 30 * 60
 
 // 在线模式（online）
