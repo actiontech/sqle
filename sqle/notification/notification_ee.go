@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"strings"
 	"text/template"
+
+	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
 )
 
 func (n *AuditPlanNotifier) sendWebHook(notification Notification, webHookUrl, webHookTemplate string) error {
@@ -26,9 +28,11 @@ func (n *AuditPlanNotifier) splicingWebHookMessage(webHookTemplate string, notif
 		return "", err
 	}
 	// Newline characters are not allowed in json message and need to be replaced with '\n' string
+	subject := notification.NotificationSubject()
+	body := notification.NotificationBody()
 	data := map[string]string{
-		"subject": strings.ReplaceAll(notification.NotificationSubject(), "\n", "\\n"),
-		"body":    strings.ReplaceAll(notification.NotificationBody(), "\n", "\\n"),
+		"subject": strings.ReplaceAll(subject.GetStrInLang(i18nPkg.DefaultLang), "\n", "\\n"),
+		"body":    strings.ReplaceAll(body.GetStrInLang(i18nPkg.DefaultLang), "\n", "\\n"),
 	}
 	var buff bytes.Buffer
 	err = temp.Execute(&buff, data)
