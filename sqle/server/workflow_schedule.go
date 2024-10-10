@@ -67,9 +67,7 @@ func (j *WorkflowScheduleJob) WorkflowSchedule(entry *logrus.Entry) {
 func ExecuteWorkflow(workflow *model.Workflow, needExecTaskIdToUserId map[uint]string) (chan string, error) {
 	s := model.GetStorage()
 	l := log.NewEntry()
-	workflowStageParam := make(map[string]interface{}, 1)
-	workflowStageParam["workflow_exec_time"] = time.Now()
-	err := s.UpdateStageWorkflowIfNeed(workflow.WorkflowId, workflowStageParam)
+	err := s.UpdateStageWorkflowExecTimeIfNeed(workflow.WorkflowId)
 	if err != nil {
 		l.Errorf("update workflow execute time for version stage error: %v", err)
 	}
