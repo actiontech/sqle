@@ -233,6 +233,22 @@ func (s *Storage) UpdateStageWorkflowExecTimeIfNeed(workflowId string) error {
 	return nil
 }
 
+func (s *Storage) UpdateStageWorkflowIfNeed(workflowId string, workflowStage map[string]interface{}) error {
+	_, exist, err := s.GetStageOfTheWorkflow(workflowId)
+	if err != nil {
+		return err
+	}
+	if !exist {
+		// 工单没有关联版本阶段信息，不需要更新
+		return nil
+	}
+	err = s.db.Model(WorkflowVersionStage{}).Where("workflow_id = ?", workflowId).Updates(workflowStage).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *Storage) GetStageOfTheWorkflow(workflowId string) (*SqlVersionStage, bool, error) {
 	stage := &SqlVersionStage{}
 	err := s.db.Model(&SqlVersionStage{}).
