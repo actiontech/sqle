@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
 	"github.com/actiontech/sqle/sqle/dms"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/model"
 )
 
@@ -28,42 +30,46 @@ func NewSQLmanageRecordNotification(config SQLmanageRecordNotifyConfig, SQLmanag
 	}
 }
 
-func (a *SQLmanageRecordNotification) NotificationSubject() string {
-	return "SQL管控记录"
+func (a *SQLmanageRecordNotification) NotificationSubject() i18nPkg.I18nStr {
+	return locale.Bundle.LocalizeAll(locale.NotifyManageRecordSubject)
 }
 
-func (a *SQLmanageRecordNotification) NotificationBody() string {
-	builder := strings.Builder{}
-	builder.WriteString(fmt.Sprintf("记录时间周期：%v - %v\n", a.Config.StartTime, a.Config.EndTime))
-	builder.WriteString(fmt.Sprintf(`所属项目  %v`, a.Config.ProjectName))
+func (a *SQLmanageRecordNotification) NotificationBody() i18nPkg.I18nStr {
+	timeInBody := locale.Bundle.LocalizeAllWithArgs(locale.NotifyManageRecordBodyTime, a.Config.StartTime, a.Config.EndTime)
+	projInBody := locale.Bundle.LocalizeAllWithArgs(locale.NotifyManageRecordBodyProj, a.Config.ProjectName)
 
+	var linkInBody i18nPkg.I18nStr
 	if a.Config.SQLEUrl != "" && a.Config.ProjectName != "" {
 		// TODO 当前只跳转到管控页面，无筛选条件
 		// builder.WriteString(fmt.Sprintf("\n- SQL管控记录链接: %v/v2/projects/%v/sql_manages?filter_priority=hight&filter_last_audit_start_time_from=%v&filter_last_audit_start_time_to=%v&page_index=1&page_size=20&filter_status=unhandled", strings.TrimRight(a.Config.SQLEUrl, "/"), a.Config.ProjectName, a.Config.StartTime, a.Config.EndTime))
 		projectId, err := dms.GetPorjectUIDByName(context.TODO(), a.Config.ProjectName)
 		if err == nil {
-			builder.WriteString(fmt.Sprintf("\n- SQL管控记录链接: %v/project/%v/sql-management", strings.TrimRight(a.Config.SQLEUrl, "/"), projectId))
+			link := fmt.Sprintf("%v/project/%v/sql-management", strings.TrimRight(a.Config.SQLEUrl, "/"), projectId)
+			linkInBody = locale.Bundle.LocalizeAllWithArgs(locale.NotifyManageRecordBodyLink, link)
 		}
 
 	}
+
+	bodyStr := make([]i18nPkg.I18nStr, 0, len(a.SQLmanageRecords)+3)
+	bodyStr = append(bodyStr, timeInBody, projInBody, linkInBody)
+
 	for _, sqlManagerRecord := range a.SQLmanageRecords {
+		auditResults := make(i18nPkg.I18nStr, len(locale.Bundle.LanguageTags()))
+		for _, langTag := range locale.Bundle.LanguageTags() {
+			auditResults.SetStrInLang(langTag, sqlManagerRecord.AuditResults.GetAuditJsonStrByLangTag(langTag))
+		}
+
 		db := dms.GetInstancesByIdWithoutError(sqlManagerRecord.InstanceID)
-		builder.WriteString(fmt.Sprintf(`
-- SQLID	%v
-- 所在数据源名称 %v
-- 所属业务 %v
-- SQL %v
-- 触发规则级别 %v
-- SQL审核建议 %v
-================================`,
+		recordI18n := locale.Bundle.LocalizeAllWithArgs(locale.NotifyManageRecordBodyRecord,
 			sqlManagerRecord.SQLID,
 			fmt.Sprintf("%v(%v:%v)", db.Name, db.Host, db.Port),
 			db.Business,
 			sqlManagerRecord.SqlText,
 			sqlManagerRecord.AuditLevel,
-			sqlManagerRecord.AuditResults,
-		))
+			auditResults,
+		)
+		bodyStr = append(bodyStr, recordI18n)
 	}
 
-	return builder.String()
+	return locale.Bundle.JoinI18nStr(bodyStr, "\n")
 }
