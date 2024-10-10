@@ -812,17 +812,21 @@ func updateWorkflowInstanceRecordById(tx *gorm.DB, needExecInstanceRecords []*Wo
 
 func (s *Storage) BatchUpdateWorkflowStatus(ws []*Workflow) error {
 	return s.Tx(func(tx *gorm.DB) error {
-		workflowStageParam := make(map[string]interface{}, 1)
-		workflowStageParam["workflow_release_status"] = WorkflowReleaseStatusNotNeedReleased
 		for _, w := range ws {
 			err := updateWorkflowStatus(tx, w)
 			if err != nil {
 				return err
 			}
-			err = s.UpdateStageWorkflowIfNeed(w.WorkflowId, workflowStageParam)
-			if err != nil {
-				return err
+			// 工单关闭时，在版本中设置为不需要发布
+			if w.Record.Status == WorkflowStatusCancel {
+				workflowStageParam := make(map[string]interface{}, 1)
+				workflowStageParam["workflow_release_status"] = WorkflowReleaseStatusNotNeedReleased
+				err = s.UpdateStageWorkflowIfNeed(w.WorkflowId, workflowStageParam)
+				if err != nil {
+					return err
+				}
 			}
+
 		}
 		return nil
 	})
@@ -851,9 +855,7 @@ func (s *Storage) CompletionWorkflow(w *Workflow, operateStep *WorkflowStep, nee
 		if err := updateWorkflowInstanceRecordById(tx, needExecInstanceRecords); err != nil {
 			return err
 		}
-		workflowStageParam := make(map[string]interface{}, 1)
-		workflowStageParam["workflow_exec_time"] = time.Now()
-		if err := s.UpdateStageWorkflowIfNeed(w.WorkflowId, workflowStageParam); err != nil {
+		if err := s.UpdateStageWorkflowExecTimeIfNeed(w.WorkflowId); err != nil {
 			l.Errorf("update workflow execute time for version stage error: %v", err)
 		}
 		return nil
