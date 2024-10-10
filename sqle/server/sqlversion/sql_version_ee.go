@@ -5,6 +5,7 @@ package sqlversion
 
 import (
 	"fmt"
+	"sort"
 
 	"time"
 
@@ -31,7 +32,7 @@ type Stage struct {
 	Name        string      // 该阶段名称
 	Sequence    int         // 该阶段的次序
 	Instances   []*Instance // 该阶段关联的数据源
-	Workflows   []*Workflow // 该阶段纳管的工单
+	Workflows   Workflows   // 该阶段纳管的工单
 }
 
 func ToServiceStage(modelStage *model.SqlVersionStage) *Stage {
@@ -43,14 +44,16 @@ func ToServiceStage(modelStage *model.SqlVersionStage) *Stage {
 			NextInstanceID: dependency.NextStageInstanceID,
 		})
 	}
-	workflows := make([]*Workflow, 0, len(modelStage.WorkflowVersionStage))
+	workflows := make(Workflows, 0, len(modelStage.WorkflowVersionStage))
 	for _, workflow := range modelStage.WorkflowVersionStage {
 		workflows = append(workflows, &Workflow{
 			ID:         workflow.ID,
 			WorkflowID: workflow.WorkflowID,
 			Sequence:   workflow.WorkflowSequence,
+			Status:     workflow.WorkflowReleaseStatus,
 		})
 	}
+	workflows.SortBySequence()
 	stage := &Stage{
 		ID:        modelStage.ID,
 		Name:      modelStage.Name,
@@ -113,15 +116,24 @@ type Instance struct {
 	NextInstanceID uint64 // 下一阶段的数据源ID
 }
 
+type Workflows []*Workflow
+
 // SQL工单，SQL工单被纳管至SQL版本管理中，以关联关系的方式保存，SQL版本阶段:工单 = 1:n
 type Workflow struct {
 	ID          uint
 	WorkflowID  string // 工单ID
 	Sequence    int    // 该阶段中工单的排序
+	Status      string // 该工单的状态
 	Subject     string
 	Description string
 	Status      string
 	workflow    *model.Workflow
+}
+
+func (w Workflows) SortBySequence() {
+	sort.Slice(w, func(i, j int) bool {
+		return w[i].Sequence < w[j].Sequence
+	})
 }
 
 func GetWorkflowsThatCanBeAssociatedToVersionStage(versionID, stageID uint) ([]*Workflow, error) {
@@ -216,5 +228,41 @@ func BatchAssociateWorkflowsWithStage(projectUid string, versionID, stageID uint
 		}
 	}
 
-	return db.BatchCreateWorkflowVerionRelation(modelStage, workflowIds)
+	return db.BatchCreateWorkflowVersionRelation(modelStage, workflowIds)
+}
+
+func CheckWorkflowExecutable(projectUid, workflowId string) (executable bool, reason string, err error) {
+
+	db := model.GetStorage()
+	modelStage, exist, err := db.GetStageOfTheWorkflow(workflowId)
+	if err != nil {
+		return false, "", err
+	}
+	if !exist {
+		return true, "", nil
+	}
+	stage := ToServiceStage(modelStage)
+	for _, workflow := range stage.Workflows {
+		// 按顺序检查该工单之前的工单
+		if workflow.WorkflowID == workflowId {
+			return true, "", nil
+		}
+		if workflow.workflow == nil {
+			workflow.workflow, exist, err = db.GetWorkflowByWorkflowId(workflow.WorkflowID)
+			if err != nil {
+				return false, fmt.Sprintf("when checking if workflow can execute, find a workflow before this workflow failed, workflow id is %v, err: %v", workflow.WorkflowID, err), err
+			}
+			if !exist {
+				return false, fmt.Sprintf("when checking if workflow can execute, can not find a workflow before this workflow, workflow id is %v", workflow.WorkflowID), nil
+			}
+		}
+		// 当发现该工单之前的工单的状态不是执行完成或者取消这两种状态时，不允许执行或定时执行该工单
+		switch workflow.workflow.Record.Status {
+		case model.WorkflowStatusFinish, model.WorkflowStatusCancel:
+			continue
+		default:
+			return false, fmt.Sprintf("can not execute or scheduled execute workflow that bind with stage of sql version, before this workflow. there were still workflow with a %v status, sql version id is %v", workflow.workflow.Record.Status, modelStage.SqlVersionID), nil
+		}
+	}
+	return true, "the previous workflows are executed as expected", nil
 }
