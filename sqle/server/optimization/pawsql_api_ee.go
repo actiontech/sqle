@@ -47,6 +47,9 @@ type CreateWorkspace struct {
 	WorkspaceId string `json:"workspaceId"`
 }
 
+// pawsql平台接口均为同步调用，优化任务复杂情况下调用时间远超过默认的15s。pawsql的任务超时时间为20min，这里提供30分钟超时时间避免调用失败
+const defaultPawSQLTimeOutSecond = 30 * 60
+
 // 在线模式（online）
 func (a *OptimizationPawSQLServer) createWorkspaceOnline(ctx context.Context, instance *model.Instance, schema string) (string, error) {
 	req := CreateWorkspaceReq{
@@ -68,7 +71,7 @@ func (a *OptimizationPawSQLServer) createWorkspaceOnline(ctx context.Context, in
 	}
 
 	reply := new(CreateWorkspaceReply)
-	err := dmsCommonHttp.POST(ctx, getPawHost()+"/api/v1/createWorkspace", nil, req, reply)
+	err := dmsCommonHttp.POST(dmsCommonHttp.SetTimeoutValueContext(ctx, defaultPawSQLTimeOutSecond), getPawHost()+"/api/v1/createWorkspace", nil, req, reply)
 	if err != nil {
 		return "", err
 	}
@@ -88,7 +91,7 @@ func (a *OptimizationPawSQLServer) createWorkspaceOffline(ctx context.Context, d
 		DdlText: ddlText,
 	}
 	reply := new(CreateWorkspaceReply)
-	err := dmsCommonHttp.POST(ctx, getPawHost()+"/api/v1/workspaces", nil, req, reply)
+	err := dmsCommonHttp.POST(dmsCommonHttp.SetTimeoutValueContext(ctx, defaultPawSQLTimeOutSecond), getPawHost()+"/api/v1/workspaces", nil, req, reply)
 	if err != nil {
 		return "", err
 	}
@@ -121,7 +124,7 @@ func (a *OptimizationPawSQLServer) createOptimization(ctx context.Context, works
 	}
 
 	reply := new(CreateOptimizationReply)
-	err = dmsCommonHttp.POST(context.TODO(), getPawHost()+"/api/v1/createAnalysis", nil, req, reply)
+	err = dmsCommonHttp.POST(dmsCommonHttp.SetTimeoutValueContext(ctx, defaultPawSQLTimeOutSecond), workspaceId+"/api/v1/createAnalysis", nil, req, reply)
 	if err != nil {
 		return "", err
 	}
@@ -171,7 +174,7 @@ func (a *OptimizationPawSQLServer) getOptimizationSummary(ctx context.Context, o
 	}
 
 	reply := new(OptimizationSummaryReply)
-	err = dmsCommonHttp.POST(ctx, getPawHost()+"/api/v1/getAnalysisSummary", nil, req, reply)
+	err = dmsCommonHttp.POST(dmsCommonHttp.SetTimeoutValueContext(ctx, defaultPawSQLTimeOutSecond), getPawHost()+"/api/v1/getAnalysisSummary", nil, req, reply)
 	if err != nil {
 		return ret, err
 	}
@@ -251,7 +254,7 @@ func (a *OptimizationPawSQLServer) getOptimizationDetail(ctx context.Context, op
 		OptimizationStmtId: optimizationStmtId,
 	}
 	reply := new(OptimizationDetailReply)
-	err = dmsCommonHttp.POST(ctx, getPawHost()+"/api/v1/getStatementDetails", nil, req, reply)
+	err = dmsCommonHttp.POST(dmsCommonHttp.SetTimeoutValueContext(ctx, defaultPawSQLTimeOutSecond), getPawHost()+"/api/v1/getStatementDetails", nil, req, reply)
 	if err != nil {
 		return ret, err
 	}
