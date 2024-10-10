@@ -195,6 +195,9 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		// workflow template
 		v1OpProjectRouter.PATCH("/:project_name/workflow_template", v1.UpdateWorkflowTemplate)
 
+		// report push
+		v1OpProjectRouter.PUT("/:project_name/report_push_configs/:report_push_config_id/", v1.UpdateReportPushConfig)
+
 		// sql version
 		v1OpProjectRouter.POST("/:project_name/sql_versions", v1.CreateSqlVersion)
 		v1OpProjectRouter.PATCH("/:project_name/sql_versions/:sql_version_id/", v1.UpdateSqlVersion)
@@ -273,9 +276,6 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 
 		// task
 		v1ProjectOpRouter.POST("/:project_name/tasks/audits", v1.CreateAndAuditTask)
-
-		// report push
-		v1ProjectOpRouter.PUT("/:project_name/report_push_configs/:report_push_config_id/", v1.UpdateReportPushConfig)
 
 		// pipeline
 		v1ProjectOpRouter.POST("/:project_name/pipelines", v1.CreatePipeline)
