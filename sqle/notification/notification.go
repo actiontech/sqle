@@ -107,7 +107,7 @@ func (w *WorkflowNotification) NotificationSubject() i18nPkg.I18nStr {
 }
 
 func (w *WorkflowNotification) NotificationBody() i18nPkg.I18nStr {
-	var bodyStr []i18nPkg.I18nStr
+	bodyStr := make([]i18nPkg.I18nStr, 0)
 	bodyStr = append(bodyStr, locale.Bundle.LocalizeAllWithArgs(locale.NotifyWorkflowBodyHead,
 		w.workflow.Subject,
 		w.workflow.WorkflowId,
