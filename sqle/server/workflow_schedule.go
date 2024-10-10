@@ -210,7 +210,7 @@ func updateStatus(s *model.Storage, workflow *model.Workflow, l *logrus.Entry, w
 		if err != nil {
 			l.Errorf("update workflow record status failed: %v", err)
 		}
-		if workflowStatusChan != nil && workFlowStatus != model.WorkflowStatusExecuting {
+		if workflowStatusChan != nil && workFlowStatus != model.WorkflowStatusExecuting && workFlowStatus != model.WorkflowStatusWaitForExecution {
 			workflowStatusChan <- workFlowStatus
 		}
 	}
