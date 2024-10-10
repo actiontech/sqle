@@ -120,6 +120,7 @@ type Workflow struct {
 	Sequence    int    // 该阶段中工单的排序
 	Subject     string
 	Description string
+	Status      string
 	workflow    *model.Workflow
 }
 
