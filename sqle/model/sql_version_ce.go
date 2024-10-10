@@ -7,6 +7,10 @@ func (s *Storage) UpdateStageWorkflowExecTimeIfNeed(workflowId string) error {
 	return nil
 }
 
+func (s *Storage) UpdateStageWorkflowIfNeed(workflowId string, workflowStage map[string]interface{}) error {
+	return nil
+}
+
 func (stage SqlVersionStage) InitialStatusOfWorkflow() string {
 	return ""
 }

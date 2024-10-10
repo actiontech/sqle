@@ -817,6 +817,16 @@ func (s *Storage) BatchUpdateWorkflowStatus(ws []*Workflow) error {
 			if err != nil {
 				return err
 			}
+			// 工单关闭时，在版本中设置为不需要发布
+			if w.Record.Status == WorkflowStatusCancel {
+				workflowStageParam := make(map[string]interface{}, 1)
+				workflowStageParam["workflow_release_status"] = WorkflowReleaseStatusNotNeedReleased
+				err = s.UpdateStageWorkflowIfNeed(w.WorkflowId, workflowStageParam)
+				if err != nil {
+					return err
+				}
+			}
+
 		}
 		return nil
 	})
