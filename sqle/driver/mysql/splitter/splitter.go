@@ -75,17 +75,24 @@ type sqlWithLineNumber struct {
 	line int
 }
 
+func (s sqlWithLineNumber) IsEmpty() bool {
+	return s.sql == ""
+}
+
 func (s *splitter) splitSqlText(sqlText string) (results []*sqlWithLineNumber, err error) {
 	result, err := s.getNextSql(sqlText)
 	if err != nil {
 		return nil, err
 	}
-	if result != nil {
+	if !result.IsEmpty() {
 		results = append(results, result)
 	}
 	// 递归切分剩余SQL
 	if s.scanner.Offset() < len(sqlText) {
-		subResults, _ := s.splitSqlText(sqlText[s.scanner.Offset():])
+		subResults, err := s.splitSqlText(sqlText[s.scanner.Offset():])
+		if err != nil {
+			return results, err
+		}
 		results = append(results, subResults...)
 	}
 	return results, nil
@@ -110,7 +117,7 @@ func (s *splitter) getNextSql(sqlText string) (*sqlWithLineNumber, error) {
 	}
 	restOfSql := strings.TrimSpace(sqlText)
 	if restOfSql == "" {
-		return nil, nil
+		return &sqlWithLineNumber{}, nil
 	}
 	return &sqlWithLineNumber{
 		sql:  restOfSql,
@@ -155,7 +162,7 @@ func (s *splitter) skipBeginEndBlock(token *parser.Token) *parser.Token {
 			BEGIN
 				IF
 				END IF
-				WIHLE
+				WHILE
 				END WHILE
 			END
 		*/
@@ -198,12 +205,12 @@ func (s *splitter) isTokenMatchDelimiter(token *parser.Token) bool {
 			return false
 		}
 		// 2. 定位特征的第一个字符所处的位置
-		indexIntoken := strings.Index(token.Ident(), s.delimiter.FirstTokenValueOfDelimiter)
-		if indexIntoken == -1 {
+		indexInToken := strings.Index(token.Ident(), s.delimiter.FirstTokenValueOfDelimiter)
+		if indexInToken == -1 {
 			return false
 		}
 		// 3. 字符串匹配
-		begin := s.scanner.Offset() + indexIntoken
+		begin := s.scanner.Offset() + indexInToken
 		end := begin + len(s.delimiter.DelimiterStr)
 		if begin < 0 || end > len(s.scanner.Text()) {
 			return false

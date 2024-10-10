@@ -50,7 +50,7 @@ func getDelimiterValueAndEndPos(sqlAfterDelimiter string) (string, int) {
 	ptr := 0
 	start := 0
 	quoted := false
-	qtype := byte(0)
+	qType := byte(0)
 
 	// 跳过开头的空格
 	for ptr < len(sqlAfterDelimiter) && isWhitespace(sqlAfterDelimiter[ptr]) {
@@ -63,7 +63,7 @@ func getDelimiterValueAndEndPos(sqlAfterDelimiter string) (string, int) {
 
 	// 检查是否为引号字符串
 	if sqlAfterDelimiter[ptr] == '\'' || sqlAfterDelimiter[ptr] == '"' || sqlAfterDelimiter[ptr] == '`' {
-		qtype = sqlAfterDelimiter[ptr]
+		qType = sqlAfterDelimiter[ptr]
 		quoted = true
 		ptr++
 	}
@@ -74,7 +74,7 @@ func getDelimiterValueAndEndPos(sqlAfterDelimiter string) (string, int) {
 	for ptr < len(sqlAfterDelimiter) {
 		if !quoted && sqlAfterDelimiter[ptr] == '\\' && ptr+1 < len(sqlAfterDelimiter) { // 跳过转义字符
 			ptr += 2
-		} else if (!quoted && isWhitespace(sqlAfterDelimiter[ptr])) || (quoted && sqlAfterDelimiter[ptr] == qtype) {
+		} else if (!quoted && isWhitespace(sqlAfterDelimiter[ptr])) || (quoted && sqlAfterDelimiter[ptr] == qType) {
 			break
 		} else {
 			ptr++
