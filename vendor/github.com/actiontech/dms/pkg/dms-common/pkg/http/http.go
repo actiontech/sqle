@@ -58,6 +58,11 @@ func POST(ctx context.Context, url string, headers map[string]string, body, out 
 }
 
 func Call(ctx context.Context, method, url string, headers map[string]string, body, out interface{}) error {
+	// 获取上下文中的超时值，并将其断言为 int64 类型
+	timeout, ok := ctx.Value(timeoutKey).(int64)
+	if !ok {
+		timeout = 15 // 默认超时时间
+	}
 	var bodyReader io.Reader
 	if body != nil {
 		bodyJson, err := json.Marshal(body)
@@ -77,7 +82,7 @@ func Call(ctx context.Context, method, url string, headers map[string]string, bo
 	req.Header.Set("Content-Type", "application/json")
 
 	client := http.Client{
-		Timeout: time.Second * 15,
+		Timeout: time.Second * time.Duration(timeout),
 	}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -99,4 +104,12 @@ func Call(ctx context.Context, method, url string, headers map[string]string, bo
 		return fmt.Errorf("unmarshal error: %v", err)
 	}
 	return nil
+}
+
+type contextKey string
+
+const timeoutKey contextKey = "timeoutKey"
+
+func SetTimeoutValueContext(ctx context.Context, timeout int64) context.Context {
+	return context.WithValue(ctx, timeoutKey, timeout)
 }
