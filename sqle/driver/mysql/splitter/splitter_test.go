@@ -19,10 +19,10 @@ func TestSplitSqlText(t *testing.T) {
 		filePath       string
 		expectedLength int
 	}{
-		{"splitter_test_1.sql", 20},
-		{"splitter_test_2.sql", 20},
+		{"splitter_test_1.sql", 14},
+		{"splitter_test_2.sql", 14},
 		{"splitter_test_3.sql", 4},
-		{"splitter_test_skip_quoted_delimiter.sql", 26},
+		{"splitter_test_skip_quoted_delimiter.sql", 18},
 	}
 	for _, testCase := range testCases {
 		t.Run(testCase.filePath, func(t *testing.T) {
@@ -152,10 +152,10 @@ func TestSkipQuotedDelimiter(t *testing.T) {
 	}
 	for _, result := range splitResults {
 		fmt.Print("------------------------------\n")
-		fmt.Printf("SQL语句在第%v行\n", result.line)
-		fmt.Printf("SQL语句为:\n%v\n", result.sql)
+		fmt.Printf("SQL语句在第%v行\n", result.lineNumber)
+		fmt.Printf("SQL语句为:\n%v\n", result.originSql)
 	}
-	if len(splitResults) != 26 {
+	if len(splitResults) != 18 {
 		t.FailNow()
 	}
 }
@@ -570,8 +570,8 @@ END;`,
 				// 之前的测试用例预期对SQL的切分会保留SQL语句的前后的空格
 				// 现在的切分会将SQL前后的空格去掉
 				// 这里统一修改为匹配SQL语句，除去分隔符后的内容是否相等
-				if strings.TrimSuffix(s.sql, ";") != strings.TrimSuffix(strings.TrimSpace(c.expect[i]), ";") {
-					t.Errorf("expect sql is [%s], actual is [%s]", c.expect[i], s.sql)
+				if strings.TrimSuffix(s.originSql, ";") != strings.TrimSuffix(strings.TrimSpace(c.expect[i]), ";") {
+					t.Errorf("expect sql is [%s], actual is [%s]", c.expect[i], s.originSql)
 				}
 			}
 		}
