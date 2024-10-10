@@ -194,6 +194,12 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 
 		// workflow template
 		v1OpProjectRouter.PATCH("/:project_name/workflow_template", v1.UpdateWorkflowTemplate)
+
+		// sql version
+		v1OpProjectRouter.POST("/:project_name/sql_versions", v1.CreateSqlVersion)
+		v1OpProjectRouter.PATCH("/:project_name/sql_versions/:sql_version_id/", v1.UpdateSqlVersion)
+		v1OpProjectRouter.DELETE("/:project_name/sql_versions/:sql_version_id/", v1.DeleteSqlVersion)
+		v1OpProjectRouter.POST("/:project_name/sql_versions/:sql_version_id/lock", v1.LockSqlVersion)
 	}
 
 	// project admin and global view router
@@ -224,10 +230,6 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1ProjectOpRouter.POST("/:project_name/workflows/:workflow_id/tasks/:task_id/order_file", v1.UpdateSqlFileOrderByWorkflowV1)
 
 		// sql version
-		v1ProjectOpRouter.POST("/:project_name/sql_versions", v1.CreateSqlVersion)
-		v1ProjectOpRouter.PATCH("/:project_name/sql_versions/:sql_version_id/", v1.UpdateSqlVersion)
-		v1ProjectOpRouter.DELETE("/:project_name/sql_versions/:sql_version_id/", v1.DeleteSqlVersion)
-		v1ProjectOpRouter.POST("/:project_name/sql_versions/:sql_version_id/lock", v1.LockSqlVersion)
 		v1ProjectOpRouter.POST("/:project_name/sql_versions/:sql_version_id/batch_release_workflows", v1.BatchReleaseWorkflows)
 		v1ProjectOpRouter.POST("/:project_name/sql_versions/:sql_version_id/batch_execute_workflows", v1.BatchExecuteWorkflows)
 		v1ProjectOpRouter.POST("/:project_name/sql_versions/:sql_version_id/sql_version_stages/:sql_version_stage_id/associate_workflows", v1.BatchAssociateWorkflowsWithVersion)
