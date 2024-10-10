@@ -101,6 +101,10 @@ AND sv.lock_time <= :filter_by_lock_time_to
 AND sv.status = :filter_by_version_status
 {{- end }}
 
+{{- if .filter_by_project_id }}
+AND sv.project_id = :filter_by_project_id
+{{- end }}
+
 {{ end }}
 `
 
