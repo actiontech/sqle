@@ -54,8 +54,7 @@ LIMIT :limit OFFSET :offset
 `
 
 var sqlVersionCountTpl = `
-SELECT COUNT(*)
-
+SELECT COUNT(DISTINCT sv.id)
 {{- template "body" . -}}
 `
 
