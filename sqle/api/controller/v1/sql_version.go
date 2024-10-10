@@ -45,14 +45,6 @@ type CreateSqlVersionRes struct {
 // @router /v1/projects/{project_name}/sql_versions [post]
 func CreateSqlVersion(c echo.Context) error {
 
-	/**
-		1、save version
-		2、save stage
-		3、遍历stage，stage的id作为dependency的stage id
-		4、实现方法getNextSatgeBySequence，获取next stage id（SqlVersionStage表StageSequence + 1的id作为NextStageID）
-		5、save dependenc
-	**/
-
 	return createSqlVersion(c)
 }
 
@@ -104,7 +96,6 @@ type SqlVersionResV1 struct {
 // @router /v1/projects/{project_name}/sql_versions [get]
 func GetSqlVersionList(c echo.Context) error {
 
-	// 获取列表同时返回版本是否有关联工单
 	return getSqlVersionList(c)
 }
 
@@ -155,11 +146,6 @@ type VersionStageInstance struct {
 // @router /v1/projects/{project_name}/sql_versions/{sql_version_id}/ [get]
 func GetSqlVersionDetail(c echo.Context) error {
 
-	/**
-		1、getStageBySqlVersionID
-		2、获取工单信息dms.GetWorkflowDetailByWorkflowId(projectUid, workflowID, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
-		3、遍历workflow获取WorkflowDetail遍历workflow.record.instancerecords获取WorkflowInstance
-	**/
 	return getSqlVersionDetail(c)
 }
 
@@ -191,11 +177,7 @@ type UpdateStagesInstanceDep struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/sql_versions/{sql_version_id}/ [patch]
 func UpdateSqlVersion(c echo.Context) error {
-	/**
-		1、getStageBySqlVersionID
-		2、save sql version
-		3、如果要更新stage，传入完整的stage，覆盖式更新stage及dependency
-	  **/
+
 	return updateSqlVersion(c)
 }
 
@@ -228,10 +210,7 @@ func LockSqlVersion(c echo.Context) error {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/sql_versions/{sql_version_id}/ [delete]
 func DeleteSqlVersion(c echo.Context) error {
-	// delete sql version
-	// delete stage
-	// delete dependency
-	// delete workflow release stage
+
 	return deleteSqlVersion(c)
 }
 
@@ -258,9 +237,7 @@ type DepBetweenStageInstance struct {
 // @Success 200 {object} v1.GetDepBetweenStageInstanceResV1
 // @router /v1/projects/{project_name}/sql_versions/{sql_version_id}/sql_version_stages/{sql_version_stage_id}/dependencies [get]
 func GetDependenciesBetweenStageInstance(c echo.Context) error {
-	/**
-		select * from SqlVersionStagesDependency where SqlVersionStageID = sql_version_stage_id
-	 **/
+
 	return getDependenciesBetweenStageInstance(c)
 }
 
@@ -291,15 +268,7 @@ type TargetReleaseInstance struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/sql_versions/{sql_version_id}/batch_release_workflows [post]
 func BatchReleaseWorkflows(c echo.Context) error {
-	/**
-		1、遍历获取工单信息，dms.GetWorkflowDetailByWorkflowId(projectUid, workflowID, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
-		2、遍历workflow.task[]，获取task信息
-		3、找到task的instance id，对应到target instance id
-		4、dms.GetInstancesById(c.Request().Context(), req.InstanceId)
-		5、参考func CreateAndAuditTask(c echo.Context) error 创建审核，如果原task的sql source是sql_file，
-			参考func GetWorkflowTaskAuditFile(c echo.Context) error获取原始文件
-		6、提交工单工单（忽略工单审批流程模板的审核等级限制）参考func CreateWorkflowV2(c echo.Context) error
-	**/
+
 	return batchReleaseWorkflows(c)
 }
 
@@ -318,10 +287,7 @@ type BatchExecuteWorkflowsReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/sql_versions/{sql_version_id}/batch_execute_workflows [post]
 func BatchExecuteWorkflows(c echo.Context) error {
-	/**
-		1、遍历workflow id，获取workflow信息
-		2、参考func ExecuteTasksOnWorkflowV2(c echo.Context) error 执行上线
-	**/
+
 	return batchExecuteWorkflows(c)
 }
 
@@ -342,7 +308,6 @@ type BatchAssociateWorkflowsWithVersionReqV1 struct {
 // @router /v1/projects/{project_name}/sql_versions/{sql_version_id}/sql_version_stages/{sql_version_stage_id}/associate_workflows [post]
 func BatchAssociateWorkflowsWithVersion(c echo.Context) error {
 
-	// 与第一个阶段进行关联
 	return batchAssociateWorkflowsWithVersion(c)
 }
 
