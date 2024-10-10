@@ -15645,11 +15645,17 @@ var doc = `{
                 "created_at": {
                     "type": "string"
                 },
+                "deletable": {
+                    "type": "boolean"
+                },
                 "desc": {
                     "type": "string"
                 },
                 "lock_time": {
                     "type": "string"
+                },
+                "lockable": {
+                    "type": "boolean"
                 },
                 "status": {
                     "type": "string",
