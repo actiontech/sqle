@@ -246,7 +246,7 @@ func CheckWorkflowExecutable(projectUid, workflowId string) (executable bool, re
 			return true, "", nil
 		}
 		if workflow.workflow == nil {
-			workflow.workflow, exist, err = db.GetWorkflowByProjectAndWorkflowId(projectUid, workflow.WorkflowID)
+			workflow.workflow, exist, err = db.GetWorkflowByWorkflowId(workflow.WorkflowID)
 			if err != nil {
 				return false, fmt.Sprintf("when checking if workflow can execute, find a workflow before this workflow failed, workflow id is %v, err: %v", workflow.WorkflowID, err), err
 			}
