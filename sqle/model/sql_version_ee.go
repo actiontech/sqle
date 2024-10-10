@@ -130,6 +130,15 @@ func (s *Storage) GetSqlVersionDetailByVersionId(versionId uint) (*SqlVersion, b
 	return version, true, errors.New(errors.ConnectStorageError, err)
 }
 
+func (s *Storage) GetSqlVersionByVersionId(versionId uint) (*SqlVersion, bool, error) {
+	version := &SqlVersion{}
+	err := s.db.Model(SqlVersion{}).Where("id=?", versionId).First(version).Error
+	if err == gorm.ErrRecordNotFound {
+		return version, false, nil
+	}
+	return version, true, errors.New(errors.ConnectStorageError, err)
+}
+
 func (s *Storage) GetStageDependenciesByStageId(stageId string) ([]*SqlVersionStagesDependency, error) {
 	var dependencies []*SqlVersionStagesDependency
 	err := s.db.Model(SqlVersionStagesDependency{}).Where("sql_version_stage_id = ?", stageId).Find(&dependencies).Error
