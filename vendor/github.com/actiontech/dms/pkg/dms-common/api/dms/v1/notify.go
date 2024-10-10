@@ -1,6 +1,9 @@
 package v1
 
-import base "github.com/actiontech/dms/pkg/dms-common/api/base/v1"
+import (
+	base "github.com/actiontech/dms/pkg/dms-common/api/base/v1"
+	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
+)
 
 // swagger:parameters Notification
 type NotificationReq struct {
@@ -10,9 +13,9 @@ type NotificationReq struct {
 }
 
 type Notification struct {
-	NotificationSubject string   `json:"notification_subject"`
-	NotificationBody    string   `json:"notification_body"`
-	UserUids            []string `json:"user_uids"`
+	NotificationSubject i18nPkg.I18nStr `json:"notification_subject"`
+	NotificationBody    i18nPkg.I18nStr `json:"notification_body"`
+	UserUids            []string        `json:"user_uids"`
 }
 
 // swagger:model NotificationReply
