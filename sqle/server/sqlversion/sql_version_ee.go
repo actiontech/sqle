@@ -126,7 +126,6 @@ type Workflow struct {
 	Status      string // 该工单的状态
 	Subject     string
 	Description string
-	Status      string
 	workflow    *model.Workflow
 }
 
