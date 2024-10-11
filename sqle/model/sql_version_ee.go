@@ -14,14 +14,12 @@ import (
 )
 
 type SqlVersionListDetail struct {
-	Id                   uint           `json:"id"`
-	Version              sql.NullString `json:"version"`
-	Desc                 sql.NullString `json:"description"`
-	Status               sql.NullString `json:"status"`
-	LockTime             *time.Time     `json:"lock_time"`
-	CreatedAt            *time.Time     `json:"created_at"`
-	HasBindWorkflow      bool           `json:"has_bind_workflow"`
-	AllWorkflowCompleted bool           `json:"all_workflow_completed"`
+	Id        uint           `json:"id"`
+	Version   sql.NullString `json:"version"`
+	Desc      sql.NullString `json:"description"`
+	Status    sql.NullString `json:"status"`
+	LockTime  *time.Time     `json:"lock_time"`
+	CreatedAt *time.Time     `json:"created_at"`
 }
 
 var sqlVersionQueryTpl = `
@@ -31,12 +29,10 @@ SELECT
 	sv.description AS description,
 	sv.status AS status,
 	sv.lock_time AS lock_time,
-	sv.created_at AS created_at,
-	MAX(wvs.sql_version_id IS NOT NULL) AS has_bind_workflow,
-    COALESCE(MIN(wr.status IN ("finished", "canceled")), 1) AS all_workflow_completed
+	sv.created_at AS created_at
+ 
 {{- template "body" . -}} 
-GROUP BY  
-    sv.id
+
 {{- if .order_by -}}
 ORDER BY {{.order_by}}
 {{- if .is_asc }}
@@ -54,7 +50,8 @@ LIMIT :limit OFFSET :offset
 `
 
 var sqlVersionCountTpl = `
-SELECT COUNT(DISTINCT sv.id)
+SELECT COUNT(*)
+
 {{- template "body" . -}}
 `
 
@@ -63,12 +60,6 @@ var sqlVersionBodyTpl = `
 
 FROM 
     sql_versions sv
-LEFT JOIN 
-    workflow_version_stages wvs ON sv.id = wvs.sql_version_id AND wvs.deleted_at IS NULL
-LEFT JOIN 
-    workflows wf ON wf.workflow_id = wvs.workflow_id AND wf.deleted_at IS NULL 
-LEFT JOIN 
-    workflow_records wr ON wf.workflow_record_id = wr.id AND wr.deleted_at IS NULL
 WHERE 
     sv.deleted_at IS NULL
 
