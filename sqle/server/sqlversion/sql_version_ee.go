@@ -4,11 +4,12 @@
 package sqlversion
 
 import (
+	"context"
 	"fmt"
 	"sort"
-
 	"time"
 
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/model"
 )
 
@@ -230,7 +231,7 @@ func BatchAssociateWorkflowsWithStage(projectUid string, versionID, stageID uint
 	return db.BatchCreateWorkflowVersionRelation(modelStage, workflowIds)
 }
 
-func CheckWorkflowExecutable(projectUid, workflowId string) (executable bool, reason string, err error) {
+func CheckWorkflowExecutable(ctx context.Context, projectUid, workflowId string) (executable bool, reason string, err error) {
 
 	db := model.GetStorage()
 	modelStage, exist, err := db.GetStageOfTheWorkflow(workflowId)
@@ -260,7 +261,7 @@ func CheckWorkflowExecutable(projectUid, workflowId string) (executable bool, re
 		case model.WorkflowStatusFinish, model.WorkflowStatusCancel:
 			continue
 		default:
-			return false, fmt.Sprintf("can not execute or scheduled execute workflow that bind with stage of sql version, before this workflow. there were still workflow with a %v status, sql version id is %v", workflow.workflow.Record.Status, modelStage.SqlVersionID), nil
+			return false, fmt.Sprintf(locale.Bundle.LocalizeMsgByCtx(ctx, locale.SqlVersionInvalidStatusReason), workflow.workflow.Record.Status, modelStage.SqlVersionID), nil
 		}
 	}
 	return true, "the previous workflows are executed as expected", nil
