@@ -18252,6 +18252,17 @@ var doc = `{
                 }
             }
         },
+        "v2.SqlVersion": {
+            "type": "object",
+            "properties": {
+                "sql_version_id": {
+                    "type": "integer"
+                },
+                "sql_version_name": {
+                    "type": "string"
+                }
+            }
+        },
         "v2.TableMetas": {
             "type": "object",
             "properties": {
@@ -18403,8 +18414,9 @@ var doc = `{
                         "$ref": "#/definitions/v2.WorkflowRecordResV2"
                     }
                 },
-                "sql_version_name": {
-                    "type": "string"
+                "sql_version": {
+                    "type": "object",
+                    "$ref": "#/definitions/v2.SqlVersion"
                 },
                 "workflow_id": {
                     "type": "string"

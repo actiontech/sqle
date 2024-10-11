@@ -55,7 +55,7 @@ func BatchCompleteWorkflowsV3(c echo.Context) error {
 	s := model.GetStorage()
 	workflows := make([]*model.Workflow, len(req.WorkflowList))
 	for i, completeWorkflow := range req.WorkflowList {
-		executable, reason, err := sqlversion.CheckWorkflowExecutable(projectUid, completeWorkflow.WorkflowID)
+		executable, reason, err := sqlversion.CheckWorkflowExecutable(c.Request().Context(), projectUid, completeWorkflow.WorkflowID)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}

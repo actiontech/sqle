@@ -1358,7 +1358,8 @@ func parseRuleTemplate(c echo.Context, fileType ExportType) (*ParseProjectRuleTe
 				csvReader.FieldsPerRecord = 0
 			}
 
-			if len(rule) == 3 && index == 1 {
+			// 因为wps保存csv文件时会自动填充短的列的个数,所以使用 >= 符号作比较,避免解析csv文件错误
+			if len(rule) >= 3 && index == 1 {
 				resp.Name = rule[0]
 				resp.Desc = rule[1]
 				resp.DBType = rule[2]
