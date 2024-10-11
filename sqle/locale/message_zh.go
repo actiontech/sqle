@@ -17,8 +17,18 @@ import (
 
 // rule template
 var (
-	DefaultRuleTemplatesDesc = &i18n.Message{ID: "DefaultRuleTemplatesDesc", Other: "默认规则模板"}
-	DefaultTemplatesDesc     = &i18n.Message{ID: "DefaultTemplatesDesc", Other: "%s 默认模板"}
+	DefaultRuleTemplatesDesc   = &i18n.Message{ID: "DefaultRuleTemplatesDesc", Other: "默认规则模板"}
+	DefaultTemplatesDesc       = &i18n.Message{ID: "DefaultTemplatesDesc", Other: "%s 默认模板"}
+	RuleTemplateName           = &i18n.Message{ID: "RuleTemplateName", Other: "规则模板名"}
+	RuleTemplateDesc           = &i18n.Message{ID: "RuleTemplateDesc", Other: "规则模板描述"}
+	RuleTemplateInstType       = &i18n.Message{ID: "RuleTemplateInstType", Other: "数据源类型"}
+	RuleTemplateRuleName       = &i18n.Message{ID: "RuleTemplateRuleName", Other: "规则名"}
+	RuleTemplateRuleDesc       = &i18n.Message{ID: "RuleTemplateRuleDesc", Other: "规则描述"}
+	RuleTemplateRuleAnnotation = &i18n.Message{ID: "RuleTemplateRuleAnnotation", Other: "规则注解"}
+	RuleTemplateRuleLevel      = &i18n.Message{ID: "RuleTemplateRuleLevel", Other: "规则等级"}
+	RuleTemplateRuleCategory   = &i18n.Message{ID: "RuleTemplateRuleCategory", Other: "规则分类"}
+	RuleTemplateRuleParam      = &i18n.Message{ID: "RuleTemplateRuleParam", Other: "规则参数"}
+	RuleTemplateRuleErr        = &i18n.Message{ID: "RuleTemplateRuleErr", Other: "问题"}
 )
 
 // task
