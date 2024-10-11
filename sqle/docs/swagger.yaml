@@ -5332,6 +5332,13 @@ definitions:
         - manual_audited
         type: string
     type: object
+  v2.SqlVersion:
+    properties:
+      sql_version_id:
+        type: integer
+      sql_version_name:
+        type: string
+    type: object
   v2.TableMetas:
     properties:
       err_message:
@@ -5435,8 +5442,9 @@ definitions:
         items:
           $ref: '#/definitions/v2.WorkflowRecordResV2'
         type: array
-      sql_version_name:
-        type: string
+      sql_version:
+        $ref: '#/definitions/v2.SqlVersion'
+        type: object
       workflow_id:
         type: string
       workflow_name:
