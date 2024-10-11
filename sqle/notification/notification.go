@@ -248,6 +248,7 @@ func NotifyWorkflow(projectId, workflowId string, wt WorkflowNotifyType) {
 	config, err := s.GetReportPushConfigInProjectByType(projectId, model.TypeWorkflow)
 	if err != nil {
 		logger.Errorf("get report push config failed: %v", err)
+		return
 	}
 	if !config.Enabled {
 		return

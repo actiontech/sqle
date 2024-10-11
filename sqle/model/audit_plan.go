@@ -71,7 +71,7 @@ type BlackListAuditPlanSQL struct {
 	ProjectId     ProjectUID          `gorm:"index; not null"`
 	FilterContent string              `json:"filter_content" gorm:"type:varchar(3000);not null;"`
 	Desc          string              `json:"desc" gorm:"type:varchar(512)"`
-	FilterType    BlacklistFilterType `json:"filter_type" gorm:"type:enum('sql','fp_sql','ip','cidr','host','instance');default:'SQL';not null;"`
+	FilterType    BlacklistFilterType `json:"filter_type" gorm:"type:enum('sql','fp_sql','ip','cidr','host','instance');default:'sql';not null;"`
 	MatchedCount  uint                `json:"matched_count" gorm:"default:0"`
 	LastMatchTime *time.Time          `json:"last_match_time"`
 }
