@@ -1500,74 +1500,74 @@ func ExportRuleTemplateFile(c echo.Context) error {
 }
 
 func exportTemplateFile(c echo.Context, exportType ExportType, templateFile interface{}, templateName string) error {
-	var name, desc, dbType string
-	var columnNameList []string
-	var columnContentList [][]string
-
-	ctx := c.Request().Context()
-	defaultColumnNameList := []string{
-		locale.Bundle.LocalizeMsgByCtx(ctx, locale.RuleTemplateRuleName),
-		locale.Bundle.LocalizeMsgByCtx(ctx, locale.RuleTemplateRuleDesc),
-		locale.Bundle.LocalizeMsgByCtx(ctx, locale.RuleTemplateRuleAnnotation),
-		locale.Bundle.LocalizeMsgByCtx(ctx, locale.RuleTemplateRuleLevel),
-		locale.Bundle.LocalizeMsgByCtx(ctx, locale.RuleTemplateRuleCategory),
-		locale.Bundle.LocalizeMsgByCtx(ctx, locale.RuleTemplateInstType),
-		locale.Bundle.LocalizeMsgByCtx(ctx, locale.RuleTemplateRuleParam),
-	}
-
-	convertToContentList := func(ruleTemplateInfo RuleTemplateRuleInfo) ([]string, error) {
-		paramsBytes, err := json.Marshal(ruleTemplateInfo.Params)
-		if err != nil {
-			return nil, err
-		}
-
-		return []string{
-			ruleTemplateInfo.Name,
-			ruleTemplateInfo.Desc,
-			ruleTemplateInfo.Annotation,
-			ruleTemplateInfo.Level,
-			ruleTemplateInfo.Typ,
-			ruleTemplateInfo.DBType,
-			string(paramsBytes),
-		}, nil
-	}
-
-	if ruleTemplateExport, ok := templateFile.(*RuleTemplateExport); ok {
-		name = ruleTemplateExport.Name
-		desc = ruleTemplateExport.Desc
-		dbType = ruleTemplateExport.DBType
-		columnNameList = defaultColumnNameList
-		for _, res := range ruleTemplateExport.RuleList {
-			contentList, err := convertToContentList(res.RuleTemplateRuleInfo)
-			if err != nil {
-				return controller.JSONBaseErrorReq(c, err)
-			}
-
-			columnContentList = append(columnContentList, contentList)
-		}
-	} else if ruleTemplateExportErr, ok := templateFile.(*RuleTemplateExportErr); ok {
-		name = ruleTemplateExportErr.Name
-		desc = ruleTemplateExportErr.Desc
-		dbType = ruleTemplateExportErr.DBType
-		columnNameList = append(defaultColumnNameList, locale.Bundle.LocalizeMsgByCtx(ctx, locale.RuleTemplateRuleErr))
-
-		for _, res := range ruleTemplateExportErr.RuleList {
-			contentList, err := convertToContentList(res.RuleTemplateRuleInfo)
-			if err != nil {
-				return controller.JSONBaseErrorReq(c, err)
-			}
-
-			columnContentList = append(columnContentList,
-				contentList,
-				[]string{res.RuleErr},
-			)
-		}
-	} else {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("template file is invalid")))
-	}
-
 	switch exportType {
 	case CsvExportType:
+		var name, desc, dbType string
+		var columnNameList []string
+		var columnContentList [][]string
+
+		ctx := c.Request().Context()
+		defaultColumnNameList := []string{
+			locale.Bundle.LocalizeMsgByCtx(ctx, locale.RuleTemplateRuleName),
+			locale.Bundle.LocalizeMsgByCtx(ctx, locale.RuleTemplateRuleDesc),
+			locale.Bundle.LocalizeMsgByCtx(ctx, locale.RuleTemplateRuleAnnotation),
+			locale.Bundle.LocalizeMsgByCtx(ctx, locale.RuleTemplateRuleLevel),
+			locale.Bundle.LocalizeMsgByCtx(ctx, locale.RuleTemplateRuleCategory),
+			locale.Bundle.LocalizeMsgByCtx(ctx, locale.RuleTemplateInstType),
+			locale.Bundle.LocalizeMsgByCtx(ctx, locale.RuleTemplateRuleParam),
+		}
+
+		convertToContentList := func(ruleTemplateInfo RuleTemplateRuleInfo) ([]string, error) {
+			paramsBytes, err := json.Marshal(ruleTemplateInfo.Params)
+			if err != nil {
+				return nil, err
+			}
+
+			return []string{
+				ruleTemplateInfo.Name,
+				ruleTemplateInfo.Desc,
+				ruleTemplateInfo.Annotation,
+				ruleTemplateInfo.Level,
+				ruleTemplateInfo.Typ,
+				ruleTemplateInfo.DBType,
+				string(paramsBytes),
+			}, nil
+		}
+
+		if ruleTemplateExport, ok := templateFile.(*RuleTemplateExport); ok {
+			name = ruleTemplateExport.Name
+			desc = ruleTemplateExport.Desc
+			dbType = ruleTemplateExport.DBType
+			columnNameList = defaultColumnNameList
+			for _, res := range ruleTemplateExport.RuleList {
+				contentList, err := convertToContentList(res.RuleTemplateRuleInfo)
+				if err != nil {
+					return controller.JSONBaseErrorReq(c, err)
+				}
+
+				columnContentList = append(columnContentList, contentList)
+			}
+		} else if ruleTemplateExportErr, ok := templateFile.(*RuleTemplateExportErr); ok {
+			name = ruleTemplateExportErr.Name
+			desc = ruleTemplateExportErr.Desc
+			dbType = ruleTemplateExportErr.DBType
+			columnNameList = append(defaultColumnNameList, locale.Bundle.LocalizeMsgByCtx(ctx, locale.RuleTemplateRuleErr))
+
+			for _, res := range ruleTemplateExportErr.RuleList {
+				contentList, err := convertToContentList(res.RuleTemplateRuleInfo)
+				if err != nil {
+					return controller.JSONBaseErrorReq(c, err)
+				}
+
+				columnContentList = append(columnContentList,
+					contentList,
+					[]string{res.RuleErr},
+				)
+			}
+		} else {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("template file is invalid")))
+		}
+
 		buf := new(bytes.Buffer)
 		buf.WriteString("\xEF\xBB\xBF") // 写入UTF-8 BOM
 
