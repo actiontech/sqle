@@ -1145,7 +1145,7 @@ type WorkflowResV2 struct {
 	ExecMode                 string                      `json:"exec_mode" enums:"sql_file,sqls"`
 	CreateUser               string                      `json:"create_user_name"`
 	CreateTime               *time.Time                  `json:"create_time"`
-	SqlVersionName           string                      `json:"sql_version_name"`
+	SqlVersion               *SqlVersion                 `json:"sql_version,omitempty"`
 	Record                   *WorkflowRecordResV2        `json:"record"`
 	RecordHistory            []*WorkflowRecordResV2      `json:"record_history_list,omitempty"`
 	AssociatedStageWorkflows []*AssociatedStageWorkflows `json:"associated_stage_workflows,omitempty"`
@@ -1157,6 +1157,11 @@ type AssociatedStageWorkflows struct {
 	Status            string `json:"status" enums:"wait_for_audit,wait_for_execution,rejected,canceled,exec_failed,executing,finished"`
 	SqlVersionStageID uint   `json:"sql_version_stage_id"`
 	StageSequence     int    `json:"stage_sequence"`
+}
+
+type SqlVersion struct {
+	SqlVersionName string `json:"sql_version_name"`
+	SqlVersionId   uint   `json:"sql_version_id"`
 }
 
 // GetWorkflowV2
@@ -1230,13 +1235,16 @@ func convertWorkflowToRes(workflow *model.Workflow, sqlVersion *model.SqlVersion
 		WorkflowID:               workflow.WorkflowId,
 		Desc:                     workflow.Desc,
 		Mode:                     workflow.Mode,
-		SqlVersionName:           sqlVersion.Version,
 		ExecMode:                 workflow.ExecMode,
 		CreateUser:               dms.GetUserNameWithDelTag(workflow.CreateUserId),
 		CreateTime:               &workflow.CreatedAt,
 		AssociatedStageWorkflows: convertAssociatedWorkflowToRes(associatedWorkflows),
 	}
-
+	sqlVersionRes := &SqlVersion{
+		SqlVersionId:   sqlVersion.ID,
+		SqlVersionName: sqlVersion.Version,
+	}
+	workflowRes.SqlVersion = sqlVersionRes
 	// convert workflow record
 	workflowRecordRes := convertWorkflowRecordToRes(workflow, workflow.Record)
 
