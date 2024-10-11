@@ -109,6 +109,8 @@ var (
 // sql version
 var (
 	SqlVersionInvalidStatusReason = &i18n.Message{ID: "SqlVersionInvalidStatusReason", Other: "执行失败：在该工单绑定的SQL版本的阶段上，存在状态为%v的工单，其SQL版本id为%v"}
+	SqlVersionExecFailedReason    = &i18n.Message{ID: "SqlVersionExecFailedReason", Other: "工单：%s 上线失败并停止继续上线"}
+	SqlVersionReleaseFailedReason = &i18n.Message{ID: "SqlVersionReleaseFailedReason", Other: "工单：%s 发布失败并停止继续发布"}
 )
 
 // audit plan
