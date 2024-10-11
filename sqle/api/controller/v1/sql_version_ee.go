@@ -15,6 +15,7 @@ import (
 	"github.com/actiontech/sqle/sqle/api/controller"
 	dms "github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/notification"
 	"github.com/actiontech/sqle/sqle/pkg/im"
@@ -527,7 +528,7 @@ func batchReleaseWorkflows(c echo.Context) error {
 		}
 		err = createWorkFlow(c, s, nextSubject, workflow.Desc, projectUid, uint(sqlVersionId), nextSatgeId, stageWorkflow.WorkflowSequence, user, taskIds)
 		if err != nil {
-			return controller.JSONBaseErrorReq(c, errors.New(errors.SQLVersionNotAllTasksExecutedSuccess, fmt.Errorf("workflow %s release fail and stop release", workflow.Subject)))
+			return controller.JSONBaseErrorReq(c, errors.New(errors.SQLVersionNotAllTasksExecutedSuccess, fmt.Errorf(locale.Bundle.LocalizeMsgByCtx(c.Request().Context(), locale.SqlVersionReleaseFailedReason), workflow.Subject)))
 		}
 		err = s.UpdateWorkflowReleaseStatus(uint(sqlVersionId), releaseWorkflow.WorkFlowID, model.WorkflowReleaseStatusHaveBeenReleased)
 	}
@@ -786,7 +787,7 @@ func batchExecuteWorkflows(c echo.Context) error {
 
 		// 阻塞继续上线，直到获取到工单上线结果(状态)
 		if <-workflowStatusChan != model.WorkflowStatusFinish {
-			return controller.JSONBaseErrorReq(c, errors.New(errors.SQLVersionNotAllTasksExecutedSuccess, fmt.Errorf("workflow %s execution status is not finished and stop execution", workflow.Subject)))
+			return controller.JSONBaseErrorReq(c, errors.New(errors.SQLVersionNotAllTasksExecutedSuccess, fmt.Errorf(locale.Bundle.LocalizeMsgByCtx(c.Request().Context(), locale.SqlVersionExecFailedReason), workflow.Subject)))
 		}
 
 	}
