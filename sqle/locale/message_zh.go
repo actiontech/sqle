@@ -4,6 +4,17 @@ import (
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
+// 在该文件中添加 i18n.Message 后还需生成对应语言文件（active.*.toml），脚本写在Makefile中了，使用步骤如下：
+// 1. 安装需要的工具，已安装则跳过：
+//		make install_i18n_tool
+// 2. 将新增的i18n.Message提取到语言文件(active.*.toml)中：
+//		make extract_i18n
+// 3. 生成待翻译的临时文件(translate.en.toml)：
+//		make start_trans_i18n
+// 4. 人工介入将 translate.en.toml 文件中的文本翻译替换
+// 5. 根据翻译好的文本更新英文文件(active.en.toml):
+//		make end_trans_i18n
+
 // rule template
 var (
 	DefaultRuleTemplatesDesc = &i18n.Message{ID: "DefaultRuleTemplatesDesc", Other: "默认规则模板"}
@@ -83,6 +94,11 @@ var (
 	WFExportExecutionStartTime  = &i18n.Message{ID: "ExportExecutionStartTime", Other: "上线开始时间"}
 	WFExportExecutionEndTime    = &i18n.Message{ID: "ExportExecutionEndTime", Other: "上线结束时间"}
 	WFExportExecutionStatus     = &i18n.Message{ID: "ExportExecutionStatus", Other: "上线结果"}
+)
+
+// sql version
+var (
+	SqlVersionInvalidStatusReason = &i18n.Message{ID: "SqlVersionInvalidStatusReason", Other: "执行失败：在该工单绑定的SQL版本的阶段上，存在状态为%v的工单，其SQL版本id为%v"}
 )
 
 // audit plan
