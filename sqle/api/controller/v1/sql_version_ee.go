@@ -123,6 +123,7 @@ func getSqlVersionList(c echo.Context) error {
 
 	resData := make([]*SqlVersionResV1, len(sqlVersions))
 	for i, v := range sqlVersions {
+
 		resData[i] = &SqlVersionResV1{
 			VersionID: v.Id,
 			Version:   v.Version.String,
@@ -130,8 +131,6 @@ func getSqlVersionList(c echo.Context) error {
 			Status:    v.Status.String,
 			LockTime:  v.LockTime,
 			CreatedAt: v.CreatedAt,
-			Deletable: !v.HasBindWorkflow,     // 当SQL版本绑定任意工单，SQL版本不允许被删除
-			Lockable:  v.AllWorkflowCompleted, // 当SQL版本中的所有工单的状态都是完成或者关闭的则可以锁定
 		}
 	}
 	return c.JSON(http.StatusOK, &GetSqlVersionListResV1{
