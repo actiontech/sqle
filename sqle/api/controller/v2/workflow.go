@@ -440,7 +440,7 @@ func ExecuteOneTaskOnWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	executable, reason, err := sqlversion.CheckWorkflowExecutable(projectUid, workflowID)
+	executable, reason, err := sqlversion.CheckWorkflowExecutable(c.Request().Context(), projectUid, workflowID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1041,7 +1041,7 @@ func UpdateWorkflowScheduleV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, v1.ErrWorkflowExecuteTimeIncorrect)
 	}
 
-	executable, reason, err := sqlversion.CheckWorkflowExecutable(projectUid, workflowId)
+	executable, reason, err := sqlversion.CheckWorkflowExecutable(c.Request().Context(), projectUid, workflowId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1097,7 +1097,7 @@ func ExecuteTasksOnWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	executable, reason, err := sqlversion.CheckWorkflowExecutable(projectUid, workflowId)
+	executable, reason, err := sqlversion.CheckWorkflowExecutable(c.Request().Context(), projectUid, workflowId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1220,11 +1220,11 @@ func GetWorkflowV2(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, &GetWorkflowResV2{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertWorkflowToRes(workflow, sqlVersion, associatedWorkflows),
+		Data:    convertWorkflowToRes(c.Request().Context(), workflow, sqlVersion, associatedWorkflows),
 	})
 }
 
-func convertWorkflowToRes(workflow *model.Workflow, sqlVersion *model.SqlVersion, associatedWorkflows []*model.AssociatedStageWorkflow) *WorkflowResV2 {
+func convertWorkflowToRes(ctx context.Context, workflow *model.Workflow, sqlVersion *model.SqlVersion, associatedWorkflows []*model.AssociatedStageWorkflow) *WorkflowResV2 {
 	workflowRes := &WorkflowResV2{
 		Name:                     workflow.Subject,
 		WorkflowID:               workflow.WorkflowId,
@@ -1238,12 +1238,12 @@ func convertWorkflowToRes(workflow *model.Workflow, sqlVersion *model.SqlVersion
 	}
 
 	// convert workflow record
-	workflowRecordRes := convertWorkflowRecordToRes(workflow, workflow.Record)
+	workflowRecordRes := convertWorkflowRecordToRes(ctx, workflow, workflow.Record)
 
 	// convert workflow record history
 	recordHistory := make([]*WorkflowRecordResV2, 0, len(workflow.RecordHistory))
 	for _, record := range workflow.RecordHistory {
-		recordRes := convertWorkflowRecordToRes(workflow, record)
+		recordRes := convertWorkflowRecordToRes(ctx, workflow, record)
 		recordHistory = append(recordHistory, recordRes)
 	}
 	workflowRes.RecordHistory = recordHistory
@@ -1267,7 +1267,7 @@ func convertAssociatedWorkflowToRes(associatedWorkflows []*model.AssociatedStage
 	return associatedWorkflowsRes
 }
 
-func convertWorkflowRecordToRes(workflow *model.Workflow, record *model.WorkflowRecord) *WorkflowRecordResV2 {
+func convertWorkflowRecordToRes(ctx context.Context, workflow *model.Workflow, record *model.WorkflowRecord) *WorkflowRecordResV2 {
 	steps := make([]*WorkflowStepResV2, 0, len(record.Steps)+1)
 	// It is filled by create user and create time;
 	// and tell others that this is a creating or updating operation.
@@ -1309,7 +1309,7 @@ func convertWorkflowRecordToRes(workflow *model.Workflow, record *model.Workflow
 	var executable bool
 	var reason string = fmt.Sprintf("the status of workflow is %v", record.Status)
 	if record.Status == model.WorkflowStatusWaitForExecution {
-		executable, reason, err = sqlversion.CheckWorkflowExecutable(string(workflow.ProjectId), workflow.WorkflowId)
+		executable, reason, err = sqlversion.CheckWorkflowExecutable(ctx, string(workflow.ProjectId), workflow.WorkflowId)
 		if err != nil {
 			reason = err.Error()
 		}
