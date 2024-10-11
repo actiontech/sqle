@@ -123,12 +123,25 @@ func getSqlVersionList(c echo.Context) error {
 
 	resData := make([]*SqlVersionResV1, len(sqlVersions))
 	for i, v := range sqlVersions {
+		version, _, err := s.GetSqlVersionDetailByVersionId(v.Id)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+
+		deletable, _ := isSqlVersionDeletable(version)
+
+		lockable, _, err := isSqlVersionLockable(version)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
 
 		resData[i] = &SqlVersionResV1{
 			VersionID: v.Id,
 			Version:   v.Version.String,
 			Desc:      v.Desc.String,
 			Status:    v.Status.String,
+			Deletable: deletable,
+			Lockable:  lockable,
 			LockTime:  v.LockTime,
 			CreatedAt: v.CreatedAt,
 		}
@@ -138,6 +151,49 @@ func getSqlVersionList(c echo.Context) error {
 		Data:      resData,
 		TotalNums: count,
 	})
+}
+
+func isSqlVersionLocked(version *model.SqlVersion) bool {
+	return version.Status == model.SqlVersionStatusLock
+}
+
+func isSqlVersionLockable(version *model.SqlVersion) (lockable bool, reason string, err error) {
+	// 当sql版本已经锁定，不可重复锁定
+	if isSqlVersionLocked(version) {
+		return false, "the sql version is locked and no operation is allowed", nil
+	}
+	for _, stage := range version.SqlVersionStage {
+		// 当sql版本中存在某个阶段没有发布工单，sql版本不可锁定
+		if len(stage.WorkflowVersionStage) == 0 {
+			return false, "there are unfinished workflows release in this version", nil
+		}
+		// 当sql版本中存在状态不是完成或者取消的工单，sql版本不可锁定
+		for _, workflowStage := range stage.WorkflowVersionStage {
+			workflow, err := dms.GetWorkflowDetailByWorkflowId(
+				string(version.ProjectId), workflowStage.WorkflowID, model.GetStorage().GetWorkflowDetailWithoutInstancesByWorkflowID)
+			if err != nil {
+				return false, "", err
+			}
+			if workflow.Record.Status != model.WorkflowStatusFinish && workflow.Record.Status != model.WorkflowStatusCancel {
+				return false, "there are unfinished workflows in this version", nil
+			}
+		}
+	}
+	return true, "", nil
+}
+
+func isSqlVersionDeletable(version *model.SqlVersion) (deletable bool, reason string) {
+	// 当sql版本已锁定，sql版本不可以被删除
+	if isSqlVersionLocked(version) {
+		return false, "the sql version is locked and no operation is allowed"
+	}
+	// 当sql版本中绑定任意工单，sql版本不可被删除
+	for _, stage := range version.SqlVersionStage {
+		if len(stage.WorkflowVersionStage) > 0 {
+			return false, fmt.Sprintf("workflow already exists in %s stage and no deleted allowed, stage id=%v", stage.Name, stage.ID)
+		}
+	}
+	return true, ""
 }
 
 func getSqlVersionDetail(c echo.Context) error {
@@ -230,7 +286,7 @@ func checkSqlVersionIsLocked(sqlVersionId uint) (bool, error) {
 	if !exist {
 		return false, errors.NewDataNotExistErr("sql version not found")
 	}
-	if version.Status == model.SqlVersionStatusLock {
+	if isSqlVersionLocked(version) {
 		return true, nil
 	}
 	return false, nil
@@ -321,7 +377,8 @@ func updateSqlVersion(c echo.Context) error {
 }
 
 func lockSqlVersion(c echo.Context) error {
-	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
+	// check if project archived
+	_, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -329,13 +386,7 @@ func lockSqlVersion(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	isLocked, err := checkSqlVersionIsLocked(uint(sqlVersionId))
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if isLocked {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, fmt.Errorf("the sql version is locked and no operation is allowed")))
-	}
+
 	s := model.GetStorage()
 	version, exist, err := s.GetSqlVersionDetailByVersionId(uint(sqlVersionId))
 	if err != nil {
@@ -344,21 +395,15 @@ func lockSqlVersion(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.NewDataNotExistErr("sql version not found"))
 	}
-	// 校验版本中工单是否都已完成（忽略关闭的工单）
-	for _, stage := range version.SqlVersionStage {
-		if len(stage.WorkflowVersionStage) == 0 {
-			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, fmt.Errorf("there are unfinished workflows release in this version")))
-		}
-		for _, workflowStage := range stage.WorkflowVersionStage {
-			workflow, err := dms.GetWorkflowDetailByWorkflowId(projectUid, workflowStage.WorkflowID, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
-			if err != nil {
-				return controller.JSONBaseErrorReq(c, err)
-			}
-			if workflow.Record.Status != model.WorkflowStatusFinish && workflow.Record.Status != model.WorkflowStatusCancel {
-				return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, fmt.Errorf("there are unfinished workflows in this version")))
-			}
-		}
+
+	lockable, reason, err := isSqlVersionLockable(version)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
 	}
+	if !lockable {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, fmt.Errorf(reason)))
+	}
+
 	sqlVersionParam := make(map[string]interface{}, 2)
 	sqlVersionParam["lock_time"] = time.Now()
 	sqlVersionParam["status"] = model.SqlVersionStatusLock
@@ -374,13 +419,7 @@ func deleteSqlVersion(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	isLocked, err := checkSqlVersionIsLocked(uint(sqlVersionId))
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if isLocked {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, fmt.Errorf("the sql version is locked and no operation is allowed")))
-	}
+
 	s := model.GetStorage()
 	version, exist, err := s.GetSqlVersionDetailByVersionId(uint(sqlVersionId))
 	if err != nil {
@@ -389,12 +428,12 @@ func deleteSqlVersion(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.NewDataNotExistErr("sql version not found"))
 	}
-	// 不允许删除已经有工单的版本
-	for _, stage := range version.SqlVersionStage {
-		if len(stage.WorkflowVersionStage) > 0 {
-			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, fmt.Errorf("workflow already exists in %s stage and no deleted allowed", stage.Name)))
-		}
+
+	deletable, reason := isSqlVersionDeletable(version)
+	if !deletable {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, fmt.Errorf(reason)))
 	}
+
 	err = s.DeleteSqlVersionById(uint(sqlVersionId))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
