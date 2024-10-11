@@ -256,8 +256,8 @@ func (s *Storage) GetManagerSqlMetricTipsByAuditPlan(auditPlanId uint, metricNam
 	var metricValueTips []string
 	err := s.db.Table("sql_manage_records").
 		Select(fmt.Sprintf("DISTINCT sql_manage_records.info->>'$.%s' as metric_value", metricName)).
-		Joins("JOIN audit_plans_v2 ON sql_manage_records.source = audit_plans_v2.type AND sql_manage_records.source_id = audit_plan_v2.instance_audit_plan_id").
-		Where("audit_plans_v2.id = ?", auditPlanId).
+		Joins("JOIN audit_plans_v2 ON sql_manage_records.source = audit_plans_v2.type AND sql_manage_records.source_id = audit_plans_v2.instance_audit_plan_id").
+		Where("audit_plans_v2.id = ? AND NOT ISNULL(sql_manage_records.info->>'$.db_user')", auditPlanId).
 		Scan(&metricValueTips).Error
 	return metricValueTips, errors.New(errors.ConnectStorageError, err)
 }
