@@ -21,9 +21,9 @@ func TestRuleSQLE00108(t *testing.T) {
 		"DELETE FROM exist_db.exist_tb_1 WHERE id IN (SELECT id FROM exist_db.exist_tb_1 WHERE id IN (SELECT id FROM exist_db.exist_tb_1 WHERE id IN (SELECT id FROM exist_db.exist_tb_1 WHERE id IN (SELECT id FROM exist_db.exist_tb_1 WHERE id = 'value'))))",
 		nil, nil, newTestResult())
 
-	runAIRuleCase(rule, t, "case 3: INSERT语句where中包含6层嵌套子查询",
+	runAIRuleCase(rule, t, "case 3: INSERT...select语句中包含5层嵌套子查询",
 		"INSERT INTO exist_db.exist_tb_1 (id) SELECT id FROM exist_db.exist_tb_1 WHERE id IN (SELECT id FROM exist_db.exist_tb_1 WHERE id IN (SELECT id FROM exist_db.exist_tb_1 WHERE id IN (SELECT id FROM exist_db.exist_tb_1 WHERE id IN (SELECT id0 FROM exist_db.exist_tb_1 WHERE id IN (SELECT id0 FROM exist_db.exist_tb_1 WHERE id1 = 'value')))))",
-		nil, nil, newTestResult().addResult(ruleName))
+		nil, nil, newTestResult())
 
 	runAIRuleCase(rule, t, "case 4: INSERT语句where中包含4层嵌套子查询",
 		"INSERT INTO exist_db.exist_tb_1 (id) SELECT id FROM exist_db.exist_tb_1 WHERE id IN (SELECT id FROM exist_db.exist_tb_1 WHERE id IN (SELECT id FROM exist_db.exist_tb_1 WHERE id IN (SELECT id FROM exist_db.exist_tb_1 WHERE id = 'value')))",

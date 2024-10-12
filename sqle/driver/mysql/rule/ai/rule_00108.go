@@ -99,9 +99,9 @@ func RuleSQLE00108(input *rulepkg.RuleHandlerInput) error {
 	}
 
 	// 定义一个函数，用于检查给定节点的子查询嵌套层数是否超过阈值
-	checkAndReport := func(node ast.Node, extraNum int) {
+	checkAndReport := func(node ast.Node) {
 		depth := getMaxSubqueryDepth(node)
-		if depth+extraNum > threshold {
+		if depth > threshold {
 			// 记录规则违规
 			rulepkg.AddResult(input.Res, input.Rule, SQLE00108)
 		}
@@ -109,17 +109,14 @@ func RuleSQLE00108(input *rulepkg.RuleHandlerInput) error {
 
 	// 根据输入节点的类型，执行相应的检查
 	switch stmt := input.Node.(type) {
-	case *ast.SelectStmt, *ast.UpdateStmt, *ast.DeleteStmt:
+	case *ast.SelectStmt, *ast.UpdateStmt, *ast.DeleteStmt, *ast.InsertStmt:
 		// 对于SELECT、INSERT、UPDATE、DELETE语句，检查其子查询嵌套层数
-		checkAndReport(stmt, 0)
-	case *ast.InsertStmt:
-		if stmt.Select != nil { // insert ... select 本身算一次
-			checkAndReport(stmt, 1)
-		}
+		checkAndReport(stmt)
+
 	case *ast.UnionStmt:
 		// 对于UNION语句，分别检查每个SELECT子句的子查询嵌套层数
-		for _, selectStmt := range util.GetSelectStmt(stmt) {
-			checkAndReport(selectStmt, 0)
+		for _, selectStmt := range stmt.SelectList.Selects {
+			checkAndReport(selectStmt)
 		}
 
 	// Removed the case for *ast.WithStmt to fix the compilation error
