@@ -474,7 +474,8 @@ func (w *Workflow) GetNeedSendOATaskIds(entry *logrus.Entry) ([]uint, error) {
 	return taskIds, nil
 }
 
-func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User, tasks []*Task, stepTemplates []*WorkflowStepTemplate, projectId ProjectUID, sqlVersionId, versionStageId *uint, workflowStageSequence *int, getOpExecUser func([]*Task) (canAuditUsers [][]*User, canExecUsers [][]*User)) error {
+func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User, tasks []*Task, stepTemplates []*WorkflowStepTemplate, projectId ProjectUID,
+	sqlVersionId *uint, getOpExecUser func([]*Task) (canAuditUsers [][]*User, canExecUsers [][]*User)) error {
 	if len(tasks) <= 0 {
 		return errors.New(errors.DataConflict, fmt.Errorf("there is no task for creating workflow"))
 	}
@@ -594,42 +595,27 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 			}
 		}
 	}
-
+	// 在SQL版本的第一阶段建立与工单的关联
 	if sqlVersionId != nil {
 		stage := &SqlVersionStage{}
-		if versionStageId == nil {
-			// get the first stage
-			err = tx.Model(&SqlVersionStage{}).
-				Preload("WorkflowVersionStage").
-				Preload("SqlVersionStagesDependency").
-				Where("sql_version_id = ?", sqlVersionId).
-				Order("stage_sequence ASC").First(stage).Error
-		} else {
-			// get specific stage
-			err = tx.Model(&SqlVersionStage{}).
-				Preload("WorkflowVersionStage").
-				Preload("SqlVersionStagesDependency").
-				Where("sql_version_id = ? AND id = ?", sqlVersionId, versionStageId).
-				First(stage).Error
-		}
+		// 获取版本的第一个阶段
+		err := tx.Model(&SqlVersionStage{}).
+			Preload("WorkflowVersionStage").
+			Preload("SqlVersionStagesDependency").
+			Where("sql_version_id = ?", sqlVersionId).
+			Order("stage_sequence ASC").First(stage).Error
 		if err != nil {
 			tx.Rollback()
 			return errors.New(errors.ConnectStorageError, err)
 		}
-		// associate sql version with workflow
+		// 建立版本阶段与工单的关联
 		workflowVersionStageRelation := &WorkflowVersionStage{
 			WorkflowID:            workflowId,
 			SqlVersionID:          *sqlVersionId,
 			SqlVersionStageID:     stage.ID,
 			WorkflowReleaseStatus: stage.InitialStatusOfWorkflow(),
-		}
-
-		if workflowStageSequence != nil {
-			// 当在版本中发布工单时，工单发布到下一阶段所在的占位由当前阶段决定
-			workflowVersionStageRelation.WorkflowSequence = *workflowStageSequence
-		} else {
-			// 当在版本中新建工单时，该工单的顺序为该阶段的最后一条工单
-			workflowVersionStageRelation.WorkflowSequence = len(stage.WorkflowVersionStage) + 1
+			// 在版本中新建工单时，该工单的顺序为该阶段的最后一条工单
+			WorkflowSequence: len(stage.WorkflowVersionStage) + 1,
 		}
 		err = tx.Create(workflowVersionStageRelation).Error
 		if err != nil {
