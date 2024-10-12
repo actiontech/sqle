@@ -133,6 +133,9 @@ func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHoo
 
 	st := model.GetStorage()
 	projectId, err := st.GetSQLAuditRecordProjectIdByTaskId(task.ID)
+	if err != nil {
+		return err
+	}
 	whitelist, err := st.GetSqlWhitelistByProjectId(projectId)
 	if err != nil {
 		return err
