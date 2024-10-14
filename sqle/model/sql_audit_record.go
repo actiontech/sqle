@@ -66,13 +66,3 @@ func (s *Storage) GetSQLAuditRecordById(projectId string, SQLAuditRecordId strin
 	}
 	return record, true, nil
 }
-
-func (s *Storage) GetSQLAuditRecordProjectIdByTaskId(taskId uint) (projectId string, err error) {
-	var record = &SQLAuditRecord{}
-	if err = s.db.Where("task_id = ?", taskId).Select("project_id").First(&record).Error; err != nil && err == gorm.ErrRecordNotFound {
-		return "", nil
-	} else if err != nil {
-		return "", errors.New(errors.ConnectStorageError, err)
-	}
-	return record.ProjectId, nil
-}
