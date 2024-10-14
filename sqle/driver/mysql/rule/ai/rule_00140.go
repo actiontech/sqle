@@ -123,6 +123,15 @@ func RuleSQLE00140(input *rulepkg.RuleHandlerInput) error {
 			return nil
 		}
 
+	case *ast.RenameTableStmt:
+		// Check for all old and new names
+		for _, tablePair := range stmt.TableToTables {
+			if !hasSchema(tablePair.OldTable.Schema.O) || !hasSchema(tablePair.NewTable.Schema.O) {
+				rulepkg.AddResult(input.Res, input.Rule, SQLE00140)
+				return nil
+			}
+		}
+
 	// TODO: Stored Procedure Calls
 
 	// Other DDL Statements: CREATE INDEX, ALTER INDEX, etc.
