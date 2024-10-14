@@ -27,10 +27,11 @@ func JoinColumnNames(columns []*ast.ColumnDef) string {
 	return strings.Join(names, ",")
 }
 
-// a helper function to check if a string is in list
+// a helper function to checks if the given string is present in the list, ignoring case differences. It returns true if the string is found, and false otherwise.
 func IsStrInSlice(str string, list []string) bool {
+	str = strings.ToLower(str)
 	for _, v := range list {
-		if v == str {
+		if strings.ToLower(v) == str {
 			return true
 		}
 	}
