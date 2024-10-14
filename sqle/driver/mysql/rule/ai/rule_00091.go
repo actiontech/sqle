@@ -60,28 +60,6 @@ func init() {
 func RuleSQLE00091(input *rulepkg.RuleHandlerInput) error {
 	// 内部函数: 检查dml语句的JOIN
 	checkJoin := func(stmt ast.Node) bool {
-		getJoinNodeFromNode := func(node ast.Node) *ast.Join {
-			switch stmt := node.(type) {
-			case *ast.SelectStmt:
-				if stmt.From == nil {
-					return nil
-				}
-				return stmt.From.TableRefs
-			case *ast.UpdateStmt:
-				if stmt.TableRefs == nil {
-					return nil
-				}
-				return stmt.TableRefs.TableRefs
-			case *ast.DeleteStmt:
-				if stmt.TableRefs == nil {
-					return nil
-				}
-				return stmt.TableRefs.TableRefs
-			default:
-				return nil
-			}
-		}
-
 		getWhereExpr := func(node ast.Node) (where ast.ExprNode) {
 			switch stmt := node.(type) {
 			case *ast.SelectStmt:
@@ -169,7 +147,7 @@ func RuleSQLE00091(input *rulepkg.RuleHandlerInput) error {
 			}
 		}
 
-		joinNode := getJoinNodeFromNode(stmt)
+		joinNode := util.GetJoinNodeFromNode(stmt)
 		whereStmt := getWhereExpr(stmt)
 		if joinNode == nil {
 			return true

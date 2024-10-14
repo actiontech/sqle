@@ -368,6 +368,29 @@ func GetDefaultTable(stmt *ast.SelectStmt) *ast.TableName {
 	return nil
 }
 
+// a helper function to get first join node from dml
+func GetJoinNodeFromNode(node ast.Node) *ast.Join {
+	switch stmt := node.(type) {
+	case *ast.SelectStmt:
+		if stmt.From == nil {
+			return nil
+		}
+		return stmt.From.TableRefs
+	case *ast.UpdateStmt:
+		if stmt.TableRefs == nil {
+			return nil
+		}
+		return stmt.TableRefs.TableRefs
+	case *ast.DeleteStmt:
+		if stmt.TableRefs == nil {
+			return nil
+		}
+		return stmt.TableRefs.TableRefs
+	default:
+		return nil
+	}
+}
+
 // a helper function to get the table source from join node
 func GetTableSourcesFromJoin(join *ast.Join) []*ast.TableSource {
 	sources := []*ast.TableSource{}
