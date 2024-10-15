@@ -39,9 +39,6 @@ func init() {
 您应遵循以下逻辑：
 1. 对于所有 DQL 语句，检查是否存在 count(*) 或 count(1)。
 2. 如果存在 count(*) 或 count(1)，进一步检查该语句是否不带 WHERE 条件。需要考虑 WHERE 条件可能出现在不同位置，如 SELECT 查询中（包括子查询）、UPDATE 语句中、DELETE 语句中。
-    1. 使用辅助函数GetWhereExprFromDMLStmt提取WHERE条件。
-    2. 使用辅助函数IsExprConstTrue检查WHERE条件是否为恒真条件。
-3. 如果语句中存在 count(*) 或 count(1) 且不带 WHERE 条件，则报告违反规则。
 ==== Prompt end ====
 */
 
@@ -80,6 +77,7 @@ func RuleSQLE00220(input *rulepkg.RuleHandlerInput) error {
 			}
 		}
 	}
+	// TODO 解析器不支持WITH（CTE)语法
 	return nil
 }
 
