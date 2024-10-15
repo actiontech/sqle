@@ -27,7 +27,7 @@ func NewCleanJob(entry *logrus.Entry) ServerJob {
 }
 
 func (j *CleanJob) job(entry *logrus.Entry) {
-	j.CleanExpiredWorkflows(entry)
+	// j.CleanExpiredWorkflows(entry) /* 不再自动销毁工单（目前没有使用场景）*/
 	j.CleanExpiredTasks(entry)
 	j.CleanExpiredOperationLog(entry)
 }
