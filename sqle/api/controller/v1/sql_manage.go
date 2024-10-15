@@ -347,3 +347,49 @@ func convertSQLAnalysisResultToRes(ctx context.Context, res *AnalysisResult, raw
 
 	return data
 }
+
+type GetGlobalSqlManageListReq struct {
+	FilterProjectUid      *string `query:"filter_project_uid" json:"filter_project_uid,omitempty"`
+	FilterInstanceId      *string `query:"filter_instance_id" json:"filter_instance_id,omitempty"`
+	FilterProjectPriority *string `query:"filter_project_priority" json:"filter_project_priority,omitempty" enums:"high,medium,low"`
+	PageIndex             uint32  `query:"page_index" valid:"required" json:"page_index"`
+	PageSize              uint32  `query:"page_size" valid:"required" json:"page_size"`
+}
+
+type GetGlobalSqlManageListResp struct {
+	controller.BaseRes
+	Data     []*GlobalSqlManage `json:"data"`
+	TotalNum uint64             `json:"total_num"`
+}
+
+type GlobalSqlManage struct {
+	Id                   uint64         `json:"id"`
+	Sql                  string         `json:"sql"`
+	Source               *Source        `json:"source"`
+	AuditResult          []*AuditResult `json:"audit_result"`
+	ProjectName          string         `json:"project_name"`
+	ProjectUid           string         `json:"project_uid"`
+	InstanceName         string         `json:"instance_name"`
+	InstanceId           string         `json:"instance_id"`
+	Status               string         `json:"status" enums:"unhandled,solved,ignored,manual_audited"`
+	ProjectPriority      string         `json:"project_priority"`
+	FirstAppearTimeStamp string         `json:"first_appear_timestamp"`
+	ProblemDescriptions  []string       `json:"problem_descriptions"` // 根据来源信息拼接
+}
+
+// GetGlobalSqlManageList
+// @Summary 获取全局管控sql列表
+// @Description get global sql manage list
+// @Tags SqlManage
+// @Id GetGlobalSqlManageList
+// @Security ApiKeyAuth
+// @Param filter_project_uid query string false "project uid"
+// @Param filter_instance_id query string false "instance id"
+// @Param filter_project_priority query string false "project priority" Enums(high,medium,low)
+// @Param page_index query uint32 true "page index"
+// @Param page_size query uint32 true "size of per page"
+// @Success 200 {object} v1.GetGlobalSqlManageListResp
+// @Router /v1/sql_manages [get]
+func GetGlobalSqlManageList(c echo.Context) error {
+	return getGlobalSqlManageList(c)
+}
