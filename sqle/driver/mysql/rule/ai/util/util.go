@@ -439,7 +439,7 @@ func GetExecutionPlan(context *session.Context, sql string) (*executor.ExplainWi
 	return context.GetExecutionPlanWithWarnings(sql)
 }
 
-// a helper function to get table row count in MySQL
+// a helper function to get the number of rows in a table in MySQL
 func GetTableRowCount(context *session.Context, table *ast.TableName) (int, error) {
 	return context.GetTableRowCount(table)
 }
@@ -578,14 +578,9 @@ func ScanWhereStmt(fn func(expr ast.ExprNode) (skip bool), exprs ...ast.ExprNode
 	}
 }
 
-func utilGetTableName(tableName *ast.TableName) string {
-	// 假设这是一个简单的实现
-	return tableName.Name.String()
-}
-
-func utilGetTargetObjectType(cmd *ast.AlterTableSpec) string {
-	// 假设这是一个简单的实现
-	return "TEMPORARY_TABLE"
+// a helper function to return the maximum character length of a specified column in a specified table.
+func GetCurrentMaxColumnWidth(ctx *session.Context, table *ast.TableName, columnName string) (int, error) {
+	return ctx.GetExecutor().ShowCurrentMaxColumnWidth(table.Name.O, columnName)
 }
 
 // end helper function file. this line which used for ai scanner should be at the end of the file, please do not delete it
