@@ -522,8 +522,8 @@ const (
 	ExplainRecordExtraUsingIndexForSkipScan = "Using index for skip scan"
 	ExplainRecordExtraUsingWhere            = "Using where"
 
-	ExplainRecordAccessTypeAll   = "ALL"
-	ExplainRecordAccessTypeIndex = "index"
+	ExplainRecordAccessTypeAll        = "ALL"
+	ExplainRecordAccessTypeIndex      = "index"
 	ExplainRecordAccessTypeIndexMerge = "index_merge"
 
 	ExplainRecordPrimaryKey = "PRIMARY"
@@ -540,6 +540,23 @@ func (c *Executor) Explain(query string) (columns []string, rows [][]sql.NullStr
 	}
 
 	return columns, rows, nil
+}
+
+func (c *Executor) ExplainTree(query string) (out string, err error) {
+	_, rows, err := c.Db.QueryWithContext(context.TODO(), fmt.Sprintf("EXPLAIN FORMAT=TREE %s", query))
+	if err != nil {
+		return "", err
+	}
+
+	if len(rows) == 0 {
+		return "", fmt.Errorf("no explain tree record for sql %v", query)
+	}
+	if len(rows[0]) == 0 {
+		return "", fmt.Errorf("no explain tree record for sql %v", query)
+	}
+	out = rows[0][0].String
+
+	return out, nil
 }
 
 type WarningsRecord struct {

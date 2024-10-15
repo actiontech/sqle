@@ -488,6 +488,11 @@ func GetExecutionPlan(context *session.Context, sql string) (*executor.ExplainWi
 	return context.GetExecutionPlanWithWarnings(sql)
 }
 
+// a helper function to get the execution tree plan of a SQL statement in MySQL
+func GetExecutionTreePlan(context *session.Context, sql string) (string, error) {
+	return context.GetExecutor().ExplainTree(sql)
+}
+
 // a helper function to get the number of rows in a table in MySQL
 func GetTableRowCount(context *session.Context, table *ast.TableName) (int, error) {
 	return context.GetTableRowCount(table)
