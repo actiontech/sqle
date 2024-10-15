@@ -7982,6 +7982,68 @@ var doc = `{
                 }
             }
         },
+        "/v1/sql_manages": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get global sql manage list",
+                "tags": [
+                    "SqlManage"
+                ],
+                "summary": "获取全局管控sql列表",
+                "operationId": "GetGlobalSqlManageList",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project uid",
+                        "name": "filter_project_uid",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance id",
+                        "name": "filter_instance_id",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "high",
+                            "medium",
+                            "low"
+                        ],
+                        "type": "string",
+                        "description": "project priority",
+                        "name": "filter_project_priority",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetGlobalSqlManageListResp"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/statistic/instances/sql_average_execution_time": {
             "get": {
                 "security": [
@@ -12717,6 +12779,28 @@ var doc = `{
                 }
             }
         },
+        "v1.GetGlobalSqlManageListResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.GlobalSqlManage"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_num": {
+                    "type": "integer"
+                }
+            }
+        },
         "v1.GetInstanceAuditPlanDetailResV1": {
             "type": "object",
             "properties": {
@@ -14096,6 +14180,61 @@ var doc = `{
                 "message": {
                     "type": "string",
                     "example": "ok"
+                }
+            }
+        },
+        "v1.GlobalSqlManage": {
+            "type": "object",
+            "properties": {
+                "audit_result": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.AuditResult"
+                    }
+                },
+                "first_appear_timestamp": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "instance_id": {
+                    "type": "string"
+                },
+                "instance_name": {
+                    "type": "string"
+                },
+                "problem_descriptions": {
+                    "description": "根据来源信息拼接",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "project_name": {
+                    "type": "string"
+                },
+                "project_priority": {
+                    "type": "string"
+                },
+                "project_uid": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.Source"
+                },
+                "sql": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "unhandled",
+                        "solved",
+                        "ignored",
+                        "manual_audited"
+                    ]
                 }
             }
         },
