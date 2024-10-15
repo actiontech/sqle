@@ -476,6 +476,25 @@ func (c *Executor) ShowCreateView(tableName string) (string, error) {
 	}
 }
 
+func (c *Executor) ShowCurrentMaxColumnWidth(tableName, columnName string) (int, error) {
+	query := fmt.Sprintf(`SELECT MAX(CHAR_LENGTH(%s)) "max_length" FROM %s`, columnName, tableName)
+	result, err := c.Db.Query(query)
+	if err != nil {
+		return 0, err
+	}
+	if len(result) != 1 {
+		err := fmt.Errorf("show max column width error, result is %v", result)
+		c.Db.Logger().Error(err)
+		return 0, errors.New(errors.ConnectRemoteDatabaseError, err)
+	}
+	if value, ok := result[0]["max_length"]; ok {
+		return strconv.Atoi(value.String)
+	}
+	err = fmt.Errorf("show max column width error, column \"MAX(CHAR_LENGTH(`%s`))\" not found", columnName)
+	c.Db.Logger().Error(err)
+	return 0, errors.New(errors.ConnectRemoteDatabaseError, err)
+}
+
 type ExplainWithWarningsResult struct {
 	Plan     []*ExplainRecord
 	Warnings []*WarningsRecord
