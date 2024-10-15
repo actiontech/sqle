@@ -1,7 +1,6 @@
 package v1
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -79,7 +78,6 @@ func TestDingTalkConfigV1(c echo.Context) error {
 }
 
 type UpdateSystemVariablesReqV1 struct {
-	WorkflowExpiredHours        *int    `json:"workflow_expired_hours" form:"workflow_expired_hours" example:"720"`
 	Url                         *string `json:"url" form:"url" example:"http://10.186.61.32:8080" validate:"url"`
 	OperationRecordExpiredHours *int    `json:"operation_record_expired_hours" form:"operation_record_expired_hours" example:"2160"`
 }
@@ -102,12 +100,6 @@ func UpdateSystemVariables(c echo.Context) error {
 	s := model.GetStorage()
 
 	var systemVariables []model.SystemVariable
-	if req.WorkflowExpiredHours != nil {
-		systemVariables = append(systemVariables, model.SystemVariable{
-			Key:   model.SystemVariableWorkflowExpiredHours,
-			Value: fmt.Sprintf("%v", *req.WorkflowExpiredHours),
-		})
-	}
 
 	if req.OperationRecordExpiredHours != nil {
 		systemVariables = append(systemVariables, model.SystemVariable{
@@ -136,7 +128,6 @@ type GetSystemVariablesResV1 struct {
 }
 
 type SystemVariablesResV1 struct {
-	WorkflowExpiredHours        int    `json:"workflow_expired_hours"`
 	Url                         string `json:"url"`
 	OperationRecordExpiredHours int    `json:"operation_record_expired_hours"`
 }
@@ -154,12 +145,6 @@ func GetSystemVariables(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
-	expiredHours, err := strconv.Atoi(systemVariables[model.SystemVariableWorkflowExpiredHours].Value)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
 	operationRecordExpiredHours, err := strconv.Atoi(systemVariables[model.SystemVariableOperationRecordExpiredHours].Value)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -168,7 +153,6 @@ func GetSystemVariables(c echo.Context) error {
 	return c.JSON(http.StatusOK, &GetSystemVariablesResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data: SystemVariablesResV1{
-			WorkflowExpiredHours:        expiredHours,
 			Url:                         systemVariables[model.SystemVariableSqleUrl].Value,
 			OperationRecordExpiredHours: operationRecordExpiredHours,
 		},

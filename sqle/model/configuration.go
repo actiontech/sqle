@@ -21,6 +21,7 @@ const (
 
 const (
 	DefaultOperationRecordExpiredHours = 90 * 24
+	DefaultCbOperationLogsExpiredHours = 90 * 24
 )
 
 // SystemVariable store misc K-V.
@@ -51,12 +52,12 @@ func (s *Storage) GetAllSystemVariables() (map[string]SystemVariable, error) {
 		sysVariables[sv.Key] = sv
 	}
 
-	if _, ok := sysVariables[SystemVariableWorkflowExpiredHours]; !ok {
-		sysVariables[SystemVariableWorkflowExpiredHours] = SystemVariable{
-			Key:   SystemVariableWorkflowExpiredHours,
-			Value: strconv.Itoa(30 * 24),
-		}
-	}
+	// if _, ok := sysVariables[SystemVariableWorkflowExpiredHours]; !ok {
+	// 	sysVariables[SystemVariableWorkflowExpiredHours] = SystemVariable{
+	// 		Key:   SystemVariableWorkflowExpiredHours,
+	// 		Value: strconv.Itoa(30 * 24),
+	// 	}
+	// }
 
 	if _, ok := sysVariables[SystemVariableOperationRecordExpiredHours]; !ok {
 		sysVariables[SystemVariableOperationRecordExpiredHours] = SystemVariable{
