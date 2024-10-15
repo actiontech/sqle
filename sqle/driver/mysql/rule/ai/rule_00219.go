@@ -1,6 +1,7 @@
 package ai
 
 import (
+	"fmt"
 	"strings"
 
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
@@ -57,7 +58,11 @@ func init() {
 // ==== Rule code start ====
 func RuleSQLE00219(input *rulepkg.RuleHandlerInput) error {
 	// 获取规则变量值，例如 "create_time"
-	targetColumnName := input.Rule.Params.GetParam(rulepkg.DefaultSingleParamKeyName).String()
+	param := input.Rule.Params.GetParam(rulepkg.DefaultSingleParamKeyName)
+	if param == nil {
+		return fmt.Errorf("param %s not found", rulepkg.DefaultSingleParamKeyName)
+	}
+	targetColumnName := param.String()
 
 	switch stmt := input.Node.(type) {
 	case *ast.CreateTableStmt:
