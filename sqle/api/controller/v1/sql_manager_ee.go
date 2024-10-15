@@ -395,3 +395,7 @@ func ConvertSqlSourceDescByType(ctx context.Context, source string) string {
 	}
 	return ""
 }
+
+func getGlobalSqlManageList(c echo.Context) error {
+	return nil
+}
