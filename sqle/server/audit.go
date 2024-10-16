@@ -33,7 +33,7 @@ func HookAudit(l *logrus.Entry, task *model.Task, hook AuditHook, projectId *mod
 	if err != nil {
 		return err
 	}
-	if nil == task {
+	if task == nil {
 		return fmt.Errorf("HookAudit error because task is nil, projectId: %v", projectIdString)
 	}
 	plugin, err := newDriverManagerWithAudit(l, task.Instance, task.Schema, task.DBType, rules)
