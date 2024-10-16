@@ -520,20 +520,24 @@ type GetWorkflowsResV1 struct {
 }
 
 type WorkflowDetailResV1 struct {
-	ProjectName             string     `json:"project_name"`
-	ProjectUid              string     `json:"project_uid,omitempty"`
-	ProjectPriority         string     `json:"project_priority"`
-	Name                    string     `json:"workflow_name"`
-	WorkflowId              string     `json:"workflow_id" `
-	Desc                    string     `json:"desc"`
-	SqlVersionName          []string   `json:"sql_version_name,omitempty"`
-	CreateUser              string     `json:"create_user_name"`
-	CreateTime              *time.Time `json:"create_time"`
-	CurrentStepType         string     `json:"current_step_type,omitempty" enums:"sql_review,sql_execute"`
-	CurrentStepAssigneeUser []string   `json:"current_step_assignee_user_name_list,omitempty"`
-	Status                  string     `json:"status" enums:"wait_for_audit,wait_for_execution,rejected,canceled,exec_failed,executing,finished"`
-	InstanceId              int64      `json:"instance_id,omitempty"`
-	InstanceName            string     `json:"instance_name,omitempty"`
+	ProjectName             string         `json:"project_name"`
+	ProjectUid              string         `json:"project_uid,omitempty"`
+	ProjectPriority         string         `json:"project_priority"`
+	Name                    string         `json:"workflow_name"`
+	WorkflowId              string         `json:"workflow_id" `
+	Desc                    string         `json:"desc"`
+	SqlVersionName          []string       `json:"sql_version_name,omitempty"`
+	CreateUser              string         `json:"create_user_name"`
+	CreateTime              *time.Time     `json:"create_time"`
+	CurrentStepType         string         `json:"current_step_type,omitempty" enums:"sql_review,sql_execute"`
+	CurrentStepAssigneeUser []string       `json:"current_step_assignee_user_name_list,omitempty"`
+	Status                  string         `json:"status" enums:"wait_for_audit,wait_for_execution,rejected,canceled,exec_failed,executing,finished"`
+	InstanceInfo            []InstanceInfo `json:"instance_info,omitempty"`
+}
+
+type InstanceInfo struct {
+	InstanceId   int64  `json:"instance_id,omitempty"`
+	InstanceName string `json:"instance_name,omitempty"`
 }
 
 // GetGlobalWorkflowsV1
