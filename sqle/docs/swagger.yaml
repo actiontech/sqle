@@ -11442,7 +11442,7 @@ paths:
         - medium
         - low
         in: query
-        name: project_priority
+        name: filter_project_priority
         type: string
       - description: filter current step assignee user id
         in: query
