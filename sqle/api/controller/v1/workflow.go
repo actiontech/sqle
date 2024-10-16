@@ -505,6 +505,9 @@ type GetWorkflowsReqV1 struct {
 	FilterTaskExecuteStartTimeFrom  string `json:"filter_task_execute_start_time_from" query:"filter_task_execute_start_time_from"`
 	FilterTaskExecuteStartTimeTo    string `json:"filter_task_execute_start_time_to" query:"filter_task_execute_start_time_to"`
 	FilterSqlVersionID              *uint  `json:"filter_sql_version_id" query:"filter_sql_version_id"`
+	FilterProjectUid                string `json:"filter_project_uid" query:"filter_project_uid"`
+	FilterInstanceId                string `json:"filter_instance_id" query:"filter_instance_id"`
+	FilterProjectPriority           string `json:"project_priority" query:"project_priority"  valid:"omitempty,oneof=high medium low"`
 	PageIndex                       uint32 `json:"page_index" query:"page_index" valid:"required"`
 	PageSize                        uint32 `json:"page_size" query:"page_size" valid:"required"`
 	FuzzyKeyword                    string `json:"fuzzy_keyword" query:"fuzzy_keyword"`
@@ -517,16 +520,24 @@ type GetWorkflowsResV1 struct {
 }
 
 type WorkflowDetailResV1 struct {
-	ProjectName             string     `json:"project_name"`
-	Name                    string     `json:"workflow_name"`
-	WorkflowId              string     `json:"workflow_id" `
-	Desc                    string     `json:"desc"`
-	SqlVersionName          []string   `json:"sql_version_name,omitempty"`
-	CreateUser              string     `json:"create_user_name"`
-	CreateTime              *time.Time `json:"create_time"`
-	CurrentStepType         string     `json:"current_step_type,omitempty" enums:"sql_review,sql_execute"`
-	CurrentStepAssigneeUser []string   `json:"current_step_assignee_user_name_list,omitempty"`
-	Status                  string     `json:"status" enums:"wait_for_audit,wait_for_execution,rejected,canceled,exec_failed,executing,finished"`
+	ProjectName             string         `json:"project_name"`
+	ProjectUid              string         `json:"project_uid,omitempty"`
+	ProjectPriority         string         `json:"project_priority"`
+	Name                    string         `json:"workflow_name"`
+	WorkflowId              string         `json:"workflow_id" `
+	Desc                    string         `json:"desc"`
+	SqlVersionName          []string       `json:"sql_version_name,omitempty"`
+	CreateUser              string         `json:"create_user_name"`
+	CreateTime              *time.Time     `json:"create_time"`
+	CurrentStepType         string         `json:"current_step_type,omitempty" enums:"sql_review,sql_execute"`
+	CurrentStepAssigneeUser []string       `json:"current_step_assignee_user_name_list,omitempty"`
+	Status                  string         `json:"status" enums:"wait_for_audit,wait_for_execution,rejected,canceled,exec_failed,executing,finished"`
+	InstanceInfo            []InstanceInfo `json:"instance_info,omitempty"`
+}
+
+type InstanceInfo struct {
+	InstanceId   int64  `json:"instance_id,omitempty"`
+	InstanceName string `json:"instance_name,omitempty"`
 }
 
 // GetGlobalWorkflowsV1
@@ -542,6 +553,9 @@ type WorkflowDetailResV1 struct {
 // @Param filter_task_execute_start_time_to query string false "filter_task_execute_start_time_to"
 // @Param filter_create_user_id query string false "filter create user id"
 // @Param filter_status query string false "filter workflow status" Enums(wait_for_audit,wait_for_execution,rejected,executing,canceled,exec_failed,finished)
+// @Param filter_project_uid query string false "filter by project uid"
+// @Param filter_instance_id query string false "filter by instance id in project"
+// @Param project_priority query string false "filter by project priority" Enums(high,medium,low)
 // @Param filter_current_step_assignee_user_id query string false "filter current step assignee user id"
 // @Param filter_task_instance_id query string false "filter instance id"
 // @Param page_index query uint32 true "page index"
