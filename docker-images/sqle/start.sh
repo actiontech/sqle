@@ -7,13 +7,13 @@ if grep -q "# sqle-init" ${CONF}; then
     echo "sqle config has been init"
 else
     # DMS 配置
-    sed -i "s|host: 172.41.134.5|host:|" ${CONF}
-    sed -i "s|port: 8978|port:|" ${CONF}
-    sed -i "s|admin_user: administrator|admin_user:|" ${CONF}
-    sed -i "s|admin_password: 123456|admin_password:|" ${CONF}
+    sed -i "s|^    host: 127.0.0.1|    host: ${CB_HOST}|" ${CONF}
+    sed -i "s|port: 8978|port: ${CB_PORT}|" ${CONF}
+    sed -i "s|admin_user: administrator|admin_user: ${CB_USER}|" ${CONF}
+    sed -i "s|admin_password: 123456|admin_password: ${CB_PASSWORD}|" ${CONF}
     sed -i "s|username: root|username: ${MYSQL_USER}|g" ${CONF}
-    sed -i "s|password: 123|password: ${MYSQL_PASSWORD}|g" ${CONF}
-    sed -i "s|host: 127.0.0.1|host: ${MYSQL_HOST}|g" ${CONF}
+    sed -i "s|^      password: 123|      password: ${MYSQL_PASSWORD}|g" ${CONF}
+    sed -i "s|^      host: 127.0.0.1|      host: ${MYSQL_HOST}|g" ${CONF}
     sed -i "s|port: 3306|port: ${MYSQL_PORT}|g" ${CONF}
     sed -i "s|database: dms|database: ${MYSQL_DMS_SCHEMA}|g" ${CONF}
     sed -i "s|path: logs|path: ${SQLE_BASE}\/logs|g" ${CONF}
