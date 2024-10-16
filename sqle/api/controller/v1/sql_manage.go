@@ -372,7 +372,7 @@ type GlobalSqlManage struct {
 	InstanceName         string         `json:"instance_name"`
 	InstanceId           string         `json:"instance_id"`
 	Status               string         `json:"status" enums:"unhandled,solved,ignored,manual_audited"`
-	ProjectPriority      string         `json:"project_priority"`
+	ProjectPriority      string         `json:"project_priority" enums:"high,medium,low"`
 	FirstAppearTimeStamp string         `json:"first_appear_timestamp"`
 	ProblemDescriptions  []string       `json:"problem_descriptions"` // 根据来源信息拼接
 }
