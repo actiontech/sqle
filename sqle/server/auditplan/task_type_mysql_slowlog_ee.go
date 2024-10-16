@@ -212,9 +212,12 @@ func (at *SlowLogTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, persist
 		return nil, fmt.Errorf("instance is not configured")
 	}
 
-	instance, _, err := dms.GetInstancesById(context.Background(), ap.InstanceID)
+	instance, exist, err := dms.GetInstancesById(context.Background(), ap.InstanceID)
 	if err != nil {
 		return nil, fmt.Errorf("get instance fail, error: %v", err)
+	}
+	if !exist {
+		return nil, fmt.Errorf("instance: %v is not exist", ap.InstanceID)
 	}
 
 	db, err := executor.NewExecutor(logger, &driverV2.DSN{

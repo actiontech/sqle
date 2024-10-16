@@ -181,11 +181,13 @@ func (at *DB2TopSQLTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, persi
 		return nil, fmt.Errorf("instance is not configured")
 	}
 
-	inst, _, err := dms.GetInstancesById(context.Background(), ap.InstanceID)
+	inst, exist, err := dms.GetInstancesById(context.Background(), ap.InstanceID)
 	if err != nil {
 		return nil, fmt.Errorf("get instance fail, error: %v", err)
 	}
-
+	if !exist {
+		return nil, fmt.Errorf("instance: %v is not exist", ap.InstanceID)
+	}
 	if !driver.GetPluginManager().IsOptionalModuleEnabled(inst.DbType, driverV2.OptionalModuleQuery) {
 		return nil, fmt.Errorf("can not do this task, %v", driver.NewErrPluginAPINotImplement(driverV2.OptionalModuleQuery))
 	}

@@ -198,9 +198,12 @@ func (at *DmTopSQLTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, persis
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
 	defer cancel()
-	inst, _, err := dms.GetInstancesById(ctx, ap.InstanceID)
+	inst, exist, err := dms.GetInstancesById(ctx, ap.InstanceID)
 	if err != nil {
 		return nil, fmt.Errorf("get instance fail, error: %v", err)
+	}
+	if !exist {
+		return nil, fmt.Errorf("instance: %v is not exist", ap.InstanceID)
 	}
 
 	sqls, err := at.queryTopSQLsForDm(inst, "", ap.Params.GetParam("order_by_column").String(),
