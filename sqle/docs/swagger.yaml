@@ -1551,6 +1551,21 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetGlobalSqlManageListResp:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.GlobalSqlManage'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_num:
+        type: integer
+    type: object
   v1.GetInstanceAuditPlanDetailResV1:
     properties:
       code:
@@ -2506,6 +2521,44 @@ definitions:
         type: array
       message:
         example: ok
+        type: string
+    type: object
+  v1.GlobalSqlManage:
+    properties:
+      audit_result:
+        items:
+          $ref: '#/definitions/v1.AuditResult'
+        type: array
+      first_appear_timestamp:
+        type: string
+      id:
+        type: integer
+      instance_id:
+        type: string
+      instance_name:
+        type: string
+      problem_descriptions:
+        description: 根据来源信息拼接
+        items:
+          type: string
+        type: array
+      project_name:
+        type: string
+      project_priority:
+        type: string
+      project_uid:
+        type: string
+      source:
+        $ref: '#/definitions/v1.Source'
+        type: object
+      sql:
+        type: string
+      status:
+        enum:
+        - unhandled
+        - solved
+        - ignored
+        - manual_audited
         type: string
     type: object
   v1.HighPriorityConditionReq:
@@ -3628,8 +3681,6 @@ definitions:
         type: integer
       url:
         type: string
-      workflow_expired_hours:
-        type: integer
     type: object
   v1.Table:
     properties:
@@ -4092,9 +4143,6 @@ definitions:
       url:
         example: http://10.186.61.32:8080
         type: string
-      workflow_expired_hours:
-        example: 720
-        type: integer
     type: object
   v1.UpdateWechatConfigurationReqV1:
     properties:
@@ -10683,6 +10731,47 @@ paths:
       summary: 直接审核SQL
       tags:
       - sql_audit
+  /v1/sql_manages:
+    get:
+      description: get global sql manage list
+      operationId: GetGlobalSqlManageList
+      parameters:
+      - description: project uid
+        in: query
+        name: filter_project_uid
+        type: string
+      - description: instance id
+        in: query
+        name: filter_instance_id
+        type: string
+      - description: project priority
+        enum:
+        - high
+        - medium
+        - low
+        in: query
+        name: filter_project_priority
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        required: true
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetGlobalSqlManageListResp'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取全局管控sql列表
+      tags:
+      - SqlManage
   /v1/statistic/instances/sql_average_execution_time:
     get:
       description: get average execution time of sql

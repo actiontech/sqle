@@ -35,3 +35,7 @@ func getSqlManageSqlAnalysisV1(c echo.Context) error {
 func getAuditPlanUnsolvedSQLCount(auditPlanId uint) (int64, error) {
 	return 0, nil
 }
+
+func getGlobalSqlManageList(c echo.Context) error {
+	return ErrCommunityEditionNotSupportSqlManage
+}
