@@ -25,9 +25,16 @@ func Audit(l *logrus.Entry, task *model.Task, projectId *model.ProjectUID, ruleT
 
 func HookAudit(l *logrus.Entry, task *model.Task, hook AuditHook, projectId *model.ProjectUID, ruleTemplateName string) (err error) {
 	st := model.GetStorage()
-	rules, customRules, err := st.GetAllRulesByTmpNameAndProjectIdInstanceDBType(ruleTemplateName, string(*projectId), task.Instance, task.DBType)
+	projectIdString := ""
+	if projectId != nil {
+		projectIdString = string(*projectId)
+	}
+	rules, customRules, err := st.GetAllRulesByTmpNameAndProjectIdInstanceDBType(ruleTemplateName, projectIdString, task.Instance, task.DBType)
 	if err != nil {
 		return err
+	}
+	if nil == task {
+		return fmt.Errorf("HookAudit error because task is nil, projectId: %v", projectIdString)
 	}
 	plugin, err := newDriverManagerWithAudit(l, task.Instance, task.Schema, task.DBType, rules)
 	if err != nil {
@@ -37,10 +44,9 @@ func HookAudit(l *logrus.Entry, task *model.Task, hook AuditHook, projectId *mod
 
 	// possible task is self build object, not model.Task{}
 	if task.Instance == nil {
-		task.Instance = &model.Instance{ProjectId: string(*projectId)}
+		task.Instance = &model.Instance{ProjectId: projectIdString}
 	}
-
-	return hookAudit(string(*projectId), l, task, plugin, hook, customRules)
+	return hookAudit(projectIdString, l, task, plugin, hook, customRules)
 }
 
 const AuditSchema = "AuditSchema"
