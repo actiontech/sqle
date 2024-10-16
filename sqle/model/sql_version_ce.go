@@ -19,6 +19,6 @@ func (s *Storage) GetAssociatedStageWorkflows(workflowId string) ([]*AssociatedS
 	return nil, nil
 }
 
-func (s *Storage) GetSQLVersionByWorkflowId(workflowId string) (*SqlVersion, error) {
-	return &SqlVersion{}, nil
+func (s *Storage) GetSQLVersionByWorkflowId(workflowId string) (*SqlVersion, bool, error) {
+	return &SqlVersion{}, false, nil
 }
