@@ -19,6 +19,7 @@ func TestRuleSQLE00220(t *testing.T) {
 		expectedResult string
 		mockContextSql string
 	}{
+		{"case 0: SELECT count(id) without WHERE clause", "SELECT count(id) FROM users;", "通过", "CREATE TABLE users (id INT, age INT);"},
 		{"case 1: SELECT count(*) without WHERE clause", "SELECT count(*) FROM users;", "违规", "CREATE TABLE users (id INT, age INT);"},
 		{"case 2: SELECT count(1) without WHERE clause", "SELECT count(1) FROM users;", "违规", "CREATE TABLE users (id INT, age INT);"},
 		{"case 3: SELECT count(*) with WHERE clause", "SELECT count(*) FROM users WHERE age > 30;", "通过", "CREATE TABLE users (id INT, age INT);"},
