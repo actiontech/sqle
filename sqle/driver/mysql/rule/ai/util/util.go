@@ -281,7 +281,7 @@ func GetCreateTableStmt(context *session.Context, table *ast.TableName) (*ast.Cr
 		return nil, err
 	}
 	if !exist {
-		return nil, fmt.Errorf("failed to get create table stmt, table is not exist")
+		return nil, fmt.Errorf("failed to get create table stmt, table (%s) is not exist", table.Name.String())
 	}
 
 	return stmt, nil
