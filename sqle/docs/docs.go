@@ -9011,6 +9011,29 @@ var doc = `{
                     },
                     {
                         "type": "string",
+                        "description": "filter by project uid",
+                        "name": "filter_project_uid",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter by instance id in project",
+                        "name": "filter_instance_id",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "high",
+                            "medium",
+                            "low"
+                        ],
+                        "type": "string",
+                        "description": "filter by project priority",
+                        "name": "project_priority",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "description": "filter current step assignee user id",
                         "name": "filter_current_step_assignee_user_id",
                         "in": "query"
@@ -14215,7 +14238,12 @@ var doc = `{
                     "type": "string"
                 },
                 "project_priority": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "high",
+                        "medium",
+                        "low"
+                    ]
                 },
                 "project_uid": {
                     "type": "string"
@@ -14464,6 +14492,17 @@ var doc = `{
                     "type": "string"
                 },
                 "instance_schema": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.InstanceInfo": {
+            "type": "object",
+            "properties": {
+                "instance_id": {
+                    "type": "integer"
+                },
+                "instance_name": {
                     "type": "string"
                 }
             }
@@ -16805,7 +16844,19 @@ var doc = `{
                 "desc": {
                     "type": "string"
                 },
+                "instance_info": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.InstanceInfo"
+                    }
+                },
                 "project_name": {
+                    "type": "string"
+                },
+                "project_priority": {
+                    "type": "string"
+                },
+                "project_uid": {
                     "type": "string"
                 },
                 "sql_version_name": {

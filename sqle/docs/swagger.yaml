@@ -2545,6 +2545,10 @@ definitions:
       project_name:
         type: string
       project_priority:
+        enum:
+        - high
+        - medium
+        - low
         type: string
       project_uid:
         type: string
@@ -2717,6 +2721,13 @@ definitions:
       instance_name:
         type: string
       instance_schema:
+        type: string
+    type: object
+  v1.InstanceInfo:
+    properties:
+      instance_id:
+        type: integer
+      instance_name:
         type: string
     type: object
   v1.InstanceSchemaResV1:
@@ -4285,7 +4296,15 @@ definitions:
         type: string
       desc:
         type: string
+      instance_info:
+        items:
+          $ref: '#/definitions/v1.InstanceInfo'
+        type: array
       project_name:
+        type: string
+      project_priority:
+        type: string
+      project_uid:
         type: string
       sql_version_name:
         items:
@@ -11394,6 +11413,22 @@ paths:
         - finished
         in: query
         name: filter_status
+        type: string
+      - description: filter by project uid
+        in: query
+        name: filter_project_uid
+        type: string
+      - description: filter by instance id in project
+        in: query
+        name: filter_instance_id
+        type: string
+      - description: filter by project priority
+        enum:
+        - high
+        - medium
+        - low
+        in: query
+        name: project_priority
         type: string
       - description: filter current step assignee user id
         in: query
