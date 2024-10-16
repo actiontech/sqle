@@ -22,6 +22,15 @@ services:
       - MYSQL_PASSWORD=mysqlpass
       - MYSQL_SQLE_SCHEMA=sqle
       - MYSQL_DMS_SCHEMA=dms
+      - CB_HOST=20.20.20.3
+      - CB_PORT=8978
+      - CB_USER=cbadmin
+      - CB_PASSWORD=123456
+#       sqle 3.2409.0及之前版本镜像中的start.sh不支持根据环境变量更新sqle配置文件中的cb连接信息
+#       旧版本sqle镜像使用cb需手动更新sqle配置，或者将新版本的start.sh挂载进容器
+#       https://github.com/actiontech/sqle/blob/main/docker-images/sqle/start.sh
+#    volumes:
+#      - ./start.sh:/opt/start.sh
     depends_on:
       - mysql-for-sqle
     command: bash -c "sleep 10 && /opt/start.sh"
@@ -46,6 +55,32 @@ services:
     volumes: 
       - ./init:/docker-entrypoint-initdb.d            
     command: ['mysqld', '--character-set-server=utf8mb4', '--collation-server=utf8mb4_unicode_ci']
+
+  cb-for-sqle:
+    image: dbeaver/cloudbeaver:23.2.1
+    container_name: cb-for-sqle
+    privileged: true
+    stdin_open: true
+    tty: true
+    security_opt:
+      - seccomp:unconfined
+    networks:
+      sqle_net:
+        ipv4_address: 20.20.20.3
+    ports:
+      - "8978:8978"
+    environment:
+      - CB_SERVER_NAME=cb-for-sqle
+      - CB_SERVER_URL=http://localhost:8978
+      - CB_ADMIN_NAME=cbadmin
+      - CB_ADMIN_PASSWORD=123456
+    entrypoint: ""
+    command:
+      - bash
+      - -c
+      - |
+        sed -i 's|rootURI: "/",|rootURI: "/sql_query",|' /opt/cloudbeaver/conf/cloudbeaver.conf \
+        && /opt/cloudbeaver/run-server.sh
 
 networks:
   sqle_net:
