@@ -9047,7 +9047,7 @@ var doc = `{
                         ],
                         "type": "string",
                         "description": "filter by project priority",
-                        "name": "project_priority",
+                        "name": "filter_project_priority",
                         "in": "query"
                     },
                     {
