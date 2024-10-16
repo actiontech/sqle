@@ -9010,6 +9010,24 @@ var doc = `{
                         "in": "query"
                     },
                     {
+                        "enum": [
+                            "wait_for_audit",
+                            "wait_for_execution",
+                            "rejected",
+                            "executing",
+                            "canceled",
+                            "exec_failed",
+                            "finished"
+                        ],
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "filter by workflow status,, support using many status",
+                        "name": "filter_status_list",
+                        "in": "query"
+                    },
+                    {
                         "type": "string",
                         "description": "filter by project uid",
                         "name": "filter_project_uid",
@@ -9029,7 +9047,7 @@ var doc = `{
                         ],
                         "type": "string",
                         "description": "filter by project priority",
-                        "name": "project_priority",
+                        "name": "filter_project_priority",
                         "in": "query"
                     },
                     {
