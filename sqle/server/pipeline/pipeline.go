@@ -41,9 +41,12 @@ func (node PipelineNode) IntegrationInfo(ctx context.Context, projectName string
 		return "", err
 	}
 	if node.InstanceID != 0 {
-		instance, _, err := dms.GetInstancesById(context.TODO(), fmt.Sprint(node.InstanceID))
+		instance, exist, err := dms.GetInstancesById(context.TODO(), fmt.Sprint(node.InstanceID))
 		if err != nil {
 			return "", err
+		}
+		if !exist {
+			return "", fmt.Errorf("instance: %v is not exist", node.InstanceID)
 		}
 		node.InstanceName = instance.Name
 	}
