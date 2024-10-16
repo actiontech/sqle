@@ -154,7 +154,7 @@ func RuleSQLE00039(input *rulepkg.RuleHandlerInput) error {
 
 			// get default table name
 			if t := util.GetDefaultTable(selectStmt); t != nil {
-				defaultTable = t.Name.L
+				defaultTable = t.Name.O
 			}
 
 			// get table alias info

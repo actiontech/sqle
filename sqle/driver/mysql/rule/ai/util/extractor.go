@@ -5,26 +5,44 @@ import (
 	"github.com/pingcap/parser/opcode"
 )
 
+type FuncInfo struct {
+	FuncName string
+	Columns  []*ast.ColumnName
+	Expr     string
+}
+
 type funcExtractor struct {
-	columnList []*ast.ColumnName
-	expr       []string
-	funcNames  []string
+	funcs []*FuncInfo
 }
 
 func (fe *funcExtractor) Enter(in ast.Node) (node ast.Node, skipChildren bool) {
 	switch n := in.(type) {
 	case *ast.FuncCallExpr:
+		fi := &FuncInfo{}
 		for _, columnNameExpr := range n.Args {
 			col, ok := columnNameExpr.(*ast.ColumnNameExpr)
 			if !ok {
 				continue
 			}
-			fe.columnList = append(fe.columnList, col.Name)
+			fi.Columns = append(fi.Columns, col.Name)
 		}
-
-		fe.expr = append(fe.expr, ExprFormat(n))
-		fe.funcNames = append(fe.funcNames, n.FnName.L)
+		fi.FuncName = n.FnName.L
+		fi.Expr = ExprFormat(n)
+		fe.funcs = append(fe.funcs, fi)
 		return in, true
+	case *ast.AggregateFuncExpr:
+		fi := &FuncInfo{}
+		for _, columnNameExpr := range n.Args {
+			col, ok := columnNameExpr.(*ast.ColumnNameExpr)
+			if !ok {
+				continue
+			}
+			fi.Columns = append(fi.Columns, col.Name)
+		}
+		// TODO: print aggregate function
+		// fi.expr = ExprFormat(n)
+		fi.FuncName = n.F
+		fe.funcs = append(fe.funcs, fi)
 	}
 	return in, false
 }
