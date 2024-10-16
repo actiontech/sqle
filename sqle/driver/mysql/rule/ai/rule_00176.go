@@ -2,8 +2,7 @@ package ai
 
 import (
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
-	util2 "github.com/actiontech/sqle/sqle/driver/mysql/rule/ai/util"
-	"github.com/actiontech/sqle/sqle/driver/mysql/util"
+	util "github.com/actiontech/sqle/sqle/driver/mysql/rule/ai/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
@@ -48,11 +47,9 @@ func init() {
 // 规则函数实现开始
 func RuleSQLE00176(input *rulepkg.RuleHandlerInput) error {
 	hasIndexHint := func(node ast.Node) bool {
-		tableNameExtractor := util.TableNameExtractor{TableNames: map[string]*ast.TableName{}}
-		node.Accept(&tableNameExtractor)
-		for _, tableName := range tableNameExtractor.TableNames {
+		tableNames := util.GetTableNames(node)
+		for _, tableName := range tableNames {
 			if len(tableName.IndexHints) > 0 {
-				rulepkg.AddResult(input.Res, input.Rule, SQLE00176)
 				return true
 			}
 		}
@@ -60,7 +57,7 @@ func RuleSQLE00176(input *rulepkg.RuleHandlerInput) error {
 	}
 
 	hasStraighJoin := func(node ast.Node) bool {
-		joinNode := util2.GetJoinNodeFromNode(input.Node)
+		joinNode := util.GetJoinNodeFromNode(input.Node)
 		if joinNode == nil {
 			return false
 		}
@@ -82,7 +79,7 @@ func RuleSQLE00176(input *rulepkg.RuleHandlerInput) error {
 	if _, ok := input.Node.(ast.DMLNode); !ok {
 		return nil
 	}
-	for _, selectStmt := range util2.GetSelectStmt(input.Node) {
+	for _, selectStmt := range util.GetSelectStmt(input.Node) {
 		if selectStmt.SelectStmtOpts.StraightJoin || len(selectStmt.TableHints) > 0 || hasIndexHint(selectStmt) || hasStraighJoin(selectStmt) {
 			rulepkg.AddResult(input.Res, input.Rule, SQLE00176)
 			return nil

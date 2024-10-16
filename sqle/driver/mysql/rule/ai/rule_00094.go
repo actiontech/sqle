@@ -5,8 +5,7 @@ import (
 	"strings"
 
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
-	util2 "github.com/actiontech/sqle/sqle/driver/mysql/rule/ai/util"
-	"github.com/actiontech/sqle/sqle/driver/mysql/util"
+	util "github.com/actiontech/sqle/sqle/driver/mysql/rule/ai/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
@@ -134,11 +133,11 @@ func RuleSQLE00094(input *rulepkg.RuleHandlerInput) error {
 	if _, ok := input.Node.(ast.DMLNode); !ok {
 		return nil
 	}
-	selectVisitor := &util.SelectVisitor{}
-	input.Node.Accept(selectVisitor)
+
+	selectList := util.GetSelectStmt(input.Node)
 
 	// 提取dml中所有的select语句（包括子查询
-	for _, selectNode := range selectVisitor.SelectList {
+	for _, selectNode := range selectList {
 		if checkViolationFuncBySelect(selectNode, violationsFuncs) {
 			rulepkg.AddResult(input.Res, input.Rule, SQLE00094, param)
 			return nil
@@ -149,7 +148,7 @@ func RuleSQLE00094(input *rulepkg.RuleHandlerInput) error {
 	case *ast.SelectStmt:
 		// 上面已处理
 	case *ast.DeleteStmt:
-		if whereList := util2.GetWhereExprFromDMLStmt(stmt); whereList != nil {
+		if whereList := util.GetWhereExprFromDMLStmt(stmt); whereList != nil {
 			for _, where := range whereList {
 				if checkViolationFunc(where, violationsFuncs) {
 					rulepkg.AddResult(input.Res, input.Rule, SQLE00094, param)
@@ -166,7 +165,7 @@ func RuleSQLE00094(input *rulepkg.RuleHandlerInput) error {
 			}
 		}
 		// where ...
-		if whereList := util2.GetWhereExprFromDMLStmt(stmt); whereList != nil {
+		if whereList := util.GetWhereExprFromDMLStmt(stmt); whereList != nil {
 			for _, where := range whereList {
 				if checkViolationFunc(where, violationsFuncs) {
 					rulepkg.AddResult(input.Res, input.Rule, SQLE00094, param)

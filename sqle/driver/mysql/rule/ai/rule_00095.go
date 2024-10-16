@@ -4,8 +4,7 @@ import (
 	"strings"
 
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
-	util2 "github.com/actiontech/sqle/sqle/driver/mysql/rule/ai/util"
-	util "github.com/actiontech/sqle/sqle/driver/mysql/util"
+	util "github.com/actiontech/sqle/sqle/driver/mysql/rule/ai/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
@@ -48,7 +47,7 @@ func RuleSQLE00095(input *rulepkg.RuleHandlerInput) error {
 	switch input.Node.(type) {
 	case *ast.SelectStmt, *ast.UpdateStmt, *ast.DeleteStmt, *ast.InsertStmt:
 		// 获取 DML 语句中的 WHERE 条件
-		whereList := util2.GetWhereExprFromDMLStmt(input.Node)
+		whereList := util.GetWhereExprFromDMLStmt(input.Node)
 
 		// 遍历 WHERE 条件中的每个表达式
 		util.ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {

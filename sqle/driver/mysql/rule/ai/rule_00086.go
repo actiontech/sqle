@@ -60,7 +60,7 @@ func RuleSQLE00086(input *rulepkg.RuleHandlerInput) error {
 			case *parserdriver.ValueExpr:
 				datum := pattern.Datum.GetString()
 				if strings.HasPrefix(datum, "%") ||
-					strings.HasSuffix(datum, "_") {
+					strings.HasPrefix(datum, "_") {
 					negative = true
 					return true
 				}

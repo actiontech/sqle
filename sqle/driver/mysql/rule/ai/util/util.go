@@ -38,7 +38,7 @@ func IsStrInSlice(str string, list []string) bool {
 	return false
 }
 
-// a helper function to check if a string is in list
+// a helper function to check if there are duplicate elements in the list
 func HasDuplicateInStrings(list []string) bool {
 	seen := make(map[string]struct{})
 	for _, element := range list {
