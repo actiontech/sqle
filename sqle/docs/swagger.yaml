@@ -11414,6 +11414,20 @@ paths:
         in: query
         name: filter_status
         type: string
+      - description: filter by workflow status,, support using many status
+        enum:
+        - wait_for_audit
+        - wait_for_execution
+        - rejected
+        - executing
+        - canceled
+        - exec_failed
+        - finished
+        in: query
+        items:
+          type: string
+        name: filter_status_list
+        type: array
       - description: filter by project uid
         in: query
         name: filter_project_uid
