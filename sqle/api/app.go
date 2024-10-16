@@ -428,7 +428,10 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 
 		v1Router.POST("/rule_templates/parse", v1.ParseProjectRuleTemplateFile)
 		v1Router.GET("/import_rule_template", v1.GetImportRuleTemplateFile)
-
+		
+		// 全局 sql manage
+		v1Router.GET("/sql_manages", v1.GetGlobalSqlManageList)
+		
 		// 全局 workflow
 		v1Router.GET("/workflows", v1.GetGlobalWorkflowsV1)
 		v1Router.GET("/rule_knowledge/db_types/:db_type/rules/:rule_name/", v1.GetRuleKnowledge)
