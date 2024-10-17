@@ -41,9 +41,9 @@ func init() {
    1. 如果任意字段被定义为 PRIMARY KEY 且同时使用 AUTO_INCREMENT，则报告违反规则。
 
 2. 对于 "ALTER TABLE..." 语句，检查以下条件：
-   1. 如果操作涉及将某字段设置为 PRIMARY KEY 且同时使用 AUTO_INCREMENT，则报告违反规则。
-   2. 如果操作涉及将某字段设置为 PRIMARY KEY，获取操作表信息提取当前列中如果有使用AUTO_INCREMENT，则报告违反规则。
-   3. 如果操作涉及将某字段设置为 AUTO_INCREMENT，获取操作表信息提取当前列如果是PRIMARY KEY，则报告违反规则。
+   1. 如果ADD/MODIFY/CHANGE操作涉及将某字段设置为 PRIMARY KEY 且同时使用 AUTO_INCREMENT，则报告违反规则。
+   2. 如果MODIFY/CHANGE操作涉及将某字段设置为 PRIMARY KEY，但没有显式使用AUTO_INCREMENT，则获取操作表信息提取当前列中如果有使用AUTO_INCREMENT，则报告违反规则。
+   3. 如果MODIFY/CHANGE操作涉及将某字段设置为 AUTO_INCREMENT，但没有显式设置PRIMARY KEY，则获取操作表信息提取当前列如果是PRIMARY KEY，则报告违反规则。
 ==== Prompt end ====
 */
 
