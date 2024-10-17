@@ -45,7 +45,7 @@ func HookAudit(l *logrus.Entry, task *model.Task, hook AuditHook, projectId *mod
 	if task.Instance == nil {
 		task.Instance = &model.Instance{ProjectId: string(*projectId)}
 	}
-	return hookAudit(string(*projectId), l, task, plugin, hook, customRules)
+	return hookAudit(l, task, plugin, hook, string(*projectId), customRules)
 }
 
 const AuditSchema = "AuditSchema"
@@ -112,7 +112,7 @@ func convertSQLsToTask(sql string, p driver.Plugin) (*model.Task, error) {
 }
 
 func audit(projectId string, l *logrus.Entry, task *model.Task, p driver.Plugin, customRules []*model.CustomRule) (err error) {
-	return hookAudit(projectId, l, task, p, &EmptyAuditHook{}, customRules)
+	return hookAudit(l, task, p, &EmptyAuditHook{}, projectId, customRules)
 }
 
 type AuditHook interface {
@@ -126,7 +126,7 @@ func (e *EmptyAuditHook) BeforeAudit(sql *model.ExecuteSQL) {}
 
 func (e *EmptyAuditHook) AfterAudit(sql *model.ExecuteSQL) {}
 
-func hookAudit(projectId string, l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHook, customRules []*model.CustomRule) (err error) {
+func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHook, projectId string, customRules []*model.CustomRule) (err error) {
 	defer func() {
 		if errRecover := recover(); errRecover != nil {
 			debug.PrintStack()
@@ -137,9 +137,6 @@ func hookAudit(projectId string, l *logrus.Entry, task *model.Task, p driver.Plu
 	}()
 
 	st := model.GetStorage()
-	if err != nil {
-		return err
-	}
 	whitelist, err := st.GetSqlWhitelistByProjectId(projectId)
 	if err != nil {
 		return err
