@@ -77,6 +77,7 @@ func RuleSQLE00076(input *rulepkg.RuleHandlerInput) error {
 			return err
 		}
 		for _, record := range explain.Plan {
+			fmt.Println("====", record.Rows)
 			if record.Rows > int64(threshold) {
 				rulepkg.AddResult(input.Res, input.Rule, SQLE00076)
 				return nil
