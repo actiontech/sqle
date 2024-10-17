@@ -23,7 +23,7 @@ type DirectAuditReqV1 struct {
 	// 调用方不应该关心SQL是否被完美的拆分成独立的条目, 拆分SQL由SQLE实现
 	SQLContent   string  `json:"sql_content" form:"sql_content" example:"select * from t1; select * from t2;" valid:"required"`
 	SQLType      string  `json:"sql_type" form:"sql_type" example:"sql" enums:"sql,mybatis," valid:"omitempty,oneof=sql mybatis"`
-	ProjectName  *string `json:"project_name" form:"project_name" example:"project1" valid:"required"`
+	ProjectName  *string `json:"project_name" form:"project_name" example:"project1"`
 	InstanceName *string `json:"instance_name" form:"instance_name" example:"instance1"`
 	SchemaName   *string `json:"schema_name" form:"schema_name" example:"schema1"`
 }
