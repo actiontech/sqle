@@ -70,6 +70,9 @@ type ListDBServiceReq struct {
 	// project id
 	// in:path
 	ProjectUid string `param:"project_uid" json:"project_uid"`
+	// filter db services by db service id list using in condition
+	// in:query
+	FilterByDBServiceIds []string `query:"filter_by_db_service_ids" json:"filter_by_db_service_ids"`
 	// the db service fuzzy keyword,include host/port
 	// in:query
 	FuzzyKeyword string `query:"fuzzy_keyword" json:"fuzzy_keyword"`

@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/Masterminds/semver/v3 v3.1.1
-	github.com/actiontech/dms v0.0.0-20241010085644-dd7513f0051e
+	github.com/actiontech/dms v0.0.0-20241017075851-7c8f25660c39
 	github.com/actiontech/java-sql-extractor v0.0.0-20231103015812-cdd5fc040f62
 	github.com/actiontech/mybatis-mapper-2-sql v0.5.1-0.20240806065717-29cde7000ef5
 	github.com/agiledragon/gomonkey v2.0.2+incompatible
@@ -66,7 +66,6 @@ require (
 
 require (
 	github.com/aliyun/credentials-go v1.1.2
-	github.com/gocarina/gocsv v0.0.0-20240520201108-78e41c74b4b1
 	github.com/hashicorp/go-version v1.7.0
 	github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.1.69
 	github.com/nicksnyder/go-i18n/v2 v2.4.0
