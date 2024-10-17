@@ -2726,7 +2726,7 @@ definitions:
   v1.InstanceInfo:
     properties:
       instance_id:
-        type: integer
+        type: string
       instance_name:
         type: string
     type: object

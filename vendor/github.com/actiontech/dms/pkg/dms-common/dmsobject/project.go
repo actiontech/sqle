@@ -3,6 +3,7 @@ package dmsobject
 import (
 	"context"
 	"fmt"
+	"net/url"
 
 	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	pkgHttp "github.com/actiontech/dms/pkg/dms-common/pkg/http"
@@ -15,10 +16,32 @@ func ListProjects(ctx context.Context, dmsAddr string, req dmsV1.ListProjectReq)
 
 	reply := &dmsV1.ListProjectReply{}
 
-	url := fmt.Sprintf("%v%v?page_size=%v&page_index=%v&filter_by_name=%v&filter_by_uid=%v", dmsAddr, dmsV1.GetProjectsRouter(), req.PageSize, req.PageIndex, req.FilterByName, req.FilterByUID)
+	baseURL, err := url.Parse(fmt.Sprintf("%v%v", dmsAddr, dmsV1.GetProjectsRouter()))
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to parse base URL: %v", err)
+	}
+	// 构建查询参数
+	query := url.Values{}
+	query.Set("page_size", fmt.Sprintf("%v", req.PageSize))
+	query.Set("page_index", fmt.Sprintf("%v", req.PageIndex))
 
-	if err := pkgHttp.Get(ctx, url, header, nil, reply); err != nil {
-		return nil, 0, fmt.Errorf("failed to list project from %v: %v", url, err)
+	if req.FilterByName != "" {
+		query.Set("filter_by_name", req.FilterByName)
+	}
+	if req.FilterByUID != "" {
+		query.Set("filter_by_uid", req.FilterByUID)
+	}
+	if req.FilterByProjectPriority != "" {
+		query.Set("filter_by_project_priority", string(req.FilterByProjectPriority))
+	}
+	for _, projectUid := range req.FilterByProjectUids {
+		query.Add("filter_by_project_uids", projectUid)
+	}
+
+	baseURL.RawQuery = query.Encode()
+
+	if err := pkgHttp.Get(ctx, baseURL.String(), header, nil, reply); err != nil {
+		return nil, 0, fmt.Errorf("failed to list project from %v: %v", baseURL.String(), err)
 	}
 	if reply.Code != 0 {
 		return nil, 0, fmt.Errorf("http reply code(%v) error: %v", reply.Code, reply.Message)
