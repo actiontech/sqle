@@ -7,6 +7,7 @@ import (
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	util "github.com/actiontech/sqle/sqle/driver/mysql/rule/ai/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
 )
@@ -97,6 +98,7 @@ func RuleSQLE00063(input *rulepkg.RuleHandlerInput) error {
 			} else if spec.Tp == ast.AlterTableRenameIndex { // 检查RENAME操作节点 （在线）
 				createTable, err = util.GetCreateTableStmt(input.Ctx, stmt.Table)
 				if err != nil {
+					log.NewEntry().Errorf("GetCreateTableStmt failed, sqle: %v, error: %v", stmt.Text(), err)
 					return nil
 				}
 				constraintUniqs := util.GetTableConstraints(createTable.Constraints, ast.ConstraintUniq)
