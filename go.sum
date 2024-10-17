@@ -46,10 +46,8 @@ github.com/VividCortex/ewma v1.1.1 h1:MnEK4VOv6n0RSY4vtRe3h11qjxL3+t0B8yOL8iMXdc
 github.com/VividCortex/ewma v1.1.1/go.mod h1:2Tkkvm3sRDVXaiyucHiACn4cqf7DpdyLvmxzcbUokwA=
 github.com/acomagu/bufpipe v1.0.4 h1:e3H4WUzM3npvo5uv95QuJM3cQspFNtFBzvJ2oNjKIDQ=
 github.com/acomagu/bufpipe v1.0.4/go.mod h1:mxdxdup/WdsKVreO5GpW4+M/1CE2sMG4jeGJ2sYmHc4=
-github.com/actiontech/dms v0.0.0-20241010022353-9b4591e71b26 h1:DVUD1u/1vC6yHqj171JCYgyVhFNWlQGp2y/wzKEGhJo=
-github.com/actiontech/dms v0.0.0-20241010022353-9b4591e71b26/go.mod h1:Jm+tDoBYmX8R8zqgPJRq1NwZXdxO/F+HxVRJVF65WXA=
-github.com/actiontech/dms v0.0.0-20241010085644-dd7513f0051e h1:eEnYDdYR3f8lvlUtCI0bfd/vp0QUiJTf8TzGkwvshUw=
-github.com/actiontech/dms v0.0.0-20241010085644-dd7513f0051e/go.mod h1:Jm+tDoBYmX8R8zqgPJRq1NwZXdxO/F+HxVRJVF65WXA=
+github.com/actiontech/dms v0.0.0-20241017075851-7c8f25660c39 h1:9EEP+D1p1i58sAlXQnTUPV/czYAwK5/kHKPVugBXm20=
+github.com/actiontech/dms v0.0.0-20241017075851-7c8f25660c39/go.mod h1:Jm+tDoBYmX8R8zqgPJRq1NwZXdxO/F+HxVRJVF65WXA=
 github.com/actiontech/java-sql-extractor v0.0.0-20231103015812-cdd5fc040f62 h1:JM7WnLzlvXOGE90KKd+aigi+qUDS+U5dLwQMNpTKZxE=
 github.com/actiontech/java-sql-extractor v0.0.0-20231103015812-cdd5fc040f62/go.mod h1:adDZHhAf2LRMx2h0JzofPXn12x2XlyQjVE116KXquwo=
 github.com/actiontech/mybatis-mapper-2-sql v0.5.1-0.20240806065717-29cde7000ef5 h1:vyQVrkYPzUV9d7gSvOWoezwWMTiC4jc3f3Hpianefq0=
@@ -305,8 +303,6 @@ github.com/go-sql-driver/mysql v1.6.0/go.mod h1:DCzpHaOWr8IXmIStZouvnhqoel9Qv2LB
 github.com/go-sql-driver/mysql v1.7.0 h1:ueSltNNllEqE3qcWBTD0iQd3IpL/6U+mJxLkazJ7YPc=
 github.com/go-sql-driver/mysql v1.7.0/go.mod h1:OXbVy3sEdcQ2Doequ6Z5BW6fXNQTmx+9S1MCJN5yJMI=
 github.com/go-stack/stack v1.8.0/go.mod h1:v0f6uXyyMGvRgIKkXu+yp6POWl0qKG85gN/melR3HDY=
-github.com/gocarina/gocsv v0.0.0-20240520201108-78e41c74b4b1 h1:FWNFq4fM1wPfcK40yHE5UO3RUdSNPaBC+j3PokzA6OQ=
-github.com/gocarina/gocsv v0.0.0-20240520201108-78e41c74b4b1/go.mod h1:5YoVOkjYAQumqlV356Hj3xeYh4BdZuLE0/nRkf2NKkI=
 github.com/goccy/go-graphviz v0.0.5/go.mod h1:wXVsXxmyMQU6TN3zGRttjNn3h+iCAS7xQFC6TlNvLhk=
 github.com/gofrs/uuid v4.0.0+incompatible h1:1SD/1F5pU8p29ybwgQSwpQk+mwdRrXCYuPhW6m+TnJw=
 github.com/gofrs/uuid v4.0.0+incompatible/go.mod h1:b2aQJv3Z4Fp6yNu3cdSllBxTCLRxnplIgP/c0N/04lM=
