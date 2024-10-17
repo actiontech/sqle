@@ -600,7 +600,7 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 	projectMap := make(map[string] /* project uid */ *dmsV1.ListProject)
 	// 若根据项目优先级筛选，则先请求dms，获取优先级对应的项目信息
 	if req.FilterProjectPriority != "" {
-		data["filter_project_id_list"], projectMap, err = loadProjectsByPriority(c.Request().Context(), dmsV1.ProjectPriority(req.FilterProjectPriority))
+		data["filter_project_id_list"], projectMap, err = loadProjectsByPriority(c.Request().Context(), req.FilterProjectPriority)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
