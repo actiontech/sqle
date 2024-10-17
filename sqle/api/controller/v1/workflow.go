@@ -494,23 +494,24 @@ func CheckWorkflowCanCommit(template *model.WorkflowTemplate, tasks []*model.Tas
 }
 
 type GetWorkflowsReqV1 struct {
-	FilterSubject                   string `json:"filter_subject" query:"filter_subject"`
-	FilterWorkflowID                string `json:"filter_workflow_id" query:"filter_workflow_id"`
-	FilterCreateTimeFrom            string `json:"filter_create_time_from" query:"filter_create_time_from"`
-	FilterCreateTimeTo              string `json:"filter_create_time_to" query:"filter_create_time_to"`
-	FilterCreateUserId              string `json:"filter_create_user_id" query:"filter_create_user_id"`
-	FilterStatus                    string `json:"filter_status" query:"filter_status" valid:"omitempty,oneof=wait_for_audit wait_for_execution rejected canceled executing exec_failed finished"`
-	FilterCurrentStepAssigneeUserId string `json:"filter_current_step_assignee_user_id" query:"filter_current_step_assignee_user_id"`
-	FilterTaskInstanceId            string `json:"filter_task_instance_id" query:"filter_task_instance_id"`
-	FilterTaskExecuteStartTimeFrom  string `json:"filter_task_execute_start_time_from" query:"filter_task_execute_start_time_from"`
-	FilterTaskExecuteStartTimeTo    string `json:"filter_task_execute_start_time_to" query:"filter_task_execute_start_time_to"`
-	FilterSqlVersionID              *uint  `json:"filter_sql_version_id" query:"filter_sql_version_id"`
-	FilterProjectUid                string `json:"filter_project_uid" query:"filter_project_uid"`
-	FilterInstanceId                string `json:"filter_instance_id" query:"filter_instance_id"`
-	FilterProjectPriority           string `json:"project_priority" query:"project_priority"  valid:"omitempty,oneof=high medium low"`
-	PageIndex                       uint32 `json:"page_index" query:"page_index" valid:"required"`
-	PageSize                        uint32 `json:"page_size" query:"page_size" valid:"required"`
-	FuzzyKeyword                    string `json:"fuzzy_keyword" query:"fuzzy_keyword"`
+	FilterSubject                   string   `json:"filter_subject" query:"filter_subject"`
+	FilterWorkflowID                string   `json:"filter_workflow_id" query:"filter_workflow_id"`
+	FilterCreateTimeFrom            string   `json:"filter_create_time_from" query:"filter_create_time_from"`
+	FilterCreateTimeTo              string   `json:"filter_create_time_to" query:"filter_create_time_to"`
+	FilterCreateUserId              string   `json:"filter_create_user_id" query:"filter_create_user_id"`
+	FilterStatus                    string   `json:"filter_status" query:"filter_status" valid:"omitempty,oneof=wait_for_audit wait_for_execution rejected canceled executing exec_failed finished"`
+	FilterStatusList                []string `json:"filter_status_list" query:"filter_status_list" validate:"dive,oneof=wait_for_audit wait_for_execution rejected canceled executing exec_failed finished"`
+	FilterCurrentStepAssigneeUserId string   `json:"filter_current_step_assignee_user_id" query:"filter_current_step_assignee_user_id"`
+	FilterTaskInstanceId            string   `json:"filter_task_instance_id" query:"filter_task_instance_id"`
+	FilterTaskExecuteStartTimeFrom  string   `json:"filter_task_execute_start_time_from" query:"filter_task_execute_start_time_from"`
+	FilterTaskExecuteStartTimeTo    string   `json:"filter_task_execute_start_time_to" query:"filter_task_execute_start_time_to"`
+	FilterSqlVersionID              *uint    `json:"filter_sql_version_id" query:"filter_sql_version_id"`
+	FilterProjectUid                string   `json:"filter_project_uid" query:"filter_project_uid"`
+	FilterInstanceId                string   `json:"filter_instance_id" query:"filter_instance_id"`
+	FilterProjectPriority           string   `json:"filter_project_priority" query:"filter_project_priority"  valid:"omitempty,oneof=high medium low"`
+	PageIndex                       uint32   `json:"page_index" query:"page_index" valid:"required"`
+	PageSize                        uint32   `json:"page_size" query:"page_size" valid:"required"`
+	FuzzyKeyword                    string   `json:"fuzzy_keyword" query:"fuzzy_keyword"`
 }
 
 type GetWorkflowsResV1 struct {
@@ -553,9 +554,10 @@ type InstanceInfo struct {
 // @Param filter_task_execute_start_time_to query string false "filter_task_execute_start_time_to"
 // @Param filter_create_user_id query string false "filter create user id"
 // @Param filter_status query string false "filter workflow status" Enums(wait_for_audit,wait_for_execution,rejected,executing,canceled,exec_failed,finished)
+// @Param filter_status_list query []string false "filter by workflow status,, support using many status" Enums(wait_for_audit,wait_for_execution,rejected,executing,canceled,exec_failed,finished)
 // @Param filter_project_uid query string false "filter by project uid"
 // @Param filter_instance_id query string false "filter by instance id in project"
-// @Param project_priority query string false "filter by project priority" Enums(high,medium,low)
+// @Param filter_project_priority query string false "filter by project priority" Enums(high,medium,low)
 // @Param filter_current_step_assignee_user_id query string false "filter current step assignee user id"
 // @Param filter_task_instance_id query string false "filter instance id"
 // @Param page_index query uint32 true "page index"
