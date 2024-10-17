@@ -25,9 +25,15 @@ func Audit(l *logrus.Entry, task *model.Task, projectId *model.ProjectUID, ruleT
 
 func HookAudit(l *logrus.Entry, task *model.Task, hook AuditHook, projectId *model.ProjectUID, ruleTemplateName string) (err error) {
 	st := model.GetStorage()
+	if projectId == nil {
+		return fmt.Errorf("HookAudit error because projectId is nil, taskId: %v", task.ID)
+	}
 	rules, customRules, err := st.GetAllRulesByTmpNameAndProjectIdInstanceDBType(ruleTemplateName, string(*projectId), task.Instance, task.DBType)
 	if err != nil {
 		return err
+	}
+	if task == nil {
+		return fmt.Errorf("HookAudit error because task is nil, projectId: %v", string(*projectId))
 	}
 	plugin, err := newDriverManagerWithAudit(l, task.Instance, task.Schema, task.DBType, rules)
 	if err != nil {
@@ -39,8 +45,7 @@ func HookAudit(l *logrus.Entry, task *model.Task, hook AuditHook, projectId *mod
 	if task.Instance == nil {
 		task.Instance = &model.Instance{ProjectId: string(*projectId)}
 	}
-
-	return hookAudit(l, task, plugin, hook, customRules)
+	return hookAudit(l, task, plugin, hook, string(*projectId), customRules)
 }
 
 const AuditSchema = "AuditSchema"
@@ -63,7 +68,7 @@ func DirectAuditByInstance(l *logrus.Entry, sql, schemaName string, instance *mo
 	}
 	task.Instance = instance
 
-	return task, audit(l, task, plugin, customRules)
+	return task, audit(instance.ProjectId, l, task, plugin, customRules)
 }
 
 func AuditSQLByDBType(l *logrus.Entry, sql string, dbType string, projectId string, ruleTemplateName string) (*model.Task, error) {
@@ -78,15 +83,15 @@ func AuditSQLByDBType(l *logrus.Entry, sql string, dbType string, projectId stri
 	}
 	defer plugin.Close(context.TODO())
 
-	return AuditSQLByDriver(l, sql, plugin, customRules)
+	return AuditSQLByDriver(projectId, l, sql, plugin, customRules)
 }
 
-func AuditSQLByDriver(l *logrus.Entry, sql string, p driver.Plugin, customRules []*model.CustomRule) (*model.Task, error) {
+func AuditSQLByDriver(projectId string, l *logrus.Entry, sql string, p driver.Plugin, customRules []*model.CustomRule) (*model.Task, error) {
 	task, err := convertSQLsToTask(sql, p)
 	if err != nil {
 		return nil, err
 	}
-	return task, audit(l, task, p, customRules)
+	return task, audit(projectId, l, task, p, customRules)
 }
 
 func convertSQLsToTask(sql string, p driver.Plugin) (*model.Task, error) {
@@ -106,8 +111,8 @@ func convertSQLsToTask(sql string, p driver.Plugin) (*model.Task, error) {
 	return task, nil
 }
 
-func audit(l *logrus.Entry, task *model.Task, p driver.Plugin, customRules []*model.CustomRule) (err error) {
-	return hookAudit(l, task, p, &EmptyAuditHook{}, customRules)
+func audit(projectId string, l *logrus.Entry, task *model.Task, p driver.Plugin, customRules []*model.CustomRule) (err error) {
+	return hookAudit(l, task, p, &EmptyAuditHook{}, projectId, customRules)
 }
 
 type AuditHook interface {
@@ -121,7 +126,7 @@ func (e *EmptyAuditHook) BeforeAudit(sql *model.ExecuteSQL) {}
 
 func (e *EmptyAuditHook) AfterAudit(sql *model.ExecuteSQL) {}
 
-func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHook, customRules []*model.CustomRule) (err error) {
+func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHook, projectId string, customRules []*model.CustomRule) (err error) {
 	defer func() {
 		if errRecover := recover(); errRecover != nil {
 			debug.PrintStack()
@@ -132,11 +137,6 @@ func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHoo
 	}()
 
 	st := model.GetStorage()
-
-	projectId := ""
-	if task.Instance != nil {
-		projectId = task.Instance.ProjectId
-	}
 	whitelist, err := st.GetSqlWhitelistByProjectId(projectId)
 	if err != nil {
 		return err

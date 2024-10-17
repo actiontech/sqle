@@ -62,7 +62,7 @@ func (s *Sqled) HasTask(taskId string) bool {
 
 // addTask receive taskId and action type, using taskId and typ to create an action;
 // action will be validated, and sent to Sqled.queue.
-func (s *Sqled) addTask(taskId string, typ int) (*action, error) {
+func (s *Sqled) addTask(projectId string, taskId string, typ int) (*action, error) {
 	var err error
 	var p driver.Plugin
 	var rules []*model.Rule
@@ -125,6 +125,7 @@ func (s *Sqled) addTask(taskId string, typ int) (*action, error) {
 	action.plugin = p
 	action.customRules = customRules
 	action.rules = rules
+	action.projectId = projectId
 
 	s.queue <- action
 
@@ -137,13 +138,13 @@ Error:
 	return action, err
 }
 
-func (s *Sqled) AddTask(taskId string, typ int) error {
-	_, err := s.addTask(taskId, typ)
+func (s *Sqled) AddTask(projectId string, taskId string, typ int) error {
+	_, err := s.addTask(projectId, taskId, typ)
 	return err
 }
 
-func (s *Sqled) AddTaskWaitResult(taskId string, typ int) (*model.Task, error) {
-	action, err := s.addTask(taskId, typ)
+func (s *Sqled) AddTaskWaitResult(projectId string, taskId string, typ int) (*model.Task, error) {
+	action, err := s.addTask(projectId, taskId, typ)
 	if err != nil {
 		return nil, err
 	}
@@ -207,8 +208,8 @@ const (
 // when you want to execute a task, you can define an action whose type is rollback.
 type action struct {
 	sync.Mutex
-
-	plugin driver.Plugin
+	projectId string
+	plugin    driver.Plugin
 
 	task  *model.Task
 	entry *logrus.Entry
@@ -293,7 +294,7 @@ func (a *action) validation(task *model.Task) error {
 func (a *action) audit() (err error) {
 	st := model.GetStorage()
 
-	err = audit(a.entry, a.task, a.plugin, a.customRules)
+	err = audit(a.projectId, a.entry, a.task, a.plugin, a.customRules)
 	if err != nil {
 		return err
 	}

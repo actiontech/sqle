@@ -120,7 +120,7 @@ func DirectAudit(c echo.Context) error {
 	if instance != nil && schemaName != "" {
 		task, err = server.DirectAuditByInstance(l, sql, schemaName, instance)
 	} else {
-		task, err = server.AuditSQLByDBType(l, sql, req.InstanceType, "", "")
+		task, err = server.AuditSQLByDBType(l, sql, req.InstanceType, projectUid, "")
 	}
 	if err != nil {
 		l.Errorf("audit sqls failed: %v", err)
@@ -228,7 +228,7 @@ func DirectAuditFiles(c echo.Context) error {
 	if instance != nil && schemaName != "" {
 		task, err = server.DirectAuditByInstance(l, sqls, schemaName, instance)
 	} else {
-		task, err = server.AuditSQLByDBType(l, sqls, req.InstanceType, "", "")
+		task, err = server.AuditSQLByDBType(l, sqls, req.InstanceType, projectUid, "")
 	}
 	if err != nil {
 		l.Errorf("audit sqls failed: %v", err)

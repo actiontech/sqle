@@ -367,7 +367,7 @@ func CreateAndAuditTask(c echo.Context) error {
 		}
 	}
 	task.Instance = &tmpInst
-	task, err = server.GetSqled().AddTaskWaitResult(fmt.Sprintf("%d", task.ID), server.ActionTypeAudit)
+	task, err = server.GetSqled().AddTaskWaitResult(projectUid, fmt.Sprintf("%d", task.ID), server.ActionTypeAudit)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1062,7 +1062,7 @@ func AuditTaskGroupV1(c echo.Context) error {
 			continue
 		}
 
-		tasks[i], err = server.GetSqled().AddTaskWaitResult(fmt.Sprintf("%d", task.ID), server.ActionTypeAudit)
+		tasks[i], err = server.GetSqled().AddTaskWaitResult(projectId, fmt.Sprintf("%d", task.ID), server.ActionTypeAudit)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
