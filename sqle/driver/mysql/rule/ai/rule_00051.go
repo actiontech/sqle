@@ -58,7 +58,7 @@ func RuleSQLE00051(input *rulepkg.RuleHandlerInput) error {
 			rulepkg.AddResult(input.Res, input.Rule, SQLE00051)
 			return true
 		} else if isPrimaryKey {
-			// 当前设置为主键，原来有isAutoIncrement
+			// 当前设置为主键，在线检查原来是否有isAutoIncrement
 			if createTableStmt == nil {
 				createTableStmt, err = util.GetCreateTableStmt(input.Ctx, stmt.Table)
 				if err != nil {
@@ -74,7 +74,7 @@ func RuleSQLE00051(input *rulepkg.RuleHandlerInput) error {
 				}
 			}
 		} else if isAutoIncrement {
-			// 当前设置为isAutoIncrement，原来是主键
+			// 当前设置为isAutoIncrement，检查原来是不是主键
 			if createTableStmt == nil {
 				createTableStmt, err = util.GetCreateTableStmt(input.Ctx, stmt.Table)
 				if err != nil {
