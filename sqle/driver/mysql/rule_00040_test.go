@@ -29,7 +29,7 @@ func TestRuleSQLE00040(t *testing.T) {
 		session.NewAIMockContext().WithSQL("CREATE TABLE test_table (column1 INT);"),
 		nil, newTestResult().addResult(ruleName))
 
-	runAIRuleCase(rule, t, "case 3_1: ALTER TABLE ADD UNIQUE INDEX 不需要固定前缀", "ALTER TABLE test_table ADD UNIQUE INDEX my_index (column1);",
+	runAIRuleCase(rule, t, "case 3_1: ALTER TABLE ADD FULLTEXT INDEX 不需要固定前缀", "ALTER TABLE test_table ADD FULLTEXT INDEX my_index (column1);",
 		session.NewAIMockContext().WithSQL("CREATE TABLE test_table (column1 INT);"),
 		nil, newTestResult())
 
