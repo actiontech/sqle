@@ -558,14 +558,23 @@ AND oms.project_id IN (
 {{ end }}
 `
 
-func (s *Storage) GetGlobalSqlManageList(data map[string]interface{}) (list []*GlobalSqlManage, err error) {
-	globalSqlManageList := make([]*GlobalSqlManage, 0)
-	err = s.getListResult(globalSqlManagerQueryTpl, globalSqlManagerBodyTpl, data, &globalSqlManageList)
-	if err != nil {
-		return nil, err
-	}
+var globalSqlManagerTotalCount = `
+SELECT COUNT(DISTINCT oms.id)
 
-	return globalSqlManageList, nil
+{{- template "body" . -}}
+`
+
+func (s *Storage) GetGlobalSqlManageList(data map[string]interface{}) (list []*GlobalSqlManage, totalCount uint64, err error) {
+	globalSqlManageList := make([]*GlobalSqlManage, 0)
+	err = s.getListResult(globalSqlManagerBodyTpl, globalSqlManagerQueryTpl, data, &globalSqlManageList)
+	if err != nil {
+		return nil, 0, err
+	}
+	totalCount, err = s.getCountResult(globalSqlManagerBodyTpl, globalSqlManagerTotalCount, data)
+	if err != nil {
+		return nil, 0, err
+	}
+	return globalSqlManageList, totalCount, nil
 }
 
 func (s *Storage) GetAllSqlManageList() ([]*SqlManage, error) {

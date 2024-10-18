@@ -455,6 +455,13 @@ func getGlobalSqlManageList(c echo.Context) error {
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
+		if len(projectMap) == 0 {
+			return c.JSON(http.StatusOK, &GetGlobalSqlManageListResp{
+				BaseRes:  controller.NewBaseReq(nil),
+				Data:     []*GlobalSqlManage{},
+				TotalNum: 0,
+			})
+		}
 	}
 	// 角色：所有角色
 	if req.FilterProjectPriority != nil {
@@ -479,7 +486,7 @@ func getGlobalSqlManageList(c echo.Context) error {
 
 	// 3. 根据筛选项筛选SQL管控的SQL信息
 	s := model.GetStorage()
-	modelGlobalSqlManages, err := s.GetGlobalSqlManageList(data)
+	modelGlobalSqlManages, total, err := s.GetGlobalSqlManageList(data)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -498,7 +505,7 @@ func getGlobalSqlManageList(c echo.Context) error {
 	return c.JSON(http.StatusOK, &GetGlobalSqlManageListResp{
 		BaseRes:  controller.NewBaseReq(nil),
 		Data:     ToGlobalSqlManage(c.Request().Context(), modelGlobalSqlManages, projectMap, instanceMap),
-		TotalNum: 0,
+		TotalNum: total,
 	})
 }
 
