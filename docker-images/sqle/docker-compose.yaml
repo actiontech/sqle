@@ -57,7 +57,7 @@ services:
     command: ['mysqld', '--character-set-server=utf8mb4', '--collation-server=utf8mb4_unicode_ci']
 
   cb-for-sqle:
-    image: dbeaver/cloudbeaver:23.2.1
+    image: actiontech/cloudbeaver:latest
     container_name: cb-for-sqle
     privileged: true
     stdin_open: true
@@ -78,9 +78,7 @@ services:
     command:
       - bash
       - -c
-      - |
-        sed -i 's|rootURI: "/",|rootURI: "/sql_query",|' /opt/cloudbeaver/conf/cloudbeaver.conf \
-        && /opt/cloudbeaver/run-server.sh
+      - /opt/cloudbeaver/run-server.sh
 
 networks:
   sqle_net:
