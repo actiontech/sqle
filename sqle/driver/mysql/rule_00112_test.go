@@ -54,6 +54,12 @@ func TestRuleSQLE00112(t *testing.T) {
 			WithSQL("CREATE TABLE Table2 (column1 VARCHAR(100), columnB VARCHAR(100));"),
 		nil, newTestResult().addResult(ruleName))
 
+	runAIRuleCase(rule, t, "case 8.1: SELECT语句中复杂JOIN USING比较Table1.column1 (INT)与Table2.column1 (VARCHAR)，预期违规",
+		"SELECT * FROM Table1 JOIN Table2 USING (column1) JOIN Table2 USING (column3);",
+		session.NewAIMockContext().WithSQL("CREATE TABLE Table1 (column1 INT, column2 INT, column3 VARCHAR(100));").
+			WithSQL("CREATE TABLE Table2 (column1 VARCHAR(100), column3 VARCHAR(100));"),
+		nil, newTestResult().addResult(ruleName))
+
 	// UPDATE语句测试用例
 	runAIRuleCase(rule, t, "case 9: UPDATE语句中WHERE子句比较Table1.column1 (INT)与Table1.column2 (INT)，预期通过",
 		"UPDATE Table1 SET column3 = 'new_value' WHERE column1 = column2;",
@@ -159,6 +165,12 @@ func TestRuleSQLE00112(t *testing.T) {
 
 	runAIRuleCase(rule, t, "case 30: SELECT语句中JOIN ON比较customers.c_id (INT)与orders.c_id (VARCHAR)，预期违规",
 		"SELECT * FROM customers a JOIN orders b ON a.c_id = b.c_id;",
+		session.NewAIMockContext().WithSQL("CREATE TABLE customers (c_id INT, name VARCHAR(100));").
+			WithSQL("CREATE TABLE orders (c_id VARCHAR(100), order_date DATE);"),
+		nil, newTestResult().addResult(ruleName))
+
+	runAIRuleCase(rule, t, "case 30.1: SELECT语句中复杂JOIN ON比较customers.c_id (INT)与orders.c_id (VARCHAR)，预期违规",
+		"SELECT * FROM customers a JOIN orders b ON a.c_id = b.c_id JOIN orders c ON c.c_id = b.c_id;",
 		session.NewAIMockContext().WithSQL("CREATE TABLE customers (c_id INT, name VARCHAR(100));").
 			WithSQL("CREATE TABLE orders (c_id VARCHAR(100), order_date DATE);"),
 		nil, newTestResult().addResult(ruleName))

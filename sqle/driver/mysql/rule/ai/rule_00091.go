@@ -147,7 +147,7 @@ func RuleSQLE00091(input *rulepkg.RuleHandlerInput) error {
 			}
 		}
 
-		joinNode := util.GetJoinNodeFromNode(stmt)
+		joinNode := util.GetFirstJoinNodeFromStmt(stmt)
 		whereStmt := getWhereExpr(stmt)
 		if joinNode == nil {
 			return true

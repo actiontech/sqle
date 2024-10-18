@@ -369,7 +369,7 @@ func GetDefaultTable(stmt *ast.SelectStmt) *ast.TableName {
 }
 
 // a helper function to get first join node from dml
-func GetJoinNodeFromNode(node ast.Node) *ast.Join {
+func GetFirstJoinNodeFromStmt(node ast.Node) *ast.Join {
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
 		if stmt.From == nil {
@@ -389,6 +389,13 @@ func GetJoinNodeFromNode(node ast.Node) *ast.Join {
 	default:
 		return nil
 	}
+}
+
+// a helper function to get all join nodes from a given AST Node
+func GetAllJoinsFromNode(node ast.Node) []*ast.Join {
+	JoinExtractor := JoinExtractor{}
+	node.Accept(&JoinExtractor)
+	return JoinExtractor.joins
 }
 
 // a helper function to get the table source from join node
@@ -424,8 +431,8 @@ func GetTableAliasInfoFromJoin(join *ast.Join) []*TableAliasInfo {
 		if tableName, ok := tableSource.Source.(*ast.TableName); ok {
 			tableAlias = append(tableAlias, &TableAliasInfo{
 				TableAliasName: tableSource.AsName.String(),
-				TableName:      tableName.Name.L,
-				SchemaName:     tableName.Schema.L,
+				TableName:      tableName.Name.O,
+				SchemaName:     tableName.Schema.O,
 			})
 		}
 	}

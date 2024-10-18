@@ -156,7 +156,7 @@ func RuleSQLE00112(input *rulepkg.RuleHandlerInput) error {
 	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt, *ast.UpdateStmt, *ast.DeleteStmt, *ast.InsertStmt, *ast.UnionStmt:
 		// 获取DELETE、UPDATE语句的表
-		alias = util.GetTableAliasInfoFromJoin(util.GetJoinNodeFromNode(stmt))
+		alias = util.GetTableAliasInfoFromJoin(util.GetFirstJoinNodeFromStmt(stmt))
 
 		for _, selectStmt := range util.GetSelectStmt(stmt) {
 			// 获取默认表名
@@ -173,9 +173,14 @@ func RuleSQLE00112(input *rulepkg.RuleHandlerInput) error {
 			// 获取所有WHERE和ON条件表达式
 			whereExprs := util.GetWhereExprFromDMLStmt(selectStmt)
 			onExprs := []ast.ExprNode{}
-			joinExpr := util.GetJoinNodeFromNode(selectStmt)
-			if joinExpr != nil && joinExpr.On != nil {
-				onExprs = append(onExprs, joinExpr.On.Expr)
+			usingExprs := [][]*ast.ColumnName{}
+			for _, join := range util.GetAllJoinsFromNode(selectStmt) {
+					if join != nil && join.On != nil {
+						onExprs = append(onExprs, join.On.Expr)
+					}
+					if join != nil && join.Using != nil {
+						usingExprs = append(usingExprs, join.Using)
+					}
 			}
 
 			// Combine WHERE and ON expressions
@@ -217,15 +222,14 @@ func RuleSQLE00112(input *rulepkg.RuleHandlerInput) error {
 					return false
 				}, expr)
 			}
-			if joinExpr != nil && joinExpr.Using != nil {
-				for _, column := range joinExpr.Using {
-					tables := util.GetTableNames(joinExpr)
-
+			for _, using := range usingExprs {
+				for _, column := range using {
 					colTyp := make(map[byte]struct{})
-					for _, table := range tables {
-						createTableStmt, err := util.GetCreateTableStmt(input.Ctx, table)
+					for _, aliasInfo := range alias {
+						tableName := &ast.TableName{Schema: model.NewCIStr(aliasInfo.SchemaName), Name: model.NewCIStr(aliasInfo.TableName)}
+						createTableStmt, err := util.GetCreateTableStmt(input.Ctx, tableName)
 						if err != nil {
-							log.NewEntry().Errorf("获取表 %s 的CREATE TABLE语句失败: %v", table.Name.L, err)
+							log.NewEntry().Errorf("获取表 %s 的CREATE TABLE语句失败: %v", tableName.Name.L, err)
 							continue
 						}
 
@@ -261,7 +265,7 @@ func RuleSQLE00112(input *rulepkg.RuleHandlerInput) error {
 		// 获取所有WHERE和ON条件表达式
 		whereExprs := util.GetWhereExprFromDMLStmt(stmt)
 		onExprs := []ast.ExprNode{}
-		joinExpr := util.GetJoinNodeFromNode(stmt)
+		joinExpr := util.GetFirstJoinNodeFromStmt(stmt)
 		if joinExpr != nil && joinExpr.On != nil {
 			onExprs = append(onExprs, joinExpr.On.Expr)
 		}
@@ -319,7 +323,7 @@ func RuleSQLE00112(input *rulepkg.RuleHandlerInput) error {
 		// 获取所有WHERE和ON条件表达式
 		whereExprs := util.GetWhereExprFromDMLStmt(stmt)
 		onExprs := []ast.ExprNode{}
-		joinExpr := util.GetJoinNodeFromNode(stmt)
+		joinExpr := util.GetFirstJoinNodeFromStmt(stmt)
 		if joinExpr != nil && joinExpr.On != nil {
 			onExprs = append(onExprs, joinExpr.On.Expr)
 		}

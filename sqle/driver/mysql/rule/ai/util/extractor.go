@@ -170,3 +170,19 @@ func (te *SubqueryExprExtractor) Enter(in ast.Node) (node ast.Node, skipChildren
 func (te *SubqueryExprExtractor) Leave(in ast.Node) (node ast.Node, ok bool) {
 	return in, true
 }
+
+type JoinExtractor struct {
+	joins []*ast.Join
+}
+
+func (je *JoinExtractor) Enter(in ast.Node) (node ast.Node, skipChildren bool) {
+	switch stmt := in.(type) {
+	case *ast.Join:
+		je.joins = append(je.joins, stmt)
+	}
+	return in, false
+}
+
+func (je *JoinExtractor) Leave(in ast.Node) (node ast.Node, ok bool) {
+	return in, true
+}
