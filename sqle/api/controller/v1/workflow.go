@@ -571,36 +571,55 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	// 1. 权限控制
+	// 1.1. 获取用户的所有权限信息
 	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	permissions, isAdmin, err := dmsobject.GetUserOpPermission(c.Request().Context(), "", user.GetIDStr(), dms.GetDMSServerAddress())
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	// 1.2. 获取用户全局待关注清单的可见性
+	userVisibility := getGlobalDashBoardVisibilityOfUser(isAdmin, permissions)
 
-	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
-
-	data := map[string]interface{}{
-		"filter_subject":                       req.FilterSubject,
-		"filter_create_time_from":              req.FilterCreateTimeFrom,
-		"filter_create_time_to":                req.FilterCreateTimeTo,
-		"filter_create_user_id":                req.FilterCreateUserId,
-		"filter_task_execute_start_time_from":  req.FilterTaskExecuteStartTimeFrom,
-		"filter_task_execute_start_time_to":    req.FilterTaskExecuteStartTimeTo,
-		"filter_status":                        req.FilterStatus,
-		"filter_current_step_assignee_user_id": req.FilterCurrentStepAssigneeUserId,
-		"filter_task_instance_id":              req.FilterTaskInstanceId,
-		"current_user_id":                      user.GetIDStr(),
-		"check_user_can_access":                user.Name != model.DefaultAdminUser, // dms-todo: 判断是否是超级管理员
-		"limit":                                limit,
-		"offset":                               offset,
-		"filter_status_list":                   req.FilterStatusList, // 根据SQL工单的状态筛选多个状态的工单
-		"filter_project_id":                    req.FilterProjectUid, // 根据项目id筛选某些一个项目下的多个工单
-		"filter_instance_id":                   req.FilterInstanceId, // 根据工单记录的数据源id，筛选包含该数据源的工单，多数据源情况下，一旦包含该数据源，则被选中
+	// 1.3. 若用户可见性为多项目，则需要根据项目id筛选
+	var projectIdsOfProjectAdmin []string
+	if userVisibility == GlobalDashBoardVisibilityProjects {
+		for _, permission := range permissions {
+			if permission.OpPermissionType == dmsV1.OpPermissionTypeProjectAdmin {
+				projectIdsOfProjectAdmin = append(projectIdsOfProjectAdmin, permission.RangeUids...)
+			}
+		}
 	}
 
-	projectMap := make(map[string] /* project uid */ *dmsV1.ListProject)
-	// 若根据项目优先级筛选，则先请求dms，获取优先级对应的项目信息
+	// 2. 组织筛选项
+	// 2.1. 基本筛选项
+	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
+	data := map[string]interface{}{
+		// "filter_subject":                       req.FilterSubject,
+		// "filter_create_time_from":              req.FilterCreateTimeFrom,
+		// "filter_create_time_to":                req.FilterCreateTimeTo,
+		// "filter_create_user_id":                req.FilterCreateUserId,
+		// "filter_task_execute_start_time_from":  req.FilterTaskExecuteStartTimeFrom,
+		// "filter_task_execute_start_time_to":    req.FilterTaskExecuteStartTimeTo,
+		// "filter_status":                        req.FilterStatus,
+		// "filter_current_step_assignee_user_id": req.FilterCurrentStepAssigneeUserId,
+		// "filter_task_instance_id":              req.FilterTaskInstanceId,
+		// "current_user_id":       			   user.GetIDStr(),
+		// "check_user_can_access": 			   canViewGlobal,
+		"limit":              limit,
+		"offset":             offset,
+		"filter_status_list": req.FilterStatusList, // 根据SQL工单的状态筛选多个状态的工单
+		"filter_project_id":  req.FilterProjectUid, // 根据项目id筛选某些一个项目下的多个工单
+		"filter_instance_id": req.FilterInstanceId, // 根据工单记录的数据源id，筛选包含该数据源的工单，多数据源情况下，一旦包含该数据源，则被选中
+	}
+	// 2.2 页面筛选项：如果根据项目优先级筛选，则先筛选出对应优先级下的项目
+	var projectIdsByPriority []string
+	var projectMap map[string]*dmsV1.ListProject
 	if req.FilterProjectPriority != "" {
-		data["filter_project_id_list"], projectMap, err = loadProjectsByPriority(c.Request().Context(), req.FilterProjectPriority)
+		projectIdsByPriority, projectMap, err = loadProjectsByPriority(c.Request().Context(), req.FilterProjectPriority)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -612,7 +631,26 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 			})
 		}
 	}
+	if req.FilterProjectPriority != "" {
+		// 2.2.1 若根据项目优先级筛选，则根据优先级对应的项目筛选
+		data["filter_project_id_list"] = projectIdsByPriority
+	}
+	
+	if req.FilterProjectPriority != "" && userVisibility == GlobalDashBoardVisibilityProjects {
+		// 2.2.2 若根据项目优先级筛选，且可以查看多项目待关注SQL，则将可查看的项目和项目优先级筛选后的项目的集合取交集
+		data["filter_project_id_list"] = utils.IntersectionStringSlice(projectIdsByPriority, projectIdsOfProjectAdmin)
+	}
+	// 2.3 若不根据项目优先级筛选
+	if req.FilterProjectPriority == "" && userVisibility == GlobalDashBoardVisibilityProjects {
+		// 2.3.1 若可以查看多项目待关注SQL，则通过用户的有权限的项目进行筛选
+		data["filter_project_id_list"] = projectIdsOfProjectAdmin
+	}
+	// 2.4. 若用户可见性为受让人，则可以查看在SQL管控中分配给他的SQL
+	if userVisibility == GlobalDashBoardVisibilityAssignee {
+		data["filter_current_step_assignee_user_id"] = user.GetIDStr()
+	}
 
+	// 3. 根据筛选项筛选SQL管控的SQL信息
 	s := model.GetStorage()
 	workflows, count, err := s.GetWorkflowsByReq(data)
 	if err != nil {
@@ -668,6 +706,31 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 		Data:      workflowsResV1,
 		TotalNums: count,
 	})
+}
+
+type GlobalDashBoardVisibility string
+const GlobalDashBoardVisibilityGlobal GlobalDashBoardVisibility = "global"
+const GlobalDashBoardVisibilityProjects GlobalDashBoardVisibility = "projects"
+const GlobalDashBoardVisibilityAssignee GlobalDashBoardVisibility = "assignee"
+
+func getGlobalDashBoardVisibilityOfUser(isAdmin bool, permissions []dmsV1.OpPermissionItem) GlobalDashBoardVisibility {
+	// 角色：全局管理员，全局可查看者
+	if isAdmin {
+		return GlobalDashBoardVisibilityGlobal
+	}
+	for _, permission := range permissions {
+		if permission.OpPermissionType == dmsV1.OpPermissionTypeGlobalView || permission.OpPermissionType == dmsV1.OpPermissionTypeGlobalManagement {
+			return GlobalDashBoardVisibilityGlobal
+		}
+	}
+	// 角色：多项目管理者
+	for _, permission := range permissions {
+		if permission.OpPermissionType == dmsV1.OpPermissionTypeProjectAdmin {
+			return GlobalDashBoardVisibilityProjects
+		}
+	}
+	// 角色：受让人，事件处理者
+	return GlobalDashBoardVisibilityAssignee
 }
 
 // 根据项目优先级从 dms 系统中获取相应的项目列表，并返回项目ID列表和项目映射
