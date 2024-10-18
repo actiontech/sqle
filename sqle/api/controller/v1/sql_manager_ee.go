@@ -463,15 +463,16 @@ func getGlobalSqlManageList(c echo.Context) error {
 			})
 		}
 	}
-	// 角色：所有角色
+	
 	if req.FilterProjectPriority != nil {
-		// 2.2.1 若根据项目优先级筛选，则根据优先级对应的项目筛选
-		data["filter_project_id_list"] = projectIdsByPriority
-	}
-	// 角色：多项目管理者
-	if req.FilterProjectPriority != nil && canViewProjects {
-		// 2.2.2 若根据项目优先级筛选，且可以查看多项目待关注SQL，则将可查看的项目和项目优先级筛选后的项目的集合取交集
-		data["filter_project_id_list"] = utils.IntersectionStringSlice(projectIdsByPriority, projectIdsOfProjectAdmin)
+		if canViewProjects {
+			// 2.2.1 若根据项目优先级筛选，且可以查看多项目待关注SQL，则将可查看的项目和项目优先级筛选后的项目的集合取交集
+			data["filter_project_id_list"] = utils.IntersectionStringSlice(projectIdsByPriority, projectIdsOfProjectAdmin)
+		} else {
+			// 2.2.2 若只根据项目优先级筛选，则根据优先级对应的项目筛选
+			data["filter_project_id_list"] = projectIdsByPriority
+
+		}
 	}
 	// 2.3 若不根据项目优先级筛选
 	if req.FilterProjectPriority == nil && canViewProjects {
