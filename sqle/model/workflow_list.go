@@ -39,7 +39,7 @@ SELECT
 GROUP BY w.id
 {{- if .filter_instance_id }}
 HAVING 
-    FIND_IN_SET(:filter_instance_id, instance_id) > 0
+    FIND_IN_SET(:filter_instance_id, instance_ids) > 0
 {{- end }}
 
 ORDER BY w.id DESC
