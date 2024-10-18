@@ -57,7 +57,7 @@ services:
     command: ['mysqld', '--character-set-server=utf8mb4', '--collation-server=utf8mb4_unicode_ci']
 
   cb-for-sqle:
-    image: actiontech/cloudbeaver:23.2.2
+    image: actiontech/cloudbeaver:latest
     container_name: cb-for-sqle
     privileged: true
     stdin_open: true
