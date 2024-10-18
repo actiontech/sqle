@@ -135,6 +135,21 @@ func TestRuleSQLE00087(t *testing.T) {
 			},
 		},
 		newTestResult().addResult(ruleName))
+
+	runAIRuleCase(rule, t, "case 15: delete语句中WHERE条件的NOT IN子查询为union扫描行数少于500个(从xml中补充)",
+		"delete from customers WHERE id NOT IN (SELECT id FROM customers_ids1 union all SELECT id FROM customers_ids1);",
+		session.NewAIMockContext().WithSQL("CREATE TABLE customers (id INT PRIMARY KEY, name VARCHAR(100)); CREATE TABLE customers_ids1 (id INT PRIMARY KEY);"),
+		[]*AIMockSQLExpectation{
+			{
+				Query: "EXPLAIN SELECT id FROM customers_ids1",
+				Rows:  sqlmock.NewRows([]string{"rows"}).AddRow(600),
+			},
+			{
+				Query: "SHOW WARNINGS",
+				Rows:  sqlmock.NewRows(nil),
+			},
+		},
+		newTestResult().addResult(ruleName))
 }
 
 // ==== Rule test code end ====

@@ -94,7 +94,7 @@ func RuleSQLE00087(input *rulepkg.RuleHandlerInput) error {
 				}
 				if e.Sel != nil {
 					if subExpr, ok := e.Sel.(*ast.SubqueryExpr); ok {
-						executionPlan, err := util.GetExecutionPlan(input.Ctx, subExpr.Query.(*ast.SelectStmt).Text())
+						executionPlan, err := util.GetExecutionPlan(input.Ctx, subExpr.Query.Text()) // SelectStmt、UnionStmt
 						if err != nil {
 							log.NewEntry().Errorf("Failed to get execution plan for subquery: %v", err)
 							return false
