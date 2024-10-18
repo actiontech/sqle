@@ -603,21 +603,18 @@ func StatisticRiskWorkflowV1(c echo.Context) error {
 
 	riskWorkflows := make([]*RiskWorkflow, len(projectWorkflowStatusDetails))
 	for i, info := range projectWorkflowStatusDetails {
-		user, err := func() (*model.User, error) {
-			ctx, cancel := context.WithTimeout(c.Request().Context(), 5*time.Second)
+		userName := func() string {
+			_, cancel := context.WithTimeout(c.Request().Context(), 5*time.Second)
 			defer cancel()
 
-			return dms.GetUser(ctx, info.CreateUserId, controller.GetDMSServerAddress())
+			return dms.GetUserNameWithDelTag(info.CreateUserId)
 		}()
 
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
 		riskWorkflows[i] = &RiskWorkflow{
 			Name:       info.Subject,
 			WorkflowID: info.WorkflowId,
 			Status:     info.Status,
-			CreateUser: user.Name,
+			CreateUser: userName,
 			UpdateTime: info.UpdatedAt,
 		}
 	}
