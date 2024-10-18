@@ -513,7 +513,7 @@ func batchReleaseWorkflows(c echo.Context) error {
 			task := buildNewTaskByOriginalTask(uint64(user.ID), targetSchema, targetInst, instRecords.Task)
 			tasks = append(tasks, task)
 		}
-		taskIds, err := batchCreateTask(tasks)
+		taskIds, err := batchCreateTask(projectUid, tasks)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -586,7 +586,7 @@ func buildNewTaskByOriginalTask(userId uint64, schema string, instance *model.In
 	return task
 }
 
-func batchCreateTask(tasks []*model.Task) ([]uint, error) {
+func batchCreateTask(projectId string, tasks []*model.Task) ([]uint, error) {
 	s := model.GetStorage()
 	taskIds := make([]uint, 0, len(tasks))
 	for _, task := range tasks {
@@ -604,7 +604,7 @@ func batchCreateTask(tasks []*model.Task) ([]uint, error) {
 			return nil, err
 		}
 		task.Instance = &tmpInst
-		task, err = server.GetSqled().AddTaskWaitResult(fmt.Sprintf("%d", task.ID), server.ActionTypeAudit)
+		task, err = server.GetSqled().AddTaskWaitResult(projectId, fmt.Sprintf("%d", task.ID), server.ActionTypeAudit)
 		if err != nil {
 			return nil, err
 		}
