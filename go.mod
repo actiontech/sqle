@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/Masterminds/semver/v3 v3.1.1
-	github.com/actiontech/dms v0.0.0-20241010085644-dd7513f0051e
+	github.com/actiontech/dms v0.0.0-20241017075851-7c8f25660c39
 	github.com/actiontech/java-sql-extractor v0.0.0-20231103015812-cdd5fc040f62
 	github.com/actiontech/mybatis-mapper-2-sql v0.5.1-0.20240806065717-29cde7000ef5
 	github.com/agiledragon/gomonkey v2.0.2+incompatible
@@ -79,10 +79,8 @@ require (
 require golang.org/x/sys v0.15.0
 
 require (
-	github.com/BurntSushi/toml v1.3.2
 	github.com/aliyun/credentials-go v1.1.2
 	github.com/fsnotify/fsnotify v1.6.0
-	github.com/gocarina/gocsv v0.0.0-20240520201108-78e41c74b4b1
 	github.com/guregu/null v0.0.0-20160228005316-41961cea0328
 	github.com/hashicorp/go-version v1.7.0
 	github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.1.69
@@ -96,6 +94,7 @@ require (
 
 require (
 	dario.cat/mergo v1.0.0 // indirect
+	github.com/BurntSushi/toml v1.3.2 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/ProtonMail/go-crypto v0.0.0-20230828082145-3c4c8a2d2371 // indirect
@@ -132,6 +131,7 @@ require (
 	github.com/golang-sql/civil v0.0.0-20190719163853-cb61b32ac6fe // indirect
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
+	github.com/goware/modvendor v0.5.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.1 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.0 // indirect
 	github.com/hashicorp/yamux v0.0.0-20180604194846-3520598351bb // indirect
@@ -155,6 +155,7 @@ require (
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
+	github.com/mattn/go-zglob v0.0.6 // indirect
 	github.com/mitchellh/go-testing-interface v1.14.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect

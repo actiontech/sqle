@@ -45,10 +45,8 @@ github.com/VividCortex/ewma v1.1.1 h1:MnEK4VOv6n0RSY4vtRe3h11qjxL3+t0B8yOL8iMXdc
 github.com/VividCortex/ewma v1.1.1/go.mod h1:2Tkkvm3sRDVXaiyucHiACn4cqf7DpdyLvmxzcbUokwA=
 github.com/acomagu/bufpipe v1.0.4 h1:e3H4WUzM3npvo5uv95QuJM3cQspFNtFBzvJ2oNjKIDQ=
 github.com/acomagu/bufpipe v1.0.4/go.mod h1:mxdxdup/WdsKVreO5GpW4+M/1CE2sMG4jeGJ2sYmHc4=
-github.com/actiontech/dms v0.0.0-20241010022353-9b4591e71b26 h1:DVUD1u/1vC6yHqj171JCYgyVhFNWlQGp2y/wzKEGhJo=
-github.com/actiontech/dms v0.0.0-20241010022353-9b4591e71b26/go.mod h1:Jm+tDoBYmX8R8zqgPJRq1NwZXdxO/F+HxVRJVF65WXA=
-github.com/actiontech/dms v0.0.0-20241010085644-dd7513f0051e h1:eEnYDdYR3f8lvlUtCI0bfd/vp0QUiJTf8TzGkwvshUw=
-github.com/actiontech/dms v0.0.0-20241010085644-dd7513f0051e/go.mod h1:Jm+tDoBYmX8R8zqgPJRq1NwZXdxO/F+HxVRJVF65WXA=
+github.com/actiontech/dms v0.0.0-20241017075851-7c8f25660c39 h1:9EEP+D1p1i58sAlXQnTUPV/czYAwK5/kHKPVugBXm20=
+github.com/actiontech/dms v0.0.0-20241017075851-7c8f25660c39/go.mod h1:Jm+tDoBYmX8R8zqgPJRq1NwZXdxO/F+HxVRJVF65WXA=
 github.com/actiontech/java-sql-extractor v0.0.0-20231103015812-cdd5fc040f62 h1:JM7WnLzlvXOGE90KKd+aigi+qUDS+U5dLwQMNpTKZxE=
 github.com/actiontech/java-sql-extractor v0.0.0-20231103015812-cdd5fc040f62/go.mod h1:adDZHhAf2LRMx2h0JzofPXn12x2XlyQjVE116KXquwo=
 github.com/actiontech/mybatis-mapper-2-sql v0.5.1-0.20240806065717-29cde7000ef5 h1:vyQVrkYPzUV9d7gSvOWoezwWMTiC4jc3f3Hpianefq0=
@@ -333,8 +331,6 @@ github.com/go-sql-driver/mysql v1.7.0 h1:ueSltNNllEqE3qcWBTD0iQd3IpL/6U+mJxLkazJ
 github.com/go-sql-driver/mysql v1.7.0/go.mod h1:OXbVy3sEdcQ2Doequ6Z5BW6fXNQTmx+9S1MCJN5yJMI=
 github.com/go-stack/stack v1.8.0/go.mod h1:v0f6uXyyMGvRgIKkXu+yp6POWl0qKG85gN/melR3HDY=
 github.com/go-task/slim-sprig v0.0.0-20210107165309-348f09dbbbc0/go.mod h1:fyg7847qk6SyHyPtNmDHnmrv/HOrqktSC+C9fM+CJOE=
-github.com/gocarina/gocsv v0.0.0-20240520201108-78e41c74b4b1 h1:FWNFq4fM1wPfcK40yHE5UO3RUdSNPaBC+j3PokzA6OQ=
-github.com/gocarina/gocsv v0.0.0-20240520201108-78e41c74b4b1/go.mod h1:5YoVOkjYAQumqlV356Hj3xeYh4BdZuLE0/nRkf2NKkI=
 github.com/goccy/go-graphviz v0.0.5/go.mod h1:wXVsXxmyMQU6TN3zGRttjNn3h+iCAS7xQFC6TlNvLhk=
 github.com/gofrs/uuid v4.0.0+incompatible h1:1SD/1F5pU8p29ybwgQSwpQk+mwdRrXCYuPhW6m+TnJw=
 github.com/gofrs/uuid v4.0.0+incompatible/go.mod h1:b2aQJv3Z4Fp6yNu3cdSllBxTCLRxnplIgP/c0N/04lM=
@@ -422,6 +418,8 @@ github.com/gorilla/websocket v1.4.0/go.mod h1:E7qHFY5m1UJ88s3WnNqhKjPHQ0heANvMoA
 github.com/gorilla/websocket v1.4.2/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
 github.com/gorilla/websocket v1.5.0 h1:PPwGk2jz7EePpoHN/+ClbZu8SPxiqlu12wZP/3sWmnc=
 github.com/gorilla/websocket v1.5.0/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
+github.com/goware/modvendor v0.5.0 h1:3XXkmWdTccMzBswM5FTTXvWEtCV7DP7VRkIACRCGaqU=
+github.com/goware/modvendor v0.5.0/go.mod h1:rtogeSlPLJT6MlypJyGp24o/vnHvF+ebCoTQrDX6oGY=
 github.com/grokify/html-strip-tags-go v0.0.1 h1:0fThFwLbW7P/kOiTBs03FsJSV9RM2M/Q/MOnCQxKMo0=
 github.com/grokify/html-strip-tags-go v0.0.1/go.mod h1:2Su6romC5/1VXOQMaWL2yb618ARB8iVo6/DR99A6d78=
 github.com/grpc-ecosystem/go-grpc-middleware v1.0.0/go.mod h1:FiyG127CGDf3tlThmgyCl78X/SZQqEOJBCDaAfeWzPs=
@@ -648,6 +646,9 @@ github.com/mattn/go-sqlite3 v1.14.6/go.mod h1:NyWgC/yNuGj7Q9rpYnZvas74GogHl5/Z4A
 github.com/mattn/go-sqlite3 v2.0.1+incompatible/go.mod h1:FPy6KqzDD04eiIsT53CuJW3U88zkxoIYsOqkbpncsNc=
 github.com/mattn/go-sqlite3 v2.0.3+incompatible h1:gXHsfypPkaMZrKbD5209QV9jbUTJKjyR5WD3HYQSd+U=
 github.com/mattn/go-sqlite3 v2.0.3+incompatible/go.mod h1:FPy6KqzDD04eiIsT53CuJW3U88zkxoIYsOqkbpncsNc=
+github.com/mattn/go-zglob v0.0.2-0.20191112051448-a8912a37f9e7/go.mod h1:9fxibJccNxU2cnpIKLRRFA7zX7qhkJIQWBb449FYHOo=
+github.com/mattn/go-zglob v0.0.6 h1:mP8RnmCgho4oaUYDIDn6GNxYk+qJGUs8fJLn+twYj2A=
+github.com/mattn/go-zglob v0.0.6/go.mod h1:MxxjyoXXnMxfIpxTK2GAkw1w8glPsQILx3N5wrKakiY=
 github.com/matttproud/golang_protobuf_extensions v1.0.1 h1:4hp9jkHxhMHkqkrB3Ix0jegS5sx/RkqARlsWZ6pIwiU=
 github.com/matttproud/golang_protobuf_extensions v1.0.1/go.mod h1:D8He9yQNgCq6Z5Ld7szi9bcBfOoFv/3dc6xSMkL2PC0=
 github.com/mgechev/dots v0.0.0-20190921121421-c36f7dcfbb81/go.mod h1:KQ7+USdGKfpPjXk4Ga+5XxQM4Lm4e3gAogrreFAYpOg=

@@ -14518,7 +14518,7 @@ var doc = `{
             "type": "object",
             "properties": {
                 "instance_id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "instance_name": {
                     "type": "string"
