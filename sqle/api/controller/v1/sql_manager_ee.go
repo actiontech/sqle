@@ -578,7 +578,7 @@ func ToGlobalSqlManage(ctx context.Context, modelGlobalSqlManages []*model.Globa
 		sqlMgr.Source = &Source{
 			SqlSourceType: mg.Source.String,
 			SqlSourceIDs:  mg.SourceIDs,
-			SqlSourceDesc: mg.Source.String,
+			SqlSourceDesc: ConvertSqlSourceDescByType(ctx, mg.Source.String),
 		}
 		ret = append(ret, sqlMgr)
 	}
