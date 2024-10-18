@@ -705,6 +705,10 @@ func loadProjectsByWorkflows(ctx context.Context, workflows []*model.WorkflowLis
 			projectMap[workflow.ProjectId] = nil
 		}
 	}
+	return loadProjectsByProjectIds(ctx, projectIds)
+}
+
+func loadProjectsByProjectIds(ctx context.Context, projectIds []string) (projectMap map[string] /* project uid */ *dmsV1.ListProject, err error) {
 	// get project priority from dms
 	projects, _, err := dmsobject.ListProjects(ctx, controller.GetDMSServerAddress(), dmsV1.ListProjectReq{
 		PageSize:            uint32(len(projectIds)),
@@ -737,11 +741,16 @@ func loadInstanceByWorkflows(ctx context.Context, workflows []*model.WorkflowLis
 			}
 		}
 	}
+	return loadInstanceByInstanceIds(ctx, instanceIdList)
+}
+
+func loadInstanceByInstanceIds(ctx context.Context, instanceIds []string) (instanceMap map[string] /* instance id */ *dmsV1.ListDBService, err error) {
 	// get instances from dms
+	instanceMap = make(map[string]*dmsV1.ListDBService)
 	instances, _, err := dmsobject.ListDbServices(ctx, controller.GetDMSServerAddress(), dmsV1.ListDBServiceReq{
-		PageSize:             uint32(len(instanceIdList)),
+		PageSize:             uint32(len(instanceIds)),
 		PageIndex:            1,
-		FilterByDBServiceIds: instanceIdList,
+		FilterByDBServiceIds: instanceIds,
 	})
 	if err != nil {
 		return nil, err
