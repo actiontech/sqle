@@ -15,8 +15,8 @@ type SQLAuditRecordTags struct {
 
 type SQLAuditRecord struct {
 	Model
-	ProjectId string `gorm:"index;not null;type:varchar(255)"`
-	CreatorId string `gorm:"not null;type:varchar(255)"`
+	ProjectId     string `gorm:"index;not null;type:varchar(255)"`
+	CreatorId     string `gorm:"not null;type:varchar(255)"`
 	AuditRecordId string `gorm:"not null;type:varchar(255);index:unique"`
 	Tags          JSON
 

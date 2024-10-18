@@ -146,7 +146,7 @@ func CreateSQLAuditRecord(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, fmt.Errorf("save sql audit record failed: %v", err))
 	}
 
-	task, err = server.GetSqled().AddTaskWaitResult(fmt.Sprintf("%d", task.ID), server.ActionTypeAudit)
+	task, err = server.GetSqled().AddTaskWaitResult(projectUid, fmt.Sprintf("%d", task.ID), server.ActionTypeAudit)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
