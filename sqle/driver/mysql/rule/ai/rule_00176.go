@@ -99,7 +99,6 @@ func RuleSQLE00176(input *rulepkg.RuleHandlerInput) error {
 		if len(stmt.TableHints) > 0 || hasIndexHint(stmt) || hasStraighJoin(stmt) {
 			rulepkg.AddResult(input.Res, input.Rule, SQLE00176)
 		}
-		// TODO 解析器 不支持replace语法
 		// TODO 无法解析 delete/update/insert /*+ index(xx,xx) */...
 		// TODO 无法解析 delete/update/insert /*+ set_var(xx) */...
 	}
