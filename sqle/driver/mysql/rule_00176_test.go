@@ -143,6 +143,10 @@ func TestRuleSQLE00176(t *testing.T) {
 		session.NewAIMockContext().WithSQL("CREATE TABLE customers (id INT PRIMARY KEY, name VARCHAR(50), sex INT, city VARCHAR(50), age INT);"),
 		nil, newTestResult())
 
+	runAIRuleCase(rule, t, "case 30: replace 语句不包含 hint 指令 (从xml中补充)",
+		"replace INTO customers VALUES (9999999,'xiaozhangxiaowangxiaofeng',0,'shanghai',90);",
+		session.NewAIMockContext().WithSQL("CREATE TABLE customers (id INT PRIMARY KEY, name VARCHAR(50), sex INT, city VARCHAR(50), age INT);"),
+		nil, newTestResult())
 }
 
 // ==== Rule test code end ====
