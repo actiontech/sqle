@@ -7,6 +7,7 @@ import (
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	util "github.com/actiontech/sqle/sqle/driver/mysql/rule/ai/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
 )
@@ -104,6 +105,7 @@ func RuleSQLE00080(input *rulepkg.RuleHandlerInput) error {
 			// INSERT ... SELECT ...
 			_, err := getSelectRowCount(stmt)
 			if err != nil {
+				log.NewEntry().Errorf("get execution plan failed, sqle: %v, error: %v", stmt.Text(), err)
 				return err
 			}
 		} else if len(stmt.Lists) > 0 {
