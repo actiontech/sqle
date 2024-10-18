@@ -109,6 +109,7 @@ func RuleSQLE00122(input *rulepkg.RuleHandlerInput) error {
 					// 如果该列的值全为NULL，报告规则违规
 					if isAllNull {
 						rulepkg.AddResult(input.Res, input.Rule, SQLE00122, colName)
+						return nil
 					}
 				}
 			}
