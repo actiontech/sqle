@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/csv"
+	"encoding/json"
 	e "errors"
 	"fmt"
 	"mime"
@@ -15,6 +16,8 @@ import (
 	"strings"
 	"time"
 
+	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
+	"github.com/actiontech/dms/pkg/dms-common/dmsobject"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	dms "github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/errors"
@@ -397,5 +400,200 @@ func ConvertSqlSourceDescByType(ctx context.Context, source string) string {
 }
 
 func getGlobalSqlManageList(c echo.Context) error {
-	return nil
+	req := new(GetGlobalSqlManageListReq)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	var err error
+	// 1. 权限控制
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	// 1.1. 获取用户的所有权限信息
+	permissions, isAdmin, err := dmsobject.GetUserOpPermission(c.Request().Context(), "", user.GetIDStr(), dms.GetDMSServerAddress())
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	// 角色：全局可查看者 canViewGlobal
+	// 1.2. 若用户是Admin 或者拥有全局查看和全局管理权限，则可以看到所有待关注的SQL
+	var canViewGlobal bool = isAdmin
+	for _, permission := range permissions {
+		if permission.OpPermissionType == dmsV1.OpPermissionTypeGlobalView || permission.OpPermissionType == dmsV1.OpPermissionTypeGlobalManagement {
+			canViewGlobal = true
+			break
+		}
+	}
+	// 角色：多项目管理者 canViewProjects
+	// 1.3. 若用户不能查看所有待关注SQL，则需要判断用户是否拥有多项目查看待关注SQL的权限，可以看到所有待关注SQL的用户不需要判断项目范围
+	var projectIdsOfProjectAdmin []string
+	if !canViewGlobal {
+		for _, permission := range permissions {
+			if permission.OpPermissionType == dmsV1.OpPermissionTypeProjectAdmin {
+				projectIdsOfProjectAdmin = append(projectIdsOfProjectAdmin, permission.RangeUids...)
+			}
+		}
+	}
+	var canViewProjects bool = len(projectIdsOfProjectAdmin) > 0
+	// 角色：SQL被分配者 !canViewGlobal && !canViewProjects
+
+	// 2. 组织筛选项
+	// 2.1. 基本筛选项
+	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
+	data := map[string]interface{}{
+		"limit":              limit,
+		"offset":             offset,
+		"filter_instance_id": req.FilterInstanceId, // 页面筛选项
+		"filter_project_uid": req.FilterProjectUid, // 页面筛选项
+	}
+
+	var projectMap map[string]*dmsV1.ListProject
+	// 2.2 页面筛选项：如果根据项目优先级筛选，则先筛选出对应优先级下的项目
+	var projectIdsByPriority []string
+	if req.FilterProjectPriority != nil {
+		projectIdsByPriority, projectMap, err = loadProjectsByPriority(c.Request().Context(), *req.FilterProjectPriority)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+	// 角色：所有角色
+	if req.FilterProjectPriority != nil {
+		// 2.2.1 若根据项目优先级筛选，则根据优先级对应的项目筛选
+		data["filter_project_id_list"] = projectIdsByPriority
+	}
+	// 角色：多项目管理者
+	if req.FilterProjectPriority != nil && canViewProjects {
+		// 2.2.2 若根据项目优先级筛选，且可以查看多项目待关注SQL，则将可查看的项目和项目优先级筛选后的项目的集合取交集
+		data["filter_project_id_list"] = utils.IntersectionStringSlice(projectIdsByPriority, projectIdsOfProjectAdmin)
+	}
+	// 2.3 若不根据项目优先级筛选
+	if req.FilterProjectPriority == nil && canViewProjects {
+		// 2.3.1 若可以查看多项目待关注SQL，则通过用户的有权限的项目进行筛选
+		data["filter_project_id_list"] = projectIdsOfProjectAdmin
+	}
+	// 角色：SQL被分配者
+	// 2.4. 若用户既不能查看所有待关注SQL也不能查看多项目待关注SQL，则可以查看在SQL管控中分配给他的SQL
+	if !canViewGlobal && !canViewProjects {
+		data["filter_assignees_id"] = user.GetIDStr()
+	}
+
+	// 3. 根据筛选项筛选SQL管控的SQL信息
+	s := model.GetStorage()
+	modelGlobalSqlManages, err := s.GetGlobalSqlManageList(data)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	// 3.1. 若未根据项目优先级筛选，需要根据SQL拉取对应的项目信息
+	if req.FilterProjectPriority == nil {
+		projectMap, err = loadProjectsBySqlManage(c.Request().Context(), modelGlobalSqlManages)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+	// 3.2. 需要根据SQL拉取对应的数据源信息
+	instanceMap, err := loadInstancesBySqlManage(c.Request().Context(), modelGlobalSqlManages)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return c.JSON(http.StatusOK, &GetGlobalSqlManageListResp{
+		BaseRes:  controller.NewBaseReq(nil),
+		Data:     ToGlobalSqlManage(c.Request().Context(), modelGlobalSqlManages, projectMap, instanceMap),
+		TotalNum: 0,
+	})
+}
+
+func loadProjectsBySqlManage(ctx context.Context, modelGlobalSqlManages []*model.GlobalSqlManage) (projectMap map[string]*dmsV1.ListProject, err error) {
+	if len(modelGlobalSqlManages) == 0 {
+		return make(map[string]*dmsV1.ListProject), nil
+	}
+	projectMap = make(map[string]*dmsV1.ListProject)
+	projectIds := []string{}
+	for _, modelSqlManage := range modelGlobalSqlManages {
+		if _, exist := projectMap[modelSqlManage.ProjectUid]; !exist {
+			projectIds = append(projectIds, modelSqlManage.ProjectUid)
+			projectMap[modelSqlManage.ProjectUid] = nil
+		}
+	}
+	projectMap, err = loadProjectsByProjectIds(ctx, projectIds)
+	if err != nil {
+		return nil, err
+	}
+	return projectMap, nil
+}
+
+func loadInstancesBySqlManage(ctx context.Context, modelGlobalSqlManages []*model.GlobalSqlManage) (instanceMap map[string]*dmsV1.ListDBService, err error) {
+	if len(modelGlobalSqlManages) == 0 {
+		return make(map[string]*dmsV1.ListDBService), nil
+	}
+	instanceMap = make(map[string]*dmsV1.ListDBService)
+	instanceIds := []string{}
+	for _, modelSqlManage := range modelGlobalSqlManages {
+		if modelSqlManage.InstanceID.Valid {
+			if _, exist := instanceMap[modelSqlManage.InstanceID.String]; !exist {
+				instanceIds = append(instanceIds, modelSqlManage.InstanceID.String)
+				instanceMap[modelSqlManage.InstanceID.String] = nil
+			}
+		}
+	}
+	instanceMap, err = loadInstanceByInstanceIds(ctx, instanceIds)
+	if err != nil {
+		return nil, err
+	}
+	return instanceMap, nil
+}
+
+func ToGlobalSqlManage(ctx context.Context, modelGlobalSqlManages []*model.GlobalSqlManage, projectMap map[string]*dmsV1.ListProject, instanceMap map[string]*dmsV1.ListDBService) []*GlobalSqlManage {
+	lang := locale.Bundle.GetLangTagFromCtx(ctx)
+	ret := make([]*GlobalSqlManage, 0, len(modelGlobalSqlManages))
+	for _, mg := range modelGlobalSqlManages {
+		sqlMgr := &GlobalSqlManage{
+			Id:                   mg.Id,
+			Sql:                  mg.SqlText.String,
+			ProjectName:          projectMap[mg.ProjectUid].Name,
+			ProjectUid:           mg.ProjectUid,
+			Status:               mg.Status.String,
+			FirstAppearTimeStamp: mg.FirstAppearTimestamp.Format(time.RFC3339),
+			ProjectPriority:      projectMap[mg.ProjectUid].ProjectPriority,
+			ProblemDescriptions:  problemDescriptions(mg.Info),
+		}
+		if mg.InstanceID.Valid {
+			sqlMgr.InstanceName = instanceMap[mg.InstanceID.String].Name
+			sqlMgr.InstanceId = mg.InstanceID.String
+		}
+		for i := range mg.AuditResults {
+			ar := mg.AuditResults[i]
+			sqlMgr.AuditResult = append(sqlMgr.AuditResult, &AuditResult{
+				Level:    ar.Level,
+				Message:  ar.GetAuditMsgByLangTag(lang),
+				RuleName: ar.RuleName,
+			})
+		}
+		sqlMgr.Source = &Source{
+			SqlSourceType: mg.Source.String,
+			SqlSourceIDs:  mg.SourceIDs,
+			SqlSourceDesc: mg.Source.String,
+		}
+		ret = append(ret, sqlMgr)
+	}
+	return ret
+}
+
+func problemDescriptions(info string) []string {
+	var infoJson struct {
+		Counter         uint    `json:"counter"`
+		QueryTimeAvg    float32 `json:"query_time_avg"`
+		QueryTimeMax    float32 `json:"query_time_max"`
+		RowsExaminedAvg float32 `json:"row_examined_avg"`
+	}
+
+	err := json.Unmarshal([]byte(info), &infoJson)
+	if err != nil {
+		return []string{info}
+	}
+	return []string{
+		fmt.Sprintf("SQL出现次数 %v", infoJson.Counter),
+		fmt.Sprintf("平均执行时间 %v", infoJson.QueryTimeAvg),
+		fmt.Sprintf("最大执行时间 %v", infoJson.QueryTimeMax),
+		fmt.Sprintf("平均扫描行数 %v", infoJson.RowsExaminedAvg),
+	}
 }
