@@ -583,7 +583,10 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 	}
 	// 1.2. 获取用户全局待关注清单的可见性
 	userVisibility := getGlobalDashBoardVisibilityOfUser(isAdmin, permissions)
-
+	if req.FilterCurrentStepAssigneeUserId != "" {
+		// 如果根据当前用户筛选，则筛选出用户在所有项目中的工单
+		userVisibility = GlobalDashBoardVisibilityGlobal
+	}
 	// 1.3. 若用户可见性为多项目，则需要根据项目id筛选
 	var projectIdsOfProjectAdmin []string
 	if userVisibility == GlobalDashBoardVisibilityProjects {
@@ -601,7 +604,6 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 		// "filter_subject":                       req.FilterSubject,
 		// "filter_create_time_from":              req.FilterCreateTimeFrom,
 		// "filter_create_time_to":                req.FilterCreateTimeTo,
-		// "filter_create_user_id":                req.FilterCreateUserId,
 		// "filter_task_execute_start_time_from":  req.FilterTaskExecuteStartTimeFrom,
 		// "filter_task_execute_start_time_to":    req.FilterTaskExecuteStartTimeTo,
 		// "filter_status":                        req.FilterStatus,
@@ -609,11 +611,12 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 		// "filter_task_instance_id":              req.FilterTaskInstanceId,
 		// "current_user_id":       			   user.GetIDStr(),
 		// "check_user_can_access": 			   canViewGlobal,
-		"limit":              limit,
-		"offset":             offset,
-		"filter_status_list": req.FilterStatusList, // 根据SQL工单的状态筛选多个状态的工单
-		"filter_project_id":  req.FilterProjectUid, // 根据项目id筛选某些一个项目下的多个工单
-		"filter_instance_id": req.FilterInstanceId, // 根据工单记录的数据源id，筛选包含该数据源的工单，多数据源情况下，一旦包含该数据源，则被选中
+		"filter_create_user_id": req.FilterCreateUserId,
+		"limit":                 limit,
+		"offset":                offset,
+		"filter_status_list":    req.FilterStatusList, // 根据SQL工单的状态筛选多个状态的工单
+		"filter_project_id":     req.FilterProjectUid, // 根据项目id筛选某些一个项目下的多个工单
+		"filter_instance_id":    req.FilterInstanceId, // 根据工单记录的数据源id，筛选包含该数据源的工单，多数据源情况下，一旦包含该数据源，则被选中
 	}
 	// 2.2 页面筛选项：如果根据项目优先级筛选，则先筛选出对应优先级下的项目
 	var projectIdsByPriority []string
@@ -635,7 +638,7 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 		// 2.2.1 若根据项目优先级筛选，则根据优先级对应的项目筛选
 		data["filter_project_id_list"] = projectIdsByPriority
 	}
-	
+
 	if req.FilterProjectPriority != "" && userVisibility == GlobalDashBoardVisibilityProjects {
 		// 2.2.2 若根据项目优先级筛选，且可以查看多项目待关注SQL，则将可查看的项目和项目优先级筛选后的项目的集合取交集
 		data["filter_project_id_list"] = utils.IntersectionStringSlice(projectIdsByPriority, projectIdsOfProjectAdmin)
@@ -709,6 +712,7 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 }
 
 type GlobalDashBoardVisibility string
+
 const GlobalDashBoardVisibilityGlobal GlobalDashBoardVisibility = "global"
 const GlobalDashBoardVisibilityProjects GlobalDashBoardVisibility = "projects"
 const GlobalDashBoardVisibilityAssignee GlobalDashBoardVisibility = "assignee"
