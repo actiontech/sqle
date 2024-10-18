@@ -639,8 +639,8 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 
 	workflowsResV1 := make([]*WorkflowDetailResV1, 0, len(workflows))
 	for _, workflow := range workflows {
-		instanceInfos := make([]InstanceInfo, 0, len(workflow.InstanceId))
-		for _, id := range workflow.InstanceId {
+		instanceInfos := make([]InstanceInfo, 0, len(workflow.InstanceIds))
+		for _, id := range workflow.InstanceIds {
 			instanceInfos = append(instanceInfos, InstanceInfo{
 				InstanceId:   id,
 				InstanceName: instanceMap[id].Name,
@@ -730,7 +730,7 @@ func loadInstanceByWorkflows(ctx context.Context, workflows []*model.WorkflowLis
 
 	var instanceIdList []string
 	for _, workflow := range workflows {
-		for _, id := range workflow.InstanceId {
+		for _, id := range workflow.InstanceIds {
 			if _, exist := instanceMap[id]; !exist {
 				instanceIdList = append(instanceIdList, id)
 				instanceMap[id] = nil
@@ -848,7 +848,7 @@ func GetWorkflowsV1(c echo.Context) error {
 			CurrentStepType:         workflow.CurrentStepType.String,
 			CurrentStepAssigneeUser: CurrentStepAssigneeUserNames,
 			Status:                  workflow.Status,
-			SqlVersionName:          workflow.SqlVersionName,
+			SqlVersionName:          workflow.SqlVersionNames,
 		}
 		workflowsResV1 = append(workflowsResV1, workflowRes)
 	}
