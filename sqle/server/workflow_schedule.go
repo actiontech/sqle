@@ -142,7 +142,7 @@ func ExecuteWorkflow(workflow *model.Workflow, needExecTaskIdToUserId map[uint]s
 		id := taskId
 		go func() {
 			sqledServer := GetSqled()
-			task, err := sqledServer.AddTaskWaitResult(strconv.Itoa(int(id)), ActionTypeExecute)
+			task, err := sqledServer.AddTaskWaitResult(string(workflow.ProjectId), strconv.Itoa(int(id)), ActionTypeExecute)
 
 			{ // NOTE: Update the workflow status before sending notifications to ensure that the notification content reflects the latest information.
 				lock.Lock()
