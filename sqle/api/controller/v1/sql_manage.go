@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 
+	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/labstack/echo/v4"
@@ -349,11 +350,11 @@ func convertSQLAnalysisResultToRes(ctx context.Context, res *AnalysisResult, raw
 }
 
 type GetGlobalSqlManageListReq struct {
-	FilterProjectUid      *string `query:"filter_project_uid" json:"filter_project_uid,omitempty"`
-	FilterInstanceId      *string `query:"filter_instance_id" json:"filter_instance_id,omitempty"`
-	FilterProjectPriority *string `query:"filter_project_priority" json:"filter_project_priority,omitempty" enums:"high,medium,low"`
-	PageIndex             uint32  `query:"page_index" valid:"required" json:"page_index"`
-	PageSize              uint32  `query:"page_size" valid:"required" json:"page_size"`
+	FilterProjectUid      *string                `query:"filter_project_uid" json:"filter_project_uid,omitempty"`
+	FilterInstanceId      *string                `query:"filter_instance_id" json:"filter_instance_id,omitempty"`
+	FilterProjectPriority *dmsV1.ProjectPriority `query:"filter_project_priority" json:"filter_project_priority,omitempty" enums:"high,medium,low"`
+	PageIndex             uint32                 `query:"page_index" valid:"required" json:"page_index"`
+	PageSize              uint32                 `query:"page_size" valid:"required" json:"page_size"`
 }
 
 type GetGlobalSqlManageListResp struct {
@@ -363,18 +364,18 @@ type GetGlobalSqlManageListResp struct {
 }
 
 type GlobalSqlManage struct {
-	Id                   uint64         `json:"id"`
-	Sql                  string         `json:"sql"`
-	Source               *Source        `json:"source"`
-	AuditResult          []*AuditResult `json:"audit_result"`
-	ProjectName          string         `json:"project_name"`
-	ProjectUid           string         `json:"project_uid"`
-	InstanceName         string         `json:"instance_name"`
-	InstanceId           string         `json:"instance_id"`
-	Status               string         `json:"status" enums:"unhandled,solved,ignored,manual_audited"`
-	ProjectPriority      string         `json:"project_priority" enums:"high,medium,low"`
-	FirstAppearTimeStamp string         `json:"first_appear_timestamp"`
-	ProblemDescriptions  []string       `json:"problem_descriptions"` // 根据来源信息拼接
+	Id                   uint64                `json:"id"`
+	Sql                  string                `json:"sql"`
+	Source               *Source               `json:"source"`
+	AuditResult          []*AuditResult        `json:"audit_result"`
+	ProjectName          string                `json:"project_name"`
+	ProjectUid           string                `json:"project_uid"`
+	InstanceName         string                `json:"instance_name"`
+	InstanceId           string                `json:"instance_id"`
+	Status               string                `json:"status" enums:"unhandled,solved,ignored,manual_audited"`
+	ProjectPriority      dmsV1.ProjectPriority `json:"project_priority" enums:"high,medium,low"`
+	FirstAppearTimeStamp string                `json:"first_appear_timestamp"`
+	ProblemDescriptions  []string              `json:"problem_descriptions"` // 根据来源信息拼接
 }
 
 // GetGlobalSqlManageList

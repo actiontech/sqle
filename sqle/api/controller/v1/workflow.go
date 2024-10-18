@@ -22,6 +22,7 @@ import (
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/utils"
 
+	"github.com/actiontech/dms/pkg/dms-common/dmsobject"
 	"github.com/labstack/echo/v4"
 )
 
@@ -494,24 +495,24 @@ func CheckWorkflowCanCommit(template *model.WorkflowTemplate, tasks []*model.Tas
 }
 
 type GetWorkflowsReqV1 struct {
-	FilterSubject                   string   `json:"filter_subject" query:"filter_subject"`
-	FilterWorkflowID                string   `json:"filter_workflow_id" query:"filter_workflow_id"`
-	FilterCreateTimeFrom            string   `json:"filter_create_time_from" query:"filter_create_time_from"`
-	FilterCreateTimeTo              string   `json:"filter_create_time_to" query:"filter_create_time_to"`
-	FilterCreateUserId              string   `json:"filter_create_user_id" query:"filter_create_user_id"`
-	FilterStatus                    string   `json:"filter_status" query:"filter_status" valid:"omitempty,oneof=wait_for_audit wait_for_execution rejected canceled executing exec_failed finished"`
-	FilterStatusList                []string `json:"filter_status_list" query:"filter_status_list" validate:"dive,oneof=wait_for_audit wait_for_execution rejected canceled executing exec_failed finished"`
-	FilterCurrentStepAssigneeUserId string   `json:"filter_current_step_assignee_user_id" query:"filter_current_step_assignee_user_id"`
-	FilterTaskInstanceId            string   `json:"filter_task_instance_id" query:"filter_task_instance_id"`
-	FilterTaskExecuteStartTimeFrom  string   `json:"filter_task_execute_start_time_from" query:"filter_task_execute_start_time_from"`
-	FilterTaskExecuteStartTimeTo    string   `json:"filter_task_execute_start_time_to" query:"filter_task_execute_start_time_to"`
-	FilterSqlVersionID              *uint    `json:"filter_sql_version_id" query:"filter_sql_version_id"`
-	FilterProjectUid                string   `json:"filter_project_uid" query:"filter_project_uid"`
-	FilterInstanceId                string   `json:"filter_instance_id" query:"filter_instance_id"`
-	FilterProjectPriority           string   `json:"filter_project_priority" query:"filter_project_priority"  valid:"omitempty,oneof=high medium low"`
-	PageIndex                       uint32   `json:"page_index" query:"page_index" valid:"required"`
-	PageSize                        uint32   `json:"page_size" query:"page_size" valid:"required"`
-	FuzzyKeyword                    string   `json:"fuzzy_keyword" query:"fuzzy_keyword"`
+	FilterSubject                   string                `json:"filter_subject" query:"filter_subject"`
+	FilterWorkflowID                string                `json:"filter_workflow_id" query:"filter_workflow_id"`
+	FilterCreateTimeFrom            string                `json:"filter_create_time_from" query:"filter_create_time_from"`
+	FilterCreateTimeTo              string                `json:"filter_create_time_to" query:"filter_create_time_to"`
+	FilterCreateUserId              string                `json:"filter_create_user_id" query:"filter_create_user_id"`
+	FilterStatus                    string                `json:"filter_status" query:"filter_status" valid:"omitempty,oneof=wait_for_audit wait_for_execution rejected canceled executing exec_failed finished"`
+	FilterStatusList                []string              `json:"filter_status_list" query:"filter_status_list" validate:"dive,oneof=wait_for_audit wait_for_execution rejected canceled executing exec_failed finished"`
+	FilterCurrentStepAssigneeUserId string                `json:"filter_current_step_assignee_user_id" query:"filter_current_step_assignee_user_id"`
+	FilterTaskInstanceId            string                `json:"filter_task_instance_id" query:"filter_task_instance_id"`
+	FilterTaskExecuteStartTimeFrom  string                `json:"filter_task_execute_start_time_from" query:"filter_task_execute_start_time_from"`
+	FilterTaskExecuteStartTimeTo    string                `json:"filter_task_execute_start_time_to" query:"filter_task_execute_start_time_to"`
+	FilterSqlVersionID              *uint                 `json:"filter_sql_version_id" query:"filter_sql_version_id"`
+	FilterProjectUid                string                `json:"filter_project_uid" query:"filter_project_uid"`
+	FilterInstanceId                string                `json:"filter_instance_id" query:"filter_instance_id"`
+	FilterProjectPriority           dmsV1.ProjectPriority `json:"filter_project_priority" query:"filter_project_priority"  valid:"omitempty,oneof=high medium low"`
+	PageIndex                       uint32                `json:"page_index" query:"page_index" valid:"required"`
+	PageSize                        uint32                `json:"page_size" query:"page_size" valid:"required"`
+	FuzzyKeyword                    string                `json:"fuzzy_keyword" query:"fuzzy_keyword"`
 }
 
 type GetWorkflowsResV1 struct {
@@ -521,23 +522,23 @@ type GetWorkflowsResV1 struct {
 }
 
 type WorkflowDetailResV1 struct {
-	ProjectName             string         `json:"project_name"`
-	ProjectUid              string         `json:"project_uid,omitempty"`
-	ProjectPriority         string         `json:"project_priority"`
-	Name                    string         `json:"workflow_name"`
-	WorkflowId              string         `json:"workflow_id" `
-	Desc                    string         `json:"desc"`
-	SqlVersionName          []string       `json:"sql_version_name,omitempty"`
-	CreateUser              string         `json:"create_user_name"`
-	CreateTime              *time.Time     `json:"create_time"`
-	CurrentStepType         string         `json:"current_step_type,omitempty" enums:"sql_review,sql_execute"`
-	CurrentStepAssigneeUser []string       `json:"current_step_assignee_user_name_list,omitempty"`
-	Status                  string         `json:"status" enums:"wait_for_audit,wait_for_execution,rejected,canceled,exec_failed,executing,finished"`
-	InstanceInfo            []InstanceInfo `json:"instance_info,omitempty"`
+	ProjectName             string                `json:"project_name"`
+	ProjectUid              string                `json:"project_uid,omitempty"`
+	ProjectPriority         dmsV1.ProjectPriority `json:"project_priority"`
+	Name                    string                `json:"workflow_name"`
+	WorkflowId              string                `json:"workflow_id" `
+	Desc                    string                `json:"desc"`
+	SqlVersionName          []string              `json:"sql_version_name,omitempty"`
+	CreateUser              string                `json:"create_user_name"`
+	CreateTime              *time.Time            `json:"create_time"`
+	CurrentStepType         string                `json:"current_step_type,omitempty" enums:"sql_review,sql_execute"`
+	CurrentStepAssigneeUser []string              `json:"current_step_assignee_user_name_list,omitempty"`
+	Status                  string                `json:"status" enums:"wait_for_audit,wait_for_execution,rejected,canceled,exec_failed,executing,finished"`
+	InstanceInfo            []InstanceInfo        `json:"instance_info,omitempty"`
 }
 
 type InstanceInfo struct {
-	InstanceId   int64  `json:"instance_id,omitempty"`
+	InstanceId   string `json:"instance_id,omitempty"`
 	InstanceName string `json:"instance_name,omitempty"`
 }
 
@@ -591,6 +592,25 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 		"check_user_can_access":                user.Name != model.DefaultAdminUser, // dms-todo: 判断是否是超级管理员
 		"limit":                                limit,
 		"offset":                               offset,
+		"filter_status_list":                   req.FilterStatusList, // 根据SQL工单的状态筛选多个状态的工单
+		"filter_project_id":                    req.FilterProjectUid, // 根据项目id筛选某些一个项目下的多个工单
+		"filter_instance_id":                   req.FilterInstanceId, // 根据工单记录的数据源id，筛选包含该数据源的工单，多数据源情况下，一旦包含该数据源，则被选中
+	}
+
+	projectMap := make(map[string] /* project uid */ *dmsV1.ListProject)
+	// 若根据项目优先级筛选，则先请求dms，获取优先级对应的项目信息
+	if req.FilterProjectPriority != "" {
+		data["filter_project_id_list"], projectMap, err = loadProjectsByPriority(c.Request().Context(), req.FilterProjectPriority)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if len(projectMap) == 0 {
+			return c.JSON(http.StatusOK, GetWorkflowsResV1{
+				BaseRes:   controller.NewBaseReq(nil),
+				Data:      []*WorkflowDetailResV1{},
+				TotalNums: 0,
+			})
+		}
 	}
 
 	s := model.GetStorage()
@@ -604,10 +624,33 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 	 2. 用户相关代码需要从DMS获取
 	*/
 
+	// 从dms获取工单对应的项目信息，若该信息已经在根据项目优先级筛选时被加载，则不需要重复加载
+	if req.FilterProjectPriority == "" {
+		projectMap, err = loadProjectsByWorkflows(c.Request().Context(), workflows)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+	// 从dms获取工单对应的数据源信息
+	instanceMap, err := loadInstanceByWorkflows(c.Request().Context(), workflows)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	workflowsResV1 := make([]*WorkflowDetailResV1, 0, len(workflows))
 	for _, workflow := range workflows {
+		instanceInfos := make([]InstanceInfo, 0, len(workflow.InstanceIds))
+		for _, id := range workflow.InstanceIds {
+			instanceInfos = append(instanceInfos, InstanceInfo{
+				InstanceId:   id,
+				InstanceName: instanceMap[id].Name,
+			})
+		}
 		workflowRes := &WorkflowDetailResV1{
-			ProjectName:             workflow.ProjectId, // dms-todo: 临时使用id代替name
+			ProjectName:             projectMap[workflow.ProjectId].Name,
+			ProjectUid:              workflow.ProjectId,
+			ProjectPriority:         projectMap[workflow.ProjectId].ProjectPriority,
+			InstanceInfo:            instanceInfos,
 			Name:                    workflow.Subject,
 			WorkflowId:              workflow.WorkflowId,
 			Desc:                    workflow.Desc,
@@ -625,6 +668,88 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 		Data:      workflowsResV1,
 		TotalNums: count,
 	})
+}
+
+// 根据项目优先级从 dms 系统中获取相应的项目列表，并返回项目ID列表和项目映射
+func loadProjectsByPriority(ctx context.Context, priority dmsV1.ProjectPriority) (projectIds []string, projectMap map[string] /* project uid */ *dmsV1.ListProject, err error) {
+	projectMap = make(map[string]*dmsV1.ListProject)
+	// 如果根据项目优先级筛选SQL工单，则先获取项目优先级，根据优先级对应的项目ID进行筛选
+	projects, _, err := dmsobject.ListProjects(ctx, controller.GetDMSServerAddress(), dmsV1.ListProjectReq{
+		PageSize:                999,
+		PageIndex:               1,
+		FilterByProjectPriority: priority,
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	for _, project := range projects {
+		if _, exist := projectMap[project.ProjectUid]; !exist {
+			projectMap[project.ProjectUid] = project
+		}
+		projectIds = append(projectIds, project.ProjectUid)
+	}
+	return projectIds, projectMap, nil
+}
+
+// 根据工单列表中的项目ID从 dms 系统中获取对应的项目信息，并返回项目映射
+func loadProjectsByWorkflows(ctx context.Context, workflows []*model.WorkflowListDetail) (projectMap map[string] /* project uid */ *dmsV1.ListProject, err error) {
+	projectMap = make(map[string]*dmsV1.ListProject)
+	if len(workflows) == 0 {
+		return projectMap, nil
+	}
+
+	var projectIds []string
+	for _, workflow := range workflows {
+		if _, exist := projectMap[workflow.ProjectId]; !exist {
+			projectIds = append(projectIds, workflow.ProjectId)
+			projectMap[workflow.ProjectId] = nil
+		}
+	}
+	// get project priority from dms
+	projects, _, err := dmsobject.ListProjects(ctx, controller.GetDMSServerAddress(), dmsV1.ListProjectReq{
+		PageSize:            uint32(len(projectIds)),
+		PageIndex:           1,
+		FilterByProjectUids: projectIds,
+	})
+	if err != nil {
+		return nil, err
+	}
+	projectMap = make(map[string] /* project uid */ *dmsV1.ListProject)
+	for _, project := range projects {
+		projectMap[project.ProjectUid] = project
+	}
+	return projectMap, nil
+}
+
+// 根据工单列表中的实例ID从 dms 系统中获取对应的数据源实例信息，并返回实例映射
+func loadInstanceByWorkflows(ctx context.Context, workflows []*model.WorkflowListDetail) (instanceMap map[string] /* instance id */ *dmsV1.ListDBService, err error) {
+	instanceMap = make(map[string]*dmsV1.ListDBService)
+	if len(workflows) == 0 {
+		return instanceMap, nil
+	}
+
+	var instanceIdList []string
+	for _, workflow := range workflows {
+		for _, id := range workflow.InstanceIds {
+			if _, exist := instanceMap[id]; !exist {
+				instanceIdList = append(instanceIdList, id)
+				instanceMap[id] = nil
+			}
+		}
+	}
+	// get instances from dms
+	instances, _, err := dmsobject.ListDbServices(ctx, controller.GetDMSServerAddress(), dmsV1.ListDBServiceReq{
+		PageSize:             uint32(len(instanceIdList)),
+		PageIndex:            1,
+		FilterByDBServiceIds: instanceIdList,
+	})
+	if err != nil {
+		return nil, err
+	}
+	for _, instance := range instances {
+		instanceMap[instance.DBServiceUid] = instance
+	}
+	return instanceMap, nil
 }
 
 // GetWorkflowsV1
@@ -723,7 +848,7 @@ func GetWorkflowsV1(c echo.Context) error {
 			CurrentStepType:         workflow.CurrentStepType.String,
 			CurrentStepAssigneeUser: CurrentStepAssigneeUserNames,
 			Status:                  workflow.Status,
-			SqlVersionName:          workflow.SqlVersionName,
+			SqlVersionName:          workflow.SqlVersionNames,
 		}
 		workflowsResV1 = append(workflowsResV1, workflowRes)
 	}

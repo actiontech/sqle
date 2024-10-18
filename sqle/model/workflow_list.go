@@ -16,8 +16,9 @@ type WorkflowListDetail struct {
 	CurrentStepType            sql.NullString `json:"current_step_type" enums:"sql_review,sql_execute"`
 	CurrentStepAssigneeUserIds sql.NullString `json:"current_step_assignee_user_id_list"`
 	Status                     string         `json:"status"`
-	TaskInstanceType           RowList        `json:"task_instance_type"`
-	SqlVersionName             RowList        `json:"version"`
+	TaskInstanceType           RowList        `json:"task_instance_type"` // unused
+	SqlVersionNames            RowList        `json:"versions"`
+	InstanceIds                RowList        `json:"instance_ids"`
 }
 
 var workflowsQueryTpl = `
@@ -32,9 +33,15 @@ SELECT
        curr_wst.type                                                 AS current_step_type,
        curr_ws.assignees											 AS current_step_assignee_user_id_list,
        wr.status,
-	   GROUP_CONCAT(DISTINCT versions.version SEPARATOR ',') AS version
+	   GROUP_CONCAT(DISTINCT wir.instance_id SEPARATOR ',') AS instance_ids,
+	   GROUP_CONCAT(DISTINCT versions.version SEPARATOR ',') AS versions
 {{- template "body" . -}}
 GROUP BY w.id
+{{- if .filter_instance_id }}
+HAVING 
+    FIND_IN_SET(:filter_instance_id, instance_id) > 0
+{{- end }}
+
 ORDER BY w.id DESC
 {{- if .limit }}
 LIMIT :limit OFFSET :offset
@@ -145,6 +152,21 @@ AND versions.id = :filter_sql_version_id
 
 {{- if .filter_project_id }}
 AND w.project_id = :filter_project_id
+{{- end }}
+{{- if .filter_status_list }}
+AND wr.status IN ( 
+	{{ range $index, $element := .filter_status_list }}
+		{{ if $index }},{{ end }}"{{ $element }}"
+	{{ end }}
+ )
+{{- end }}
+
+{{- if .filter_project_id_list }}
+AND w.project_id IN ( 
+	{{ range $index, $element := .filter_project_id_list }}
+		{{ if $index }},{{ end }}"{{ $element }}"
+	{{ end }}
+ )
 {{- end }}
 
 {{- if .fuzzy_keyword }}
