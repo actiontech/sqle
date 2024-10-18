@@ -482,6 +482,101 @@ func (s *Storage) GetSqlManageListByReq(data map[string]interface{}) (list *SqlM
 	}, nil
 }
 
+type GlobalSqlManage struct {
+	Id                   uint64         `json:"id"`
+	SqlText              sql.NullString `json:"sql_text"`
+	Source               sql.NullString `json:"source"`
+	SourceIDs            RowList        `json:"source_id"`
+	AuditLevel           sql.NullString `json:"audit_level"`
+	AuditResults         AuditResults   `json:"audit_results"`
+	InstanceID           sql.NullString `json:"instance_id"`
+	Status               sql.NullString `json:"status"`
+	FirstAppearTimestamp *time.Time     `json:"first_appear_timestamp"`
+	Remark               sql.NullString `json:"remark"`
+	ProjectUid           string         `json:"project_id"`
+	Info                 string         `json:"info"`
+}
+
+var globalSqlManagerQueryTpl = `
+SELECT 
+	oms.id,
+	oms.sql_text,
+	oms.project_id,
+	oms.source,
+	oms.source_id as source_id,
+	oms.audit_level,
+	IF(oms.audit_results IS NULL,'null',oms.audit_results) AS audit_results,
+	oms.instance_id,
+	sm.status,
+	sm.remark,
+	oms.created_at as first_appear_timestamp,
+	oms.info
+{{- template "body" . -}} 
+
+GROUP BY oms.id
+ORDER BY 
+{{- if and .sort_field .sort_order }}
+	{{ .sort_field }} {{ .sort_order }}
+{{- else }}
+	oms.id desc
+{{- end }}
+
+{{- if .limit }}
+LIMIT :limit OFFSET :offset
+{{- end -}}
+`
+
+var globalSqlManagerBodyTpl = `
+{{ define "body" }}
+
+FROM sql_manage_records oms
+         LEFT JOIN sql_manage_record_processes sm ON sm.sql_manage_record_id = oms.id
+
+WHERE  oms.deleted_at IS NULL
+AND oms.priority = "high"
+
+{{- if .filter_project_uid }}
+AND oms.project_id = :filter_project_uid
+{{- end }}
+
+{{- if .filter_instance_id }}
+AND oms.instance_id = :filter_instance_id
+{{- end }}
+
+{{- if .filter_assignees_id }}
+AND sm.assignees = :filter_assignees_id OR FIND_IN_SET( :filter_assignees_id , sm.assignees ) > 0
+{{- end }}
+
+{{- if .filter_project_id_list }}
+AND oms.project_id IN ( 
+	{{ range $index, $element := .filter_project_id_list }}
+		{{ if $index }},{{ end }}"{{ $element }}"
+	{{ end }}
+ )
+{{- end }}
+
+{{ end }}
+`
+
+var globalSqlManagerTotalCount = `
+SELECT COUNT(DISTINCT oms.id)
+
+{{- template "body" . -}}
+`
+
+func (s *Storage) GetGlobalSqlManageList(data map[string]interface{}) (list []*GlobalSqlManage, totalCount uint64, err error) {
+	globalSqlManageList := make([]*GlobalSqlManage, 0)
+	err = s.getListResult(globalSqlManagerBodyTpl, globalSqlManagerQueryTpl, data, &globalSqlManageList)
+	if err != nil {
+		return nil, 0, err
+	}
+	totalCount, err = s.getCountResult(globalSqlManagerBodyTpl, globalSqlManagerTotalCount, data)
+	if err != nil {
+		return nil, 0, err
+	}
+	return globalSqlManageList, totalCount, nil
+}
+
 func (s *Storage) GetAllSqlManageList() ([]*SqlManage, error) {
 	sqlManageList := make([]*SqlManage, 0)
 	err := s.db.Model(&SqlManage{}).Find(&sqlManageList).Error
