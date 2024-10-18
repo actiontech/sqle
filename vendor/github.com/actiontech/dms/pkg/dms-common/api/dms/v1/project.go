@@ -22,6 +22,12 @@ type ListProjectReq struct {
 	FilterByName string `query:"filter_by_name" json:"filter_by_name"`
 	// filter the Project UID
 	FilterByUID string `query:"filter_by_uid" json:"filter_by_uid"`
+	// filter project by project id list, using in condition
+	// in:query
+	FilterByProjectUids []string `query:"filter_by_project_uids" json:"filter_by_project_uids"`
+	// filter project by project priority
+	// in:query
+	FilterByProjectPriority ProjectPriority `query:"filter_by_project_priority" json:"filter_by_project_priority"`
 }
 
 // swagger:enum ProjectOrderByField
@@ -30,6 +36,42 @@ type ProjectOrderByField string
 const (
 	ProjectOrderByName ProjectOrderByField = "name"
 )
+
+// swagger:enum ProjectPriority
+type ProjectPriority string
+
+const (
+	ProjectPriorityHigh    ProjectPriority = "high"
+	ProjectPriorityMedium  ProjectPriority = "medium"
+	ProjectPriorityLow     ProjectPriority = "low"
+	ProjectPriorityUnknown ProjectPriority = "unknown" // 当数据库中数据存在问题时，返回该状态
+)
+
+func ToPriorityNum(priority ProjectPriority) uint8 {
+	switch priority {
+	case ProjectPriorityHigh:
+		return 30
+	case ProjectPriorityMedium:
+		return 20
+	case ProjectPriorityLow:
+		return 10
+	default:
+		return 20 // 默认优先级为中
+	}
+}
+
+func ToPriority(priority uint8) ProjectPriority {
+	switch priority {
+	case 10:
+		return ProjectPriorityLow
+	case 20:
+		return ProjectPriorityMedium
+	case 30:
+		return ProjectPriorityHigh
+	default:
+		return ProjectPriorityUnknown
+	}
+}
 
 // A dms Project
 type ListProject struct {
@@ -49,6 +91,8 @@ type ListProject struct {
 	CreateUser UidWithName `json:"create_user"`
 	// create time
 	CreateTime strfmt.DateTime `json:"create_time"`
+	// project priority
+	ProjectPriority ProjectPriority `json:"project_priority" enums:"high,medium,low"`
 }
 
 type Business struct {
