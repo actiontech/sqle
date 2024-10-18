@@ -407,3 +407,22 @@ func TruncateAndMarkForExcelCell(s string) string {
 	}
 	return s
 }
+
+func IntersectionStringSlice(slice1, slice2 []string) []string {
+    // 用 map 来存储第一个切片的元素
+    elemMap := make(map[string]bool)
+    for _, v := range slice1 {
+        elemMap[v] = true
+    }
+
+    // 遍历第二个切片，找到交集
+    var intersection []string
+    for _, v := range slice2 {
+        if elemMap[v] {
+            intersection = append(intersection, v)
+            // 删除元素以防重复添加
+            delete(elemMap, v)
+        }
+    }
+    return intersection
+}
