@@ -57,7 +57,7 @@ func RuleSQLE00176(input *rulepkg.RuleHandlerInput) error {
 	}
 
 	hasStraighJoin := func(node ast.Node) bool {
-		joinNode := util.GetJoinNodeFromNode(input.Node)
+		joinNode := util.GetFirstJoinNodeFromStmt(input.Node)
 		if joinNode == nil {
 			return false
 		}

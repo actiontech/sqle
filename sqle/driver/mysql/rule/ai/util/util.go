@@ -281,7 +281,7 @@ func GetCreateTableStmt(context *session.Context, table *ast.TableName) (*ast.Cr
 		return nil, err
 	}
 	if !exist {
-		return nil, fmt.Errorf("failed to get create table stmt, table is not exist")
+		return nil, fmt.Errorf("failed to get create table stmt, table (%s) is not exist", table.Name.String())
 	}
 
 	return stmt, nil
@@ -369,7 +369,7 @@ func GetDefaultTable(stmt *ast.SelectStmt) *ast.TableName {
 }
 
 // a helper function to get first join node from dml
-func GetJoinNodeFromNode(node ast.Node) *ast.Join {
+func GetFirstJoinNodeFromStmt(node ast.Node) *ast.Join {
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
 		if stmt.From == nil {
@@ -389,6 +389,13 @@ func GetJoinNodeFromNode(node ast.Node) *ast.Join {
 	default:
 		return nil
 	}
+}
+
+// a helper function to get all join nodes from a given AST Node
+func GetAllJoinsFromNode(node ast.Node) []*ast.Join {
+	JoinExtractor := JoinExtractor{}
+	node.Accept(&JoinExtractor)
+	return JoinExtractor.joins
 }
 
 // a helper function to get the table source from join node
@@ -424,28 +431,44 @@ func GetTableAliasInfoFromJoin(join *ast.Join) []*TableAliasInfo {
 		if tableName, ok := tableSource.Source.(*ast.TableName); ok {
 			tableAlias = append(tableAlias, &TableAliasInfo{
 				TableAliasName: tableSource.AsName.String(),
-				TableName:      tableName.Name.L,
-				SchemaName:     tableName.Schema.L,
+				TableName:      tableName.Name.O,
+				SchemaName:     tableName.Schema.O,
 			})
 		}
 	}
 	return tableAlias
 }
 
-// a helper function to extract all function name from a given expr Node of a SQL statement
-func GetFuncName(expr ast.ExprNode) []string {
+// a helper function to extract all function name from a given Node of a SQL statement
+func GetFuncName(node ast.Node) (funcNames []string) {
 	extractor := funcExtractor{}
-	expr.Accept(&extractor)
+	node.Accept(&extractor)
 
-	return extractor.funcNames
+	for _, f := range extractor.funcs {
+		funcNames = append(funcNames, f.FuncName)
+	}
+
+	return funcNames
 }
 
-// a helper function to extract function expressions from a given expr node of a SQL statement
-func GetFuncExpr(expr ast.ExprNode) []string {
+// a helper function to extract function expressions from a given node of a SQL statement
+func GetFuncExpr(node ast.Node) (funcExprs []string) {
 	extractor := funcExtractor{}
-	expr.Accept(&extractor)
+	node.Accept(&extractor)
 
-	return extractor.expr
+	for _, f := range extractor.funcs {
+		funcExprs = append(funcExprs, f.Expr)
+	}
+
+	return funcExprs
+}
+
+// a helper function to extract all function info(funcName、funcExpr、funcColumnNames) from a given Node of a SQL statement
+func GetAllFunc(node ast.Node) []*FuncInfo {
+	extractor := funcExtractor{}
+	node.Accept(&extractor)
+
+	return extractor.funcs
 }
 
 // a helper function to extract math op expressions from a given expr node of a SQL statement
@@ -486,6 +509,11 @@ func CalculateIndexDiscrimination(context *session.Context, table *ast.TableName
 // a helper function to get the execution plan of a SQL statement in MySQL
 func GetExecutionPlan(context *session.Context, sql string) (*executor.ExplainWithWarningsResult, error) {
 	return context.GetExecutionPlanWithWarnings(sql)
+}
+
+// a helper function to get the execution tree plan of a SQL statement in MySQL
+func GetExecutionTreePlan(context *session.Context, sql string) (string, error) {
+	return context.GetExecutor().ExplainTree(sql)
 }
 
 // a helper function to get the number of rows in a table in MySQL
@@ -630,6 +658,24 @@ func ScanWhereStmt(fn func(expr ast.ExprNode) (skip bool), exprs ...ast.ExprNode
 // a helper function to return the maximum character length of a specified column in a specified table.
 func GetCurrentMaxColumnWidth(ctx *session.Context, table *ast.TableName, columnName string) (int, error) {
 	return ctx.GetExecutor().ShowCurrentMaxColumnWidth(table.Name.O, columnName)
+}
+
+// a helper function to check if all values in a column are NULL in MySQL
+func IsColumnAllNull(ctx *session.Context, tableName string, columnName string) (bool, error) {
+	// Construct the SQL query to check for all NULL values in the specified column
+	checkSQL := fmt.Sprintf("SELECT (SELECT COUNT(*) FROM %s) - (SELECT COUNT(*) FROM %s WHERE %s IS NOT NULL) RESULT;", tableName, tableName, columnName)
+	// Execute the query and retrieve the result
+	result, err := ctx.GetExecutor().Db.Query(checkSQL)
+	if err != nil {
+		return false, fmt.Errorf("failed to execute IsColumnAllNull query: %v", err)
+	}
+
+	// Check if the result indicates that all values are NULL
+	if len(result) != 1 {
+		return false, fmt.Errorf("unexpected result length: %v", len(result))
+	}
+
+	return result[0]["RESULT"].String == "0", nil
 }
 
 // end helper function file. this line which used for ai scanner should be at the end of the file, please do not delete it
