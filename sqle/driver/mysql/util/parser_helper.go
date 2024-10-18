@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/actiontech/sqle/sqle/driver/mysql/splitter"
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/format"
@@ -19,8 +20,7 @@ import (
 )
 
 func ParseSql(sql string) ([]ast.StmtNode, error) {
-	p := parser.New()
-	stmts, _, err := p.PerfectParse(sql, "", "")
+	stmts, err := splitter.NewSplitter().ParseSqlText(sql)
 	if err != nil {
 		return nil, err
 	}

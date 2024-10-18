@@ -100,7 +100,6 @@ require (
 	github.com/facebookgo/ensure v0.0.0-20200202191622-63f1cf65ac4c // indirect
 	github.com/facebookgo/freeport v0.0.0-20150612182905-d4adf43b75b9 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
-	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.5.0 // indirect
 	github.com/go-mysql-org/go-mysql v1.3.0 // indirect
@@ -178,13 +177,13 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
 replace (
 	cloud.google.com/go/compute/metadata => cloud.google.com/go/compute/metadata v0.1.0
 	github.com/labstack/echo/v4 => github.com/labstack/echo/v4 v4.6.1
 	github.com/pingcap/log => github.com/pingcap/log v0.0.0-20191012051959-b742a5d432e9
-	github.com/pingcap/parser => github.com/sjjian/parser v0.0.0-20240305095250-688ad439ef31
-	github.com/swaggo/swag => github.com/swaggo/swag v1.6.7
+	github.com/pingcap/parser => github.com/sjjian/parser v0.0.0-20240704052347-b6199b7bccae
 	google.golang.org/grpc => google.golang.org/grpc v1.29.0
 )
