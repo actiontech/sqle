@@ -639,3 +639,91 @@ launch_sqle() {
     fi
 }
 
+restart_sqle() {
+    echo "$split_line"
+    echo ">>>> 正在重新启动SQLE <<<<"
+    echo "$split_line"
+
+    if chmod +x "$work_directory/scripts/stop_sqle.sh"; then
+        echo "$info stop_sqle.sh 可执行权限配置完成"
+    else
+        echo "$error 设置 stop_sqle.sh 执行权限失败"
+        return 1
+    fi
+
+    if chmod +x "$work_directory/scripts/init_start.sh"; then
+            echo "$info init_start.sh 可执行权限配置完成"
+        else
+            echo "$error 设置 init_start.sh 执行权限失败"
+            return 1
+    fi
+    # 检查 stop_sqle.sh 是否存在
+    if [ ! -f "$work_directory/scripts/stop_sqle.sh" ]; then
+            echo "$error stop_sqle.sh 脚本不存在"
+            echo "$split_line"
+            exit 1
+    fi
+
+    # 检查 init_start.sh 是否存在
+    if [ ! -f "$work_directory/scripts/init_start.sh" ]; then
+        echo "$error init_start.sh 脚本不存在"
+        echo "$split_line"
+        exit 1
+    fi
+
+    # 启动 stop_sqle.sh脚本
+    echo "请稍等......"
+    bash "$work_directory/scripts/stop_sqle.sh"
+    if [ $? -eq 0 ]; then
+            echo "$info SQLE停止成功"
+            echo "$split_line"
+            echo ">>>>> SQLE 为您提供 SQL 全生命周期质量管控能力 <<<<<"
+            echo ""
+            echo "若需要社区支持，欢迎加入SQLE社区交流群："
+            echo "https://actiontech.github.io/sqle-docs/docs/support/community-support"
+            echo ""
+            echo "$split_line"
+        else
+            echo "$error SQLE停止失败"
+            echo "$split_line"
+            echo ">>>>> SQLE 为您提供 SQL 全生命周期质量管控能力 <<<<<"
+            echo ""
+            echo "若需要社区支持，欢迎加入SQLE社区交流群："
+            echo "https://actiontech.github.io/sqle-docs/docs/support/community-support"
+            echo ""
+            echo "$split_line"
+        fi
+
+    # 启动 init_start.sh 脚本
+    bash "$work_directory/scripts/init_start.sh"
+    # 检查启动是否成功
+    if [ $? -eq 0 ]; then
+        echo "$info SQLE启动成功"
+        echo "$split_line"
+        echo ">>>>> SQLE 为您提供 SQL 全生命周期质量管控能力 <<<<<"
+        echo ""
+        echo "爱可生官网-SQLE详情页见: "
+        echo "https://www.actionsky.com/sqle"
+        echo ""
+        echo "快速开始请参考："
+        echo "https://actiontech.github.io/sqle-docs/docs/quick-usage"
+        echo ""
+        echo "用户使用手册请参考: "
+        echo "https://actiontech.github.io/sqle-docs/docs/user-manual/project/intro"
+        echo ""
+        echo "若需要社区支持，欢迎加入SQLE社区交流群："
+        echo "https://actiontech.github.io/sqle-docs/docs/support/community-support"
+        echo ""
+        echo "$split_line"
+    else
+        echo "$error SQLE启动失败"
+        echo "$split_line"
+        echo ">>>>> SQLE 为您提供 SQL 全生命周期质量管控能力 <<<<<"
+        echo ""
+        echo "若需要社区支持，欢迎加入SQLE社区交流群："
+        echo "https://actiontech.github.io/sqle-docs/docs/support/community-support"
+        echo ""
+        echo "$split_line"
+    fi
+}
+
