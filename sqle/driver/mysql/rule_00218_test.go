@@ -1,172 +1,179 @@
 package mysql
 
 import (
-	"fmt"
-	"regexp"
 	"testing"
 
-	sqlmock "github.com/DATA-DOG/go-sqlmock"
-	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	"github.com/actiontech/sqle/sqle/driver/mysql/rule/ai"
-	"github.com/stretchr/testify/assert"
+	"github.com/actiontech/sqle/sqle/driver/mysql/session"
 )
 
 // ==== Rule test code start ====
-
-func NewMySQLInspectOnRuleSQLE00218(t *testing.T, tableNames ...string) *MysqlDriverImpl {
-	e, handler, err := executor.NewMockExecutor()
-	assert.NoError(t, err)
-	handler.MatchExpectationsInOrder(false)
-
-	inspect := NewMockInspect(e)
-
-	for _, tableName := range tableNames {
-		handler.ExpectQuery(regexp.QuoteMeta(fmt.Sprintf("SHOW INDEX FROM `exist_db`.`%v`", tableName))).
-			WillReturnRows(sqlmock.NewRows([]string{"Column_name", "Seq_in_index"}).AddRow("id", "1").AddRow("v2", "2"))
-	}
-
-	return inspect
-}
-
 func TestRuleSQLE00218(t *testing.T) {
 	ruleName := ai.SQLE00218
 	rule := rulepkg.RuleHandlerMap[ruleName].Rule
 
-	//select...where use leftmost index
-	runSingleRuleInspectCase(rule, t, "select...where use leftmost index", NewMySQLInspectOnRuleSQLE00218(t, "exist_tb_1"), `
-	SELECT * FROM exist_db.exist_tb_1 WHERE id = 1;
-	`, newTestResult())
+	runAIRuleCase(rule, t, "case 1: SELECT语句中的WHERE条件包含联合索引的最左字段user_id，应通过",
+		"SELECT * FROM user_table WHERE user_id = 123;",
+		session.NewAIMockContext().WithSQL(
+			"CREATE TABLE user_table (user_id INT, username VARCHAR(50), INDEX idx_user (user_id, username));",
+		),
+		nil,
+		newTestResult(),
+	)
 
-	//select...where not use leftmost index
-	runSingleRuleInspectCase(rule, t, "select...where not use leftmost index", NewMySQLInspectOnRuleSQLE00218(t, "exist_tb_1"), `
-	SELECT * FROM exist_db.exist_tb_1 WHERE v2 = 1;
-	`, newTestResult().addResult(ruleName, "v2"))
+	runAIRuleCase(rule, t, "case 2: SELECT语句中的WHERE条件仅包含联合索引的非最左字段username，应违反",
+		"SELECT * FROM user_table WHERE username = 'john_doe';",
+		session.NewAIMockContext().WithSQL(
+			"CREATE TABLE user_table (user_id INT, username VARCHAR(50), INDEX idx_user (user_id, username));",
+		),
+		nil,
+		newTestResult().addResult(ruleName),
+	)
 
-	//select...where 1=1
-	runSingleRuleInspectCase(rule, t, "select...where 1=1", NewMySQLInspectOnRuleSQLE00218(t, "exist_tb_1"), `
-	SELECT * FROM exist_db.exist_tb_1 WHERE 1=1;
-	`, newTestResult())
+	runAIRuleCase(rule, t, "case 3: SELECT语句无WHERE条件，但ORDER BY包含联合索引的最左字段user_id，应通过",
+		"SELECT * FROM user_table ORDER BY user_id;",
+		session.NewAIMockContext().WithSQL(
+			"CREATE TABLE user_table (user_id INT, username VARCHAR(50), INDEX idx_user (user_id, username));",
+		),
+		nil,
+		newTestResult(),
+	)
 
-	//select...where True
-	runSingleRuleInspectCase(rule, t, "select...where True", NewMySQLInspectOnRuleSQLE00218(t, "exist_tb_1"), `
-	SELECT * FROM exist_db.exist_tb_1 WHERE True;
-	`, newTestResult())
+	runAIRuleCase(rule, t, "case 4: SELECT语句无WHERE条件，但ORDER BY包含联合索引的非最左字段username，应违反",
+		"SELECT * FROM user_table ORDER BY username;",
+		session.NewAIMockContext().WithSQL(
+			"CREATE TABLE user_table (user_id INT, username VARCHAR(50), INDEX idx_user (user_id, username));",
+		),
+		nil,
+		newTestResult().addResult(ruleName),
+	)
 
-	//select...where use leftmost index, with group by
-	runSingleRuleInspectCase(rule, t, "select...where use leftmost index, with group by", NewMySQLInspectOnRuleSQLE00218(t, "exist_tb_1"), `
-	SELECT * FROM exist_db.exist_tb_1 WHERE id = 1 GROUP BY id;
-	`, newTestResult())
+	runAIRuleCase(rule, t, "case 5: INSERT语句中的SELECT包含WHERE条件且包含联合索引的最左字段user_id，应通过",
+		"INSERT INTO user_archive (user_id, username) SELECT user_id, username FROM user_table WHERE user_id = 456;",
+		session.NewAIMockContext().WithSQL(
+			"CREATE TABLE user_table (user_id INT, username VARCHAR(50), INDEX idx_user (user_id, username)); CREATE TABLE user_archive (user_id INT, username VARCHAR(50));",
+		),
+		nil,
+		newTestResult(),
+	)
 
-	//select...where not use leftmost index, with group by
-	runSingleRuleInspectCase(rule, t, "select...where not use leftmost index, with group by", NewMySQLInspectOnRuleSQLE00218(t, "exist_tb_1"), `
-	SELECT * FROM exist_db.exist_tb_1 WHERE v2 = 1 GROUP BY id;
-	`, newTestResult().addResult(ruleName, "v2"))
+	runAIRuleCase(rule, t, "case 6: INSERT语句中的SELECT仅包含联合索引的非最左字段username，应违反",
+		"INSERT INTO user_archive (user_id, username) SELECT user_id, username FROM user_table WHERE username = 'jane_doe';",
+		session.NewAIMockContext().WithSQL(
+			"CREATE TABLE user_table (user_id INT, username VARCHAR(50), INDEX idx_user (user_id, username)); CREATE TABLE user_archive (user_id INT, username VARCHAR(50));",
+		),
+		nil,
+		newTestResult().addResult(ruleName),
+	)
 
-	//select...where use leftmost index, with order by
-	runSingleRuleInspectCase(rule, t, "select...where use leftmost index, with order by", NewMySQLInspectOnRuleSQLE00218(t, "exist_tb_1"), `
-	SELECT * FROM exist_db.exist_tb_1 WHERE id = 1 ORDER BY id;
-	`, newTestResult())
+	runAIRuleCase(rule, t, "case 7: UNION语句的所有SELECT子句均包含WHERE条件且包含联合索引的最左字段user_id，应通过",
+		"SELECT * FROM user_table WHERE user_id = 1 UNION SELECT * FROM user_table WHERE user_id = 2;",
+		session.NewAIMockContext().WithSQL(
+			"CREATE TABLE user_table (user_id INT, username VARCHAR(50), INDEX idx_user (user_id, username));",
+		),
+		nil,
+		newTestResult(),
+	)
 
-	//select...where not use leftmost index, with order by
-	runSingleRuleInspectCase(rule, t, "select...where not use leftmost index, with order by", NewMySQLInspectOnRuleSQLE00218(t, "exist_tb_1"), `
-	SELECT * FROM exist_db.exist_tb_1 WHERE v2 = 1 ORDER BY id;
-	`, newTestResult().addResult(ruleName, "v2"))
+	runAIRuleCase(rule, t, "case 8: UNION语句的一个SELECT子句包含WHERE条件的非最左字段username，应违反",
+		"SELECT * FROM user_table WHERE user_id = 1 UNION SELECT * FROM user_table WHERE username = 'alice';",
+		session.NewAIMockContext().WithSQL(
+			"CREATE TABLE user_table (user_id INT, username VARCHAR(50), INDEX idx_user (user_id, username));",
+		),
+		nil,
+		newTestResult().addResult(ruleName),
+	)
 
-	//select...where 1=1, with group by
-	runSingleRuleInspectCase(rule, t, "select...where 1=1, with group by", NewMySQLInspectOnRuleSQLE00218(t, "exist_tb_1"), `
-	SELECT * FROM exist_db.exist_tb_1 WHERE 1=1 GROUP BY id;
-	`, newTestResult())
+	runAIRuleCase(rule, t, "case 11: SELECT语句的WHERE条件总为真且GROUP BY包含联合索引的最左字段user_id，应通过",
+		"SELECT user_id, COUNT(*) FROM user_table WHERE 1=1 GROUP BY user_id;",
+		session.NewAIMockContext().WithSQL(
+			"CREATE TABLE user_table (user_id INT, username VARCHAR(50), INDEX idx_user (user_id, username));",
+		),
+		nil,
+		newTestResult(),
+	)
 
-	//select...where 1=1, with group by, not use leftmost index
-	runSingleRuleInspectCase(rule, t, "select...where 1=1, with group by, not use leftmost index", NewMySQLInspectOnRuleSQLE00218(t, "exist_tb_1"), `
-	SELECT * FROM exist_db.exist_tb_1 WHERE 1=1 GROUP BY v2;
-	`, newTestResult().addResult(ruleName, "v2"))
+	runAIRuleCase(rule, t, "case 12: SELECT语句的WHERE条件总为真且GROUP BY包含联合索引的非最左字段username，应违反",
+		"SELECT username, COUNT(*) FROM user_table WHERE 1=1 GROUP BY username;",
+		session.NewAIMockContext().WithSQL(
+			"CREATE TABLE user_table (user_id INT, username VARCHAR(50), INDEX idx_user (user_id, username));",
+		),
+		nil,
+		newTestResult().addResult(ruleName),
+	)
 
-	//select...where 1=1, with order by
-	runSingleRuleInspectCase(rule, t, "select...where 1=1, with order by", NewMySQLInspectOnRuleSQLE00218(t, "exist_tb_1"), `
-	SELECT * FROM exist_db.exist_tb_1 WHERE 1=1 ORDER BY id;
-	`, newTestResult())
+	runAIRuleCase(rule, t, "case 13: SELECT语句中的WHERE条件包含联合索引的最左字段name，应通过(从xml中补充)",
+		"SELECT * FROM customers WHERE name = '小王1';",
+		session.NewAIMockContext().WithSQL(
+			"CREATE TABLE customers (id INT, name VARCHAR(50), age INT, INDEX idx_customers (name, age));",
+		),
+		nil,
+		newTestResult(),
+	)
 
-	//select...where 1=1, with order by, not use leftmost index
-	runSingleRuleInspectCase(rule, t, "select...where 1=1, with order by, not use leftmost index", NewMySQLInspectOnRuleSQLE00218(t, "exist_tb_1"), `
-	SELECT * FROM exist_db.exist_tb_1 WHERE 1=1 ORDER BY v2;
-	`, newTestResult().addResult(ruleName, "v2"))
+	runAIRuleCase(rule, t, "case 14: SELECT语句中的WHERE条件仅包含联合索引的非最左字段age，应违反(从xml中补充)",
+		"SELECT * FROM customers WHERE age < 30;",
+		session.NewAIMockContext().WithSQL(
+			"CREATE TABLE customers (id INT, name VARCHAR(50), age INT, INDEX idx_customers (name, age));",
+		),
+		nil,
+		newTestResult().addResult(ruleName),
+	)
 
-	//select...where normal, with join, on condition not use leftmost index, with group by
-	runSingleRuleInspectCase(rule, t, "select...where normal, with join, on condition not use leftmost index, with group by", NewMySQLInspectOnRuleSQLE00218(t, "exist_tb_1", "exist_tb_2"), `
-	SELECT * FROM exist_db.exist_tb_1 a LEFT JOIN exist_db.exist_tb_2 b ON a.v2 = b.v2 WHERE a.id = 1 GROUP BY a.id;
-	`, newTestResult().addResult(ruleName, "a.v2").addResult(ruleName, "b.v2"))
+	runAIRuleCase(rule, t, "case 15: SELECT语句无WHERE条件，但ORDER BY包含联合索引的最左字段name，应通过(从xml中补充)",
+		"SELECT * FROM customers ORDER BY name;",
+		session.NewAIMockContext().WithSQL(
+			"CREATE TABLE customers (id INT, name VARCHAR(50), age INT, INDEX idx_customers (name, age));",
+		),
+		nil,
+		newTestResult(),
+	)
 
-	//select...where normal, with join, on condition not use leftmost index, with order by
-	runSingleRuleInspectCase(rule, t, "select...where normal, with join, on condition not use leftmost index, with order by", NewMySQLInspectOnRuleSQLE00218(t, "exist_tb_1", "exist_tb_2"), `
-	SELECT * FROM exist_db.exist_tb_1 a LEFT JOIN exist_db.exist_tb_2 b ON a.v2 = b.v2 WHERE a.id = 1 ORDER BY a.id;
-	`, newTestResult().addResult(ruleName, "a.v2").addResult(ruleName, "b.v2"))
+	runAIRuleCase(rule, t, "case 16: SELECT语句无WHERE条件，但ORDER BY包含联合索引的非最左字段age，应违反(从xml中补充)",
+		"SELECT * FROM customers ORDER BY age;",
+		session.NewAIMockContext().WithSQL(
+			"CREATE TABLE customers (id INT, name VARCHAR(50), age INT, INDEX idx_customers (name, age));",
+		),
+		nil,
+		newTestResult().addResult(ruleName),
+	)
 
-	//select...where 1=1, with join, on condition not use leftmost index, with group by
-	runSingleRuleInspectCase(rule, t, "select...where 1=1, with join, on condition not use leftmost index, with group by", NewMySQLInspectOnRuleSQLE00218(t, "exist_tb_1", "exist_tb_2"), `
-	SELECT * FROM exist_db.exist_tb_1 a LEFT JOIN exist_db.exist_tb_2 b ON a.v2 = b.v2 WHERE 1=1 GROUP BY a.id;
-	`, newTestResult().addResult(ruleName, "a.v2").addResult(ruleName, "b.v2"))
+	runAIRuleCase(rule, t, "case 17: INSERT语句中的SELECT包含WHERE条件且包含联合索引的最左字段name，应通过(从xml中补充)",
+		"INSERT INTO customers_archive (id, name, sex, city, age) SELECT id, name, sex, city, age FROM customers WHERE name = '小王2';",
+		session.NewAIMockContext().WithSQL(
+			"CREATE TABLE customers (id INT, name VARCHAR(50), sex VARCHAR(10), city VARCHAR(50), age INT, INDEX idx_customers (name, age)); CREATE TABLE customers_archive (id INT, name VARCHAR(50), sex VARCHAR(10), city VARCHAR(50), age INT);",
+		),
+		nil,
+		newTestResult(),
+	)
 
-	//select...where 1=1, with join, on condition not use leftmost index, with order by
-	runSingleRuleInspectCase(rule, t, "select...where 1=1, with join, on condition not use leftmost index, with order by", NewMySQLInspectOnRuleSQLE00218(t, "exist_tb_1", "exist_tb_2"), `
-	SELECT * FROM exist_db.exist_tb_1 a LEFT JOIN exist_db.exist_tb_2 b ON a.v2 = b.v2 WHERE 1=1 ORDER BY a.id;
-	`, newTestResult().addResult(ruleName, "a.v2").addResult(ruleName, "b.v2"))
+	runAIRuleCase(rule, t, "case 18: INSERT语句中的SELECT仅包含联合索引的非最左字段age，应违反(从xml中补充)",
+		"INSERT INTO customers_archive (id, name, sex, city, age) SELECT id, name, sex, city, age FROM customers WHERE age < 25;",
+		session.NewAIMockContext().WithSQL(
+			"CREATE TABLE customers (id INT, name VARCHAR(50), sex VARCHAR(10), city VARCHAR(50), age INT, INDEX idx_customers (name, age)); CREATE TABLE customers_archive (id INT, name VARCHAR(50), sex VARCHAR(10), city VARCHAR(50), age INT);",
+		),
+		nil,
+		newTestResult().addResult(ruleName),
+	)
 
-	//insert...select...where use leftmost index
-	runSingleRuleInspectCase(rule, t, "insert...select...where use leftmost index", NewMySQLInspectOnRuleSQLE00218(t, "exist_tb_3"), `
-	INSERT INTO exist_db.exist_tb_1 SELECT * FROM exist_db.exist_tb_3 WHERE id = 1;
-	`, newTestResult())
+	runAIRuleCase(rule, t, "case 19: UNION语句的所有SELECT子句均包含WHERE条件且包含联合索引的最左字段name，应通过(从xml中补充)",
+		"SELECT * FROM customers WHERE name = '小王1' UNION SELECT * FROM customers WHERE name = '小王2';",
+		session.NewAIMockContext().WithSQL(
+			"CREATE TABLE customers (id INT, name VARCHAR(50), age INT, INDEX idx_customers (name, age));",
+		),
+		nil,
+		newTestResult(),
+	)
 
-	//insert...select...where not use leftmost index
-	runSingleRuleInspectCase(rule, t, "insert...select...where not use leftmost index", NewMySQLInspectOnRuleSQLE00218(t, "exist_tb_3"), `
-	INSERT INTO exist_db.exist_tb_1 SELECT * FROM exist_db.exist_tb_3 WHERE v2 = 1;
-	`, newTestResult().addResult(ruleName, "v2"))
-
-	//insert...select...where 1=1
-	runSingleRuleInspectCase(rule, t, "insert...select...where 1=1", NewMySQLInspectOnRuleSQLE00218(t, "exist_tb_3"), `
-	INSERT INTO exist_db.exist_tb_1 SELECT * FROM exist_db.exist_tb_3 WHERE 1=1;
-	`, newTestResult())
-
-	//insert...select...where use leftmost index, with join
-	runSingleRuleInspectCase(rule, t, "insert...select...where use leftmost index, with join", NewMySQLInspectOnRuleSQLE00218(t, "exist_tb_3", "exist_tb_4"), `
-	INSERT INTO exist_db.exist_tb_1 SELECT * FROM exist_db.exist_tb_3 a LEFT JOIN exist_db.exist_tb_4 b ON a.id = b.id WHERE a.id = 1;
-	`, newTestResult())
-
-	//insert...select...where not use leftmost index, with join
-	runSingleRuleInspectCase(rule, t, "insert...select...where not use leftmost index, with join", NewMySQLInspectOnRuleSQLE00218(t, "exist_tb_3", "exist_tb_4"), `
-	INSERT INTO exist_db.exist_tb_1 SELECT * FROM exist_db.exist_tb_3 a LEFT JOIN exist_db.exist_tb_4 b ON a.v2 = b.v2 WHERE a.id = 1;
-	`, newTestResult().addResult(ruleName, "a.v2").addResult(ruleName, "b.v2"))
-
-	//insert...select...where 1=1, with join
-	runSingleRuleInspectCase(rule, t, "insert...select...where 1=1, with join", NewMySQLInspectOnRuleSQLE00218(t, "exist_tb_3", "exist_tb_4"), `
-	INSERT INTO exist_db.exist_tb_1 SELECT * FROM exist_db.exist_tb_3 a LEFT JOIN exist_db.exist_tb_4 b ON a.v2 = b.v2 WHERE 1=1;
-	`, newTestResult().addResult(ruleName, "a.v2").addResult(ruleName, "b.v2"))
-
-	//union...where use leftmost index
-	runSingleRuleInspectCase(rule, t, "union...where use leftmost index", NewMySQLInspectOnRuleSQLE00218(t, "exist_tb_1", "exist_tb_2"), `
-	SELECT * FROM (SELECT id FROM exist_db.exist_tb_1 WHERE id = 1 UNION ALL SELECT id FROM exist_db.exist_tb_2 WHERE id = 1) a;
-	`, newTestResult())
-
-	//union...where 1=1
-	runSingleRuleInspectCase(rule, t, "union...where 1=1", NewMySQLInspectOnRuleSQLE00218(t, "exist_tb_1", "exist_tb_2"), `
-	SELECT * FROM (SELECT id FROM exist_db.exist_tb_1 WHERE 1=1 UNION ALL SELECT id FROM exist_db.exist_tb_2 WHERE 1=1) a;
-	`, newTestResult())
-
-	//union...where use leftmost index, with join
-	runSingleRuleInspectCase(rule, t, "union...where use leftmost index, with join", NewMySQLInspectOnRuleSQLE00218(t, "exist_tb_1", "exist_tb_2", "exist_tb_3", "exist_tb_4"), `
-	SELECT * FROM (SELECT id FROM exist_db.exist_tb_1 a JOIN exist_db.exist_tb_2 b ON a.id = b.id WHERE a.id = 1 UNION ALL SELECT id FROM exist_db.exist_tb_3 a JOIN exist_db.exist_tb_4 b ON a.id = b.id WHERE a.id = 1) a;
-	`, newTestResult())
-
-	//union...where not use leftmost index, with join
-	runSingleRuleInspectCase(rule, t, "union...where not use leftmost index, with join", NewMySQLInspectOnRuleSQLE00218(t, "exist_tb_1", "exist_tb_2", "exist_tb_3", "exist_tb_4"), `
-	SELECT * FROM (SELECT id FROM exist_db.exist_tb_1 a JOIN exist_db.exist_tb_2 b ON a.v2 = b.v2 WHERE a.id = 1 UNION ALL SELECT id FROM exist_db.exist_tb_3 a JOIN exist_db.exist_tb_4 b ON a.v2 = b.v2 WHERE a.id = 1) a;
-	`, newTestResult().addResult(ruleName, "a.v2").addResult(ruleName, "b.v2"))
-
-	//union...where 1=1, with join
-	runSingleRuleInspectCase(rule, t, "union...where 1=1, with join", NewMySQLInspectOnRuleSQLE00218(t, "exist_tb_1", "exist_tb_2", "exist_tb_3", "exist_tb_4"), `
-	SELECT * FROM (SELECT id FROM exist_db.exist_tb_1 a JOIN exist_db.exist_tb_2 b ON a.v2 = b.v2 WHERE 1=1 UNION ALL SELECT id FROM exist_db.exist_tb_3 a JOIN exist_db.exist_tb_4 b ON a.v2 = b.v2 WHERE 1=1) a;
-	`, newTestResult().addResult(ruleName, "a.v2").addResult(ruleName, "b.v2"))
+	runAIRuleCase(rule, t, "case 20: UNION语句的一个SELECT子句包含WHERE条件的非最左字段age，应违反(从xml中补充)",
+		"SELECT * FROM customers WHERE name = '小王1' UNION SELECT * FROM customers WHERE age < 25;",
+		session.NewAIMockContext().WithSQL(
+			"CREATE TABLE customers (id INT, name VARCHAR(50), age INT, INDEX idx_customers (name, age));",
+		),
+		nil,
+		newTestResult().addResult(ruleName),
+	)
 
 }
 

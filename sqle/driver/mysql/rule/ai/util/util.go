@@ -298,16 +298,29 @@ func GetSchemaName(context *session.Context, schemaName string) string {
 }
 
 // a helper function to indexes info for the given table
-func GetTableIndexes(context *session.Context, tableName, schemaName string) ([]*executor.TableIndexesInfo, error) {
-	schemaName = GetSchemaName(context, schemaName)
-	return context.GetExecutor().GetTableIndexesInfo(supplementalQuotationMarks(schemaName), supplementalQuotationMarks(tableName))
+func GetTableIndexes(context *session.Context, tableName, schemaName string) (indexColumnNames map[string] /*index name*/ []string /*column names*/, err error) {
+	// 获取获取表的信息
+	createTableStmt, err := GetCreateTableStmt(context, &ast.TableName{Name: model.NewCIStr(tableName), Schema: model.NewCIStr(schemaName)})
+	if err != nil {
+		return nil, err
+	}
+
+	indexColumnNames = make(map[string][]string)
+	constraints := GetTableConstraints(createTableStmt.Constraints, GetIndexConstraintTypes()...)
+	for _, constraint := range constraints {
+		for _, colName := range constraint.Keys {
+			indexColumnNames[constraint.Name] = append(indexColumnNames[constraint.Name], colName.Column.Name.String())
+		}
+	}
+
+	return indexColumnNames, nil
 }
 
 // a helper function to get index expression for the given table
 func GetIndexExpressionsForTables(ctx *session.Context, tables []*ast.TableName) ([]string, error) {
 	existIndexExpr := []string{}
 	for _, table := range tables {
-		indexesInfo, err := GetTableIndexes(ctx, table.Name.String(), table.Schema.String())
+		indexesInfo, err := getTableIndexes(ctx, table.Name.String(), table.Schema.String())
 		if err != nil {
 			return nil, err
 		}
@@ -755,4 +768,9 @@ type TableAliasInfo struct {
 	TableName      string
 	SchemaName     string
 	TableAliasName string
+}
+
+func getTableIndexes(context *session.Context, tableName, schemaName string) ([]*executor.TableIndexesInfo, error) {
+	schemaName = GetSchemaName(context, schemaName)
+	return context.GetExecutor().GetTableIndexesInfo(supplementalQuotationMarks(schemaName), supplementalQuotationMarks(tableName))
 }

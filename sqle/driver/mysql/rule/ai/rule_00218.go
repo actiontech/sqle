@@ -115,13 +115,17 @@ func RuleSQLE00218(input *rulepkg.RuleHandlerInput) error {
 					return nil
 				}
 
+			LOOP:
 				for _, colName := range colNames {
-					for _, index := range indexesInfo {
-						// check if the column in the union index and is not the leftmost column
-						if colName.Name.String() == index.ColumnName && index.SeqInIndex != "1" {
-							rulepkg.AddResult(input.Res, input.Rule, SQLE00218, colName.String())
+					// check if the column in the union index and is not the leftmost column
+					for _, cols := range indexesInfo {
+						for i, col := range cols {
+							if colName.Name.String() == col && i == 0 {
+								continue LOOP
+							}
 						}
 					}
+					rulepkg.AddResult(input.Res, input.Rule, SQLE00218, colName.Name.String())
 				}
 			}
 		}

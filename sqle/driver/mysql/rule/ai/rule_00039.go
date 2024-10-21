@@ -183,10 +183,12 @@ func RuleSQLE00039(input *rulepkg.RuleHandlerInput) error {
 				indexColumns := make([]string, 0)
 				for _, colName := range colNames {
 
-					for _, index := range indexesInfo {
+					for _, cols := range indexesInfo {
 						// check if the column is index
-						if colName.Name.String() == index.ColumnName {
-							indexColumns = append(indexColumns, colName.Name.String())
+						for _, col := range cols {
+							if colName.Name.String() == col {
+								indexColumns = append(indexColumns, colName.Name.String())
+							}
 						}
 					}
 				}

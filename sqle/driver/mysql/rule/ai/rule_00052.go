@@ -149,8 +149,6 @@ func RuleSQLE00052(input *rulepkg.RuleHandlerInput) error {
 		return nil
 	}
 	return nil
-
-	return nil
 }
 
 // ==== Rule code end ====
