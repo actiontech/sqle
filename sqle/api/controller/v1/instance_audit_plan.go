@@ -824,6 +824,11 @@ func GetAuditPlanExecCmd(projectName string, iap *model.InstanceAuditPlan, ap *m
 		return ""
 	}
 
+	if ap.Type == "default" {
+		cmdTpl := "--project=%s --audit_plan_id=%d --token=%s"
+		return fmt.Sprintf(cmdTpl, iap.ProjectId, ap.ID, iap.Token)
+	}
+
 	address := config.GetOptions().SqleOptions.DMSServerAddress
 	parsedURL, err := url.Parse(address)
 	if err != nil {
