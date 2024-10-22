@@ -8028,6 +8028,54 @@
                 }
             }
         },
+        "/v1/sql_manages/statistics": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get global sql manage statistics",
+                "tags": [
+                    "SqlManage"
+                ],
+                "summary": "获取全局管控sql统计信息",
+                "operationId": "GetGlobalSqlManageStatistics",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project uid",
+                        "name": "filter_project_uid",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance id",
+                        "name": "filter_instance_id",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "high",
+                            "medium",
+                            "low"
+                        ],
+                        "type": "string",
+                        "description": "project priority",
+                        "name": "filter_project_priority",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetGlobalSqlManageStatisticsResp"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/statistic/instances/sql_average_execution_time": {
             "get": {
                 "security": [
@@ -8400,6 +8448,29 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetWorkflowStatusCountResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/system/module_red_dots": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get the red dot prompt information in the system",
+                "tags": [
+                    "system"
+                ],
+                "summary": "查询系统各模块的红点提示信息",
+                "operationId": "GetSystemModuleRedDots",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSystemModuleRedDotsRes"
                         }
                     }
                 }
@@ -9098,6 +9169,78 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetWorkflowStatisticOfInstancesResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/workflows/statistics": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get global workflow statistics",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "获取全局工单统计数据",
+                "operationId": "GetGlobalWorkflowStatistics",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "filter create user id",
+                        "name": "filter_create_user_id",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "wait_for_audit",
+                            "wait_for_execution",
+                            "rejected",
+                            "executing",
+                            "canceled",
+                            "exec_failed",
+                            "finished"
+                        ],
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "filter by workflow status,, support using many status",
+                        "name": "filter_status_list",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter by project uid",
+                        "name": "filter_project_uid",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter by instance id in project",
+                        "name": "filter_instance_id",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "high",
+                            "medium",
+                            "low"
+                        ],
+                        "type": "string",
+                        "description": "filter by project priority",
+                        "name": "filter_project_priority",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GlobalWorkflowStatisticsResV1"
                         }
                     }
                 }
@@ -12821,7 +12964,23 @@
                     "type": "string",
                     "example": "ok"
                 },
-                "total_num": {
+                "total_nums": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.GetGlobalSqlManageStatisticsResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
                     "type": "integer"
                 }
             }
@@ -13766,6 +13925,23 @@
                 }
             }
         },
+        "v1.GetSystemModuleRedDotsRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.ModuleRedDots"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetSystemVariablesResV1": {
             "type": "object",
             "properties": {
@@ -14268,6 +14444,22 @@
                 }
             }
         },
+        "v1.GlobalWorkflowStatisticsResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
+                }
+            }
+        },
         "v1.HighPriorityConditionReq": {
             "type": "object",
             "properties": {
@@ -14680,6 +14872,23 @@
                     "type": "object",
                     "$ref": "#/definitions/v1.TimeResV1"
                 }
+            }
+        },
+        "v1.ModuleRedDot": {
+            "type": "object",
+            "properties": {
+                "has_red_dot": {
+                    "type": "boolean"
+                },
+                "module_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.ModuleRedDots": {
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/v1.ModuleRedDot"
             }
         },
         "v1.ModuleStatusRes": {
