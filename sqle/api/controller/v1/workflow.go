@@ -607,7 +607,7 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 		})
 	}
 	// 6. 从dms获取工单对应的项目信息
-	var projectMap = make(map[string]*dmsV1.ListProject)
+	var projectMap = make(ProjectMap)
 	if req.FilterProjectPriority != "" {
 		_, projectMap, err = loadProjectsByPriority(c.Request().Context(), req.FilterProjectPriority)
 	} else {
@@ -628,20 +628,54 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 	})
 }
 
-func toGlobalWorkflowRes(workflows []*model.WorkflowListDetail, projectMap map[string]*dmsV1.ListProject, instanceMap map[string]*dmsV1.ListDBService) (workflowsResV1 []*WorkflowDetailResV1) {
+type ProjectMap map[string] /* project uid */ *dmsV1.ListProject
+
+func (m ProjectMap) ProjectName(projectUid string) string {
+	if m == nil {
+		return ""
+	}
+	if project, exist := m[projectUid]; exist && project != nil {
+		return project.Name
+	}
+	return ""
+}
+
+func (m ProjectMap) ProjectPriority(projectUid string) dmsV1.ProjectPriority {
+	if m == nil {
+		return dmsV1.ProjectPriorityUnknown
+	}
+	if project, exist := m[projectUid]; exist && project != nil {
+		return project.ProjectPriority
+	}
+	return dmsV1.ProjectPriorityUnknown
+}
+
+type InstanceMap map[string] /* instance id */ *dmsV1.ListDBService
+
+func (m InstanceMap) InstanceName(instanceId string) string {
+	if m == nil {
+		return ""
+	}
+	if instance, exist := m[instanceId]; exist && instance != nil {
+		return instance.Name
+	}
+	return ""
+}
+
+func toGlobalWorkflowRes(workflows []*model.WorkflowListDetail, projectMap ProjectMap, instanceMap InstanceMap) (workflowsResV1 []*WorkflowDetailResV1) {
 	workflowsResV1 = make([]*WorkflowDetailResV1, 0, len(workflows))
 	for _, workflow := range workflows {
 		instanceInfos := make([]InstanceInfo, 0, len(workflow.InstanceIds))
 		for _, id := range workflow.InstanceIds {
 			instanceInfos = append(instanceInfos, InstanceInfo{
 				InstanceId:   id,
-				InstanceName: instanceMap[id].Name,
+				InstanceName: instanceMap.InstanceName(id),
 			})
 		}
 		workflowRes := &WorkflowDetailResV1{
-			ProjectName:             projectMap[workflow.ProjectId].Name,
+			ProjectName:             projectMap.ProjectName(workflow.ProjectId),
 			ProjectUid:              workflow.ProjectId,
-			ProjectPriority:         projectMap[workflow.ProjectId].ProjectPriority,
+			ProjectPriority:         projectMap.ProjectPriority(workflow.ProjectId),
 			InstanceInfo:            instanceInfos,
 			Name:                    workflow.Subject,
 			WorkflowId:              workflow.WorkflowId,
@@ -813,8 +847,8 @@ func getGlobalDashBoardVisibilityOfUser(isAdmin bool, permissions []dmsV1.OpPerm
 }
 
 // 根据项目优先级从 dms 系统中获取相应的项目列表，并返回项目ID列表和项目映射
-func loadProjectsByPriority(ctx context.Context, priority dmsV1.ProjectPriority) (projectIds []string, projectMap map[string] /* project uid */ *dmsV1.ListProject, err error) {
-	projectMap = make(map[string]*dmsV1.ListProject)
+func loadProjectsByPriority(ctx context.Context, priority dmsV1.ProjectPriority) (projectIds []string, projectMap ProjectMap, err error) {
+	projectMap = make(ProjectMap)
 	// 如果根据项目优先级筛选SQL工单，则先获取项目优先级，根据优先级对应的项目ID进行筛选
 	projects, _, err := dmsobject.ListProjects(ctx, controller.GetDMSServerAddress(), dmsV1.ListProjectReq{
 		PageSize:                999,
@@ -834,8 +868,8 @@ func loadProjectsByPriority(ctx context.Context, priority dmsV1.ProjectPriority)
 }
 
 // 根据工单列表中的项目ID从 dms 系统中获取对应的项目信息，并返回项目映射
-func loadProjectsByWorkflows(ctx context.Context, workflows []*model.WorkflowListDetail) (projectMap map[string] /* project uid */ *dmsV1.ListProject, err error) {
-	projectMap = make(map[string]*dmsV1.ListProject)
+func loadProjectsByWorkflows(ctx context.Context, workflows []*model.WorkflowListDetail) (projectMap ProjectMap, err error) {
+	projectMap = make(ProjectMap)
 	if len(workflows) == 0 {
 		return projectMap, nil
 	}
@@ -850,7 +884,7 @@ func loadProjectsByWorkflows(ctx context.Context, workflows []*model.WorkflowLis
 	return loadProjectsByProjectIds(ctx, projectIds)
 }
 
-func loadProjectsByProjectIds(ctx context.Context, projectIds []string) (projectMap map[string] /* project uid */ *dmsV1.ListProject, err error) {
+func loadProjectsByProjectIds(ctx context.Context, projectIds []string) (projectMap ProjectMap, err error) {
 	// get project priority from dms
 	projects, _, err := dmsobject.ListProjects(ctx, controller.GetDMSServerAddress(), dmsV1.ListProjectReq{
 		PageSize:            uint32(len(projectIds)),
@@ -868,8 +902,8 @@ func loadProjectsByProjectIds(ctx context.Context, projectIds []string) (project
 }
 
 // 根据工单列表中的实例ID从 dms 系统中获取对应的数据源实例信息，并返回实例映射
-func loadInstanceByWorkflows(ctx context.Context, workflows []*model.WorkflowListDetail) (instanceMap map[string] /* instance id */ *dmsV1.ListDBService, err error) {
-	instanceMap = make(map[string]*dmsV1.ListDBService)
+func loadInstanceByWorkflows(ctx context.Context, workflows []*model.WorkflowListDetail) (instanceMap InstanceMap, err error) {
+	instanceMap = make(InstanceMap)
 	if len(workflows) == 0 {
 		return instanceMap, nil
 	}
@@ -886,9 +920,9 @@ func loadInstanceByWorkflows(ctx context.Context, workflows []*model.WorkflowLis
 	return loadInstanceByInstanceIds(ctx, instanceIdList)
 }
 
-func loadInstanceByInstanceIds(ctx context.Context, instanceIds []string) (instanceMap map[string] /* instance id */ *dmsV1.ListDBService, err error) {
+func loadInstanceByInstanceIds(ctx context.Context, instanceIds []string) (instanceMap InstanceMap, err error) {
 	// get instances from dms
-	instanceMap = make(map[string]*dmsV1.ListDBService)
+	instanceMap = make(InstanceMap)
 	instances, _, err := dmsobject.ListDbServices(ctx, controller.GetDMSServerAddress(), dmsV1.ListDBServiceReq{
 		PageSize:             uint32(len(instanceIds)),
 		PageIndex:            1,
