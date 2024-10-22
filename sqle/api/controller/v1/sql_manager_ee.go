@@ -586,11 +586,11 @@ func loadProjectsBySqlManage(ctx context.Context, modelGlobalSqlManages []*model
 	return projectMap, nil
 }
 
-func loadInstancesBySqlManage(ctx context.Context, modelGlobalSqlManages []*model.GlobalSqlManage) (instanceMap map[string]*dmsV1.ListDBService, err error) {
+func loadInstancesBySqlManage(ctx context.Context, modelGlobalSqlManages []*model.GlobalSqlManage) (instanceMap InstanceMap, err error) {
 	if len(modelGlobalSqlManages) == 0 {
-		return make(map[string]*dmsV1.ListDBService), nil
+		return make(InstanceMap), nil
 	}
-	instanceMap = make(map[string]*dmsV1.ListDBService)
+	instanceMap = make(InstanceMap)
 	instanceIds := []string{}
 	for _, modelSqlManage := range modelGlobalSqlManages {
 		if modelSqlManage.InstanceID.Valid {
@@ -607,22 +607,22 @@ func loadInstancesBySqlManage(ctx context.Context, modelGlobalSqlManages []*mode
 	return instanceMap, nil
 }
 
-func toGlobalSqlManage(ctx context.Context, modelGlobalSqlManages []*model.GlobalSqlManage, projectMap map[string]*dmsV1.ListProject, instanceMap map[string]*dmsV1.ListDBService) []*GlobalSqlManage {
+func toGlobalSqlManage(ctx context.Context, modelGlobalSqlManages []*model.GlobalSqlManage, projectMap ProjectMap, instanceMap InstanceMap) []*GlobalSqlManage {
 	lang := locale.Bundle.GetLangTagFromCtx(ctx)
 	ret := make([]*GlobalSqlManage, 0, len(modelGlobalSqlManages))
 	for _, mg := range modelGlobalSqlManages {
 		sqlMgr := &GlobalSqlManage{
 			Id:                   mg.Id,
 			Sql:                  mg.SqlText.String,
-			ProjectName:          projectMap[mg.ProjectUid].Name,
+			ProjectName:          projectMap.ProjectName(mg.ProjectUid),
 			ProjectUid:           mg.ProjectUid,
 			Status:               mg.Status.String,
 			FirstAppearTimeStamp: mg.FirstAppearTimestamp.Format(time.RFC3339),
-			ProjectPriority:      projectMap[mg.ProjectUid].ProjectPriority,
+			ProjectPriority:      projectMap.ProjectPriority(mg.ProjectUid),
 			ProblemDescriptions:  problemDescriptions(mg.Info),
 		}
 		if mg.InstanceID.Valid {
-			sqlMgr.InstanceName = instanceMap[mg.InstanceID.String].Name
+			sqlMgr.InstanceName = instanceMap.InstanceName(mg.InstanceID.String)
 			sqlMgr.InstanceId = mg.InstanceID.String
 		}
 		for i := range mg.AuditResults {
