@@ -639,4 +639,3 @@ launch_sqle() {
     fi
 }
 
-
