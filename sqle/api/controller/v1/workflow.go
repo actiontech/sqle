@@ -599,6 +599,13 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	if len(workflows) == 0 {
+		return c.JSON(http.StatusOK, GetWorkflowsResV1{
+			BaseRes:   controller.NewBaseReq(nil),
+			Data:      []*WorkflowDetailResV1{},
+			TotalNums: count,
+		})
+	}
 	// 6. 从dms获取工单对应的项目信息
 	var projectMap = make(map[string]*dmsV1.ListProject)
 	if req.FilterProjectPriority != "" {
