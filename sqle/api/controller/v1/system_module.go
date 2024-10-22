@@ -50,3 +50,26 @@ func GetSystemModuleStatus(c echo.Context) error {
 		},
 	})
 }
+
+type GetSystemModuleRedDotsRes struct {
+	controller.BaseRes
+	Data ModuleRedDots `json:"data"`
+}
+
+type ModuleRedDots []ModuleRedDot
+
+type ModuleRedDot struct {
+	ModuleName string `json:"module_name"`
+	HasRedDot  bool   `json:"has_red_dot"`
+}
+
+// @Summary 查询系统各模块的红点提示信息
+// @Description get the red dot prompt information in the system
+// @Id GetSystemModuleRedDots
+// @Tags system
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetSystemModuleRedDotsRes
+// @router /v1/system/module_red_dots [get]
+func GetSystemModuleRedDots(c echo.Context) error {
+	return nil
+}
