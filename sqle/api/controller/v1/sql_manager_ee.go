@@ -405,19 +405,19 @@ func getGlobalSqlManageList(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	var err error
-	// 1. 权限控制
+	// 1. 获取用户权限信息
 	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	// 1.1. 获取用户的所有权限信息
 	permissions, isAdmin, err := dmsobject.GetUserOpPermission(c.Request().Context(), "", user.GetIDStr(), dms.GetDMSServerAddress())
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	// 2. 将用户权限信息，转化为全局待处理清单统一的用户可见性
 	userVisibility := getGlobalDashBoardVisibilityOfUser(isAdmin, permissions)
 
-	// 2.2 页面筛选项：如果根据项目优先级筛选，则先筛选出对应优先级下的项目
+	// 3. 将用户可见性、接口请求以及用户的权限范围，构造为全局工单的基础的过滤器，满足全局工单统一的过滤逻辑
 	filter, err := constructGlobalSqlManageBasicFilter(c.Request().Context(), user, userVisibility, permissions,
 		&globalSqlManageBasicFilter{
 			FilterProjectUid:      req.FilterProjectUid,
@@ -429,7 +429,7 @@ func getGlobalSqlManageList(c echo.Context) error {
 	filter["limit"] = limit
 	filter["offset"] = offset
 
-	// 3. 根据筛选项筛选SQL管控的SQL信息
+	// 4. 根据筛选项筛选SQL管控的SQL信息
 	s := model.GetStorage()
 	modelGlobalSqlManages, total, err := s.GetGlobalSqlManageList(filter)
 	if err != nil {
@@ -443,7 +443,7 @@ func getGlobalSqlManageList(c echo.Context) error {
 		})
 	}
 	var projectMap = make(map[string]*dmsV1.ListProject)
-	// 3.1. 若未根据项目优先级筛选，需要根据SQL拉取对应的项目信息
+	// 5. 根据SQL拉取对应的项目信息
 	if req.FilterProjectPriority == nil {
 		projectMap, err = loadProjectsBySqlManage(c.Request().Context(), modelGlobalSqlManages)
 		if err != nil {
@@ -455,7 +455,7 @@ func getGlobalSqlManageList(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
-	// 3.2. 需要根据SQL拉取对应的数据源信息
+	// 6. 根据SQL拉取对应的数据源信息
 	instanceMap, err := loadInstancesBySqlManage(c.Request().Context(), modelGlobalSqlManages)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -473,18 +473,18 @@ func getGlobalSqlManageStatistics(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	var err error
-	// 1. 权限控制
+	// 1. 获取用户权限信息
 	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	// 1.1. 获取用户的所有权限信息
 	permissions, isAdmin, err := dmsobject.GetUserOpPermission(c.Request().Context(), "", user.GetIDStr(), dms.GetDMSServerAddress())
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	// 2. 将用户权限信息，转化为全局待处理清单统一的用户可见性
 	userVisibility := getGlobalDashBoardVisibilityOfUser(isAdmin, permissions)
-	// 1.3. 若用户不能查看所有待关注SQL，则需要判断用户是否拥有多项目查看待关注SQL的权限，可以看到所有待关注SQL的用户不需要判断项目范围
+	// 3. 将用户可见性、接口请求以及用户的权限范围，构造为全局工单的基础的过滤器，满足全局工单统一的过滤逻辑
 	filter, err := constructGlobalSqlManageBasicFilter(c.Request().Context(), user, userVisibility, permissions,
 		&globalSqlManageBasicFilter{
 			FilterProjectUid:      req.FilterProjectUid,
@@ -494,7 +494,7 @@ func getGlobalSqlManageStatistics(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	// 3. 根据筛选项筛选SQL管控的SQL信息
+	// 4. 根据筛选项筛选SQL管控的SQL信息
 	s := model.GetStorage()
 	total, err := s.GetGlobalSqlManageStatics(filter)
 	if err != nil {
