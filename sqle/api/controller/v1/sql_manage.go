@@ -359,8 +359,8 @@ type GetGlobalSqlManageListReq struct {
 
 type GetGlobalSqlManageListResp struct {
 	controller.BaseRes
-	Data     []*GlobalSqlManage `json:"data"`
-	TotalNum uint64             `json:"total_num"`
+	Data      []*GlobalSqlManage `json:"data"`
+	TotalNums uint64             `json:"total_nums"`
 }
 
 type GlobalSqlManage struct {
@@ -393,4 +393,30 @@ type GlobalSqlManage struct {
 // @Router /v1/sql_manages [get]
 func GetGlobalSqlManageList(c echo.Context) error {
 	return getGlobalSqlManageList(c)
+}
+
+type GetGlobalSqlManageStatisticsReq struct {
+	FilterProjectUid      *string                `query:"filter_project_uid" json:"filter_project_uid,omitempty"`
+	FilterInstanceId      *string                `query:"filter_instance_id" json:"filter_instance_id,omitempty"`
+	FilterProjectPriority *dmsV1.ProjectPriority `query:"filter_project_priority" json:"filter_project_priority,omitempty" enums:"high,medium,low"`
+}
+
+type GetGlobalSqlManageStatisticsResp struct {
+	controller.BaseRes
+	TotalNums uint64 `json:"total_nums"`
+}
+
+// GetGlobalSqlManageStatistics
+// @Summary 获取全局管控sql统计信息
+// @Description get global sql manage statistics
+// @Tags SqlManage
+// @Id GetGlobalSqlManageStatistics
+// @Security ApiKeyAuth
+// @Param filter_project_uid query string false "project uid"
+// @Param filter_instance_id query string false "instance id"
+// @Param filter_project_priority query string false "project priority" Enums(high,medium,low)
+// @Success 200 {object} v1.GetGlobalSqlManageStatisticsResp
+// @Router /v1/sql_manages/statistics  [get]
+func GetGlobalSqlManageStatistics(c echo.Context) error {
+	return getGlobalSqlManageStatistics(c)
 }
