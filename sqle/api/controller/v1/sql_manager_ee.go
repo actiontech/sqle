@@ -435,7 +435,13 @@ func getGlobalSqlManageList(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
+	if len(modelGlobalSqlManages) == 0 {
+		return c.JSON(http.StatusOK, &GetGlobalSqlManageListResp{
+			BaseRes:   controller.NewBaseReq(nil),
+			Data:      []*GlobalSqlManage{},
+			TotalNums: total,
+		})
+	}
 	var projectMap = make(map[string]*dmsV1.ListProject)
 	// 3.1. 若未根据项目优先级筛选，需要根据SQL拉取对应的项目信息
 	if req.FilterProjectPriority == nil {
