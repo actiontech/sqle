@@ -156,9 +156,6 @@ func RuleSQLE00097(input *rulepkg.RuleHandlerInput) error {
 			return false
 		}
 
-		// 提取涉及的字段名和对应的表名
-		tableFieldsMap := make(map[string][]string)
-
 		// 提取 ORDER BY 字段
 		if hasOrderBy {
 			for _, item := range selectStmt.OrderBy.Items {
@@ -166,7 +163,6 @@ func RuleSQLE00097(input *rulepkg.RuleHandlerInput) error {
 				for _, field := range fields {
 					tableName := getTableName(field)
 					if tableName != "" {
-						tableFieldsMap[tableName] = append(tableFieldsMap[tableName], field.Name.Name.L)
 						isViolate, err := checkViolate(tableName, field.Name.Name.L)
 						if err != nil {
 							log.NewEntry().Errorf("checkViolate err: %s", err)
@@ -189,7 +185,6 @@ func RuleSQLE00097(input *rulepkg.RuleHandlerInput) error {
 					for _, field := range fields {
 						tableName := getTableName(field)
 						if tableName != "" {
-							tableFieldsMap[tableName] = append(tableFieldsMap[tableName], field.Name.Name.L)
 							isViolate, err := checkViolate(tableName, field.Name.Name.L)
 							if err != nil {
 								log.NewEntry().Errorf("checkViolate err: %s", err)
@@ -212,7 +207,6 @@ func RuleSQLE00097(input *rulepkg.RuleHandlerInput) error {
 				for _, field := range fields {
 					tableName := getTableName(field)
 					if tableName != "" {
-						tableFieldsMap[tableName] = append(tableFieldsMap[tableName], field.Name.Name.L)
 						isViolate, err := checkViolate(tableName, field.Name.Name.L)
 						if err != nil {
 							log.NewEntry().Errorf("checkViolate err: %s", err)
@@ -239,10 +233,6 @@ func RuleSQLE00097(input *rulepkg.RuleHandlerInput) error {
 			}
 		}
 	case *ast.UnionStmt:
-		// 特殊处理：UnionStmt.OrderBy 赋予给 最右边SelectStmt.OrderBy
-		rigtStmt := stmt.SelectList.Selects[len(stmt.SelectList.Selects)-1]
-		rigtStmt.OrderBy = stmt.OrderBy
-		//
 		selectStmts := util.GetSelectStmt(stmt)
 		for _, selectStmt := range selectStmts {
 			if processSelectStmt(selectStmt) {
