@@ -9031,53 +9031,8 @@ var doc = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "filter subject",
-                        "name": "filter_subject",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter create time from",
-                        "name": "filter_create_time_from",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter create time to",
-                        "name": "filter_create_time_to",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter_task_execute_start_time_from",
-                        "name": "filter_task_execute_start_time_from",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter_task_execute_start_time_to",
-                        "name": "filter_task_execute_start_time_to",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
                         "description": "filter create user id",
                         "name": "filter_create_user_id",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "wait_for_audit",
-                            "wait_for_execution",
-                            "rejected",
-                            "executing",
-                            "canceled",
-                            "exec_failed",
-                            "finished"
-                        ],
-                        "type": "string",
-                        "description": "filter workflow status",
-                        "name": "filter_status",
                         "in": "query"
                     },
                     {
@@ -9119,18 +9074,6 @@ var doc = `{
                         "type": "string",
                         "description": "filter by project priority",
                         "name": "filter_project_priority",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter current step assignee user id",
-                        "name": "filter_current_step_assignee_user_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter instance id",
-                        "name": "filter_task_instance_id",
                         "in": "query"
                     },
                     {
