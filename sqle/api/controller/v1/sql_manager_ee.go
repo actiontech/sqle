@@ -457,13 +457,13 @@ func getGlobalSqlManageList(c echo.Context) error {
 		}
 		if len(projectMap) == 0 {
 			return c.JSON(http.StatusOK, &GetGlobalSqlManageListResp{
-				BaseRes:  controller.NewBaseReq(nil),
-				Data:     []*GlobalSqlManage{},
-				TotalNum: 0,
+				BaseRes:   controller.NewBaseReq(nil),
+				Data:      []*GlobalSqlManage{},
+				TotalNums: 0,
 			})
 		}
 	}
-	
+
 	if req.FilterProjectPriority != nil {
 		if canViewProjects {
 			// 2.2.1 若根据项目优先级筛选，且可以查看多项目待关注SQL，则将可查看的项目和项目优先级筛选后的项目的集合取交集
@@ -504,9 +504,9 @@ func getGlobalSqlManageList(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	return c.JSON(http.StatusOK, &GetGlobalSqlManageListResp{
-		BaseRes:  controller.NewBaseReq(nil),
-		Data:     ToGlobalSqlManage(c.Request().Context(), modelGlobalSqlManages, projectMap, instanceMap),
-		TotalNum: total,
+		BaseRes:   controller.NewBaseReq(nil),
+		Data:      ToGlobalSqlManage(c.Request().Context(), modelGlobalSqlManages, projectMap, instanceMap),
+		TotalNums: total,
 	})
 }
 
