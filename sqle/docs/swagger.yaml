@@ -1563,7 +1563,18 @@ definitions:
       message:
         example: ok
         type: string
-      total_num:
+      total_nums:
+        type: integer
+    type: object
+  v1.GetGlobalSqlManageStatisticsResp:
+    properties:
+      code:
+        example: 0
+        type: integer
+      message:
+        example: ok
+        type: string
+      total_nums:
         type: integer
     type: object
   v1.GetInstanceAuditPlanDetailResV1:
@@ -2215,6 +2226,18 @@ definitions:
       total_nums:
         type: integer
     type: object
+  v1.GetSystemModuleRedDotsRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.ModuleRedDots'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetSystemVariablesResV1:
     properties:
       code:
@@ -2565,6 +2588,17 @@ definitions:
         - manual_audited
         type: string
     type: object
+  v1.GlobalWorkflowStatisticsResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      message:
+        example: ok
+        type: string
+      total_nums:
+        type: integer
+    type: object
   v1.HighPriorityConditionReq:
     properties:
       key:
@@ -2844,6 +2878,17 @@ definitions:
         $ref: '#/definitions/v1.TimeResV1'
         type: object
     type: object
+  v1.ModuleRedDot:
+    properties:
+      has_red_dot:
+        type: boolean
+      module_name:
+        type: string
+    type: object
+  v1.ModuleRedDots:
+    items:
+      $ref: '#/definitions/v1.ModuleRedDot'
+    type: array
   v1.ModuleStatusRes:
     properties:
       is_supported:
@@ -10791,6 +10836,37 @@ paths:
       summary: 获取全局管控sql列表
       tags:
       - SqlManage
+  /v1/sql_manages/statistics:
+    get:
+      description: get global sql manage statistics
+      operationId: GetGlobalSqlManageStatistics
+      parameters:
+      - description: project uid
+        in: query
+        name: filter_project_uid
+        type: string
+      - description: instance id
+        in: query
+        name: filter_instance_id
+        type: string
+      - description: project priority
+        enum:
+        - high
+        - medium
+        - low
+        in: query
+        name: filter_project_priority
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetGlobalSqlManageStatisticsResp'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取全局管控sql统计信息
+      tags:
+      - SqlManage
   /v1/statistic/instances/sql_average_execution_time:
     get:
       description: get average execution time of sql
@@ -11027,6 +11103,20 @@ paths:
       summary: 获取各种状态工单的数量
       tags:
       - statistic
+  /v1/system/module_red_dots:
+    get:
+      description: get the red dot prompt information in the system
+      operationId: GetSystemModuleRedDots
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetSystemModuleRedDotsRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 查询系统各模块的红点提示信息
+      tags:
+      - system
   /v1/system/module_status:
     get:
       description: get module status for modulealities in the system
@@ -11490,6 +11580,55 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取实例上工单的统计信息
+      tags:
+      - workflow
+  /v1/workflows/statistics:
+    get:
+      description: get global workflow statistics
+      operationId: GetGlobalWorkflowStatistics
+      parameters:
+      - description: filter create user id
+        in: query
+        name: filter_create_user_id
+        type: string
+      - description: filter by workflow status,, support using many status
+        enum:
+        - wait_for_audit
+        - wait_for_execution
+        - rejected
+        - executing
+        - canceled
+        - exec_failed
+        - finished
+        in: query
+        items:
+          type: string
+        name: filter_status_list
+        type: array
+      - description: filter by project uid
+        in: query
+        name: filter_project_uid
+        type: string
+      - description: filter by instance id in project
+        in: query
+        name: filter_instance_id
+        type: string
+      - description: filter by project priority
+        enum:
+        - high
+        - medium
+        - low
+        in: query
+        name: filter_project_priority
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GlobalWorkflowStatisticsResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取全局工单统计数据
       tags:
       - workflow
   /v2/audit_files:
