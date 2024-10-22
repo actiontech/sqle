@@ -711,6 +711,36 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 	})
 }
 
+type GetGlobalWorkflowStatisticsReqV1 struct {
+	FilterCreateUserId              string                `json:"filter_create_user_id" query:"filter_create_user_id"`
+	FilterStatusList                []string              `json:"filter_status_list" query:"filter_status_list" validate:"dive,oneof=wait_for_audit wait_for_execution rejected canceled executing exec_failed finished"`
+	FilterProjectUid                string                `json:"filter_project_uid" query:"filter_project_uid"`
+	FilterInstanceId                string                `json:"filter_instance_id" query:"filter_instance_id"`
+	FilterProjectPriority           dmsV1.ProjectPriority `json:"filter_project_priority" query:"filter_project_priority"  valid:"omitempty,oneof=high medium low"`
+}
+
+type GlobalWorkflowStatisticsResV1 struct {
+	controller.BaseRes
+	TotalNums uint64 `json:"total_nums"`
+}
+
+// GetGlobalWorkflowStatistics
+// @Summary 获取全局工单统计数据
+// @Description get global workflow statistics 
+// @Tags workflow
+// @Id GetGlobalWorkflowStatistics
+// @Security ApiKeyAuth
+// @Param filter_create_user_id query string false "filter create user id"
+// @Param filter_status_list query []string false "filter by workflow status,, support using many status" Enums(wait_for_audit,wait_for_execution,rejected,executing,canceled,exec_failed,finished)
+// @Param filter_project_uid query string false "filter by project uid"
+// @Param filter_instance_id query string false "filter by instance id in project"
+// @Param filter_project_priority query string false "filter by project priority" Enums(high,medium,low)
+// @Success 200 {object} v1.GlobalWorkflowStatisticsResV1
+// @router /v1/workflows/statistics [get]
+func GetGlobalWorkflowStatistics(c echo.Context) error {
+	return nil
+}
+
 type GlobalDashBoardVisibility string
 
 const GlobalDashBoardVisibilityGlobal GlobalDashBoardVisibility = "global"
