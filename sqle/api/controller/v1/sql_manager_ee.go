@@ -405,29 +405,118 @@ func getGlobalSqlManageList(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	var err error
-	// 1. 权限控制
+	// 1. 获取用户权限信息
 	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	// 1.1. 获取用户的所有权限信息
 	permissions, isAdmin, err := dmsobject.GetUserOpPermission(c.Request().Context(), "", user.GetIDStr(), dms.GetDMSServerAddress())
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	// 角色：全局可查看者 canViewGlobal
-	// 1.2. 若用户是Admin 或者拥有全局查看和全局管理权限，则可以看到所有待关注的SQL
-	var canViewGlobal bool = isAdmin
-	for _, permission := range permissions {
-		if permission.OpPermissionType == dmsV1.OpPermissionTypeGlobalView || permission.OpPermissionType == dmsV1.OpPermissionTypeGlobalManagement {
-			canViewGlobal = true
-			break
+	// 2. 将用户权限信息，转化为全局待处理清单统一的用户可见性
+	userVisibility := getGlobalDashBoardVisibilityOfUser(isAdmin, permissions)
+
+	// 3. 将用户可见性、接口请求以及用户的权限范围，构造为全局工单的基础的过滤器，满足全局工单统一的过滤逻辑
+	filter, err := constructGlobalSqlManageBasicFilter(c.Request().Context(), user, userVisibility, permissions,
+		&globalSqlManageBasicFilter{
+			FilterProjectUid:      req.FilterProjectUid,
+			FilterInstanceId:      req.FilterInstanceId,
+			FilterProjectPriority: req.FilterProjectPriority,
+		},
+	)
+	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
+	filter["limit"] = limit
+	filter["offset"] = offset
+
+	// 4. 根据筛选项筛选SQL管控的SQL信息
+	s := model.GetStorage()
+	modelGlobalSqlManages, total, err := s.GetGlobalSqlManageList(filter)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if len(modelGlobalSqlManages) == 0 {
+		return c.JSON(http.StatusOK, &GetGlobalSqlManageListResp{
+			BaseRes:   controller.NewBaseReq(nil),
+			Data:      []*GlobalSqlManage{},
+			TotalNums: total,
+		})
+	}
+	var projectMap = make(map[string]*dmsV1.ListProject)
+	// 5. 根据SQL拉取对应的项目信息
+	if req.FilterProjectPriority == nil {
+		projectMap, err = loadProjectsBySqlManage(c.Request().Context(), modelGlobalSqlManages)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	} else {
+		_, projectMap, err = loadProjectsByPriority(c.Request().Context(), *req.FilterProjectPriority)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
+	// 6. 根据SQL拉取对应的数据源信息
+	instanceMap, err := loadInstancesBySqlManage(c.Request().Context(), modelGlobalSqlManages)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return c.JSON(http.StatusOK, &GetGlobalSqlManageListResp{
+		BaseRes:   controller.NewBaseReq(nil),
+		Data:      toGlobalSqlManage(c.Request().Context(), modelGlobalSqlManages, projectMap, instanceMap),
+		TotalNums: total,
+	})
+}
+
+func getGlobalSqlManageStatistics(c echo.Context) error {
+	req := new(GetGlobalSqlManageStatisticsReq)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	var err error
+	// 1. 获取用户权限信息
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	permissions, isAdmin, err := dmsobject.GetUserOpPermission(c.Request().Context(), "", user.GetIDStr(), dms.GetDMSServerAddress())
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	// 2. 将用户权限信息，转化为全局待处理清单统一的用户可见性
+	userVisibility := getGlobalDashBoardVisibilityOfUser(isAdmin, permissions)
+	// 3. 将用户可见性、接口请求以及用户的权限范围，构造为全局工单的基础的过滤器，满足全局工单统一的过滤逻辑
+	filter, err := constructGlobalSqlManageBasicFilter(c.Request().Context(), user, userVisibility, permissions,
+		&globalSqlManageBasicFilter{
+			FilterProjectUid:      req.FilterProjectUid,
+			FilterInstanceId:      req.FilterInstanceId,
+			FilterProjectPriority: req.FilterProjectPriority,
+		})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	// 4. 根据筛选项筛选SQL管控的SQL信息
+	s := model.GetStorage()
+	total, err := s.GetGlobalSqlManageStatics(filter)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return c.JSON(http.StatusOK, &GetGlobalSqlManageStatisticsResp{
+		BaseRes:   controller.NewBaseReq(nil),
+		TotalNums: total,
+	})
+}
+
+type globalSqlManageBasicFilter struct {
+	FilterProjectUid      *string                `query:"filter_project_uid" json:"filter_project_uid,omitempty"`
+	FilterInstanceId      *string                `query:"filter_instance_id" json:"filter_instance_id,omitempty"`
+	FilterProjectPriority *dmsV1.ProjectPriority `query:"filter_project_priority" json:"filter_project_priority,omitempty" enums:"high,medium,low"`
+}
+
+func constructGlobalSqlManageBasicFilter(ctx context.Context, user *model.User, userVisibility GlobalDashBoardVisibility, permissions []dmsV1.OpPermissionItem, req *globalSqlManageBasicFilter) (map[string]interface{}, error) {
 	// 角色：多项目管理者 canViewProjects
 	// 1.3. 若用户不能查看所有待关注SQL，则需要判断用户是否拥有多项目查看待关注SQL的权限，可以看到所有待关注SQL的用户不需要判断项目范围
 	var projectIdsOfProjectAdmin []string
-	if !canViewGlobal {
+	if userVisibility == GlobalDashBoardVisibilityProjects {
 		for _, permission := range permissions {
 			if permission.OpPermissionType == dmsV1.OpPermissionTypeProjectAdmin {
 				projectIdsOfProjectAdmin = append(projectIdsOfProjectAdmin, permission.RangeUids...)
@@ -439,33 +528,24 @@ func getGlobalSqlManageList(c echo.Context) error {
 
 	// 2. 组织筛选项
 	// 2.1. 基本筛选项
-	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
+
 	data := map[string]interface{}{
-		"limit":              limit,
-		"offset":             offset,
 		"filter_instance_id": req.FilterInstanceId, // 页面筛选项
 		"filter_project_uid": req.FilterProjectUid, // 页面筛选项
 	}
 
-	var projectMap map[string]*dmsV1.ListProject
 	// 2.2 页面筛选项：如果根据项目优先级筛选，则先筛选出对应优先级下的项目
 	var projectIdsByPriority []string
+	var err error
 	if req.FilterProjectPriority != nil {
-		projectIdsByPriority, projectMap, err = loadProjectsByPriority(c.Request().Context(), *req.FilterProjectPriority)
+		projectIdsByPriority, _, err = loadProjectsByPriority(ctx, *req.FilterProjectPriority)
 		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-		if len(projectMap) == 0 {
-			return c.JSON(http.StatusOK, &GetGlobalSqlManageListResp{
-				BaseRes:   controller.NewBaseReq(nil),
-				Data:      []*GlobalSqlManage{},
-				TotalNums: 0,
-			})
+			return nil, err
 		}
 	}
 
 	if req.FilterProjectPriority != nil {
-		if canViewProjects {
+		if userVisibility == GlobalDashBoardVisibilityProjects {
 			// 2.2.1 若根据项目优先级筛选，且可以查看多项目待关注SQL，则将可查看的项目和项目优先级筛选后的项目的集合取交集
 			data["filter_project_id_list"] = utils.IntersectionStringSlice(projectIdsByPriority, projectIdsOfProjectAdmin)
 		} else {
@@ -481,33 +561,10 @@ func getGlobalSqlManageList(c echo.Context) error {
 	}
 	// 角色：SQL被分配者
 	// 2.4. 若用户既不能查看所有待关注SQL也不能查看多项目待关注SQL，则可以查看在SQL管控中分配给他的SQL
-	if !canViewGlobal && !canViewProjects {
+	if userVisibility == GlobalDashBoardVisibilityAssignee {
 		data["filter_assignees_id"] = user.GetIDStr()
 	}
-
-	// 3. 根据筛选项筛选SQL管控的SQL信息
-	s := model.GetStorage()
-	modelGlobalSqlManages, total, err := s.GetGlobalSqlManageList(data)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	// 3.1. 若未根据项目优先级筛选，需要根据SQL拉取对应的项目信息
-	if req.FilterProjectPriority == nil {
-		projectMap, err = loadProjectsBySqlManage(c.Request().Context(), modelGlobalSqlManages)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-	}
-	// 3.2. 需要根据SQL拉取对应的数据源信息
-	instanceMap, err := loadInstancesBySqlManage(c.Request().Context(), modelGlobalSqlManages)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	return c.JSON(http.StatusOK, &GetGlobalSqlManageListResp{
-		BaseRes:   controller.NewBaseReq(nil),
-		Data:      ToGlobalSqlManage(c.Request().Context(), modelGlobalSqlManages, projectMap, instanceMap),
-		TotalNums: total,
-	})
+	return data, nil
 }
 
 func loadProjectsBySqlManage(ctx context.Context, modelGlobalSqlManages []*model.GlobalSqlManage) (projectMap map[string]*dmsV1.ListProject, err error) {
@@ -529,11 +586,11 @@ func loadProjectsBySqlManage(ctx context.Context, modelGlobalSqlManages []*model
 	return projectMap, nil
 }
 
-func loadInstancesBySqlManage(ctx context.Context, modelGlobalSqlManages []*model.GlobalSqlManage) (instanceMap map[string]*dmsV1.ListDBService, err error) {
+func loadInstancesBySqlManage(ctx context.Context, modelGlobalSqlManages []*model.GlobalSqlManage) (instanceMap InstanceMap, err error) {
 	if len(modelGlobalSqlManages) == 0 {
-		return make(map[string]*dmsV1.ListDBService), nil
+		return make(InstanceMap), nil
 	}
-	instanceMap = make(map[string]*dmsV1.ListDBService)
+	instanceMap = make(InstanceMap)
 	instanceIds := []string{}
 	for _, modelSqlManage := range modelGlobalSqlManages {
 		if modelSqlManage.InstanceID.Valid {
@@ -550,22 +607,22 @@ func loadInstancesBySqlManage(ctx context.Context, modelGlobalSqlManages []*mode
 	return instanceMap, nil
 }
 
-func ToGlobalSqlManage(ctx context.Context, modelGlobalSqlManages []*model.GlobalSqlManage, projectMap map[string]*dmsV1.ListProject, instanceMap map[string]*dmsV1.ListDBService) []*GlobalSqlManage {
+func toGlobalSqlManage(ctx context.Context, modelGlobalSqlManages []*model.GlobalSqlManage, projectMap ProjectMap, instanceMap InstanceMap) []*GlobalSqlManage {
 	lang := locale.Bundle.GetLangTagFromCtx(ctx)
 	ret := make([]*GlobalSqlManage, 0, len(modelGlobalSqlManages))
 	for _, mg := range modelGlobalSqlManages {
 		sqlMgr := &GlobalSqlManage{
 			Id:                   mg.Id,
 			Sql:                  mg.SqlText.String,
-			ProjectName:          projectMap[mg.ProjectUid].Name,
+			ProjectName:          projectMap.ProjectName(mg.ProjectUid),
 			ProjectUid:           mg.ProjectUid,
 			Status:               mg.Status.String,
 			FirstAppearTimeStamp: mg.FirstAppearTimestamp.Format(time.RFC3339),
-			ProjectPriority:      projectMap[mg.ProjectUid].ProjectPriority,
+			ProjectPriority:      projectMap.ProjectPriority(mg.ProjectUid),
 			ProblemDescriptions:  problemDescriptions(mg.Info),
 		}
 		if mg.InstanceID.Valid {
-			sqlMgr.InstanceName = instanceMap[mg.InstanceID.String].Name
+			sqlMgr.InstanceName = instanceMap.InstanceName(mg.InstanceID.String)
 			sqlMgr.InstanceId = mg.InstanceID.String
 		}
 		for i := range mg.AuditResults {
@@ -604,8 +661,4 @@ func problemDescriptions(info string) []string {
 		fmt.Sprintf("最大执行时间 %v", infoJson.QueryTimeMax),
 		fmt.Sprintf("平均扫描行数 %v", infoJson.RowsExaminedAvg),
 	}
-}
-
-func getGlobalSqlManageStatistics(c echo.Context) error {
-	return nil
 }
