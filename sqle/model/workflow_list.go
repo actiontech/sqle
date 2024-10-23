@@ -190,6 +190,10 @@ func (s *Storage) GetWorkflowsByReq(data map[string]interface{}) (
 	return result, count, err
 }
 
+func (s *Storage) GetGlobalWorkflowTotalNumByReq(data map[string]interface{}) (count uint64, err error) {
+	return s.getCountResult(workflowsQueryBodyTpl, workflowsCountTpl, data)
+}
+
 func (s *Storage) GetWorkflowCountByReq(data map[string]interface{}) (uint64, error) {
 	return s.getCountResult(workflowsQueryBodyTpl, workflowsCountTpl, data)
 }
