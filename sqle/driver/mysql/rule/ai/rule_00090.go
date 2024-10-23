@@ -34,20 +34,9 @@ func init() {
 ==== Prompt start ====
 在 MySQL 中，您应该检查 SQL 是否违反了规则(SQLE00090): "在 MySQL 中，建议使用UNION ALL替代UNION."
 您应遵循以下逻辑：
-1. 对于任何包含 SELECT 语法节点的语句，使用辅助函数GetSelectStmt检查是否存在 UNION 语法节点而没有 UNION ALL 语法节点：
-   1. 如果是，则报告违反规则。
-
-2. 对于 INSERT ... SELECT 语法节点的语句，进行与 SELECT 语句相同的检查：
-   1. 使用辅助函数GetSelectStmt检查是否存在 UNION 语法节点而没有 UNION ALL 语法节点。
-   2. 如果是，则报告违反规则。
-
-3. 对于 WITH 语法节点的语句，进行与 SELECT 语句相同的检查：
-   1. 使用辅助函数GetSelectStmt检查是否存在 UNION 语法节点而没有 UNION ALL 语法节点。
-   2. 如果是，则报告违反规则。
-
-4. 对于任何包含 UNION 语法节点的语句，检查其中的每个 SELECT 子语法节点：
-   1. 使用辅助函数GetSelectStmt检查是否存在 UNION 语法节点而没有 UNION ALL 语法节点。
-   2. 如果是，则报告违反规则。
+1. 对于所有DML语句，
+    1. 含有UNION语法节点，其中UNION语法节点类型不是UNION ALL，则报告违反规则
+2. 对于"WITH ..."语句，执行与上述同样检查。
 ==== Prompt end ====
 */
 

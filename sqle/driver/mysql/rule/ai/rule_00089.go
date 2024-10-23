@@ -33,7 +33,7 @@ func init() {
 ==== Prompt start ====
 在 MySQL 中，您应该检查 SQL 是否违反了规则(SQLE00089): "在 MySQL 中，禁止INSERT ... SELECT."
 您应遵循以下逻辑：
-1. 针对每个 "INSERT ... SELECT" 语句，则报告违反规则
+1. 针对 "INSERT ... SELECT" 语句，则报告违反规则
 ==== Prompt end ====
 */
 
