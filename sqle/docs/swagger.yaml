@@ -11468,41 +11468,9 @@ paths:
       description: get global workflow list
       operationId: getGlobalWorkflowsV1
       parameters:
-      - description: filter subject
-        in: query
-        name: filter_subject
-        type: string
-      - description: filter create time from
-        in: query
-        name: filter_create_time_from
-        type: string
-      - description: filter create time to
-        in: query
-        name: filter_create_time_to
-        type: string
-      - description: filter_task_execute_start_time_from
-        in: query
-        name: filter_task_execute_start_time_from
-        type: string
-      - description: filter_task_execute_start_time_to
-        in: query
-        name: filter_task_execute_start_time_to
-        type: string
       - description: filter create user id
         in: query
         name: filter_create_user_id
-        type: string
-      - description: filter workflow status
-        enum:
-        - wait_for_audit
-        - wait_for_execution
-        - rejected
-        - executing
-        - canceled
-        - exec_failed
-        - finished
-        in: query
-        name: filter_status
         type: string
       - description: filter by workflow status,, support using many status
         enum:
@@ -11533,14 +11501,6 @@ paths:
         - low
         in: query
         name: filter_project_priority
-        type: string
-      - description: filter current step assignee user id
-        in: query
-        name: filter_current_step_assignee_user_id
-        type: string
-      - description: filter instance id
-        in: query
-        name: filter_task_instance_id
         type: string
       - description: page index
         in: query
