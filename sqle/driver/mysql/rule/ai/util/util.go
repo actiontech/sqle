@@ -306,6 +306,14 @@ func GetTableIndexes(context *session.Context, tableName, schemaName string) (in
 	}
 
 	indexColumnNames = make(map[string][]string)
+	// check primary key in column definition
+	for _, col := range createTableStmt.Cols {
+		if IsColumnPrimaryKey(col) {
+			indexColumnNames["PRIMARY"] = append(indexColumnNames["PRIMARY"], col.Name.String())
+		}
+	}
+
+	// check primary key in table constraint
 	constraints := GetTableConstraints(createTableStmt.Constraints, GetIndexConstraintTypes()...)
 	for _, constraint := range constraints {
 		for _, colName := range constraint.Keys {
