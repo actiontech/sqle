@@ -496,7 +496,7 @@ func getGlobalSqlManageStatistics(c echo.Context) error {
 	}
 	// 4. 根据筛选项筛选SQL管控的SQL信息
 	s := model.GetStorage()
-	total, err := s.GetGlobalSqlManageStatics(filter)
+	total, err := s.GetGlobalSqlManageTotalNum(filter)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

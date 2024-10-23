@@ -577,7 +577,7 @@ func (s *Storage) GetGlobalSqlManageList(data map[string]interface{}) (list []*G
 	return globalSqlManageList, totalCount, nil
 }
 
-func (s *Storage) GetGlobalSqlManageStatics(data map[string]interface{}) (totalCount uint64, err error) {
+func (s *Storage) GetGlobalSqlManageTotalNum(data map[string]interface{}) (totalCount uint64, err error) {
 	totalCount, err = s.getCountResult(globalSqlManagerBodyTpl, globalSqlManagerTotalCount, data)
 	if err != nil {
 		return 0, err
