@@ -3,6 +3,7 @@ package ai
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	util "github.com/actiontech/sqle/sqle/driver/mysql/rule/ai/util"
@@ -10,6 +11,7 @@ import (
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
+	"github.com/pingcap/parser/format"
 )
 
 const (
@@ -90,7 +92,11 @@ func RuleSQLE00100(input *rulepkg.RuleHandlerInput) error {
 	checkExplain := func(node ast.Node) (bool, error) {
 		switch stmt := node.(type) {
 		case *ast.SelectStmt, *ast.UnionStmt:
-			executionPlan, err := util.GetExecutionPlan(input.Ctx, stmt.Text()) // TODO [解析器缺陷] 当sql是insert ... select语句中的SelectStmt/UnionStmt的Text() 为''，因此无法对应 test code中Explain
+			// 当sql是insert ... select语句中的SelectStmt/UnionStmt的Text() 为'', 因此这里改用Restore方式获取sqlText
+			sqlBuilder := new(strings.Builder)
+			node.Restore(format.NewRestoreCtx((format.RestoreStringSingleQuotes), sqlBuilder))
+			sqlText := sqlBuilder.String()
+			executionPlan, err := util.GetExecutionPlan(input.Ctx, sqlText)
 			if err != nil {
 				return false, fmt.Errorf("get execution plan failed, sqle: %v, error: %v", stmt.Text(), err)
 

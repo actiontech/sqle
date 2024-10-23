@@ -106,23 +106,22 @@ func TestRuleSQLE00100(t *testing.T) {
 			},
 		}, newTestResult().addResult(ruleName))
 
-	// TODO [解析器缺陷] 当sql是insert ... select语句中的SelectStmt/UnionStmt的Text() 为''，因此无法对应 test code中Explain
-	// runAIRuleCase(rule, t, "case 10: INSER...select子句带LIMIT没有超过1000,但实际大于1000", "INSERT INTO table2 SELECT id FROM table1 UNION SELECT id FROM table2 LIMIT 500;",
-	// 	session.NewAIMockContext().WithSQL("CREATE TABLE table1 (id INT); INSERT INTO table1 VALUES (1), (2); CREATE TABLE table2 (id INT); INSERT INTO table2 VALUES (3), (4);"),
-	// 	[]*AIMockSQLExpectation{
-	// 		{
-	// 			Query: "EXPLAIN SELECT id FROM table1 UNION SELECT id FROM table2 LIMIT 500",
-	// 			Rows: sqlmock.NewRows([]string{"operation", "object_name", "object_owner", "rows"}).
-	// 				AddRow("SELECT STATEMENT", "table1", "SYSTEM", 1500).
-	// 				AddRow("TABLE ACCESS", "table1", "SYSTEM", 2).
-	// 				AddRow("SELECT STATEMENT", "table2", "SYSTEM", 2).
-	// 				AddRow("TABLE ACCESS", "table2", "SYSTEM", 2),
-	// 		},
-	// 		{
-	// 			Query: "SHOW WARNINGS",
-	// 			Rows:  sqlmock.NewRows(nil),
-	// 		},
-	// 	}, newTestResult().addResult(ruleName))
+	runAIRuleCase(rule, t, "case 10: INSER...select子句带LIMIT没有超过1000,但实际大于1000", "INSERT INTO table2 SELECT id FROM table1 UNION SELECT id FROM table2 WHERE 1=1 LIMIT 500;",
+		session.NewAIMockContext().WithSQL("CREATE TABLE table1 (id INT); INSERT INTO table1 VALUES (1), (2); CREATE TABLE table2 (id INT); INSERT INTO table2 VALUES (3), (4);"),
+		[]*AIMockSQLExpectation{
+			{
+				Query: "EXPLAIN SELECT id FROM table1 UNION SELECT id FROM table2 WHERE 1=1 LIMIT 500",
+				Rows: sqlmock.NewRows([]string{"operation", "object_name", "object_owner", "rows"}).
+					AddRow("SELECT STATEMENT", "table1", "SYSTEM", 1500).
+					AddRow("TABLE ACCESS", "table1", "SYSTEM", 2).
+					AddRow("SELECT STATEMENT", "table2", "SYSTEM", 2).
+					AddRow("TABLE ACCESS", "table2", "SYSTEM", 2),
+			},
+			{
+				Query: "SHOW WARNINGS",
+				Rows:  sqlmock.NewRows(nil),
+			},
+		}, newTestResult().addResult(ruleName))
 
 	runAIRuleCase(rule, t, "case 11: Delete中 select子句带LIMIT没有超过1000,但实际大于1000", "DELETE from table1 where id in (SELECT id FROM table1 UNION SELECT id FROM table2 LIMIT 500);",
 		session.NewAIMockContext().WithSQL("CREATE TABLE table1 (id INT); INSERT INTO table1 VALUES (1), (2); CREATE TABLE table2 (id INT); INSERT INTO table2 VALUES (3), (4);"),
