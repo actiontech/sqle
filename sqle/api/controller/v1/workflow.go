@@ -842,7 +842,7 @@ func getGlobalDashBoardVisibilityOfUser(isAdmin bool, permissions []dmsV1.OpPerm
 	// 角色：多项目管理者
 	var projectRange []string
 	for _, permission := range permissions {
-		if permission.OpPermissionType == dmsV1.OpPermissionTypeProjectAdmin || permission.OpPermissionType == dmsV1.OpPermissionTypeViewOthersWorkflow {
+		if permission.OpPermissionType == dmsV1.OpPermissionTypeProjectAdmin {
 			projectRange = append(projectRange, permission.RangeUids...)
 		}
 	}
