@@ -755,7 +755,7 @@ func CreateWorkflowV2(c echo.Context) error {
 		}
 	}
 
-	err = s.CreateWorkflowV2(req.Subject, workflowId, req.Desc, user, tasks, stepTemplates, model.ProjectUID(projectUid), req.SqlVersionID, nil, nil, func(tasks []*model.Task) (auditWorkflowUsers, canExecUser [][]*model.User) {
+	err = s.CreateWorkflowV2(req.Subject, workflowId, req.Desc, user, tasks, stepTemplates, model.ProjectUID(projectUid), req.SqlVersionID, func(tasks []*model.Task) (auditWorkflowUsers, canExecUser [][]*model.User) {
 		auditWorkflowUsers = make([][]*model.User, len(tasks))
 		executorWorkflowUsers := make([][]*model.User, len(tasks))
 		for i, task := range tasks {
@@ -1218,7 +1218,7 @@ func GetWorkflowV2(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	sqlVersion, err := s.GetSQLVersionByWorkflowId(workflow.WorkflowId)
+	sqlVersion, _, err := s.GetSQLVersionByWorkflowId(workflow.WorkflowId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1240,11 +1240,14 @@ func convertWorkflowToRes(ctx context.Context, workflow *model.Workflow, sqlVers
 		CreateTime:               &workflow.CreatedAt,
 		AssociatedStageWorkflows: convertAssociatedWorkflowToRes(associatedWorkflows),
 	}
-	sqlVersionRes := &SqlVersion{
-		SqlVersionId:   sqlVersion.ID,
-		SqlVersionName: sqlVersion.Version,
+	if sqlVersion != nil {
+		sqlVersionRes := &SqlVersion{
+			SqlVersionId:   sqlVersion.ID,
+			SqlVersionName: sqlVersion.Version,
+		}
+		workflowRes.SqlVersion = sqlVersionRes
+
 	}
-	workflowRes.SqlVersion = sqlVersionRes
 	// convert workflow record
 	workflowRecordRes := convertWorkflowRecordToRes(ctx, workflow, workflow.Record)
 
