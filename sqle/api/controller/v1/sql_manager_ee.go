@@ -414,17 +414,20 @@ func getGlobalSqlManageList(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	// 2. 将用户权限信息，转化为全局待处理清单统一的用户可见性
+	// 2. 将用户权限信息，转化为全局待处理清单统一的用户可视范围
 	userVisibility := getGlobalDashBoardVisibilityOfUser(isAdmin, permissions)
 
-	// 3. 将用户可见性、接口请求以及用户的权限范围，构造为全局工单的基础的过滤器，满足全局工单统一的过滤逻辑
-	filter, err := constructGlobalSqlManageBasicFilter(c.Request().Context(), user, userVisibility, permissions,
+	// 3. 将用户可视范围、接口请求以及用户的权限范围，构造为全局工单的基础的过滤器，满足全局工单统一的过滤逻辑
+	filter, err := constructGlobalSqlManageBasicFilter(c.Request().Context(), user, userVisibility,
 		&globalSqlManageBasicFilter{
 			FilterProjectUid:      req.FilterProjectUid,
 			FilterInstanceId:      req.FilterInstanceId,
 			FilterProjectPriority: req.FilterProjectPriority,
 		},
 	)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
 	filter["limit"] = limit
 	filter["offset"] = offset
@@ -482,10 +485,11 @@ func getGlobalSqlManageStatistics(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	// 2. 将用户权限信息，转化为全局待处理清单统一的用户可见性
+	// 2. 将用户权限信息，转化为全局待处理清单统一的用户可视范围
 	userVisibility := getGlobalDashBoardVisibilityOfUser(isAdmin, permissions)
-	// 3. 将用户可见性、接口请求以及用户的权限范围，构造为全局工单的基础的过滤器，满足全局工单统一的过滤逻辑
-	filter, err := constructGlobalSqlManageBasicFilter(c.Request().Context(), user, userVisibility, permissions,
+
+	// 3. 将用户可视范围、接口请求以及用户的权限范围，构造为全局工单的基础的过滤器，满足全局工单统一的过滤逻辑
+	filter, err := constructGlobalSqlManageBasicFilter(c.Request().Context(), user, userVisibility,
 		&globalSqlManageBasicFilter{
 			FilterProjectUid:      req.FilterProjectUid,
 			FilterInstanceId:      req.FilterInstanceId,
@@ -512,29 +516,14 @@ type globalSqlManageBasicFilter struct {
 	FilterProjectPriority *dmsV1.ProjectPriority `query:"filter_project_priority" json:"filter_project_priority,omitempty" enums:"high,medium,low"`
 }
 
-func constructGlobalSqlManageBasicFilter(ctx context.Context, user *model.User, userVisibility GlobalDashBoardVisibility, permissions []dmsV1.OpPermissionItem, req *globalSqlManageBasicFilter) (map[string]interface{}, error) {
-	// 角色：多项目管理者 canViewProjects
-	// 1.3. 若用户不能查看所有待关注SQL，则需要判断用户是否拥有多项目查看待关注SQL的权限，可以看到所有待关注SQL的用户不需要判断项目范围
-	var projectIdsOfProjectAdmin []string
-	if userVisibility == GlobalDashBoardVisibilityProjects {
-		for _, permission := range permissions {
-			if permission.OpPermissionType == dmsV1.OpPermissionTypeProjectAdmin {
-				projectIdsOfProjectAdmin = append(projectIdsOfProjectAdmin, permission.RangeUids...)
-			}
-		}
-	}
-	var canViewProjects bool = len(projectIdsOfProjectAdmin) > 0
-	// 角色：SQL被分配者 !canViewGlobal && !canViewProjects
-
-	// 2. 组织筛选项
-	// 2.1. 基本筛选项
-
+// 将用户可视范围、接口请求以及用户的权限范围，构造为全局工单的基础的过滤器，满足全局工单统一的过滤逻辑
+func constructGlobalSqlManageBasicFilter(ctx context.Context, user *model.User, userVisibility GlobalDashBoardVisibility, req *globalSqlManageBasicFilter) (map[string]interface{}, error) {
+	// 1. 基本筛选项
 	data := map[string]interface{}{
-		"filter_instance_id": req.FilterInstanceId, // 页面筛选项
-		"filter_project_uid": req.FilterProjectUid, // 页面筛选项
+		"filter_instance_id": req.FilterInstanceId, // 页面筛选项，根据数据源筛选
+		"filter_project_uid": req.FilterProjectUid, // 页面筛选项，根据项目筛选
 	}
-
-	// 2.2 页面筛选项：如果根据项目优先级筛选，则先筛选出对应优先级下的项目
+	// 1.1 页面筛选项：如果根据项目优先级筛选，则先筛选出对应优先级下的项目
 	var projectIdsByPriority []string
 	var err error
 	if req.FilterProjectPriority != nil {
@@ -542,26 +531,21 @@ func constructGlobalSqlManageBasicFilter(ctx context.Context, user *model.User, 
 		if err != nil {
 			return nil, err
 		}
+		data["filter_project_id_list"] = projectIdsByPriority
 	}
-
-	if req.FilterProjectPriority != nil {
-		if userVisibility == GlobalDashBoardVisibilityProjects {
-			// 2.2.1 若根据项目优先级筛选，且可以查看多项目待关注SQL，则将可查看的项目和项目优先级筛选后的项目的集合取交集
-			data["filter_project_id_list"] = utils.IntersectionStringSlice(projectIdsByPriority, projectIdsOfProjectAdmin)
+	// 2. 根据当前用户的可视范围筛选
+	switch userVisibility.ViewType() {
+	case GlobalDashBoardVisibilityProjects:
+		// 2.1 当用户的可视范围为多项目，则根据项目id筛选
+		if req.FilterProjectPriority != nil {
+			// 若根据项目优先级筛选，则将可查看的项目和项目优先级筛选后的项目的集合取交集
+			data["filter_project_id_list"] = utils.IntersectionStringSlice(projectIdsByPriority, userVisibility.ViewRange())
 		} else {
-			// 2.2.2 若只根据项目优先级筛选，则根据优先级对应的项目筛选
-			data["filter_project_id_list"] = projectIdsByPriority
-
+			// 若不根据项目优先级筛选，则通过用户的有权限的项目进行筛选
+			data["filter_project_id_list"] = userVisibility.ViewRange()
 		}
-	}
-	// 2.3 若不根据项目优先级筛选
-	if req.FilterProjectPriority == nil && canViewProjects {
-		// 2.3.1 若可以查看多项目待关注SQL，则通过用户的有权限的项目进行筛选
-		data["filter_project_id_list"] = projectIdsOfProjectAdmin
-	}
-	// 角色：SQL被分配者
-	// 2.4. 若用户既不能查看所有待关注SQL也不能查看多项目待关注SQL，则可以查看在SQL管控中分配给他的SQL
-	if userVisibility == GlobalDashBoardVisibilityAssignee {
+	case GlobalDashBoardVisibilityAssignee:
+		// 2.2 若用户可视范围为受让人，则查看分配给他的SQL
 		data["filter_assignees_id"] = user.GetIDStr()
 	}
 	return data, nil

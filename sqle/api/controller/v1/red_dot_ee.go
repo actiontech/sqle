@@ -37,10 +37,10 @@ func (m GlobalDashBoardModule) HasRedDot(ctx echo.Context) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	// 2. 将用户权限信息，转化为全局待处理清单统一的用户可见性
+	// 2. 将用户权限信息，转化为全局待处理清单统一的用户可视范围
 	userVisibility := getGlobalDashBoardVisibilityOfUser(isAdmin, permissions)
 	// 查询待关注SQL是否有未处理的SQL
-	filter, err := constructGlobalSqlManageBasicFilter(ctx.Request().Context(), user, userVisibility, permissions, &globalSqlManageBasicFilter{})
+	filter, err := constructGlobalSqlManageBasicFilter(ctx.Request().Context(), user, userVisibility, &globalSqlManageBasicFilter{})
 	if err != nil {
 		return false, err
 	}
@@ -53,7 +53,7 @@ func (m GlobalDashBoardModule) HasRedDot(ctx echo.Context) (bool, error) {
 		return true, nil
 	}
 	// 查询待关注工单，是否有未处理的工单
-	filter, err = constructGlobalWorkflowBasicFilter(ctx.Request().Context(), user, userVisibility, permissions, &globalWorkflowBasicFilter{
+	filter, err = constructGlobalWorkflowBasicFilter(ctx.Request().Context(), user, userVisibility, &globalWorkflowBasicFilter{
 		FilterStatusList: statusOfGlobalWorkflowRequireAttention,
 	})
 	if err != nil {
@@ -67,8 +67,7 @@ func (m GlobalDashBoardModule) HasRedDot(ctx echo.Context) (bool, error) {
 		return true, nil
 	}
 	// 查询创建的工单，是否有未处理的工单
-	userVisibility = GlobalDashBoardVisibilityGlobal
-	filter, err = constructGlobalWorkflowBasicFilter(ctx.Request().Context(), user, userVisibility, permissions, &globalWorkflowBasicFilter{
+	filter, err = constructGlobalWorkflowBasicFilter(ctx.Request().Context(), user, userVisibility,&globalWorkflowBasicFilter{
 		FilterStatusList:   statusOfGlobalWorkflowRequireAttention,
 		FilterCreateUserId: user.GetIDStr(),
 	})
