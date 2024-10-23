@@ -662,7 +662,3 @@ func problemDescriptions(info string) []string {
 		fmt.Sprintf("平均扫描行数 %v", infoJson.RowsExaminedAvg),
 	}
 }
-
-func getGlobalSqlManageStatistics(c echo.Context) error {
-	return nil
-}
