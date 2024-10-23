@@ -751,7 +751,7 @@ func GetGlobalWorkflowStatistics(c echo.Context) error {
 	}
 	// 4. 根据筛选项获取工单数量
 	s := model.GetStorage()
-	count, err := s.GetGlobalWorkflowTotalNumByReq(filter)
+	count, err := s.GetGlobalWorkflowTotalNum(filter)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
