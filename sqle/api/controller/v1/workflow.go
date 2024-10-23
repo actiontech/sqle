@@ -571,14 +571,11 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	// 2. 将用户权限信息，转化为全局待处理清单统一的用户可见性
+	// 2. 将用户权限信息，转化为全局待处理清单统一的用户可视范围
 	userVisibility := getGlobalDashBoardVisibilityOfUser(isAdmin, permissions)
-	if req.FilterCurrentStepAssigneeUserId != "" {
-		// 如果根据当前用户筛选，则筛选出用户在所有项目中的工单
-		userVisibility = GlobalDashBoardVisibilityGlobal
-	}
-	// 3. 将用户可见性、接口请求以及用户的权限范围，构造为全局工单的基础的过滤器，满足全局工单统一的过滤逻辑
-	filter, err := constructGlobalWorkflowBasicFilter(c.Request().Context(), user, userVisibility, permissions,
+
+	// 3. 将用户可视范围、接口请求以及用户的权限范围，构造为全局工单的基础的过滤器，满足全局工单统一的过滤逻辑
+	filter, err := constructGlobalWorkflowBasicFilter(c.Request().Context(), user, userVisibility,
 		&globalWorkflowBasicFilter{
 			FilterCreateUserId:    req.FilterCreateUserId,
 			FilterStatusList:      req.FilterStatusList,
@@ -731,14 +728,11 @@ func GetGlobalWorkflowStatistics(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	// 2. 将用户权限信息，转化为全局待处理清单统一的用户可见性
+	// 2. 将用户权限信息，转化为全局待处理清单统一的用户可视范围
 	userVisibility := getGlobalDashBoardVisibilityOfUser(isAdmin, permissions)
-	if req.FilterCreateUserId != "" {
-		// 如果根据当前用户筛选，则筛选出用户在所有项目中的工单，将用户可见性扩大至全局
-		userVisibility = GlobalDashBoardVisibilityGlobal
-	}
-	// 3. 将用户可见性、接口请求以及用户的权限范围，构造为全局工单的基础的过滤器，满足全局工单统一的过滤逻辑
-	filter, err := constructGlobalWorkflowBasicFilter(c.Request().Context(), user, userVisibility, permissions,
+
+	// 3. 将用户可视范围、接口请求以及用户的权限范围，构造为全局工单的基础的过滤器，满足全局工单统一的过滤逻辑
+	filter, err := constructGlobalWorkflowBasicFilter(c.Request().Context(), user, userVisibility,
 		&globalWorkflowBasicFilter{
 			FilterCreateUserId:    req.FilterCreateUserId,
 			FilterStatusList:      req.FilterStatusList,
@@ -770,8 +764,8 @@ type globalWorkflowBasicFilter struct {
 	FilterProjectPriority dmsV1.ProjectPriority `json:"filter_project_priority" query:"filter_project_priority"  valid:"omitempty,oneof=high medium low"`
 }
 
-// 将用户可见性、接口请求以及用户的权限范围，构造为全局工单的基础的过滤器，满足全局工单统一的过滤逻辑
-func constructGlobalWorkflowBasicFilter(ctx context.Context, user *model.User, userVisibility GlobalDashBoardVisibility, permissions []dmsV1.OpPermissionItem, req *globalWorkflowBasicFilter) (map[string]interface{}, error) {
+// 将用户可视范围、接口请求以及用户的权限范围，构造为全局工单的基础的过滤器，满足全局工单统一的过滤逻辑
+func constructGlobalWorkflowBasicFilter(ctx context.Context, user *model.User, userVisibility GlobalDashBoardVisibility, req *globalWorkflowBasicFilter) (map[string]interface{}, error) {
 	// 1. 基本筛选项
 	data := map[string]interface{}{
 		"filter_create_user_id": req.FilterCreateUserId, // 根据创建人ID筛选用户自己创建的工单
@@ -779,7 +773,7 @@ func constructGlobalWorkflowBasicFilter(ctx context.Context, user *model.User, u
 		"filter_project_id":     req.FilterProjectUid,   // 根据项目id筛选某些一个项目下的多个工单
 		"filter_instance_id":    req.FilterInstanceId,   // 根据工单记录的数据源id，筛选包含该数据源的工单，多数据源情况下，一旦包含该数据源，则被选中
 	}
-	// 2 页面筛选项：如果根据项目优先级筛选，则先筛选出对应优先级下的项目
+	// 1.1 页面筛选项：如果根据项目优先级筛选，则先筛选出对应优先级下的项目
 	var projectIdsByPriority []string
 	var err error
 	if req.FilterProjectPriority != "" {
@@ -787,63 +781,81 @@ func constructGlobalWorkflowBasicFilter(ctx context.Context, user *model.User, u
 		if err != nil {
 			return nil, err
 		}
-
-	}
-	if req.FilterProjectPriority != "" {
-		// 2.1 若根据项目优先级筛选，则根据优先级对应的项目筛选
 		data["filter_project_id_list"] = projectIdsByPriority
 	}
-
-	var projectIdsOfProjectAdmin []string
-	if userVisibility == GlobalDashBoardVisibilityProjects {
-		for _, permission := range permissions {
-			if permission.OpPermissionType == dmsV1.OpPermissionTypeProjectAdmin {
-				projectIdsOfProjectAdmin = append(projectIdsOfProjectAdmin, permission.RangeUids...)
-			}
+	// 2. 发起的工单页面，根据当前用户筛选在所有项目下该用户创建的工单，因此将用户可视范围调整为全局
+	if req.FilterCreateUserId != "" {
+		userVisibility.VisibilityType = GlobalDashBoardVisibilityGlobal
+	}
+	// 3. 待处理工单页面，根据当前用户的可视范围筛选
+	switch userVisibility.ViewType() {
+	case GlobalDashBoardVisibilityProjects:
+		// 3.1 当用户的可视范围为多项目，则根据项目id筛选
+		if req.FilterProjectPriority != "" {
+			// 若根据项目优先级筛选，则将可查看的项目和项目优先级筛选后的项目的集合取交集
+			data["filter_project_id_list"] = utils.IntersectionStringSlice(projectIdsByPriority, userVisibility.ViewRange())
+		} else {
+			// 若不根据项目优先级筛选，则通过用户的有权限的项目进行筛选
+			data["filter_project_id_list"] = userVisibility.ViewRange()
 		}
-	}
-
-	if req.FilterProjectPriority != "" && userVisibility == GlobalDashBoardVisibilityProjects {
-		// 2.2 若根据项目优先级筛选，且可以查看多项目待关注SQL，则将可查看的项目和项目优先级筛选后的项目的集合取交集
-		data["filter_project_id_list"] = utils.IntersectionStringSlice(projectIdsByPriority, projectIdsOfProjectAdmin)
-	}
-	// 3 若不根据项目优先级筛选
-	if req.FilterProjectPriority == "" && userVisibility == GlobalDashBoardVisibilityProjects {
-		// 3.1 若可以查看多项目待关注SQL，则通过用户的有权限的项目进行筛选
-		data["filter_project_id_list"] = projectIdsOfProjectAdmin
-	}
-	// 4. 若用户可见性为受让人，则可以查看在SQL管控中分配给他的SQL
-	if userVisibility == GlobalDashBoardVisibilityAssignee {
+	case GlobalDashBoardVisibilityAssignee:
+		// 3.2 若用户可视范围为受让人，则查看分配给他的工单
 		data["filter_current_step_assignee_user_id"] = user.GetIDStr()
 	}
 	return data, nil
 }
 
-type GlobalDashBoardVisibility string
+type VisibilityType string
 
-const GlobalDashBoardVisibilityGlobal GlobalDashBoardVisibility = "global"     // 全局可见
-const GlobalDashBoardVisibilityProjects GlobalDashBoardVisibility = "projects" // 多项目可见
-const GlobalDashBoardVisibilityAssignee GlobalDashBoardVisibility = "assignee" // 仅可见授予自己的
+const GlobalDashBoardVisibilityGlobal VisibilityType = "global"     // 全局可见
+const GlobalDashBoardVisibilityProjects VisibilityType = "projects" // 多项目可见
+const GlobalDashBoardVisibilityAssignee VisibilityType = "assignee" // 仅可见授予自己的
 
-// 将用户权限信息，转化为全局待处理清单统一的用户可见性
+type GlobalDashBoardVisibility struct {
+	VisibilityType  VisibilityType
+	VisibilityRange []string // 对于项目是项目id
+}
+
+func (v GlobalDashBoardVisibility) ViewType() VisibilityType {
+	return v.VisibilityType
+}
+
+func (v GlobalDashBoardVisibility) ViewRange() []string {
+	return v.VisibilityRange
+}
+
+// 将用户权限信息，转化为全局待处理清单统一的用户可视范围
 func getGlobalDashBoardVisibilityOfUser(isAdmin bool, permissions []dmsV1.OpPermissionItem) GlobalDashBoardVisibility {
 	// 角色：全局管理员，全局可查看者
 	if isAdmin {
-		return GlobalDashBoardVisibilityGlobal
+		return GlobalDashBoardVisibility{
+			VisibilityType: GlobalDashBoardVisibilityGlobal,
+		}
 	}
 	for _, permission := range permissions {
 		if permission.OpPermissionType == dmsV1.OpPermissionTypeGlobalView || permission.OpPermissionType == dmsV1.OpPermissionTypeGlobalManagement {
-			return GlobalDashBoardVisibilityGlobal
+			return GlobalDashBoardVisibility{
+				VisibilityType: GlobalDashBoardVisibilityGlobal,
+			}
 		}
 	}
 	// 角色：多项目管理者
+	var projectRange []string
 	for _, permission := range permissions {
-		if permission.OpPermissionType == dmsV1.OpPermissionTypeProjectAdmin {
-			return GlobalDashBoardVisibilityProjects
+		if permission.OpPermissionType == dmsV1.OpPermissionTypeProjectAdmin || permission.OpPermissionType == dmsV1.OpPermissionTypeViewOthersWorkflow {
+			projectRange = append(projectRange, permission.RangeUids...)
+		}
+	}
+	if len(projectRange) > 0 {
+		return GlobalDashBoardVisibility{
+			VisibilityType:  GlobalDashBoardVisibilityProjects,
+			VisibilityRange: projectRange,
 		}
 	}
 	// 角色：受让人，事件处理者
-	return GlobalDashBoardVisibilityAssignee
+	return GlobalDashBoardVisibility{
+		VisibilityType: GlobalDashBoardVisibilityAssignee,
+	}
 }
 
 // 根据项目优先级从 dms 系统中获取相应的项目列表，并返回项目ID列表和项目映射
