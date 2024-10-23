@@ -548,19 +548,11 @@ type InstanceInfo struct {
 // @Tags workflow
 // @Id getGlobalWorkflowsV1
 // @Security ApiKeyAuth
-// @Param filter_subject query string false "filter subject"
-// @Param filter_create_time_from query string false "filter create time from"
-// @Param filter_create_time_to query string false "filter create time to"
-// @Param filter_task_execute_start_time_from query string false "filter_task_execute_start_time_from"
-// @Param filter_task_execute_start_time_to query string false "filter_task_execute_start_time_to"
 // @Param filter_create_user_id query string false "filter create user id"
-// @Param filter_status query string false "filter workflow status" Enums(wait_for_audit,wait_for_execution,rejected,executing,canceled,exec_failed,finished)
 // @Param filter_status_list query []string false "filter by workflow status,, support using many status" Enums(wait_for_audit,wait_for_execution,rejected,executing,canceled,exec_failed,finished)
 // @Param filter_project_uid query string false "filter by project uid"
 // @Param filter_instance_id query string false "filter by instance id in project"
 // @Param filter_project_priority query string false "filter by project priority" Enums(high,medium,low)
-// @Param filter_current_step_assignee_user_id query string false "filter current step assignee user id"
-// @Param filter_task_instance_id query string false "filter instance id"
 // @Param page_index query uint32 true "page index"
 // @Param page_size query uint32 true "size of per page"
 // @Success 200 {object} v1.GetWorkflowsResV1
@@ -570,9 +562,7 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
-	// 1. 权限控制
-	// 1.1. 获取用户的所有权限信息
+	// 1. 获取用户权限信息
 	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -581,116 +571,111 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	// 1.2. 获取用户全局待关注清单的可见性
+	// 2. 将用户权限信息，转化为全局待处理清单统一的用户可见性
 	userVisibility := getGlobalDashBoardVisibilityOfUser(isAdmin, permissions)
 	if req.FilterCurrentStepAssigneeUserId != "" {
 		// 如果根据当前用户筛选，则筛选出用户在所有项目中的工单
 		userVisibility = GlobalDashBoardVisibilityGlobal
 	}
-	// 1.3. 若用户可见性为多项目，则需要根据项目id筛选
-	var projectIdsOfProjectAdmin []string
-	if userVisibility == GlobalDashBoardVisibilityProjects {
-		for _, permission := range permissions {
-			if permission.OpPermissionType == dmsV1.OpPermissionTypeProjectAdmin {
-				projectIdsOfProjectAdmin = append(projectIdsOfProjectAdmin, permission.RangeUids...)
-			}
-		}
-	}
-
-	// 2. 组织筛选项
-	// 2.1. 基本筛选项
-	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
-	data := map[string]interface{}{
-		// "filter_subject":                       req.FilterSubject,
-		// "filter_create_time_from":              req.FilterCreateTimeFrom,
-		// "filter_create_time_to":                req.FilterCreateTimeTo,
-		// "filter_task_execute_start_time_from":  req.FilterTaskExecuteStartTimeFrom,
-		// "filter_task_execute_start_time_to":    req.FilterTaskExecuteStartTimeTo,
-		// "filter_status":                        req.FilterStatus,
-		// "filter_current_step_assignee_user_id": req.FilterCurrentStepAssigneeUserId,
-		// "filter_task_instance_id":              req.FilterTaskInstanceId,
-		// "current_user_id":       			   user.GetIDStr(),
-		// "check_user_can_access": 			   canViewGlobal,
-		"filter_create_user_id": req.FilterCreateUserId,
-		"limit":                 limit,
-		"offset":                offset,
-		"filter_status_list":    req.FilterStatusList, // 根据SQL工单的状态筛选多个状态的工单
-		"filter_project_id":     req.FilterProjectUid, // 根据项目id筛选某些一个项目下的多个工单
-		"filter_instance_id":    req.FilterInstanceId, // 根据工单记录的数据源id，筛选包含该数据源的工单，多数据源情况下，一旦包含该数据源，则被选中
-	}
-	// 2.2 页面筛选项：如果根据项目优先级筛选，则先筛选出对应优先级下的项目
-	var projectIdsByPriority []string
-	var projectMap map[string]*dmsV1.ListProject
-	if req.FilterProjectPriority != "" {
-		projectIdsByPriority, projectMap, err = loadProjectsByPriority(c.Request().Context(), req.FilterProjectPriority)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-		if len(projectMap) == 0 {
-			return c.JSON(http.StatusOK, GetWorkflowsResV1{
-				BaseRes:   controller.NewBaseReq(nil),
-				Data:      []*WorkflowDetailResV1{},
-				TotalNums: 0,
-			})
-		}
-	}
-	if req.FilterProjectPriority != "" {
-		// 2.2.1 若根据项目优先级筛选，则根据优先级对应的项目筛选
-		data["filter_project_id_list"] = projectIdsByPriority
-	}
-
-	if req.FilterProjectPriority != "" && userVisibility == GlobalDashBoardVisibilityProjects {
-		// 2.2.2 若根据项目优先级筛选，且可以查看多项目待关注SQL，则将可查看的项目和项目优先级筛选后的项目的集合取交集
-		data["filter_project_id_list"] = utils.IntersectionStringSlice(projectIdsByPriority, projectIdsOfProjectAdmin)
-	}
-	// 2.3 若不根据项目优先级筛选
-	if req.FilterProjectPriority == "" && userVisibility == GlobalDashBoardVisibilityProjects {
-		// 2.3.1 若可以查看多项目待关注SQL，则通过用户的有权限的项目进行筛选
-		data["filter_project_id_list"] = projectIdsOfProjectAdmin
-	}
-	// 2.4. 若用户可见性为受让人，则可以查看在SQL管控中分配给他的SQL
-	if userVisibility == GlobalDashBoardVisibilityAssignee {
-		data["filter_current_step_assignee_user_id"] = user.GetIDStr()
-	}
-
-	// 3. 根据筛选项筛选SQL管控的SQL信息
-	s := model.GetStorage()
-	workflows, count, err := s.GetWorkflowsByReq(data)
+	// 3. 将用户可见性、接口请求以及用户的权限范围，构造为全局工单的基础的过滤器，满足全局工单统一的过滤逻辑
+	filter, err := constructGlobalWorkflowBasicFilter(c.Request().Context(), user, userVisibility, permissions,
+		&globalWorkflowBasicFilter{
+			FilterCreateUserId:    req.FilterCreateUserId,
+			FilterStatusList:      req.FilterStatusList,
+			FilterProjectUid:      req.FilterProjectUid,
+			FilterInstanceId:      req.FilterInstanceId,
+			FilterProjectPriority: req.FilterProjectPriority,
+		})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	/*
-	 TODO 全局工单暂时不使用
-	 1. viewable_instance_ids,check_user_can_access 调用 AddFilterInstanceAndUserAdmin 添加筛选项
-	 2. 用户相关代码需要从DMS获取
-	*/
-
-	// 从dms获取工单对应的项目信息，若该信息已经在根据项目优先级筛选时被加载，则不需要重复加载
-	if req.FilterProjectPriority == "" {
-		projectMap, err = loadProjectsByWorkflows(c.Request().Context(), workflows)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
+	// 4. 过滤器增加分页
+	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
+	filter["limit"] = limit
+	filter["offset"] = offset
+	// 5. 根据筛选项筛选工单信息
+	s := model.GetStorage()
+	workflows, count, err := s.GetWorkflowsByReq(filter)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
 	}
-	// 从dms获取工单对应的数据源信息
+	if len(workflows) == 0 {
+		return c.JSON(http.StatusOK, GetWorkflowsResV1{
+			BaseRes:   controller.NewBaseReq(nil),
+			Data:      []*WorkflowDetailResV1{},
+			TotalNums: count,
+		})
+	}
+	// 6. 从dms获取工单对应的项目信息
+	var projectMap = make(ProjectMap)
+	if req.FilterProjectPriority != "" {
+		_, projectMap, err = loadProjectsByPriority(c.Request().Context(), req.FilterProjectPriority)
+	} else {
+		projectMap, err = loadProjectsByWorkflows(c.Request().Context(), workflows)
+	}
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	// 7. 从dms获取工单对应的数据源信息
 	instanceMap, err := loadInstanceByWorkflows(c.Request().Context(), workflows)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	return c.JSON(http.StatusOK, GetWorkflowsResV1{
+		BaseRes:   controller.NewBaseReq(nil),
+		Data:      toGlobalWorkflowRes(workflows, projectMap, instanceMap),
+		TotalNums: count,
+	})
+}
 
-	workflowsResV1 := make([]*WorkflowDetailResV1, 0, len(workflows))
+type ProjectMap map[string] /* project uid */ *dmsV1.ListProject
+
+func (m ProjectMap) ProjectName(projectUid string) string {
+	if m == nil {
+		return ""
+	}
+	if project, exist := m[projectUid]; exist && project != nil {
+		return project.Name
+	}
+	return ""
+}
+
+func (m ProjectMap) ProjectPriority(projectUid string) dmsV1.ProjectPriority {
+	if m == nil {
+		return dmsV1.ProjectPriorityUnknown
+	}
+	if project, exist := m[projectUid]; exist && project != nil {
+		return project.ProjectPriority
+	}
+	return dmsV1.ProjectPriorityUnknown
+}
+
+type InstanceMap map[string] /* instance id */ *dmsV1.ListDBService
+
+func (m InstanceMap) InstanceName(instanceId string) string {
+	if m == nil {
+		return ""
+	}
+	if instance, exist := m[instanceId]; exist && instance != nil {
+		return instance.Name
+	}
+	return ""
+}
+
+func toGlobalWorkflowRes(workflows []*model.WorkflowListDetail, projectMap ProjectMap, instanceMap InstanceMap) (workflowsResV1 []*WorkflowDetailResV1) {
+	workflowsResV1 = make([]*WorkflowDetailResV1, 0, len(workflows))
 	for _, workflow := range workflows {
 		instanceInfos := make([]InstanceInfo, 0, len(workflow.InstanceIds))
 		for _, id := range workflow.InstanceIds {
 			instanceInfos = append(instanceInfos, InstanceInfo{
 				InstanceId:   id,
-				InstanceName: instanceMap[id].Name,
+				InstanceName: instanceMap.InstanceName(id),
 			})
 		}
 		workflowRes := &WorkflowDetailResV1{
-			ProjectName:             projectMap[workflow.ProjectId].Name,
+			ProjectName:             projectMap.ProjectName(workflow.ProjectId),
 			ProjectUid:              workflow.ProjectId,
-			ProjectPriority:         projectMap[workflow.ProjectId].ProjectPriority,
+			ProjectPriority:         projectMap.ProjectPriority(workflow.ProjectId),
 			InstanceInfo:            instanceInfos,
 			Name:                    workflow.Subject,
 			WorkflowId:              workflow.WorkflowId,
@@ -703,20 +688,15 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 		}
 		workflowsResV1 = append(workflowsResV1, workflowRes)
 	}
-
-	return c.JSON(http.StatusOK, GetWorkflowsResV1{
-		BaseRes:   controller.NewBaseReq(nil),
-		Data:      workflowsResV1,
-		TotalNums: count,
-	})
+	return workflowsResV1
 }
 
 type GetGlobalWorkflowStatisticsReqV1 struct {
-	FilterCreateUserId              string                `json:"filter_create_user_id" query:"filter_create_user_id"`
-	FilterStatusList                []string              `json:"filter_status_list" query:"filter_status_list" validate:"dive,oneof=wait_for_audit wait_for_execution rejected canceled executing exec_failed finished"`
-	FilterProjectUid                string                `json:"filter_project_uid" query:"filter_project_uid"`
-	FilterInstanceId                string                `json:"filter_instance_id" query:"filter_instance_id"`
-	FilterProjectPriority           dmsV1.ProjectPriority `json:"filter_project_priority" query:"filter_project_priority"  valid:"omitempty,oneof=high medium low"`
+	FilterCreateUserId    string                `json:"filter_create_user_id" query:"filter_create_user_id"`
+	FilterStatusList      []string              `json:"filter_status_list" query:"filter_status_list" validate:"dive,oneof=wait_for_audit wait_for_execution rejected canceled executing exec_failed finished"`
+	FilterProjectUid      string                `json:"filter_project_uid" query:"filter_project_uid"`
+	FilterInstanceId      string                `json:"filter_instance_id" query:"filter_instance_id"`
+	FilterProjectPriority dmsV1.ProjectPriority `json:"filter_project_priority" query:"filter_project_priority"  valid:"omitempty,oneof=high medium low"`
 }
 
 type GlobalWorkflowStatisticsResV1 struct {
@@ -726,7 +706,7 @@ type GlobalWorkflowStatisticsResV1 struct {
 
 // GetGlobalWorkflowStatistics
 // @Summary 获取全局工单统计数据
-// @Description get global workflow statistics 
+// @Description get global workflow statistics
 // @Tags workflow
 // @Id GetGlobalWorkflowStatistics
 // @Security ApiKeyAuth
@@ -738,15 +718,114 @@ type GlobalWorkflowStatisticsResV1 struct {
 // @Success 200 {object} v1.GlobalWorkflowStatisticsResV1
 // @router /v1/workflows/statistics [get]
 func GetGlobalWorkflowStatistics(c echo.Context) error {
-	return nil
+	req := new(GetGlobalWorkflowStatisticsReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	// 1. 获取用户权限信息
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	permissions, isAdmin, err := dmsobject.GetUserOpPermission(c.Request().Context(), "", user.GetIDStr(), dms.GetDMSServerAddress())
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	// 2. 将用户权限信息，转化为全局待处理清单统一的用户可见性
+	userVisibility := getGlobalDashBoardVisibilityOfUser(isAdmin, permissions)
+	if req.FilterCreateUserId != "" {
+		// 如果根据当前用户筛选，则筛选出用户在所有项目中的工单，将用户可见性扩大至全局
+		userVisibility = GlobalDashBoardVisibilityGlobal
+	}
+	// 3. 将用户可见性、接口请求以及用户的权限范围，构造为全局工单的基础的过滤器，满足全局工单统一的过滤逻辑
+	filter, err := constructGlobalWorkflowBasicFilter(c.Request().Context(), user, userVisibility, permissions,
+		&globalWorkflowBasicFilter{
+			FilterCreateUserId:    req.FilterCreateUserId,
+			FilterStatusList:      req.FilterStatusList,
+			FilterProjectUid:      req.FilterProjectUid,
+			FilterInstanceId:      req.FilterInstanceId,
+			FilterProjectPriority: req.FilterProjectPriority,
+		})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	// 4. 根据筛选项获取工单数量
+	s := model.GetStorage()
+	count, err := s.GetGlobalWorkflowTotalNumByReq(filter)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.JSON(http.StatusOK, GlobalWorkflowStatisticsResV1{
+		BaseRes:   controller.NewBaseReq(nil),
+		TotalNums: count,
+	})
+}
+
+type globalWorkflowBasicFilter struct {
+	FilterCreateUserId    string                `json:"filter_create_user_id" query:"filter_create_user_id"`
+	FilterStatusList      []string              `json:"filter_status_list" query:"filter_status_list" validate:"dive,oneof=wait_for_audit wait_for_execution rejected canceled executing exec_failed finished"`
+	FilterProjectUid      string                `json:"filter_project_uid" query:"filter_project_uid"`
+	FilterInstanceId      string                `json:"filter_instance_id" query:"filter_instance_id"`
+	FilterProjectPriority dmsV1.ProjectPriority `json:"filter_project_priority" query:"filter_project_priority"  valid:"omitempty,oneof=high medium low"`
+}
+
+// 将用户可见性、接口请求以及用户的权限范围，构造为全局工单的基础的过滤器，满足全局工单统一的过滤逻辑
+func constructGlobalWorkflowBasicFilter(ctx context.Context, user *model.User, userVisibility GlobalDashBoardVisibility, permissions []dmsV1.OpPermissionItem, req *globalWorkflowBasicFilter) (map[string]interface{}, error) {
+	// 1. 基本筛选项
+	data := map[string]interface{}{
+		"filter_create_user_id": req.FilterCreateUserId, // 根据创建人ID筛选用户自己创建的工单
+		"filter_status_list":    req.FilterStatusList,   // 根据SQL工单的状态筛选多个状态的工单
+		"filter_project_id":     req.FilterProjectUid,   // 根据项目id筛选某些一个项目下的多个工单
+		"filter_instance_id":    req.FilterInstanceId,   // 根据工单记录的数据源id，筛选包含该数据源的工单，多数据源情况下，一旦包含该数据源，则被选中
+	}
+	// 2 页面筛选项：如果根据项目优先级筛选，则先筛选出对应优先级下的项目
+	var projectIdsByPriority []string
+	var err error
+	if req.FilterProjectPriority != "" {
+		projectIdsByPriority, _, err = loadProjectsByPriority(ctx, req.FilterProjectPriority)
+		if err != nil {
+			return nil, err
+		}
+
+	}
+	if req.FilterProjectPriority != "" {
+		// 2.1 若根据项目优先级筛选，则根据优先级对应的项目筛选
+		data["filter_project_id_list"] = projectIdsByPriority
+	}
+
+	var projectIdsOfProjectAdmin []string
+	if userVisibility == GlobalDashBoardVisibilityProjects {
+		for _, permission := range permissions {
+			if permission.OpPermissionType == dmsV1.OpPermissionTypeProjectAdmin {
+				projectIdsOfProjectAdmin = append(projectIdsOfProjectAdmin, permission.RangeUids...)
+			}
+		}
+	}
+
+	if req.FilterProjectPriority != "" && userVisibility == GlobalDashBoardVisibilityProjects {
+		// 2.2 若根据项目优先级筛选，且可以查看多项目待关注SQL，则将可查看的项目和项目优先级筛选后的项目的集合取交集
+		data["filter_project_id_list"] = utils.IntersectionStringSlice(projectIdsByPriority, projectIdsOfProjectAdmin)
+	}
+	// 3 若不根据项目优先级筛选
+	if req.FilterProjectPriority == "" && userVisibility == GlobalDashBoardVisibilityProjects {
+		// 3.1 若可以查看多项目待关注SQL，则通过用户的有权限的项目进行筛选
+		data["filter_project_id_list"] = projectIdsOfProjectAdmin
+	}
+	// 4. 若用户可见性为受让人，则可以查看在SQL管控中分配给他的SQL
+	if userVisibility == GlobalDashBoardVisibilityAssignee {
+		data["filter_current_step_assignee_user_id"] = user.GetIDStr()
+	}
+	return data, nil
 }
 
 type GlobalDashBoardVisibility string
 
-const GlobalDashBoardVisibilityGlobal GlobalDashBoardVisibility = "global"
-const GlobalDashBoardVisibilityProjects GlobalDashBoardVisibility = "projects"
-const GlobalDashBoardVisibilityAssignee GlobalDashBoardVisibility = "assignee"
+const GlobalDashBoardVisibilityGlobal GlobalDashBoardVisibility = "global"     // 全局可见
+const GlobalDashBoardVisibilityProjects GlobalDashBoardVisibility = "projects" // 多项目可见
+const GlobalDashBoardVisibilityAssignee GlobalDashBoardVisibility = "assignee" // 仅可见授予自己的
 
+// 将用户权限信息，转化为全局待处理清单统一的用户可见性
 func getGlobalDashBoardVisibilityOfUser(isAdmin bool, permissions []dmsV1.OpPermissionItem) GlobalDashBoardVisibility {
 	// 角色：全局管理员，全局可查看者
 	if isAdmin {
@@ -768,8 +847,8 @@ func getGlobalDashBoardVisibilityOfUser(isAdmin bool, permissions []dmsV1.OpPerm
 }
 
 // 根据项目优先级从 dms 系统中获取相应的项目列表，并返回项目ID列表和项目映射
-func loadProjectsByPriority(ctx context.Context, priority dmsV1.ProjectPriority) (projectIds []string, projectMap map[string] /* project uid */ *dmsV1.ListProject, err error) {
-	projectMap = make(map[string]*dmsV1.ListProject)
+func loadProjectsByPriority(ctx context.Context, priority dmsV1.ProjectPriority) (projectIds []string, projectMap ProjectMap, err error) {
+	projectMap = make(ProjectMap)
 	// 如果根据项目优先级筛选SQL工单，则先获取项目优先级，根据优先级对应的项目ID进行筛选
 	projects, _, err := dmsobject.ListProjects(ctx, controller.GetDMSServerAddress(), dmsV1.ListProjectReq{
 		PageSize:                999,
@@ -789,8 +868,8 @@ func loadProjectsByPriority(ctx context.Context, priority dmsV1.ProjectPriority)
 }
 
 // 根据工单列表中的项目ID从 dms 系统中获取对应的项目信息，并返回项目映射
-func loadProjectsByWorkflows(ctx context.Context, workflows []*model.WorkflowListDetail) (projectMap map[string] /* project uid */ *dmsV1.ListProject, err error) {
-	projectMap = make(map[string]*dmsV1.ListProject)
+func loadProjectsByWorkflows(ctx context.Context, workflows []*model.WorkflowListDetail) (projectMap ProjectMap, err error) {
+	projectMap = make(ProjectMap)
 	if len(workflows) == 0 {
 		return projectMap, nil
 	}
@@ -805,7 +884,7 @@ func loadProjectsByWorkflows(ctx context.Context, workflows []*model.WorkflowLis
 	return loadProjectsByProjectIds(ctx, projectIds)
 }
 
-func loadProjectsByProjectIds(ctx context.Context, projectIds []string) (projectMap map[string] /* project uid */ *dmsV1.ListProject, err error) {
+func loadProjectsByProjectIds(ctx context.Context, projectIds []string) (projectMap ProjectMap, err error) {
 	// get project priority from dms
 	projects, _, err := dmsobject.ListProjects(ctx, controller.GetDMSServerAddress(), dmsV1.ListProjectReq{
 		PageSize:            uint32(len(projectIds)),
@@ -823,8 +902,8 @@ func loadProjectsByProjectIds(ctx context.Context, projectIds []string) (project
 }
 
 // 根据工单列表中的实例ID从 dms 系统中获取对应的数据源实例信息，并返回实例映射
-func loadInstanceByWorkflows(ctx context.Context, workflows []*model.WorkflowListDetail) (instanceMap map[string] /* instance id */ *dmsV1.ListDBService, err error) {
-	instanceMap = make(map[string]*dmsV1.ListDBService)
+func loadInstanceByWorkflows(ctx context.Context, workflows []*model.WorkflowListDetail) (instanceMap InstanceMap, err error) {
+	instanceMap = make(InstanceMap)
 	if len(workflows) == 0 {
 		return instanceMap, nil
 	}
@@ -841,9 +920,9 @@ func loadInstanceByWorkflows(ctx context.Context, workflows []*model.WorkflowLis
 	return loadInstanceByInstanceIds(ctx, instanceIdList)
 }
 
-func loadInstanceByInstanceIds(ctx context.Context, instanceIds []string) (instanceMap map[string] /* instance id */ *dmsV1.ListDBService, err error) {
+func loadInstanceByInstanceIds(ctx context.Context, instanceIds []string) (instanceMap InstanceMap, err error) {
 	// get instances from dms
-	instanceMap = make(map[string]*dmsV1.ListDBService)
+	instanceMap = make(InstanceMap)
 	instances, _, err := dmsobject.ListDbServices(ctx, controller.GetDMSServerAddress(), dmsV1.ListDBServiceReq{
 		PageSize:             uint32(len(instanceIds)),
 		PageIndex:            1,
