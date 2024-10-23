@@ -40,13 +40,14 @@ func (m GlobalDashBoardModule) HasRedDot(ctx echo.Context) (bool, error) {
 	// 2. 将用户权限信息，转化为全局待处理清单统一的用户可见性
 	userVisibility := getGlobalDashBoardVisibilityOfUser(isAdmin, permissions)
 	// 查询待关注工单，是否有未处理的工单
-	filter, err = constructGlobalWorkflowBasicFilter(ctx.Request().Context(), user, userVisibility, permissions, &globalWorkflowBasicFilter{
+	filter, err := constructGlobalWorkflowBasicFilter(ctx.Request().Context(), user, userVisibility, permissions, &globalWorkflowBasicFilter{
 		FilterStatusList: statusOfGlobalWorkflowRequireAttention,
 	})
 	if err != nil {
 		return false, err
 	}
-	total, err = s.GetGlobalWorkflowTotalNum(filter)
+	s := model.GetStorage()
+	total, err := s.GetGlobalWorkflowTotalNum(filter)
 	if err != nil {
 		return false, err
 	}
