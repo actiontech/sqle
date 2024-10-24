@@ -181,8 +181,9 @@ func GetMeta(typ string) (Meta, error) {
 }
 
 var supportedCmdTypeList = map[string]struct{}{
-	TypeMySQLSlowLog: {},
-	TypeTiDBAuditLog: {},
+	TypeMySQLSlowLog:  {},
+	TypeTiDBAuditLog:  {},
+	TypeAllAppExtract: {},
 }
 
 func GetSupportedScannerAuditPlanType() map[string]struct{} {
