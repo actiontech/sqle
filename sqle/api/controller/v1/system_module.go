@@ -59,7 +59,7 @@ type GetSystemModuleRedDotsRes struct {
 type ModuleRedDots []ModuleRedDot
 
 type ModuleRedDot struct {
-	ModuleName string `json:"module_name"`
+	ModuleName string `json:"module_name" enums:"global_dashboard"`
 	HasRedDot  bool   `json:"has_red_dot"`
 }
 
@@ -71,5 +71,23 @@ type ModuleRedDot struct {
 // @Success 200 {object} v1.GetSystemModuleRedDotsRes
 // @router /v1/system/module_red_dots [get]
 func GetSystemModuleRedDots(c echo.Context) error {
-	return nil
+	redDots, err := GetSystemModuleRedDotsList(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return c.JSON(http.StatusOK, &GetSystemModuleRedDotsRes{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    toModuleRedDots(redDots),
+	})
+}
+
+func toModuleRedDots(redDots []*RedDot) ModuleRedDots {
+	moduleRedDots := make(ModuleRedDots, 0, len(redDots))
+	for _, redDot := range redDots {
+		moduleRedDots = append(moduleRedDots, ModuleRedDot{
+			ModuleName: redDot.ModuleName,
+			HasRedDot:  redDot.HasRedDot,
+		})
+	}
+	return moduleRedDots
 }

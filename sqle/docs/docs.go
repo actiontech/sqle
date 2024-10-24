@@ -14840,7 +14840,10 @@ var doc = `{
                     "type": "boolean"
                 },
                 "module_name": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "global_dashboard"
+                    ]
                 }
             }
         },
