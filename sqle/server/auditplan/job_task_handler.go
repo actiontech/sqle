@@ -201,6 +201,7 @@ func SetSQLPriority(sqlList []*model.SQLManageRecord) ([]*model.SQLManageRecord,
 	return sqlList, nil
 }
 
+// 获取SQL的优先级以及优先级触发的原因，只有高优先级或者无优先级，若是高优先级，则返回model.PriorityHigh=high,如果无优先级则返回空字符串
 func GetSingleSQLPriorityWithReasons(auditPlan *model.AuditPlanV2, sql *model.SQLManageRecord) (priority string, reasons []string, err error) {
 	if auditPlan == nil || sql == nil {
 		return "", reasons, nil
