@@ -187,42 +187,77 @@ func SetSQLPriority(sqlList []*model.SQLManageRecord) ([]*model.SQLManageRecord,
 			}
 			auditPlanMap[sourceId] = auditPlan
 		}
-
-		info, err := sql_.Info.OriginValue()
+		priority, _, err := GetSingleSQLPriorityWithReasons(auditPlan, sql_)
 		if err != nil {
 			return nil, err
 		}
-		highPriorityConditions := auditPlan.HighPriorityParams
-		priority := sql.NullString{}
-		for _, highPriorityCondition := range highPriorityConditions {
-			var compareParamVale string
-			// 审核级别特殊处理
-			if highPriorityCondition.Key == OperationParamAuditLevel {
-				switch sql_.AuditLevel {
-				case string(driverV2.RuleLevelNotice):
-					compareParamVale = "1"
-				case string(driverV2.RuleLevelWarn):
-					compareParamVale = "2"
-				case string(driverV2.RuleLevelError):
-					compareParamVale = "3"
-				default:
-					compareParamVale = "0"
-				}
-			} else {
-				infoV, ok := info[highPriorityCondition.Key]
-				if !ok {
-					continue
-				}
-				compareParamVale = fmt.Sprintf("%v", infoV)
-			}
-			if high, err := highPriorityConditions.CompareParamValue(highPriorityCondition.Key, compareParamVale); err == nil && high {
-				priority = sql.NullString{
-					String: model.PriorityHigh,
-					Valid:  true,
-				}
+		if priority == model.PriorityHigh {
+			sqlList[i].Priority = sql.NullString{
+				String: model.PriorityHigh,
+				Valid:  true,
 			}
 		}
-		sqlList[i].Priority = priority
 	}
 	return sqlList, nil
+}
+
+func GetSingleSQLPriorityWithReasons(auditPlan *model.AuditPlanV2, sql *model.SQLManageRecord) (priority string, reasons []string, err error) {
+	if auditPlan == nil || sql == nil {
+		return "", reasons, nil
+	}
+	info, err := sql.Info.OriginValue()
+	if err != nil {
+		return "", nil, err
+	}
+	highPriorityConditions := auditPlan.HighPriorityParams
+	// 遍历优先级条件
+	for _, highPriorityCondition := range highPriorityConditions {
+		var compareParamVale string
+		// 特殊处理审核级别
+		if highPriorityCondition.Key == OperationParamAuditLevel {
+			switch sql.AuditLevel {
+			case string(driverV2.RuleLevelNotice):
+				compareParamVale = "1"
+			case string(driverV2.RuleLevelWarn):
+				compareParamVale = "2"
+			case string(driverV2.RuleLevelError):
+				compareParamVale = "3"
+			default:
+				compareParamVale = "0"
+			}
+		} else {
+			// 获取信息中的相应字段值
+			infoV, ok := info[highPriorityCondition.Key]
+			if !ok {
+				continue
+			}
+			compareParamVale = fmt.Sprintf("%v", infoV)
+		}
+		// 检查是否为高优先级条件
+		if high, err := highPriorityConditions.CompareParamValue(highPriorityCondition.Key, compareParamVale); err == nil && high {
+			// 添加匹配的条件作为原因
+			if highPriorityCondition.Key == OperationParamAuditLevel {
+				reasons = append(reasons, fmt.Sprintf("【%v %v %v，为：%s】", highPriorityCondition.Desc, highPriorityCondition.Operator.Value, toComparedValue(highPriorityCondition.Param.Value), toComparedValue(compareParamVale)))
+			} else {
+				reasons = append(reasons, fmt.Sprintf("【%v %v %v，为：%s】", highPriorityCondition.Desc, highPriorityCondition.Operator.Value, highPriorityCondition.Param.Value, toComparedValue(compareParamVale)))
+			}
+		}
+	}
+	if len(reasons) > 0 {
+		return model.PriorityHigh, reasons, nil
+	}
+	return "", reasons, nil
+}
+
+func toComparedValue(compareParamVale string) string {
+	switch compareParamVale {
+	case "1":
+		return "提示"
+	case "2":
+		return "警告"
+	case "3":
+		return "错误"
+	default:
+		return compareParamVale
+	}
 }
