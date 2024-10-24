@@ -117,6 +117,26 @@ func TestRuleSQLE00097(t *testing.T) {
 				Rows:  sqlmock.NewRows([]string{"data_type", "character_maximum_length"}).AddRow("VARCHAR", 255),
 			},
 		}, newTestResult().addResult(ruleName))
+
+	runAIRuleCase(rule, t, "case 11: select...join ...语句中ORDER BY使用VARCHAR字段长度超过100",
+		"select * from users a inner join archive b on a.name =b.name order by a.name,b.name;",
+		session.NewAIMockContext().WithSQL("CREATE TABLE users (name VARCHAR(255)); CREATE TABLE archive (name VARCHAR(55));"),
+		[]*AIMockSQLExpectation{
+			{
+				Query: "select data_type, character_maximum_length from information_schema.columns where table_name='users' and column_name='name';",
+				Rows:  sqlmock.NewRows([]string{"data_type", "character_maximum_length"}).AddRow("VARCHAR", 255),
+			},
+		}, newTestResult().addResult(ruleName))
+
+	runAIRuleCase(rule, t, "case 12: delete ...语句中ORDER BY使用VARCHAR字段长度超过100",
+		"delete from users order by name;",
+		session.NewAIMockContext().WithSQL("CREATE TABLE users (name VARCHAR(255)); CREATE TABLE archive (name VARCHAR(55));"),
+		[]*AIMockSQLExpectation{
+			{
+				Query: "select data_type, character_maximum_length from information_schema.columns where table_name='users' and column_name='name';",
+				Rows:  sqlmock.NewRows([]string{"data_type", "character_maximum_length"}).AddRow("VARCHAR", 255),
+			},
+		}, newTestResult().addResult(ruleName))
 }
 
 // ==== Rule test code end ====

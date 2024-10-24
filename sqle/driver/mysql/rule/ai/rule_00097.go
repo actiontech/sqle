@@ -81,141 +81,122 @@ func RuleSQLE00097(input *rulepkg.RuleHandlerInput) error {
 
 	createMap := make(map[*ast.TableName]*ast.CreateTableStmt) // 缓存CreateTableStmt
 
-	// 定义一个函数来处理单个 SELECT 语句
-	processSelectStmt := func(selectStmt *ast.SelectStmt) bool {
-		// 定义内部辅助函数获取表名
-		getTableName := func(field *ast.ColumnNameExpr) string {
-			if field.Name.Table.L != "" {
-				return field.Name.Table.L
+	getCreateTableStmt := func(table *ast.TableName) (*ast.CreateTableStmt, error) {
+		createTableStmt, ok := createMap[table]
+		if !ok {
+			createTableStmt, err := util.GetCreateTableStmt(input.Ctx, table)
+			if err != nil {
+				return nil, err
 			}
-			// 如果没有显式的表名，可以尝试从上下文中获取默认表名
-			defaultTable := util.GetDefaultTable(selectStmt)
-			if defaultTable != nil {
-				return defaultTable.Name.L
-			}
-			return ""
-		}
-
-		// 定义内部辅助函数获取列定义
-		getColumnDef := func(createTableStmt *ast.CreateTableStmt, columnName string) *ast.ColumnDef {
-			for _, col := range createTableStmt.Cols {
-				if col.Name.Name.L == columnName {
-					return col
-				}
-			}
-			return nil
-		}
-
-		getCreateTableStmt := func(tableName string) (*ast.CreateTableStmt, error) {
-			table := &ast.TableName{Name: model.NewCIStr(tableName)}
-			createTableStmt, ok := createMap[table]
-			if !ok {
-				createTableStmt, err := util.GetCreateTableStmt(input.Ctx, table)
-				if err != nil {
-					return nil, err
-				}
-				createMap[table] = createTableStmt
-				return createTableStmt, nil
-			}
+			createMap[table] = createTableStmt
 			return createTableStmt, nil
 		}
+		return createTableStmt, nil
+	}
 
-		checkViolate := func(table string, col string) (bool, error) {
-			createTableStmt, err := getCreateTableStmt(table)
-			if err != nil {
-				return false, fmt.Errorf("Failed to get CREATE TABLE statement for table %s: %v", table, err)
+	// 定义内部辅助函数获取列定义
+	getColumnDef := func(createTableStmt *ast.CreateTableStmt, columnName string) *ast.ColumnDef {
+		for _, col := range createTableStmt.Cols {
+			if col.Name.Name.L == columnName {
+				return col
 			}
-			columnDef := getColumnDef(createTableStmt, col)
+		}
+		return nil
+	}
 
-			// 获取列类型
-			colType := columnDef.Tp.Tp
+	checkViolate := func(table *ast.TableName, col string) (bool, error) {
+		createTableStmt, err := getCreateTableStmt(table)
+		if err != nil {
+			return false, fmt.Errorf("Failed to get CREATE TABLE statement for table %s: %v", table, err)
+		}
+		columnDef := getColumnDef(createTableStmt, col)
 
-			// 检查是否为 TEXT 或 BLOB 类型
-			if colType == mysql.TypeLongBlob || colType == mysql.TypeBlob ||
-				colType == mysql.TypeTinyBlob || colType == mysql.TypeMediumBlob {
+		// 获取列类型
+		colType := columnDef.Tp.Tp
+
+		// 检查是否为 TEXT 或 BLOB 类型
+		if colType == mysql.TypeLongBlob || colType == mysql.TypeBlob ||
+			colType == mysql.TypeTinyBlob || colType == mysql.TypeMediumBlob {
+			return true, nil
+		}
+
+		// 检查是否为 VARCHAR 类型
+		if colType == mysql.TypeVarchar {
+			width := util.GetColumnWidth(columnDef)
+			if width > threshold {
 				return true, nil
 			}
-
-			// 检查是否为 VARCHAR 类型
-			if colType == mysql.TypeVarchar {
-				width := util.GetColumnWidth(columnDef)
-				if width > threshold {
-					return true, nil
-				}
-			}
-			return false, nil
 		}
+		return false, nil
+	}
 
-		// 检查是否包含 ORDER BY、DISTINCT 或 GROUP BY 子句
-		hasOrderBy := selectStmt.OrderBy != nil
-		hasDistinct := selectStmt.Distinct
-		hasGroupBy := selectStmt.GroupBy != nil
-
-		if !(hasOrderBy || hasDistinct || hasGroupBy) {
-			// 不包含任何需要检查的子句，跳过
+	extractFieldsFromExpr := func(expr ast.ExprNode, aliasMap []*util.TableAliasInfo) bool {
+		if expr == nil {
 			return false
 		}
-
-		// 提取 ORDER BY 字段
-		if hasOrderBy {
-			for _, item := range selectStmt.OrderBy.Items {
-				fields := util.GetColumnNameInExpr(item.Expr)
-				for _, field := range fields {
-					tableName := getTableName(field)
-					if tableName != "" {
-						isViolate, err := checkViolate(tableName, field.Name.Name.L)
-						if err != nil {
-							log.NewEntry().Errorf("checkViolate err: %s", err)
-							return false
-						}
-						if isViolate {
-							rulepkg.AddResult(input.Res, input.Rule, SQLE00097)
-							return true
-						}
+		fields := util.GetColumnNameInExpr(expr)
+		for _, field := range fields {
+			tableName := field.Name.Table.String()
+			schemaName := field.Name.Schema.String()
+			if tableName != "" {
+				// 如果字段有表前缀，通过别名映射获取真实表名
+				for _, alias := range aliasMap {
+					if alias.TableAliasName == tableName {
+						tableName = alias.TableName
+						schemaName = alias.SchemaName
+						break
 					}
+				}
+			} else {
+				// 如果字段没有表前缀，尝试将其映射到第一个表
+				for _, alias := range aliasMap {
+					tableName = alias.TableName
+					schemaName = alias.SchemaName
+					break
+				}
+			}
+
+			table := &ast.TableName{Name: model.NewCIStr(tableName), Schema: model.NewCIStr(schemaName)}
+			col := field.Name.Name.String()
+			isViolate, err := checkViolate(table, col)
+			if err != nil {
+				log.NewEntry().Errorf("checkViolate err: %s", err)
+				continue
+			}
+			if isViolate {
+				return true
+			}
+		}
+		return false
+	}
+
+	gatherColFromOrderByClause := func(orderBy *ast.OrderByClause, aliasInfo []*util.TableAliasInfo) bool {
+		if orderBy != nil {
+			for _, item := range orderBy.Items {
+				if extractFieldsFromExpr(item.Expr, aliasInfo) {
+					return true
 				}
 			}
 		}
+		return false
+	}
 
-		// 提取 DISTINCT 字段
-		if hasDistinct {
-			for _, expr := range selectStmt.Fields.Fields {
-				if expr.Expr != nil {
-					fields := util.GetColumnNameInExpr(expr.Expr)
-					for _, field := range fields {
-						tableName := getTableName(field)
-						if tableName != "" {
-							isViolate, err := checkViolate(tableName, field.Name.Name.L)
-							if err != nil {
-								log.NewEntry().Errorf("checkViolate err: %s", err)
-								return false
-							}
-							if isViolate {
-								rulepkg.AddResult(input.Res, input.Rule, SQLE00097)
-								return true
-							}
-						}
-					}
+	gatherColFromSelectStmt := func(stmt *ast.SelectStmt, aliasInfo []*util.TableAliasInfo) bool {
+		if gatherColFromOrderByClause(stmt.OrderBy, aliasInfo) {
+			return true
+		}
+		if stmt.GroupBy != nil {
+			for _, item := range stmt.GroupBy.Items {
+				if extractFieldsFromExpr(item.Expr, aliasInfo) {
+					return true
 				}
 			}
 		}
-
-		// 提取 GROUP BY 字段
-		if hasGroupBy {
-			for _, item := range selectStmt.GroupBy.Items {
-				fields := util.GetColumnNameInExpr(item.Expr)
-				for _, field := range fields {
-					tableName := getTableName(field)
-					if tableName != "" {
-						isViolate, err := checkViolate(tableName, field.Name.Name.L)
-						if err != nil {
-							log.NewEntry().Errorf("checkViolate err: %s", err)
-							return false
-						}
-						if isViolate {
-							rulepkg.AddResult(input.Res, input.Rule, SQLE00097)
-							return true
-						}
+		if stmt.Distinct {
+			if stmt.Fields != nil {
+				for _, field := range stmt.Fields.Fields {
+					if extractFieldsFromExpr(field.Expr, aliasInfo) {
+						return true
 					}
 				}
 			}
@@ -223,21 +204,45 @@ func RuleSQLE00097(input *rulepkg.RuleHandlerInput) error {
 		return false
 	}
 
+	// 定义一个函数来处理单个 SELECT 语句
+	processSelectStmt := func(selectStmt *ast.SelectStmt) bool {
+
+		if selectStmt.From == nil || selectStmt.From.TableRefs == nil {
+			// 跳过
+			return false
+		}
+		// 获取表的别名信息
+		aliasInfo := util.GetTableAliasInfoFromJoin(selectStmt.From.TableRefs)
+		if gatherColFromSelectStmt(selectStmt, aliasInfo) {
+			return true
+		}
+		return false
+	}
+
+	// 提取所有的 SELECT 语句，包括子查询和 UNION
+	selectStmts := util.GetSelectStmt(input.Node)
+	for _, sq := range selectStmts {
+		if processSelectStmt(sq) {
+			rulepkg.AddResult(input.Res, input.Rule, SQLE00097)
+			return nil
+		}
+	}
+
 	// DML
 	switch stmt := input.Node.(type) {
-	case *ast.SelectStmt, *ast.UpdateStmt, *ast.DeleteStmt, *ast.InsertStmt:
-		selectStmts := util.GetSelectStmt(stmt)
-		for _, selectStmt := range selectStmts {
-			if processSelectStmt(selectStmt) {
-				return nil
-			}
+	case *ast.SelectStmt, *ast.UnionStmt, *ast.InsertStmt:
+		// 上面 util.GetSelectStmt 已经实现了
+	case *ast.UpdateStmt:
+		aliasInfos := util.GetTableAliasInfoFromJoin(stmt.TableRefs.TableRefs)
+		if gatherColFromOrderByClause(stmt.Order, aliasInfos) {
+			rulepkg.AddResult(input.Res, input.Rule, SQLE00097)
+			return nil
 		}
-	case *ast.UnionStmt:
-		selectStmts := util.GetSelectStmt(stmt)
-		for _, selectStmt := range selectStmts {
-			if processSelectStmt(selectStmt) {
-				return nil
-			}
+	case *ast.DeleteStmt:
+		aliasInfos := util.GetTableAliasInfoFromJoin(stmt.TableRefs.TableRefs)
+		if gatherColFromOrderByClause(stmt.Order, aliasInfos) {
+			rulepkg.AddResult(input.Res, input.Rule, SQLE00097)
+			return nil
 		}
 	}
 
