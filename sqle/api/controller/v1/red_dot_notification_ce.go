@@ -7,7 +7,6 @@ import (
 	"github.com/actiontech/dms/pkg/dms-common/dmsobject"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	dms "github.com/actiontech/sqle/sqle/dms"
-	"github.com/actiontech/sqle/sqle/model"
 	"github.com/labstack/echo/v4"
 )
 
@@ -19,13 +18,6 @@ type GlobalDashBoardModule struct{}
 
 func (m GlobalDashBoardModule) Name() string {
 	return "global_dashboard"
-}
-
-var statusOfGlobalWorkflowRequireAttention []string = []string{
-	model.WorkflowStatusWaitForExecution,
-	model.WorkflowStatusExecFailed,
-	model.WorkflowStatusWaitForAudit,
-	model.WorkflowStatusReject,
 }
 
 func (m GlobalDashBoardModule) HasRedDot(ctx echo.Context) (bool, error) {
