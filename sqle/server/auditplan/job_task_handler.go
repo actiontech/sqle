@@ -209,8 +209,8 @@ func GetSingleSQLPriorityWithReasons(auditPlan *model.AuditPlanV2, sql *model.SQ
 	if err != nil {
 		return "", nil, err
 	}
-	toComparedValue := func(compareParamVale string) string {
-		switch compareParamVale {
+	toAuditLevel := func(valueToBeCompared string) string {
+		switch valueToBeCompared {
 		case "1":
 			return "提示"
 		case "2":
@@ -218,24 +218,24 @@ func GetSingleSQLPriorityWithReasons(auditPlan *model.AuditPlanV2, sql *model.SQ
 		case "3":
 			return "错误"
 		default:
-			return compareParamVale
+			return valueToBeCompared
 		}
 	}
 	highPriorityConditions := auditPlan.HighPriorityParams
 	// 遍历优先级条件
 	for _, highPriorityCondition := range highPriorityConditions {
-		var compareParamVale string
+		var valueToBeCompared string
 		// 特殊处理审核级别
 		if highPriorityCondition.Key == OperationParamAuditLevel {
 			switch sql.AuditLevel {
 			case string(driverV2.RuleLevelNotice):
-				compareParamVale = "1"
+				valueToBeCompared = "1"
 			case string(driverV2.RuleLevelWarn):
-				compareParamVale = "2"
+				valueToBeCompared = "2"
 			case string(driverV2.RuleLevelError):
-				compareParamVale = "3"
+				valueToBeCompared = "3"
 			default:
-				compareParamVale = "0"
+				valueToBeCompared = "0"
 			}
 		} else {
 			// 获取信息中的相应字段值
@@ -243,15 +243,15 @@ func GetSingleSQLPriorityWithReasons(auditPlan *model.AuditPlanV2, sql *model.SQ
 			if !ok {
 				continue
 			}
-			compareParamVale = fmt.Sprintf("%v", infoV)
+			valueToBeCompared = fmt.Sprintf("%v", infoV)
 		}
 		// 检查是否为高优先级条件
-		if high, err := highPriorityConditions.CompareParamValue(highPriorityCondition.Key, compareParamVale); err == nil && high {
+		if high, err := highPriorityConditions.CompareParamValue(highPriorityCondition.Key, valueToBeCompared); err == nil && high {
 			// 添加匹配的条件作为原因
 			if highPriorityCondition.Key == OperationParamAuditLevel {
-				compareParamVale = toComparedValue(compareParamVale)
+				valueToBeCompared = toAuditLevel(valueToBeCompared)
 			}
-			reasons = append(reasons, fmt.Sprintf("【%v %v %v，为：%s】", highPriorityCondition.Desc, highPriorityCondition.Operator.Value, highPriorityCondition.Param.Value, toComparedValue(compareParamVale)))
+			reasons = append(reasons, fmt.Sprintf("【%v %v %v，为：%s】", highPriorityCondition.Desc, highPriorityCondition.Operator.Value, highPriorityCondition.Param.Value, valueToBeCompared))
 		}
 	}
 	if len(reasons) > 0 {
