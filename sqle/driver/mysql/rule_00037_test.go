@@ -13,47 +13,47 @@ func TestRuleSQLE00037(t *testing.T) {
 	ruleName := ai.SQLE00037
 	rule := rulepkg.RuleHandlerMap[ruleName].Rule
 
-	// runAIRuleCase(rule, t, "case 1: 创建一个没有二级索引的表",
-	// 	"CREATE TABLE user_data (id INT PRIMARY KEY, name VARCHAR(100));",
-	// 	nil,
-	// 	nil,
-	// 	newTestResult())
+	runAIRuleCase(rule, t, "case 1: 创建一个没有二级索引的表",
+		"CREATE TABLE user_data (id INT PRIMARY KEY, name VARCHAR(100));",
+		nil,
+		nil,
+		newTestResult())
 
-	// runAIRuleCase(rule, t, "case 2: 创建一个包含3个二级索引的表",
-	// 	"CREATE TABLE user_data (id INT PRIMARY KEY, name VARCHAR(100), email VARCHAR(100), age INT, INDEX idx_name (name), INDEX idx_email (email), INDEX idx_age (age));",
-	// 	nil,
-	// 	nil,
-	// 	newTestResult())
+	runAIRuleCase(rule, t, "case 2: 创建一个包含3个二级索引的表",
+		"CREATE TABLE user_data (id INT PRIMARY KEY, name VARCHAR(100), email VARCHAR(100), age INT, INDEX idx_name (name), INDEX idx_email (email), INDEX idx_age (age));",
+		nil,
+		nil,
+		newTestResult())
 
-	// runAIRuleCase(rule, t, "case 3: 创建一个包含5个二级索引的表",
-	// 	"CREATE TABLE user_data (id INT PRIMARY KEY, name VARCHAR(100), email VARCHAR(100), age INT, address VARCHAR(255), city VARCHAR(100), INDEX idx_name (name), INDEX idx_email (email), INDEX idx_age (age), INDEX idx_address (address), INDEX idx_city (city));",
-	// 	nil,
-	// 	nil,
-	// 	newTestResult())
+	runAIRuleCase(rule, t, "case 3: 创建一个包含5个二级索引的表",
+		"CREATE TABLE user_data (id INT PRIMARY KEY, name VARCHAR(100), email VARCHAR(100), age INT, address VARCHAR(255), city VARCHAR(100), INDEX idx_name (name), INDEX idx_email (email), INDEX idx_age (age), INDEX idx_address (address), INDEX idx_city (city));",
+		nil,
+		nil,
+		newTestResult())
 
-	// runAIRuleCase(rule, t, "case 4: 创建一个包含6个二级索引的表，超过限制",
-	// 	"CREATE TABLE user_data (id INT PRIMARY KEY, name VARCHAR(100), email VARCHAR(100), age INT, address VARCHAR(255), city VARCHAR(100), country VARCHAR(100), INDEX idx_name (name), INDEX idx_email (email), INDEX idx_age (age), INDEX idx_address (address), INDEX idx_city (city), INDEX idx_country (country));",
-	// 	nil,
-	// 	nil,
-	// 	newTestResult().addResult(ruleName))
+	runAIRuleCase(rule, t, "case 4: 创建一个包含6个二级索引的表，超过限制",
+		"CREATE TABLE user_data (id INT PRIMARY KEY, name VARCHAR(100), email VARCHAR(100), age INT, address VARCHAR(255), city VARCHAR(100), country VARCHAR(100), INDEX idx_name (name), INDEX idx_email (email), INDEX idx_age (age), INDEX idx_address (address), INDEX idx_city (city), INDEX idx_country (country));",
+		nil,
+		nil,
+		newTestResult().addResult(ruleName))
 
-	// runAIRuleCase(rule, t, "case 5: 向已有4个二级索引的表中添加1个新二级索引，不超过限制",
-	// 	"ALTER TABLE user_data ADD INDEX idx_phone (phone);",
-	// 	session.NewAIMockContext().WithSQL("CREATE TABLE user_data (id INT PRIMARY KEY, name VARCHAR(100), email VARCHAR(100), age INT, phone VARCHAR(20), INDEX idx_name (name), INDEX idx_email (email), INDEX idx_age (age), INDEX idx_address (address));"),
-	// 	nil,
-	// 	newTestResult())
+	runAIRuleCase(rule, t, "case 5: 向已有4个二级索引的表中添加1个新二级索引，不超过限制",
+		"ALTER TABLE user_data ADD INDEX idx_phone (phone);",
+		session.NewAIMockContext().WithSQL("CREATE TABLE user_data (id INT PRIMARY KEY, name VARCHAR(100), email VARCHAR(100), age INT, phone VARCHAR(20), INDEX idx_name (name), INDEX idx_email (email), INDEX idx_age (age), INDEX idx_address (address));"),
+		nil,
+		newTestResult())
 
-	// runAIRuleCase(rule, t, "case 6: 向已有4个二级索引的表中添加2个新二级索引，导致总数超过限制",
-	// 	"ALTER TABLE user_data ADD INDEX idx_phone (phone), ADD INDEX idx_country (country);",
-	// 	session.NewAIMockContext().WithSQL("CREATE TABLE user_data (id INT PRIMARY KEY, name VARCHAR(100), email VARCHAR(100), age INT, phone VARCHAR(20), country VARCHAR(100), INDEX idx_name (name), INDEX idx_email (email), INDEX idx_age (age), INDEX idx_address (address));"),
-	// 	nil,
-	// 	newTestResult().addResult(ruleName))
+	runAIRuleCase(rule, t, "case 6: 向已有4个二级索引的表中添加2个新二级索引，导致总数超过限制",
+		"ALTER TABLE user_data ADD INDEX idx_phone (phone), ADD INDEX idx_country (country);",
+		session.NewAIMockContext().WithSQL("CREATE TABLE user_data (id INT PRIMARY KEY, name VARCHAR(100), email VARCHAR(100), age INT, phone VARCHAR(20), country VARCHAR(100), INDEX idx_name (name), INDEX idx_email (email), INDEX idx_age (age), INDEX idx_address (address));"),
+		nil,
+		newTestResult().addResult(ruleName))
 
-	// runAIRuleCase(rule, t, "case 7: 向已有5个二级索引的表中添加1个新二级索引，导致总数超过限制",
-	// 	"ALTER TABLE user_data ADD INDEX idx_phone (phone);",
-	// 	session.NewAIMockContext().WithSQL("CREATE TABLE user_data (id INT PRIMARY KEY, name VARCHAR(100), email VARCHAR(100), age INT, phone VARCHAR(20), INDEX idx_name (name), INDEX idx_email (email), INDEX idx_age (age), INDEX idx_address (address), INDEX idx_city (city));"),
-	// 	nil,
-	// 	newTestResult().addResult(ruleName))
+	runAIRuleCase(rule, t, "case 7: 向已有5个二级索引的表中添加1个新二级索引，导致总数超过限制",
+		"ALTER TABLE user_data ADD INDEX idx_phone (phone);",
+		session.NewAIMockContext().WithSQL("CREATE TABLE user_data (id INT PRIMARY KEY, name VARCHAR(100), email VARCHAR(100), age INT, phone VARCHAR(20), INDEX idx_name (name), INDEX idx_email (email), INDEX idx_age (age), INDEX idx_address (address), INDEX idx_city (city));"),
+		nil,
+		newTestResult().addResult(ruleName))
 
 	runAIRuleCase(rule, t, "case 8: 向已有5个二级索引的表中不添加任何新索引",
 		"ALTER TABLE user_data MODIFY COLUMN name VARCHAR(150);",
