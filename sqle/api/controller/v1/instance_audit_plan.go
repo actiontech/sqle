@@ -834,22 +834,32 @@ func GetAuditPlanExecCmd(projectName string, iap *model.InstanceAuditPlan, ap *m
 		return ""
 	}
 
-	scannerd, err := scannerCmd.GetScannerdCmd(ap.Type)
-	if err != nil {
-		logger.Infof("get scannerd %s failed %s", ap.Type, err)
-		return ""
+	var cmd string
+	switch ap.Type {
+	case auditplan.TypeAllAppExtract:
+		cmd = fmt.Sprintf(`SQLE_PROJECT_NAME=%s \
+PROJECT_APP_NAME=<Please provide the business parameters here> \
+java -<Please provide the java agent name parameters here> \
+-jar <Please provide the java app name parameters here>`, projectName)
+	default:
+		scannerd, err := scannerCmd.GetScannerdCmd(ap.Type)
+		if err != nil {
+			logger.Infof("get scannerd %s failed %s", ap.Type, err)
+			return ""
+		}
+		cmd, err = scannerd.GenCommand("./scannerd", map[string]string{
+			scannerCmd.FlagHost:        ip,
+			scannerCmd.FlagPort:        port,
+			scannerCmd.FlagProject:     projectName,
+			scannerCmd.FlagToken:       iap.Token,
+			scannerCmd.FlagAuditPlanID: fmt.Sprint(ap.ID),
+		})
+		if err != nil {
+			logger.Infof("generate scannerd %s command failed %s", ap.Type, err)
+			return ""
+		}
 	}
-	cmd, err := scannerd.GenCommand("./scannerd", map[string]string{
-		scannerCmd.FlagHost:        ip,
-		scannerCmd.FlagPort:        port,
-		scannerCmd.FlagProject:     projectName,
-		scannerCmd.FlagToken:       iap.Token,
-		scannerCmd.FlagAuditPlanID: fmt.Sprint(ap.ID),
-	})
-	if err != nil {
-		logger.Infof("generate scannerd %s command failed %s", ap.Type, err)
-		return ""
-	}
+
 	return cmd
 }
 
