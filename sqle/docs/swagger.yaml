@@ -2883,6 +2883,8 @@ definitions:
       has_red_dot:
         type: boolean
       module_name:
+        enum:
+        - global_dashboard
         type: string
     type: object
   v1.ModuleRedDots:
