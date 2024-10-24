@@ -209,6 +209,18 @@ func GetSingleSQLPriorityWithReasons(auditPlan *model.AuditPlanV2, sql *model.SQ
 	if err != nil {
 		return "", nil, err
 	}
+	toComparedValue := func(compareParamVale string) string {
+		switch compareParamVale {
+		case "1":
+			return "提示"
+		case "2":
+			return "警告"
+		case "3":
+			return "错误"
+		default:
+			return compareParamVale
+		}
+	}
 	highPriorityConditions := auditPlan.HighPriorityParams
 	// 遍历优先级条件
 	for _, highPriorityCondition := range highPriorityConditions {
@@ -237,27 +249,13 @@ func GetSingleSQLPriorityWithReasons(auditPlan *model.AuditPlanV2, sql *model.SQ
 		if high, err := highPriorityConditions.CompareParamValue(highPriorityCondition.Key, compareParamVale); err == nil && high {
 			// 添加匹配的条件作为原因
 			if highPriorityCondition.Key == OperationParamAuditLevel {
-				reasons = append(reasons, fmt.Sprintf("【%v %v %v，为：%s】", highPriorityCondition.Desc, highPriorityCondition.Operator.Value, toComparedValue(highPriorityCondition.Param.Value), toComparedValue(compareParamVale)))
-			} else {
-				reasons = append(reasons, fmt.Sprintf("【%v %v %v，为：%s】", highPriorityCondition.Desc, highPriorityCondition.Operator.Value, highPriorityCondition.Param.Value, toComparedValue(compareParamVale)))
+				compareParamVale = toComparedValue(compareParamVale)
 			}
+			reasons = append(reasons, fmt.Sprintf("【%v %v %v，为：%s】", highPriorityCondition.Desc, highPriorityCondition.Operator.Value, highPriorityCondition.Param.Value, toComparedValue(compareParamVale)))
 		}
 	}
 	if len(reasons) > 0 {
 		return model.PriorityHigh, reasons, nil
 	}
 	return "", reasons, nil
-}
-
-func toComparedValue(compareParamVale string) string {
-	switch compareParamVale {
-	case "1":
-		return "提示"
-	case "2":
-		return "警告"
-	case "3":
-		return "错误"
-	default:
-		return compareParamVale
-	}
 }
