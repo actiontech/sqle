@@ -57,8 +57,8 @@ while true; do
                         fi
                     fi
                 done
-                if ! launch_sqle;then
-                    echo "$error 启动SQLE失败, 脚本已退出"
+                if ! restart_sqle;then
+                    echo "$error 重启SQLE失败, 脚本已退出"
                 fi
                 break
             else
