@@ -28,6 +28,7 @@ SELECT
     instance_audit_plans.active_status,
     instance_audit_plans.create_user_id,
     instance_audit_plans.created_at,
+	instance_audit_plans.token,
     audit_plans.audit_plan_ids
 
  

@@ -418,6 +418,7 @@ type AuditPlanTypeResBase struct {
 	AuditPlanId       uint   `json:"audit_plan_id"`
 	AuditPlanType     string `json:"type"`
 	AuditPlanTypeDesc string `json:"desc"`
+	Token             string `json:"token"`
 }
 
 type GetInstanceAuditPlansReqV1 struct {
@@ -519,7 +520,7 @@ func GetInstanceAuditPlans(c echo.Context) error {
 		typeBases := make([]AuditPlanTypeResBase, 0, len(auditPlanIds))
 		for _, auditPlanId := range auditPlanIds {
 			if auditPlanId != "" {
-				typeBase, err := ConvertAuditPlanTypeToResByID(c.Request().Context(), auditPlanId)
+				typeBase, err := ConvertAuditPlanTypeToResByID(c.Request().Context(), auditPlanId, v.Token)
 				if err != nil {
 					return controller.JSONBaseErrorReq(c, err)
 				}
@@ -547,7 +548,7 @@ func GetInstanceAuditPlans(c echo.Context) error {
 	})
 }
 
-func ConvertAuditPlanTypeToResByID(ctx context.Context, id string) (AuditPlanTypeResBase, error) {
+func ConvertAuditPlanTypeToResByID(ctx context.Context, id string, token string) (AuditPlanTypeResBase, error) {
 	auditPlanID, err := strconv.Atoi(id)
 	if err != nil {
 		return AuditPlanTypeResBase{}, err
@@ -566,6 +567,7 @@ func ConvertAuditPlanTypeToResByID(ctx context.Context, id string) (AuditPlanTyp
 				AuditPlanType:     auditPlan.Type,
 				AuditPlanTypeDesc: locale.Bundle.LocalizeMsgByCtx(ctx, meta.Desc),
 				AuditPlanId:       auditPlan.ID,
+				Token:             token,
 			}, nil
 		}
 	}
