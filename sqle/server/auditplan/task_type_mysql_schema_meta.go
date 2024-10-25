@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/actiontech/sqle/sqle/errors"
 	"strconv"
 	"time"
 
@@ -47,9 +48,12 @@ func (at *BaseSchemaMetaTaskV2) extractSQL(logger *logrus.Entry, ap *AuditPlan, 
 	sqls := []*SchemaMetaSQL{}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
 	defer cancel()
-	instance, _, err := dms.GetInstancesById(ctx, ap.InstanceID)
+	instance, exist, err := dms.GetInstancesById(ctx, ap.InstanceID)
 	if err != nil {
 		return nil, fmt.Errorf("get instance fail, error: %v", err)
+	}
+	if !exist {
+		return nil, errors.NewInstanceNoExistErr()
 	}
 	db, err := executor.NewExecutor(logger, &driverV2.DSN{
 		Host:             instance.Host,
