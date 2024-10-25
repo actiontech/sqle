@@ -6171,6 +6171,186 @@ paths:
       summary: 获取 dashboard 信息
       tags:
       - dashboard
+  /v1/dashboard/sql_manages:
+    get:
+      description: get global sql manage list
+      operationId: GetGlobalSqlManageList
+      parameters:
+      - description: project uid
+        in: query
+        name: filter_project_uid
+        type: string
+      - description: instance id
+        in: query
+        name: filter_instance_id
+        type: string
+      - description: project priority
+        enum:
+        - high
+        - medium
+        - low
+        in: query
+        name: filter_project_priority
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        required: true
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetGlobalSqlManageListResp'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取全局管控sql列表
+      tags:
+      - SqlManage
+  /v1/dashboard/sql_manages/statistics:
+    get:
+      description: get global sql manage statistics
+      operationId: GetGlobalSqlManageStatistics
+      parameters:
+      - description: project uid
+        in: query
+        name: filter_project_uid
+        type: string
+      - description: instance id
+        in: query
+        name: filter_instance_id
+        type: string
+      - description: project priority
+        enum:
+        - high
+        - medium
+        - low
+        in: query
+        name: filter_project_priority
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetGlobalSqlManageStatisticsResp'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取全局管控sql统计信息
+      tags:
+      - SqlManage
+  /v1/dashboard/workflows:
+    get:
+      description: get global workflow list
+      operationId: getGlobalWorkflowsV1
+      parameters:
+      - description: filter create user id
+        in: query
+        name: filter_create_user_id
+        type: string
+      - description: filter by workflow status,, support using many status
+        enum:
+        - wait_for_audit
+        - wait_for_execution
+        - rejected
+        - executing
+        - canceled
+        - exec_failed
+        - finished
+        in: query
+        items:
+          type: string
+        name: filter_status_list
+        type: array
+      - description: filter by project uid
+        in: query
+        name: filter_project_uid
+        type: string
+      - description: filter by instance id in project
+        in: query
+        name: filter_instance_id
+        type: string
+      - description: filter by project priority
+        enum:
+        - high
+        - medium
+        - low
+        in: query
+        name: filter_project_priority
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        required: true
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetWorkflowsResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取全局工单列表
+      tags:
+      - workflow
+  /v1/dashboard/workflows/statistics:
+    get:
+      description: get global workflow statistics
+      operationId: GetGlobalWorkflowStatistics
+      parameters:
+      - description: filter create user id
+        in: query
+        name: filter_create_user_id
+        type: string
+      - description: filter by workflow status,, support using many status
+        enum:
+        - wait_for_audit
+        - wait_for_execution
+        - rejected
+        - executing
+        - canceled
+        - exec_failed
+        - finished
+        in: query
+        items:
+          type: string
+        name: filter_status_list
+        type: array
+      - description: filter by project uid
+        in: query
+        name: filter_project_uid
+        type: string
+      - description: filter by instance id in project
+        in: query
+        name: filter_instance_id
+        type: string
+      - description: filter by project priority
+        enum:
+        - high
+        - medium
+        - low
+        in: query
+        name: filter_project_priority
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GlobalWorkflowStatisticsResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取全局工单统计数据
+      tags:
+      - workflow
   /v1/import_rule_template:
     get:
       description: get rule template file
@@ -10797,78 +10977,6 @@ paths:
       summary: 直接审核SQL
       tags:
       - sql_audit
-  /v1/sql_manages:
-    get:
-      description: get global sql manage list
-      operationId: GetGlobalSqlManageList
-      parameters:
-      - description: project uid
-        in: query
-        name: filter_project_uid
-        type: string
-      - description: instance id
-        in: query
-        name: filter_instance_id
-        type: string
-      - description: project priority
-        enum:
-        - high
-        - medium
-        - low
-        in: query
-        name: filter_project_priority
-        type: string
-      - description: page index
-        in: query
-        name: page_index
-        required: true
-        type: integer
-      - description: size of per page
-        in: query
-        name: page_size
-        required: true
-        type: integer
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetGlobalSqlManageListResp'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取全局管控sql列表
-      tags:
-      - SqlManage
-  /v1/sql_manages/statistics:
-    get:
-      description: get global sql manage statistics
-      operationId: GetGlobalSqlManageStatistics
-      parameters:
-      - description: project uid
-        in: query
-        name: filter_project_uid
-        type: string
-      - description: instance id
-        in: query
-        name: filter_instance_id
-        type: string
-      - description: project priority
-        enum:
-        - high
-        - medium
-        - low
-        in: query
-        name: filter_project_priority
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetGlobalSqlManageStatisticsResp'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取全局管控sql统计信息
-      tags:
-      - SqlManage
   /v1/statistic/instances/sql_average_execution_time:
     get:
       description: get average execution time of sql
@@ -11465,65 +11573,6 @@ paths:
       summary: 获取用户提示列表
       tags:
       - user
-  /v1/workflows:
-    get:
-      description: get global workflow list
-      operationId: getGlobalWorkflowsV1
-      parameters:
-      - description: filter create user id
-        in: query
-        name: filter_create_user_id
-        type: string
-      - description: filter by workflow status,, support using many status
-        enum:
-        - wait_for_audit
-        - wait_for_execution
-        - rejected
-        - executing
-        - canceled
-        - exec_failed
-        - finished
-        in: query
-        items:
-          type: string
-        name: filter_status_list
-        type: array
-      - description: filter by project uid
-        in: query
-        name: filter_project_uid
-        type: string
-      - description: filter by instance id in project
-        in: query
-        name: filter_instance_id
-        type: string
-      - description: filter by project priority
-        enum:
-        - high
-        - medium
-        - low
-        in: query
-        name: filter_project_priority
-        type: string
-      - description: page index
-        in: query
-        name: page_index
-        required: true
-        type: integer
-      - description: size of per page
-        in: query
-        name: page_size
-        required: true
-        type: integer
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetWorkflowsResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取全局工单列表
-      tags:
-      - workflow
   /v1/workflows/statistic_of_instances:
     get:
       description: Get Workflows Statistic Of Instances
@@ -11542,55 +11591,6 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取实例上工单的统计信息
-      tags:
-      - workflow
-  /v1/workflows/statistics:
-    get:
-      description: get global workflow statistics
-      operationId: GetGlobalWorkflowStatistics
-      parameters:
-      - description: filter create user id
-        in: query
-        name: filter_create_user_id
-        type: string
-      - description: filter by workflow status,, support using many status
-        enum:
-        - wait_for_audit
-        - wait_for_execution
-        - rejected
-        - executing
-        - canceled
-        - exec_failed
-        - finished
-        in: query
-        items:
-          type: string
-        name: filter_status_list
-        type: array
-      - description: filter by project uid
-        in: query
-        name: filter_project_uid
-        type: string
-      - description: filter by instance id in project
-        in: query
-        name: filter_instance_id
-        type: string
-      - description: filter by project priority
-        enum:
-        - high
-        - medium
-        - low
-        in: query
-        name: filter_project_priority
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GlobalWorkflowStatisticsResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取全局工单统计数据
       tags:
       - workflow
   /v2/audit_files:
