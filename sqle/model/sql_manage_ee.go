@@ -494,7 +494,7 @@ type GlobalSqlManage struct {
 	FirstAppearTimestamp *time.Time     `json:"first_appear_timestamp"`
 	Remark               sql.NullString `json:"remark"`
 	ProjectUid           string         `json:"project_id"`
-	Info                 string         `json:"info"`
+	Info                 JSON           `json:"info"`
 }
 
 var globalSqlManagerQueryTpl = `

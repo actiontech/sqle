@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/csv"
-	"encoding/json"
 	e "errors"
 	"fmt"
 	"mime"
@@ -592,9 +591,44 @@ func loadInstancesBySqlManage(ctx context.Context, modelGlobalSqlManages []*mode
 }
 
 func toGlobalSqlManage(ctx context.Context, modelGlobalSqlManages []*model.GlobalSqlManage, projectMap ProjectMap, instanceMap InstanceMap) []*GlobalSqlManage {
+
+	// 定义缓存用于存储 auditPlan
+	var auditPlanCache = make(map[string]*model.AuditPlanV2)
+
+	// GetAuditPlan 从缓存中获取或查询 auditPlan
+	getAuditPlan := func(sourceId, sourceType string) (*model.AuditPlanV2, error) {
+		// 检查缓存
+		if auditPlan, ok := auditPlanCache[sourceId]; ok {
+			return auditPlan, nil
+		}
+		// 如果缓存中没有，进行数据库查询
+		s := model.GetStorage()
+		auditPlan, exist, err := s.GetAuditPlanByInstanceIdAndType(sourceId, sourceType)
+		if err != nil {
+			return nil, err
+		}
+		if !exist {
+			return nil, fmt.Errorf("audit plan does not exist")
+		}
+		// 将查询到的 auditPlan 存入缓存
+		auditPlanCache[sourceId] = auditPlan
+		return auditPlan, nil
+	}
+
 	lang := locale.Bundle.GetLangTagFromCtx(ctx)
 	ret := make([]*GlobalSqlManage, 0, len(modelGlobalSqlManages))
 	for _, mg := range modelGlobalSqlManages {
+		var reasons []string
+		if len(mg.SourceIDs) > 0 {
+			ap, err := getAuditPlan(mg.SourceIDs[0], mg.Source.String)
+			if err != nil {
+				reasons = append(reasons, fmt.Sprintf("未找到该SQL的智能扫描任务，source id：%v", mg.SourceIDs[0]))
+			}
+			_, reasons, err = auditplan.GetSingleSQLPriorityWithReasons(ap, &model.SQLManageRecord{Info: mg.Info, AuditLevel: mg.AuditLevel.String})
+			if err != nil {
+				reasons = append(reasons, fmt.Sprintf("获取该SQL高优先级的原因失败，err：%v", err.Error()))
+			}
+		}
 		sqlMgr := &GlobalSqlManage{
 			Id:                   mg.Id,
 			Sql:                  mg.SqlText.String,
@@ -603,7 +637,7 @@ func toGlobalSqlManage(ctx context.Context, modelGlobalSqlManages []*model.Globa
 			Status:               mg.Status.String,
 			FirstAppearTimeStamp: mg.FirstAppearTimestamp.Format(time.RFC3339),
 			ProjectPriority:      projectMap.ProjectPriority(mg.ProjectUid),
-			ProblemDescriptions:  problemDescriptions(mg.Info),
+			ProblemDescriptions:  reasons,
 		}
 		if mg.InstanceID.Valid {
 			sqlMgr.InstanceName = instanceMap.InstanceName(mg.InstanceID.String)
@@ -625,24 +659,4 @@ func toGlobalSqlManage(ctx context.Context, modelGlobalSqlManages []*model.Globa
 		ret = append(ret, sqlMgr)
 	}
 	return ret
-}
-
-func problemDescriptions(info string) []string {
-	var infoJson struct {
-		Counter         uint    `json:"counter"`
-		QueryTimeAvg    float32 `json:"query_time_avg"`
-		QueryTimeMax    float32 `json:"query_time_max"`
-		RowsExaminedAvg float32 `json:"row_examined_avg"`
-	}
-
-	err := json.Unmarshal([]byte(info), &infoJson)
-	if err != nil {
-		return []string{info}
-	}
-	return []string{
-		fmt.Sprintf("SQL出现次数 %v", infoJson.Counter),
-		fmt.Sprintf("平均执行时间 %v", infoJson.QueryTimeAvg),
-		fmt.Sprintf("最大执行时间 %v", infoJson.QueryTimeMax),
-		fmt.Sprintf("平均扫描行数 %v", infoJson.RowsExaminedAvg),
-	}
 }
