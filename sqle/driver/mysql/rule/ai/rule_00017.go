@@ -21,6 +21,7 @@ func init() {
 			Category:   rulepkg.RuleTypeDDLConvention,
 		},
 		Message: "对于MySQL的DDL, 不建议使用 BLOB 或 TEXT 类型. 不符合规定的字段: %v",
+		AllowOffline: true,
 		Func:    RuleSQLE00017,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

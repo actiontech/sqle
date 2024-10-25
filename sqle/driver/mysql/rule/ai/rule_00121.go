@@ -21,6 +21,7 @@ func init() {
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
 		Message: "对于MySQL的DML, 建议在限定记录数的查询语句中使用ORDER BY.",
+		AllowOffline: true,
 		Func:    RuleSQLE00121,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

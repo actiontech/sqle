@@ -21,6 +21,7 @@ func init() {
 			Category:   rulepkg.RuleTypeDDLConvention,
 		},
 		Message: "对于MySQL的DDL, 禁止进行删除列的操作",
+		AllowOffline: true,
 		Func:    RuleSQLE00071,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

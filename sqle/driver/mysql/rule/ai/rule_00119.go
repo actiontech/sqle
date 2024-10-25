@@ -21,6 +21,7 @@ func init() {
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
 		Message: "对于MySQL的DML, 建议为GROUP BY语句添加ORDER BY条件.",
+		AllowOffline: true,
 		Func:    RuleSQLE00119,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

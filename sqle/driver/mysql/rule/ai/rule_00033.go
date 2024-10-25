@@ -33,6 +33,7 @@ func init() {
 			},
 		},
 		Message: "对于MySQL的DDL, 建表DDL必须包含更新时间字段, 默认值为CURRENT_TIMESTAMP, ON UPDATE值为CURRENT_TIMESTAMP. 更新时间字段名: %v",
+		AllowOffline: true,
 		Func:    RuleSQLE00033,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

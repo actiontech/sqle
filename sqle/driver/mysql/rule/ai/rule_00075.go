@@ -21,6 +21,7 @@ func init() {
 			Category:   rulepkg.RuleTypeDDLConvention,
 		},
 		Message: "对于MySQL的DDL, 建议列与表使用同一个字符集. 不符合规则的字段: %v",
+		AllowOffline: false,
 		Func:    RuleSQLE00075,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

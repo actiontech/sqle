@@ -32,8 +32,8 @@ func init() {
 			},
 		},
 		Message:      "在 MySQL 中, 数据库名称必须使用固定后缀结尾:%s",
-		Func:         RuleSQLE00032,
 		AllowOffline: true,
+		Func:         RuleSQLE00032,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
 	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh

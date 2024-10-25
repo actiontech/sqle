@@ -23,6 +23,7 @@ func init() {
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
 		Message: "对于MySQL的DML, 不建议对表进行全索引扫描",
+		AllowOffline: false,
 		Func:    RuleSQLE00085,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

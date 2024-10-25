@@ -21,6 +21,7 @@ func init() {
 			Category:   rulepkg.RuleTypeDDLConvention,
 		},
 		Message: "对于MySQL的DDL, 表字段必须有NOT NULL约束. 不符合规定的字段: %v",
+		AllowOffline: true,
 		Func:    RuleSQLE00021,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

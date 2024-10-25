@@ -33,8 +33,8 @@ func init() {
 			},
 		},
 		Message:      "在 MySQL 中, 避免在分页查询中使用过大偏移量, 最大偏移量:%v",
-		Func:         RuleSQLE00045,
 		AllowOffline: true,
+		Func:         RuleSQLE00045,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
 	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh

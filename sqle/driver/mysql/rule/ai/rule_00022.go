@@ -32,6 +32,7 @@ func init() {
 			},
 		},
 		Message: "对于MySQL的DDL, 表的列数不建议超过阈值. 阈值: %v",
+		AllowOffline: false,
 		Func:    RuleSQLE00022,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

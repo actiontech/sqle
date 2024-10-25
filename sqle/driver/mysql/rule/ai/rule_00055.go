@@ -21,6 +21,7 @@ func init() {
 			Category:   rulepkg.RuleTypeIndexOptimization,
 		},
 		Message: "已存在索引 %v , 索引 %v 为冗余索引",
+		AllowOffline: false,
 		Func:    RuleSQLE00055,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

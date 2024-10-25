@@ -22,6 +22,7 @@ func init() {
 			Category:   rulepkg.RuleTypeDDLConvention,
 		},
 		Message: "对于MySQL的DDL, DDL语句中不建议使用中文全角引号",
+		AllowOffline: true,
 		Func:    RuleSQLE00035,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

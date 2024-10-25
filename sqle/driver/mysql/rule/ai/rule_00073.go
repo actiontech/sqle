@@ -21,6 +21,7 @@ func init() {
 			Category:   rulepkg.RuleTypeDDLConvention,
 		},
 		Message: "对于MySQL的DDL, 不建议修改表的默认字符集",
+		AllowOffline: true,
 		Func:    RuleSQLE00073,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

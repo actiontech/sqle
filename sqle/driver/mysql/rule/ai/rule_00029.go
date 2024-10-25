@@ -24,8 +24,8 @@ func init() {
 			Params:     params.Params{},
 		},
 		Message:      "在 MySQL 中, 禁止使用存储过程",
-		Func:         RuleSQLE00029,
 		AllowOffline: true,
+		Func:         RuleSQLE00029,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
 	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh

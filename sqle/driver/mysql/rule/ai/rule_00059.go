@@ -34,6 +34,7 @@ func init() {
 			},
 		},
 		Message: "对于MySQL的DDL，禁止修改大表字段类型，表大小阈值: %v GB",
+		AllowOffline: false,
 		Func:    RuleSQLE00059,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

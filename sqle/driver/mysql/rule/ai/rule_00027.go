@@ -23,6 +23,7 @@ func init() {
 			Category:   rulepkg.RuleTypeDDLConvention,
 		},
 		Message: "对于MySQL的DDL, 列定义建议加注释. 不符合规定的字段: %v",
+		AllowOffline: true,
 		Func:    RuleSQLE00027,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

@@ -21,6 +21,7 @@ func init() {
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
 		Message: "对于MySQL的DML, 避免使用 ORDER BY RAND() 进行随机排序",
+		AllowOffline: true,
 		Func:    RuleSQLE00131,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

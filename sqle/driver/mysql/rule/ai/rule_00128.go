@@ -21,6 +21,7 @@ func init() {
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
 		Message: "对于MySQL的DML, 不建议使用 HAVING 子句.",
+		AllowOffline: true,
 		Func:    RuleSQLE00128,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

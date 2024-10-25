@@ -24,8 +24,8 @@ func init() {
 			Params:     params.Params{},
 		},
 		Message:      "在 MySQL 中, 禁止使用触发器",
-		Func:         RuleSQLE00030,
 		AllowOffline: true,
+		Func:         RuleSQLE00030,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
 	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh

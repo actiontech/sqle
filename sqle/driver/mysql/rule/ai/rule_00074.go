@@ -21,6 +21,7 @@ func init() {
 			Category:   rulepkg.RuleTypeDDLConvention,
 		},
 		Message: "对于MySQL的DDL, 禁止使用RENAME或CHANGE对表名字段名进行修改",
+		AllowOffline: true,
 		Func:    RuleSQLE00074,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

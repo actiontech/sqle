@@ -21,6 +21,7 @@ func init() {
 			Category:   rulepkg.RuleTypeIndexingConvention,
 		},
 		Message: "BLOB类型属于大字段类型，作为索引会占用很大的存储空间",
+		AllowOffline: true,
 		Func:    RuleSQLE00036,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

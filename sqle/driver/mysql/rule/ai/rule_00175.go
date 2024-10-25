@@ -23,6 +23,7 @@ func init() {
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
 		Message: "对于MySQL的DML, 避免不必要的索引扫描合并",
+		AllowOffline: false,
 		Func:    RuleSQLE00175,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

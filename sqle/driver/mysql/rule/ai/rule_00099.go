@@ -21,6 +21,7 @@ func init() {
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
 		Message: "对于MySQL的DQL, 不建议使用SELECT FOR UPDATE",
+		AllowOffline: true,
 		Func:    RuleSQLE00099,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

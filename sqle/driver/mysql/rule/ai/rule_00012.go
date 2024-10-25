@@ -22,6 +22,7 @@ func init() {
 			Category:   rulepkg.RuleTypeDDLConvention,
 		},
 		Message: "对于MySQL的DDL, 建议用BIGINT类型代替DECIMAL. 不符合规定的字段: %v",
+		AllowOffline: true,
 		Func:    RuleSQLE00012,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

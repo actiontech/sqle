@@ -24,6 +24,7 @@ func init() {
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
 		Message: "对于MySQL的DML, 避免隐式数据类型转换的SQL查询",
+		AllowOffline: false,
 		Func:    RuleSQLE00179,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

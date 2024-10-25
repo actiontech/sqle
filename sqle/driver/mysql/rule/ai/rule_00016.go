@@ -21,6 +21,7 @@ func init() {
 			Category:   rulepkg.RuleTypeDDLConvention,
 		},
 		Message: "对于MySQL的DDL, BLOB 和 TEXT 类型的字段如果定义了默认值, 那默认值应为NULL. 不符合规定的字段: %v",
+		AllowOffline: true,
 		Func:    RuleSQLE00016,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

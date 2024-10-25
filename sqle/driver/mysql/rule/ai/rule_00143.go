@@ -22,6 +22,7 @@ func init() {
 			Category:   rulepkg.RuleTypeIndexInvalidation,
 		},
 		Message: "对于MySQL的DML, 多表关联时，不建议在WHERE条件中对不同表的字段使用OR条件.",
+		AllowOffline: false,
 		Func:    RuleSQLE00143,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

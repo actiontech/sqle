@@ -21,6 +21,7 @@ func init() {
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
 		Message: "对于MySQL的DML, 不建议对表进行全表排序操作",
+		AllowOffline: true,
 		Func:    RuleSQLE00178,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

@@ -21,6 +21,7 @@ func init() {
 			Category:   rulepkg.RuleTypeIndexingConvention,
 		},
 		Message: "对于MySQL的索引, 表必须有主键",
+		AllowOffline: false,
 		Func:    RuleSQLE00008,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

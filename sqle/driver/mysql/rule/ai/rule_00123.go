@@ -20,6 +20,7 @@ func init() {
 			Category:   rulepkg.RuleTypeIndexInvalidation,
 		},
 		Message: "对于MySQL的DML, 禁止使用TRUNCATE操作.",
+		AllowOffline: true,
 		Func:    RuleSQLE00123,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
