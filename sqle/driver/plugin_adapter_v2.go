@@ -576,3 +576,79 @@ func (s *dbDriverResult) RowsAffected() (int64, error) {
 	}
 	return s.rowsAffected, nil
 }
+
+func (s *PluginImplV2) GetDatabaseObjectDDL(ctx context.Context, objInfos []*driverV2.DatabasSchemaInfo) ([]*driverV2.DatabaseSchemaObjectResult, error) {
+	api := "GetDatabaseObjectDDL"
+	s.preLog(api)
+	dbInfoReq := make([]*protoV2.DatabasSchemaInfo, len(objInfos))
+	for _, dbSchema := range objInfos {
+		dbObjs := make([]*protoV2.DatabaseObject, len(dbSchema.DatabaseObjects))
+		for _, dbObj := range dbSchema.DatabaseObjects {
+			dbObjs = append(dbObjs, &protoV2.DatabaseObject{
+				ObjectName: dbObj.ObjectName,
+				ObjectType: dbObj.ObjectType,
+			})
+		}
+		dbInfoReq = append(dbInfoReq, &protoV2.DatabasSchemaInfo{
+			ScheamName:     dbSchema.ScheamName,
+			DatabaseObject: dbObjs,
+		})
+	}
+	resp, err := s.client.GetDatabaseObjectDDL(ctx, &protoV2.DatabaseObjectInfoRequest{
+		Session:           s.Session,
+		DatabasSchemaInfo: dbInfoReq,
+	})
+	s.afterLog(api, err)
+	if err != nil {
+		return nil, err
+	}
+	ret := make([]*driverV2.DatabaseSchemaObjectResult, len(resp.DatabaseSchemaObject))
+	for i, info := range resp.DatabaseSchemaObject {
+		ObjDDL := make([]*driverV2.DatabaseObjectDDL, len(info.DatabaseObjectDDL))
+		for _, obj := range info.DatabaseObjectDDL {
+			ObjDDL = append(ObjDDL, &driverV2.DatabaseObjectDDL{
+				DatabaseObject: &driverV2.DatabaseObject{
+					ObjectName: obj.DatabaseObject.ObjectName,
+					ObjectType: obj.DatabaseObject.ObjectType,
+				},
+				ObjectDDL: obj.ObjectDDL,
+			})
+		}
+		ret[i] = &driverV2.DatabaseSchemaObjectResult{
+			SchemaName:         info.SchemaName,
+			SchemaDDL:          info.SchemaDDL,
+			DatabaseObjectDDLs: ObjDDL,
+		}
+	}
+	return ret, nil
+}
+
+func (s *PluginImplV2) GetDatabaseDiffModifySQL(ctx context.Context, calibratedDSN *driverV2.DSN, objInfos []*driverV2.DatabasCompareSchemaInfo) ([]*driverV2.DatabaseDiffModifySQLResult, error) {
+	api := "GetDatabaseDiffModifySQL"
+	s.preLog(api)
+	resp, err := s.client.GetDatabaseDiffModifySQL(ctx, &protoV2.DatabaseDiffModifyRequest{
+		Session: s.Session,
+		CalibratedDSN: &protoV2.DSN{
+			Host:             calibratedDSN.Host,
+			Port:             calibratedDSN.Port,
+			User:             calibratedDSN.User,
+			Password:         calibratedDSN.Password,
+			AdditionalParams: driverV2.ConvertParamToProtoParam(calibratedDSN.AdditionalParams),
+			Database:         calibratedDSN.DatabaseName,
+		},
+		ObjInfos: driverV2.ConvertDatabasSchemaInfoToProto(objInfos),
+	})
+	s.afterLog(api, err)
+	if err != nil {
+		return nil, err
+	}
+
+	dbDiffSQLs := make([]*driverV2.DatabaseDiffModifySQLResult, len(resp.SchemaDiffModify))
+	for i, schemaDiff := range resp.SchemaDiffModify {
+		dbDiffSQLs[i] = &driverV2.DatabaseDiffModifySQLResult{
+			SchemaName: schemaDiff.SchemaName,
+			ModifySQLs: schemaDiff.ModifySQLs,
+		}
+	}
+	return dbDiffSQLs, nil
+}

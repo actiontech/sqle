@@ -526,3 +526,83 @@ func (d *DriverGrpcServer) KillProcess(ctx context.Context, req *protoV2.KillPro
 		ErrMessage: info.ErrMessage,
 	}, nil
 }
+
+func (d *DriverGrpcServer) GetDatabaseObjectDDL(ctx context.Context, req *protoV2.DatabaseObjectInfoRequest) (*protoV2.DatabaseSchemaObjectResponse, error) {
+	driver, err := d.getDriverBySession(req.Session)
+	if err != nil {
+		return &protoV2.DatabaseSchemaObjectResponse{}, err
+	}
+	dbInfoReq := make([]*DatabasSchemaInfo, len(req.DatabasSchemaInfo))
+	for _, dbSchema := range req.DatabasSchemaInfo {
+		dbObjs := make([]*DatabaseObject, len(dbSchema.DatabaseObject))
+		for _, dbObj := range dbSchema.DatabaseObject {
+			dbObjs = append(dbObjs, &DatabaseObject{
+				ObjectName: dbObj.ObjectName,
+				ObjectType: dbObj.ObjectType,
+			})
+		}
+		dbInfoReq = append(dbInfoReq, &DatabasSchemaInfo{
+			ScheamName:      dbSchema.ScheamName,
+			DatabaseObjects: dbObjs,
+		})
+	}
+	infos, err := driver.GetDatabaseObjectDDL(ctx, dbInfoReq)
+	if err != nil {
+		return &protoV2.DatabaseSchemaObjectResponse{}, err
+	}
+	ret := make([]*protoV2.DatabaseSchemaObject, len(infos))
+	for i, info := range infos {
+		ObjDDL := make([]*protoV2.DatabaseObjectDDL, len(info.DatabaseObjectDDLs))
+		for _, obj := range info.DatabaseObjectDDLs {
+			ObjDDL = append(ObjDDL, &protoV2.DatabaseObjectDDL{
+				DatabaseObject: &protoV2.DatabaseObject{
+					ObjectName: obj.DatabaseObject.ObjectName,
+					ObjectType: obj.DatabaseObject.ObjectType,
+				},
+				ObjectDDL: obj.ObjectDDL,
+			})
+		}
+		ret[i] = &protoV2.DatabaseSchemaObject{
+			SchemaName:        info.SchemaName,
+			SchemaDDL:         info.SchemaDDL,
+			DatabaseObjectDDL: ObjDDL,
+		}
+	}
+	return &protoV2.DatabaseSchemaObjectResponse{
+		DatabaseSchemaObject: ret,
+	}, nil
+}
+
+func (d *DriverGrpcServer) GetDatabaseDiffModifySQL(ctx context.Context, req *protoV2.DatabaseDiffModifyRequest) (*protoV2.DatabaseDiffModifyRponse, error) {
+	driver, err := d.getDriverBySession(req.Session)
+	if err != nil {
+		return &protoV2.DatabaseDiffModifyRponse{}, err
+	}
+	params, err := ConvertProtoParamToParam(req.CalibratedDSN.AdditionalParams)
+	if err != nil {
+		return nil, fmt.Errorf("DriverGrpcServer Init req rule param err: %w", err)
+	}
+
+	infos, err := driver.GetDatabaseDiffModifySQL(ctx, &DSN{
+		Host:             req.CalibratedDSN.Host,
+		Port:             req.CalibratedDSN.Port,
+		User:             req.CalibratedDSN.User,
+		Password:         req.CalibratedDSN.Password,
+		AdditionalParams: params,
+		DatabaseName:     req.CalibratedDSN.Database,
+	},
+		ConvertProtoDatabaseDiffReqToDriver(req.ObjInfos))
+	if err != nil {
+		return &protoV2.DatabaseDiffModifyRponse{}, err
+	}
+	scheamDiff := make([]*protoV2.SchemaDiffModify, len(infos))
+	for i, info := range infos {
+		scheamDiff[i] = &protoV2.SchemaDiffModify{
+			SchemaName: info.SchemaName,
+			ModifySQLs: info.ModifySQLs,
+		}
+	}
+	return &protoV2.DatabaseDiffModifyRponse{
+		SchemaDiffModify: scheamDiff,
+	}, nil
+}
