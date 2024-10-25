@@ -3,6 +3,7 @@ package pipeline
 import (
 	"context"
 	"fmt"
+	"github.com/actiontech/sqle/sqle/errors"
 	"net"
 	"net/url"
 	"time"
@@ -46,7 +47,7 @@ func (node PipelineNode) IntegrationInfo(ctx context.Context, projectName string
 			return "", err
 		}
 		if !exist {
-			return "", fmt.Errorf("instance: %v is not exist", node.InstanceID)
+			return "", errors.NewInstanceNoExistErr()
 		}
 		node.InstanceName = instance.Name
 	}

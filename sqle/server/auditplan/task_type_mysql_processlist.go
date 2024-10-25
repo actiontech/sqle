@@ -3,6 +3,7 @@ package auditplan
 import (
 	"context"
 	"fmt"
+	"github.com/actiontech/sqle/sqle/errors"
 	"strconv"
 	"time"
 
@@ -82,7 +83,7 @@ func (at *MySQLProcessListTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan
 		return nil, fmt.Errorf("get instance fail, error: %v", err)
 	}
 	if !exist {
-		return nil, fmt.Errorf("instance: %v is not exist", ap.InstanceID)
+		return nil, errors.NewInstanceNoExistErr()
 	}
 
 	db, err := executor.NewExecutor(logger, &driverV2.DSN{
