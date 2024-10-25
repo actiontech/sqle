@@ -3,6 +3,7 @@ package auditplan
 import (
 	"context"
 	"fmt"
+	"github.com/actiontech/sqle/sqle/errors"
 	"strconv"
 	"time"
 
@@ -100,7 +101,7 @@ func (at *OracleTopSQLTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, pe
 		return nil, fmt.Errorf("get instance fail, error: %v", err)
 	}
 	if !exist {
-		return nil, fmt.Errorf("instance: %v is not exist", ap.InstanceID)
+		return nil, errors.NewInstanceNoExistErr()
 	}
 	// This depends on: https://github.com/actiontech/sqle-oracle-plugin.
 	// If your Oracle db plugin does not implement the parameter `service_name`,
