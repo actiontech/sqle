@@ -729,11 +729,6 @@ func CreateWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errTaskHasBeenUsed)
 	}
 
-	err = v1.CheckWorkflowCanCommit(workflowTemplate, tasks)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
 	stepTemplates, err := s.GetWorkflowStepsByTemplateId(workflowTemplate.ID)
 	if err != nil {
 		return err
