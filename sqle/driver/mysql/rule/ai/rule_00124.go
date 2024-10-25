@@ -21,6 +21,7 @@ func init() {
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
 		Message: "对于MySQL的DML, 删除全表时建议使用 TRUNCATE 替代 DELETE",
+		AllowOffline: true,
 		Func:    RuleSQLE00124,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

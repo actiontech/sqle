@@ -22,6 +22,7 @@ func init() {
 			Category:   rulepkg.RuleTypeDDLConvention,
 		},
 		Message: "对于MySQL的DDL, CHAR长度大于20时，必须使用VARCHAR类型. 不符合规定的字段: %v",
+		AllowOffline: true,
 		Func:    RuleSQLE00018,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

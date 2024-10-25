@@ -35,6 +35,7 @@ func init() {
 			},
 		},
 		Message: "对于MySQL的DML, 不建议使用全表扫描. 表大小阈值: %v GB",
+		AllowOffline: false,
 		Func:    RuleSQLE00139,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

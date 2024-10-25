@@ -21,6 +21,7 @@ func init() {
 			Category:   rulepkg.RuleTypeDDLConvention,
 		},
 		Message: "对于MySQL的DDL, 自增字段只能设置一个",
+		AllowOffline: true,
 		Func:    RuleSQLE00007,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

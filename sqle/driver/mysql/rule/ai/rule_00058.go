@@ -24,7 +24,7 @@ func init() {
 			Params:     params.Params{},
 		},
 		Message:      "在 MySQL 中, 避免使用分区表相关功能",
-		AllowOffline: false,
+		AllowOffline: true,
 		Func:         RuleSQLE00058,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

@@ -23,6 +23,7 @@ func init() {
 			Category:   rulepkg.RuleTypeIndexInvalidation,
 		},
 		Message: "对于MySQL的DML, 不建议对条件字段使用负向查询",
+		AllowOffline: true,
 		Func:    RuleSQLE00113,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

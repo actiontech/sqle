@@ -32,6 +32,7 @@ func init() {
 			},
 		},
 		Message: "对于MySQL的DDL, 复合索引的列数量不建议超过阈值. 阈值: %v",
+		AllowOffline: true,
 		Func:    RuleSQLE00005,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

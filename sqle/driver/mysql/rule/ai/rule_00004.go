@@ -21,6 +21,7 @@ func init() {
 			Category:   rulepkg.RuleTypeDDLConvention,
 		},
 		Message: "对于MySQL的DDL, 表的初始AUTO_INCREMENT值建议为0",
+		AllowOffline: true,
 		Func:    RuleSQLE00004,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

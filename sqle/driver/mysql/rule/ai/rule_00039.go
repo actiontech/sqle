@@ -34,6 +34,7 @@ func init() {
 			},
 		},
 		Message: "索引列 %v 未超过区分度阈值 %v, 不建议选为索引",
+		AllowOffline: false,
 		Func:    RuleSQLE00039,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

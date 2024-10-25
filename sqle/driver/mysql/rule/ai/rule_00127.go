@@ -21,6 +21,7 @@ func init() {
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
 		Message: "对于MySQL的DML, 不建议在ORDER BY中使用表达式或函数",
+		AllowOffline: false,
 		Func:    RuleSQLE00127,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

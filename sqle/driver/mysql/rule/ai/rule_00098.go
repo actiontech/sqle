@@ -33,6 +33,7 @@ func init() {
 			},
 		},
 		Message: "对于MySQL的DML,避免在单个SQL语句中对同一张表进行多次连接或查询. 违反规则的表名: %s",
+		AllowOffline: true,
 		Func:    RuleSQLE00098,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

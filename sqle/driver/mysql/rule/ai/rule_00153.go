@@ -21,6 +21,7 @@ func init() {
 			Category:   rulepkg.RuleTypeDDLConvention,
 		},
 		Message: "对于MySQL的DDL, 创建表建议添加索引.",
+		AllowOffline: true,
 		Func:    RuleSQLE00153,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

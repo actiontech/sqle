@@ -32,6 +32,7 @@ func init() {
 			},
 		},
 		Message: "对于MySQL的DML, 建议Order By字段个数不超过指定阈值. 阈值: %v",
+		AllowOffline: true,
 		Func:    RuleSQLE00177,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

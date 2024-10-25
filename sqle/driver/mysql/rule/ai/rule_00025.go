@@ -22,6 +22,7 @@ func init() {
 			Category:   rulepkg.RuleTypeDDLConvention,
 		},
 		Message: "对于MySQL的DDL, TIMESTAMP 类型的列必须添加默认值. 不符合规定的字段: %v",
+		AllowOffline: false,
 		Func:    RuleSQLE00025,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

@@ -22,6 +22,7 @@ func init() {
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
 		Message: "对于MySQL的DML, 避免对条件字段使用表达式操作",
+		AllowOffline: false,
 		Func:    RuleSQLE00111,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

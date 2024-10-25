@@ -31,6 +31,7 @@ func init() {
 			},
 		},
 		Message: "对于MySQL的DDL, 不建议索引字段是VARCHAR类型时其长度大于阈值. 不符合规则的字段: %v",
+		AllowOffline: false,
 		Func:    RuleSQLE00064,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

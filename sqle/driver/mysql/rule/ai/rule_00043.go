@@ -32,6 +32,7 @@ func init() {
 			},
 		},
 		Message: "对于MySQL的索引, 避免表内同一字段上存在过多索引. 字段 %v 上的索引数量不建议超过%v个",
+		AllowOffline: false,
 		Func:    RuleSQLE00043,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

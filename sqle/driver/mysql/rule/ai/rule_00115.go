@@ -22,6 +22,7 @@ func init() {
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
 		Message: "对于MySQL的DML, 避免使用标量子查询",
+		AllowOffline: true,
 		Func:    RuleSQLE00115,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

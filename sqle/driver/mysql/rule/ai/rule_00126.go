@@ -21,6 +21,7 @@ func init() {
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
 		Message: "对于MySQL的DML, 不建议对字段编号进行 GROUP BY",
+		AllowOffline: true,
 		Func:    RuleSQLE00126,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

@@ -22,6 +22,7 @@ func init() {
 			Category:   rulepkg.RuleTypeIndexInvalidation,
 		},
 		Message: "对于MySQL的DML, 联合索引最左侧的字段必须出现在查询条件内. 不符合规范的字段: %v",
+		AllowOffline: false,
 		Func:    RuleSQLE00218,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

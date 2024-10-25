@@ -33,6 +33,7 @@ func init() {
 			},
 		},
 		Message: "对于MySQL的DDL, 建议使用规定的数据库排序规则为%s",
+		AllowOffline: false,
 		Func:    RuleSQLE00015,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

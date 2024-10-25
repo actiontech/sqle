@@ -23,6 +23,7 @@ func init() {
 			Category:   rulepkg.RuleTypeDDLConvention,
 		},
 		Message: "对于MySQL的DDL, 避免CREATE TABLE/ALTER TABLE 使用禁止的表空间.",
+		AllowOffline: true,
 		Func:    RuleSQLE00151,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

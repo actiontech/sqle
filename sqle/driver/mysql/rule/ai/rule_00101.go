@@ -21,6 +21,7 @@ func init() {
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
 		Message: "对于MySQL的DQL, SELECT 语句不能有ORDER BY",
+		AllowOffline: false,
 		Func:    RuleSQLE00101,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

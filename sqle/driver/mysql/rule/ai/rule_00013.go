@@ -22,6 +22,7 @@ func init() {
 			Category:   rulepkg.RuleTypeDDLConvention,
 		},
 		Message: "对于MySQL的DDL, 精确浮点数建议使用DECIMAL. 不符合规定的字段: %v",
+		AllowOffline: true,
 		Func:    RuleSQLE00013,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
