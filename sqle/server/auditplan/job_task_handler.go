@@ -167,26 +167,14 @@ func BatchAuditSQLs(sqlList []*model.SQLManageRecord, isSkipAuditedSql bool) ([]
 }
 
 func SetSQLPriority(sqlList []*model.SQLManageRecord) ([]*model.SQLManageRecord, error) {
-	var err error
-	s := model.GetStorage()
-	// SQL聚合
-	auditPlanMap := make(map[string]*model.AuditPlanV2, 0)
+	auditPlanGetter := NewAuditPlanGetter()
 
 	for i, sql_ := range sqlList {
-		sourceId := sql_.SourceId
-		sourceType := sql_.Source
-		auditPlan, ok := auditPlanMap[sourceId]
-		if !ok {
-			var exist bool
-			auditPlan, exist, err = s.GetAuditPlanByInstanceIdAndType(sourceId, sourceType)
-			if err != nil {
-				return nil, err
-			}
-			if !exist {
-				continue
-			}
-			auditPlanMap[sourceId] = auditPlan
+		auditPlan, err := auditPlanGetter.GetAuditPlan(sql_.SourceId, sql_.Source)
+		if err != nil {
+			return nil, err
 		}
+
 		priority, _, err := GetSingleSQLPriorityWithReasons(auditPlan, sql_)
 		if err != nil {
 			return nil, err

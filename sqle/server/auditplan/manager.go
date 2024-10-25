@@ -374,3 +374,36 @@ func (s *scheduler) hasJob(auditPlanId uint) bool {
 	_, has := s.entryIDs[auditPlanId]
 	return has
 }
+
+// 创建带有 缓存的AuditPlanGetter，不支持并发场景
+func NewAuditPlanGetter() auditPlanGetter {
+	return auditPlanGetter{
+		cache: make(map[string]*model.AuditPlanV2),
+	}
+}
+
+type auditPlanGetter struct {
+	cache map[string]*model.AuditPlanV2
+}
+
+func (a *auditPlanGetter) GetAuditPlan(sourceId, sourceType string) (*model.AuditPlanV2, error) {
+	// 直接从缓存读取
+	if auditPlan, ok := a.cache[sourceId]; ok {
+		return auditPlan, nil
+	}
+
+	// 缓存中没有，进行数据库查询
+	s := model.GetStorage()
+	auditPlan, exist, err := s.GetAuditPlanByInstanceIdAndType(sourceId, sourceType)
+	if err != nil {
+		return nil, err
+	}
+	if !exist {
+		return nil, fmt.Errorf("audit plan does not exist")
+	}
+
+	// 将查询到的 auditPlan 存入缓存
+	a.cache[sourceId] = auditPlan
+
+	return auditPlan, nil
+}
