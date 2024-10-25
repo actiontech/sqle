@@ -714,3 +714,19 @@ func (c *Executor) GetTableIndexesInfo(schema, tableName string) ([]*TableIndexe
 	}
 	return ret, nil
 }
+
+func (c *Executor) ShowCreateSchema(schemaName string) (string, error) {
+	query := fmt.Sprintf("SHOW CREATE DATABASE %s", schemaName)
+
+	result, err := c.Db.Query(query)
+	if err != nil {
+		return "", err
+	}
+
+	if len(result) != 1 {
+		err := fmt.Errorf("show create database error, result is %v", result)
+		c.Db.Logger().Error(err)
+		return "", errors.New(errors.ConnectRemoteDatabaseError, err)
+	}
+	return result[0]["Create Database"].String, nil
+}

@@ -9,6 +9,7 @@ import (
 
 	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
 	"github.com/actiontech/sqle/sqle/driver"
+	"github.com/actiontech/sqle/sqle/driver/mysql/differ"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/driver/mysql/onlineddl"
 	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
@@ -619,6 +620,181 @@ func (i *MysqlDriverImpl) getPrimaryKey(stmt *ast.CreateTableStmt) (map[string]s
 		return pkColumnsName, hasPk, nil
 	}
 	return pkColumnsName, hasPk, nil
+}
+
+func (i *MysqlDriverImpl) GetDatabaseDiffModifySQL(ctx context.Context, calibratedDSN *driverV2.DSN, objInfos []*driverV2.DatabasCompareSchemaInfo) ([]*driverV2.DatabaseDiffModifySQLResult, error) {
+
+	baseConn, err := i.getDbConn()
+	if err != nil {
+		return nil, err
+	}
+	logEntry := log.NewEntry()
+	compareConn, err := executor.NewExecutor(logEntry, &driverV2.DSN{
+		Host:             calibratedDSN.Host,
+		Port:             calibratedDSN.Port,
+		User:             calibratedDSN.User,
+		Password:         calibratedDSN.Password,
+		AdditionalParams: calibratedDSN.AdditionalParams,
+	}, "")
+	if err != nil {
+		return nil, err
+	}
+	fromSchemaInfos := make([]*driverV2.DatabasSchemaInfo, len(objInfos))
+	for i, baseSchemaInfo := range objInfos {
+		fromSchemaInfos[i] = &driverV2.DatabasSchemaInfo{
+			ScheamName:      baseSchemaInfo.ComparedScheamName,
+			DatabaseObjects: baseSchemaInfo.DatabaseObjects,
+		}
+	}
+
+	toSchemaInfos := make([]*driverV2.DatabasSchemaInfo, len(objInfos))
+	for i, baseSchemaInfo := range objInfos {
+		toSchemaInfos[i] = &driverV2.DatabasSchemaInfo{
+			ScheamName:      baseSchemaInfo.BaseScheamName,
+			DatabaseObjects: baseSchemaInfo.DatabaseObjects,
+		}
+	}
+
+	fromSchemas, err := differ.Schemas(true, compareConn, fromSchemaInfos)
+	if err != nil {
+		return nil, err
+	}
+	toSchemas, err := differ.Schemas(true, baseConn, toSchemaInfos)
+	if err != nil {
+		return nil, err
+	}
+	mods := differ.StatementModifiers{AllowUnsafe: true}
+	// if !flavor.IsMySQL(5, 5) {
+	// 	mods.LockClause, mods.AlgorithmClause = "none", "inplace"
+	// }
+	dbDiffSQLs := make([]*driverV2.DatabaseDiffModifySQLResult, 0)
+	for _, objInfo := range objInfos {
+		for _, from := range fromSchemas {
+			if from.Name == objInfo.ComparedScheamName {
+				for _, to := range toSchemas {
+					if to.Name == objInfo.BaseScheamName {
+						diff := differ.NewSchemaDiff(from, to)
+						objDiffs := diff.ObjectDiffs()
+						diffSqls := make([]string, len(objDiffs))
+						for i, diff := range objDiffs {
+							stmt, err := diff.Statement(mods)
+							if err != nil {
+								return nil, err
+							}
+							diffSqls[i] = stmt
+						}
+						dbDiffSQLs = append(dbDiffSQLs, &driverV2.DatabaseDiffModifySQLResult{
+							SchemaName: from.Name,
+							ModifySQLs: diffSqls,
+						})
+					}
+				}
+			}
+		}
+	}
+
+	return dbDiffSQLs, nil
+}
+
+func (i *MysqlDriverImpl) GetDatabaseObjectDDL(ctx context.Context, objInfos []*driverV2.DatabasSchemaInfo) ([]*driverV2.DatabaseSchemaObjectResult, error) {
+	conn, err := i.getDbConn()
+	if err != nil {
+		return nil, err
+	}
+	// 未指定schema时默认获取全量
+	if len(objInfos) == 0 {
+		schemas, err := conn.ShowDatabases(true)
+		if err != nil {
+			return nil, err
+		}
+		for _, schema := range schemas {
+			schemaObjs, err := getAllSchemaObjects(conn, schema)
+			if err != nil {
+				return nil, err
+			}
+			objInfos = append(objInfos, &driverV2.DatabasSchemaInfo{
+				ScheamName:      schema,
+				DatabaseObjects: schemaObjs,
+			})
+
+		}
+	} else {
+		// 未指定schema对象（表、视图、存储过程等）时默认获取全量
+		for _, objInfo := range objInfos {
+			if len(objInfo.DatabaseObjects) == 0 {
+				schemaObjs, err := getAllSchemaObjects(conn, objInfo.ScheamName)
+				if err != nil {
+					return nil, err
+				}
+				objInfo.DatabaseObjects = schemaObjs
+			}
+		}
+	}
+
+	res := make([]*driverV2.DatabaseSchemaObjectResult, 0, len(objInfos))
+	for _, objInfo := range objInfos {
+		schemaDDL, err := conn.ShowCreateSchema(objInfo.ScheamName)
+		if err != nil {
+			return nil, err
+		}
+		dbDDLs := make([]*driverV2.DatabaseObjectDDL, 0, len(objInfo.DatabaseObjects))
+		for _, obj := range objInfo.DatabaseObjects {
+			objetDDL := ""
+			if obj.ObjectType == driverV2.ObjectType_TABLE {
+				objetDDL, err = conn.ShowCreateTable(objInfo.ScheamName, obj.ObjectName)
+				if err != nil {
+					return nil, err
+				}
+			}
+			if obj.ObjectType == driverV2.ObjectType_VIEW {
+				// TODO
+			}
+			if obj.ObjectType == driverV2.ObjectType_PROCEDURE {
+				// TODO
+			}
+			dbDDLs = append(dbDDLs, &driverV2.DatabaseObjectDDL{
+				ObjectDDL: objetDDL,
+				DatabaseObject: &driverV2.DatabaseObject{
+					ObjectName: obj.ObjectName,
+					ObjectType: obj.ObjectType,
+				},
+			})
+		}
+		res = append(res, &driverV2.DatabaseSchemaObjectResult{
+			SchemaName:         objInfo.ScheamName,
+			SchemaDDL:          schemaDDL,
+			DatabaseObjectDDLs: dbDDLs,
+		})
+	}
+
+	return res, nil
+}
+
+func getAllSchemaObjects(conn *executor.Executor, schemaName string) ([]*driverV2.DatabaseObject, error) {
+	dbObjs := make([]*driverV2.DatabaseObject, 0)
+	tables, err := conn.ShowSchemaTables(schemaName)
+	if err != nil {
+		return nil, err
+	}
+	for _, tableName := range tables {
+		dbObjs = append(dbObjs, &driverV2.DatabaseObject{
+			ObjectName: tableName,
+			ObjectType: driverV2.ObjectType_TABLE,
+		})
+	}
+	views, err := conn.ShowSchemaViews(schemaName)
+	if err != nil {
+		return nil, err
+	}
+	for _, viewsName := range views {
+		dbObjs = append(dbObjs, &driverV2.DatabaseObject{
+			ObjectName: viewsName,
+			ObjectType: driverV2.ObjectType_VIEW,
+		})
+	}
+	// TODO
+
+	return dbObjs, nil
 }
 
 type PluginProcessor struct{}
