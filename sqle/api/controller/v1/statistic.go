@@ -1,7 +1,6 @@
 package v1
 
 import (
-	"context"
 	"math"
 	"net/http"
 	"time"
@@ -603,13 +602,7 @@ func StatisticRiskWorkflowV1(c echo.Context) error {
 
 	riskWorkflows := make([]*RiskWorkflow, len(projectWorkflowStatusDetails))
 	for i, info := range projectWorkflowStatusDetails {
-		userName := func() string {
-			_, cancel := context.WithTimeout(c.Request().Context(), 5*time.Second)
-			defer cancel()
-
-			return dms.GetUserNameWithDelTag(info.CreateUserId)
-		}()
-
+		userName := dms.GetUserNameWithDelTag(info.CreateUserId)
 		riskWorkflows[i] = &RiskWorkflow{
 			Name:       info.Subject,
 			WorkflowID: info.WorkflowId,
