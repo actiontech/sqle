@@ -390,7 +390,7 @@ type GlobalSqlManage struct {
 // @Param page_index query uint32 true "page index"
 // @Param page_size query uint32 true "size of per page"
 // @Success 200 {object} v1.GetGlobalSqlManageListResp
-// @Router /v1/sql_manages [get]
+// @Router /v1/dashboard/sql_manages [get]
 func GetGlobalSqlManageList(c echo.Context) error {
 	return getGlobalSqlManageList(c)
 }
@@ -416,7 +416,7 @@ type GetGlobalSqlManageStatisticsResp struct {
 // @Param filter_instance_id query string false "instance id"
 // @Param filter_project_priority query string false "project priority" Enums(high,medium,low)
 // @Success 200 {object} v1.GetGlobalSqlManageStatisticsResp
-// @Router /v1/sql_manages/statistics  [get]
+// @Router /v1/dashboard/sql_manages/statistics  [get]
 func GetGlobalSqlManageStatistics(c echo.Context) error {
 	return getGlobalSqlManageStatistics(c)
 }

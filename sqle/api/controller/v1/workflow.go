@@ -556,7 +556,7 @@ type InstanceInfo struct {
 // @Param page_index query uint32 true "page index"
 // @Param page_size query uint32 true "size of per page"
 // @Success 200 {object} v1.GetWorkflowsResV1
-// @router /v1/workflows [get]
+// @router /v1/dashboard/workflows [get]
 func GetGlobalWorkflowsV1(c echo.Context) error {
 	req := new(GetWorkflowsReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
@@ -713,7 +713,7 @@ type GlobalWorkflowStatisticsResV1 struct {
 // @Param filter_instance_id query string false "filter by instance id in project"
 // @Param filter_project_priority query string false "filter by project priority" Enums(high,medium,low)
 // @Success 200 {object} v1.GlobalWorkflowStatisticsResV1
-// @router /v1/workflows/statistics [get]
+// @router /v1/dashboard/workflows/statistics [get]
 func GetGlobalWorkflowStatistics(c echo.Context) error {
 	req := new(GetGlobalWorkflowStatisticsReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {

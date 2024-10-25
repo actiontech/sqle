@@ -908,6 +908,274 @@ var doc = `{
                 }
             }
         },
+        "/v1/dashboard/sql_manages": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get global sql manage list",
+                "tags": [
+                    "SqlManage"
+                ],
+                "summary": "获取全局管控sql列表",
+                "operationId": "GetGlobalSqlManageList",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project uid",
+                        "name": "filter_project_uid",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance id",
+                        "name": "filter_instance_id",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "high",
+                            "medium",
+                            "low"
+                        ],
+                        "type": "string",
+                        "description": "project priority",
+                        "name": "filter_project_priority",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetGlobalSqlManageListResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/dashboard/sql_manages/statistics": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get global sql manage statistics",
+                "tags": [
+                    "SqlManage"
+                ],
+                "summary": "获取全局管控sql统计信息",
+                "operationId": "GetGlobalSqlManageStatistics",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project uid",
+                        "name": "filter_project_uid",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance id",
+                        "name": "filter_instance_id",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "high",
+                            "medium",
+                            "low"
+                        ],
+                        "type": "string",
+                        "description": "project priority",
+                        "name": "filter_project_priority",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetGlobalSqlManageStatisticsResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/dashboard/workflows": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get global workflow list",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "获取全局工单列表",
+                "operationId": "getGlobalWorkflowsV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "filter create user id",
+                        "name": "filter_create_user_id",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "wait_for_audit",
+                            "wait_for_execution",
+                            "rejected",
+                            "executing",
+                            "canceled",
+                            "exec_failed",
+                            "finished"
+                        ],
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "filter by workflow status,, support using many status",
+                        "name": "filter_status_list",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter by project uid",
+                        "name": "filter_project_uid",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter by instance id in project",
+                        "name": "filter_instance_id",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "high",
+                            "medium",
+                            "low"
+                        ],
+                        "type": "string",
+                        "description": "filter by project priority",
+                        "name": "filter_project_priority",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetWorkflowsResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/dashboard/workflows/statistics": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get global workflow statistics",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "获取全局工单统计数据",
+                "operationId": "GetGlobalWorkflowStatistics",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "filter create user id",
+                        "name": "filter_create_user_id",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "wait_for_audit",
+                            "wait_for_execution",
+                            "rejected",
+                            "executing",
+                            "canceled",
+                            "exec_failed",
+                            "finished"
+                        ],
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "filter by workflow status,, support using many status",
+                        "name": "filter_status_list",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter by project uid",
+                        "name": "filter_project_uid",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter by instance id in project",
+                        "name": "filter_instance_id",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "high",
+                            "medium",
+                            "low"
+                        ],
+                        "type": "string",
+                        "description": "filter by project priority",
+                        "name": "filter_project_priority",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GlobalWorkflowStatisticsResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/import_rule_template": {
             "get": {
                 "security": [
@@ -7982,116 +8250,6 @@ var doc = `{
                 }
             }
         },
-        "/v1/sql_manages": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get global sql manage list",
-                "tags": [
-                    "SqlManage"
-                ],
-                "summary": "获取全局管控sql列表",
-                "operationId": "GetGlobalSqlManageList",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "project uid",
-                        "name": "filter_project_uid",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "instance id",
-                        "name": "filter_instance_id",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "high",
-                            "medium",
-                            "low"
-                        ],
-                        "type": "string",
-                        "description": "project priority",
-                        "name": "filter_project_priority",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page index",
-                        "name": "page_index",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "size of per page",
-                        "name": "page_size",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetGlobalSqlManageListResp"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/sql_manages/statistics": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get global sql manage statistics",
-                "tags": [
-                    "SqlManage"
-                ],
-                "summary": "获取全局管控sql统计信息",
-                "operationId": "GetGlobalSqlManageStatistics",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "project uid",
-                        "name": "filter_project_uid",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "instance id",
-                        "name": "filter_instance_id",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "high",
-                            "medium",
-                            "low"
-                        ],
-                        "type": "string",
-                        "description": "project priority",
-                        "name": "filter_project_priority",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetGlobalSqlManageStatisticsResp"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/statistic/instances/sql_average_execution_time": {
             "get": {
                 "security": [
@@ -9015,92 +9173,6 @@ var doc = `{
                 }
             }
         },
-        "/v1/workflows": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get global workflow list",
-                "tags": [
-                    "workflow"
-                ],
-                "summary": "获取全局工单列表",
-                "operationId": "getGlobalWorkflowsV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "filter create user id",
-                        "name": "filter_create_user_id",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "wait_for_audit",
-                            "wait_for_execution",
-                            "rejected",
-                            "executing",
-                            "canceled",
-                            "exec_failed",
-                            "finished"
-                        ],
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "description": "filter by workflow status,, support using many status",
-                        "name": "filter_status_list",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter by project uid",
-                        "name": "filter_project_uid",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter by instance id in project",
-                        "name": "filter_instance_id",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "high",
-                            "medium",
-                            "low"
-                        ],
-                        "type": "string",
-                        "description": "filter by project priority",
-                        "name": "filter_project_priority",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page index",
-                        "name": "page_index",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "size of per page",
-                        "name": "page_size",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetWorkflowsResV1"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/workflows/statistic_of_instances": {
             "get": {
                 "security": [
@@ -9128,78 +9200,6 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetWorkflowStatisticOfInstancesResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/workflows/statistics": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get global workflow statistics",
-                "tags": [
-                    "workflow"
-                ],
-                "summary": "获取全局工单统计数据",
-                "operationId": "GetGlobalWorkflowStatistics",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "filter create user id",
-                        "name": "filter_create_user_id",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "wait_for_audit",
-                            "wait_for_execution",
-                            "rejected",
-                            "executing",
-                            "canceled",
-                            "exec_failed",
-                            "finished"
-                        ],
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "description": "filter by workflow status,, support using many status",
-                        "name": "filter_status_list",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter by project uid",
-                        "name": "filter_project_uid",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter by instance id in project",
-                        "name": "filter_instance_id",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "high",
-                            "medium",
-                            "low"
-                        ],
-                        "type": "string",
-                        "description": "filter by project priority",
-                        "name": "filter_project_priority",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GlobalWorkflowStatisticsResV1"
                         }
                     }
                 }
