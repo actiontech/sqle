@@ -210,9 +210,12 @@ func (at *PGTopSQLTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, persis
 	// 超时2分钟
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
 	defer cancel()
-	inst, _, err := dms.GetInstancesById(ctx, ap.InstanceID)
+	inst, exist, err := dms.GetInstancesById(ctx, ap.InstanceID)
 	if err != nil {
 		return nil, fmt.Errorf("get instance fail, error: %v", err)
+	}
+	if !exist {
+		return nil, fmt.Errorf("instance: %v is not exist", ap.InstanceID)
 	}
 
 	sqls, err := at.queryTopSQLsForPg(inst, schema, ap.Params.GetParam("order_by_column").String(),

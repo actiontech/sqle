@@ -70,11 +70,13 @@ func (at *DB2SchemaMetaTaskV2) extractSQL(logger *logrus.Entry, ap *AuditPlan, p
 	if ap.InstanceID == "" {
 		return nil, fmt.Errorf("instance is not configured")
 	}
-	instance, _, err := dms.GetInstancesById(context.Background(), ap.InstanceID)
+	instance, exist, err := dms.GetInstancesById(context.Background(), ap.InstanceID)
 	if err != nil {
 		return nil, fmt.Errorf("get instance fail, error: %v", err)
 	}
-
+	if !exist {
+		return nil, fmt.Errorf("instance: %v is not exist", ap.InstanceID)
+	}
 	pluginMgr := driver.GetPluginManager()
 	if !pluginMgr.IsOptionalModuleEnabled(instance.DbType, driverV2.OptionalModuleQuery) {
 		return nil, fmt.Errorf("collect DB2 schema meta failed: %v", driver.NewErrPluginAPINotImplement(driverV2.OptionalModuleQuery))

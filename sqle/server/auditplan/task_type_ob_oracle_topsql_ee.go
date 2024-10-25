@@ -260,9 +260,12 @@ func (at *ObForOracleTopSQLTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPla
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
 	defer cancel()
-	inst, _, err := dms.GetInstancesById(ctx, ap.InstanceID)
+	inst, exist, err := dms.GetInstancesById(ctx, ap.InstanceID)
 	if err != nil {
 		return nil, fmt.Errorf("get instance fail, error: %v", err)
+	}
+	if !exist {
+		return nil, fmt.Errorf("instance: %v is not exist", ap.InstanceID)
 	}
 
 	if at.obVersion == "" {
