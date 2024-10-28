@@ -105,4 +105,5 @@ func init() {
 	}
 
 	supportedCmdTypeList[TypeTBaseSlowLog] = struct{}{}
+	supportedCmdTypeList[TypeTDSQLSlowLog] = struct{}{}
 }
