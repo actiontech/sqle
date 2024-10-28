@@ -2,7 +2,6 @@ package command
 
 import (
 	"fmt"
-
 	"strconv"
 )
 
@@ -75,7 +74,8 @@ func GetScannerdCmd(scannerType string) (*scannerCmd, error) {
 		return &rootCmd, nil
 	case TypeMySQLMybatis:
 		return &myBatis, nil
-	case TypeMySQLSlowLog:
+	// TDSQL Innodb of MySQL 慢日志格式与 MySQL 慢日志格式一致,复用 Mysql 慢日志 Scanner
+	case TypeMySQLSlowLog, TypeTDSQLInnodbSlowLog:
 		return &slowLog, nil
 	case TypeTiDBAuditLog:
 		return &tidbAuditLog, nil
