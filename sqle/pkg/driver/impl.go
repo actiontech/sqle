@@ -285,3 +285,11 @@ func (p *DriverImpl) EstimateSQLAffectRows(ctx context.Context, sql string) (*dr
 func (p *DriverImpl) KillProcess(ctx context.Context) (*driverV2.KillProcessInfo, error) {
 	return &driverV2.KillProcessInfo{}, nil
 }
+
+func (p *DriverImpl) GetDatabaseObjectDDL(ctx context.Context, objInfos []*driverV2.DatabasSchemaInfo) ([]*driverV2.DatabaseSchemaObjectResult, error) {
+	return []*driverV2.DatabaseSchemaObjectResult{}, nil
+}
+
+func (p *DriverImpl) GetDatabaseDiffModifySQL(ctx context.Context, calibratedDSN *driverV2.DSN, objInfos []*driverV2.DatabasCompareSchemaInfo) ([]*driverV2.DatabaseDiffModifySQLResult, error) {
+	return []*driverV2.DatabaseDiffModifySQLResult{}, nil
+}

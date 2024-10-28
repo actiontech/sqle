@@ -42,6 +42,10 @@ type Plugin interface {
 
 	// Introduced from v2.2304.0
 	EstimateSQLAffectRows(ctx context.Context, sql string) (*driverV2.EstimatedAffectRows, error)
+
+	GetDatabaseObjectDDL(ctx context.Context, objInfos []*driverV2.DatabasSchemaInfo) ([]*driverV2.DatabaseSchemaObjectResult, error)
+
+	GetDatabaseDiffModifySQL(ctx context.Context, calibratedDSN *driverV2.DSN, objInfos []*driverV2.DatabasCompareSchemaInfo) ([]*driverV2.DatabaseDiffModifySQLResult, error)
 }
 
 type PluginProcessor interface {
