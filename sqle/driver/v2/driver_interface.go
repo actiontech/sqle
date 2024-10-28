@@ -91,6 +91,8 @@ type Driver interface {
 	ExtractTableFromSQL(ctx context.Context, sql string) ([]*Table, error)
 	EstimateSQLAffectRows(ctx context.Context, sql string) (*EstimatedAffectRows, error)
 	KillProcess(ctx context.Context) (*KillProcessInfo, error)
+	GetDatabaseObjectDDL(ctx context.Context, objInfos []*DatabasSchemaInfo) ([]*DatabaseSchemaObjectResult, error)
+	GetDatabaseDiffModifySQL(ctx context.Context, calibratedDSN *DSN, objInfos []*DatabasCompareSchemaInfo) ([]*DatabaseDiffModifySQLResult, error)
 }
 
 type Node struct {
@@ -339,4 +341,43 @@ func NewKillProcessInfo(errorMessage string) *KillProcessInfo {
 
 type RuleKnowledge struct {
 	Content string
+}
+
+type DatabasSchemaInfo struct {
+	ScheamName      string
+	DatabaseObjects []*DatabaseObject
+}
+
+type DatabasCompareSchemaInfo struct {
+	BaseScheamName     string
+	ComparedScheamName string
+	DatabaseObjects    []*DatabaseObject
+}
+
+const (
+	ObjectType_TABLE     string = "TABLE"
+	ObjectType_VIEW      string = "VIEW"
+	ObjectType_PROCEDURE string = "PROCEDURE"
+	ObjectType_TRIGGER   string = "TRIGGER"
+	ObjectType_EVENT     string = "EVENT"
+	ObjectType_FUNCTION  string = "FUNCTION"
+)
+
+type DatabaseObject struct {
+	ObjectName string
+	ObjectType string
+}
+type DatabaseSchemaObjectResult struct {
+	SchemaName         string
+	SchemaDDL          string
+	DatabaseObjectDDLs []*DatabaseObjectDDL
+}
+type DatabaseObjectDDL struct {
+	DatabaseObject *DatabaseObject
+	ObjectDDL      string
+}
+
+type DatabaseDiffModifySQLResult struct {
+	SchemaName string
+	ModifySQLs []string
 }
