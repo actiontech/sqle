@@ -13,3 +13,11 @@ import (
 func (i *MysqlDriverImpl) Query(ctx context.Context, sql string, conf *driverV2.QueryConf) (*driverV2.QueryResult, error) {
 	return nil, fmt.Errorf("only support Query in enterprise edition")
 }
+
+func (i *MysqlDriverImpl) GetDatabaseDiffModifySQL(ctx context.Context, calibratedDSN *driverV2.DSN, objInfos []*driverV2.DatabasCompareSchemaInfo) ([]*driverV2.DatabaseDiffModifySQLResult, error) {
+	return nil, fmt.Errorf("only support Query in enterprise edition")
+}
+
+func (i *MysqlDriverImpl) GetDatabaseObjectDDL(ctx context.Context, objInfos []*driverV2.DatabasSchemaInfo) ([]*driverV2.DatabaseSchemaObjectResult, error) {
+	return nil, fmt.Errorf("only support Query in enterprise edition")
+}
