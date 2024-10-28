@@ -49,15 +49,15 @@ enum OptionalModule {
   EstimateSQLAffectRows = 5;
   KillProcess = 6;
   ExecBatch = 7;
-  I18n = 8;
+  I18n = 8; // 插件是否支持国际化
 }
 
 message Param {
   string key = 1;
   string value = 2;
-  string desc = 3;
+  string desc = 3;  // 不支持国际化时，sqle从此取值
   string type = 4;
-  map<string, string> i18nDesc = 5;
+  map<string, string> i18nDesc = 5; // 支持国际化时，sqle从此取值，必须包含默认语言
 }
 
 message DSN {
@@ -71,13 +71,13 @@ message DSN {
 
 message Rule {
   string name = 1;
-  string desc = 2;
+  string desc = 2; // 不支持国际化时，sqle从此取值
   string level = 3;
-  string category = 4;
+  string category = 4; // 不支持国际化时，sqle从此取值
   repeated Param params = 5;
-  string annotation = 6;
-  Knowledge knowledge = 7;
-  map<string, I18nRuleInfo> i18nRuleInfo = 8;
+  string annotation = 6; // 不支持国际化时，sqle从此取值
+  Knowledge knowledge = 7; // 不支持国际化时，sqle从此取值
+  map<string, I18nRuleInfo> i18nRuleInfo = 8; // 支持国际化时，sqle从此取值，必须包含默认语言
 }
 
 message I18nRuleInfo {
@@ -158,10 +158,10 @@ message I18nAuditResultInfo {
 }
 
 message AuditResult {
-  string message = 1;
+  string message = 1; // 不支持国际化时，sqle从此取值
   string level = 2;
   string rule_name = 3;
-  map<string, I18nAuditResultInfo> i18nAuditResultInfo = 4;
+  map<string, I18nAuditResultInfo> i18nAuditResultInfo = 4; // 支持国际化时，sqle从此取值，必须包含默认语言
 }
 
 message AuditResults {
@@ -188,8 +188,8 @@ message I18nRollbackSQLInfo {
 
 message RollbackSQL {
   string query = 1;
-  string message = 2;
-  map<string, I18nRollbackSQLInfo> i18nRollbackSQLInfo = 3;
+  string message = 2; // 不支持国际化时，sqle从此取值
+  map<string, I18nRollbackSQLInfo> i18nRollbackSQLInfo = 3; // 支持国际化时，sqle从此取值，必须包含默认语言
 }
 
 message GenRollbackSQLResponse {
@@ -332,8 +332,8 @@ message IndexesInfo {
 
 message TabularDataHead {
   string name = 1;
-  string desc = 2;
-  map<string, string> i18nDesc = 3;
+  string desc = 2; // 不支持国际化时，sqle从此取值
+  map<string, string> i18nDesc = 3; // 支持国际化时，sqle从此取值，必须包含默认语言
 }
 
 message TabularDataRows {
