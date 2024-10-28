@@ -543,6 +543,9 @@ func constructGlobalSqlManageBasicFilter(ctx context.Context, user *model.User, 
 			// 若不根据项目优先级筛选，则通过用户的有权限的项目进行筛选
 			data["filter_project_id_list"] = userVisibility.ViewRange()
 		}
+		// 2.3 除了要显示用户作为管理员要看到管理的项目下关注的SQL，还需要看到他作为成员被分配的SQL
+		data["filter_out_project_ids_as_project_admin"] = data["filter_project_id_list"]
+		data["filter_assignees_id_as_project_member"] = user.GetIDStr()
 	case GlobalDashBoardVisibilityAssignee:
 		// 2.2 若用户可视范围为受让人，则查看分配给他的SQL
 		data["filter_assignees_id"] = user.GetIDStr()

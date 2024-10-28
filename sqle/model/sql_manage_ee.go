@@ -513,12 +513,46 @@ SELECT
 	oms.info
 {{- template "body" . -}} 
 
-GROUP BY oms.id
+GROUP BY id
+
+{{- if .filter_out_project_ids_as_project_admin }}
+-- 当用户是某些项目的管理员时，还需要查询，他在其他项目中作为项目成员时，被分配的SQL
+UNION ALL
+SELECT
+	oms.id,
+	oms.sql_text,
+	oms.project_id,
+	oms.source,
+	oms.source_id as source_id,
+	oms.audit_level,
+	IF(oms.audit_results IS NULL,'null',oms.audit_results) AS audit_results,
+	oms.instance_id,
+	sm.status,
+	sm.remark,
+	oms.created_at as first_appear_timestamp,
+	oms.info
+FROM
+    sql_manage_records oms   
+LEFT JOIN
+    sql_manage_record_processes sm ON sm.sql_manage_record_id = oms.id  
+WHERE
+    oms.deleted_at IS NULL        
+    AND oms.priority = 'high'     
+    AND oms.project_id NOT IN ( 
+		{{ range $index, $element := .filter_out_project_ids_as_project_admin }}
+			{{ if $index }},{{ end }}"{{ $element }}"
+		{{ end }}
+	 )
+    AND (sm.assignees = :filter_assignees_id_as_project_member OR FIND_IN_SET(:filter_assignees_id_as_project_member, sm.assignees) > 0)  
+GROUP BY
+    id                       
+{{- end }}
+
 ORDER BY 
 {{- if and .sort_field .sort_order }}
 	{{ .sort_field }} {{ .sort_order }}
 {{- else }}
-	oms.id desc
+	id desc
 {{- end }}
 
 {{- if .limit }}
