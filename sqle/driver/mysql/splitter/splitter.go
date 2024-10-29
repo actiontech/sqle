@@ -39,12 +39,12 @@ func (s *splitter) processToExecutableNodes(results []*singleSQL) ([]ast.StmtNod
 	var executableNodes []ast.StmtNode
 	for _, result := range results {
 		// 根据解析结果生成得到sql的抽象语法树
-		stmt, err := s.parser.ParseOneStmt(result.formattedSql, "", "")
+		stmt, err := s.parser.ParseOneStmt(result.originSql, "", "")
 		if err != nil {
 			// 若解析结果为错误，则将分割后的SQL作为不可解析的SQL添加到executableNodes中
 			unParsedStmt := &ast.UnparsedStmt{}
 			unParsedStmt.SetStartLine(result.lineNumber)
-			unParsedStmt.SetText(result.formattedSql)
+			unParsedStmt.SetText(result.originSql)
 			executableNodes = append(executableNodes, unParsedStmt)
 		} else {
 			// 若能成功解析，则将解析的结果添加到executableNodes中
@@ -57,7 +57,6 @@ func (s *splitter) processToExecutableNodes(results []*singleSQL) ([]ast.StmtNod
 
 type singleSQL struct {
 	originSql          string
-	formattedSql       string // 将SQL的分隔符统一替换为封号;
 	lineNumber         int
 	isDelimiterCommand bool
 }
@@ -95,15 +94,13 @@ func (s *splitter) getNextSql(sqlText string) (*singleSQL, error) {
 		buff := bytes.Buffer{}
 		buff.WriteString(sqlText[:s.scanner.Offset()])
 		lineBeforeStart := strings.Count(sqlText[:s.delimiter.startPos], "\n")
-		originSql := strings.TrimSpace(buff.String())
-		trimmedSQL := strings.TrimSuffix(originSql, s.delimiter.DelimiterStr)
-		if trimmedSQL == "" {
+		originSql := s.formateOriginSql(strings.TrimSpace(buff.String()))
+		if originSql == "" {
 			// 跳过空SQL
 			return &singleSQL{}, nil
 		}
 		result := &singleSQL{
 			originSql:          originSql,
-			formattedSql:       trimmedSQL + ";",
 			lineNumber:         s.delimiter.line + lineBeforeStart + 1,
 			isDelimiterCommand: matchedDelimiterCommand,
 		}
@@ -111,22 +108,34 @@ func (s *splitter) getNextSql(sqlText string) (*singleSQL, error) {
 		return result, nil
 	}
 	// 处理剩余SQL文本
-	restOfSql := strings.TrimSpace(sqlText)
+	restOfSql := s.formateOriginSql(strings.TrimSpace(sqlText))
 	if restOfSql == "" {
 		// 跳过空SQL
 		return &singleSQL{}, nil
 	}
-	trimmedSQL := strings.TrimSuffix(restOfSql, s.delimiter.DelimiterStr)
-	if trimmedSQL == "" {
-		// 跳过空SQL
-		return &singleSQL{}, nil
-	}
+
 	return &singleSQL{
 		originSql:          restOfSql,
-		formattedSql:       trimmedSQL + ";",
 		lineNumber:         s.delimiter.line + strings.Count(sqlText[:s.delimiter.startPos], "\n") + 1,
 		isDelimiterCommand: matchedDelimiterCommand,
 	}, nil
+}
+
+// 如果SQL有分隔符，则保留SQL的分隔符，
+// 如果SQL没有分隔符，则返回没有分隔符的SQL
+// 如果分隔符不是默认分隔符，则将其替换为默认分隔符
+// 如果去除分隔符和空白符之后SQL为空字符串，则返回空字符串，空字符串需跳过
+func (s *splitter) formateOriginSql(originSql string) string {
+	if strings.HasSuffix(originSql, s.delimiter.DelimiterStr) {
+		trimmedSql := strings.TrimSuffix(originSql, s.delimiter.DelimiterStr)
+		if trimmedSql == "" {
+			return ""
+		}
+		if s.delimiter.DelimiterStr != DefaultDelimiterString {
+			originSql = trimmedSql + DefaultDelimiterString
+		}
+	}
+	return originSql
 }
 
 func (s *splitter) matchSql(sql string) bool {
