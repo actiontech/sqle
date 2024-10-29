@@ -10,16 +10,16 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-var ErrCommunityEditionNotSupportDatabaseCompare = errors.New(errors.EnterpriseEditionFeatures, e.New("database compare is enterprise version feature"))
+var ErrCommunityEditionNotSupportDatabaseStructComparison = errors.New(errors.EnterpriseEditionFeatures, e.New("database struct comparison is enterprise version feature"))
 
-func getDatabaseCompare(c echo.Context) error {
-	return ErrCommunityEditionNotSupportDatabaseCompare
+func getDatabaseComparison(c echo.Context) error {
+	return ErrCommunityEditionNotSupportDatabaseStructComparison
 }
 
-func getCompareStatement(c echo.Context) error {
-	return ErrCommunityEditionNotSupportDatabaseCompare
+func getComparisonStatement(c echo.Context) error {
+	return ErrCommunityEditionNotSupportDatabaseStructComparison
 }
 
 func genDatabaseDiffModifySQLs(c echo.Context) error {
-	return ErrCommunityEditionNotSupportDatabaseCompare
+	return ErrCommunityEditionNotSupportDatabaseStructComparison
 }

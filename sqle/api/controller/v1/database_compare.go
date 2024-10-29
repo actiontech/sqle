@@ -6,14 +6,23 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-type DatabaseCompareResV1 struct {
+type GetDatabaseComparisonReqV1 struct {
+	BaseDBObject       *DatabaseComparisonObject `json:"base_db_object" query:"base_db_object"`
+	ComparisonDBObject *DatabaseComparisonObject `json:"comparison_db_object" query:"comparison_db_object"`
+}
+
+type DatabaseComparisonObject struct {
+	InstanceId string  `json:"instance_id" query:"instance_id"`
+	SchemaName *string `json:"schema_name,omitempty" query:"instance_id"`
+}
+type DatabaseComparisonResV1 struct {
 	controller.BaseRes
 	Data []*SchemaObject `json:"data"`
 }
 
 type SchemaObject struct {
 	SchemaName          string                `json:"schema_name"`
-	ComparedResult      string                `json:"compared_result"`
+	ComparisonResult    string                `json:"comparison_result" enums:"same,inconsistent,base_not_exist,comparison_not_exist"`
 	DatabaseDiffObjects []*DatabaseDiffObject `json:"database_diff_objects,omitempty"`
 	InconsistentNum     int                   `json:"inconsistent_num"`
 }
@@ -25,33 +34,23 @@ type DatabaseDiffObject struct {
 }
 
 type ObjectDiffResult struct {
-	ComparedResult string `json:"compared_result"`
-	ObjectName     string `json:"object_name"`
+	ComparisonResult string `json:"comparison_result" enums:"same,inconsistent,base_not_exist,comparison_not_exist"`
+	ObjectName       string `json:"object_name"`
 }
 
-type GetDatabaseCompareReqV1 struct {
-	BaseDBObject     *DatabaseCompareObject `json:"base_db_object" query:"base_db_object"`
-	ComparedDBObject *DatabaseCompareObject `json:"compared_db_object" query:"compared_db_object"`
-}
-
-type DatabaseCompareObject struct {
-	InstanceId string  `json:"instance_id" query:"instance_id"`
-	SchemaName *string `json:"schema_name,omitempty" query:"instance_id"`
-}
-
-// @Summary 获取对比结果
-// @Description get database compare
-// @Id getDatabaseCompareV1
-// @Tags database_compare
+// @Summary 执行数据库结构对比并获取结果
+// @Description get database comparison
+// @Id executeDatabaseComparisonV1
+// @Tags database_comparison
 // @Security ApiKeyAuth
 // @Accept json
 // @Param project_name path string true "project name"
-// @Param database_compared body v1.GetDatabaseCompareReqV1 true "get database compare request"
-// @Success 200 {object} v1.DatabaseCompareResV1
-// @router /v1/projects/{project_name}/database_compare [post]
-func GetDatabaseCompare(c echo.Context) error {
+// @Param database_comparison body v1.GetDatabaseComparisonReqV1 true "get database comparison request"
+// @Success 200 {object} v1.DatabaseComparisonResV1
+// @router /v1/projects/{project_name}/database_comparison/execute_comparison [post]
+func ExecuteDatabaseComparison(c echo.Context) error {
 
-	return getDatabaseCompare(c)
+	return getDatabaseComparison(c)
 }
 
 type DatabaseObject struct {
@@ -59,14 +58,19 @@ type DatabaseObject struct {
 	ObjectType string `json:"object_type" enums:"TABLE,VIEW,PROCEDURE,TIGGER,EVENT,FUNCTION"`
 }
 
-type GetComparedStatementsReqV1 struct {
-	DatabaseComparedObject GetDatabaseCompareReqV1 `json:"database_compared_object"`
-	DatabaseObject         *DatabaseObject         `json:"database_object"`
+type GetComparisonStatementsReqV1 struct {
+	DatabaseComparisonObject GetDatabaseComparisonReqV1 `json:"database_comparison_object"`
+	DatabaseObject           *DatabaseObject            `json:"database_object"`
 }
 
-type DatabaseCompareStatementsResV1 struct {
-	BaseSQL     *SQLStatementWithAuditResult `json:"base_sql"`
-	ComparedSQL *SQLStatementWithAuditResult `json:"compared_sql"`
+type DatabaseComparisonStatementsResV1 struct {
+	controller.BaseRes
+	Data *DatabaseComparisonStatements `json:"data"`
+}
+
+type DatabaseComparisonStatements struct {
+	BaseSQL        *SQLStatementWithAuditResult `json:"base_sql"`
+	ComparisondSQL *SQLStatementWithAuditResult `json:"comparison_sql"`
 }
 
 type SQLStatementWithAuditResult struct {
@@ -76,33 +80,33 @@ type SQLStatementWithAuditResult struct {
 }
 
 // @Summary 获取对比语句
-// @Description gen database compare detail
-// @Id getCompareStatementV1
-// @Tags database_compare
+// @Description get database comparison detail
+// @Id getComparisonStatementV1
+// @Tags database_comparison
 // @Security ApiKeyAuth
 // @Accept json
 // @Param project_name path string true "project name"
-// @Param database_compared_object body v1.GetComparedStatementsReqV1 true "get database compared statement request"
-// @Success 200 {object} v1.DatabaseCompareStatementsResV1
-// @router /v1/projects/{project_name}/database_compare/statements [post]
-func GetCompareStatement(c echo.Context) error {
+// @Param database_comparison_object body v1.GetComparisonStatementsReqV1 true "get database comparison statement request"
+// @Success 200 {object} v1.DatabaseComparisonStatementsResV1
+// @router /v1/projects/{project_name}/database_comparison/comparison_statements [post]
+func GetComparisonStatement(c echo.Context) error {
 
-	return getCompareStatement(c)
+	return getComparisonStatement(c)
 }
 
-type GenAlterantlSQLReqV1 struct {
+type GenModifylSQLReqV1 struct {
 	BaseInstanceId        string                  `json:"base_instance_id"`
-	ComparedInstanceId    string                  `json:"compared_instance_id"`
+	ComparisonInstanceId  string                  `json:"comparison_instance_id"`
 	DatabaseSchemaObjects []*DatabaseSchemaObject `json:"database_schema_objects"`
 }
 
 type DatabaseSchemaObject struct {
-	BaseSchemaName     string            `json:"base_schema_name"`
-	ComparedSchemaName string            `json:"compared_schema_name"`
-	DatabaseObjects    []*DatabaseObject `json:"database_objects"`
+	BaseSchemaName       string            `json:"base_schema_name"`
+	ComparisonSchemaName string            `json:"comparison_schema_name"`
+	DatabaseObjects      []*DatabaseObject `json:"database_objects"`
 }
 
-type GenAlterantlSQLResV1 struct {
+type GenModifySQLResV1 struct {
 	controller.BaseRes
 	Data []*DatabaseDiffModifySQL `json:"data"`
 }
@@ -113,15 +117,15 @@ type DatabaseDiffModifySQL struct {
 }
 
 // @Summary 生成变更SQL
-// @Description gen database diff modify sqls
+// @Description generate database diff modify sqls
 // @Id genDatabaseDiffModifySQLsV1
-// @Tags database_compare
+// @Tags database_comparison
 // @Security ApiKeyAuth
 // @Accept json
 // @Param project_name path string true "project name"
-// @Param gen_alterantl_sql body v1.GenAlterantlSQLReqV1 true "gen database diff modify sqls request"
-// @Success 200 {object} v1.GenAlterantlSQLResV1
-// @router /v1/projects/{project_name}/database_compare/alterant_sql [post]
+// @Param gen_modify_sql body v1.GenModifylSQLReqV1 true "generate database diff modify sqls request"
+// @Success 200 {object} v1.GenModifySQLResV1
+// @router /v1/projects/{project_name}/database_comparison/modify_sql_statements [post]
 func GenDatabaseDiffModifySQLs(c echo.Context) error {
 
 	return genDatabaseDiffModifySQLs(c)
