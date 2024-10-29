@@ -12,10 +12,10 @@ import (
 	"time"
 
 	"github.com/actiontech/sqle/sqle/cmd/scannerd/scanners"
+	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	"github.com/actiontech/sqle/sqle/pkg/scanner"
 	"github.com/pkg/errors"
 
-	"github.com/percona/go-mysql/query"
 	"github.com/sirupsen/logrus"
 )
 
@@ -119,7 +119,10 @@ func (s *AuditLog) Run(ctx context.Context) error {
 				return nil
 			}
 			s.l.Debugf("parsed tidb audit log event: %+v.", e)
-			fingerprint := query.Fingerprint(e.RawText)
+			fingerprint, err := util.Fingerprint(e.RawText, true)
+			if err != nil {
+				return err
+			}
 			if e.Schema != "" {
 				fingerprint = fmt.Sprintf("%v -- current schema: %v", fingerprint, e.Schema)
 			}
