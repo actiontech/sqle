@@ -189,6 +189,20 @@ func TestFingerprint(t *testing.T) {
 			input:  "select * from tb1 where a='my_db' and b='test1'# this is a comment",
 			expect: "SELECT * FROM `tb1` WHERE `a`=? AND `b`=?",
 		},
+		// not sql
+		{
+			input:  "SELECT*FROM (SELECT * FROM tb values(1));",
+			expect: "SELECT*FROM (SELECT * FROM tb values(1));",
+		},
+		{
+			input:  "not sql",
+			expect: "not sql",
+		},
+		// https://github.com/actiontech/sqle/issues/2603
+		{
+			input:  "insert into tb values(1)",
+			expect: "INSERT INTO `tb` VALUES (?)",
+		},
 	}
 	for _, c := range cases {
 		testFingerprint(t, c.input, c.expect)
