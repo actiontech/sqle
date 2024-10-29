@@ -9,11 +9,25 @@ definitions:
         example: ok
         type: string
     type: object
+  model.AuditResult:
+    properties:
+      i18n_audit_result_info:
+        $ref: '#/definitions/model.I18nAuditResultInfo'
+        type: object
+      level:
+        type: string
+      rule_name:
+        type: string
+    type: object
   model.AuditResultInfo:
     properties:
       message:
         type: string
     type: object
+  model.AuditResults:
+    items:
+      $ref: '#/definitions/model.AuditResult'
+    type: array
   model.I18nAuditResultInfo:
     additionalProperties:
       $ref: '#/definitions/model.AuditResultInfo'
@@ -291,6 +305,8 @@ definitions:
       audit_plan_id:
         type: integer
       desc:
+        type: string
+      token:
         type: string
       type:
         type: string
@@ -962,6 +978,99 @@ definitions:
         $ref: '#/definitions/v1.WorkflowStatisticsResV1'
         type: object
     type: object
+  v1.DatabaseComparisonObject:
+    properties:
+      instance_id:
+        type: string
+      schema_name:
+        type: string
+    type: object
+  v1.DatabaseComparisonResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.SchemaObject'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.DatabaseComparisonStatements:
+    properties:
+      base_sql:
+        $ref: '#/definitions/v1.SQLStatementWithAuditResult'
+        type: object
+      comparison_sql:
+        $ref: '#/definitions/v1.SQLStatementWithAuditResult'
+        type: object
+    type: object
+  v1.DatabaseComparisonStatementsResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.DatabaseComparisonStatements'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.DatabaseDiffModifySQL:
+    properties:
+      modify_sqls:
+        items:
+          $ref: '#/definitions/v1.SQLStatementWithAuditResult'
+        type: array
+      schema_name:
+        type: string
+    type: object
+  v1.DatabaseDiffObject:
+    properties:
+      inconsistent_num:
+        type: integer
+      object_type:
+        enum:
+        - TABLE
+        - VIEW
+        - PROCEDURE
+        - TIGGER
+        - EVENT
+        - FUNCTION
+        type: string
+      objects_diff_result:
+        items:
+          $ref: '#/definitions/v1.ObjectDiffResult'
+        type: array
+    type: object
+  v1.DatabaseObject:
+    properties:
+      object_name:
+        type: string
+      object_type:
+        enum:
+        - TABLE
+        - VIEW
+        - PROCEDURE
+        - TIGGER
+        - EVENT
+        - FUNCTION
+        type: string
+    type: object
+  v1.DatabaseSchemaObject:
+    properties:
+      base_schema_name:
+        type: string
+      comparison_schema_name:
+        type: string
+      database_objects:
+        items:
+          $ref: '#/definitions/v1.DatabaseObject'
+        type: array
+    type: object
   v1.DepBetweenStageInstance:
     properties:
       next_stage_instance_id:
@@ -1169,6 +1278,30 @@ definitions:
       audit_plan_sql_list:
         items:
           $ref: '#/definitions/v1.AuditPlanSQLReqV1'
+        type: array
+    type: object
+  v1.GenModifySQLResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.DatabaseDiffModifySQL'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GenModifylSQLReqV1:
+    properties:
+      base_instance_id:
+        type: string
+      comparison_instance_id:
+        type: string
+      database_schema_objects:
+        items:
+          $ref: '#/definitions/v1.DatabaseSchemaObject'
         type: array
     type: object
   v1.GetAuditPlanAnalysisDataResV1:
@@ -1452,6 +1585,15 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetComparisonStatementsReqV1:
+    properties:
+      database_comparison_object:
+        $ref: '#/definitions/v1.GetDatabaseComparisonReqV1'
+        type: object
+      database_object:
+        $ref: '#/definitions/v1.DatabaseObject'
+        type: object
+    type: object
   v1.GetCustomRuleResV1:
     properties:
       code:
@@ -1501,6 +1643,15 @@ definitions:
       message:
         example: ok
         type: string
+    type: object
+  v1.GetDatabaseComparisonReqV1:
+    properties:
+      base_db_object:
+        $ref: '#/definitions/v1.DatabaseComparisonObject'
+        type: object
+      comparison_db_object:
+        $ref: '#/definitions/v1.DatabaseComparisonObject'
+        type: object
     type: object
   v1.GetDepBetweenStageInstanceResV1:
     properties:
@@ -2896,6 +3047,18 @@ definitions:
       is_supported:
         type: boolean
     type: object
+  v1.ObjectDiffResult:
+    properties:
+      comparison_result:
+        enum:
+        - same
+        - inconsistent
+        - base_not_exist
+        - comparison_not_exist
+        type: string
+      object_name:
+        type: string
+    type: object
   v1.OperationActionList:
     properties:
       desc:
@@ -3479,6 +3642,16 @@ definitions:
       query_timeout_second:
         type: integer
     type: object
+  v1.SQLStatementWithAuditResult:
+    properties:
+      audit_level:
+        type: string
+      audit_results:
+        $ref: '#/definitions/model.AuditResults'
+        type: object
+      sql_statement:
+        type: string
+    type: object
   v1.ScheduleTaskDefaultOption:
     properties:
       default_selector:
@@ -3497,6 +3670,24 @@ definitions:
         type: object
       message:
         example: ok
+        type: string
+    type: object
+  v1.SchemaObject:
+    properties:
+      comparison_result:
+        enum:
+        - same
+        - inconsistent
+        - base_not_exist
+        - comparison_not_exist
+        type: string
+      database_diff_objects:
+        items:
+          $ref: '#/definitions/v1.DatabaseDiffObject'
+        type: array
+      inconsistent_num:
+        type: integer
+      schema_name:
         type: string
     type: object
   v1.Source:
@@ -7286,6 +7477,90 @@ paths:
       summary: 更新黑名单
       tags:
       - blacklist
+  /v1/projects/{project_name}/database_comparison/comparison_statements:
+    post:
+      consumes:
+      - application/json
+      description: get database comparison detail
+      operationId: getComparisonStatementV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: get database comparison statement request
+        in: body
+        name: database_comparison_object
+        required: true
+        schema:
+          $ref: '#/definitions/v1.GetComparisonStatementsReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.DatabaseComparisonStatementsResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取对比语句
+      tags:
+      - database_comparison
+  /v1/projects/{project_name}/database_comparison/execute_comparison:
+    post:
+      consumes:
+      - application/json
+      description: get database comparison
+      operationId: executeDatabaseComparisonV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: get database comparison request
+        in: body
+        name: database_comparison
+        required: true
+        schema:
+          $ref: '#/definitions/v1.GetDatabaseComparisonReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.DatabaseComparisonResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 执行数据库结构对比并获取结果
+      tags:
+      - database_comparison
+  /v1/projects/{project_name}/database_comparison/modify_sql_statements:
+    post:
+      consumes:
+      - application/json
+      description: generate database diff modify sqls
+      operationId: genDatabaseDiffModifySQLsV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: generate database diff modify sqls request
+        in: body
+        name: gen_modify_sql
+        required: true
+        schema:
+          $ref: '#/definitions/v1.GenModifylSQLReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GenModifySQLResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 生成变更SQL
+      tags:
+      - database_comparison
   /v1/projects/{project_name}/instance_audit_plans:
     get:
       description: get instance audit plan info list

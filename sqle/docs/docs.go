@@ -2614,6 +2614,138 @@ var doc = `{
                 }
             }
         },
+        "/v1/projects/{project_name}/database_comparison/comparison_statements": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get database comparison detail",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "database_comparison"
+                ],
+                "summary": "获取对比语句",
+                "operationId": "getComparisonStatementV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "get database comparison statement request",
+                        "name": "database_comparison_object",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetComparisonStatementsReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.DatabaseComparisonStatementsResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/database_comparison/execute_comparison": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get database comparison",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "database_comparison"
+                ],
+                "summary": "执行数据库结构对比并获取结果",
+                "operationId": "executeDatabaseComparisonV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "get database comparison request",
+                        "name": "database_comparison",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetDatabaseComparisonReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.DatabaseComparisonResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/database_comparison/modify_sql_statements": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "generate database diff modify sqls",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "database_comparison"
+                ],
+                "summary": "生成变更SQL",
+                "operationId": "genDatabaseDiffModifySQLsV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "generate database diff modify sqls request",
+                        "name": "gen_modify_sql",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.GenModifylSQLReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GenModifySQLResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{project_name}/instance_audit_plans": {
             "get": {
                 "security": [
@@ -10656,12 +10788,33 @@ var doc = `{
                 }
             }
         },
+        "model.AuditResult": {
+            "type": "object",
+            "properties": {
+                "i18n_audit_result_info": {
+                    "type": "object",
+                    "$ref": "#/definitions/model.I18nAuditResultInfo"
+                },
+                "level": {
+                    "type": "string"
+                },
+                "rule_name": {
+                    "type": "string"
+                }
+            }
+        },
         "model.AuditResultInfo": {
             "type": "object",
             "properties": {
                 "message": {
                     "type": "string"
                 }
+            }
+        },
+        "model.AuditResults": {
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/model.AuditResult"
             }
         },
         "model.I18nAuditResultInfo": {
@@ -11068,6 +11221,9 @@ var doc = `{
                     "type": "integer"
                 },
                 "desc": {
+                    "type": "string"
+                },
+                "token": {
                     "type": "string"
                 },
                 "type": {
@@ -12049,6 +12205,141 @@ var doc = `{
                 }
             }
         },
+        "v1.DatabaseComparisonObject": {
+            "type": "object",
+            "properties": {
+                "instance_id": {
+                    "type": "string"
+                },
+                "schema_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.DatabaseComparisonResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.SchemaObject"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.DatabaseComparisonStatements": {
+            "type": "object",
+            "properties": {
+                "base_sql": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.SQLStatementWithAuditResult"
+                },
+                "comparison_sql": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.SQLStatementWithAuditResult"
+                }
+            }
+        },
+        "v1.DatabaseComparisonStatementsResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.DatabaseComparisonStatements"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.DatabaseDiffModifySQL": {
+            "type": "object",
+            "properties": {
+                "modify_sqls": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.SQLStatementWithAuditResult"
+                    }
+                },
+                "schema_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.DatabaseDiffObject": {
+            "type": "object",
+            "properties": {
+                "inconsistent_num": {
+                    "type": "integer"
+                },
+                "object_type": {
+                    "type": "string",
+                    "enum": [
+                        "TABLE",
+                        "VIEW",
+                        "PROCEDURE",
+                        "TIGGER",
+                        "EVENT",
+                        "FUNCTION"
+                    ]
+                },
+                "objects_diff_result": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ObjectDiffResult"
+                    }
+                }
+            }
+        },
+        "v1.DatabaseObject": {
+            "type": "object",
+            "properties": {
+                "object_name": {
+                    "type": "string"
+                },
+                "object_type": {
+                    "type": "string",
+                    "enum": [
+                        "TABLE",
+                        "VIEW",
+                        "PROCEDURE",
+                        "TIGGER",
+                        "EVENT",
+                        "FUNCTION"
+                    ]
+                }
+            }
+        },
+        "v1.DatabaseSchemaObject": {
+            "type": "object",
+            "properties": {
+                "base_schema_name": {
+                    "type": "string"
+                },
+                "comparison_schema_name": {
+                    "type": "string"
+                },
+                "database_objects": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.DatabaseObject"
+                    }
+                }
+            }
+        },
         "v1.DepBetweenStageInstance": {
             "type": "object",
             "properties": {
@@ -12351,6 +12642,42 @@ var doc = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/v1.AuditPlanSQLReqV1"
+                    }
+                }
+            }
+        },
+        "v1.GenModifySQLResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.DatabaseDiffModifySQL"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GenModifylSQLReqV1": {
+            "type": "object",
+            "properties": {
+                "base_instance_id": {
+                    "type": "string"
+                },
+                "comparison_instance_id": {
+                    "type": "string"
+                },
+                "database_schema_objects": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.DatabaseSchemaObject"
                     }
                 }
             }
@@ -12764,6 +13091,19 @@ var doc = `{
                 }
             }
         },
+        "v1.GetComparisonStatementsReqV1": {
+            "type": "object",
+            "properties": {
+                "database_comparison_object": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.GetDatabaseComparisonReqV1"
+                },
+                "database_object": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.DatabaseObject"
+                }
+            }
+        },
         "v1.GetCustomRuleResV1": {
             "type": "object",
             "properties": {
@@ -12833,6 +13173,19 @@ var doc = `{
                 "message": {
                     "type": "string",
                     "example": "ok"
+                }
+            }
+        },
+        "v1.GetDatabaseComparisonReqV1": {
+            "type": "object",
+            "properties": {
+                "base_db_object": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.DatabaseComparisonObject"
+                },
+                "comparison_db_object": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.DatabaseComparisonObject"
                 }
             }
         },
@@ -14861,6 +15214,23 @@ var doc = `{
                 }
             }
         },
+        "v1.ObjectDiffResult": {
+            "type": "object",
+            "properties": {
+                "comparison_result": {
+                    "type": "string",
+                    "enum": [
+                        "same",
+                        "inconsistent",
+                        "base_not_exist",
+                        "comparison_not_exist"
+                    ]
+                },
+                "object_name": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.OperationActionList": {
             "type": "object",
             "properties": {
@@ -15732,6 +16102,21 @@ var doc = `{
                 }
             }
         },
+        "v1.SQLStatementWithAuditResult": {
+            "type": "object",
+            "properties": {
+                "audit_level": {
+                    "type": "string"
+                },
+                "audit_results": {
+                    "type": "object",
+                    "$ref": "#/definitions/model.AuditResults"
+                },
+                "sql_statement": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.ScheduleTaskDefaultOption": {
             "type": "object",
             "properties": {
@@ -15758,6 +16143,32 @@ var doc = `{
                 "message": {
                     "type": "string",
                     "example": "ok"
+                }
+            }
+        },
+        "v1.SchemaObject": {
+            "type": "object",
+            "properties": {
+                "comparison_result": {
+                    "type": "string",
+                    "enum": [
+                        "same",
+                        "inconsistent",
+                        "base_not_exist",
+                        "comparison_not_exist"
+                    ]
+                },
+                "database_diff_objects": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.DatabaseDiffObject"
+                    }
+                },
+                "inconsistent_num": {
+                    "type": "integer"
+                },
+                "schema_name": {
+                    "type": "string"
                 }
             }
         },
