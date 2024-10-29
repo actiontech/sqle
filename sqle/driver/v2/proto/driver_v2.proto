@@ -52,6 +52,8 @@ enum OptionalModule {
   KillProcess = 6;
   ExecBatch = 7;
   I18n = 8; // 插件是否支持国际化
+  GetDatabaseObjectDDL = 9;
+  GetDatabaseDiffModifySQL = 10;
 }
 
 message Param {
