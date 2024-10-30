@@ -1,12 +1,13 @@
 package command
 
 const (
-	TypeMySQLMybatis = "mysql_mybatis"
-	TypeMySQLSlowLog = "mysql_slow_log"
-	TypeSQLFile      = "sql_file"
-	TypeTBaseSlowLog = "TBase_slow_log"
-	TypeTiDBAuditLog = "tidb_audit_log"
-	TypeRootScannerd = "root"
+	TypeMySQLMybatis       = "mysql_mybatis"
+	TypeMySQLSlowLog       = "mysql_slow_log"
+	TypeTDSQLInnodbSlowLog = "tdsql_for_innodb_slow_log"
+	TypeSQLFile            = "sql_file"
+	TypeTBaseSlowLog       = "TBase_slow_log"
+	TypeTiDBAuditLog       = "tidb_audit_log"
+	TypeRootScannerd       = "root"
 )
 
 var (
