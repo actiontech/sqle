@@ -590,7 +590,7 @@ func (s *PluginImplV2) GetDatabaseObjectDDL(ctx context.Context, objInfos []*dri
 			}
 		}
 		dbInfoReq[i] = &protoV2.DatabasSchemaInfo{
-			ScheamName:     dbSchema.ScheamName,
+			SchemaName:     dbSchema.SchemaName,
 			DatabaseObject: dbObjs,
 		}
 	}

@@ -344,13 +344,13 @@ type RuleKnowledge struct {
 }
 
 type DatabasSchemaInfo struct {
-	ScheamName      string
+	SchemaName      string
 	DatabaseObjects []*DatabaseObject
 }
 
 type DatabasCompareSchemaInfo struct {
-	BaseScheamName     string
-	ComparedScheamName string
+	BaseSchemaName     string
+	ComparedSchemaName string
 	DatabaseObjects    []*DatabaseObject
 }
 

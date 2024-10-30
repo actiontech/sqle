@@ -388,7 +388,7 @@ message DatabaseObjectInfoRequest {
 }
 
 message DatabasSchemaInfo {
-	string scheamName = 1;
+	string schemaName = 1;
 	repeated DatabaseObject databaseObject = 2;
 }
 
@@ -417,8 +417,8 @@ message DatabaseDiffModifyRequest {
 }
 
 message DatabasDiffSchemaInfo {
-	string baseScheamName = 1;
-  string comparedScheamName = 2;
+	string baseSchemaName = 1;
+  string comparedSchemaName = 2;
 	repeated DatabaseObject databaseObject = 3;
 }
 
