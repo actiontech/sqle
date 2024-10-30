@@ -542,7 +542,7 @@ func (d *DriverGrpcServer) GetDatabaseObjectDDL(ctx context.Context, req *protoV
 			}
 		}
 		dbInfoReq[i] = &DatabasSchemaInfo{
-			ScheamName:      dbSchema.ScheamName,
+			SchemaName:      dbSchema.SchemaName,
 			DatabaseObjects: dbObjs,
 		}
 	}

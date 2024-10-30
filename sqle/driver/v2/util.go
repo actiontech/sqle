@@ -449,8 +449,8 @@ func ConvertDatabasSchemaInfoToProto(infos []*DatabasCompareSchemaInfo) []*proto
 			}
 		}
 		dbInfoReq[i] = &protoV2.DatabasDiffSchemaInfo{
-			BaseScheamName:     dbSchema.BaseScheamName,
-			ComparedScheamName: dbSchema.ComparedScheamName,
+			BaseSchemaName:     dbSchema.BaseSchemaName,
+			ComparedSchemaName: dbSchema.ComparedSchemaName,
 			DatabaseObject:     dbObjs,
 		}
 	}
@@ -468,8 +468,8 @@ func ConvertProtoDatabaseDiffReqToDriver(infos []*protoV2.DatabasDiffSchemaInfo)
 			}
 		}
 		dbInfoReq[i] = &DatabasCompareSchemaInfo{
-			BaseScheamName:     dbSchema.BaseScheamName,
-			ComparedScheamName: dbSchema.ComparedScheamName,
+			BaseSchemaName:     dbSchema.BaseSchemaName,
+			ComparedSchemaName: dbSchema.ComparedSchemaName,
 			DatabaseObjects:    dbObjs,
 		}
 	}
