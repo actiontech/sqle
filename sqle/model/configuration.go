@@ -185,8 +185,8 @@ func (s *Storage) GetAllIMConfig() ([]IM, error) {
 }
 
 func (s *Storage) UpdateImConfigById(id uint, m map[string]interface{}) error {
-	// 这里使用UpdateColumns可以不触发hook
-	err := s.db.Model(&IM{}).Where("id = ?", id).UpdateColumns(m).Error
+	im := new(IM)
+	err := s.db.Where("id = ?", id).First(&im).Updates(m).Error
 	if err != nil {
 		return errors.New(errors.ConnectStorageError, err)
 	}
