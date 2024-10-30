@@ -793,8 +793,8 @@ github.com/sirupsen/logrus v1.6.0/go.mod h1:7uNnSEd1DgxDLC74fIahvMZmmYsHGZGEOFrf
 github.com/sirupsen/logrus v1.7.0/go.mod h1:yWOB1SBYBC5VeMP7gHvWumXLIWorT60ONWic61uBYv0=
 github.com/sirupsen/logrus v1.9.0 h1:trlNQbNUG3OdDrDil03MCb1H2o9nJ1x4/5LYw7byDE0=
 github.com/sirupsen/logrus v1.9.0/go.mod h1:naHLuLoDiP4jHNo9R0sCBMtWGeIprob74mVsIT4qYEQ=
-github.com/sjjian/parser v0.0.0-20240305095250-688ad439ef31 h1:E3JSX1FjUlg8ep8XQlLkdTFbZhM4tmecpdfZhUuubLs=
-github.com/sjjian/parser v0.0.0-20240305095250-688ad439ef31/go.mod h1:Qq2tnreUXwVo7NAKAHmbWFsgqpDUkxwhJCClY+ZCudA=
+github.com/sjjian/parser v0.0.0-20240704052347-b6199b7bccae h1:rTwogc7Uq0/7zMHNhpQTqjtGKdccVh8Z8vHReIlsXG0=
+github.com/sjjian/parser v0.0.0-20240704052347-b6199b7bccae/go.mod h1:Qq2tnreUXwVo7NAKAHmbWFsgqpDUkxwhJCClY+ZCudA=
 github.com/skeema/knownhosts v1.2.0 h1:h9r9cf0+u7wSE+M183ZtMGgOJKiL96brpaz5ekfJCpM=
 github.com/skeema/knownhosts v1.2.0/go.mod h1:g4fPeYpque7P0xefxtGzV81ihjC8sX2IqpAoNkjxbMo=
 github.com/smartystreets/assertions v0.0.0-20180927180507-b2de0cb4f26d/go.mod h1:OnSkiWE9lh6wB0YB77sQom3nweQdgAjqCqsofrRNTgc=
