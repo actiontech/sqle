@@ -10788,33 +10788,12 @@ var doc = `{
                 }
             }
         },
-        "model.AuditResult": {
-            "type": "object",
-            "properties": {
-                "i18n_audit_result_info": {
-                    "type": "object",
-                    "$ref": "#/definitions/model.I18nAuditResultInfo"
-                },
-                "level": {
-                    "type": "string"
-                },
-                "rule_name": {
-                    "type": "string"
-                }
-            }
-        },
         "model.AuditResultInfo": {
             "type": "object",
             "properties": {
                 "message": {
                     "type": "string"
                 }
-            }
-        },
-        "model.AuditResults": {
-            "type": "array",
-            "items": {
-                "$ref": "#/definitions/model.AuditResult"
             }
         },
         "model.I18nAuditResultInfo": {
@@ -16063,6 +16042,29 @@ var doc = `{
                 }
             }
         },
+        "v1.SQLAuditResult": {
+            "type": "object",
+            "properties": {
+                "db_type": {
+                    "type": "string"
+                },
+                "i18n_audit_result_info": {
+                    "type": "object",
+                    "$ref": "#/definitions/model.I18nAuditResultInfo"
+                },
+                "level": {
+                    "type": "string",
+                    "example": "warn"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "避免使用不必要的内置函数md5()"
+                },
+                "rule_name": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.SQLExplain": {
             "type": "object",
             "properties": {
@@ -16105,12 +16107,11 @@ var doc = `{
         "v1.SQLStatementWithAuditResult": {
             "type": "object",
             "properties": {
-                "audit_level": {
-                    "type": "string"
-                },
                 "audit_results": {
-                    "type": "object",
-                    "$ref": "#/definitions/model.AuditResults"
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.SQLAuditResult"
+                    }
                 },
                 "sql_statement": {
                     "type": "string"
@@ -16149,6 +16150,9 @@ var doc = `{
         "v1.SchemaObject": {
             "type": "object",
             "properties": {
+                "base_schema_name": {
+                    "type": "string"
+                },
                 "comparison_result": {
                     "type": "string",
                     "enum": [
@@ -16158,6 +16162,9 @@ var doc = `{
                         "comparison_not_exist"
                     ]
                 },
+                "comparison_schema_name": {
+                    "type": "string"
+                },
                 "database_diff_objects": {
                     "type": "array",
                     "items": {
@@ -16166,9 +16173,6 @@ var doc = `{
                 },
                 "inconsistent_num": {
                     "type": "integer"
-                },
-                "schema_name": {
-                    "type": "string"
                 }
             }
         },
