@@ -13,7 +13,7 @@ type GetDatabaseComparisonReqV1 struct {
 
 type DatabaseComparisonObject struct {
 	InstanceId string  `json:"instance_id" query:"instance_id"`
-	SchemaName *string `json:"schema_name,omitempty" query:"instance_id"`
+	SchemaName *string `json:"schema_name,omitempty" query:"schema_name"`
 }
 type DatabaseComparisonResV1 struct {
 	controller.BaseRes
@@ -21,10 +21,11 @@ type DatabaseComparisonResV1 struct {
 }
 
 type SchemaObject struct {
-	SchemaName          string                `json:"schema_name"`
-	ComparisonResult    string                `json:"comparison_result" enums:"same,inconsistent,base_not_exist,comparison_not_exist"`
-	DatabaseDiffObjects []*DatabaseDiffObject `json:"database_diff_objects,omitempty"`
-	InconsistentNum     int                   `json:"inconsistent_num"`
+	BaseSchemaName       string                `json:"base_schema_name"`
+	ComparisonSchemaName string                `json:"comparison_schema_name"`
+	ComparisonResult     string                `json:"comparison_result" enums:"same,inconsistent,base_not_exist,comparison_not_exist"`
+	DatabaseDiffObjects  []*DatabaseDiffObject `json:"database_diff_objects,omitempty"`
+	InconsistentNum      int                   `json:"inconsistent_num"`
 }
 
 type DatabaseDiffObject struct {
@@ -74,9 +75,16 @@ type DatabaseComparisonStatements struct {
 }
 
 type SQLStatementWithAuditResult struct {
-	SQLStatement string             `json:"sql_statement"`
-	AuditResults model.AuditResults `json:"audit_results"`
-	AuditLevel   string             `json:"audit_level"`
+	SQLStatement string            `json:"sql_statement"`
+	AuditResults []*SQLAuditResult `json:"audit_results"`
+}
+
+type SQLAuditResult struct {
+	Level               string                    `json:"level" example:"warn"`
+	Message             string                    `json:"message" example:"避免使用不必要的内置函数md5()"`
+	RuleName            string                    `json:"rule_name"`
+	DbType              string                    `json:"db_type"`
+	I18nAuditResultInfo model.I18nAuditResultInfo `json:"i18n_audit_result_info"`
 }
 
 // @Summary 获取对比语句
