@@ -437,3 +437,41 @@ func RandStr(length int) string {
 	}
 	return string(result)
 }
+
+func ConvertDatabasSchemaInfoToProto(infos []*DatabasCompareSchemaInfo) []*protoV2.DatabasDiffSchemaInfo {
+	dbInfoReq := make([]*protoV2.DatabasDiffSchemaInfo, 0, len(infos))
+	for i, dbSchema := range infos {
+		dbObjs := make([]*protoV2.DatabaseObject, len(dbSchema.DatabaseObjects))
+		for j, dbObj := range dbSchema.DatabaseObjects {
+			dbObjs[j] = &protoV2.DatabaseObject{
+				ObjectName: dbObj.ObjectName,
+				ObjectType: dbObj.ObjectType,
+			}
+		}
+		dbInfoReq[i] = &protoV2.DatabasDiffSchemaInfo{
+			BaseSchemaName:     dbSchema.BaseSchemaName,
+			ComparedSchemaName: dbSchema.ComparedSchemaName,
+			DatabaseObject:     dbObjs,
+		}
+	}
+	return dbInfoReq
+}
+
+func ConvertProtoDatabaseDiffReqToDriver(infos []*protoV2.DatabasDiffSchemaInfo) []*DatabasCompareSchemaInfo {
+	dbInfoReq := make([]*DatabasCompareSchemaInfo, len(infos))
+	for i, dbSchema := range infos {
+		dbObjs := make([]*DatabaseObject, len(dbSchema.DatabaseObject))
+		for j, dbObj := range dbSchema.DatabaseObject {
+			dbObjs[j] = &DatabaseObject{
+				ObjectName: dbObj.ObjectName,
+				ObjectType: dbObj.ObjectType,
+			}
+		}
+		dbInfoReq[i] = &DatabasCompareSchemaInfo{
+			BaseSchemaName:     dbSchema.BaseSchemaName,
+			ComparedSchemaName: dbSchema.ComparedSchemaName,
+			DatabaseObjects:    dbObjs,
+		}
+	}
+	return dbInfoReq
+}
