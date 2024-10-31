@@ -6,7 +6,6 @@ package server
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/dms"
@@ -100,7 +99,7 @@ func (j *FeishuJob) feishuRotation(entry *logrus.Entry) {
 					continue
 				}
 			} else if workflow.Record.Status == model.WorkflowStatusWaitForExecution {
-				if _, err := ExecuteTasksProcess(strconv.Itoa(int(workflow.ID)), string(workflow.ProjectId), user); err != nil {
+				if _, err := ExecuteTasksProcess(workflow.WorkflowId, string(workflow.ProjectId), user); err != nil {
 					entry.Errorf("execute workflow process error: %v", err)
 					continue
 				}
@@ -116,7 +115,7 @@ func (j *FeishuJob) feishuRotation(entry *logrus.Entry) {
 			}
 
 			if nextStep != nil {
-				imPkg.CreateApprove(string(workflow.ProjectId), strconv.Itoa(int(workflow.ID)))
+				imPkg.CreateApprove(string(workflow.ProjectId), workflow.WorkflowId)
 			}
 		case model.FeishuAuditStatusRejected:
 			workflow, err := dms.GetWorkflowDetailByWorkflowId("", inst.WorkflowId, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
