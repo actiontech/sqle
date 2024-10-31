@@ -142,10 +142,14 @@ func convertToGetSqlManageListResp(ctx context.Context, sqlManageList []*model.S
 			}
 		}
 
+		endpoints, err := sqlManage.Endpoints()
+		if err != nil {
+			return nil, err
+		}
+
 		sqlMgr.Status = sqlManage.Status.String
 		sqlMgr.Remark = sqlManage.Remark.String
-		// todo 临时注释 关联issue:https://github.com/actiontech/sqle/issues/2616
-		//sqlMgr.Endpoints = sqlManage.Endpoints.String
+		sqlMgr.Endpoints = endpoints
 		sqlMgr.Priority = sqlManage.Priority.String
 		sqlManageRespList = append(sqlManageRespList, sqlMgr)
 	}
