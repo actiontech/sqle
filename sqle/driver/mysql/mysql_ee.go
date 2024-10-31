@@ -9,8 +9,10 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/driver/mysql/differ"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/utils"
 )
@@ -155,7 +157,88 @@ func (i *MysqlDriverImpl) Query(ctx context.Context, sql string, conf *driverV2.
 
 func (i *MysqlDriverImpl) GetDatabaseDiffModifySQL(ctx context.Context, calibratedDSN *driverV2.DSN, objInfos []*driverV2.DatabasCompareSchemaInfo) ([]*driverV2.DatabaseDiffModifySQLResult, error) {
 
-	return nil, nil
+	baseConn, err := i.getDbConn()
+	if err != nil {
+		return nil, err
+	}
+	logEntry := log.NewEntry()
+	compareConn, err := executor.NewExecutor(logEntry, &driverV2.DSN{
+		Host:             calibratedDSN.Host,
+		Port:             calibratedDSN.Port,
+		User:             calibratedDSN.User,
+		Password:         calibratedDSN.Password,
+		AdditionalParams: calibratedDSN.AdditionalParams,
+	}, "")
+	if err != nil {
+		return nil, err
+	}
+	fromSchemaInfos := make([]*driverV2.DatabasSchemaInfo, len(objInfos))
+	for i, baseSchemaInfo := range objInfos {
+		fromSchemaInfos[i] = &driverV2.DatabasSchemaInfo{
+			SchemaName:      baseSchemaInfo.ComparedSchemaName,
+			DatabaseObjects: baseSchemaInfo.DatabaseObjects,
+		}
+	}
+
+	toSchemaInfos := make([]*driverV2.DatabasSchemaInfo, len(objInfos))
+	for i, baseSchemaInfo := range objInfos {
+		toSchemaInfos[i] = &driverV2.DatabasSchemaInfo{
+			SchemaName:      baseSchemaInfo.BaseSchemaName,
+			DatabaseObjects: baseSchemaInfo.DatabaseObjects,
+		}
+	}
+
+	fromSchemas, err := differ.Schemas(true, compareConn, fromSchemaInfos)
+	if err != nil {
+		return nil, err
+	}
+	toSchemas, err := differ.Schemas(true, baseConn, toSchemaInfos)
+	if err != nil {
+		return nil, err
+	}
+	fromSchemaMap := make(map[string]*differ.Schema)
+	toSchemaMap := make(map[string]*differ.Schema)
+
+	for _, from := range fromSchemas {
+		fromSchemaMap[from.Name] = from
+	}
+	for _, to := range toSchemas {
+		toSchemaMap[to.Name] = to
+	}
+
+	mods := differ.StatementModifiers{AllowUnsafe: true}
+	// results, err := compareConn.Db.Query("SELECT VERSION()")
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// flavor := differ.ParseFlavor(fmt.Sprintf("%s %s", "mysql:", results[0]["VERSION()"].String))
+	// if !flavor.IsMySQL(5, 5) {
+	// 	mods.LockClause, mods.AlgorithmClause = "none", "inplace"
+	// }
+	dbDiffSQLs := make([]*driverV2.DatabaseDiffModifySQLResult, 0)
+	for _, objInfo := range objInfos {
+		fromSchema, _ := fromSchemaMap[objInfo.ComparedSchemaName]
+		toSchema, _ := toSchemaMap[objInfo.BaseSchemaName]
+		// from作为需要校对的schema，to为基准schema，另一种写法为diff.NewSchemaDiff(fromSchema, toSchema)
+		diff := fromSchema.Diff(toSchema)
+		objDiffs := diff.ObjectDiffs()
+		diffSqls := make([]string, len(objDiffs))
+
+		for i, objDiff := range objDiffs {
+			stmt, err := objDiff.Statement(mods)
+			if err != nil {
+				return nil, err
+			}
+			diffSqls[i] = stmt
+		}
+
+		dbDiffSQLs = append(dbDiffSQLs, &driverV2.DatabaseDiffModifySQLResult{
+			SchemaName: objInfo.ComparedSchemaName, // 此处使用校准数据源的schema，因为有可能校准数据源中scheam不存在
+			ModifySQLs: diffSqls,
+		})
+	}
+
+	return dbDiffSQLs, nil
 }
 
 func (i *MysqlDriverImpl) GetDatabaseObjectDDL(ctx context.Context, objInfos []*driverV2.DatabasSchemaInfo) ([]*driverV2.DatabaseSchemaObjectResult, error) {
