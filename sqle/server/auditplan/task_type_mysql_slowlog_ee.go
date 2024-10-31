@@ -145,7 +145,10 @@ func (at *SlowLogTaskV2) mergeSQL(originSQL, mergedSQL *SQLV2) {
 	originSQL.Info.SetString(MetricNameDBUser, mergedSQL.Info.Get(MetricNameDBUser).String())
 
 	// endpoints
-	originSQL.Info.SetString(MetricNameEndpoints, mergedSQL.Info.Get(MetricNameEndpoints).String())
+	originEndpoints := originSQL.Info.Get(MetricNameEndpoints).StringArray()
+	mergedEndpoints := mergedSQL.Info.Get(MetricNameEndpoints).StringArray()
+	deduplicateSortEndpoints := utils.MergeAndDeduplicateSort(originEndpoints, mergedEndpoints)
+	originSQL.Info.SetStringArray(MetricNameEndpoints, deduplicateSortEndpoints)
 
 	// start_time
 	originSQL.Info.SetString(MetricNameStartTimeOfLastScrapedSQL, mergedSQL.Info.Get(MetricNameStartTimeOfLastScrapedSQL).String())

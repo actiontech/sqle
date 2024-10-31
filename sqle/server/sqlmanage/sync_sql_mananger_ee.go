@@ -51,7 +51,7 @@ func (sa *SyncFromSqlAuditRecord) SyncSqlManager() error {
 		instName := sa.Task.InstanceName()
 		instHost := sa.Task.InstanceHost()
 
-		matchedID, isInBlacklist := auditplan.FilterSQLsByBlackList(instHost, sql, fp, instName, blacklist)
+		matchedID, isInBlacklist := auditplan.FilterSQLsByBlackList([]string{instHost}, sql, fp, instName, blacklist)
 		if isInBlacklist {
 			matchedCount[matchedID]++
 			continue
