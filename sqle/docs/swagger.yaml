@@ -9,25 +9,11 @@ definitions:
         example: ok
         type: string
     type: object
-  model.AuditResult:
-    properties:
-      i18n_audit_result_info:
-        $ref: '#/definitions/model.I18nAuditResultInfo'
-        type: object
-      level:
-        type: string
-      rule_name:
-        type: string
-    type: object
   model.AuditResultInfo:
     properties:
       message:
         type: string
     type: object
-  model.AuditResults:
-    items:
-      $ref: '#/definitions/model.AuditResult'
-    type: array
   model.I18nAuditResultInfo:
     additionalProperties:
       $ref: '#/definitions/model.AuditResultInfo'
@@ -3615,6 +3601,22 @@ definitions:
         $ref: '#/definitions/v1.AuditTaskResV1'
         type: object
     type: object
+  v1.SQLAuditResult:
+    properties:
+      db_type:
+        type: string
+      i18n_audit_result_info:
+        $ref: '#/definitions/model.I18nAuditResultInfo'
+        type: object
+      level:
+        example: warn
+        type: string
+      message:
+        example: 避免使用不必要的内置函数md5()
+        type: string
+      rule_name:
+        type: string
+    type: object
   v1.SQLExplain:
     properties:
       classic_result:
@@ -3644,11 +3646,10 @@ definitions:
     type: object
   v1.SQLStatementWithAuditResult:
     properties:
-      audit_level:
-        type: string
       audit_results:
-        $ref: '#/definitions/model.AuditResults'
-        type: object
+        items:
+          $ref: '#/definitions/v1.SQLAuditResult'
+        type: array
       sql_statement:
         type: string
     type: object
@@ -3674,6 +3675,8 @@ definitions:
     type: object
   v1.SchemaObject:
     properties:
+      base_schema_name:
+        type: string
       comparison_result:
         enum:
         - same
@@ -3681,14 +3684,14 @@ definitions:
         - base_not_exist
         - comparison_not_exist
         type: string
+      comparison_schema_name:
+        type: string
       database_diff_objects:
         items:
           $ref: '#/definitions/v1.DatabaseDiffObject'
         type: array
       inconsistent_num:
         type: integer
-      schema_name:
-        type: string
     type: object
   v1.Source:
     properties:
