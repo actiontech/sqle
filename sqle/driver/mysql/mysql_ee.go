@@ -256,6 +256,8 @@ func (i *MysqlDriverImpl) GetDatabaseObjectDDL(ctx context.Context, objInfos []*
 }
 
 // 去除DDL中不需要关注的token
+// 在建表的DDL语句中，表选项AUTO_INCREMENT表示自增起点为
+// 当表中存有数据时，已有记录数量 + 1，这个值根据表中记录数量所变化，获取ddl后续处理时一般不关心自增起点
 func sanitizeDDL(ddl string) string {
 	re := regexp.MustCompile(`AUTO_INCREMENT\s*=\s*\d+\s`)
 	return re.ReplaceAllString(ddl, "")

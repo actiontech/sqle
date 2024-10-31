@@ -11,7 +11,6 @@ import (
 	dms "github.com/actiontech/sqle/sqle/dms"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
-	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server/compare"
 	"github.com/labstack/echo/v4"
@@ -22,8 +21,10 @@ func getDatabaseComparison(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if (req.BaseDBObject.SchemaName != nil && req.ComparisonDBObject.SchemaName == nil) ||
-		(req.BaseDBObject.SchemaName == nil && req.ComparisonDBObject.SchemaName != nil) {
+	if req.BaseDBObject == nil || req.ComparisonDBObject == nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("neither the base instance nor the comparison instance can be empty")))
+	}
+	if (req.BaseDBObject.SchemaName == nil) != (req.ComparisonDBObject.SchemaName == nil) {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, fmt.Errorf("the base instance and comparison instance must be consistent")))
 	}
 	// 获取基准数据源和比对数据源实例信息
@@ -97,20 +98,6 @@ func getInstanceById(c echo.Context, instanceID string) (*model.Instance, error)
 		return nil, ErrInstanceNotExist
 	}
 	return inst, nil
-}
-
-func convertTaskAuditResults(c echo.Context, taskAuditResults model.AuditResults, dbType string) []*SQLAuditResult {
-	auditResults := make([]*SQLAuditResult, len(taskAuditResults))
-	for i, auditResult := range taskAuditResults {
-		auditResults[i] = &SQLAuditResult{
-			Level:               auditResult.Level,
-			Message:             auditResult.GetAuditMsgByLangTag(locale.Bundle.GetLangTagFromCtx(c.Request().Context())),
-			RuleName:            auditResult.RuleName,
-			DbType:              dbType,
-			I18nAuditResultInfo: auditResult.I18nAuditResultInfo,
-		}
-	}
-	return auditResults
 }
 
 func getComparisonStatement(c echo.Context) error {
