@@ -137,7 +137,9 @@ func convertToGetSqlManageListResp(ctx context.Context, sqlManageList []*model.S
 
 		sqlMgr.Status = sqlManage.Status.String
 		sqlMgr.Remark = sqlManage.Remark.String
-		sqlMgr.Endpoint = sqlManage.Endpoints.String
+		// 因为该接口已经废弃,所以不再升级该接口的返回值
+		// github.com/actiontech/sqle/issues/2616
+		// sqlMgr.Endpoint = sqlManage.Endpoints.String
 		sqlManageRespList = append(sqlManageRespList, sqlMgr)
 	}
 
