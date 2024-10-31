@@ -173,7 +173,7 @@ type SqlManageDetail struct {
 	Status               sql.NullString `json:"status"`
 	Remark               sql.NullString `json:"remark"`
 	Assignees            *string        `json:"assignees"`
-	Endpoints            sql.NullString `json:"endpoints"`
+	Info                 JSON           `json:"info"`
 	Priority             sql.NullString `json:"priority"`
 }
 
@@ -189,6 +189,27 @@ func (sm *SqlManageDetail) LastReceiveTime() string {
 		return ""
 	}
 	return sm.LastReceiveTimestamp.String()
+}
+
+func (sm *SqlManageDetail) Endpoints() ([]string, error) {
+	value, err := sm.Info.OriginValue()
+	if err != nil {
+		return nil, err
+	}
+
+	if endpoints, ok := value["endpoints"]; ok {
+		if strArray, ok := endpoints.([]interface{}); ok {
+			result := make([]string, 0, len(strArray))
+			for _, v := range strArray {
+				if str, ok := v.(string); ok {
+					result = append(result, str)
+				}
+			}
+			return result, nil
+		}
+	}
+
+	return []string{}, nil
 }
 
 var sqlManageTotalCount = `
@@ -323,12 +344,12 @@ SELECT
 	IF(oms.audit_results IS NULL,'being_audited','') AS audit_status,
 	oms.instance_id,
 	oms.schema_name,
-	oms.end_point as endpoints,
 	sm.status,
 	sm.remark,
 	sm.assignees as assignees,
 	oms.source_id as source_id,
-	oms.priority
+	oms.priority,
+    oms.info
 {{- template "body" . -}} 
 
 GROUP BY oms.id

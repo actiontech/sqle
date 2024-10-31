@@ -137,7 +137,9 @@ func convertToGetSqlManageListResp(ctx context.Context, sqlManageList []*model.S
 
 		sqlMgr.Status = sqlManage.Status.String
 		sqlMgr.Remark = sqlManage.Remark.String
-		sqlMgr.Endpoint = sqlManage.Endpoints.String
+		// 因为该接口已经废弃,所以不再升级该接口的返回值
+		// github.com/actiontech/sqle/issues/2616
+		// sqlMgr.Endpoint = sqlManage.Endpoints.String
 		sqlManageRespList = append(sqlManageRespList, sqlMgr)
 	}
 
@@ -269,6 +271,12 @@ func exportSqlManagesV1(c echo.Context) error {
 				}
 			}
 		}
+
+		endpoints, err := sqlManage.Endpoints()
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+
 		var newRow []string
 		newRow = append(
 			newRow,
@@ -278,7 +286,7 @@ func exportSqlManagesV1(c echo.Context) error {
 			dms.GetInstancesByIdWithoutError(sqlManage.InstanceID.String).Name,
 			sqlManage.SchemaName.String,
 			spliceAuditResults(ctx, sqlManage.AuditResults),
-			sqlManage.Endpoints.String,
+			strings.Join(endpoints, ","),
 			strings.Join(assignees, ","),
 			locale.Bundle.LocalizeMsgByCtx(ctx, model.SqlManageStatusMap[sqlManage.Status.String]),
 			sqlManage.Remark.String,
