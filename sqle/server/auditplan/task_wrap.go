@@ -320,7 +320,12 @@ func (at *TaskWrapper) filterSqlManageQueue(sqlList []*model.SQLManageQueue) (ma
 			instanceMap[sql.InstanceID] = instName
 		}
 
-		matchedID, isInBlacklist := FilterSQLsByBlackList(sql.EndPoint, sql.SqlText, sql.SqlFingerprint, instName, blacklist)
+		value, err := sql.Info.OriginValue()
+		if err != nil {
+			return nil, nil, err
+		}
+		metrics := LoadMetrics(value, []string{MetricNameEndpoints})
+		matchedID, isInBlacklist := FilterSQLsByBlackList(metrics.Get(MetricNameEndpoints).StringArray(), sql.SqlText, sql.SqlFingerprint, instName, blacklist)
 		if isInBlacklist {
 			matchedCount[matchedID]++
 			continue
@@ -332,14 +337,14 @@ func (at *TaskWrapper) filterSqlManageQueue(sqlList []*model.SQLManageQueue) (ma
 	return matchedCount, SqlQueueList, nil
 }
 
-func FilterSQLsByBlackList(endpoint, sqlText, sqlFp, instName string, blacklist []*model.BlackListAuditPlanSQL) (uint, bool) {
+func FilterSQLsByBlackList(endpoint []string, sqlText, sqlFp, instName string, blacklist []*model.BlackListAuditPlanSQL) (uint, bool) {
 	if len(blacklist) == 0 {
 		return 0, false
 	}
 
 	filter := ConvertToBlackFilter(blacklist)
 
-	matchedID, hasEndpointInBlacklist := filter.HasEndpointInBlackList([]string{endpoint})
+	matchedID, hasEndpointInBlacklist := filter.HasEndpointInBlackList(endpoint)
 	if hasEndpointInBlacklist {
 		return matchedID, true
 	}

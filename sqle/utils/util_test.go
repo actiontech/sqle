@@ -2,6 +2,7 @@ package utils
 
 import (
 	"math/rand"
+	"reflect"
 	"strconv"
 	"testing"
 	"time"
@@ -31,6 +32,37 @@ func TestHasPrefix(t *testing.T) {
 				t.Errorf("HasPrefix() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestMergeAndDeduplicate(t *testing.T) {
+	testCases := []struct {
+		arr1   []string
+		arr2   []string
+		expect []string
+	}{
+		{
+			[]string{"apple", "banana", "cherry", "apple"},
+			[]string{"banana", "orange", "grape"},
+			[]string{"apple", "banana", "cherry", "grape", "orange"},
+		},
+		{
+			[]string{},
+			[]string{"apple", "banana"},
+			[]string{"apple", "banana"},
+		},
+		{
+			[]string{"apple"},
+			[]string{},
+			[]string{"apple"},
+		},
+	}
+
+	for _, tc := range testCases {
+		result := MergeAndDeduplicateSort(tc.arr1, tc.arr2)
+		if !reflect.DeepEqual(result, tc.expect) {
+			t.Errorf("expected %v, got %v", tc.expect, result)
+		}
 	}
 }
 
@@ -261,12 +293,12 @@ func TestFullFuzzySearchRegexp(t *testing.T) {
 			".*(?i)",
 			[]string{"GoLang .*(?i) awesome", "I love GO^.*(?i)SING", "GoLangGO.*(?i)Golang"},
 			[]string{"language", "hi", "heyHelloCode", "HElLO", "Sun_hello", "HelLo_Jack"},
-		},{
+		}, {
 			"ignored_service",
 			[]string{`/* this is a comment, Service: ignored_service */
 			select * from table_ignored where id < 123;'
-			`,`/* this is a comment, Service: ignored_service */ select * from table_ignored where id < 123;`},
-			[]string{"any sql","",`/* this is a comment, Service: ignored
+			`, `/* this is a comment, Service: ignored_service */ select * from table_ignored where id < 123;`},
+			[]string{"any sql", "", `/* this is a comment, Service: ignored
 			_service */ select * from table_ignored where id < 123;`},
 		},
 	}
