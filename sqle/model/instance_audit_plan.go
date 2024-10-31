@@ -186,7 +186,6 @@ type SQLManageRecord struct {
 	Info           JSON           `gorm:"type:json"` // 慢日志的 执行时间等特殊属性
 	AuditLevel     string         `json:"audit_level" gorm:"type:varchar(255)"`
 	AuditResults   AuditResults   `json:"audit_results" gorm:"type:json"`
-	EndPoint       string         `json:"endpoint" gorm:"type:varchar(255)"`
 	SQLID          string         `json:"sql_id" gorm:"type:varchar(255);unique;not null"`
 	Priority       sql.NullString `json:"priority" gorm:"type:varchar(255)"`
 
@@ -463,9 +462,7 @@ type SQLManageQueue struct {
 	SqlFingerprint string `json:"sql_fingerprint" gorm:"type:mediumtext;not null"`
 	SqlText        string `json:"sql_text" gorm:"type:mediumtext;not null"`
 	Info           JSON   `gorm:"type:json"` // 慢日志的 执行时间等特殊属性
-	EndPoint       string `json:"endpoint" gorm:"type:varchar(255)"`
-
-	SQLID string `json:"sql_id" gorm:"type:varchar(255);not null"`
+	SQLID          string `json:"sql_id" gorm:"type:varchar(255);not null"`
 }
 
 func (s *Storage) PushSQLToManagerSQLQueue(sqls []*SQLManageQueue) error {
