@@ -5,10 +5,14 @@ package mysql
 
 import (
 	"context"
+	"fmt"
+	"regexp"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/pkg/params"
+	"github.com/actiontech/sqle/sqle/utils"
 )
 
 // func (*MysqlDriverImpl) QueryPrepare(ctx context.Context, sql string, conf *driver.QueryPrepareConf) (*driver.QueryPrepareResult, error) {
@@ -155,6 +159,175 @@ func (i *MysqlDriverImpl) GetDatabaseDiffModifySQL(ctx context.Context, calibrat
 }
 
 func (i *MysqlDriverImpl) GetDatabaseObjectDDL(ctx context.Context, objInfos []*driverV2.DatabasSchemaInfo) ([]*driverV2.DatabaseSchemaObjectResult, error) {
+	conn, err := i.getDbConn()
+	if err != nil {
+		return nil, err
+	}
+	// 复制切片以避免修改原始数据
+	databasSchemaInfo := make([]*driverV2.DatabasSchemaInfo, len(objInfos))
+	copy(databasSchemaInfo, objInfos)
+	// 未指定schema时默认获取全量
+	if len(databasSchemaInfo) == 0 {
+		schemas, err := conn.ShowDatabases(true)
+		if err != nil {
+			return nil, err
+		}
+		for _, schema := range schemas {
+			schemaObjs, err := getAllSchemaObjects(conn, schema)
+			if err != nil {
+				return nil, err
+			}
+			databasSchemaInfo = append(databasSchemaInfo, &driverV2.DatabasSchemaInfo{
+				SchemaName:      schema,
+				DatabaseObjects: schemaObjs,
+			})
 
-	return nil, nil
+		}
+	} else {
+		// 未指定schema对象（表、视图、存储过程等）时默认获取全量
+		for _, objInfo := range databasSchemaInfo {
+			if len(objInfo.DatabaseObjects) == 0 {
+				schemaObjs, err := getAllSchemaObjects(conn, objInfo.SchemaName)
+				if err != nil {
+					return nil, err
+				}
+				objInfo.DatabaseObjects = schemaObjs
+			}
+		}
+	}
+
+	res := make([]*driverV2.DatabaseSchemaObjectResult, 0, len(databasSchemaInfo))
+	for _, objInfo := range databasSchemaInfo {
+		schemaDDL, err := conn.ShowCreateSchema(utils.SupplementalQuotationMarks(objInfo.SchemaName))
+		if err != nil {
+			return nil, err
+		}
+		dbDDLs := make([]*driverV2.DatabaseObjectDDL, 0, len(objInfo.DatabaseObjects))
+		for _, obj := range objInfo.DatabaseObjects {
+			err = conn.UseSchema(objInfo.SchemaName)
+			if err != nil {
+				return nil, fmt.Errorf("use schema fail, error: %v", err)
+			}
+			objetDDL := ""
+			if obj.ObjectType == driverV2.ObjectType_TABLE {
+				tableDDL, err := conn.ShowCreateTable(objInfo.SchemaName, obj.ObjectName)
+				if err != nil {
+					return nil, err
+				}
+				objetDDL = sanitizeDDL(tableDDL)
+			}
+			if obj.ObjectType == driverV2.ObjectType_PROCEDURE {
+				objetDDL, err = conn.ShowCreateProcedure(obj.ObjectName)
+				if err != nil {
+					return nil, err
+				}
+			}
+			if obj.ObjectType == driverV2.ObjectType_FUNCTION {
+				objetDDL, err = conn.ShowCreateFunction(obj.ObjectName)
+				if err != nil {
+					return nil, err
+				}
+			}
+
+			// TODO 数据库结构对比目前视图、事件、触发器还未支持，若后续支持在此处补充获取这些对象的ddl（代码须经验证）
+			// if obj.ObjectType == driverV2.ObjectType_VIEW {
+			// 	objetDDL, err = conn.ShowCreateView(obj.ObjectName)
+			// 	if err != nil {
+			// 		return nil, err
+			// 	}
+			// }
+
+			dbDDLs = append(dbDDLs, &driverV2.DatabaseObjectDDL{
+				ObjectDDL: objetDDL,
+				DatabaseObject: &driverV2.DatabaseObject{
+					ObjectName: obj.ObjectName,
+					ObjectType: obj.ObjectType,
+				},
+			})
+		}
+		res = append(res, &driverV2.DatabaseSchemaObjectResult{
+			SchemaName:         objInfo.SchemaName,
+			SchemaDDL:          schemaDDL,
+			DatabaseObjectDDLs: dbDDLs,
+		})
+	}
+
+	return res, nil
+}
+
+// 去除DDL中不需要关注的token
+func sanitizeDDL(ddl string) string {
+	re := regexp.MustCompile(`AUTO_INCREMENT\s*=\s*\d+\s`)
+	return re.ReplaceAllString(ddl, "")
+}
+
+func getAllSchemaObjects(conn *executor.Executor, schemaName string) ([]*driverV2.DatabaseObject, error) {
+	dbObjs := make([]*driverV2.DatabaseObject, 0)
+	tables, err := conn.ShowSchemaTables(schemaName)
+	if err != nil {
+		return nil, err
+	}
+	for _, tableName := range tables {
+		dbObjs = append(dbObjs, &driverV2.DatabaseObject{
+			ObjectName: utils.SupplementalQuotationMarks(tableName),
+			ObjectType: driverV2.ObjectType_TABLE,
+		})
+	}
+
+	procedures, err := conn.ShowSchemaProcedures(schemaName)
+	if err != nil {
+		return nil, err
+	}
+	for _, procedureName := range procedures {
+		dbObjs = append(dbObjs, &driverV2.DatabaseObject{
+			ObjectName: utils.SupplementalQuotationMarks(procedureName),
+			ObjectType: driverV2.ObjectType_PROCEDURE,
+		})
+	}
+
+	functions, err := conn.ShowSchemaFunctions(schemaName)
+	if err != nil {
+		return nil, err
+	}
+	for _, functionName := range functions {
+		dbObjs = append(dbObjs, &driverV2.DatabaseObject{
+			ObjectName: utils.SupplementalQuotationMarks(functionName),
+			ObjectType: driverV2.ObjectType_FUNCTION,
+		})
+	}
+
+	// TODO 数据库结构对比目前视图、事件、触发器还未支持，若后续支持放开此处代码注释以获取这些对象的名称（代码须经验证）
+	// views, err := conn.ShowSchemaViews(schemaName)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// for _, viewName := range views {
+	// 	dbObjs = append(dbObjs, &driverV2.DatabaseObject{
+	// 		ObjectName: utils.SupplementalQuotationMarks(viewName),
+	// 		ObjectType: driverV2.ObjectType_VIEW,
+	// 	})
+	// }
+	// 	triggers, err := conn.ShowSchemaTriggers(schemaName)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	for _, triggerName := range triggers {
+	// 		dbObjs = append(dbObjs, &driverV2.DatabaseObject{
+	// 			ObjectName: utils.SupplementalQuotationMarks(triggerName),
+	// 			ObjectType: driverV2.ObjectType_TRIGGER,
+	// 		})
+	// 	}
+	//
+	// 	events, err := conn.ShowSchemaEvents(schemaName)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	for _, eventName := range events {
+	// 		dbObjs = append(dbObjs, &driverV2.DatabaseObject{
+	// 			ObjectName: utils.SupplementalQuotationMarks(eventName),
+	// 			ObjectType: driverV2.ObjectType_EVENT,
+	// 		})
+	// 	}
+
+	return dbObjs, nil
 }
