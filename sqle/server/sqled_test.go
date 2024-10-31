@@ -106,6 +106,14 @@ func (d *mockDriver) EstimateSQLAffectRows(ctx context.Context, sql string) (*dr
 	return nil, nil
 }
 
+func (d *mockDriver) GetDatabaseObjectDDL(ctx context.Context, objInfos []*driverV2.DatabasSchemaInfo) ([]*driverV2.DatabaseSchemaObjectResult, error) {
+	return nil, nil
+}
+
+func (d *mockDriver) GetDatabaseDiffModifySQL(ctx context.Context, calibratedDSN *driverV2.DSN, objInfos []*driverV2.DatabasCompareSchemaInfo) ([]*driverV2.DatabaseDiffModifySQLResult, error) {
+	return nil, nil
+}
+
 func TestAction_validation(t *testing.T) {
 	actions := map[int]*action{
 		ActionTypeAudit:    {typ: ActionTypeAudit},

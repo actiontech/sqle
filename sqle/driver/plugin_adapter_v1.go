@@ -331,3 +331,11 @@ func (p *PluginImplV1) GetTableMetaBySQL(ctx context.Context, conf *GetTableMeta
 func (p *PluginImplV1) EstimateSQLAffectRows(ctx context.Context, sql string) (*driverV2.EstimatedAffectRows, error) {
 	return nil, NewErrPluginAPINotImplement(driverV2.OptionalModuleEstimateSQLAffectRows)
 }
+
+func (s *PluginImplV1) GetDatabaseObjectDDL(ctx context.Context, objInfos []*driverV2.DatabasSchemaInfo) ([]*driverV2.DatabaseSchemaObjectResult, error) {
+	return nil, fmt.Errorf("unimplement this method")
+}
+
+func (s *PluginImplV1) GetDatabaseDiffModifySQL(ctx context.Context, calibratedDSN *driverV2.DSN, objInfos []*driverV2.DatabasCompareSchemaInfo) ([]*driverV2.DatabaseDiffModifySQLResult, error) {
+	return nil, fmt.Errorf("unimplement this method")
+}

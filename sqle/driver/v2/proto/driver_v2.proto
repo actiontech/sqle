@@ -32,6 +32,8 @@ service Driver {
   rpc GetTableMeta(GetTableMetaRequest) returns (GetTableMetaResponse);
   rpc ExtractTableFromSQL(ExtractTableFromSQLRequest) returns (ExtractTableFromSQLResponse);
   rpc EstimateSQLAffectRows(EstimateSQLAffectRowsRequest) returns (EstimateSQLAffectRowsResponse); // Introduced from SQLE v2.2304.0
+  rpc GetDatabaseObjectDDL(DatabaseObjectInfoRequest) returns (DatabaseSchemaObjectResponse);
+  rpc GetDatabaseDiffModifySQL(DatabaseDiffModifyRequest) returns (DatabaseDiffModifyRponse);
 }
 
 message Empty {}
@@ -50,6 +52,8 @@ enum OptionalModule {
   KillProcess = 6;
   ExecBatch = 7;
   I18n = 8; // 插件是否支持国际化
+  GetDatabaseObjectDDL = 9;
+  GetDatabaseDiffModifySQL = 10;
 }
 
 message Param {
@@ -378,3 +382,51 @@ message KillProcessResponse {
   string errMessage = 1; // 记录执行失败原因
 }
 
+message DatabaseObjectInfoRequest {
+  Session session = 1;
+  repeated DatabasSchemaInfo databasSchemaInfo = 2;
+}
+
+message DatabasSchemaInfo {
+	string schemaName = 1;
+	repeated DatabaseObject databaseObject = 2;
+}
+
+message DatabaseObject {
+  string objectName = 1;
+  string objectType = 2;
+}
+message  DatabaseSchemaObjectResponse {
+  repeated DatabaseSchemaObject databaseSchemaObject = 1;
+}
+message DatabaseSchemaObject {
+	string schemaName = 1;   
+  string schemaDDL = 2;
+	repeated DatabaseObjectDDL databaseObjectDDL = 3;
+}
+
+message DatabaseObjectDDL {
+	DatabaseObject databaseObject = 1;
+	string objectDDL = 2;   
+}
+
+message DatabaseDiffModifyRequest {
+  Session session = 1;
+  DSN calibratedDSN = 2;
+  repeated DatabasDiffSchemaInfo objInfos = 3;
+}
+
+message DatabasDiffSchemaInfo {
+	string baseSchemaName = 1;
+  string comparedSchemaName = 2;
+	repeated DatabaseObject databaseObject = 3;
+}
+
+message DatabaseDiffModifyRponse {
+  repeated SchemaDiffModify schemaDiffModify = 1;
+}
+
+message SchemaDiffModify {
+  string schemaName = 1;  
+	repeated string modifySQLs = 2;
+}
