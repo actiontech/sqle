@@ -248,3 +248,30 @@ func updateDiffObjectMap(diffObjectMap map[string]*DatabaseDiffObject, objectTyp
 		diffObjectMap[objectType] = diffObj
 	}
 }
+
+func (c *Compared) GetDatabaseDiffModifySQLs() ([]*driverV2.DatabaseDiffModifySQLResult, error) {
+	basePlugin, err := common.NewDriverManagerWithoutAudit(log.NewEntry(), c.BaseInstance, "")
+	if err != nil {
+		return nil, err
+	}
+	defer basePlugin.Close(context.TODO())
+	calibratedDSN := &driverV2.DSN{
+		Host:             c.ComparedInstance.Host,
+		Port:             c.ComparedInstance.Port,
+		User:             c.ComparedInstance.User,
+		Password:         c.ComparedInstance.Password,
+		AdditionalParams: c.ComparedInstance.AdditionalParams,
+	}
+	modifySQLs, err := basePlugin.GetDatabaseDiffModifySQL(context.TODO(), calibratedDSN, c.ObjInfos)
+	if err != nil {
+		return nil, err
+	}
+	dbDiffSQLs := make([]*driverV2.DatabaseDiffModifySQLResult, len(modifySQLs))
+	for i, schemaDiff := range modifySQLs {
+		dbDiffSQLs[i] = &driverV2.DatabaseDiffModifySQLResult{
+			SchemaName: schemaDiff.SchemaName,
+			ModifySQLs: schemaDiff.ModifySQLs,
+		}
+	}
+	return dbDiffSQLs, nil
+}
