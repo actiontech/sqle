@@ -834,13 +834,12 @@ func GetAuditPlanExecCmd(projectName string, iap *model.InstanceAuditPlan, ap *m
 		logger.Info("split server host failed ", err)
 		return ""
 	}
-	if ap.Type == auditplan.TypeDefault {
-		cmdTpl := "--host=%s --port=%s --project=%s --audit_plan_id=%d --token=%s"
-		return fmt.Sprintf(cmdTpl, ip, port, iap.ProjectId, ap.ID, iap.Token)
-	}
 
 	var cmd string
 	switch ap.Type {
+	case auditplan.TypeDefault:
+		cmdTpl := "--host=%s --port=%s --project=%s --audit_plan_id=%d --token=%s"
+		return fmt.Sprintf(cmdTpl, ip, port, iap.ProjectId, ap.ID, iap.Token)
 	case auditplan.TypeAllAppExtract:
 		cmd = fmt.Sprintf(`SQLE_PROJECT_NAME=%s \
 PROJECT_APP_NAME=<Please provide the business parameters here> \
