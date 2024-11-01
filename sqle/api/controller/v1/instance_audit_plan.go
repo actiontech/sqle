@@ -823,10 +823,6 @@ func GetAuditPlanExecCmd(projectName string, iap *model.InstanceAuditPlan, ap *m
 	if !ok {
 		return ""
 	}
-	if ap.Type == "default" {
-		cmdTpl := "--project=%s --audit_plan_id=%d --token=%s"
-		return fmt.Sprintf(cmdTpl, iap.ProjectId, ap.ID, iap.Token)
-	}
 	address := config.GetOptions().SqleOptions.DMSServerAddress
 	parsedURL, err := url.Parse(address)
 	if err != nil {
@@ -837,6 +833,10 @@ func GetAuditPlanExecCmd(projectName string, iap *model.InstanceAuditPlan, ap *m
 	if err != nil {
 		logger.Info("split server host failed ", err)
 		return ""
+	}
+	if ap.Type == auditplan.TypeDefault {
+		cmdTpl := "--host=%s --port=%s --project=%s --audit_plan_id=%d --token=%s"
+		return fmt.Sprintf(cmdTpl, ip, port, iap.ProjectId, ap.ID, iap.Token)
 	}
 
 	var cmd string
