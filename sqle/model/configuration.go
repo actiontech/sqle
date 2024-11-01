@@ -186,6 +186,7 @@ func (s *Storage) GetAllIMConfig() ([]IM, error) {
 
 func (s *Storage) UpdateImConfigById(id uint, m map[string]interface{}) error {
 	im := new(IM)
+	// 使用First将IM实例化，避免BeforeSave加密空的AppSecret
 	err := s.db.Where("id = ?", id).First(&im).Updates(m).Error
 	if err != nil {
 		return errors.New(errors.ConnectStorageError, err)
