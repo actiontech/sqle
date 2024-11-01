@@ -125,7 +125,6 @@ func ConvertSQLV2ToMangerSQL(sql *SQLV2) *model.SQLManageRecord {
 		SqlFingerprint: sql.Fingerprint,
 		SqlText:        sql.SQLContent,
 		Info:           data,
-		EndPoint:       sql.Info.Get("endpoints").String(),
 	}
 }
 
@@ -141,6 +140,5 @@ func ConvertSQLV2ToMangerSQLQueue(sql *SQLV2) *model.SQLManageQueue {
 		SqlFingerprint: sql.Fingerprint,
 		SqlText:        sql.SQLContent,
 		Info:           data,
-		EndPoint:       sql.Info.Get("endpoints").String(),
 	}
 }

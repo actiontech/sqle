@@ -1,6 +1,8 @@
 package auditplan
 
-import "time"
+import (
+	"time"
+)
 
 const MetricNameCounter string = "counter" // 总次数
 const MetricNameLastReceiveTimestamp string = "last_receive_timestamp"
@@ -43,7 +45,7 @@ var ALLMetric = map[string]MetricType{
 	MetricNameRowExaminedAvg:            MetricTypeFloat,  // MySQL slow log
 	MetricNameFirstQueryAt:              MetricTypeString, // MySQL slow log, 好像没用上 | OB MySQL TOP SQL
 	MetricNameDBUser:                    MetricTypeString, // MySQL slow log
-	MetricNameEndpoints:                 MetricTypeString, // MySQL slow log
+	MetricNameEndpoints:                 MetricTypeArray,  // MySQL slow log
 	MetricNameStartTimeOfLastScrapedSQL: MetricTypeString, // MySQL slow log
 	MetricNameMetaName:                  MetricTypeString, // MySQL schema meta
 	MetricNameMetaType:                  MetricTypeString, // MySQL schema meta
@@ -94,7 +96,20 @@ func LoadMetrics(info map[string]interface{}, metrics []string) Metrics {
 			} else {
 				ms.SetString(metric, "")
 			}
-
+		case MetricTypeArray:
+			if ss, ok := v.([]string); ok {
+				ms.SetStringArray(metric, ss)
+			} else if ss, ok := v.([]interface{}); ok {
+				var valList []string
+				for _, s := range ss {
+					if val, ok := s.(string); ok {
+						valList = append(valList, val)
+					}
+				}
+				ms.SetStringArray(metric, valList)
+			} else {
+				ms.SetStringArray(metric, nil)
+			}
 		case MetricTypeTime:
 			if t, ok := v.(*time.Time); ok {
 				ms.SetTime(metric, t)
@@ -152,6 +167,7 @@ const (
 	MetricTypeString MetricType = 3
 	MetricTypeTime   MetricType = 4
 	MetricTypeBool   MetricType = 5
+	MetricTypeArray  MetricType = 6
 )
 
 type Metric struct {
@@ -161,6 +177,7 @@ type Metric struct {
 	f    float64
 	t    *time.Time
 	b    bool
+	ss   []string
 	typ  MetricType
 }
 
@@ -183,6 +200,13 @@ func (m *Metric) String() string {
 		return ""
 	}
 	return m.s
+}
+
+func (m *Metric) StringArray() []string {
+	if m == nil || m.typ != MetricTypeArray {
+		return nil
+	}
+	return m.ss
 }
 
 func (m *Metric) Time() *time.Time {
@@ -210,6 +234,8 @@ func (m *Metric) Value() interface{} {
 		return m.f
 	case MetricTypeString:
 		return m.s
+	case MetricTypeArray:
+		return m.ss
 	case MetricTypeTime:
 		return m.t
 	case MetricTypeBool:
@@ -247,6 +273,13 @@ func (m Metrics) SetString(name string, s string) {
 	m[name] = &Metric{
 		typ: MetricTypeString,
 		s:   s,
+	}
+}
+
+func (m Metrics) SetStringArray(name string, ss []string) {
+	m[name] = &Metric{
+		typ: MetricTypeArray,
+		ss:  ss,
 	}
 }
 
