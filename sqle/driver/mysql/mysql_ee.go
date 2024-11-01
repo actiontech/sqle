@@ -155,13 +155,17 @@ func (i *MysqlDriverImpl) Query(ctx context.Context, sql string, conf *driverV2.
 	return res, nil
 }
 
+// 由基准数据源(driver中数据源)和比对数据源(入参)所指定的schema对象信息生成变更sql，修改比对数据库对象的差异
+// 生成变更sql大致逻辑是：
+// 1、获取基准和比对schema对象的解析结果
+// 2、比对schema对象解析结果的差异
+// 3、根据差异生成变更sql
 func (i *MysqlDriverImpl) GetDatabaseDiffModifySQL(ctx context.Context, calibratedDSN *driverV2.DSN, objInfos []*driverV2.DatabasCompareSchemaInfo) ([]*driverV2.DatabaseDiffModifySQLResult, error) {
-
 	baseConn, err := i.getDbConn()
 	if err != nil {
 		return nil, err
 	}
-	logEntry := log.NewEntry()
+	logEntry := log.NewEntry().WithField("generate sql", "generate sql based on database differences")
 	compareConn, err := executor.NewExecutor(logEntry, &driverV2.DSN{
 		Host:             calibratedDSN.Host,
 		Port:             calibratedDSN.Port,
@@ -172,38 +176,35 @@ func (i *MysqlDriverImpl) GetDatabaseDiffModifySQL(ctx context.Context, calibrat
 	if err != nil {
 		return nil, err
 	}
-	fromSchemaInfos := make([]*driverV2.DatabasSchemaInfo, len(objInfos))
-	for i, baseSchemaInfo := range objInfos {
-		fromSchemaInfos[i] = &driverV2.DatabasSchemaInfo{
-			SchemaName:      baseSchemaInfo.ComparedSchemaName,
-			DatabaseObjects: baseSchemaInfo.DatabaseObjects,
+	compareSchemaInfos := make([]*driverV2.DatabasSchemaInfo, len(objInfos))
+	baseSchemaInfos := make([]*driverV2.DatabasSchemaInfo, len(objInfos))
+	for i, objInfo := range objInfos {
+		compareSchemaInfos[i] = &driverV2.DatabasSchemaInfo{
+			SchemaName:      objInfo.ComparedSchemaName,
+			DatabaseObjects: objInfo.DatabaseObjects,
+		}
+		baseSchemaInfos[i] = &driverV2.DatabasSchemaInfo{
+			SchemaName:      objInfo.BaseSchemaName,
+			DatabaseObjects: objInfo.DatabaseObjects,
 		}
 	}
 
-	toSchemaInfos := make([]*driverV2.DatabasSchemaInfo, len(objInfos))
-	for i, baseSchemaInfo := range objInfos {
-		toSchemaInfos[i] = &driverV2.DatabasSchemaInfo{
-			SchemaName:      baseSchemaInfo.BaseSchemaName,
-			DatabaseObjects: baseSchemaInfo.DatabaseObjects,
-		}
-	}
-
-	fromSchemas, err := differ.Schemas(true, compareConn, fromSchemaInfos)
+	compareSchemas, err := differ.Schemas(true, compareConn, compareSchemaInfos)
 	if err != nil {
 		return nil, err
 	}
-	toSchemas, err := differ.Schemas(true, baseConn, toSchemaInfos)
+	baseSchemas, err := differ.Schemas(true, baseConn, baseSchemaInfos)
 	if err != nil {
 		return nil, err
 	}
-	fromSchemaMap := make(map[string]*differ.Schema)
-	toSchemaMap := make(map[string]*differ.Schema)
+	compareSchemaMap := make(map[string]*differ.Schema)
+	baseSchemaMap := make(map[string]*differ.Schema)
 
-	for _, from := range fromSchemas {
-		fromSchemaMap[from.Name] = from
+	for _, compare := range compareSchemas {
+		compareSchemaMap[compare.Name] = compare
 	}
-	for _, to := range toSchemas {
-		toSchemaMap[to.Name] = to
+	for _, base := range baseSchemas {
+		baseSchemaMap[base.Name] = base
 	}
 
 	mods := differ.StatementModifiers{AllowUnsafe: true}
@@ -213,14 +214,14 @@ func (i *MysqlDriverImpl) GetDatabaseDiffModifySQL(ctx context.Context, calibrat
 	// }
 	// flavor := differ.ParseFlavor(fmt.Sprintf("%s %s", "mysql:", results[0]["VERSION()"].String))
 	// if !flavor.IsMySQL(5, 5) {
-	// 	mods.LockClause, mods.AlgorithmClause = "none", "inplace"
+	// mods.LockClause, mods.AlgorithmClause = "none", "inplace"
 	// }
 	dbDiffSQLs := make([]*driverV2.DatabaseDiffModifySQLResult, 0)
 	for _, objInfo := range objInfos {
-		fromSchema, _ := fromSchemaMap[objInfo.ComparedSchemaName]
-		toSchema, _ := toSchemaMap[objInfo.BaseSchemaName]
-		// from作为需要校对的schema，to为基准schema，另一种写法为diff.NewSchemaDiff(fromSchema, toSchema)
-		diff := fromSchema.Diff(toSchema)
+		compareSchema := compareSchemaMap[objInfo.ComparedSchemaName]
+		baseSchema := baseSchemaMap[objInfo.BaseSchemaName]
+		// compare作为需要校对的schema，base为基准schema，另一种写法为diff.NewSchemaDiff(compareSchema, baseSchema)
+		diff := compareSchema.Diff(baseSchema)
 		objDiffs := diff.ObjectDiffs()
 		diffSqls := make([]string, len(objDiffs))
 
@@ -233,7 +234,7 @@ func (i *MysqlDriverImpl) GetDatabaseDiffModifySQL(ctx context.Context, calibrat
 		}
 
 		dbDiffSQLs = append(dbDiffSQLs, &driverV2.DatabaseDiffModifySQLResult{
-			SchemaName: objInfo.ComparedSchemaName, // 此处使用校准数据源的schema，因为有可能校准数据源中scheam不存在
+			SchemaName: objInfo.ComparedSchemaName, // 此处使用校准数据源的schema，因为变更sql需要在校准数据源上执行
 			ModifySQLs: diffSqls,
 		})
 	}

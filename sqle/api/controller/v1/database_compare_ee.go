@@ -32,6 +32,7 @@ func getDatabaseComparison(c echo.Context) error {
 	if (req.BaseDBObject.SchemaName == nil) != (req.ComparisonDBObject.SchemaName == nil) {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, fmt.Errorf("the base instance and comparison instance must be consistent")))
 	}
+	logger := log.NewEntry().WithField("database comparison", "execute database comparison")
 	// 获取基准数据源和比对数据源实例信息
 	baseInst, err := getInstanceById(c, req.BaseDBObject.InstanceId)
 	if err != nil {
@@ -54,7 +55,7 @@ func getDatabaseComparison(c echo.Context) error {
 		ComparedInstance: comparedInst,
 		ObjInfos:         schemaNames,
 	}
-	execCompareRes, err := compared.ExecDatabaseCompare()
+	execCompareRes, err := compared.ExecDatabaseCompare(c.Request().Context(), logger)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
 	}
@@ -113,12 +114,12 @@ func getComparisonStatement(c echo.Context) error {
 	})
 }
 
-func convertTaskAuditResults(c echo.Context, taskAuditResults model.AuditResults, dbType string) []*SQLAuditResult {
+func convertTaskAuditResults(c context.Context, taskAuditResults model.AuditResults, dbType string) []*SQLAuditResult {
 	auditResults := make([]*SQLAuditResult, len(taskAuditResults))
 	for i, auditResult := range taskAuditResults {
 		auditResults[i] = &SQLAuditResult{
 			Level:               auditResult.Level,
-			Message:             auditResult.GetAuditMsgByLangTag(locale.Bundle.GetLangTagFromCtx(c.Request().Context())),
+			Message:             auditResult.GetAuditMsgByLangTag(locale.Bundle.GetLangTagFromCtx(c)),
 			RuleName:            auditResult.RuleName,
 			DbType:              dbType,
 			I18nAuditResultInfo: auditResult.I18nAuditResultInfo,
@@ -161,17 +162,17 @@ func genDatabaseDiffModifySQLs(c echo.Context) error {
 	}
 
 	projectUID := model.ProjectUID(projectId)
-	logger := log.NewEntry()
-	diffSQLs, err := compared.GetDatabaseDiffModifySQLs()
+	logger := log.NewEntry().WithField("database comparsion", "generate modify sql")
+	diffSQLs, err := compared.GetDatabaseDiffModifySQLs(c.Request().Context(), logger)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	plugin, err := common.NewDriverManagerWithoutAudit(log.NewEntry(), comparedInst, "")
+	plugin, err := common.NewDriverManagerWithoutAudit(logger, comparedInst, "")
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	defer plugin.Close(context.TODO())
-	comparisonDBSchemas, err := plugin.Schemas(context.TODO())
+	defer plugin.Close(c.Request().Context())
+	comparisonDBSchemas, err := plugin.Schemas(c.Request().Context())
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -204,7 +205,7 @@ func genDatabaseDiffModifySQLs(c echo.Context) error {
 		}
 
 		for j, sql := range task.ExecuteSQLs {
-			modifySQLs[j].AuditResults = convertTaskAuditResults(c, sql.AuditResults, task.DBType)
+			modifySQLs[j].AuditResults = convertTaskAuditResults(c.Request().Context(), sql.AuditResults, task.DBType)
 		}
 		diffModifySQLs[i] = &DatabaseDiffModifySQL{
 			SchemaName: diffSQL.SchemaName,
