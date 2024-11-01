@@ -6,6 +6,8 @@ package differ
 import (
 	"fmt"
 	"strings"
+
+	"github.com/actiontech/sqle/sqle/utils"
 )
 
 // DiffType enumerates possible ways that two objects differ
@@ -228,7 +230,8 @@ func (dd *DatabaseDiff) Statement(mods StatementModifiers) (string, error) {
 	}
 	switch dd.DiffType() {
 	case DiffTypeCreate:
-		return dd.To.CreateStatement(), nil
+		// fmt.Sprintf("%s;\n use %s\n", dd.To.Name, dd.To.CreateStatement())
+		return fmt.Sprintf("%s;\nUSE %s", dd.To.CreateStatement(), utils.SupplementalQuotationMarks(dd.To.Name)), nil
 	case DiffTypeDrop:
 		stmt := dd.From.DropStatement()
 		var err error
