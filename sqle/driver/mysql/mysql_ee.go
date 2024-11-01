@@ -230,14 +230,23 @@ func (i *MysqlDriverImpl) GetDatabaseDiffModifySQL(ctx context.Context, calibrat
 		// compare作为需要校对的schema，base为基准schema，另一种写法为diff.NewSchemaDiff(compareSchema, baseSchema)
 		diff := compareSchema.Diff(baseSchema)
 		objDiffs := diff.ObjectDiffs()
-		diffSqls := make([]string, len(objDiffs))
-
-		for i, objDiff := range objDiffs {
+		diffSqls := make([]string, 0, len(objDiffs))
+		schemaNames, err := compareConn.ShowDatabases(true)
+		if err != nil {
+			return nil, err
+		}
+		for _, schemaName := range schemaNames {
+			if objInfo.ComparedSchemaName == schemaName {
+				diffSqls = append(diffSqls, fmt.Sprintf("USE %s;\n", schemaName))
+				break
+			}
+		}
+		for _, objDiff := range objDiffs {
 			stmt, err := objDiff.Statement(mods)
 			if err != nil {
 				return nil, err
 			}
-			diffSqls[i] = stmt
+			diffSqls = append(diffSqls, fmt.Sprintf("%s;\n", stmt))
 		}
 
 		dbDiffSQLs = append(dbDiffSQLs, &driverV2.DatabaseDiffModifySQLResult{
