@@ -20,6 +20,7 @@ const (
 	TypePostgreSQLTopSQL         = "postgresql_top_sql"
 	TypePostgreSQLSchemaMeta     = "Postgresql_schema_meta"
 	TypeTBaseSlowLog             = command.TypeTBaseSlowLog
+	TypeTiDBAuditLog             = command.TypeTiDBAuditLog
 )
 
 const (
@@ -95,6 +96,11 @@ var EEMetaBuilderList = []MetaBuilder{
 		Desc:          locale.ApMetaSlowLog,
 		TaskHandlerFn: NewTBaseSlowLogTaskV2Fn(),
 	},
+	{
+		Type:          TypeTiDBAuditLog,
+		Desc:          locale.ApMetaTiDBAuditLog,
+		TaskHandlerFn: NewTiDBAuditLogTaskV2Fn(),
+	},
 }
 
 func init() {
@@ -106,4 +112,5 @@ func init() {
 
 	supportedCmdTypeList[TypeTBaseSlowLog] = struct{}{}
 	supportedCmdTypeList[TypeTDSQLSlowLog] = struct{}{}
+	supportedCmdTypeList[TypeTiDBAuditLog] = struct{}{}
 }
