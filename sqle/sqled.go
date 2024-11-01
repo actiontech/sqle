@@ -11,6 +11,7 @@ import (
 	"github.com/actiontech/dms/pkg/dms-common/pkg/http"
 	"github.com/actiontech/sqle/sqle/api"
 	"github.com/actiontech/sqle/sqle/dms"
+	optimizationRule "github.com/actiontech/sqle/sqle/server/optimization/rule"
 
 	// "github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/service"
 	"github.com/actiontech/sqle/sqle/config"
@@ -90,6 +91,10 @@ func Run(options *config.SqleOptions) error {
 		return fmt.Errorf("register to dms failed :%v", err)
 	}
 
+	if options.OptimizationConfig.OptimizationKey != "" && options.OptimizationConfig.OptimizationURL != "" {
+		// 配置了pawsql才会去初始化重写规则
+		optimizationRule.InitOptimizationRule()
+	}
 	if sqleCnf.AutoMigrateTable {
 		if err := s.AutoMigrate(); err != nil {
 			return fmt.Errorf("auto migrate table failed: %v", err)
