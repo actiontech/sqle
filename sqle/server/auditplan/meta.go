@@ -184,6 +184,7 @@ var supportedCmdTypeList = map[string]struct{}{
 	TypeMySQLSlowLog:  {},
 	TypeTiDBAuditLog:  {},
 	TypeAllAppExtract: {},
+	TypeDefault:       {},
 }
 
 func GetSupportedScannerAuditPlanType() map[string]struct{} {
