@@ -20,7 +20,7 @@ type SqlManage struct {
 	InstanceName              string       `json:"instance_name" gorm:"type:varchar(255)"`
 	SchemaName                string       `json:"schema_name" gorm:"type:varchar(255)"`
 
-	Assignees string `json:"assignees" gorm:"type:varchar(255)"`
+	Assignees string `json:"assignees" gorm:"type:varchar(2000)"`
 	Status    string `json:"status" gorm:"default:\"unhandled\"; type:varchar(255)"`
 	Remark    string `json:"remark" gorm:"type:varchar(4000)"`
 
