@@ -5,6 +5,7 @@ package compare
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/common"
@@ -274,4 +275,36 @@ func (c *Compared) GetDatabaseDiffModifySQLs(context context.Context, l *logrus.
 		}
 	}
 	return dbDiffSQLs, nil
+}
+
+func GetDatabaseObjectDDL(c context.Context, l *logrus.Entry, instance *model.Instance, schemaName, objectName, objectType string) (*driverV2.DatabaseObjectDDL, error) {
+	p, err := common.NewDriverManagerWithoutAudit(l, instance, "")
+	if err != nil {
+		return nil, err
+	}
+	defer p.Close(c)
+	baseInfos := make([]*driverV2.DatabasSchemaInfo, 0, 1)
+	dbObj := &driverV2.DatabaseObject{
+		ObjectName: objectName,
+		ObjectType: objectType,
+	}
+	baseInfos = append(baseInfos, &driverV2.DatabasSchemaInfo{
+		SchemaName:      schemaName,
+		DatabaseObjects: []*driverV2.DatabaseObject{dbObj},
+	})
+	objDDLRes, err := p.GetDatabaseObjectDDL(c, baseInfos)
+	if err != nil {
+		return nil, err
+	}
+	// 因为该方法只获取一个数据库对象的ddl语句，所以得到的结果也应该只有1条
+	if !(len(objDDLRes) == 1 && len(objDDLRes[0].DatabaseObjectDDLs) == 1) {
+		return nil, fmt.Errorf("the number of ddl statements to get the database is not as expected")
+	}
+	return &driverV2.DatabaseObjectDDL{
+		DatabaseObject: &driverV2.DatabaseObject{
+			ObjectName: objDDLRes[0].DatabaseObjectDDLs[0].DatabaseObject.ObjectName,
+			ObjectType: objDDLRes[0].DatabaseObjectDDLs[0].DatabaseObject.ObjectType,
+		},
+		ObjectDDL: objDDLRes[0].DatabaseObjectDDLs[0].ObjectDDL,
+	}, nil
 }

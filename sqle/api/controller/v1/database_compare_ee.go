@@ -19,6 +19,7 @@ import (
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/server/compare"
 	"github.com/labstack/echo/v4"
+	"github.com/sirupsen/logrus"
 )
 
 func getDatabaseComparison(c echo.Context) error {
@@ -107,11 +108,83 @@ func getInstanceById(c echo.Context, instanceID string) (*model.Instance, error)
 }
 
 func getComparisonStatement(c echo.Context) error {
+	req := new(GetComparisonStatementsReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 
+	projectID, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
+	}
+	baseObject := req.DatabaseComparisonObject.BaseDBObject
+	comparisonObject := req.DatabaseComparisonObject.ComparisonDBObject
+	databaseObject := req.DatabaseObject
+	logger := log.NewEntry().WithField("get database object DDL", "comparison sql statement")
+	var base *SQLStatementWithAuditResult
+	var comparison *SQLStatementWithAuditResult
+	if baseObject != nil {
+		baseInst, err := getInstanceById(c, baseObject.InstanceId)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		base, err = getAuditedSQLStatement(c.Request().Context(), logger, baseInst, *baseObject.SchemaName, databaseObject.ObjectName, databaseObject.ObjectType, projectID)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+	if comparisonObject != nil {
+		comparedInst, err := getInstanceById(c, comparisonObject.InstanceId)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		comparison, err = getAuditedSQLStatement(c.Request().Context(), logger, comparedInst, *comparisonObject.SchemaName, databaseObject.ObjectName, databaseObject.ObjectType, projectID)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
 	return c.JSON(http.StatusOK, &DatabaseComparisonStatementsResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    nil,
+		Data: &DatabaseComparisonStatements{
+			BaseSQL:        base,
+			ComparisondSQL: comparison,
+		},
 	})
+}
+
+func getAuditedSQLStatement(c context.Context, l *logrus.Entry, inst *model.Instance, schemaName, objectName, objectType, projectID string) (*SQLStatementWithAuditResult, error) {
+
+	ddl, err := compare.GetDatabaseObjectDDL(c, l, inst, schemaName, objectName, objectType)
+	if err != nil {
+		return nil, errors.New(errors.DataConflict, err)
+	}
+
+	if ddl == nil {
+		return nil, nil
+	}
+
+	projectUID := model.ProjectUID(projectID)
+
+	task := &model.Task{
+		Instance: inst,
+		Schema:   schemaName,
+		DBType:   inst.DbType,
+		ExecuteSQLs: []*model.ExecuteSQL{
+			{
+				BaseSQL: model.BaseSQL{
+					Content: ddl.ObjectDDL,
+				},
+			},
+		},
+	}
+	err = server.Audit(l, task, &projectUID, inst.RuleTemplateName)
+	if err != nil {
+		return nil, errors.New(errors.DataConflict, err)
+	}
+	return &SQLStatementWithAuditResult{
+		AuditResults: convertTaskAuditResults(c, task.ExecuteSQLs[0].AuditResults, task.DBType),
+		SQLStatement: ddl.ObjectDDL,
+	}, nil
 }
 
 func convertTaskAuditResults(c context.Context, taskAuditResults model.AuditResults, dbType string) []*SQLAuditResult {
