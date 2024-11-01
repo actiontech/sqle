@@ -9,8 +9,8 @@ import (
 
 	"github.com/actiontech/sqle/sqle/common"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
-	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/sirupsen/logrus"
 )
 
 type Compared struct {
@@ -45,7 +45,7 @@ const (
 	DatabaseStructComparisonNotExist string = "comparison_not_exist" // 比对对象不存在
 )
 
-func (c *Compared) ExecDatabaseCompare() ([]*SchemaObject, error) {
+func (c *Compared) ExecDatabaseCompare(context context.Context, l *logrus.Entry) ([]*SchemaObject, error) {
 	baseInfos := make([]*driverV2.DatabasSchemaInfo, len(c.ObjInfos))
 	comparedInfos := make([]*driverV2.DatabasSchemaInfo, len(c.ObjInfos))
 	if len(c.ObjInfos) > 0 {
@@ -59,21 +59,21 @@ func (c *Compared) ExecDatabaseCompare() ([]*SchemaObject, error) {
 		}
 	}
 
-	basePlugin, err := common.NewDriverManagerWithoutAudit(log.NewEntry(), c.BaseInstance, "")
+	basePlugin, err := common.NewDriverManagerWithoutAudit(l, c.BaseInstance, "")
 	if err != nil {
 		return nil, err
 	}
-	defer basePlugin.Close(context.TODO())
-	baseRes, err := basePlugin.GetDatabaseObjectDDL(context.TODO(), baseInfos)
+	defer basePlugin.Close(context)
+	baseRes, err := basePlugin.GetDatabaseObjectDDL(context, baseInfos)
 	if err != nil {
 		return nil, err
 	}
-	comparedPlugin, err := common.NewDriverManagerWithoutAudit(log.NewEntry(), c.ComparedInstance, "")
+	comparedPlugin, err := common.NewDriverManagerWithoutAudit(l, c.ComparedInstance, "")
 	if err != nil {
 		return nil, err
 	}
-	defer comparedPlugin.Close(context.TODO())
-	comparedRes, err := comparedPlugin.GetDatabaseObjectDDL(context.TODO(), comparedInfos)
+	defer comparedPlugin.Close(context)
+	comparedRes, err := comparedPlugin.GetDatabaseObjectDDL(context, comparedInfos)
 	if err != nil {
 		return nil, err
 	}
@@ -247,4 +247,31 @@ func updateDiffObjectMap(diffObjectMap map[string]*DatabaseDiffObject, objectTyp
 		// 如果不存在，则直接将当前对比结果加入 map
 		diffObjectMap[objectType] = diffObj
 	}
+}
+
+func (c *Compared) GetDatabaseDiffModifySQLs(context context.Context, l *logrus.Entry) ([]*driverV2.DatabaseDiffModifySQLResult, error) {
+	basePlugin, err := common.NewDriverManagerWithoutAudit(l, c.BaseInstance, "")
+	if err != nil {
+		return nil, err
+	}
+	defer basePlugin.Close(context)
+	calibratedDSN := &driverV2.DSN{
+		Host:             c.ComparedInstance.Host,
+		Port:             c.ComparedInstance.Port,
+		User:             c.ComparedInstance.User,
+		Password:         c.ComparedInstance.Password,
+		AdditionalParams: c.ComparedInstance.AdditionalParams,
+	}
+	modifySQLs, err := basePlugin.GetDatabaseDiffModifySQL(context, calibratedDSN, c.ObjInfos)
+	if err != nil {
+		return nil, err
+	}
+	dbDiffSQLs := make([]*driverV2.DatabaseDiffModifySQLResult, len(modifySQLs))
+	for i, schemaDiff := range modifySQLs {
+		dbDiffSQLs[i] = &driverV2.DatabaseDiffModifySQLResult{
+			SchemaName: schemaDiff.SchemaName,
+			ModifySQLs: schemaDiff.ModifySQLs,
+		}
+	}
+	return dbDiffSQLs, nil
 }

@@ -9,8 +9,10 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/driver/mysql/differ"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/utils"
 )
@@ -153,9 +155,98 @@ func (i *MysqlDriverImpl) Query(ctx context.Context, sql string, conf *driverV2.
 	return res, nil
 }
 
+// 由基准数据源(driver中数据源)和比对数据源(入参)所指定的schema对象信息生成变更sql，修改比对数据库对象的差异
+// 生成变更sql大致逻辑是：
+// 1、获取基准和比对schema对象的解析结果
+// 2、比对schema对象解析结果的差异
+// 3、根据差异生成变更sql
 func (i *MysqlDriverImpl) GetDatabaseDiffModifySQL(ctx context.Context, calibratedDSN *driverV2.DSN, objInfos []*driverV2.DatabasCompareSchemaInfo) ([]*driverV2.DatabaseDiffModifySQLResult, error) {
+	baseConn, err := i.getDbConn()
+	if err != nil {
+		return nil, err
+	}
+	logEntry := log.NewEntry().WithField("generate sql", "generate sql based on database differences")
+	compareConn, err := executor.NewExecutor(logEntry, &driverV2.DSN{
+		Host:             calibratedDSN.Host,
+		Port:             calibratedDSN.Port,
+		User:             calibratedDSN.User,
+		Password:         calibratedDSN.Password,
+		AdditionalParams: calibratedDSN.AdditionalParams,
+	}, "")
+	if err != nil {
+		return nil, err
+	}
+	compareSchemaInfos := make([]*driverV2.DatabasSchemaInfo, len(objInfos))
+	baseSchemaInfos := make([]*driverV2.DatabasSchemaInfo, len(objInfos))
+	for i, objInfo := range objInfos {
+		compareSchemaInfos[i] = &driverV2.DatabasSchemaInfo{
+			SchemaName:      objInfo.ComparedSchemaName,
+			DatabaseObjects: objInfo.DatabaseObjects,
+		}
+		baseSchemaInfos[i] = &driverV2.DatabasSchemaInfo{
+			SchemaName:      objInfo.BaseSchemaName,
+			DatabaseObjects: objInfo.DatabaseObjects,
+		}
+	}
 
-	return nil, nil
+	compareSchemas, err := differ.Schemas(true, compareConn, compareSchemaInfos)
+	if err != nil {
+		return nil, err
+	}
+	baseSchemas, err := differ.Schemas(true, baseConn, baseSchemaInfos)
+	if err != nil {
+		return nil, err
+	}
+	compareSchemaMap := make(map[string]*differ.Schema)
+	baseSchemaMap := make(map[string]*differ.Schema)
+
+	for _, compare := range compareSchemas {
+		compareSchemaMap[compare.Name] = compare
+	}
+	for _, base := range baseSchemas {
+		baseSchemaMap[base.Name] = base
+	}
+
+	mods := differ.StatementModifiers{AllowUnsafe: true}
+	// LockClause：
+	// 该字段在生成的 ALTER TABLE 语句中用于指定锁定的行为。通过设置 LOCK=[value] 来决定当修改表时是否锁定表以及锁定的方式。
+	// 例如，LOCK=none 表示在 ALTER TABLE 操作时不锁定任何内容。通常用于需要在不阻塞表读写的情况下修改表结构的场景。
+	// AlgorithmClause：
+	// 该字段用于生成 ALTER TABLE 语句时指定修改表的算法。ALGORITHM=[value] 用于选择更改表结构时使用的算法。
+	// 例如，ALGORITHM=inplace 表示不需要拷贝整个表，而是在不重建整个表的情况下就地修改表结构。这种算法更高效，尤其适用于大表的变更。
+	// 此处属于优化内容，且mysql各个版本支持度不唯一，此处可以不使用该属性
+	// results, err := compareConn.Db.Query("SELECT VERSION()")
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// flavor := differ.ParseFlavor(fmt.Sprintf("%s %s", "mysql:", results[0]["VERSION()"].String))
+	// if !flavor.IsMySQL(5, 5) {
+	// 	mods.LockClause, mods.AlgorithmClause = "none", "inplace"
+	// }
+	dbDiffSQLs := make([]*driverV2.DatabaseDiffModifySQLResult, 0)
+	for _, objInfo := range objInfos {
+		compareSchema := compareSchemaMap[objInfo.ComparedSchemaName]
+		baseSchema := baseSchemaMap[objInfo.BaseSchemaName]
+		// compare作为需要校对的schema，base为基准schema，另一种写法为diff.NewSchemaDiff(compareSchema, baseSchema)
+		diff := compareSchema.Diff(baseSchema)
+		objDiffs := diff.ObjectDiffs()
+		diffSqls := make([]string, len(objDiffs))
+
+		for i, objDiff := range objDiffs {
+			stmt, err := objDiff.Statement(mods)
+			if err != nil {
+				return nil, err
+			}
+			diffSqls[i] = stmt
+		}
+
+		dbDiffSQLs = append(dbDiffSQLs, &driverV2.DatabaseDiffModifySQLResult{
+			SchemaName: objInfo.ComparedSchemaName, // 此处使用校准数据源的schema，因为变更sql需要在校准数据源上执行
+			ModifySQLs: diffSqls,
+		})
+	}
+
+	return dbDiffSQLs, nil
 }
 
 func (i *MysqlDriverImpl) GetDatabaseObjectDDL(ctx context.Context, objInfos []*driverV2.DatabasSchemaInfo) ([]*driverV2.DatabaseSchemaObjectResult, error) {
