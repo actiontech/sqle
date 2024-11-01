@@ -39,7 +39,6 @@ const (
 	TypeAliRdsMySQLAuditLog   = "ali_rds_mysql_audit_log"
 	TypeHuaweiRdsMySQLSlowLog = "huawei_rds_mysql_slow_log"
 	TypeOracleTopSQL          = "oracle_top_sql"
-	TypeTiDBAuditLog          = scannerCmd.TypeTiDBAuditLog
 	TypeAllAppExtract         = "all_app_extract"
 	TypeBaiduRdsMySQLSlowLog  = "baidu_rds_mysql_slow_log"
 	TypeSQLFile               = scannerCmd.TypeSQLFile
@@ -117,11 +116,6 @@ var MetaBuilderList = []MetaBuilder{
 		Desc:          locale.ApMetaAllAppExtract,
 		TaskHandlerFn: NewDefaultTaskV2Fn(),
 	},
-	{
-		Type:          TypeTiDBAuditLog,
-		Desc:          locale.ApMetaTiDBAuditLog,
-		TaskHandlerFn: NewTiDBAuditLogTaskV2Fn(),
-	},
 }
 
 var MetaMap = map[string]Meta{}
@@ -182,7 +176,6 @@ func GetMeta(typ string) (Meta, error) {
 
 var supportedCmdTypeList = map[string]struct{}{
 	TypeMySQLSlowLog:  {},
-	TypeTiDBAuditLog:  {},
 	TypeAllAppExtract: {},
 }
 
