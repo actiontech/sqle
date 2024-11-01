@@ -19,6 +19,7 @@ import (
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/server/compare"
 	"github.com/labstack/echo/v4"
+	"github.com/sirupsen/logrus"
 )
 
 func getDatabaseComparison(c echo.Context) error {
@@ -119,7 +120,7 @@ func getComparisonStatement(c echo.Context) error {
 	baseObject := req.DatabaseComparisonObject.BaseDBObject
 	comparisonObject := req.DatabaseComparisonObject.ComparisonDBObject
 	databaseObject := req.DatabaseObject
-
+	logger := log.NewEntry().WithField("get database object DDL", "comparison sql statement")
 	var base *SQLStatementWithAuditResult
 	var comparison *SQLStatementWithAuditResult
 	if baseObject != nil {
@@ -127,7 +128,7 @@ func getComparisonStatement(c echo.Context) error {
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
-		base, err = getAuditedSQLStatement(c, baseInst, *baseObject.SchemaName, databaseObject.ObjectName, databaseObject.ObjectType, projectID)
+		base, err = getAuditedSQLStatement(c.Request().Context(), logger, baseInst, *baseObject.SchemaName, databaseObject.ObjectName, databaseObject.ObjectType, projectID)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -137,7 +138,7 @@ func getComparisonStatement(c echo.Context) error {
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
-		comparison, err = getAuditedSQLStatement(c, comparedInst, *comparisonObject.SchemaName, databaseObject.ObjectName, databaseObject.ObjectType, projectID)
+		comparison, err = getAuditedSQLStatement(c.Request().Context(), logger, comparedInst, *comparisonObject.SchemaName, databaseObject.ObjectName, databaseObject.ObjectType, projectID)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -151,9 +152,9 @@ func getComparisonStatement(c echo.Context) error {
 	})
 }
 
-func getAuditedSQLStatement(c echo.Context, inst *model.Instance, schemaName, objectName, objectType, projectID string) (*SQLStatementWithAuditResult, error) {
-	logger := log.NewEntry().WithField("get database object DDL", schemaName)
-	ddl, err := compare.GetDatabaseObjectDDL(c.Request().Context(), logger, inst, schemaName, objectName, objectType)
+func getAuditedSQLStatement(c context.Context, l *logrus.Entry, inst *model.Instance, schemaName, objectName, objectType, projectID string) (*SQLStatementWithAuditResult, error) {
+
+	ddl, err := compare.GetDatabaseObjectDDL(c, l, inst, schemaName, objectName, objectType)
 	if err != nil {
 		return nil, errors.New(errors.DataConflict, err)
 	}
@@ -176,12 +177,12 @@ func getAuditedSQLStatement(c echo.Context, inst *model.Instance, schemaName, ob
 			},
 		},
 	}
-	err = server.Audit(logger, task, &projectUID, inst.RuleTemplateName)
+	err = server.Audit(l, task, &projectUID, inst.RuleTemplateName)
 	if err != nil {
 		return nil, errors.New(errors.DataConflict, err)
 	}
 	return &SQLStatementWithAuditResult{
-		AuditResults: convertTaskAuditResults(c.Request().Context(), task.ExecuteSQLs[0].AuditResults, task.DBType),
+		AuditResults: convertTaskAuditResults(c, task.ExecuteSQLs[0].AuditResults, task.DBType),
 		SQLStatement: ddl.ObjectDDL,
 	}, nil
 }

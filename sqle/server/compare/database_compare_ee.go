@@ -297,7 +297,7 @@ func GetDatabaseObjectDDL(c context.Context, l *logrus.Entry, instance *model.In
 		return nil, err
 	}
 	// 因为该方法只获取一个数据库对象的ddl语句，所以得到的结果也应该只有1条
-	if len(objDDLRes) != 1 || len(objDDLRes[0].DatabaseObjectDDLs) != 1 {
+	if !(len(objDDLRes) == 1 && len(objDDLRes[0].DatabaseObjectDDLs) == 1) {
 		return nil, fmt.Errorf("the number of ddl statements to get the database is not as expected")
 	}
 	return &driverV2.DatabaseObjectDDL{
