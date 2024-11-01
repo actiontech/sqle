@@ -208,13 +208,20 @@ func (i *MysqlDriverImpl) GetDatabaseDiffModifySQL(ctx context.Context, calibrat
 	}
 
 	mods := differ.StatementModifiers{AllowUnsafe: true}
+	// LockClause：
+	// 该字段在生成的 ALTER TABLE 语句中用于指定锁定的行为。通过设置 LOCK=[value] 来决定当修改表时是否锁定表以及锁定的方式。
+	// 例如，LOCK=none 表示在 ALTER TABLE 操作时不锁定任何内容。通常用于需要在不阻塞表读写的情况下修改表结构的场景。
+	// AlgorithmClause：
+	// 该字段用于生成 ALTER TABLE 语句时指定修改表的算法。ALGORITHM=[value] 用于选择更改表结构时使用的算法。
+	// 例如，ALGORITHM=inplace 表示不需要拷贝整个表，而是在不重建整个表的情况下就地修改表结构。这种算法更高效，尤其适用于大表的变更。
+	// 此处属于优化内容，且mysql各个版本支持度不唯一，此处可以不使用该属性
 	// results, err := compareConn.Db.Query("SELECT VERSION()")
 	// if err != nil {
 	// 	return nil, err
 	// }
 	// flavor := differ.ParseFlavor(fmt.Sprintf("%s %s", "mysql:", results[0]["VERSION()"].String))
 	// if !flavor.IsMySQL(5, 5) {
-	// mods.LockClause, mods.AlgorithmClause = "none", "inplace"
+	// 	mods.LockClause, mods.AlgorithmClause = "none", "inplace"
 	// }
 	dbDiffSQLs := make([]*driverV2.DatabaseDiffModifySQLResult, 0)
 	for _, objInfo := range objInfos {
