@@ -254,7 +254,7 @@ type WorkflowInstanceRecord struct {
 	Instance *Instance `gorm:"foreignkey:InstanceId"`
 	Task     *Task     `gorm:"foreignkey:TaskId"`
 	// User     *User     `gorm:"foreignkey:ExecutionUserId"`
-	ExecutionAssignees string `gorm:"type:varchar(255)"`
+	ExecutionAssignees string `gorm:"type:varchar(2000)"`
 }
 
 func (s *Storage) UpdateWorkflowInstanceRecordById(id uint, m map[string]interface{}) error {
@@ -312,7 +312,7 @@ type WorkflowStep struct {
 	State                  string `gorm:"default:\"initialized\"; type:varchar(255)"`
 	Reason                 string `gorm:"type:varchar(255)"`
 
-	Assignees string                `gorm:"type:varchar(255)"` // `gorm:"many2many:workflow_step_user"`
+	Assignees string                `gorm:"type:varchar(2000)"` // `gorm:"many2many:workflow_step_user"`
 	Template  *WorkflowStepTemplate `gorm:"foreignkey:WorkflowStepTemplateId"`
 	// OperationUser string                // `gorm:"foreignkey:OperationUserId"`
 }
