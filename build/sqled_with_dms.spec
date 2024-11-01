@@ -79,8 +79,10 @@ fi
 (which bash 1>/dev/null 2>&1) || (echo "require bash" && exit 12)
 (which pkill 1>/dev/null 2>&1) || (echo "require pkill" && exit 13)
 (getent group %{group_name} 1>/dev/null 2>&1) || groupadd -g 5700 %{group_name}
-(id %{user_name} 1>/dev/null 2>&1) || (useradd -M -g %{group_name} -s $(which nologin) -u 5700 %{user_name} && chage -M 99999 %{user_name})
+(id %{user_name} 1>/dev/null 2>&1) || (useradd -M -g %{group_name} -s /bin/bash -u 5700 %{user_name} && chage -M 99999 %{user_name})
 
+#arthas
+curl https://arthas.aliyun.com/arthas-boot.jar -o $RPM_INSTALL_PREFIX/arthas-boot.jar
 
 #check bash env
 bash -c "" 2>&1 | grep -e 'warning' -e 'error'
