@@ -107,11 +107,83 @@ func getInstanceById(c echo.Context, instanceID string) (*model.Instance, error)
 }
 
 func getComparisonStatement(c echo.Context) error {
+	req := new(GetComparisonStatementsReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 
+	projectID, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
+	}
+	baseObject := req.DatabaseComparisonObject.BaseDBObject
+	comparisonObject := req.DatabaseComparisonObject.ComparisonDBObject
+	databaseObject := req.DatabaseObject
+
+	var base *SQLStatementWithAuditResult
+	var comparison *SQLStatementWithAuditResult
+	if baseObject != nil {
+		baseInst, err := getInstanceById(c, baseObject.InstanceId)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		base, err = getAuditedSQLStatement(c, baseInst, *baseObject.SchemaName, databaseObject.ObjectName, databaseObject.ObjectType, projectID)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+	if comparisonObject != nil {
+		comparedInst, err := getInstanceById(c, comparisonObject.InstanceId)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		comparison, err = getAuditedSQLStatement(c, comparedInst, *comparisonObject.SchemaName, databaseObject.ObjectName, databaseObject.ObjectType, projectID)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
 	return c.JSON(http.StatusOK, &DatabaseComparisonStatementsResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    nil,
+		Data: &DatabaseComparisonStatements{
+			BaseSQL:        base,
+			ComparisondSQL: comparison,
+		},
 	})
+}
+
+func getAuditedSQLStatement(c echo.Context, inst *model.Instance, schemaName, objectName, objectType, projectID string) (*SQLStatementWithAuditResult, error) {
+	logger := log.NewEntry().WithField("get database object DDL", schemaName)
+	ddl, err := compare.GetDatabaseObjectDDL(c.Request().Context(), logger, inst, schemaName, objectName, objectType)
+	if err != nil {
+		return nil, errors.New(errors.DataConflict, err)
+	}
+
+	if ddl == nil {
+		return nil, nil
+	}
+
+	projectUID := model.ProjectUID(projectID)
+
+	task := &model.Task{
+		Instance: inst,
+		Schema:   schemaName,
+		DBType:   inst.DbType,
+		ExecuteSQLs: []*model.ExecuteSQL{
+			{
+				BaseSQL: model.BaseSQL{
+					Content: ddl.ObjectDDL,
+				},
+			},
+		},
+	}
+	err = server.Audit(logger, task, &projectUID, inst.RuleTemplateName)
+	if err != nil {
+		return nil, errors.New(errors.DataConflict, err)
+	}
+	return &SQLStatementWithAuditResult{
+		AuditResults: convertTaskAuditResults(c.Request().Context(), task.ExecuteSQLs[0].AuditResults, task.DBType),
+		SQLStatement: ddl.ObjectDDL,
+	}, nil
 }
 
 func convertTaskAuditResults(c context.Context, taskAuditResults model.AuditResults, dbType string) []*SQLAuditResult {
