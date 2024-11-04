@@ -39,9 +39,7 @@ func init() {
 您应遵循以下逻辑：
 1. 针对 "CREATE TABLE ..." 语句，执行以下检查，若任一条件满足则判定为违反规则：
    1. 语法树中包含 AUTO_INCREMENT 属性的列，且其初始值不等于 0。
-2. 针对 "ALTER TABLE ..." 语句，执行以下检查，若任一条件满足则判定为违反规则：
-   1. 语法树中包含 AUTO_INCREMENT 属性的列，且其初始值不等于 0。
-3. 针对 "SET ..." 语句，执行以下检查：
+2. 针对 "SET ..." 语句，执行以下检查：
    1. 设置的参数为 auto_increment_offset，且其值大于 0。
    若条件满足，则判定为违反规则。
 ==== Prompt end ====
@@ -58,18 +56,6 @@ func RuleSQLE00004(input *rulepkg.RuleHandlerInput) error {
 				// the table option "auto increment" is other than 0
 				rulepkg.AddResult(input.Res, input.Rule, SQLE00004)
 				return nil
-			}
-		}
-	case *ast.AlterTableStmt:
-		// "alter table"
-		for _, spec := range util.GetAlterTableCommandsByTypes(stmt, ast.AlterTableOption) {
-			if option := util.GetTableOption(spec.Options, ast.TableOptionAutoIncrement); nil != option {
-				//"alter table ... auto_increment=..."
-				if option.UintValue != 0 {
-					// the table option "auto increment" is other than 0
-					rulepkg.AddResult(input.Res, input.Rule, SQLE00004)
-					return nil
-				}
 			}
 		}
 	case *ast.SetStmt:
