@@ -388,6 +388,10 @@ definitions:
         - error
         - ""
         type: string
+      backup_conflict_with_instance:
+        type: boolean
+      enable_backup:
+        type: boolean
       exec_end_time:
         type: string
       exec_mode:
@@ -664,6 +668,8 @@ definitions:
     type: object
   v1.CreateAuditTaskReqV1:
     properties:
+      enable_backup:
+        type: boolean
       exec_mode:
         enum:
         - sql_file
@@ -4346,6 +4352,11 @@ definitions:
           type: string
         type: array
     type: object
+  v1.UpdateSqlBackupStrategyReq:
+    properties:
+      strategy:
+        type: string
+    type: object
   v1.UpdateSqlFileOrderV1Req:
     properties:
       files_to_sort:
@@ -4394,6 +4405,11 @@ definitions:
         type: integer
       url:
         example: http://10.186.61.32:8080
+        type: string
+    type: object
+  v1.UpdateTaskBackupStrategyReq:
+    properties:
+      strategy:
         type: string
     type: object
   v1.UpdateWechatConfigurationReqV1:
@@ -5152,12 +5168,18 @@ definitions:
         type: array
       audit_status:
         type: string
+      backup_strategy:
+        type: string
+      backup_strategy_tip:
+        type: string
       description:
         type: string
       exec_result:
         type: string
       exec_sql:
         type: string
+      exec_sql_id:
+        type: integer
       exec_status:
         type: string
       number:
@@ -5187,6 +5209,8 @@ definitions:
     type: object
   v2.CreateWorkflowReqV2:
     properties:
+      associated_workflow_id:
+        type: string
       desc:
         type: string
       sql_version_id:
@@ -10093,6 +10117,10 @@ paths:
         in: formData
         name: instance_schema
         type: string
+      - description: enable back up
+        in: formData
+        name: enable_backup
+        type: boolean
       - description: sqls for audit
         in: formData
         name: sql
@@ -10334,6 +10362,36 @@ paths:
       summary: 获取工单的task附件
       tags:
       - workflow
+  /v1/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/backup_files/download:
+    get:
+      description: download SQL back up file for the audit task
+      operationId: downloadBackupFileV1
+      parameters:
+      - description: workflow id
+        in: path
+        name: workflow_id
+        required: true
+        type: string
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: task id
+        in: path
+        name: task_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: sql file
+          schema:
+            type: file
+      security:
+      - ApiKeyAuth: []
+      summary: 下载工单中的SQL备份
+      tags:
+      - task
   /v1/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/order_file:
     post:
       consumes:
@@ -11560,6 +11618,10 @@ paths:
         in: formData
         name: sql
         type: string
+      - description: enable back up
+        in: formData
+        name: enable_backup
+        type: boolean
       - description: file order method
         in: formData
         name: file_order_method
@@ -11608,6 +11670,35 @@ paths:
       summary: 获取Sql扫描任务信息
       tags:
       - task
+    patch:
+      consumes:
+      - application/json
+      description: update back up strategy for all sqls in task
+      operationId: UpdateTaskBackupStrategyV1
+      parameters:
+      - description: task id
+        in: path
+        name: task_id
+        required: true
+        type: string
+      - description: update back up strategy for sqls in workflow
+        in: body
+        name: strategy
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateTaskBackupStrategyReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新工单中数据源对应所有SQL的备份策略
+      tags:
+      - workflow
   /v1/tasks/audits/{task_id}/origin_file:
     get:
       description: get SQL origin file of the audit task
@@ -11813,6 +11904,41 @@ paths:
       summary: 获取task相关的SQL执行计划和表元数据
       tags:
       - task
+  /v1/tasks/audits/{task_id}/sqls/{sql_id}/:
+    patch:
+      consumes:
+      - application/json
+      description: update back up strategy for one sql in workflow
+      operationId: UpdateSqlBackupStrategyV1
+      parameters:
+      - description: task id
+        in: path
+        name: task_id
+        required: true
+        type: string
+      - description: sql id
+        in: path
+        name: sql_id
+        required: true
+        type: string
+      - description: update back up strategy for one sql in workflow
+        in: body
+        name: strategy
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateSqlBackupStrategyReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新单条SQL的备份策略
+      tags:
+      - workflow
   /v1/tasks/file_order_methods:
     get:
       consumes:
@@ -12348,7 +12474,7 @@ paths:
             $ref: '#/definitions/controller.BaseRes'
       security:
       - ApiKeyAuth: []
-      summary: 更新工单（驳回后才可更新）
+      summary: 更新工单（工单被驳回、工单被关闭、执行成功、执行失败后才可更新）
       tags:
       - workflow
   /v2/projects/{project_name}/workflows/{workflow_id}/cancel:
