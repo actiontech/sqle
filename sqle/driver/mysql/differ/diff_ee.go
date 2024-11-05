@@ -213,7 +213,9 @@ func (dd *DatabaseDiff) DiffType() DiffType {
 	} else if dd.From == nil && dd.To != nil {
 		return DiffTypeCreate
 	} else if dd.From != nil && dd.To == nil {
-		return DiffTypeDrop
+		// 忽略drop database类型差异：https://github.com/actiontech/sqle-ee/issues/1949#issuecomment-2453922579
+		// return DiffTypeDrop
+		return DiffTypeNone
 	}
 
 	if dd.From.CharSet != dd.To.CharSet || dd.From.Collation != dd.To.Collation {
