@@ -583,10 +583,11 @@ func convertWorkflowToTasksSummaryRes(taskDetails []*model.WorkflowTasksSummaryD
 }
 
 type CreateWorkflowReqV2 struct {
-	Subject      string `json:"workflow_subject" form:"workflow_subject" valid:"required,name"`
-	Desc         string `json:"desc" form:"desc"`
-	SqlVersionID *uint  `json:"sql_version_id" form:"sql_version_id"`
-	TaskIds      []uint `json:"task_ids" form:"task_ids" valid:"required"`
+	Subject              string `json:"workflow_subject" form:"workflow_subject" valid:"required,name"`
+	Desc                 string `json:"desc" form:"desc"`
+	SqlVersionID         *uint  `json:"sql_version_id" form:"sql_version_id"`
+	TaskIds              []uint `json:"task_ids" form:"task_ids" valid:"required"`
+	AssociatedWorkflowId string `json:"associated_workflow_id"`
 }
 
 type CreateWorkflowResV2 struct {
@@ -794,7 +795,7 @@ type UpdateWorkflowReqV2 struct {
 }
 
 // UpdateWorkflowV2
-// @Summary 更新工单（驳回后才可更新）
+// @Summary 更新工单（工单被驳回、工单被关闭、执行成功、执行失败后才可更新）
 // @Description update workflow when it is rejected to creator.
 // @Tags workflow
 // @Accept json
@@ -901,6 +902,7 @@ func UpdateWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errTaskHasBeenUsed)
 	}
 	// When workflow status is rejected or exec failed, the user can recommit workflow. And the workflow becomes waiting for the audit process.
+	// TODO 重试工单 驳回、成功、失败、关闭的工单可以重试，应抽离出一个函数
 	if workflow.Record.Status != model.WorkflowStatusReject && workflow.Record.Status != model.WorkflowStatusExecFailed {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
 			fmt.Errorf("workflow status is %s, not allow operate it", workflow.Record.Status)))
