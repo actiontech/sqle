@@ -207,6 +207,15 @@ func (i *MysqlDriverImpl) GetDatabaseDiffModifySQL(ctx context.Context, calibrat
 		baseSchemaMap[base.Name] = base
 	}
 
+	cpAllSchemas, err := compareConn.ShowDatabases(true)
+	if err != nil {
+		return nil, err
+	}
+	cpAllSchemaMap := make(map[string]struct{}, len(cpAllSchemas))
+	for _, schemaName := range cpAllSchemas {
+		cpAllSchemaMap[schemaName] = struct{}{}
+	}
+
 	mods := differ.StatementModifiers{AllowUnsafe: true}
 	// LockClause：
 	// 该字段在生成的 ALTER TABLE 语句中用于指定锁定的行为。通过设置 LOCK=[value] 来决定当修改表时是否锁定表以及锁定的方式。
@@ -231,22 +240,23 @@ func (i *MysqlDriverImpl) GetDatabaseDiffModifySQL(ctx context.Context, calibrat
 		diff := compareSchema.Diff(baseSchema)
 		objDiffs := diff.ObjectDiffs()
 		diffSqls := make([]string, 0, len(objDiffs))
-		schemaNames, err := compareConn.ShowDatabases(true)
-		if err != nil {
-			return nil, err
+
+		// 当数据库存在于校准数据源时，在生成变更sql前，首先use database
+		if _, ok := cpAllSchemaMap[objInfo.ComparedSchemaName]; ok {
+			diffSqls = append(diffSqls, fmt.Sprintf("USE %s;\n", objInfo.ComparedSchemaName))
 		}
-		for _, schemaName := range schemaNames {
-			if objInfo.ComparedSchemaName == schemaName {
-				diffSqls = append(diffSqls, fmt.Sprintf("USE %s;\n", schemaName))
-				break
-			}
-		}
+
 		for _, objDiff := range objDiffs {
 			stmt, err := objDiff.Statement(mods)
 			if err != nil {
 				return nil, err
 			}
 			diffSqls = append(diffSqls, fmt.Sprintf("%s;\n", stmt))
+			// 当sql语句为create database时，需要补充在其后use database;
+			if objDiff.ObjectKey().Type == differ.ObjectTypeDatabase && objDiff.DiffType() == differ.DiffTypeCreate {
+				diffSqls = append(diffSqls, fmt.Sprintf("USE %s;\n", objDiff.ObjectKey().Name))
+			}
+
 		}
 
 		dbDiffSQLs = append(dbDiffSQLs, &driverV2.DatabaseDiffModifySQLResult{
@@ -298,16 +308,16 @@ func (i *MysqlDriverImpl) GetDatabaseObjectDDL(ctx context.Context, objInfos []*
 
 	res := make([]*driverV2.DatabaseSchemaObjectResult, 0, len(databasSchemaInfo))
 	for _, objInfo := range databasSchemaInfo {
+		err = conn.UseSchema(objInfo.SchemaName)
+		if err != nil {
+			return nil, fmt.Errorf("use schema fail, error: %v", err)
+		}
 		schemaDDL, err := conn.ShowCreateSchema(utils.SupplementalQuotationMarks(objInfo.SchemaName))
 		if err != nil {
 			return nil, err
 		}
 		dbDDLs := make([]*driverV2.DatabaseObjectDDL, 0, len(objInfo.DatabaseObjects))
 		for _, obj := range objInfo.DatabaseObjects {
-			err = conn.UseSchema(objInfo.SchemaName)
-			if err != nil {
-				return nil, fmt.Errorf("use schema fail, error: %v", err)
-			}
 			objetDDL := ""
 			if obj.ObjectType == driverV2.ObjectType_TABLE {
 				tableDDL, err := conn.ShowCreateTable(objInfo.SchemaName, obj.ObjectName)
