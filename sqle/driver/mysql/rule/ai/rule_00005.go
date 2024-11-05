@@ -18,22 +18,22 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00005,
-			Desc:       "对于MySQL的DDL, 复合索引的列数量不建议超过阈值",
-			Annotation: "复合索引会根据索引列数创建对应组合的索引，列数越多，创建的索引越多，每个索引都会增加磁盘空间的开销，同时增加索引维护的开销；具体规则阈值可以根据业务需求调整，默认值：3",
-			Level:      driverV2.RuleLevelNotice,
-			Category:   rulepkg.RuleTypeIndexingConvention,
+			Desc:       "在 MySQL 中, 避免复合索引中包含过多字段",
+			Annotation: "在设计复合索引过程中，每增加一个索引字段，都会使索引的大小线性增加，从而占用更多的磁盘空间，且增加索引维护的开销。尤其是在数据频繁变动的环境中，这会显著增加数据库的维护压力。",
+			Level:      driverV2.RuleLevelWarn,
+			Category:   rulepkg.RuleTypeDMLConvention,
 			Params: params.Params{
 				&params.Param{
 					Key:   rulepkg.DefaultSingleParamKeyName,
 					Value: "5",
-					Desc:  "索引列数",
-					Type:  params.ParamTypeInt,
+					Desc:  "复合索引内字段个数",
+					Type:  params.ParamTypeString,
 				},
 			},
 		},
-		Message: "对于MySQL的DDL, 复合索引的列数量不建议超过阈值. 阈值: %v",
+		Message:      "在 MySQL 中, 避免复合索引中包含过多字段",
 		AllowOffline: true,
-		Func:    RuleSQLE00005,
+		Func:         RuleSQLE00005,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
 	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
@@ -41,15 +41,30 @@ func init() {
 
 /*
 ==== Prompt start ====
-In MySQL, you should check if the SQL violate the rule(SQLE00005): "For table creation and index creation statements, the number of columns included in the composite index should be within threshold, the threshold should be a parameter whose default value is 5.".
-You should follow the following logic:
-1. For the "CREATE TABLE ..." statements, check if the composite index includes more than three columns. If it does, report a violation.
-2. For the  "CREATE INDEX ..." statements, check if the composite index includes more than three columns. If it does, report a violation.
-3. For the  "ALTER TABLE ... ADD INDEX ..." statements, check if the composite index includes more than three columns. If it does, report a violation.
+在 MySQL 中，您应该检查 SQL 是否违反了规则(SQLE00005): "在 MySQL 中，避免复合索引中包含过多字段.默认参数描述: 复合索引内字段个数, 默认参数值: 5"
+您应遵循以下逻辑：
+1. 对于 CREATE TABLE 语句，检查以下条件：
+   1. 定义一个字段集合。
+   2. 解析语法树，提取语句中 key 或 index 定义的字段，并将其加入集合。
+   3. 获取集合中字段的数量。
+   4. 如果字段数量大于规则变量值，则报告违反规则。
+
+2. 对于 ALTER TABLE 语句，检查以下条件：
+   1. 定义一个字段集合。
+   2. 解析语法树，提取语句中 key 或 index 定义的字段，并将其加入集合。
+   3. 获取集合中字段的数量。
+   4. 如果字段数量大于规则变量值，则报告违反规则。
+
+3. 对于 CREATE INDEX 语句，检查以下条件：
+   1. 定义一个字段集合。
+   2. 解析语法树，提取语句中 index 定义的字段，并将其加入集合。
+   3. 获取集合中字段的数量。
+   4. 如果字段数量大于规则变量值，则报告违反规则。
 ==== Prompt end ====
 */
 
 // ==== Rule code start ====
+// 规则函数实现开始
 func RuleSQLE00005(input *rulepkg.RuleHandlerInput) error {
 	// get expected param value
 	param := input.Rule.Params.GetParam(rulepkg.DefaultSingleParamKeyName)
@@ -95,4 +110,5 @@ func RuleSQLE00005(input *rulepkg.RuleHandlerInput) error {
 	return nil
 }
 
+// 规则函数实现结束
 // ==== Rule code end ====
