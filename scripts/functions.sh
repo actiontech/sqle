@@ -650,7 +650,7 @@ restart_sqle() {
     if [ ! -f "$work_directory/scripts/stop_sqle.sh" ]; then
             echo "$error stop_sqle.sh 脚本不存在"
             echo "$split_line"
-            exit 1
+            return 2
     fi
     if chmod +x "$work_directory/scripts/stop_sqle.sh"; then
           echo "$info stop_sqle.sh 可执行权限配置完成"

@@ -57,8 +57,16 @@ while true; do
                         fi
                     fi
                 done
-                if ! restart_sqle;then
-                    echo "$error 重启SQLE失败, 脚本已退出"
+                restart_sqle
+                error_code=$?
+                if [ $error_code -ne 0 ];then
+                    if [ $error_code -eq 1 ]; then
+                      echo "$error 重启SQLE失败，原因是：设置权限失败，脚本已退出"
+                    elif [ $error_code -eq 2 ]; then
+                      echo "$error 重启SQLE失败，原因是：停止脚本不存在，脚本已退出"
+                    else
+                      echo "$error 重启SQLE失败, 脚本已退出"
+                    fi
                 fi
                 break
             else
