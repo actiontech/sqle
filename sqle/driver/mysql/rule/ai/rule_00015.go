@@ -1,12 +1,12 @@
 package ai
 
 import (
-	"fmt"
 	"strings"
 
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	util "github.com/actiontech/sqle/sqle/driver/mysql/rule/ai/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
 )
@@ -19,22 +19,15 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00015,
-			Desc:       "对于MySQL的DDL, 建议使用规定的数据库排序规则",
-			Annotation: "通过该规则约束全局的数据库排序规则，避免创建非预期的数据库排序规则，防止业务侧出现排序结果非预期等问题。建议项目内库表使用统一的字符集和字符集排序，部分连表查询的情况下字段的字符集或排序规则不一致可能会导致索引失效且不易发现",
-			Level:      driverV2.RuleLevelError,
-			Category:   rulepkg.RuleTypeDDLConvention,
-			Params: params.Params{
-				&params.Param{
-					Key:   rulepkg.DefaultSingleParamKeyName,
-					Value: "utf8mb4_0900_ai_ci",
-					Desc:  "数据库排序规则",
-					Type:  params.ParamTypeString,
-				},
-			},
+			Desc:       "在 MySQL 中, 避免库内出现多种数据库排序规则",
+			Annotation: "建议库内使用一致的数据库排序规则，以确保查询性能和索引有效性，避免因排序规则不一致导致的全表扫描和数据一致性问题。",
+			Level:      driverV2.RuleLevelWarn,
+			Category:   rulepkg.RuleTypeDMLConvention,
+			Params:     params.Params{},
 		},
-		Message: "对于MySQL的DDL, 建议使用规定的数据库排序规则为%s",
+		Message:      "在 MySQL 中, 避免库内出现多种数据库排序规则",
 		AllowOffline: false,
-		Func:    RuleSQLE00015,
+		Func:         RuleSQLE00015,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
 	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
@@ -42,102 +35,108 @@ func init() {
 
 /*
 ==== Prompt start ====
-In MySQL, you should check if the SQL violate the rule(SQLE00015): "In DDL, the specified collation should be used, the specified collation should be a parameter whose default value is utf8mb4_0900_ai_ci.".
-You should follow the following logic:
-1. For "create table ... collate= ..." statement, check collate which on the table option or on the column should be the same as the specified collation, otherwise, report a violation
-2. For "alter table ... collate= ..." statement, check collate which on the table option or on the column should be the same as the specified collation, otherwise, report a violation
-2. For "create database ... collate= ..." statement, check collate should be the same as the specified collation, otherwise, report a violation
-2. For "alter database ... collate= ..." statement, check collate should be the same as the specified collation, otherwise, report a violation
+在 MySQL 中，您应该检查 SQL 是否违反了规则(SQLE00015): "在 MySQL 中，避免库内出现多种数据库排序规则."
+您应遵循以下逻辑：
+1. 对于 CREATE TABLE 语句：
+   1. 检查是否在表级别指定了 COLLATION。
+   2. 如果指定了表级 COLLATION，使用辅助函数 GetDatabaseOption 验证其是否与数据库默认 COLLATION 一致。
+   3. 检查所有字符类型列（如 CHAR、VARCHAR、TEXT 等）是否指定了列级 COLLATION。
+   4. 如果指定了列级 COLLATION，使用辅助函数 GetDatabaseOption 验证其是否与数据库默认 COLLATION 一致。
+   5. 如果表级或任何列级 COLLATION 与数据库默认 COLLATION 不一致，报告规则违规。
+
+2. 对于 ALTER TABLE 语句：
+   1. 检查语句中是否包含 CONVERT TO CHARACTER SET 子句，并使用辅助函数 GetDatabaseOption 验证指定的 COLLATION 是否与数据库默认 COLLATION 一致。
+   2. 如果添加或修改字符类型列（如 CHAR、VARCHAR、TEXT 等），检查是否指定了 COLLATION，并使用辅助函数 GetDatabaseOption 验证其是否与数据库默认 COLLATION 一致。
+   3. 如果指定的 COLLATION 与数据库默认 COLLATION 不一致，报告规则违规。
 ==== Prompt end ====
 */
 
 // ==== Rule code start ====
-func RuleSQLE00015(input *rulepkg.RuleHandlerInput) error {
-	// get expected param value
-	param := input.Rule.Params.GetParam(rulepkg.DefaultSingleParamKeyName)
-	if param == nil {
-		return fmt.Errorf("param %s not found", rulepkg.DefaultSingleParamKeyName)
-	}
 
-	expectedCollation := param.Value
-	var columnCollations []string
+// 规则函数实现开始
+func RuleSQLE00015(input *rulepkg.RuleHandlerInput) error {
+
+	getDefaultCollation := func(defaultCollation string, table *ast.TableName) (string, error) {
+		if defaultCollation != "" {
+			return defaultCollation, nil
+		}
+		defaultCollation, err := input.Ctx.GetCollationDatabase(table, "")
+		if err != nil {
+			log.NewEntry().Errorf("GetCollationDatabase, fail err: %v", err)
+			return "", err
+		}
+		return defaultCollation, nil
+	}
 
 	switch stmt := input.Node.(type) {
 	case *ast.CreateTableStmt:
-		// "create table ..."
+		var defaultCollation string
+		var err error
 
+		// "create table ..."
 		// get collate in column definition
 		for _, col := range stmt.Cols {
 			if option := util.GetColumnOption(col, ast.ColumnOptionCollate); nil != option {
-				columnCollations = append(columnCollations, option.StrValue)
+				defaultCollation, err = getDefaultCollation(defaultCollation, stmt.Table)
+				if err != nil {
+					return err
+				}
+				if !strings.EqualFold(defaultCollation, option.StrValue) {
+					rulepkg.AddResult(input.Res, input.Rule, SQLE00015)
+					return nil
+				}
 			}
 		}
 
 		// get collate in table option
 		if option := util.GetTableOption(stmt.Options, ast.TableOptionCollate); nil != option {
-			columnCollations = append(columnCollations, option.StrValue)
-		}
-
-		// if create table not define collate, using default
-		if len(columnCollations) == 0 {
-			c, err := input.Ctx.GetCollationDatabase(stmt.Table, "")
+			defaultCollation, err = getDefaultCollation(defaultCollation, stmt.Table)
 			if err != nil {
 				return err
 			}
-			columnCollations = append(columnCollations, c)
+			if !strings.EqualFold(defaultCollation, option.StrValue) {
+				rulepkg.AddResult(input.Res, input.Rule, SQLE00015)
+				return nil
+			}
 		}
 
 	case *ast.AlterTableStmt:
+		var defaultCollation string
+		var err error
 		// "alter table"
-
 		for _, spec := range stmt.Specs {
-
 			// get collate in column definition
 			for _, col := range spec.NewColumns {
 				if option := util.GetColumnOption(col, ast.ColumnOptionCollate); nil != option {
-					columnCollations = append(columnCollations, option.StrValue)
+					defaultCollation, err = getDefaultCollation(defaultCollation, stmt.Table)
+					if err != nil {
+						return err
+					}
+					if !strings.EqualFold(defaultCollation, option.StrValue) {
+						rulepkg.AddResult(input.Res, input.Rule, SQLE00015)
+						return nil
+					}
 				}
 			}
 
 			// get collate in table option
 			if option := util.GetTableOption(spec.Options, ast.TableOptionCollate); nil != option {
-				columnCollations = append(columnCollations, option.StrValue)
+				defaultCollation, err = getDefaultCollation(defaultCollation, stmt.Table)
+				if err != nil {
+					return err
+				}
+				if !strings.EqualFold(defaultCollation, option.StrValue) {
+					rulepkg.AddResult(input.Res, input.Rule, SQLE00015)
+					return nil
+				}
 			}
-		}
-
-	case *ast.CreateDatabaseStmt:
-		// "create database ..."
-
-		if option := util.GetDatabaseOption(stmt.Options, ast.DatabaseOptionCollate); nil != option {
-			columnCollations = append(columnCollations, option.Value)
-		}
-
-		// if create database not define collate, using default
-		if len(columnCollations) == 0 {
-			c, err := input.Ctx.GetCollationDatabase(nil, stmt.Name)
-			if err != nil {
-				return err
-			}
-			columnCollations = append(columnCollations, c)
-		}
-
-	case *ast.AlterDatabaseStmt:
-		// "alter database ..."
-
-		if option := util.GetDatabaseOption(stmt.Options, ast.DatabaseOptionCollate); nil != option {
-			columnCollations = append(columnCollations, option.Value)
 		}
 	default:
 		return nil
 	}
 
-	for _, cs := range columnCollations {
-		if !strings.EqualFold(cs, expectedCollation) {
-			// the collate is not the same as param
-			rulepkg.AddResult(input.Res, input.Rule, SQLE00015, expectedCollation)
-		}
-	}
 	return nil
 }
 
+// 规则函数实现结束
 // ==== Rule code end ====
