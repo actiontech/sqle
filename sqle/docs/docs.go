@@ -12219,11 +12219,11 @@ var doc = `{
             "properties": {
                 "base_sql": {
                     "type": "object",
-                    "$ref": "#/definitions/v1.SQLStatementWithAuditResult"
+                    "$ref": "#/definitions/v1.SQLStatement"
                 },
                 "comparison_sql": {
                     "type": "object",
-                    "$ref": "#/definitions/v1.SQLStatementWithAuditResult"
+                    "$ref": "#/definitions/v1.SQLStatement"
                 }
             }
         },
@@ -12247,6 +12247,9 @@ var doc = `{
         "v1.DatabaseDiffModifySQL": {
             "type": "object",
             "properties": {
+                "audit_error": {
+                    "type": "string"
+                },
                 "modify_sqls": {
                     "type": "array",
                     "items": {
@@ -16101,6 +16104,18 @@ var doc = `{
                 },
                 "query_timeout_second": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.SQLStatement": {
+            "type": "object",
+            "properties": {
+                "audit_error": {
+                    "type": "string"
+                },
+                "sql_statement_with_audit": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.SQLStatementWithAuditResult"
                 }
             }
         },
