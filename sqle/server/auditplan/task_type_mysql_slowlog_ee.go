@@ -414,6 +414,7 @@ func (at *SlowLogTaskV2) Head(ap *AuditPlan) []Head {
 			Name:     MetricNameLastReceiveTimestamp,
 			Desc:     locale.ApLastMatchTime,
 			Sortable: true,
+			Type:     "time",
 		},
 		{
 			Name:     MetricNameQueryTimeAvg,

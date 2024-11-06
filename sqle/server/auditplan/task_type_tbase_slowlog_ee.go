@@ -136,6 +136,7 @@ func (at *TBaseSlowLogTaskV2) Head(ap *AuditPlan) []Head {
 		{
 			Name: "last_receive_timestamp",
 			Desc: locale.ApLastMatchTime,
+			Type: "time",
 		},
 		{
 			Name: "average_query_time",
