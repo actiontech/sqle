@@ -96,7 +96,7 @@ func RuleSQLE00001(input *rulepkg.RuleHandlerInput) error {
 	checkIsNotNull := func(table *ast.TableName, col string) (bool, error) {
 		createTableStmt, err := util.GetCreateTableStmt(input.Ctx, table)
 		if err != nil {
-			log.NewEntry().Errorf("GetCreateTableStmt failed", err)
+			log.NewEntry().Errorf("GetCreateTableStmt failed, error: %v", err)
 			return false, err
 		}
 		for _, columnDef := range createTableStmt.Cols {
