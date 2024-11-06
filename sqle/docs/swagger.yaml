@@ -486,6 +486,29 @@ definitions:
       total_sql_count:
         type: integer
     type: object
+  v1.BackupSqlListRes:
+    properties:
+      backup_sqls:
+        items:
+          type: string
+        type: array
+      backup_strategy:
+        type: string
+      description:
+        type: string
+      exec_order:
+        type: integer
+      exec_sql_id:
+        type: integer
+      exec_status:
+        type: string
+      'instance_id ':
+        type: string
+      instance_name:
+        type: string
+      origin_sql:
+        type: string
+    type: object
   v1.BatchAssociateWorkflowsWithVersionReqV1:
     properties:
       workflow_ids:
@@ -10117,7 +10140,7 @@ paths:
         in: formData
         name: instance_schema
         type: string
-      - description: enable back up
+      - description: enable backup
         in: formData
         name: enable_backup
         type: boolean
@@ -10330,6 +10353,48 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 创建工单
+      tags:
+      - workflow
+  /v1/projects/{project_name}/workflows/{workflow_id}/backup_sqls:
+    get:
+      description: get backup sql list
+      operationId: GetBackupSqlListV1
+      parameters:
+      - description: 'filter: exec status of task sql'
+        enum:
+        - initialized
+        - doing
+        - succeeded
+        - failed
+        - manually_executed
+        - terminating
+        - terminate_succeeded
+        - terminate_failed
+        in: query
+        name: filter_exec_status
+        type: string
+      - description: 'filter: instance id in workflow'
+        in: query
+        name: filter_instance_id
+        type: integer
+      - description: page index
+        in: query
+        name: page_index
+        required: true
+        type: string
+      - description: page size
+        in: query
+        name: page_size
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.BackupSqlListRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取工单下所有回滚SQL的列表
       tags:
       - workflow
   /v1/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/attachment:
@@ -11618,7 +11683,7 @@ paths:
         in: formData
         name: sql
         type: string
-      - description: enable back up
+      - description: enable backup
         in: formData
         name: enable_backup
         type: boolean

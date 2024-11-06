@@ -6592,7 +6592,7 @@
                     },
                     {
                         "type": "boolean",
-                        "description": "enable back up",
+                        "description": "enable backup",
                         "name": "enable_backup",
                         "in": "formData"
                     },
@@ -7094,6 +7094,67 @@
                         "description": "export workflow",
                         "schema": {
                             "type": "file"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/workflows/{workflow_id}/backup_sqls": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get backup sql list",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "获取工单下所有回滚SQL的列表",
+                "operationId": "GetBackupSqlListV1",
+                "parameters": [
+                    {
+                        "enum": [
+                            "initialized",
+                            "doing",
+                            "succeeded",
+                            "failed",
+                            "manually_executed",
+                            "terminating",
+                            "terminate_succeeded",
+                            "terminate_failed"
+                        ],
+                        "type": "string",
+                        "description": "filter: exec status of task sql",
+                        "name": "filter_exec_status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "filter: instance id in workflow",
+                        "name": "filter_instance_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "page size",
+                        "name": "page_size",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.BackupSqlListRes"
                         }
                     }
                 }
@@ -8903,7 +8964,7 @@
                     },
                     {
                         "type": "boolean",
-                        "description": "enable back up",
+                        "description": "enable backup",
                         "name": "enable_backup",
                         "in": "formData"
                     },
@@ -11623,6 +11684,41 @@
                 },
                 "total_sql_count": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.BackupSqlListRes": {
+            "type": "object",
+            "properties": {
+                "backup_sqls": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "backup_strategy": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "exec_order": {
+                    "type": "integer"
+                },
+                "exec_sql_id": {
+                    "type": "integer"
+                },
+                "exec_status": {
+                    "type": "string"
+                },
+                "instance_id ": {
+                    "type": "string"
+                },
+                "instance_name": {
+                    "type": "string"
+                },
+                "origin_sql": {
+                    "type": "string"
                 }
             }
         },
