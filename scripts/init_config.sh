@@ -45,11 +45,11 @@ while true; do
                 echo "$edition ${successful_plugins[i]}"
             done
             echo "$split_line"
-            read -p "输入 'y'或'Y' 重启SQLE, 输入任意字符继续选择需要配置的插件>> " choice
+            read -p "输入 'y'或'Y' 启动SQLE, 输入任意字符继续选择需要配置的插件>> " choice
             if [[ "$choice" == "y" || "$choice" == "Y" ]]; then
                 echo "$split_line"
                 # 将不存在于successful_plugins中的插件移动到unused_plugin
-                echo "$info 本次重启未使用的插件文件将移动到unused_plugins中"
+                echo "$info 本次启动未使用的插件文件将移动到unused_plugins中"
                 for plugin in "${plugins[@]}"; do
                     if [[ ! " ${successful_plugins[@]} " =~ " ${plugin} " ]]; then
                         if ! move_to_unused_plugins "$plugin"; then
@@ -60,13 +60,7 @@ while true; do
                 restart_sqle
                 error_code=$?
                 if [ $error_code -ne 0 ];then
-                    if [ $error_code -eq 1 ]; then
-                      echo "$error 重启SQLE失败，原因是：设置权限失败，脚本已退出"
-                    elif [ $error_code -eq 2 ]; then
-                      echo "$error 重启SQLE失败，原因是：停止脚本不存在，脚本已退出"
-                    else
-                      echo "$error 重启SQLE失败, 脚本已退出"
-                    fi
+                    echo "$error 启动SQLE失败, 脚本已退出"
                 fi
                 break
             else
