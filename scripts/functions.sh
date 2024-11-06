@@ -638,4 +638,32 @@ launch_sqle() {
         echo "$split_line"
     fi
 }
+# 当stop.sh脚本不存在时返回错误码:2
+# 当赋予stop.sh脚本执行权限失败返回错误码:1
+restart_sqle() {
+  # pgrep -x sqled 如果找到sqled进程后返回true
+  if pgrep -x sqled >/dev/null
+  then
+    echo "$split_line"
+    echo ">>>> 正在重新启动SQLE <<<<"
+    echo "$split_line"
+    # 检查 stop_sqle.sh 是否存在
+    if [ ! -f "$work_directory/scripts/stop_sqle.sh" ]; then
+            echo "$error stop_sqle.sh 脚本不存在"
+            echo "$split_line"
+            return 2
+    fi
+    if chmod +x "$work_directory/scripts/stop_sqle.sh"; then
+          echo "$info stop_sqle.sh 可执行权限配置完成"
+      else
+          echo "$error 设置 stop_sqle.sh 执行权限失败"
+          return 1
+    fi
+    # 启动 stop_sqle.sh脚本
+    bash "$work_directory/scripts/stop_sqle.sh"
+    launch_sqle
+  else
+    launch_sqle
+  fi
+}
 
