@@ -6,8 +6,6 @@ package differ
 import (
 	"fmt"
 	"strings"
-
-	"github.com/actiontech/sqle/sqle/utils"
 )
 
 // DiffType enumerates possible ways that two objects differ
@@ -213,7 +211,9 @@ func (dd *DatabaseDiff) DiffType() DiffType {
 	} else if dd.From == nil && dd.To != nil {
 		return DiffTypeCreate
 	} else if dd.From != nil && dd.To == nil {
-		return DiffTypeDrop
+		// 忽略drop database类型差异：https://github.com/actiontech/sqle-ee/issues/1949#issuecomment-2453922579
+		// return DiffTypeDrop
+		return DiffTypeNone
 	}
 
 	if dd.From.CharSet != dd.To.CharSet || dd.From.Collation != dd.To.Collation {
@@ -230,8 +230,7 @@ func (dd *DatabaseDiff) Statement(mods StatementModifiers) (string, error) {
 	}
 	switch dd.DiffType() {
 	case DiffTypeCreate:
-		// fmt.Sprintf("%s;\n use %s\n", dd.To.Name, dd.To.CreateStatement())
-		return fmt.Sprintf("%s;\nUSE %s", dd.To.CreateStatement(), utils.SupplementalQuotationMarks(dd.To.Name)), nil
+		return dd.To.CreateStatement(), nil
 	case DiffTypeDrop:
 		stmt := dd.From.DropStatement()
 		var err error

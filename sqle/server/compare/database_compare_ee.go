@@ -6,6 +6,7 @@ package compare
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/common"
@@ -78,7 +79,26 @@ func (c *Compared) ExecDatabaseCompare(context context.Context, l *logrus.Entry)
 	if err != nil {
 		return nil, err
 	}
+	// 数据库对象按名称字典序排序
 	schemaObjects := CompareDDL(baseRes, comparedRes, c.ObjInfos)
+	for _, schema := range schemaObjects {
+		for _, diffObject := range schema.DatabaseDiffObjects {
+			sort.Slice(diffObject.ObjectsDiffResults, func(x, y int) bool {
+				return diffObject.ObjectsDiffResults[x].ObjectName < diffObject.ObjectsDiffResults[y].ObjectName
+			})
+		}
+	}
+	// schema名称按字典序排序
+	sort.Slice(schemaObjects, func(i, j int) bool {
+		baseI, baseJ := schemaObjects[i].BaseSchemaName, schemaObjects[j].BaseSchemaName
+		compI, compJ := schemaObjects[i].ComparisonSchemaName, schemaObjects[j].ComparisonSchemaName
+
+		if baseI != baseJ { // 首先按 BaseSchemaName 排序
+			return baseI < baseJ
+		}
+		return compI < compJ // 其次按 ComparisonSchemaName 排序
+	})
+
 	return schemaObjects, err
 }
 
