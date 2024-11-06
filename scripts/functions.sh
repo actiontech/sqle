@@ -643,19 +643,20 @@ restart_sqle() {
   echo "$split_line"
   echo ">>>> 正在重新启动SQLE <<<<"
   echo "$split_line"
+  # pgrep -x sqled 如果找到sqled进程后返回true
   if pgrep -x sqled >/dev/null
   then
-    if chmod +x "$work_directory/scripts/stop_sqle.sh"; then
-          echo "$info stop_sqle.sh 可执行权限配置完成"
-      else
-          echo "$error 设置 stop_sqle.sh 执行权限失败"
-          return 1
-    fi
     # 检查 stop_sqle.sh 是否存在
     if [ ! -f "$work_directory/scripts/stop_sqle.sh" ]; then
             echo "$error stop_sqle.sh 脚本不存在"
             echo "$split_line"
             exit 1
+    fi
+    if chmod +x "$work_directory/scripts/stop_sqle.sh"; then
+          echo "$info stop_sqle.sh 可执行权限配置完成"
+      else
+          echo "$error 设置 stop_sqle.sh 执行权限失败"
+          return 1
     fi
     # 启动 stop_sqle.sh脚本
     bash "$work_directory/scripts/stop_sqle.sh"
