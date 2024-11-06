@@ -45,7 +45,7 @@ while true; do
                 echo "$edition ${successful_plugins[i]}"
             done
             echo "$split_line"
-            read -p "输入 'y'或'Y' 启动SQLE, 输入任意字符继续选择需要配置的插件>> " choice
+            read -p "输入 'y'或'Y' 重启SQLE, 输入任意字符继续选择需要配置的插件>> " choice
             if [[ "$choice" == "y" || "$choice" == "Y" ]]; then
                 echo "$split_line"
                 # 将不存在于successful_plugins中的插件移动到unused_plugin
