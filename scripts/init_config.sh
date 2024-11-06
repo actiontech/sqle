@@ -49,7 +49,7 @@ while true; do
             if [[ "$choice" == "y" || "$choice" == "Y" ]]; then
                 echo "$split_line"
                 # 将不存在于successful_plugins中的插件移动到unused_plugin
-                echo "$info 本次启动未使用的插件文件将移动到unused_plugins中"
+                echo "$info 本次重启未使用的插件文件将移动到unused_plugins中"
                 for plugin in "${plugins[@]}"; do
                     if [[ ! " ${successful_plugins[@]} " =~ " ${plugin} " ]]; then
                         if ! move_to_unused_plugins "$plugin"; then
