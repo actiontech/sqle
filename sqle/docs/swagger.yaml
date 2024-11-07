@@ -987,10 +987,10 @@ definitions:
   v1.DatabaseComparisonStatements:
     properties:
       base_sql:
-        $ref: '#/definitions/v1.SQLStatementWithAuditResult'
+        $ref: '#/definitions/v1.SQLStatement'
         type: object
       comparison_sql:
-        $ref: '#/definitions/v1.SQLStatementWithAuditResult'
+        $ref: '#/definitions/v1.SQLStatement'
         type: object
     type: object
   v1.DatabaseComparisonStatementsResV1:
@@ -1007,6 +1007,8 @@ definitions:
     type: object
   v1.DatabaseDiffModifySQL:
     properties:
+      audit_error:
+        type: string
       modify_sqls:
         items:
           $ref: '#/definitions/v1.SQLStatementWithAuditResult'
@@ -3643,6 +3645,14 @@ definitions:
         type: integer
       query_timeout_second:
         type: integer
+    type: object
+  v1.SQLStatement:
+    properties:
+      audit_error:
+        type: string
+      sql_statement_with_audit:
+        $ref: '#/definitions/v1.SQLStatementWithAuditResult'
+        type: object
     type: object
   v1.SQLStatementWithAuditResult:
     properties:

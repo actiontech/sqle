@@ -142,6 +142,7 @@ func (at *DefaultTaskV2) Head(ap *AuditPlan) []Head {
 		{
 			Name: MetricNameLastReceiveTimestamp,
 			Desc: locale.ApMetricNameLastReceiveTimestamp,
+			Type: "time",
 		},
 	}
 }
