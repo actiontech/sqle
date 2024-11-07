@@ -145,7 +145,7 @@ func AIMockExecutor(expectations []*AIMockSQLExpectation) (*executor.Executor, e
 	return e, nil
 }
 
-func runAIRuleCase(rule driverV2.Rule, t *testing.T, desc, sql string, mockContext *session.AIMockContext, mockSQLExpectation []*AIMockSQLExpectation, result *testResult) {
+func runAIRuleCase(rule driverV2.Rule, t *testing.T, desc, sql string, mockContext *session.AIMockContext, mockSQLExpectation []*AIMockSQLExpectation, result ...*testResult) {
 	e, err := AIMockExecutor(mockSQLExpectation)
 	if err != nil {
 		t.Errorf("%s test failed, mock executor error: %v\n", desc, err)
@@ -159,7 +159,7 @@ func runAIRuleCase(rule driverV2.Rule, t *testing.T, desc, sql string, mockConte
 	inspect := NewMockInspect(e)
 	inspect.Ctx = ctx
 	inspect.rules = []*driverV2.Rule{&rule}
-	inspectAICase(t, desc, inspect, sql, result)
+	inspectAICase(t, desc, inspect, sql, result...)
 }
 
 func runDefaultRulesInspectCase(t *testing.T, desc string, i *MysqlDriverImpl, sql string, results ...*testResult) {
