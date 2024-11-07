@@ -121,8 +121,8 @@ func getComparisonStatement(c echo.Context) error {
 	comparisonObject := req.DatabaseComparisonObject.ComparisonDBObject
 	databaseObject := req.DatabaseObject
 	logger := log.NewEntry().WithField("get database object DDL", "comparison sql statement")
-	var base *SQLStatementWithAuditResult
-	var comparison *SQLStatementWithAuditResult
+	var base *SQLStatement
+	var comparison *SQLStatement
 	if baseObject != nil {
 		baseInst, err := getInstanceById(c, baseObject.InstanceId)
 		if err != nil {
@@ -152,7 +152,7 @@ func getComparisonStatement(c echo.Context) error {
 	})
 }
 
-func getAuditedSQLStatement(c context.Context, l *logrus.Entry, inst *model.Instance, schemaName, objectName, objectType, projectID string) (*SQLStatementWithAuditResult, error) {
+func getAuditedSQLStatement(c context.Context, l *logrus.Entry, inst *model.Instance, schemaName, objectName, objectType, projectID string) (*SQLStatement, error) {
 
 	ddl, err := compare.GetDatabaseObjectDDL(c, l, inst, schemaName, objectName, objectType)
 	if err != nil {
@@ -177,14 +177,26 @@ func getAuditedSQLStatement(c context.Context, l *logrus.Entry, inst *model.Inst
 			},
 		},
 	}
+	var sqlStatement *SQLStatement
 	err = server.Audit(l, task, &projectUID, inst.RuleTemplateName)
 	if err != nil {
-		return nil, errors.New(errors.DataConflict, err)
+		sqlStatement = &SQLStatement{
+			AuditError: err.Error(),
+			SQLStatementWithAudit: &SQLStatementWithAuditResult{
+				SQLStatement: ddl.ObjectDDL,
+			},
+		}
+		l.Errorf("auditing sql ddl statement error: %v", err)
+	} else {
+		sqlStatement = &SQLStatement{
+			SQLStatementWithAudit: &SQLStatementWithAuditResult{
+				AuditResults: convertTaskAuditResults(c, task.ExecuteSQLs[0].AuditResults, task.DBType),
+				SQLStatement: ddl.ObjectDDL,
+			},
+		}
 	}
-	return &SQLStatementWithAuditResult{
-		AuditResults: convertTaskAuditResults(c, task.ExecuteSQLs[0].AuditResults, task.DBType),
-		SQLStatement: ddl.ObjectDDL,
-	}, nil
+
+	return sqlStatement, nil
 }
 
 func convertTaskAuditResults(c context.Context, taskAuditResults model.AuditResults, dbType string) []*SQLAuditResult {
@@ -272,18 +284,26 @@ func genDatabaseDiffModifySQLs(c echo.Context) error {
 				SQLStatement: sql,
 			}
 		}
+		var sqlStatement *DatabaseDiffModifySQL
 		err := server.Audit(logger, task, &projectUID, comparedInst.RuleTemplateName)
 		if err != nil {
-			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
+			sqlStatement = &DatabaseDiffModifySQL{
+				AuditError: err.Error(),
+				SchemaName: diffSQL.SchemaName,
+				ModifySQLs: modifySQLs,
+			}
+			logger.Errorf("auditing modify sql statement error: %v", err)
+		} else {
+			for j, sql := range task.ExecuteSQLs {
+				modifySQLs[j].AuditResults = convertTaskAuditResults(c.Request().Context(), sql.AuditResults, comparedInst.DbType)
+			}
+			sqlStatement = &DatabaseDiffModifySQL{
+				SchemaName: diffSQL.SchemaName,
+				ModifySQLs: modifySQLs,
+			}
 		}
+		diffModifySQLs[i] = sqlStatement
 
-		for j, sql := range task.ExecuteSQLs {
-			modifySQLs[j].AuditResults = convertTaskAuditResults(c.Request().Context(), sql.AuditResults, task.DBType)
-		}
-		diffModifySQLs[i] = &DatabaseDiffModifySQL{
-			SchemaName: diffSQL.SchemaName,
-			ModifySQLs: modifySQLs,
-		}
 	}
 	return c.JSON(http.StatusOK, &GenModifySQLResV1{
 		BaseRes: controller.NewBaseReq(nil),
