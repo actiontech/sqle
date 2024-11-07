@@ -6607,6 +6607,12 @@ var doc = `{
                         "in": "formData"
                     },
                     {
+                        "type": "boolean",
+                        "description": "enable backup",
+                        "name": "enable_backup",
+                        "in": "formData"
+                    },
+                    {
                         "type": "string",
                         "description": "sqls for audit",
                         "name": "sql",
@@ -7109,6 +7115,67 @@ var doc = `{
                 }
             }
         },
+        "/v1/projects/{project_name}/workflows/{workflow_id}/backup_sqls": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get backup sql list",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "获取工单下所有回滚SQL的列表",
+                "operationId": "GetBackupSqlListV1",
+                "parameters": [
+                    {
+                        "enum": [
+                            "initialized",
+                            "doing",
+                            "succeeded",
+                            "failed",
+                            "manually_executed",
+                            "terminating",
+                            "terminate_succeeded",
+                            "terminate_failed"
+                        ],
+                        "type": "string",
+                        "description": "filter: exec status of task sql",
+                        "name": "filter_exec_status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "filter: instance id in workflow",
+                        "name": "filter_instance_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "page size",
+                        "name": "page_size",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.BackupSqlListRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{project_name}/workflows/{workflow_id}/tasks/terminate": {
             "post": {
                 "security": [
@@ -7187,6 +7254,52 @@ var doc = `{
                 "responses": {
                     "200": {
                         "description": "get workflow attachment",
+                        "schema": {
+                            "type": "file"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/backup_files/download": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "download SQL back up file for the audit task",
+                "tags": [
+                    "task"
+                ],
+                "summary": "下载工单中的SQL备份",
+                "operationId": "downloadBackupFileV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "workflow id",
+                        "name": "workflow_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "task id",
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "sql file",
                         "schema": {
                             "type": "file"
                         }
@@ -8866,6 +8979,12 @@ var doc = `{
                         "in": "formData"
                     },
                     {
+                        "type": "boolean",
+                        "description": "enable backup",
+                        "name": "enable_backup",
+                        "in": "formData"
+                    },
+                    {
                         "type": "string",
                         "description": "file order method",
                         "name": "file_order_method",
@@ -8927,6 +9046,51 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetAuditTaskResV1"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update back up strategy for all sqls in task",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "更新工单中数据源对应所有SQL的备份策略",
+                "operationId": "UpdateTaskBackupStrategyV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "task id",
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "update back up strategy for sqls in workflow",
+                        "name": "strategy",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateTaskBackupStrategyReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
                         }
                     }
                 }
@@ -9239,6 +9403,60 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetTaskAnalysisDataResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/tasks/audits/{task_id}/sqls/{sql_id}/": {
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update back up strategy for one sql in workflow",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "更新单条SQL的备份策略",
+                "operationId": "UpdateSqlBackupStrategyV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "task id",
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "sql id",
+                        "name": "sql_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "update back up strategy for one sql in workflow",
+                        "name": "strategy",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateSqlBackupStrategyReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
                         }
                     }
                 }
@@ -10115,7 +10333,7 @@ var doc = `{
                 "tags": [
                     "workflow"
                 ],
-                "summary": "更新工单（驳回后才可更新）",
+                "summary": "更新工单（工单被驳回、工单被关闭、执行成功、执行失败后才可更新）",
                 "operationId": "updateWorkflowV2",
                 "parameters": [
                     {
@@ -11341,6 +11559,12 @@ var doc = `{
                         ""
                     ]
                 },
+                "backup_conflict_with_instance": {
+                    "type": "boolean"
+                },
+                "enable_backup": {
+                    "type": "boolean"
+                },
                 "exec_end_time": {
                     "type": "string"
                 },
@@ -11476,6 +11700,41 @@ var doc = `{
                 },
                 "total_sql_count": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.BackupSqlListRes": {
+            "type": "object",
+            "properties": {
+                "backup_sqls": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "backup_strategy": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "exec_order": {
+                    "type": "integer"
+                },
+                "exec_sql_id": {
+                    "type": "integer"
+                },
+                "exec_status": {
+                    "type": "string"
+                },
+                "instance_id ": {
+                    "type": "string"
+                },
+                "instance_name": {
+                    "type": "string"
+                },
+                "origin_sql": {
+                    "type": "string"
                 }
             }
         },
@@ -11749,6 +12008,9 @@ var doc = `{
         "v1.CreateAuditTaskReqV1": {
             "type": "object",
             "properties": {
+                "enable_backup": {
+                    "type": "boolean"
+                },
                 "exec_mode": {
                     "type": "string",
                     "enum": [
@@ -17157,6 +17419,14 @@ var doc = `{
                 }
             }
         },
+        "v1.UpdateSqlBackupStrategyReq": {
+            "type": "object",
+            "properties": {
+                "strategy": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.UpdateSqlFileOrderV1Req": {
             "type": "object",
             "properties": {
@@ -17229,6 +17499,14 @@ var doc = `{
                 "url": {
                     "type": "string",
                     "example": "http://10.186.61.32:8080"
+                }
+            }
+        },
+        "v1.UpdateTaskBackupStrategyReq": {
+            "type": "object",
+            "properties": {
+                "strategy": {
+                    "type": "string"
                 }
             }
         },
@@ -18330,6 +18608,12 @@ var doc = `{
                 "audit_status": {
                     "type": "string"
                 },
+                "backup_strategy": {
+                    "type": "string"
+                },
+                "backup_strategy_tip": {
+                    "type": "string"
+                },
                 "description": {
                     "type": "string"
                 },
@@ -18338,6 +18622,9 @@ var doc = `{
                 },
                 "exec_sql": {
                     "type": "string"
+                },
+                "exec_sql_id": {
+                    "type": "integer"
                 },
                 "exec_status": {
                     "type": "string"
@@ -18384,6 +18671,9 @@ var doc = `{
         "v2.CreateWorkflowReqV2": {
             "type": "object",
             "properties": {
+                "associated_workflow_id": {
+                    "type": "string"
+                },
                 "desc": {
                     "type": "string"
                 },

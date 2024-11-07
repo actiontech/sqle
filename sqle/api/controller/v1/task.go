@@ -40,6 +40,7 @@ type CreateAuditTaskReqV1 struct {
 	InstanceSchema  string `json:"instance_schema" form:"instance_schema" example:"db1"`
 	Sql             string `json:"sql" form:"sql" example:"alter table tb1 drop columns c1"`
 	ExecMode        string `json:"exec_mode" form:"exec_mode" enums:"sql_file,sqls"`
+	EnableBackup    bool   `json:"enable_backup" form:"enable_backup"`
 	FileOrderMethod string `json:"file_order_method" form:"file_order_method"`
 }
 
@@ -49,20 +50,22 @@ type GetAuditTaskResV1 struct {
 }
 
 type AuditTaskResV1 struct {
-	Id              uint            `json:"task_id"`
-	InstanceName    string          `json:"instance_name"`
-	InstanceDbType  string          `json:"instance_db_type"`
-	InstanceSchema  string          `json:"instance_schema" example:"db1"`
-	AuditLevel      string          `json:"audit_level" enums:"normal,notice,warn,error,"`
-	Score           int32           `json:"score"`
-	PassRate        float64         `json:"pass_rate"`
-	Status          string          `json:"status" enums:"initialized,audited,executing,exec_success,exec_failed,manually_executed"`
-	SQLSource       string          `json:"sql_source" enums:"form_data,sql_file,mybatis_xml_file,audit_plan,zip_file,git_repository"`
-	ExecStartTime   *time.Time      `json:"exec_start_time,omitempty"`
-	ExecEndTime     *time.Time      `json:"exec_end_time,omitempty"`
-	FileOrderMethod string          `json:"file_order_method,omitempty"`
-	ExecMode        string          `json:"exec_mode,omitempty"`
-	AuditFiles      []AuditFileResp `json:"audit_files,omitempty"`
+	Id                         uint            `json:"task_id"`
+	InstanceName               string          `json:"instance_name"`
+	InstanceDbType             string          `json:"instance_db_type"`
+	InstanceSchema             string          `json:"instance_schema" example:"db1"`
+	AuditLevel                 string          `json:"audit_level" enums:"normal,notice,warn,error,"`
+	Score                      int32           `json:"score"`
+	PassRate                   float64         `json:"pass_rate"`
+	Status                     string          `json:"status" enums:"initialized,audited,executing,exec_success,exec_failed,manually_executed"`
+	SQLSource                  string          `json:"sql_source" enums:"form_data,sql_file,mybatis_xml_file,audit_plan,zip_file,git_repository"`
+	ExecStartTime              *time.Time      `json:"exec_start_time,omitempty"`
+	ExecEndTime                *time.Time      `json:"exec_end_time,omitempty"`
+	FileOrderMethod            string          `json:"file_order_method,omitempty"`
+	ExecMode                   string          `json:"exec_mode,omitempty"`
+	EnableBackup               bool            `json:"enable_backup"`
+	BackupConflictWithInstance bool            `json:"backup_conflict_with_instance"`
+	AuditFiles                 []AuditFileResp `json:"audit_files,omitempty"`
 }
 
 type AuditFileResp struct {
@@ -285,6 +288,7 @@ func getFileHeaderFromContext(c echo.Context) (fileHeader *multipart.FileHeader,
 // @Param project_name path string true "project name"
 // @Param instance_name formData string true "instance name"
 // @Param instance_schema formData string false "schema of instance"
+// @Param enable_backup formData bool false "enable backup"
 // @Param sql formData string false "sqls for audit"
 // @Param input_sql_file formData file false "input SQL file"
 // @Param input_mybatis_xml_file formData file false "input mybatis XML file"
@@ -295,6 +299,7 @@ func getFileHeaderFromContext(c echo.Context) (fileHeader *multipart.FileHeader,
 // @Success 200 {object} v1.GetAuditTaskResV1
 // @router /v1/projects/{project_name}/tasks/audits [post]
 func CreateAndAuditTask(c echo.Context) error {
+	// TODO 不同SQL模式审核增加备份配置
 	req := new(CreateAuditTaskReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
@@ -926,8 +931,9 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 }
 
 type AuditTaskGroupReqV1 struct {
-	TaskGroupId uint   `json:"task_group_id" form:"task_group_id" valid:"required"`
-	Sql         string `json:"sql" form:"sql" example:"alter table tb1 drop columns c1"`
+	TaskGroupId  uint   `json:"task_group_id" form:"task_group_id" valid:"required"`
+	Sql          string `json:"sql" form:"sql" example:"alter table tb1 drop columns c1"`
+	EnableBackup bool   `json:"enable_backup" form:"enable_backup"`
 }
 
 type AuditTaskGroupRes struct {
@@ -954,13 +960,15 @@ type AuditTaskGroupResV1 struct {
 // @Security ApiKeyAuth
 // @Param task_group_id formData uint true "group id of tasks"
 // @Param sql formData string false "sqls for audit"
+// @Param enable_backup formData bool false "enable backup"
 // @Param file_order_method formData string false "file order method"
 // @Param input_sql_file formData file false "input SQL file"
 // @Param input_mybatis_xml_file formData file false "input mybatis XML file"
 // @Param input_zip_file formData file false "input ZIP file"
 // @Success 200 {object} v1.AuditTaskGroupResV1
 // @router /v1/task_groups/audit [post]
-func AuditTaskGroupV1(c echo.Context) error {
+func AuditTaskGroupV1(c echo.Context) error { 
+	// TODO 单数据源审核，以及多数据源相同SQL模式审核，增加备份配置
 	req := new(AuditTaskGroupReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
