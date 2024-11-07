@@ -70,13 +70,18 @@ type DatabaseComparisonStatementsResV1 struct {
 }
 
 type DatabaseComparisonStatements struct {
-	BaseSQL        *SQLStatementWithAuditResult `json:"base_sql"`
-	ComparisondSQL *SQLStatementWithAuditResult `json:"comparison_sql"`
+	BaseSQL        *SQLStatement `json:"base_sql"`
+	ComparisondSQL *SQLStatement `json:"comparison_sql"`
+}
+
+type SQLStatement struct {
+	AuditError            string                       `json:"audit_error,omitempty"`
+	SQLStatementWithAudit *SQLStatementWithAuditResult `json:"sql_statement_with_audit"`
 }
 
 type SQLStatementWithAuditResult struct {
 	SQLStatement string            `json:"sql_statement"`
-	AuditResults []*SQLAuditResult `json:"audit_results"`
+	AuditResults []*SQLAuditResult `json:"audit_results,omitempty"`
 }
 
 type SQLAuditResult struct {
@@ -122,6 +127,7 @@ type GenModifySQLResV1 struct {
 type DatabaseDiffModifySQL struct {
 	SchemaName string                         `json:"schema_name"`
 	ModifySQLs []*SQLStatementWithAuditResult `json:"modify_sqls"`
+	AuditError string                         `json:"audit_error,omitempty"`
 }
 
 // @Summary 生成变更SQL
