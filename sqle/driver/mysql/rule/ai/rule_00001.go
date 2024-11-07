@@ -11,6 +11,7 @@ import (
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/opcode"
+	parserdriver "github.com/pingcap/tidb/types/parser_driver"
 )
 
 const (
@@ -59,6 +60,7 @@ func init() {
 // 规则函数实现开始
 func RuleSQLE00001(input *rulepkg.RuleHandlerInput) error {
 
+	// 获取列的信息
 	extractFieldsFromExpr := func(expr ast.ExprNode, aliasMap []*util.TableAliasInfo) (*ast.TableName, string) {
 		if expr == nil {
 			return nil, ""
@@ -92,7 +94,7 @@ func RuleSQLE00001(input *rulepkg.RuleHandlerInput) error {
 		return nil, ""
 	}
 
-	// 在线
+	// 在线，当有 is not null时，则当前列是否有not null约束，如果有则为恒真
 	checkIsNotNull := func(table *ast.TableName, col string) (bool, error) {
 		createTableStmt, err := util.GetCreateTableStmt(input.Ctx, table)
 		if err != nil {
@@ -107,27 +109,25 @@ func RuleSQLE00001(input *rulepkg.RuleHandlerInput) error {
 		return false, nil
 	}
 
-	var IsExprConstTrue2 func(node ast.ExprNode, isOutermost bool, aliasInfo []*util.TableAliasInfo) (bool, error)
-	IsExprConstTrue2 = func(node ast.ExprNode, isOutermost bool, aliasInfo []*util.TableAliasInfo) (bool, error) {
-		if !isOutermost {
-			return util.IsExprConstTrue(node), nil
-		}
+	// 恒真判断
+	var IsExprConstTrue2 func(node ast.ExprNode, aliasInfo []*util.TableAliasInfo) (bool, error)
+	IsExprConstTrue2 = func(node ast.ExprNode, aliasInfo []*util.TableAliasInfo) (bool, error) {
 		switch expr := node.(type) {
 		case *ast.BinaryOperationExpr:
-			if expr != nil && expr.Op == opcode.LogicOr {
-				left, err := IsExprConstTrue2(expr.L, false, aliasInfo)
+			if expr != nil && expr.Op == opcode.LogicOr { // 处理or场景
+				left, err := IsExprConstTrue2(expr.L, aliasInfo)
 				right := false
 				if !left {
-					right, err = IsExprConstTrue2(expr.R, true, aliasInfo)
+					right, err = IsExprConstTrue2(expr.R, aliasInfo)
 				}
 				return (left || right), err
 			} else {
 				return util.IsExprConstTrue(node), nil
 			}
-		case *ast.ParenthesesExpr:
-			return IsExprConstTrue2(expr.Expr, isOutermost, aliasInfo)
+		case *ast.ParenthesesExpr: // 含有括号()
+			return IsExprConstTrue2(expr.Expr, aliasInfo)
 		case *ast.IsNullExpr:
-			if expr.Not { // 需要在线获取列是否有 not null约束
+			if expr.Not { // 需要[在线]获取列是否有 not null约束
 				table, col := extractFieldsFromExpr(expr.Expr, aliasInfo)
 				if table != nil && col != "" {
 					yes, err := checkIsNotNull(table, col)
@@ -136,15 +136,59 @@ func RuleSQLE00001(input *rulepkg.RuleHandlerInput) error {
 					}
 					return yes, nil
 				}
-			} else {
-				return false, nil
 			}
+			return false, nil
+		case *ast.ExistsSubqueryExpr:
+			if !expr.Not { // 处理 exists
+				if len(util.GetTableNames(expr)) == 0 { // 不存在表时，则为恒真
+					return true, nil
+				}
+			}
+			return false, nil
+		case *ast.PatternInExpr:
+			if left_value, ok := expr.Expr.(*parserdriver.ValueExpr); ok { // 当左边为确定值
+				// 1 in (1,2,3)
+				if expr.Sel == nil {
+					for _, expr := range expr.List {
+						if value, okk := expr.(*parserdriver.ValueExpr); okk {
+							result, err := util.EqualValueExpr(left_value, value)
+							if err != nil {
+								log.NewEntry().Errorf("EqualValueExpr failed, error: %v", err)
+								return false, err
+							}
+							if result {
+								return true, nil
+							}
+						}
+					}
+				} else {
+					// 1 in (select 1 from dual union select 2 from dual)
+					if len(util.GetTableNames(expr)) == 0 { // 不存在表时
+						sList := util.GetSelectStmt(expr)
+						for _, ss := range sList {
+							if ss.From == nil {
+								if field_value, okk := (ss.Fields.Fields[0]).Expr.(*parserdriver.ValueExpr); okk {
+									result, err := util.EqualValueExpr(left_value, field_value)
+									if err != nil {
+										log.NewEntry().Errorf("EqualValueExpr failed, error: %v", err)
+										return false, err
+									}
+									if result {
+										return true, nil
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			return false, nil
 		default:
 			return util.IsExprConstTrue(node), nil
 		}
-		return false, nil
 	}
 
+	// 检索出所有的select语句中的 where
 	switch stmt := input.Node.(type) {
 	case *ast.SelectStmt, *ast.UnionStmt, *ast.InsertStmt, *ast.DeleteStmt, *ast.UpdateStmt:
 		selectList := util.GetSelectStmt(stmt)
@@ -152,7 +196,7 @@ func RuleSQLE00001(input *rulepkg.RuleHandlerInput) error {
 			if sel.From != nil {
 				aliasInfo := util.GetTableAliasInfoFromJoin(sel.From.TableRefs)
 				if sel.Where != nil {
-					isConst, err := IsExprConstTrue2(sel.Where, true, aliasInfo)
+					isConst, err := IsExprConstTrue2(sel.Where, aliasInfo)
 					if err != nil {
 						return err
 					}
@@ -160,7 +204,6 @@ func RuleSQLE00001(input *rulepkg.RuleHandlerInput) error {
 						rulepkg.AddResult(input.Res, input.Rule, SQLE00001)
 						return nil
 					}
-
 				} else {
 					rulepkg.AddResult(input.Res, input.Rule, SQLE00001)
 					return nil
@@ -169,6 +212,7 @@ func RuleSQLE00001(input *rulepkg.RuleHandlerInput) error {
 		}
 	}
 
+	// 单独处理 delete、update的 where
 	switch stmt2 := input.Node.(type) {
 	case *ast.DeleteStmt:
 		if stmt2.Where == nil {
@@ -176,7 +220,7 @@ func RuleSQLE00001(input *rulepkg.RuleHandlerInput) error {
 			return nil
 		} else {
 			aliasInfos := util.GetTableAliasInfoFromJoin(stmt2.TableRefs.TableRefs)
-			isConst, err := IsExprConstTrue2(stmt2.Where, true, aliasInfos)
+			isConst, err := IsExprConstTrue2(stmt2.Where, aliasInfos)
 			if err != nil {
 				return err
 			}
@@ -191,7 +235,7 @@ func RuleSQLE00001(input *rulepkg.RuleHandlerInput) error {
 			return nil
 		} else {
 			aliasInfos := util.GetTableAliasInfoFromJoin(stmt2.TableRefs.TableRefs)
-			isConst, err := IsExprConstTrue2(stmt2.Where, true, aliasInfos)
+			isConst, err := IsExprConstTrue2(stmt2.Where, aliasInfos)
 			if err != nil {
 				return err
 			}
@@ -201,15 +245,6 @@ func RuleSQLE00001(input *rulepkg.RuleHandlerInput) error {
 			}
 		}
 	}
-	// TODO 以下场景暂时没有实现
-	// SELECT * FROM employees WHERE 1 in (SELECT 2 FROM dual); -- 非恒真
-	// SELECT * FROM employees WHERE 1 in (SELECT 1 FROM dual); -- 恒真
-	// SELECT * FROM employees WHERE 1 in (1); -- 恒真
-	// SELECT * FROM employees WHERE 1 in (2); -- 非恒真
-	// select count(*) from customers where EXISTS (SELECT 1 FROM dual); -- 恒真
-	// select count(*) from customers where EXISTS (SELECT 2 FROM dual); -- 恒真
-	// select count(*) from customers where not EXISTS (SELECT 2 FROM dual); -- 恒真
-	// select count(*) from customers WHERE COALESCE(city, 'default') IS NOT NULL; // 有点难度
 	return nil
 }
 

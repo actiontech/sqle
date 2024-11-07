@@ -38,6 +38,12 @@ func TestRuleSQLE00001(t *testing.T) {
 		nil,
 		newTestResult().addResult(ruleName))
 
+	runAIRuleCase(rule, t, "case 2_3: SELECT statement with WHERE condition always true",
+		"SELECT * FROM employees WHERE  (1=2 or name=name) or 1=2;",
+		session.NewAIMockContext().WithSQL("CREATE TABLE employees (employee_id INT NOT NULL, name VARCHAR(100), department VARCHAR(50), age INT, middle_name VARCHAR(50));"),
+		nil,
+		newTestResult().addResult(ruleName))
+
 	runAIRuleCase(rule, t, "case 3: SELECT statement with WHERE condition using OR with always true expression",
 		"SELECT * FROM employees WHERE department = 'Sales' OR TRUE;",
 		session.NewAIMockContext().WithSQL("CREATE TABLE employees (employee_id INT NOT NULL, name VARCHAR(100), department VARCHAR(50), age INT, middle_name VARCHAR(50));"),
@@ -260,11 +266,48 @@ func TestRuleSQLE00001(t *testing.T) {
 		nil,
 		newTestResult().addResult(ruleName))
 
-	// runAIRuleCase(rule, t, "case 41: SELECT statement with WHERE condition on non-nullable column using IS NOT NULL on customers table (从xml中补充)",
-	// 	"SELECT * FROM customers WHERE name IS NOT NULL;",
-	// 	session.NewAIMockContext().WithSQL("CREATE TABLE customers (customer_id INT NOT NULL, name VARCHAR(100), age INT);"),
-	// 	nil,
-	// 	newTestResult().addResult(ruleName))
+	runAIRuleCase(rule, t, "case 41: SELECT statement with WHERE EXISTS (haven't table)",
+		"SELECT * FROM customers WHERE EXISTS (SELECT 1 FROM dual);",
+		session.NewAIMockContext().WithSQL("CREATE TABLE customers (customer_id INT NOT NULL, name VARCHAR(100), age INT);"),
+		nil,
+		newTestResult().addResult(ruleName))
+
+	runAIRuleCase(rule, t, "case 42: SELECT statement with WHERE EXISTS (have table)",
+		"SELECT * FROM customers WHERE EXISTS (SELECT 1 FROM customers where customer_id=1);",
+		session.NewAIMockContext().WithSQL("CREATE TABLE customers (customer_id INT NOT NULL, name VARCHAR(100), age INT);"),
+		nil,
+		newTestResult())
+
+	runAIRuleCase(rule, t, "case 43: SELECT statement with WHERE not EXISTS ",
+		"SELECT * FROM customers WHERE not EXISTS (SELECT 1 FROM dual);",
+		session.NewAIMockContext().WithSQL("CREATE TABLE customers (customer_id INT NOT NULL, name VARCHAR(100), age INT);"),
+		nil,
+		newTestResult())
+
+	runAIRuleCase(rule, t, "case 44: SELECT statement with WHERE 1 in (1,2,3) ",
+		"SELECT * FROM customers WHERE 1 in (1,2,3);",
+		session.NewAIMockContext().WithSQL("CREATE TABLE customers (customer_id INT NOT NULL, name VARCHAR(100), age INT);"),
+		nil,
+		newTestResult().addResult(ruleName))
+
+	runAIRuleCase(rule, t, "case 45: SELECT statement with WHERE 1 in (SELECT 1 FROM dual) ",
+		"SELECT * FROM customers WHERE 1 in (SELECT 1 FROM dual);",
+		session.NewAIMockContext().WithSQL("CREATE TABLE customers (customer_id INT NOT NULL, name VARCHAR(100), age INT);"),
+		nil,
+		newTestResult().addResult(ruleName))
+
+	runAIRuleCase(rule, t, "case 46: SELECT statement with WHERE 1 in (SELECT 2 FROM dual) ",
+		"SELECT * FROM customers WHERE 1 in (SELECT 2 FROM dual union SELECT 1 FROM dual );",
+		session.NewAIMockContext().WithSQL("CREATE TABLE customers (customer_id INT NOT NULL, name VARCHAR(100), age INT);"),
+		nil,
+		newTestResult().addResult(ruleName))
+
+	runAIRuleCase(rule, t, "case 47: SELECT statement with WHERE COALESCE(customer_id, 'default') IS NOT NULL ",
+		"select count(*) from customers WHERE COALESCE(customer_id, 'default') IS NOT NULL;",
+		session.NewAIMockContext().WithSQL("CREATE TABLE customers (customer_id INT NOT NULL, name VARCHAR(100), age INT);"),
+		nil,
+		newTestResult().addResult(ruleName))
+
 }
 
 // ==== Rule test code end ====
