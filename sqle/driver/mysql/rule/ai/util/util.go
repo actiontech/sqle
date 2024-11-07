@@ -18,6 +18,19 @@ import (
 	parser "github.com/pingcap/tidb/types/parser_driver"
 )
 
+// a helper function to compares two ValueExpr s for equality
+func EqualValueExpr(value1 *parser.ValueExpr, value2 *parser.ValueExpr) (bool, error) {
+	sc := &stmtctx.StatementContext{}
+	result, err := value1.CompareDatum(sc, &value2.Datum)
+	if err != nil {
+		return false, err
+	}
+	if result == 0 {
+		return true, nil
+	}
+	return false, nil
+}
+
 // a helper function to join column names
 func JoinColumnNames(columns []*ast.ColumnDef) string {
 	names := make([]string, len(columns))
