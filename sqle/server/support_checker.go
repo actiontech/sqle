@@ -3,9 +3,9 @@ package server
 import (
 	"fmt"
 
-	"github.com/actiontech/sqle/sqle/config"
 	"github.com/actiontech/sqle/sqle/driver"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	optimization "github.com/actiontech/sqle/sqle/server/optimization/rule"
 )
 
 const (
@@ -39,6 +39,5 @@ func (checker executeSqlFileChecker) CheckIsSupport() bool {
 type sqlOptimizationChecker struct{}
 
 func (s sqlOptimizationChecker) CheckIsSupport() bool {
-	return config.GetOptions().SqleOptions.OptimizationConfig.OptimizationKey != "" &&
-		config.GetOptions().SqleOptions.OptimizationConfig.OptimizationURL != ""
+	return len(optimization.OptimizationRuleMap) > 0
 }
