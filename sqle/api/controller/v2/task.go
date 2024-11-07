@@ -28,18 +28,21 @@ type GetAuditTaskSQLsResV2 struct {
 }
 
 type AuditTaskSQLResV2 struct {
-	Number        uint           `json:"number"`
-	ExecSQL       string         `json:"exec_sql"`
-	SQLSourceFile string         `json:"sql_source_file"`
-	SQLStartLine  uint64         `json:"sql_start_line"`
-	AuditResult   []*AuditResult `json:"audit_result"`
-	AuditLevel    string         `json:"audit_level"`
-	AuditStatus   string         `json:"audit_status"`
-	ExecResult    string         `json:"exec_result"`
-	ExecStatus    string         `json:"exec_status"`
-	RollbackSQL   string         `json:"rollback_sql,omitempty"`
-	Description   string         `json:"description"`
-	SQLType       string         `json:"sql_type"`
+	ExecSqlID         uint           `json:"exec_sql_id"`
+	Number            uint           `json:"number"`
+	ExecSQL           string         `json:"exec_sql"`
+	SQLSourceFile     string         `json:"sql_source_file"`
+	SQLStartLine      uint64         `json:"sql_start_line"`
+	AuditResult       []*AuditResult `json:"audit_result"`
+	AuditLevel        string         `json:"audit_level"`
+	AuditStatus       string         `json:"audit_status"`
+	ExecResult        string         `json:"exec_result"`
+	ExecStatus        string         `json:"exec_status"`
+	RollbackSQL       string         `json:"rollback_sql,omitempty"`
+	Description       string         `json:"description"`
+	SQLType           string         `json:"sql_type"`
+	BackupStrategy    string         `json:"backup_strategy" enum:"none,manual,reverse_sql,origin_row"`
+	BackupStrategyTip string         `json:"backup_strategy_tip"`
 }
 
 type AuditResult struct {
