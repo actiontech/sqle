@@ -100,6 +100,14 @@ func RuleSQLE00002(input *rulepkg.RuleHandlerInput) error {
 					}
 				}
 			}
+			if stmt.Limit != nil {
+				if _, ok := stmt.Limit.Count.(*parserdriver.ParamMarkerExpr); ok && stmt.Limit.Count != nil {
+					count++
+				}
+				if _, ok := stmt.Limit.Offset.(*parserdriver.ParamMarkerExpr); ok && stmt.Limit.Offset != nil {
+					count++
+				}
+			}
 
 		case *ast.UnionStmt:
 			if stmt.OrderBy != nil {
