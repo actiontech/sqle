@@ -251,7 +251,9 @@ func (i *MysqlDriverImpl) GetDatabaseDiffModifySQL(ctx context.Context, calibrat
 			if err != nil {
 				return nil, err
 			}
-			diffSqls = append(diffSqls, fmt.Sprintf("%s;\n", stmt))
+			if stmt != "" {
+				diffSqls = append(diffSqls, fmt.Sprintf("%s;\n", stmt))
+			}
 			// 当sql语句为create database时，需要补充在其后use database;
 			if objDiff.ObjectKey().Type == differ.ObjectTypeDatabase && objDiff.DiffType() == differ.DiffTypeCreate {
 				diffSqls = append(diffSqls, fmt.Sprintf("USE %s;\n", objDiff.ObjectKey().Name))
