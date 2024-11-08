@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"net/url"
 
 	"github.com/pkg/errors"
 
@@ -31,7 +32,7 @@ func NewDB(dsn *DSN) (*DB, error) {
 		dsn.ServiceName = "xe"
 	}
 
-	sqlDB, err := sql.Open("oracle", fmt.Sprintf("oracle://%s:%s@%s:%s/%s", dsn.User, dsn.Password, dsn.Host, dsn.Port, dsn.ServiceName))
+	sqlDB, err := sql.Open("oracle", fmt.Sprintf("oracle://%s:%s@%s:%s/%s", dsn.User, url.QueryEscape(dsn.Password), dsn.Host, dsn.Port, dsn.ServiceName))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to connect to %s", dsn.String())
 	}
