@@ -28,11 +28,16 @@ type DB struct {
 }
 
 func NewDB(dsn *DSN) (*DB, error) {
+	// go_ora.BuildUrl()
 	if dsn.ServiceName == "" {
 		dsn.ServiceName = "xe"
 	}
+	dataSourceName := fmt.Sprintf("oracle://%s:%s@%s:%s/%s", dsn.User, url.QueryEscape(dsn.Password), dsn.Host, dsn.Port, dsn.ServiceName)
+	if dsn.User == "sys" {
+		dataSourceName = fmt.Sprintf("%s%s", dataSourceName, "?dba privilege=sysdba")
+	}
 
-	sqlDB, err := sql.Open("oracle", fmt.Sprintf("oracle://%s:%s@%s:%s/%s", dsn.User, url.QueryEscape(dsn.Password), dsn.Host, dsn.Port, dsn.ServiceName))
+	sqlDB, err := sql.Open("oracle", dataSourceName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to connect to %s", dsn.String())
 	}
