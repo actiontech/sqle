@@ -10373,6 +10373,16 @@ paths:
         in: query
         name: filter_exec_status
         type: string
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: workflow id
+        in: path
+        name: workflow_id
+        required: true
+        type: string
       - description: 'filter: instance id in workflow'
         in: query
         name: filter_instance_id

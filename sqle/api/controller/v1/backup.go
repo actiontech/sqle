@@ -82,6 +82,8 @@ type BackupSqlListRes struct {
 // @Id GetBackupSqlListV1
 // @Security ApiKeyAuth
 // @Param filter_exec_status query string false "filter: exec status of task sql" Enums(initialized,doing,succeeded,failed,manually_executed,terminating,terminate_succeeded,terminate_failed)
+// @Param project_name path string true "project name"
+// @Param workflow_id path string true "workflow id"
 // @Param filter_instance_id query uint false "filter: instance id in workflow"
 // @Param page_index query string true "page index"
 // @Param page_size query string true "page size"
