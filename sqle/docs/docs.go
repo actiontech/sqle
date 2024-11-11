@@ -7146,6 +7146,20 @@ var doc = `{
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "workflow id",
+                        "name": "workflow_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
                         "type": "integer",
                         "description": "filter: instance id in workflow",
                         "name": "filter_instance_id",
