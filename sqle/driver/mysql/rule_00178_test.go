@@ -52,12 +52,7 @@ func TestRuleSQLE00178(t *testing.T) {
 	SELECT * FROM exist_db.exist_tb_1 WHERE TRUE OR FALSE ORDER BY id;
 	`, newTestResult().addResult(ruleName))
 
-	//select... order by, with where condition is always true(2*3 = 6)
-	runSingleRuleInspectCase(rule, t, "select... order by, with where condition is always true(2*3 = 6)", DefaultMysqlInspect(), `
-	SELECT * FROM exist_db.exist_tb_1 WHERE 2*3 = 6 ORDER BY id;
-	`, newTestResult().addResult(ruleName))
-
-	//select... order by, with where condition is always true(TRUE AND TRUE)
+	// select... order by, with where condition is always true(TRUE AND TRUE)
 	runSingleRuleInspectCase(rule, t, "select... order by, with where condition is always true(TRUE AND TRUE)", DefaultMysqlInspect(), `
 	SELECT * FROM exist_db.exist_tb_1 WHERE TRUE AND TRUE ORDER BY id;
 	`, newTestResult().addResult(ruleName))

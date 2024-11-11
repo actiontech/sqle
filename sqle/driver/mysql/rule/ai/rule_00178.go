@@ -20,9 +20,9 @@ func init() {
 			Level:      driverV2.RuleLevelError,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		Message: "对于MySQL的DML, 不建议对表进行全表排序操作",
+		Message:      "对于MySQL的DML, 不建议对表进行全表排序操作",
 		AllowOffline: true,
-		Func:    RuleSQLE00178,
+		Func:         RuleSQLE00178,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
 	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
@@ -43,7 +43,8 @@ You should follow the following logic:
 // ==== Rule code start ====
 func RuleSQLE00178(input *rulepkg.RuleHandlerInput) error {
 	isSelectStmtViolation := func(stmt *ast.SelectStmt) bool {
-		if stmt.Where == nil || util.IsExprConstTrue(stmt.Where) {
+		aliasInfo := util.GetTableAliasInfoFromJoin(stmt.From.TableRefs)
+		if stmt.Where == nil || util.IsExprConstTrue(input.Ctx, stmt.Where, aliasInfo) {
 			// where is nil or where is always true
 			if stmt.OrderBy != nil || stmt.GroupBy != nil || stmt.Distinct {
 				// with order by or group by or distinct
@@ -81,7 +82,8 @@ func RuleSQLE00178(input *rulepkg.RuleHandlerInput) error {
 		}
 	case *ast.DeleteStmt:
 		// "delete"
-		if stmt.Where == nil || util.IsExprConstTrue(stmt.Where) {
+		aliasInfos := util.GetTableAliasInfoFromJoin(stmt.TableRefs.TableRefs)
+		if stmt.Where == nil || util.IsExprConstTrue(input.Ctx, stmt.Where, aliasInfos) {
 			// where is nil or where is always true
 			if stmt.Order != nil {
 				// with order
@@ -91,7 +93,8 @@ func RuleSQLE00178(input *rulepkg.RuleHandlerInput) error {
 		}
 	case *ast.UpdateStmt:
 		// "update"
-		if stmt.Where == nil || util.IsExprConstTrue(stmt.Where) {
+		aliasInfos := util.GetTableAliasInfoFromJoin(stmt.TableRefs.TableRefs)
+		if stmt.Where == nil || util.IsExprConstTrue(input.Ctx, stmt.Where, aliasInfos) {
 			// where is nil or where is always true
 			if stmt.Order != nil {
 				// with order

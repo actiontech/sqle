@@ -4,6 +4,7 @@ import (
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	util "github.com/actiontech/sqle/sqle/driver/mysql/rule/ai/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/mysql"
 )
@@ -16,14 +17,15 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00012,
-			Desc:       "对于MySQL的DDL, 建议用BIGINT类型代替DECIMAL",
-			Annotation: "因为CPU不支持对DECIMAL的直接运算，只是MySQL自身实现了DECIMAL的高精度计算，但是计算代价高，并且存储同样范围值的时候，空间占用也更多；使用BIGINT代替DECIMAL，可根据小数的位数乘以相应的倍数，即可达到精确的浮点存储计算，避免DECIMAL计算代价高的问题",
+			Desc:       "在 MySQL 中, 建议使用BIGINT类型表示小数",
+			Annotation: "在MySQL中，对于金额等需要高精度计算的小数，建议使用BIGINT类型表示，以避免浮点数精度问题。例如，可以用分来表示金额，1元在数据库中用整型表示为100。",
 			Level:      driverV2.RuleLevelNotice,
-			Category:   rulepkg.RuleTypeDDLConvention,
+			Category:   rulepkg.RuleTypeDMLConvention,
+			Params:     params.Params{},
 		},
-		Message: "对于MySQL的DDL, 建议用BIGINT类型代替DECIMAL. 不符合规定的字段: %v",
+		Message:      "在 MySQL 中, 建议使用BIGINT类型表示小数",
 		AllowOffline: true,
-		Func:    RuleSQLE00012,
+		Func:         RuleSQLE00012,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
 	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
@@ -31,17 +33,20 @@ func init() {
 
 /*
 ==== Prompt start ====
-In MySQL, you should check if the SQL violate the rule(SQLE00012): "In table definition, BIGINT type should be used instead of DECIMAL".
-You should follow the following logic:
-1. For "create table ..." statement, check every column, if its type is not Decimal-type, otherwise, add the column name to violation-list
-2. For "alter table ... add column ..." statement, check the column, if its type is not Decimal-type, otherwise, add the column name to violation-list
-3. For "alter table ... modify column ..." statement, check the modified column definition, if its type is not Decimal-type, otherwise, add the column name to violation-list
-4. For "alter table ... change column ..." statement, check the new column's definition, if its type is not Decimal-type, otherwise, add the column name to violation-list
-5. Generate a violation message as the checking result, including column names which violate the rule, if there is any violations
+在 MySQL 中，您应该检查 SQL 是否违反了规则(SQLE00012): "在 MySQL 中，建议使用BIGINT类型表示小数."
+您应遵循以下逻辑：
+1. 针对 "CREATE TABLE..." 语句，执行以下检查：
+   1. 检查语法节点中是否定义了 DECIMAL 类型字段（例如用于表示价格、金额、数量等）。
+   如果发现 DECIMAL 类型字段，则标记为违反规则。
+
+2. 针对 "ALTER TABLE..." 语句，执行以下检查：
+   1. 检查语法节点中是否添加或修改为 DECIMAL 类型字段（例如用于表示价格、金额、数量等）。
+   如果发现 DECIMAL 类型字段，则标记为违反规则。
 ==== Prompt end ====
 */
 
 // ==== Rule code start ====
+// 规则函数实现开始
 func RuleSQLE00012(input *rulepkg.RuleHandlerInput) error {
 	violateColumns := []*ast.ColumnDef{}
 	switch stmt := input.Node.(type) {
@@ -69,4 +74,5 @@ func RuleSQLE00012(input *rulepkg.RuleHandlerInput) error {
 	return nil
 }
 
+// 规则函数实现结束
 // ==== Rule code end ====

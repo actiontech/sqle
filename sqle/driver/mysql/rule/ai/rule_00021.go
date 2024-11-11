@@ -4,6 +4,7 @@ import (
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	util "github.com/actiontech/sqle/sqle/driver/mysql/rule/ai/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
 )
 
@@ -15,14 +16,15 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00021,
-			Desc:       "对于MySQL的DDL, 表字段必须有NOT NULL约束",
-			Annotation: "表字段必须有 NOT NULL 约束可确保数据的完整性，防止插入空值，提升查询准确性",
+			Desc:       "在 MySQL 中, 禁止表字段缺少NOT NULL约束",
+			Annotation: "若数据库表字段缺少NOT NULL约束，则字段存储值可能是NULL，后期判断时，需要加上IS NULL判断，增加SQL编写的复杂度。",
 			Level:      driverV2.RuleLevelWarn,
-			Category:   rulepkg.RuleTypeDDLConvention,
+			Category:   rulepkg.RuleTypeDMLConvention,
+			Params:     params.Params{},
 		},
-		Message: "对于MySQL的DDL, 表字段必须有NOT NULL约束. 不符合规定的字段: %v",
+		Message:      "在 MySQL 中, 禁止表字段缺少NOT NULL约束",
 		AllowOffline: true,
-		Func:    RuleSQLE00021,
+		Func:         RuleSQLE00021,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
 	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
@@ -30,42 +32,46 @@ func init() {
 
 /*
 ==== Prompt start ====
-In MySQL, you should check if the SQL violate the rule(SQLE00021): "In table definition, table fields must have a NOT NULL constraint".
-You should follow the following logic:
-1. For "create table" statement, check every column if it has NOT NULL constraint, otherwise, add the column name to violation-list
-2. For "alter table add column" statement, check the column if it has NOT NULL constraint, otherwise, add the column name to violation-list
-3. For "alter table modify column" statement, check the modified column definition if it has NOT NULL constraint, otherwise, add the column name to violation-list
-4. For "alter table change column" statement, check the new column's definition if it has NOT NULL constraint, otherwise, add the column name to violation-list
-5. Generate a violation message as the checking result, including column names which violate the rule, if there is any violations
+在 MySQL 中，您应该检查 SQL 是否违反了规则(SQLE00021): "在 MySQL 中，禁止表字段缺少NOT NULL约束."
+您应遵循以下逻辑：
+1. 针对 "CREATE TABLE..." 语句：
+   - 检查表定义中的每个字段（如 INT、VARCHAR、DECIMAL 等）是否包含 NOT NULL 约束，使用辅助函数 IsColumnHasOption 检查字段是否具有 NOT NULL 约束。
+   - 如果发现任何字段未指定 NOT NULL 约束，则记录为违反规则。
+
+2. 针对 "ALTER TABLE..." 语句：
+   1. 当添加新列时：
+      - 检查新列定义是否包含 NOT NULL 约束，使用辅助函数 IsColumnHasOption 检查字段是否具有 NOT NULL 约束。
+      - 如果未包含 NOT NULL 约束，则记录为违反规则。
+   2. 当修改现有列时：
+      - 检查修改后的列定义是否移除了原有的 NOT NULL 约束，使用辅助函数 IsColumnHasOption 检查字段是否具有 NOT NULL 约束。
+      - 如果移除了 NOT NULL 约束或未添加 NOT NULL 约束，则记录为违反规则。
 ==== Prompt end ====
 */
 
 // ==== Rule code start ====
+// 规则函数实现开始
 func RuleSQLE00021(input *rulepkg.RuleHandlerInput) error {
-	violateColumns := []*ast.ColumnDef{}
+
 	switch stmt := input.Node.(type) {
 	case *ast.CreateTableStmt:
 		for _, col := range stmt.Cols {
-			if util.IsColumnHasOption(col, ast.ColumnOptionNotNull) {
-				continue
+			if !util.IsColumnHasOption(col, ast.ColumnOptionNotNull) {
+				rulepkg.AddResult(input.Res, input.Rule, SQLE00021)
+				return nil
 			}
-			violateColumns = append(violateColumns, col)
 		}
 	case *ast.AlterTableStmt:
-		for _, spec := range util.GetAlterTableCommandsByTypes(stmt, ast.AlterTableAddColumns, ast.AlterTableChangeColumn, ast.AlterTableModifyColumn) {
+		for _, spec := range util.GetAlterTableCommandsByTypes(stmt, ast.AlterTableAddColumns, ast.AlterTableModifyColumn, ast.AlterTableChangeColumn) {
 			for _, col := range spec.NewColumns {
-				if util.IsColumnHasOption(col, ast.ColumnOptionNotNull) {
-					continue
+				if !util.IsColumnHasOption(col, ast.ColumnOptionNotNull) {
+					rulepkg.AddResult(input.Res, input.Rule, SQLE00021)
+					return nil
 				}
-				violateColumns = append(violateColumns, col)
 			}
 		}
-	}
-
-	if len(violateColumns) > 0 {
-		rulepkg.AddResult(input.Res, input.Rule, SQLE00021, util.JoinColumnNames(violateColumns))
 	}
 	return nil
 }
 
+// 规则函数实现结束
 // ==== Rule code end ====

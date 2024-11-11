@@ -21,9 +21,9 @@ func init() {
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeIndexInvalidation,
 		},
-		Message: "对于MySQL的DML, 联合索引最左侧的字段必须出现在查询条件内. 不符合规范的字段: %v",
+		Message:      "对于MySQL的DML, 联合索引最左侧的字段必须出现在查询条件内. 不符合规范的字段: %v",
 		AllowOffline: false,
-		Func:    RuleSQLE00218,
+		Func:         RuleSQLE00218,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
 	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
@@ -86,8 +86,9 @@ func RuleSQLE00218(input *rulepkg.RuleHandlerInput) error {
 				table2colNames[getTableName(col)] = append(table2colNames[getTableName(col)], col.Name)
 			}
 
-			// get column names in group by when there is no where condition
-			if selectStmt.Where == nil || util.IsExprConstTrue(selectStmt.Where) {
+			aliasInfos := util.GetTableAliasInfoFromJoin(selectStmt.From.TableRefs)
+			if selectStmt.Where == nil || util.IsExprConstTrue(input.Ctx, selectStmt.Where, aliasInfos) {
+				// get column names in group by when there is no where condition
 				if selectStmt.GroupBy != nil {
 					for _, item := range selectStmt.GroupBy.Items {
 						for _, col := range util.GetColumnNameInExpr(item.Expr) {
@@ -95,10 +96,7 @@ func RuleSQLE00218(input *rulepkg.RuleHandlerInput) error {
 						}
 					}
 				}
-			}
-
-			// get column names in order by when there is no where condition
-			if selectStmt.Where == nil || util.IsExprConstTrue(selectStmt.Where) {
+				// get column names in order by when there is no where condition
 				if selectStmt.OrderBy != nil {
 					for _, item := range selectStmt.OrderBy.Items {
 						for _, col := range util.GetColumnNameInExpr(item.Expr) {

@@ -20,9 +20,9 @@ func init() {
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		Message: "对于MySQL的DML, 删除全表时建议使用 TRUNCATE 替代 DELETE",
+		Message:      "对于MySQL的DML, 删除全表时建议使用 TRUNCATE 替代 DELETE",
 		AllowOffline: true,
-		Func:    RuleSQLE00124,
+		Func:         RuleSQLE00124,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
 	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
@@ -41,7 +41,8 @@ func RuleSQLE00124(input *rulepkg.RuleHandlerInput) error {
 	switch stmt := input.Node.(type) {
 	case *ast.DeleteStmt:
 		// "delete"
-		if stmt.Where == nil || util.IsExprConstTrue(stmt.Where) {
+		aliasInfos := util.GetTableAliasInfoFromJoin(stmt.TableRefs.TableRefs)
+		if stmt.Where == nil || util.IsExprConstTrue(input.Ctx, stmt.Where, aliasInfos) {
 			// "delete...where..."
 			rulepkg.AddResult(input.Res, input.Rule, SQLE00124)
 			return nil
