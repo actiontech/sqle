@@ -587,7 +587,6 @@ type CreateWorkflowReqV2 struct {
 	Desc                 string `json:"desc" form:"desc"`
 	SqlVersionID         *uint  `json:"sql_version_id" form:"sql_version_id"`
 	TaskIds              []uint `json:"task_ids" form:"task_ids" valid:"required"`
-	AssociatedWorkflowId string `json:"associated_workflow_id"`
 }
 
 type CreateWorkflowResV2 struct {

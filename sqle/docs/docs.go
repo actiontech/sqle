@@ -7190,6 +7190,60 @@ var doc = `{
                 }
             }
         },
+        "/v1/projects/{project_name}/workflows/{workflow_id}/rollback": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "create rollback workflow",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "创建回滚工单",
+                "operationId": "CreateRollbackWorkflow",
+                "parameters": [
+                    {
+                        "description": "create rollback workflow request",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.CreateRollbackWorkflowReq"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "origin workflow id to rollback",
+                        "name": "workflow_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.CreateRollbackWorkflowRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{project_name}/workflows/{workflow_id}/tasks/terminate": {
             "post": {
                 "security": [
@@ -12239,6 +12293,57 @@ var doc = `{
                     }
                 },
                 "rule_template_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.CreateRollbackWorkflowReq": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string"
+                },
+                "rollback_sql_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "sql_version_id": {
+                    "type": "integer"
+                },
+                "task_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "workflow_subject": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.CreateRollbackWorkflowRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.CreateRollbackWorkflowResData"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.CreateRollbackWorkflowResData": {
+            "type": "object",
+            "properties": {
+                "workflow_id": {
                     "type": "string"
                 }
             }
@@ -18670,9 +18775,6 @@ var doc = `{
         "v2.CreateWorkflowReqV2": {
             "type": "object",
             "properties": {
-                "associated_workflow_id": {
-                    "type": "string"
-                },
                 "desc": {
                     "type": "string"
                 },
