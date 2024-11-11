@@ -5217,6 +5217,10 @@ definitions:
     type: object
   v2.AuditTaskSQLResV2:
     properties:
+      associate_workflow_ids:
+        items:
+          type: string
+        type: array
       audit_level:
         type: string
       audit_result:
