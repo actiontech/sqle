@@ -4,6 +4,7 @@ import (
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	"github.com/actiontech/sqle/sqle/driver/mysql/rule/ai/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
 )
@@ -47,44 +48,58 @@ func init() {
 // 规则函数实现开始
 func RuleSQLE00009(input *rulepkg.RuleHandlerInput) error {
 
-	checkExistFunc := func(node ast.ExprNode) bool {
-		return len(util.GetFuncName(node)) > 0
-	}
+	checkWhere := func(stmt ast.Node, whereClause ast.ExprNode) bool {
+		if whereClause == nil {
+			return false
+		}
 
-	checkSelect := func(selStmt *ast.SelectStmt) bool {
-		if selStmt.Where != nil {
-			// TODO 当前解析器不支持 函数索引语法：
-			// create index idx_substr_name_2_8 on employees(substr(name,2,8));
-			// 此规则先完成进度：判断where条件中是否有func，有则违规
-			if checkExistFunc(selStmt.Where) {
-				return true
+		// Check for function calls in the WHERE clause.
+		funcExpr := util.GetFuncExpr(whereClause)
+		// If there are no function expressions, then there's no issue.
+		if len(funcExpr) == 0 {
+			return false
+		}
+
+		// Retrieve the names of all tables involved in the statement.
+		tables := util.GetTableNames(stmt)
+		// Fetch the expressions for all indexes associated with these tables.
+		indexExprs, err := util.GetIndexExpressionsForTables(input.Ctx, tables)
+		if err != nil {
+			// Log an error if fetching index expressions fails.
+			log.NewEntry().Errorf("get table index failed, sqle: %v, error: %v", input.Node.Text(), err)
+			return false
+		}
+
+		violate := false
+		// Check if each function expression has a corresponding index.
+		for _, e := range funcExpr {
+			if !util.IsStrInSlice(e, indexExprs) {
+				// Return true if any expression is not indexed, indicating a potential issue.
+				violate = true
+				break
 			}
 		}
-		return false
+		return violate
 	}
 
 	// 所有select语句
 	selectList := util.GetSelectStmt(input.Node)
 	for _, sel := range selectList {
-		if checkSelect(sel) {
+		if checkWhere(sel, sel.Where) {
 			rulepkg.AddResult(input.Res, input.Rule, SQLE00009)
 			return nil
 		}
 	}
 	switch stmt := input.Node.(type) {
 	case *ast.UpdateStmt:
-		if stmt.Where != nil {
-			if checkExistFunc(stmt.Where) {
-				rulepkg.AddResult(input.Res, input.Rule, SQLE00009)
-				return nil
-			}
+		if checkWhere(stmt, stmt.Where) {
+			rulepkg.AddResult(input.Res, input.Rule, SQLE00009)
+			return nil
 		}
 	case *ast.DeleteStmt:
-		if stmt.Where != nil {
-			if checkExistFunc(stmt.Where) {
-				rulepkg.AddResult(input.Res, input.Rule, SQLE00009)
-				return nil
-			}
+		if checkWhere(stmt, stmt.Where) {
+			rulepkg.AddResult(input.Res, input.Rule, SQLE00009)
+			return nil
 		}
 	}
 
