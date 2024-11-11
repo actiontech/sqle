@@ -33,10 +33,11 @@ import (
 )
 
 type CreateSQLAuditRecordReqV1 struct {
-	DbType         string `json:"db_type" form:"db_type" example:"MySQL"`
-	InstanceName   string `json:"instance_name" form:"instance_name" example:"inst_1"`
-	InstanceSchema string `json:"instance_schema" form:"instance_schema" example:"db1"`
-	Sqls           string `json:"sqls" form:"sqls" example:"alter table tb1 drop columns c1; select * from tb"`
+	DbType           string  `json:"db_type" form:"db_type" example:"MySQL"`
+	InstanceName     string  `json:"instance_name" form:"instance_name" example:"inst_1"`
+	InstanceSchema   string  `json:"instance_schema" form:"instance_schema" example:"db1"`
+	RuleTemplateName *string `json:"rule_template_name" form:"rule_template_name"`
+	Sqls             string  `json:"sqls" form:"sqls" example:"alter table tb1 drop columns c1; select * from tb"`
 }
 
 type CreateSQLAuditRecordResV1 struct {
@@ -70,6 +71,7 @@ var maxZipFileSize int64 = 1024 * 1024 * 10
 // @Param project_name path string true "project name"
 // @Param instance_name formData string false "instance name"
 // @Param instance_schema formData string false "schema of instance"
+// @Param rule_template_name formData string false "rule template name"
 // @Param db_type formData string false "db type of instance"
 // @Param sqls formData string false "sqls for audit"
 // @Param input_sql_file formData file false "input SQL file"
