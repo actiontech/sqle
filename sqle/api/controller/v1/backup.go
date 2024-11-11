@@ -1,6 +1,9 @@
 package v1
 
-import "github.com/labstack/echo/v4"
+import (
+	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/labstack/echo/v4"
+)
 
 type UpdateSqlBackupStrategyReq struct {
 	Strategy string `json:"strategy" enum:"none,manual,reverse_sql,origin_row"`
@@ -64,7 +67,7 @@ type BackupSqlListReq struct {
 	PageSize         uint32 `json:"page_size" query:"page_size" valid:"required"`
 }
 
-type BackupSqlListRes struct {
+type BackupSqlData struct {
 	ExecOrder      uint     `json:"exec_order"`
 	ExecSqlID      uint     `json:"exec_sql_id"`
 	OriginSQL      string   `json:"origin_sql"`
@@ -76,17 +79,59 @@ type BackupSqlListRes struct {
 	Description    string   `json:"description"`
 }
 
+type BackupSqlListRes struct {
+	controller.BaseRes
+	Data      []*BackupSqlData `json:"data"`
+	TotalNums uint64           `json:"total_nums"`
+}
+
 // @Summary 获取工单下所有回滚SQL的列表
 // @Description get backup sql list
 // @Tags workflow
 // @Id GetBackupSqlListV1
 // @Security ApiKeyAuth
 // @Param filter_exec_status query string false "filter: exec status of task sql" Enums(initialized,doing,succeeded,failed,manually_executed,terminating,terminate_succeeded,terminate_failed)
+// @Param project_name path string true "project name"
+// @Param workflow_id path string true "workflow id"
 // @Param filter_instance_id query uint false "filter: instance id in workflow"
 // @Param page_index query string true "page index"
 // @Param page_size query string true "page size"
 // @Success 200 {object} v1.BackupSqlListRes
 // @router /v1/projects/{project_name}/workflows/{workflow_id}/backup_sqls [get]
 func GetBackupSqlList(c echo.Context) error {
+	return nil
+}
+
+type CreateRollbackWorkflowReq struct {
+	Subject        string `json:"workflow_subject" form:"workflow_subject" valid:"required,name"`
+	Desc           string `json:"desc" form:"desc"`
+	SqlVersionID   *uint  `json:"sql_version_id" form:"sql_version_id"`
+	TaskIds        []uint `json:"task_ids" form:"task_ids" valid:"required"`
+	RollbackSqlIds []uint `json:"rollback_sql_ids" form:"rollback_sql_ids" valid:"required"`
+}
+
+type CreateRollbackWorkflowRes struct {
+	controller.BaseRes
+	Data *CreateRollbackWorkflowResData `json:"data"`
+}
+
+type CreateRollbackWorkflowResData struct {
+	WorkflowID string `json:"workflow_id"`
+}
+
+// CreateRollbackWorkflow
+// @Summary 创建回滚工单
+// @Description create rollback workflow
+// @Accept json
+// @Produce json
+// @Tags workflow
+// @Id CreateRollbackWorkflow
+// @Security ApiKeyAuth
+// @Param instance body v1.CreateRollbackWorkflowReq true "create rollback workflow request"
+// @Param project_name path string true "project name"
+// @Param workflow_id path string true "origin workflow id to rollback"
+// @Success 200 {object} CreateRollbackWorkflowRes
+// @router /v1/projects/{project_name}/workflows/{workflow_id}/rollback [post]
+func CreateRollbackWorkflow(c echo.Context) error {
 	return nil
 }
