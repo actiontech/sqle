@@ -11771,7 +11771,7 @@ var doc = `{
                 }
             }
         },
-        "v1.BackupSqlListRes": {
+        "v1.BackupSqlData": {
             "type": "object",
             "properties": {
                 "backup_sqls": {
@@ -11803,6 +11803,28 @@ var doc = `{
                 },
                 "origin_sql": {
                     "type": "string"
+                }
+            }
+        },
+        "v1.BackupSqlListRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.BackupSqlData"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
                 }
             }
         },
