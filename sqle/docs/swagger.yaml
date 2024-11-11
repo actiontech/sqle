@@ -847,6 +847,40 @@ definitions:
       rule_template_name:
         type: string
     type: object
+  v1.CreateRollbackWorkflowReq:
+    properties:
+      desc:
+        type: string
+      rollback_sql_ids:
+        items:
+          type: integer
+        type: array
+      sql_version_id:
+        type: integer
+      task_ids:
+        items:
+          type: integer
+        type: array
+      workflow_subject:
+        type: string
+    type: object
+  v1.CreateRollbackWorkflowRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.CreateRollbackWorkflowResData'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.CreateRollbackWorkflowResData:
+    properties:
+      workflow_id:
+        type: string
+    type: object
   v1.CreateRuleTemplateReqV1:
     properties:
       db_type:
@@ -5232,8 +5266,6 @@ definitions:
     type: object
   v2.CreateWorkflowReqV2:
     properties:
-      associated_workflow_id:
-        type: string
       desc:
         type: string
       sql_version_id:
@@ -10405,6 +10437,41 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取工单下所有回滚SQL的列表
+      tags:
+      - workflow
+  /v1/projects/{project_name}/workflows/{workflow_id}/rollback:
+    post:
+      consumes:
+      - application/json
+      description: create rollback workflow
+      operationId: CreateRollbackWorkflow
+      parameters:
+      - description: create rollback workflow request
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.CreateRollbackWorkflowReq'
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: origin workflow id to rollback
+        in: path
+        name: workflow_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.CreateRollbackWorkflowRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 创建回滚工单
       tags:
       - workflow
   /v1/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/attachment:
