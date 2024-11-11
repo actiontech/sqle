@@ -8817,6 +8817,10 @@ paths:
         in: formData
         name: instance_schema
         type: string
+      - description: rule template name
+        in: formData
+        name: rule_template_name
+        type: string
       - description: db type of instance
         in: formData
         name: db_type

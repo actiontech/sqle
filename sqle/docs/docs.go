@@ -4582,6 +4582,12 @@ var doc = `{
                     },
                     {
                         "type": "string",
+                        "description": "rule template name",
+                        "name": "rule_template_name",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
                         "description": "db type of instance",
                         "name": "db_type",
                         "in": "formData"
