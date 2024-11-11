@@ -9,11 +9,13 @@ import (
 
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/driver/mysql/session"
+	"github.com/actiontech/sqle/sqle/log"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/opcode"
 	"github.com/pingcap/tidb/sessionctx/stmtctx"
+	"github.com/pingcap/tidb/types"
 	driver "github.com/pingcap/tidb/types/parser_driver"
 	parser "github.com/pingcap/tidb/types/parser_driver"
 )
@@ -575,26 +577,43 @@ func IsTemporaryTable(context *session.Context, tableName *ast.TableName) (bool,
 	return t.OriginalTable.IsTemporary, nil
 }
 
-// a helper function to check if the where clause is a constant true
-func IsExprConstTrue(where ast.ExprNode) bool {
-	notAlwaysTrue := false
-	ScanWhereStmt(func(expr ast.ExprNode) (skip bool) {
-		switch x := expr.(type) {
-		case *ast.FuncCallExpr:
-			notAlwaysTrue = true
-			return true
-		case *ast.ColumnNameExpr:
-			notAlwaysTrue = true
-			return true
-		case *ast.ExistsSubqueryExpr:
-			notAlwaysTrue = true
-			return true
-		case *ast.BinaryOperationExpr:
-			compareResult, err := getBinaryExprCompareResult(x)
-			if err == nil && !compareResult {
-				notAlwaysTrue = true
+// a helper function to check if the where clause is a constant true（eg: where 1=1/(True or 2=1)/(True and id=id)/(col not false)/(col is not null)/(1 in (1,2,3))
+func IsExprConstTrue(context *session.Context, where ast.ExprNode, aliasInfo []*TableAliasInfo) bool {
+	switch x := where.(type) {
+	case *ast.ParenthesesExpr: // 含有括号()
+		return IsExprConstTrue(context, x.Expr, aliasInfo)
+	case *ast.FuncCallExpr:
+		return false
+	case *ast.ExistsSubqueryExpr:
+		if !x.Not { // 处理 exists
+			if len(GetTableNames(x)) == 0 { // 不存在表时，则为恒真
 				return true
 			}
+		}
+		return false
+	case *ast.ColumnNameExpr:
+		return false
+	case *ast.BinaryOperationExpr:
+		if x.Op == opcode.LogicOr { // 处理or场景
+			left := IsExprConstTrue(context, x.L, aliasInfo)
+			right := false
+			if !left {
+				right = IsExprConstTrue(context, x.R, aliasInfo)
+			}
+			return (left || right)
+		} else if x.Op == opcode.LogicAnd {
+			left := IsExprConstTrue(context, x.L, aliasInfo)
+			right := IsExprConstTrue(context, x.R, aliasInfo)
+			return (left && right)
+		} else {
+			if IsMathComputation(x) { // 需要数学计算
+				return false
+			}
+			compareResult, err := getBinaryExprCompareResult(x)
+			if err == nil && compareResult {
+				return true
+			}
+			// colname == colname
 			col1, ok := x.R.(*ast.ColumnNameExpr)
 			if !ok {
 				return false
@@ -607,9 +626,129 @@ func IsExprConstTrue(where ast.ExprNode) bool {
 				return true
 			}
 		}
+	case *ast.IsNullExpr:
+		if x.Not { // 需要[在线]获取列是否有 not null约束
+			if aliasInfo == nil || len(aliasInfo) == 0 {
+				return false
+			}
+			table, col := extractFieldsFromExpr(x.Expr, aliasInfo)
+			if table != nil && col != "" {
+				yes, err := checkIsNotNull(context, table, col)
+				if err != nil {
+					return false
+				}
+				return yes
+			}
+		}
 		return false
-	}, where)
-	return !notAlwaysTrue
+	case *ast.PatternInExpr:
+		if left_value, ok := x.Expr.(*parser.ValueExpr); ok { // 当左边为确定值
+			// 1 in (1,2,3)
+			if x.Sel == nil {
+				for _, expr := range x.List {
+					if value, okk := expr.(*parser.ValueExpr); okk {
+						result, err := EqualValueExpr(left_value, value)
+						if err != nil {
+							log.NewEntry().Errorf("EqualValueExpr failed, error: %v", err)
+							return opcode.IsFalsity.IsKeyword()
+						}
+						if result {
+							return true
+						}
+					}
+				}
+			} else {
+				// 1 in (select 1 from dual union select 2 from dual)
+				if len(GetTableNames(x)) == 0 { // 不存在表时
+					sList := GetSelectStmt(x)
+					for _, ss := range sList {
+						if ss.From == nil {
+							if field_value, okk := (ss.Fields.Fields[0]).Expr.(*parser.ValueExpr); okk {
+								result, err := EqualValueExpr(left_value, field_value)
+								if err != nil {
+									log.NewEntry().Errorf("EqualValueExpr failed, error: %v", err)
+									return false
+								}
+								if result {
+									return true
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	case *parser.ValueExpr: // 处理FALSE/TRUE
+		switch x.Kind() {
+		case types.KindInt64:
+			if x.Type.Flag&mysql.IsBooleanFlag != 0 {
+				if x.GetInt64() > 0 {
+					return true
+				} else {
+					return false
+				}
+			}
+		}
+	case *ast.UnaryOperationExpr:
+		if x.Op == opcode.Not && !IsExprConstTrue(context, x.V, aliasInfo) { // not false
+			return true
+		}
+	}
+	return false
+}
+
+// a helper function to assemble table, and column according to TableAliasInfo
+func extractFieldsFromExpr(expr ast.ExprNode, aliasMap []*TableAliasInfo) (*ast.TableName, string) {
+	if expr == nil {
+		return nil, ""
+	}
+	fields := GetColumnNameInExpr(expr)
+	for _, field := range fields {
+		tableName := field.Name.Table.String()
+		schemaName := field.Name.Schema.String()
+		if tableName != "" {
+			// 如果字段有表前缀，通过别名映射获取真实表名
+			for _, alias := range aliasMap {
+				if alias.TableAliasName == tableName {
+					tableName = alias.TableName
+					schemaName = alias.SchemaName
+					break
+				}
+			}
+		} else {
+			// 如果字段没有表前缀，尝试将其映射到第一个表
+			for _, alias := range aliasMap {
+				tableName = alias.TableName
+				schemaName = alias.SchemaName
+				break
+			}
+		}
+		if tableName == "" {
+			return nil, ""
+		}
+		return &ast.TableName{Name: model.NewCIStr(tableName), Schema: model.NewCIStr(schemaName)}, field.Name.Name.String()
+	}
+	return nil, ""
+}
+
+// a helper function to check if the column has a not null constraint
+func checkIsNotNull(context *session.Context, table *ast.TableName, col string) (bool, error) {
+	createTableStmt, err := GetCreateTableStmt(context, table)
+	if err != nil {
+		log.NewEntry().Errorf("GetCreateTableStmt failed, error: %v", err)
+		return false, err
+	}
+	for _, columnDef := range createTableStmt.Cols {
+		if strings.EqualFold(columnDef.Name.OrigColName(), col) && IsColumnHasOption(columnDef, ast.ColumnOptionNotNull) {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// a helper function to check whether data needs to be math computation
+func IsMathComputation(stmt *ast.BinaryOperationExpr) bool {
+	return stmt.Op == opcode.Plus || stmt.Op == opcode.Minus || stmt.Op == opcode.Mul || stmt.Op == opcode.Div || stmt.Op == opcode.IntDiv || stmt.Op == opcode.Mod
 }
 
 // a helper function to get the where clause from a DML statement
@@ -781,7 +920,10 @@ func getBinaryExprCompareResult(binary *ast.BinaryOperationExpr) (bool, error) {
 		if result != 0 {
 			return true, nil
 		}
-
+	case opcode.LogicAnd:
+		if result == 0 {
+			return true, nil
+		}
 	}
 
 	return false, nil

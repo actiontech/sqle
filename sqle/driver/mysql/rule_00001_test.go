@@ -50,6 +50,12 @@ func TestRuleSQLE00001(t *testing.T) {
 		nil,
 		newTestResult().addResult(ruleName))
 
+	runAIRuleCase(rule, t, "case 3: SELECT statement with WHERE condition using OR with always false expression",
+		"SELECT * FROM employees WHERE department = 'Sales' OR false;",
+		session.NewAIMockContext().WithSQL("CREATE TABLE employees (employee_id INT NOT NULL, name VARCHAR(100), department VARCHAR(50), age INT, middle_name VARCHAR(50));"),
+		nil,
+		newTestResult())
+
 	runAIRuleCase(rule, t, "case 3_1: SELECT statement with WHERE condition on non-nullable column using IS NOT NULL",
 		"SELECT * FROM employees WHERE employee_id IS NOT NULL;",
 		session.NewAIMockContext().WithSQL("CREATE TABLE employees (employee_id INT, name VARCHAR(100), department VARCHAR(50), age INT, middle_name VARCHAR(50));"),
