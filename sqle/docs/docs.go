@@ -18700,6 +18700,12 @@ var doc = `{
         "v2.AuditTaskSQLResV2": {
             "type": "object",
             "properties": {
+                "associate_workflow_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "audit_level": {
                     "type": "string"
                 },
