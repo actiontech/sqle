@@ -486,7 +486,7 @@ definitions:
       total_sql_count:
         type: integer
     type: object
-  v1.BackupSqlListRes:
+  v1.BackupSqlData:
     properties:
       backup_sqls:
         items:
@@ -508,6 +508,21 @@ definitions:
         type: string
       origin_sql:
         type: string
+    type: object
+  v1.BackupSqlListRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.BackupSqlData'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_nums:
+        type: integer
     type: object
   v1.BatchAssociateWorkflowsWithVersionReqV1:
     properties:

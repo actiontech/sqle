@@ -67,7 +67,7 @@ type BackupSqlListReq struct {
 	PageSize         uint32 `json:"page_size" query:"page_size" valid:"required"`
 }
 
-type BackupSqlListRes struct {
+type BackupSqlData struct {
 	ExecOrder      uint     `json:"exec_order"`
 	ExecSqlID      uint     `json:"exec_sql_id"`
 	OriginSQL      string   `json:"origin_sql"`
@@ -77,6 +77,12 @@ type BackupSqlListRes struct {
 	InstanceId     string   `json:"instance_id "`
 	ExecStatus     string   `json:"exec_status"`
 	Description    string   `json:"description"`
+}
+
+type BackupSqlListRes struct {
+	controller.BaseRes
+	Data      []*BackupSqlData `json:"data"`
+	TotalNums uint64           `json:"total_nums"`
 }
 
 // @Summary 获取工单下所有回滚SQL的列表
