@@ -74,7 +74,7 @@ type BackupSqlData struct {
 	BackupSqls     []string `json:"backup_sqls"`
 	BackupStrategy string   `json:"backup_strategy" enum:"none,manual,reverse_sql,origin_row"`
 	InstanceName   string   `json:"instance_name"`
-	InstanceId     string   `json:"instance_id "`
+	InstanceId     string   `json:"instance_id"`
 	ExecStatus     string   `json:"exec_status"`
 	Description    string   `json:"description"`
 }
