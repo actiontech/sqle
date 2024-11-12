@@ -4582,6 +4582,12 @@ var doc = `{
                     },
                     {
                         "type": "string",
+                        "description": "rule template name",
+                        "name": "rule_template_name",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
                         "description": "db type of instance",
                         "name": "db_type",
                         "in": "formData"
@@ -7146,6 +7152,20 @@ var doc = `{
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "workflow id",
+                        "name": "workflow_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
                         "type": "integer",
                         "description": "filter: instance id in workflow",
                         "name": "filter_instance_id",
@@ -7171,6 +7191,60 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.BackupSqlListRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/workflows/{workflow_id}/rollback": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "create rollback workflow",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "创建回滚工单",
+                "operationId": "CreateRollbackWorkflow",
+                "parameters": [
+                    {
+                        "description": "create rollback workflow request",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.CreateRollbackWorkflowReq"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "origin workflow id to rollback",
+                        "name": "workflow_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.CreateRollbackWorkflowRes"
                         }
                     }
                 }
@@ -11703,7 +11777,7 @@ var doc = `{
                 }
             }
         },
-        "v1.BackupSqlListRes": {
+        "v1.BackupSqlData": {
             "type": "object",
             "properties": {
                 "backup_sqls": {
@@ -11735,6 +11809,28 @@ var doc = `{
                 },
                 "origin_sql": {
                     "type": "string"
+                }
+            }
+        },
+        "v1.BackupSqlListRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.BackupSqlData"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
                 }
             }
         },
@@ -12225,6 +12321,57 @@ var doc = `{
                     }
                 },
                 "rule_template_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.CreateRollbackWorkflowReq": {
+            "type": "object",
+            "properties": {
+                "desc": {
+                    "type": "string"
+                },
+                "rollback_sql_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "sql_version_id": {
+                    "type": "integer"
+                },
+                "task_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "workflow_subject": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.CreateRollbackWorkflowRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.CreateRollbackWorkflowResData"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.CreateRollbackWorkflowResData": {
+            "type": "object",
+            "properties": {
+                "workflow_id": {
                     "type": "string"
                 }
             }
@@ -18596,6 +18743,12 @@ var doc = `{
         "v2.AuditTaskSQLResV2": {
             "type": "object",
             "properties": {
+                "associate_workflow_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "audit_level": {
                     "type": "string"
                 },
@@ -18671,9 +18824,6 @@ var doc = `{
         "v2.CreateWorkflowReqV2": {
             "type": "object",
             "properties": {
-                "associated_workflow_id": {
-                    "type": "string"
-                },
                 "desc": {
                     "type": "string"
                 },

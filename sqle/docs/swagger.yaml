@@ -486,7 +486,7 @@ definitions:
       total_sql_count:
         type: integer
     type: object
-  v1.BackupSqlListRes:
+  v1.BackupSqlData:
     properties:
       backup_sqls:
         items:
@@ -508,6 +508,21 @@ definitions:
         type: string
       origin_sql:
         type: string
+    type: object
+  v1.BackupSqlListRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.BackupSqlData'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_nums:
+        type: integer
     type: object
   v1.BatchAssociateWorkflowsWithVersionReqV1:
     properties:
@@ -845,6 +860,40 @@ definitions:
           $ref: '#/definitions/v1.RuleReqV1'
         type: array
       rule_template_name:
+        type: string
+    type: object
+  v1.CreateRollbackWorkflowReq:
+    properties:
+      desc:
+        type: string
+      rollback_sql_ids:
+        items:
+          type: integer
+        type: array
+      sql_version_id:
+        type: integer
+      task_ids:
+        items:
+          type: integer
+        type: array
+      workflow_subject:
+        type: string
+    type: object
+  v1.CreateRollbackWorkflowRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.CreateRollbackWorkflowResData'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.CreateRollbackWorkflowResData:
+    properties:
+      workflow_id:
         type: string
     type: object
   v1.CreateRuleTemplateReqV1:
@@ -5193,6 +5242,10 @@ definitions:
     type: object
   v2.AuditTaskSQLResV2:
     properties:
+      associate_workflow_ids:
+        items:
+          type: string
+        type: array
       audit_level:
         type: string
       audit_result:
@@ -5242,8 +5295,6 @@ definitions:
     type: object
   v2.CreateWorkflowReqV2:
     properties:
-      associated_workflow_id:
-        type: string
       desc:
         type: string
       sql_version_id:
@@ -8817,6 +8868,10 @@ paths:
         in: formData
         name: instance_schema
         type: string
+      - description: rule template name
+        in: formData
+        name: rule_template_name
+        type: string
       - description: db type of instance
         in: formData
         name: db_type
@@ -10383,6 +10438,16 @@ paths:
         in: query
         name: filter_exec_status
         type: string
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: workflow id
+        in: path
+        name: workflow_id
+        required: true
+        type: string
       - description: 'filter: instance id in workflow'
         in: query
         name: filter_instance_id
@@ -10405,6 +10470,41 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取工单下所有回滚SQL的列表
+      tags:
+      - workflow
+  /v1/projects/{project_name}/workflows/{workflow_id}/rollback:
+    post:
+      consumes:
+      - application/json
+      description: create rollback workflow
+      operationId: CreateRollbackWorkflow
+      parameters:
+      - description: create rollback workflow request
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.CreateRollbackWorkflowReq'
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: origin workflow id to rollback
+        in: path
+        name: workflow_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.CreateRollbackWorkflowRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 创建回滚工单
       tags:
       - workflow
   /v1/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/attachment:
