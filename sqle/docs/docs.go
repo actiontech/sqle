@@ -11795,7 +11795,7 @@ var doc = `{
                 "exec_status": {
                     "type": "string"
                 },
-                "instance_id ": {
+                "instance_id": {
                     "type": "string"
                 },
                 "instance_name": {
