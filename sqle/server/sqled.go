@@ -114,7 +114,7 @@ func (s *Sqled) addTask(projectId string, taskId string, typ int) (*action, erro
 	action.task = task
 
 	// plugin will be closed by drvMgr in Sqled.do().
-	rules, customRules, err = st.GetAllRulesByTmpNameAndProjectIdInstanceDBType("", "", task.Instance, task.DBType)
+	rules, customRules, err = st.GetAllRulesByTmpNameAndProjectIdInstanceDBType(task.RuleTemplateName(), projectId, task.Instance, task.DBType)
 	if err != nil {
 		goto Error
 	}
