@@ -16357,6 +16357,9 @@ var doc = `{
                 "desc": {
                     "type": "string"
                 },
+                "is_default_rule_template": {
+                    "type": "boolean"
+                },
                 "rule_template_name": {
                     "type": "string"
                 }

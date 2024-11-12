@@ -396,9 +396,10 @@ type GetRuleTemplatesResV1 struct {
 }
 
 type RuleTemplateResV1 struct {
-	Name   string `json:"rule_template_name"`
-	Desc   string `json:"desc"`
-	DBType string `json:"db_type"`
+	Name                  string `json:"rule_template_name"`
+	Desc                  string `json:"desc"`
+	DBType                string `json:"db_type"`
+	IsDefaultRuleTemplate bool   `json:"is_default_rule_template"`
 }
 
 // @Summary 全局规则模板列表
