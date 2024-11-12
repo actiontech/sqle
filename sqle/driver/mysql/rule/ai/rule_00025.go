@@ -16,12 +16,12 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00025,
-			Desc:       "对于MySQL的DDL, TIMESTAMP 类型的列必须添加默认值",
+			Desc:       "TIMESTAMP 类型的列必须添加默认值",
 			Annotation: "TIMESTAMP 类型的列添加默认值，可避免出现全为0的日期格式与业务预期不符",
 			Level:      driverV2.RuleLevelError,
 			Category:   rulepkg.RuleTypeDDLConvention,
 		},
-		Message: "对于MySQL的DDL, TIMESTAMP 类型的列必须添加默认值. 不符合规定的字段: %v",
+		Message: "TIMESTAMP 类型的列必须添加默认值. 不符合规定的字段: %v",
 		AllowOffline: false,
 		Func:    RuleSQLE00025,
 	}

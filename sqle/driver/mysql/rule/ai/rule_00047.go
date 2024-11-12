@@ -18,7 +18,7 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00047,
-			Desc:       "在 MySQL 中, 数据库对象名称的字符个数不建议超过阈值",
+			Desc:       "数据库对象名称的字符个数不建议超过阈值",
 			Annotation: "通过配置该规则可以规范指定业务的对象命名长度，具体长度可以自定义设置。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeNamingConvention,
@@ -31,7 +31,7 @@ func init() {
 				},
 			},
 		},
-		Message:      "在 MySQL 中, 数据库对象名称的字符个数不建议超过阈值:%v",
+		Message:      "数据库对象名称的字符个数不建议超过阈值:%v",
 		AllowOffline: true,
 		Func:         RuleSQLE00047,
 	}

@@ -15,12 +15,12 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00073,
-			Desc:       "对于MySQL的DDL, 不建议修改表的默认字符集",
+			Desc:       "不建议修改表的默认字符集",
 			Annotation: "修改表的默认字符集，只会影响后续新增的字段，不会修表已有字段的字符集；如需修改整张表所有字段的字符集建议开启此规则",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDDLConvention,
 		},
-		Message: "对于MySQL的DDL, 不建议修改表的默认字符集",
+		Message: "不建议修改表的默认字符集",
 		AllowOffline: true,
 		Func:    RuleSQLE00073,
 	}

@@ -21,7 +21,7 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00097,
-			Desc:       "在 MySQL 中, 禁止对长字段排序",
+			Desc:       "禁止对长字段排序",
 			Annotation: "在MySQL数据库中，对长字段（如VARCHAR(2000)、TEXT、BLOB等）进行排序操作（包括但不限于ORDER BY、DISTINCT、GROUP BY、UNION等）是不推荐的实践。这类操作会导致排序缓冲区（sort_buffer_size）溢出，引发性能下降和资源浪费。此外，由于长字段排序可能导致临时表（使用Temptable引擎）溢出到磁盘，这不仅会严重影响查询性能，还可能导致系统稳定性和响应能力的降低。",
 			Level:      driverV2.RuleLevelError,
 			Category:   rulepkg.RuleTypeDMLConvention,
@@ -34,7 +34,7 @@ func init() {
 				},
 			},
 		},
-		Message:      "在 MySQL 中, 禁止对长字段排序",
+		Message:      "禁止对长字段排序",
 		AllowOffline: false,
 		Func:         RuleSQLE00097,
 	}

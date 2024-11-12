@@ -19,7 +19,7 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00108,
-			Desc:       "在 MySQL 中, 避免子查询嵌套层数过多",
+			Desc:       "避免子查询嵌套层数过多",
 			Annotation: "子查询嵌套层数超过阈值，有些情况下，子查询并不能使用到索引。同时对于返回结果集比较大的子查询，会产生大量的临时表，消耗过多的CPU和IO资源，产生大量的慢查询",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
@@ -32,7 +32,7 @@ func init() {
 				},
 			},
 		},
-		Message:      "在 MySQL 中, 避免子查询嵌套层数过多",
+		Message:      "避免子查询嵌套层数过多",
 		AllowOffline: true,
 		Func:         RuleSQLE00108,
 	}

@@ -16,13 +16,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00109,
-			Desc:       "在 MySQL 中, 禁止在子查询中使用LIMIT",
+			Desc:       "禁止在子查询中使用LIMIT",
 			Annotation: "不支持在子查询中进行'LIMIT & IN/ALL/ANY/SOME'，数据库会执行报错。",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 禁止在子查询中使用LIMIT",
+		Message:      "禁止在子查询中使用LIMIT",
 		AllowOffline: true,
 		Func:         RuleSQLE00109,
 	}

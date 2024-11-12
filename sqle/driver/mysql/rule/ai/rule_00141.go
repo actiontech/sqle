@@ -19,7 +19,7 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00141,
-			Desc:       "在 MySQL 中, 表关联嵌套循环的层次过多",
+			Desc:       "表关联嵌套循环的层次过多",
 			Annotation: "嵌套越深，需要扫描的行数、生成的结果集就越大，SQL的执行效率越低。",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
@@ -32,7 +32,7 @@ func init() {
 				},
 			},
 		},
-		Message:      "在 MySQL 中, 表关联嵌套循环的层次过多",
+		Message:      "表关联嵌套循环的层次过多",
 		AllowOffline: true,
 		Func:         RuleSQLE00141,
 	}

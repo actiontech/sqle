@@ -20,7 +20,7 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00076,
-			Desc:       "在 MySQL 中, UPDATE/DELETE操作影响行数不建议超过阈值",
+			Desc:       "UPDATE/DELETE操作影响行数不建议超过阈值",
 			Annotation: "在数据库中，进行修改或删除等数据变更操作时，一次性操作的数据量过大，会消耗大量的系统资源，产生长事务，会导致查询性能下降，影响其他事务或查询的执行。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
@@ -33,7 +33,7 @@ func init() {
 				},
 			},
 		},
-		Message:      "在 MySQL 中, UPDATE/DELETE操作影响行数不建议超过阈值",
+		Message:      "UPDATE/DELETE操作影响行数不建议超过阈值",
 		AllowOffline: false,
 		Func:         RuleSQLE00076,
 	}

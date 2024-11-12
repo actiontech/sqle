@@ -17,13 +17,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00170,
-			Desc:       "在 MySQL 中, 避免缩短字段长度",
+			Desc:       "避免缩短字段长度",
 			Annotation: "修改字段长度值低于现有字段长度值，如果该字段现有数据超出设定后的长度，会造成语句执行报错",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 避免缩短字段长度. 字段 %s 的新长度 %d 小于当前最大长度 %d",
+		Message:      "避免缩短字段长度. 字段 %s 的新长度 %d 小于当前最大长度 %d",
 		AllowOffline: false,
 		Func:         RuleSQLE00170,
 	}

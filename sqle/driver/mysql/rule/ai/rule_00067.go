@@ -16,13 +16,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00067,
-			Desc:       "在 MySQL 中, 表不建议使用外键",
+			Desc:       "表不建议使用外键",
 			Annotation: "外键在大量写入场景下性能较差，强烈禁止使用",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDDLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 表不建议使用外键",
+		Message:      "表不建议使用外键",
 		AllowOffline: true,
 		Func:         RuleSQLE00067,
 	}

@@ -16,13 +16,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00007,
-			Desc:       "在 MySQL 中, 建表时，自增字段只能设置一个",
+			Desc:       "建表时，自增字段只能设置一个",
 			Annotation: "多个自增字段会造成表写入性能影响、可读性差、数据库设计不规范等缺点。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 建表时，自增字段只能设置一个",
+		Message:      "建表时，自增字段只能设置一个",
 		AllowOffline: true,
 		Func:         RuleSQLE00007,
 	}

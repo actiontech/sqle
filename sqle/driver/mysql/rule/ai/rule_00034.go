@@ -16,13 +16,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00034,
-			Desc:       "在 MySQL 中, 字段约束为NOT NULL时必须带默认值",
+			Desc:       "字段约束为NOT NULL时必须带默认值",
 			Annotation: "如存在NOT NULL且不带默认值的字段，对字段进行写入时不包含该字段，会导致插入报错",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDDLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 字段约束为NOT NULL时必须带默认值",
+		Message:      "字段约束为NOT NULL时必须带默认值",
 		AllowOffline: true,
 		Func:         RuleSQLE00034,
 	}

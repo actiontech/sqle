@@ -15,12 +15,12 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00072,
-			Desc:       "对于MySQL的DDL, 禁止进行删除外键的操作",
+			Desc:       "禁止进行删除外键的操作",
 			Annotation: "删除已有约束会影响已有业务逻辑；开启该规则，SQLE将提醒删除外键为高危操作",
 			Level:      driverV2.RuleLevelError,
 			Category:   rulepkg.RuleTypeDDLConvention,
 		},
-		Message: "对于MySQL的DDL, 禁止进行删除外键的操作",
+		Message: "禁止进行删除外键的操作",
 		AllowOffline: true,
 		Func:    RuleSQLE00072,
 	}

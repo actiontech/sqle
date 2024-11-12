@@ -17,13 +17,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00026,
-			Desc:       "在 MySQL 中, 整数字段建议指定最大显示宽度",
+			Desc:       "整数字段建议指定最大显示宽度",
 			Annotation: "在表结构定义中，整数字段定义指定了最大显示宽度，可以体现业务对该字段的数据存储预期；同时保持了字段定义的一致性，减少在数据库之间迁移时需要修改字段长度的工作量。",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDDLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 整数字段建议指定最大显示宽度",
+		Message:      "整数字段建议指定最大显示宽度",
 		AllowOffline: true,
 		Func:         RuleSQLE00026,
 	}

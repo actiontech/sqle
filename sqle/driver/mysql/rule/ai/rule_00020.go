@@ -20,7 +20,7 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00020,
-			Desc:       "在 MySQL 中, 避免表中包含有太多的列",
+			Desc:       "避免表中包含有太多的列",
 			Annotation: "数据库表中字段过多会导致数据操作效率降低、数据完整性检查成本增加，以及索引维护与更新效率之间的权衡成本。对于追求事务响应和处理速度的OLTP系统，应尽量避免宽表设计，采用规范化数据模型以提升性能。",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
@@ -33,7 +33,7 @@ func init() {
 				},
 			},
 		},
-		Message:      "在 MySQL 中, 避免表中包含有太多的列",
+		Message:      "避免表中包含有太多的列",
 		AllowOffline: false,
 		Func:         RuleSQLE00020,
 	}

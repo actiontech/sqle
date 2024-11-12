@@ -18,13 +18,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00091,
-			Desc:       "在 MySQL 中, 建议表连接时有连接条件",
+			Desc:       "建议表连接时有连接条件",
 			Annotation: "为了确保连接操作的正确性和可靠性，应该始终指定连接条件，定义正确的关联关系。缺少连接条件，可能导致连接操作失败，最终数据库会使用笛卡尔积的方式进行处理，产生不正确的连接结果，并导致性能问题，消耗大量的CPU和内存资源。",
 			Level:      driverV2.RuleLevelError,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 建议表连接时有连接条件",
+		Message:      "建议表连接时有连接条件",
 		AllowOffline: true,
 		Func:         RuleSQLE00091,
 	}

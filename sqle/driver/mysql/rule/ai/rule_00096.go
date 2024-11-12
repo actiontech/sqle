@@ -19,7 +19,7 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00096,
-			Desc:       "在 MySQL 中, 不建议参与连接操作的表数量过多",
+			Desc:       "不建议参与连接操作的表数量过多",
 			Annotation: "表关联越多，意味着各种驱动关系组合就越多，比较各种结果集的执行成本的代价也就越高，进而SQL查询性能会大幅度下降。",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
@@ -32,7 +32,7 @@ func init() {
 				},
 			},
 		},
-		Message:      "在 MySQL 中, 不建议参与连接操作的表数量过多",
+		Message:      "不建议参与连接操作的表数量过多",
 		AllowOffline: true,
 		Func:         RuleSQLE00096,
 	}

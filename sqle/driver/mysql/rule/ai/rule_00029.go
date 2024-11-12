@@ -17,13 +17,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00029,
-			Desc:       "在 MySQL 中, 禁止使用存储过程",
+			Desc:       "禁止使用存储过程",
 			Annotation: "存储过程在一定程度上能使程序难以调试和拓展，各种数据库端的存储过程语法相差很大，给将来的数据移植带来很大的困难，且会极大的出现BUG的几率",
 			Level:      driverV2.RuleLevelError,
 			Category:   rulepkg.RuleTypeUsageSuggestion,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 禁止使用存储过程",
+		Message:      "禁止使用存储过程",
 		AllowOffline: true,
 		Func:         RuleSQLE00029,
 	}

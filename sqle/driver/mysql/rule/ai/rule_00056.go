@@ -19,7 +19,7 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00056,
-			Desc:       "在 MySQL 中, 表建议使用指定的字符集",
+			Desc:       "表建议使用指定的字符集",
 			Annotation: "数据库内使用非标准的字符集，可能导致字符无法编码或者编码不全引起的乱码，最终出现应用写入数据失败或者查询结果显示乱码，影响数据库服务可用性。",
 			Level:      driverV2.RuleLevelError,
 			Category:   rulepkg.RuleTypeDDLConvention,
@@ -32,7 +32,7 @@ func init() {
 				},
 			},
 		},
-		Message:      "在 MySQL 中, 表建议使用指定的字符集: %v",
+		Message:      "表建议使用指定的字符集: %v",
 		AllowOffline: true,
 		Func:         RuleSQLE00056,
 	}

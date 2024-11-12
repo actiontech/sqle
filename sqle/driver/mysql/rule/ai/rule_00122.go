@@ -19,13 +19,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00122,
-			Desc:       "在 MySQL 中, 避免对值全为NULL的列直接使用 SUM或COUNT函数",
+			Desc:       "避免对值全为NULL的列直接使用 SUM或COUNT函数",
 			Annotation: "当某一列的值全是NULL时，COUNT(COL)的返回结果为0，但SUM(COL)的返回结果为NULL，因此使用SUM()时需注意NPE问题（指数据返回NULL）；如业务需避免NPE问题，建议开启此规则",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 避免对值全为NULL的列直接使用 SUM或COUNT函数. 违反规则的列名: %s",
+		Message:      "避免对值全为NULL的列直接使用 SUM或COUNT函数. 违反规则的列名: %s",
 		AllowOffline: false,
 		Func:         RuleSQLE00122,
 	}

@@ -19,13 +19,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00051,
-			Desc:       "在 MySQL 中, 禁止主键使用自增",
+			Desc:       "禁止主键使用自增",
 			Annotation: "后期维护相对不便，过于依赖数据库自增机制达到全局唯一，不易拆分，容易造成主键冲突",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 禁止主键使用自增",
+		Message:      "禁止主键使用自增",
 		AllowOffline: false,
 		Func:         RuleSQLE00051,
 	}

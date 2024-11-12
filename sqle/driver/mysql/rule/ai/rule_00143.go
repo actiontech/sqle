@@ -16,12 +16,12 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00143,
-			Desc:       "对于MySQL的DML, 多表关联时，不建议在WHERE条件中对不同表的字段使用OR条件",
+			Desc:       "多表关联时，不建议在WHERE条件中对不同表的字段使用OR条件",
 			Annotation: "多表关联时，在WHERE条件中对不同表的字段使用OR条件可能会导致SQL无法使用正确的索引",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeIndexInvalidation,
 		},
-		Message: "对于MySQL的DML, 多表关联时，不建议在WHERE条件中对不同表的字段使用OR条件.",
+		Message: "多表关联时，不建议在WHERE条件中对不同表的字段使用OR条件.",
 		AllowOffline: false,
 		Func:    RuleSQLE00143,
 	}

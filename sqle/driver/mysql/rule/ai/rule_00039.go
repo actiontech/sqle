@@ -20,7 +20,7 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00039,
-			Desc:       "对于MySQL的索引, 建议使用数据区分度高的索引字段",
+			Desc:       "建议使用数据区分度高的索引字段",
 			Annotation: "为了提高查询效率，建议在执行SQL时优先使用区分度高的索引字段。区分度高的索引可以更快地定位数据，减少不必要的数据扫描，从而加速查询响应时间。规则检查将会计算候选索引字段的区分度，如果索引的区分度低于设定的阈值，则建议调整索引策略，默认值：0.7",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeIndexOptimization,

@@ -17,13 +17,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00016,
-			Desc:       "在 MySQL 中, 存储大数据类型（如长文本、图片等）的字段只能设置为NULL",
+			Desc:       "存储大数据类型（如长文本、图片等）的字段只能设置为NULL",
 			Annotation: "在MySQL中，存储大数据类型的内容常用BLOB和TEXT、GEOMETRY以及JSON类型，但它们无法指定默认值；写入数据时，如未对该字段指定值会导致写入失败。",
 			Level:      driverV2.RuleLevelError,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 存储大数据类型（如长文本、图片等）的字段只能设置为NULL",
+		Message:      "存储大数据类型（如长文本、图片等）的字段只能设置为NULL",
 		AllowOffline: true,
 		Func:         RuleSQLE00016,
 	}

@@ -16,13 +16,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00088,
-			Desc:       "在 MySQL 中, INSERT 语句必须指定COLUMN",
+			Desc:       "INSERT 语句必须指定COLUMN",
 			Annotation: "当表结构发生变更，INSERT请求不明确指定列名，会发生插入数据不匹配的情况；建议开启此规则，避免插入结果与业务预期不符",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, INSERT 语句必须指定COLUMN",
+		Message:      "INSERT 语句必须指定COLUMN",
 		AllowOffline: true,
 		Func:         RuleSQLE00088,
 	}

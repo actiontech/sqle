@@ -17,13 +17,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00062,
-			Desc:       "在 MySQL 中, 建议事务隔离级别设置成RC",
+			Desc:       "建议事务隔离级别设置成RC",
 			Annotation: "RC 虽然没有解决幻读的问题，但是没有间隙锁，从而每次在做更新操作时影响的行数比默认RR要小很多；默认的RR隔离级别虽然解决了幻读问题，但是增加了间隙锁，导致加锁的范围扩大，性能比RC要低，增加死锁的概率；在大多数情况下，出现幻读的几率较小，所以建议使用RC。",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 建议事务隔离级别设置成RC",
+		Message:      "建议事务隔离级别设置成RC",
 		AllowOffline: true,
 		Func:         RuleSQLE00062,
 	}

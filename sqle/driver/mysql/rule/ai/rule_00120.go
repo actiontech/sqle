@@ -17,13 +17,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00120,
-			Desc:       "在 MySQL 中, 避免使用 IN (NULL) 或者 NOT IN (NULL)",
+			Desc:       "避免使用 IN (NULL) 或者 NOT IN (NULL)",
 			Annotation: "使用 `IN(NULL)` 或 `NOT IN(NULL)` 会导致查询条件永远为假，从而使得查询无法返回任何结果。这不仅影响查询逻辑和结果的准确性，还可能导致性能问题和不必要的资源消耗。",
 			Level:      driverV2.RuleLevelError,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 避免使用 IN (NULL) 或者 NOT IN (NULL)",
+		Message:      "避免使用 IN (NULL) 或者 NOT IN (NULL)",
 		AllowOffline: true,
 		Func:         RuleSQLE00120,
 	}

@@ -16,13 +16,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00065,
-			Desc:       "在 MySQL 中, 禁止修改表时指定或调整字段在表结构中的顺序",
+			Desc:       "禁止修改表时指定或调整字段在表结构中的顺序",
 			Annotation: "FIRST 和 AFTER 关键词在 ALTER TABLE 语句中用于调整字段的顺序，这种操作会改变表字段的物理顺序，可能导致依赖默认列顺序的业务SQL出现错误，影响数据的一致性和业务的稳定性。",
 			Level:      driverV2.RuleLevelError,
 			Category:   rulepkg.RuleTypeDDLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 禁止修改表时指定或调整字段在表结构中的顺序",
+		Message:      "禁止修改表时指定或调整字段在表结构中的顺序",
 		AllowOffline: true,
 		Func:         RuleSQLE00065,
 	}

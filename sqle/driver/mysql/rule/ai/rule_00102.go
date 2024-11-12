@@ -16,13 +16,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00102,
-			Desc:       "在 MySQL 中, 禁止UPDATE/DELETE语句使用ORDER BY操作 ",
+			Desc:       "禁止UPDATE/DELETE语句使用ORDER BY操作 ",
 			Annotation: "使用ORDER BY子句的UPDATE或DELETE语句会导致不必要的性能开销，影响数据库响应时间，并可能导致锁竞争，从而影响到系统的整体性能和稳定性。",
 			Level:      driverV2.RuleLevelError,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 禁止UPDATE/DELETE语句使用ORDER BY操作 ",
+		Message:      "禁止UPDATE/DELETE语句使用ORDER BY操作 ",
 		AllowOffline: true,
 		Func:         RuleSQLE00102,
 	}

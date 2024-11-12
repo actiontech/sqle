@@ -19,7 +19,7 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00045,
-			Desc:       "在 MySQL 中, 避免在分页查询中使用过大偏移量",
+			Desc:       "避免在分页查询中使用过大偏移量",
 			Annotation: "在数据库中，分页查询通常使用 LIMIT 和 OFFSET 语句进行。当数据量较大时，使用大的偏移量（OFFSET）进行分页查询可能会导致性能下降，因为数据库需要跳过大量的行来获得所需的结果集。",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
@@ -32,7 +32,7 @@ func init() {
 				},
 			},
 		},
-		Message:      "在 MySQL 中, 避免在分页查询中使用过大偏移量, 最大偏移量:%v",
+		Message:      "避免在分页查询中使用过大偏移量, 最大偏移量:%v",
 		AllowOffline: true,
 		Func:         RuleSQLE00045,
 	}

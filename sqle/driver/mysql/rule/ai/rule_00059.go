@@ -20,7 +20,7 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00059,
-			Desc:       "对于MySQL的DDL, 禁止修改大表字段类型",
+			Desc:       "禁止修改大表字段类型",
 			Annotation: "对于大型数据表，修改字段类型的DDL操作将导致显著的性能下降和可用性影响。此类操作通常需要复制整个表来更改数据类型，期间表将无法进行写操作，并且可能导致长时间的锁等待，对线上业务造成过长时间的影响。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDDLConvention,
@@ -33,9 +33,9 @@ func init() {
 				},
 			},
 		},
-		Message: "对于MySQL的DDL，禁止修改大表字段类型，表大小阈值: %v GB",
+		Message:      "禁止修改大表字段类型，表大小阈值: %v GB",
 		AllowOffline: false,
-		Func:    RuleSQLE00059,
+		Func:         RuleSQLE00059,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
 	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh

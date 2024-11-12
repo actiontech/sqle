@@ -16,12 +16,12 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00024,
-			Desc:       "对于MySQL的DDL, 不建议使用 SET 类型",
+			Desc:       "不建议使用 SET 类型",
 			Annotation: "集合的修改需要重新定义列，后期修改的代价大，建议在业务层实现",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDDLConvention,
 		},
-		Message: "对于MySQL的DDL, 不建议使用 SET 类型. 不符合规定的字段: %v",
+		Message: "不建议使用 SET 类型. 不符合规定的字段: %v",
 		Func:    RuleSQLE00024,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

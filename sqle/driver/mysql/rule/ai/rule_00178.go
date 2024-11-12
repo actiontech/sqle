@@ -15,12 +15,12 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00178,
-			Desc:       "对于MySQL的DML, 不建议对表进行全表排序操作",
+			Desc:       "不建议对表进行全表排序操作",
 			Annotation: "SQL语句存在全表排序操作，无过滤条件，也就是WHERE 必须显式指定过滤条件",
 			Level:      driverV2.RuleLevelError,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		Message:      "对于MySQL的DML, 不建议对表进行全表排序操作",
+		Message:      "不建议对表进行全表排序操作",
 		AllowOffline: true,
 		Func:         RuleSQLE00178,
 	}

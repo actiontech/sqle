@@ -19,7 +19,7 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00098,
-			Desc:       "对于MySQL的DML, 避免在单个SQL语句中对同一张表进行多次连接或查询",
+			Desc:       "避免在单个SQL语句中对同一张表进行多次连接或查询",
 			Annotation: "在设计SQL语句时，应避免对同一张表进行多次连接或查询。这种做法可能导致查询性能显著下降，因为它会增加数据库的I/O操作，CPU处理以及内存使用，从而影响整体查询效率",
 			Level:      driverV2.RuleLevelError,
 			Category:   rulepkg.RuleTypeDMLConvention,
@@ -32,9 +32,9 @@ func init() {
 				},
 			},
 		},
-		Message: "对于MySQL的DML,避免在单个SQL语句中对同一张表进行多次连接或查询. 违反规则的表名: %s",
+		Message:      "避免在单个SQL语句中对同一张表进行多次连接或查询. 违反规则的表名: %s",
 		AllowOffline: true,
-		Func:    RuleSQLE00098,
+		Func:         RuleSQLE00098,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
 	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh

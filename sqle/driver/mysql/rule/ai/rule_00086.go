@@ -19,13 +19,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00086,
-			Desc:       "在 MySQL 中, 禁止使用子字符串匹配或后缀匹配搜索",
+			Desc:       "禁止使用子字符串匹配或后缀匹配搜索",
 			Annotation: "使用子字符串匹配搜索或后缀匹配搜索将导致查询无法使用索引，导致全表扫描",
 			Level:      driverV2.RuleLevelError,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 禁止使用子字符串匹配或后缀匹配搜索",
+		Message:      "禁止使用子字符串匹配或后缀匹配搜索",
 		AllowOffline: true,
 		Func:         RuleSQLE00086,
 	}

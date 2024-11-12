@@ -15,12 +15,12 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00101,
-			Desc:       "对于MySQL的DQL, SELECT 语句不能有ORDER BY",
+			Desc:       "SELECT 语句不能有ORDER BY",
 			Annotation: "ORDER BY 对查询性能影响较大，建议将排序部分放到业务处理。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		Message: "对于MySQL的DQL, SELECT 语句不能有ORDER BY",
+		Message: "SELECT 语句不能有ORDER BY",
 		AllowOffline: false,
 		Func:    RuleSQLE00101,
 	}

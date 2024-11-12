@@ -15,12 +15,12 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00016_1,
-			Desc:       "对于MySQL的DDL, BLOB 和 TEXT 类型的字段不建议设置为 NOT NULL",
+			Desc:       "BLOB 和 TEXT 类型的字段不建议设置为 NOT NULL",
 			Annotation: "BLOB 和 TEXT 类型的字段无法指定默认值，如插入数据不指定字段默认为NULL，如果添加了 NOT NULL 限制，写入数据时又未对该字段指定值会导致写入失败",
 			Level:      driverV2.RuleLevelError,
 			Category:   rulepkg.RuleTypeDDLConvention,
 		},
-		Message: "对于MySQL的DDL, BLOB 和 TEXT 类型的字段不建议设置为 NOT NULL. 不符合规定的字段: %v",
+		Message: "BLOB 和 TEXT 类型的字段不建议设置为 NOT NULL. 不符合规定的字段: %v",
 		Func:    RuleSQLE00016_1,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

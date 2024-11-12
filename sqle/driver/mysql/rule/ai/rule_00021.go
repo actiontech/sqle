@@ -16,13 +16,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00021,
-			Desc:       "在 MySQL 中, 禁止表字段缺少NOT NULL约束",
+			Desc:       "禁止表字段缺少NOT NULL约束",
 			Annotation: "若数据库表字段缺少NOT NULL约束，则字段存储值可能是NULL，后期判断时，需要加上IS NULL判断，增加SQL编写的复杂度。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 禁止表字段缺少NOT NULL约束",
+		Message:      "禁止表字段缺少NOT NULL约束",
 		AllowOffline: true,
 		Func:         RuleSQLE00021,
 	}

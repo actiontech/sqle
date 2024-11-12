@@ -15,12 +15,12 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00119,
-			Desc:       "对于MySQL的DML, 建议为GROUP BY语句添加ORDER BY条件",
+			Desc:       "建议为GROUP BY语句添加ORDER BY条件",
 			Annotation: "在5.7中，MySQL默认会对’GROUP BY col1, …’按如下顺序’ORDER BY col1,…’隐式排序，导致产生无谓的排序，带来额外的开销，影响SQL执行效率；在8.0中，则不会出现这种情况。如果不需要排序建议显示添加’ORDER BY NULL’",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		Message: "对于MySQL的DML, 建议为GROUP BY语句添加ORDER BY条件.",
+		Message: "建议为GROUP BY语句添加ORDER BY条件.",
 		AllowOffline: true,
 		Func:    RuleSQLE00119,
 	}

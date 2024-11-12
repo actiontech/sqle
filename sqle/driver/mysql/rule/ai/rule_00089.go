@@ -15,13 +15,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00089,
-			Desc:       "在 MySQL 中, 禁止INSERT ... SELECT",
+			Desc:       "禁止INSERT ... SELECT",
 			Annotation: "使用 INSERT ... SELECT 在默认事务隔离级别下，可能会导致对查询的表施加表级锁",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 禁止INSERT ... SELECT",
+		Message:      "禁止INSERT ... SELECT",
 		AllowOffline: true,
 		Func:         RuleSQLE00089,
 	}

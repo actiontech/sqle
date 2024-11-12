@@ -17,13 +17,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00054,
-			Desc:       "在 MySQL 中, 建议主键字段使用BIGINT时采用无符号的BIGINT",
+			Desc:       "建议主键字段使用BIGINT时采用无符号的BIGINT",
 			Annotation: "在设计主键时若选择BIGINT时，使用无符号类型，相对于有符号类型，可以使数据库的索引性能更加优化，因为它减少了负值处理的开销，并能在某些情况下提高查询速度。特别是在系统设计初期可能无法完全预见到未来数据量的情况下，无符号数值类型（BIGINT UNSIGNED）可以有效避免因数据增长导致的溢出问题。",
 			Level:      driverV2.RuleLevelError,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 建议主键字段使用BIGINT时采用无符号的BIGINT",
+		Message:      "建议主键字段使用BIGINT时采用无符号的BIGINT",
 		AllowOffline: true,
 		Func:         RuleSQLE00054,
 	}

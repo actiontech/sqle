@@ -17,7 +17,7 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00064,
-			Desc:       "对于MySQL的DDL, 不建议索引字段是VARCHAR类型时其长度大于阈值",
+			Desc:       "不建议索引字段是VARCHAR类型时其长度大于阈值",
 			Annotation: "建立索引时没有限制索引的大小，索引长度会根据该字段实际存储的值来计算，VARCHAR 定义的长度越长，导致业务写入的内容越多，则建立的索引其存储大小将会越大，默认值：767",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDDLConvention,
@@ -30,7 +30,7 @@ func init() {
 				},
 			},
 		},
-		Message: "对于MySQL的DDL, 不建议索引字段是VARCHAR类型时其长度大于阈值. 不符合规则的字段: %v",
+		Message: "不建议索引字段是VARCHAR类型时其长度大于阈值. 不符合规则的字段: %v",
 		AllowOffline: false,
 		Func:    RuleSQLE00064,
 	}

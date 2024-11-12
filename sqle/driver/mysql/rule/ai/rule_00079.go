@@ -16,13 +16,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00079,
-			Desc:       "在 MySQL 中, 别名不建议与表或列的名字相同",
+			Desc:       "别名不建议与表或列的名字相同",
 			Annotation: "表或列的别名与其真实名称相同, 这样的别名会使得查询更难去分辨",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 别名不建议与表或列的名字相同",
+		Message:      "别名不建议与表或列的名字相同",
 		AllowOffline: true,
 		Func:         RuleSQLE00079,
 	}

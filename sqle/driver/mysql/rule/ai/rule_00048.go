@@ -20,13 +20,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00048,
-			Desc:       "在 MySQL 中, 数据库对象命名只能使用英文、下划线或数字，首字母必须是英文",
+			Desc:       "数据库对象命名只能使用英文、下划线或数字，首字母必须是英文",
 			Annotation: "遵循良好的命名约定和避免特殊字符的使用，可以提高代码的可读性、可维护性，并减少潜在的兼容性和语法问题。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeNamingConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 数据库对象命名只能使用英文、下划线或数字，首字母必须是英文",
+		Message:      "数据库对象命名只能使用英文、下划线或数字，首字母必须是英文",
 		AllowOffline: true,
 		Func:         RuleSQLE00048,
 	}

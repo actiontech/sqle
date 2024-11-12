@@ -19,13 +19,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00052,
-			Desc:       "在 MySQL 中, 建议主键使用自增",
+			Desc:       "建议主键使用自增",
 			Annotation: "自增主键通常为数字类型，其数据写入速度快，占用的存储空间小。自增主键保证了数据的有序性，减少了页分裂的频率，并简化了应用层的数据写入逻辑。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 建议主键使用自增",
+		Message:      "建议主键使用自增",
 		AllowOffline: false,
 		Func:         RuleSQLE00052,
 	}

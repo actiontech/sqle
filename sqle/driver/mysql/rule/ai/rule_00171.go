@@ -19,7 +19,7 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00171,
-			Desc:       "对于MySQL的DDL, 建表DDL必须包含创建时间字段且默认值为CURRENT_TIMESTAMP",
+			Desc:       "建表DDL必须包含创建时间字段且默认值为CURRENT_TIMESTAMP",
 			Annotation: "使用CREATE_TIME字段，有利于问题查找跟踪和检索数据，同时避免后期对数据生命周期管理不便 ，默认值为CURRENT_TIMESTAMP可保证时间的准确性",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDDLConvention,
@@ -32,7 +32,7 @@ func init() {
 				},
 			},
 		},
-		Message: "对于MySQL的DDL, 建表DDL必须包含创建时间字段且默认值为CURRENT_TIMESTAMP",
+		Message: "建表DDL必须包含创建时间字段且默认值为CURRENT_TIMESTAMP",
 		Func:    RuleSQLE00171,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

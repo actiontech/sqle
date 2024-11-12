@@ -17,12 +17,12 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00027,
-			Desc:       "对于MySQL的DDL, 列定义建议加注释",
+			Desc:       "列定义建议加注释",
 			Annotation: "MySQL列添加注释能够使列的意义更明确，方便日后的维护。",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDDLConvention,
 		},
-		Message: "对于MySQL的DDL, 列定义建议加注释. 不符合规定的字段: %v",
+		Message: "列定义建议加注释. 不符合规定的字段: %v",
 		AllowOffline: true,
 		Func:    RuleSQLE00027,
 	}

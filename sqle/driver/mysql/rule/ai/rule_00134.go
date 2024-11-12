@@ -16,13 +16,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00134,
-			Desc:       "在 MySQL 中, 避免对主键值进行修改",
+			Desc:       "避免对主键值进行修改",
 			Annotation: "主键在大多数数据库系统中用于定义数据的唯一性，并且常常与数据的物理存储结构密切相关。更新主键会导致底层存储结构（如聚簇索引）的重大重新组织，引发性能下降。此外，主键的更改可能影响数据一致性，尤其在涉及复杂事务处理和高并发操作的场景中。",
 			Level:      driverV2.RuleLevelError,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 避免对主键值进行修改",
+		Message:      "避免对主键值进行修改",
 		AllowOffline: false,
 		Func:         RuleSQLE00134,
 	}

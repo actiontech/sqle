@@ -19,13 +19,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00095,
-			Desc:       "在 MySQL 中, 建议使用'<>'代替'!='",
+			Desc:       "建议使用'<>'代替'!='",
 			Annotation: "'<>' 是ANSI SQL标准中定义的不等于运算符。如果使用了!=运算符，数据库优化器会自动转换为SQL标准不等于运算符，增加了优化器的转换开销；另外，目前并非所有的SQL数据库系统都支持 !=，使用标准的运算符可以确保SQL在各数据库之间具有更高的兼容性。",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 建议使用'<>'代替'!='",
+		Message:      "建议使用'<>'代替'!='",
 		AllowOffline: true,
 		Func:         RuleSQLE00095,
 	}

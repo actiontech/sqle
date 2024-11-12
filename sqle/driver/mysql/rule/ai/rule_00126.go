@@ -15,12 +15,12 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00126,
-			Desc:       "对于MySQL的DML, 不建议对字段编号进行 GROUP BY",
+			Desc:       "不建议对字段编号进行 GROUP BY",
 			Annotation: "GROUP BY 1 表示按第一列进行GROUP BY；在GROUP BY子句中使用字段编号，而不是表达式或列名称，当查询列顺序改变时，会导致查询逻辑出现问题",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		Message: "对于MySQL的DML, 不建议对字段编号进行 GROUP BY",
+		Message: "不建议对字段编号进行 GROUP BY",
 		AllowOffline: true,
 		Func:    RuleSQLE00126,
 	}

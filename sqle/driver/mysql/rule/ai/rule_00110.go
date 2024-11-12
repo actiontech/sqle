@@ -20,13 +20,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00110,
-			Desc:       "在 MySQL 中, 建议为SQL查询条件建立索引",
+			Desc:       "建议为SQL查询条件建立索引",
 			Annotation: "为SQL查询条件建立索引可以显著提高查询性能，减少I/O操作，并提高查询效率。特别是在处理大数据量的表时，索引可以大幅度缩短查询时间，优化数据库性能。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 建议为SQL查询条件建立索引. 不符合条件的字段有: %v",
+		Message:      "建议为SQL查询条件建立索引. 不符合条件的字段有: %v",
 		AllowOffline: false,
 		Func:         RuleSQLE00110,
 	}

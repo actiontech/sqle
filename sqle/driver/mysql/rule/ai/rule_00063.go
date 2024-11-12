@@ -20,7 +20,7 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00063,
-			Desc:       "在 MySQL 中, 唯一索引名必须遵循指定格式",
+			Desc:       "唯一索引名必须遵循指定格式",
 			Annotation: "通过配置该规则可以规范指定业务的唯一索引命名规则，如索引字段存在多个，则可以拼接字段名，不要超过索引名长度即可。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
@@ -33,7 +33,7 @@ func init() {
 				},
 			},
 		},
-		Message:      "在 MySQL 中, 唯一索引名必须遵循指定格式",
+		Message:      "唯一索引名必须遵循指定格式",
 		AllowOffline: false,
 		Func:         RuleSQLE00063,
 	}

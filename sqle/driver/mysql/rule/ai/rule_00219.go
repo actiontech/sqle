@@ -20,7 +20,7 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00219,
-			Desc:       "在 MySQL 中, 建表DDL必须包括创建时间字段，并应确保该字段能记录表记录的创建时间。",
+			Desc:       "建表DDL必须包括创建时间字段，并应确保该字段能记录表记录的创建时间。",
 			Annotation: "使用创建时间字段，有利于问题查找跟踪和检索数据，同时避免后期对数据生命周期管理不便 ，可保证时间的准确性",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
@@ -33,7 +33,7 @@ func init() {
 				},
 			},
 		},
-		Message:      "在 MySQL 中, 建表DDL必须包括创建时间字段，并应确保该字段能记录表记录的创建时间。",
+		Message:      "建表DDL必须包括创建时间字段，并应确保该字段能记录表记录的创建时间。",
 		AllowOffline: true,
 		Func:         RuleSQLE00219,
 	}

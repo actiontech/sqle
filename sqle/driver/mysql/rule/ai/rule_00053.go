@@ -15,13 +15,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00053,
-			Desc:       "在 MySQL 中, 不建议使用SELECT *",
+			Desc:       "不建议使用SELECT *",
 			Annotation: "当表结构变更时，使用*通配符选择所有列将导致查询行为会发生更改，与业务期望不符；同时SELECT * 中的无用字段会带来不必要的磁盘I/O，以及网络开销，且无法覆盖索引进而回表，大幅度降低查询效率。",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 不建议使用SELECT *",
+		Message:      "不建议使用SELECT *",
 		AllowOffline: true,
 		Func:         RuleSQLE00053,
 	}

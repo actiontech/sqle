@@ -15,7 +15,7 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00036,
-			Desc:       "对于MySQL的索引, 禁止将BLOB类型的列加入索引",
+			Desc:       "禁止将BLOB类型的列加入索引",
 			Annotation: "BLOB类型属于大字段类型，作为索引会占用很大的存储空间",
 			Level:      driverV2.RuleLevelError,
 			Category:   rulepkg.RuleTypeIndexingConvention,

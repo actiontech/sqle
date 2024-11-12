@@ -15,12 +15,12 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00071,
-			Desc:       "对于MySQL的DDL, 禁止进行删除列的操作",
+			Desc:       "禁止进行删除列的操作",
 			Annotation: "业务逻辑与删除列依赖未完全消除，列被删除后可能导致程序异常（无法正常读写）的情况；开启该规则，SQLE将提醒删除列为高危操作",
 			Level:      driverV2.RuleLevelError,
 			Category:   rulepkg.RuleTypeDDLConvention,
 		},
-		Message: "对于MySQL的DDL, 禁止进行删除列的操作",
+		Message: "禁止进行删除列的操作",
 		AllowOffline: true,
 		Func:    RuleSQLE00071,
 	}

@@ -19,13 +19,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00015,
-			Desc:       "在 MySQL 中, 避免库内出现多种数据库排序规则",
+			Desc:       "避免库内出现多种数据库排序规则",
 			Annotation: "建议库内使用一致的数据库排序规则，以确保查询性能和索引有效性，避免因排序规则不一致导致的全表扫描和数据一致性问题。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 避免库内出现多种数据库排序规则",
+		Message:      "避免库内出现多种数据库排序规则",
 		AllowOffline: false,
 		Func:         RuleSQLE00015,
 	}

@@ -20,7 +20,7 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00040,
-			Desc:       "在 MySQL 中, 普通索引必须使用固定前缀",
+			Desc:       "普通索引必须使用固定前缀",
 			Annotation: "通过配置该规则可以规范指定业务的普通索引命名规则，具体命名规范可以自定义设置。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
@@ -33,7 +33,7 @@ func init() {
 				},
 			},
 		},
-		Message:      "在 MySQL 中, 普通索引必须使用固定前缀",
+		Message:      "普通索引必须使用固定前缀",
 		AllowOffline: false,
 		Func:         RuleSQLE00040,
 	}

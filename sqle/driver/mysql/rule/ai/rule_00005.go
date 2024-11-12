@@ -18,7 +18,7 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00005,
-			Desc:       "在 MySQL 中, 避免复合索引中包含过多字段",
+			Desc:       "避免复合索引中包含过多字段",
 			Annotation: "在设计复合索引过程中，每增加一个索引字段，都会使索引的大小线性增加，从而占用更多的磁盘空间，且增加索引维护的开销。尤其是在数据频繁变动的环境中，这会显著增加数据库的维护压力。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
@@ -31,7 +31,7 @@ func init() {
 				},
 			},
 		},
-		Message:      "在 MySQL 中, 避免复合索引中包含过多字段",
+		Message:      "避免复合索引中包含过多字段",
 		AllowOffline: true,
 		Func:         RuleSQLE00005,
 	}

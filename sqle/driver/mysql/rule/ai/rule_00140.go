@@ -16,13 +16,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00140,
-			Desc:       "在 MySQL 中, 建议对表、视图等对象进行操作时指定库名",
+			Desc:       "建议对表、视图等对象进行操作时指定库名",
 			Annotation: "对表、视图等对象进行创建、修改、查询、更新、删除等DDL、DML操作时，如未指定schema或者库名，会导致在不确定的数据库下执行，与实际业务预期不符合，而且会导致SQL语句执行错误。",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 建议对表、视图等对象进行操作时指定库名",
+		Message:      "建议对表、视图等对象进行操作时指定库名",
 		AllowOffline: true,
 		Func:         RuleSQLE00140,
 	}

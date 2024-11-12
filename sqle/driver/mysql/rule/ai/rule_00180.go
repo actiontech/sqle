@@ -19,7 +19,7 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00180,
-			Desc:       "在 MySQL 中, 避免执行计划中 filter 次数过多",
+			Desc:       "避免执行计划中 filter 次数过多",
 			Annotation: "执行计划中的filter 步骤表示查询在检索数据之后需要进行额外的行过滤。过滤通常发生在已经通过索引或其他方法获取的行集上。如果这个步骤处理的行数很多，那么它可能会成为查询性能的瓶颈。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
@@ -32,7 +32,7 @@ func init() {
 				},
 			},
 		},
-		Message:      "在 MySQL 中, 避免执行计划中 filter 次数过多",
+		Message:      "避免执行计划中 filter 次数过多",
 		AllowOffline: false,
 		Func:         RuleSQLE00180,
 	}

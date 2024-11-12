@@ -17,13 +17,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00012,
-			Desc:       "在 MySQL 中, 建议使用BIGINT类型表示小数",
+			Desc:       "建议使用BIGINT类型表示小数",
 			Annotation: "在MySQL中，对于金额等需要高精度计算的小数，建议使用BIGINT类型表示，以避免浮点数精度问题。例如，可以用分来表示金额，1元在数据库中用整型表示为100。",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 建议使用BIGINT类型表示小数",
+		Message:      "建议使用BIGINT类型表示小数",
 		AllowOffline: true,
 		Func:         RuleSQLE00012,
 	}

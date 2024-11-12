@@ -17,12 +17,12 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00175,
-			Desc:       "对于MySQL的DML, 避免不必要的索引扫描合并",
+			Desc:       "避免不必要的索引扫描合并",
 			Annotation: "索引合并说明一个查询同时使用了多个索引，增加了更多IO操作，特别是在数据量大的情况下执行效率比复合索引明显更多。此外，索引合并操作可能消耗更多CPU和内存资源，以及较长的查询响应时间。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		Message: "对于MySQL的DML, 避免不必要的索引扫描合并",
+		Message: "避免不必要的索引扫描合并",
 		AllowOffline: false,
 		Func:    RuleSQLE00175,
 	}

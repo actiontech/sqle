@@ -18,13 +18,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00046,
-			Desc:       "在 MySQL 中, 数据库对象命名不建议大小写字母混合",
+			Desc:       "数据库对象命名不建议大小写字母混合",
 			Annotation: "数据库对象命名规范，不推荐采用大小写混用的形式建议词语之间使用下划线连接，提高代码可读性",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeNamingConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 数据库对象命名不建议大小写字母混合",
+		Message:      "数据库对象命名不建议大小写字母混合",
 		AllowOffline: true,
 		Func:         RuleSQLE00046,
 	}

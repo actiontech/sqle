@@ -18,7 +18,7 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00043,
-			Desc:       "对于MySQL的索引, 避免表内同一字段上存在过多索引",
+			Desc:       "避免表内同一字段上存在过多索引",
 			Annotation: "复合索引会根据索引列数创建对应组合的索引，列数越多，创建的索引越多，每个索引都会增加磁盘空间的开销，同时增加索引维护的开销；具体规则阈值可以根据业务需求调整，默认值：2",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeIndexingConvention,
@@ -31,7 +31,7 @@ func init() {
 				},
 			},
 		},
-		Message: "对于MySQL的索引, 避免表内同一字段上存在过多索引. 字段 %v 上的索引数量不建议超过%v个",
+		Message: "避免表内同一字段上存在过多索引. 字段 %v 上的索引数量不建议超过%v个",
 		AllowOffline: false,
 		Func:    RuleSQLE00043,
 	}

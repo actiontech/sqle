@@ -19,13 +19,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00057,
-			Desc:       "在 MySQL 中, 必须使用INNODB数据库引擎",
+			Desc:       "必须使用INNODB数据库引擎",
 			Annotation: "INNODB 支持事务，支持行级锁，更好的恢复性，高并发下性能更好。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 必须使用INNODB数据库引擎",
+		Message:      "必须使用INNODB数据库引擎",
 		AllowOffline: false,
 		Func:         RuleSQLE00057,
 	}

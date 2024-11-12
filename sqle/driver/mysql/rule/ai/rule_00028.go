@@ -15,12 +15,12 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00028,
-			Desc:       "对于MySQL的DDL, 除了自增列和blob/text类型的列, 每个列都必须添加默认值",
+			Desc:       "除了自增列和blob/text类型的列, 每个列都必须添加默认值",
 			Annotation: "列添加默认值，可避免列为NULL值时对查询的影响",
 			Level:      driverV2.RuleLevelError,
 			Category:   rulepkg.RuleTypeDDLConvention,
 		},
-		Message: "对于MySQL的DDL, 除了自增列和blob/text类型的列, 每个列都必须添加默认值. 不符合规定的字段: %v",
+		Message: "除了自增列和blob/text类型的列, 每个列都必须添加默认值. 不符合规定的字段: %v",
 		Func:    RuleSQLE00028,
 	}
 	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)

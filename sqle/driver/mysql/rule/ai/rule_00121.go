@@ -15,12 +15,12 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00121,
-			Desc:       "对于MySQL的DML, 建议在限定记录数的查询语句中使用ORDER BY",
+			Desc:       "建议在限定记录数的查询语句中使用ORDER BY",
 			Annotation: "在限定记录的查询语句中，如果没有ORDER BY子句，每次查询的结果可能会受数据更新影响而出现非确定性的结，最终与业务需求不符",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		Message: "对于MySQL的DML, 建议在限定记录数的查询语句中使用ORDER BY.",
+		Message: "建议在限定记录数的查询语句中使用ORDER BY.",
 		AllowOffline: true,
 		Func:    RuleSQLE00121,
 	}

@@ -15,12 +15,12 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00127,
-			Desc:       "对于MySQL的DML, 不建议在ORDER BY中使用表达式或函数",
+			Desc:       "不建议在ORDER BY中使用表达式或函数",
 			Annotation: "在ORDER BY子句中使用表达式或函数会导致无法有效利用索引，从而可能涉及到全表扫描和使用临时表进行数据排序。这样的操作在处理大数据量时会显著降低查询性能。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		Message: "对于MySQL的DML, 不建议在ORDER BY中使用表达式或函数",
+		Message: "不建议在ORDER BY中使用表达式或函数",
 		AllowOffline: false,
 		Func:    RuleSQLE00127,
 	}

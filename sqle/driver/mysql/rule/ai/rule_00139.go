@@ -21,7 +21,7 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00139,
-			Desc:       "对于MySQL的DML, 不建议使用全表扫描",
+			Desc:       "不建议使用全表扫描",
 			Annotation: "全表扫描是数据库执行查询时读取表中每一行来查找匹配记录的过程。对于大型表来说，出现全表扫描的SQL会导致显著的性能下降和资源消耗，影响业务稳定运行。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
@@ -34,7 +34,7 @@ func init() {
 				},
 			},
 		},
-		Message: "对于MySQL的DML, 不建议使用全表扫描. 表大小阈值: %v GB",
+		Message: "不建议使用全表扫描. 表大小阈值: %v GB",
 		AllowOffline: false,
 		Func:    RuleSQLE00139,
 	}

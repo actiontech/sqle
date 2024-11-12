@@ -19,7 +19,7 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00037,
-			Desc:       "在 MySQL 中, 避免一张表内二级索引的个数过多",
+			Desc:       "避免一张表内二级索引的个数过多",
 			Annotation: "在表上建立的每个索引都会增加存储开销，索引对于插入、删除、更新操作也会增加维护索引处理上的开销（TPS），且太多与不充分、不正确的索引对性能都毫无益处。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
@@ -32,7 +32,7 @@ func init() {
 				},
 			},
 		},
-		Message:      "在 MySQL 中, 避免一张表内二级索引的个数过多",
+		Message:      "避免一张表内二级索引的个数过多",
 		AllowOffline: false,
 		Func:         RuleSQLE00037,
 	}

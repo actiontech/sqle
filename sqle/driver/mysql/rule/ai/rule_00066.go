@@ -17,13 +17,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00066,
-			Desc:       "在 MySQL 中, 禁止除索引外的DROP 操作",
+			Desc:       "禁止除索引外的DROP 操作",
 			Annotation: "DROP 操作是数据定义语言（DDL）的一部分，一旦执行，将导致无法恢复的数据或结构丢失。在不恰当的情况下执行DROP操作可能导致数据丢失、系统功能缺失甚至业务中断。",
 			Level:      driverV2.RuleLevelError,
 			Category:   rulepkg.RuleTypeDDLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 禁止除索引外的DROP 操作",
+		Message:      "禁止除索引外的DROP 操作",
 		AllowOffline: true,
 		Func:         RuleSQLE00066,
 	}

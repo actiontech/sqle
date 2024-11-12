@@ -15,13 +15,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00118,
-			Desc:       "在 MySQL 中, 建议在执行DROP/TRUNCATE等操作前进行备份",
+			Desc:       "建议在执行DROP/TRUNCATE等操作前进行备份",
 			Annotation: "DROP/TRUNCATE是DDL，操作立即生效，不会写入日志，所以无法回滚，在执行高危操作之前对数据进行备份是很有必要的",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 建议在执行DROP/TRUNCATE等操作前进行备份",
+		Message:      "建议在执行DROP/TRUNCATE等操作前进行备份",
 		AllowOffline: true,
 		Func:         RuleSQLE00118,
 	}

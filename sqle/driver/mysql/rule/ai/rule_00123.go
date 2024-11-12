@@ -14,12 +14,12 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00123,
-			Desc:       "对于MySQL的DML, 禁止使用TRUNCATE操作",
+			Desc:       "禁止使用TRUNCATE操作",
 			Annotation: "TRUNCATE是DDL，执行后数据默认隐式提交，无法回滚，在没有备份的场景下，谨慎使用TRUNCATE",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeIndexInvalidation,
 		},
-		Message: "对于MySQL的DML, 禁止使用TRUNCATE操作.",
+		Message: "禁止使用TRUNCATE操作.",
 		AllowOffline: true,
 		Func:    RuleSQLE00123,
 	}

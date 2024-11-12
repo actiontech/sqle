@@ -20,7 +20,7 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00080,
-			Desc:       "在 MySQL 中, 建议单条SQL写入数据的行数不超过阈值",
+			Desc:       "建议单条SQL写入数据的行数不超过阈值",
 			Annotation: "为了避免单个SQL语句在批量写入时对数据库性能造成过大压力，限制每条SQL语句一次性插入的数据行数不得超过指定行。这有助于提高事务的可管理性，减少锁冲突，优化日志处理，以及提升错误恢复速度。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
@@ -33,7 +33,7 @@ func init() {
 				},
 			},
 		},
-		Message:      "在 MySQL 中, 建议单条SQL写入数据的行数不超过阈值",
+		Message:      "建议单条SQL写入数据的行数不超过阈值",
 		AllowOffline: false,
 		Func:         RuleSQLE00080,
 	}

@@ -15,13 +15,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00031,
-			Desc:       "在 MySQL 中, 禁止使用视图",
+			Desc:       "禁止使用视图",
 			Annotation: "视图的查询性能较差，同时基表结构变更，需要对视图进行维护。如果视图可读性差，且包含复杂的逻辑，会增加维护的成本。",
 			Level:      driverV2.RuleLevelError,
 			Category:   rulepkg.RuleTypeUsageSuggestion,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 禁止使用视图",
+		Message:      "禁止使用视图",
 		AllowOffline: true,
 		Func:         RuleSQLE00031,
 	}

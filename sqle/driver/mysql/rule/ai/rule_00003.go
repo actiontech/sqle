@@ -19,13 +19,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00003,
-			Desc:       "在 MySQL 中, 建议为组成索引的字段添加非空约束，并配置合理的default值",
+			Desc:       "建议为组成索引的字段添加非空约束，并配置合理的default值",
 			Annotation: "在MySQL中，NULL值表示的含义为missing unknown value，在不同的场景下MySQL存在不同的处理方式；当字段内容存在NULL值时，处理结果可能存在异常",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 建议为组成索引的字段添加非空约束，并配置合理的default值",
+		Message:      "建议为组成索引的字段添加非空约束，并配置合理的default值",
 		AllowOffline: false,
 		Func:         RuleSQLE00003,
 	}

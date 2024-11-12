@@ -16,13 +16,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00001,
-			Desc:       "在 MySQL 中, 禁止SQL语句不带WHERE条件或者WHERE条件为永真",
+			Desc:       "禁止SQL语句不带WHERE条件或者WHERE条件为永真",
 			Annotation: "使用有效的WHERE条件能够避免全表扫描，提高SQL执行效率；而恒为TRUE的WHERE条件，如where 1=1、where true=true等，在执行时会进行全表扫描产生额外开销。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 禁止SQL语句不带WHERE条件或者WHERE条件为永真",
+		Message:      "禁止SQL语句不带WHERE条件或者WHERE条件为永真",
 		AllowOffline: false,
 		Func:         RuleSQLE00001,
 	}

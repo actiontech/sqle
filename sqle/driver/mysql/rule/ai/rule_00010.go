@@ -17,12 +17,12 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00010,
-			Desc:       "对于MySQL的DDL, 禁止进行删除主键的操作",
+			Desc:       "禁止进行删除主键的操作",
 			Annotation: "在MySQL中删除已有主键代价高昂，极易引起业务阻塞、故障；开启该规则，SQLE将提醒删除主键为高危操作",
 			Level:      driverV2.RuleLevelError,
 			Category:   rulepkg.RuleTypeDDLConvention,
 		},
-		Message: "对于MySQL的DDL, 禁止进行删除主键的操作",
+		Message: "禁止进行删除主键的操作",
 		AllowOffline: true,
 		Func:    RuleSQLE00010,
 	}

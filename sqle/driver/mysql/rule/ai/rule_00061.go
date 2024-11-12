@@ -15,13 +15,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00061,
-			Desc:       "在 MySQL 中, 建议新建表句子中包含表存在判断操作",
+			Desc:       "建议新建表句子中包含表存在判断操作",
 			Annotation: "新建表如果已经存在，不加 IF NOT EXISTS 会报错。新建表只在表不存在的前提下进行，避免SQL 实际执行报错。",
 			Level:      driverV2.RuleLevelError,
 			Category:   rulepkg.RuleTypeUsageSuggestion,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 建议新建表句子中包含表存在判断操作",
+		Message:      "建议新建表句子中包含表存在判断操作",
 		AllowOffline: true,
 		Func:         RuleSQLE00061,
 	}

@@ -19,7 +19,7 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00018,
-			Desc:       "在 MySQL 中, CHAR长度大于20时，建议使用VARCHAR类型",
+			Desc:       "CHAR长度大于20时，建议使用VARCHAR类型",
 			Annotation: "VARCHAR是变长字段，存储空间小，可节省存储空间，同时相对较小的字段检索效率显然也要高些",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
@@ -32,7 +32,7 @@ func init() {
 				},
 			},
 		},
-		Message:      "在 MySQL 中, CHAR长度大于20时，建议使用VARCHAR类型",
+		Message:      "CHAR长度大于20时，建议使用VARCHAR类型",
 		AllowOffline: true,
 		Func:         RuleSQLE00018,
 	}

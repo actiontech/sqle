@@ -17,13 +17,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00009,
-			Desc:       "在 MySQL 中, 避免对条件字段使用函数操作",
+			Desc:       "避免对条件字段使用函数操作",
 			Annotation: "对条件字段做函数操作，可能会破坏索引值的有序性，导致优化器选择放弃走索引，使查询性能大幅度降低",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 避免对条件字段使用函数操作",
+		Message:      "避免对条件字段使用函数操作",
 		AllowOffline: false,
 		Func:         RuleSQLE00009,
 	}

@@ -15,13 +15,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00060,
-			Desc:       "在 MySQL 中, 表建议添加注释",
+			Desc:       "表建议添加注释",
 			Annotation: "表添加注释能够使表的意义更明确，方便日后的维护",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDDLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 表建议添加注释",
+		Message:      "表建议添加注释",
 		AllowOffline: true,
 		Func:         RuleSQLE00060,
 	}

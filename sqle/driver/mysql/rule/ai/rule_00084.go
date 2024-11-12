@@ -20,13 +20,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00084,
-			Desc:       "在 MySQL 中, 不建议使用临时表",
+			Desc:       "不建议使用临时表",
 			Annotation: "大数据量的情况下，临时表意味着SQL性能较低，会增加OS的开销，影响数据库性能",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 不建议使用临时表",
+		Message:      "不建议使用临时表",
 		AllowOffline: false,
 		Func:         RuleSQLE00084,
 	}

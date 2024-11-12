@@ -18,13 +18,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00161,
-			Desc:       "在 MySQL 中, 建议序列或自增字段的步长为1",
+			Desc:       "建议序列或自增字段的步长为1",
 			Annotation: "序列或自增字段的步长为1时，有助于保证主键和其他自增字段的连续性，避免不必要的数据间隔和数字资源的浪费。不仅简化了数据库的管理和维护，而且也提高了系统的可预测性和稳定性。特别是在处理大量数据插入或高并发场景时，连续的主键值还能减少潜在的冲突和错误。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 建议序列或自增字段的步长为1",
+		Message:      "建议序列或自增字段的步长为1",
 		AllowOffline: true,
 		Func:         RuleSQLE00161,
 	}

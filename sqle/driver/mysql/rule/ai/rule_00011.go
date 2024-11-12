@@ -15,13 +15,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00011,
-			Desc:       "在 MySQL 中, 存在多条对同一个表的修改语句，建议合并成一个ALTER语句",
+			Desc:       "存在多条对同一个表的修改语句，建议合并成一个ALTER语句",
 			Annotation: "避免对同一个表使用多条单独的ALTER语句，以减少数据库的锁定时间和执行开销，提高SQL语句的可读性和维护性。",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 存在多条对同一个表的修改语句，建议合并成一个ALTER语句",
+		Message:      "存在多条对同一个表的修改语句，建议合并成一个ALTER语句",
 		AllowOffline: true,
 		Func:         RuleSQLE00011,
 	}

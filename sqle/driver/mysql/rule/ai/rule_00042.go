@@ -19,7 +19,7 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00042,
-			Desc:       "在 MySQL 中, 临时表必须使用固定前缀",
+			Desc:       "临时表必须使用固定前缀",
 			Annotation: "统一命名规范，有利于后期维护以及业务开发",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
@@ -32,7 +32,7 @@ func init() {
 				},
 			},
 		},
-		Message:      "在 MySQL 中, 临时表必须使用固定前缀",
+		Message:      "临时表必须使用固定前缀",
 		AllowOffline: true,
 		Func:         RuleSQLE00042,
 	}

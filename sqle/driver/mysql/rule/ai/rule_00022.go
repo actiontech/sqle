@@ -18,7 +18,7 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00022,
-			Desc:       "对于MySQL的DDL, 表的列数不建议超过阈值",
+			Desc:       "表的列数不建议超过阈值",
 			Annotation: "避免在OLTP系统上做宽表设计，后期对性能影响很大；具体规则阈值可根据业务需求调整，默认值：40",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDDLConvention,
@@ -31,7 +31,7 @@ func init() {
 				},
 			},
 		},
-		Message: "对于MySQL的DDL, 表的列数不建议超过阈值. 阈值: %v",
+		Message: "表的列数不建议超过阈值. 阈值: %v",
 		AllowOffline: false,
 		Func:    RuleSQLE00022,
 	}

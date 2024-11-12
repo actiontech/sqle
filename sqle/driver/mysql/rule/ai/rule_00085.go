@@ -17,12 +17,12 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00085,
-			Desc:       "对于MySQL的DML, 不建议对表进行全索引扫描",
+			Desc:       "不建议对表进行全索引扫描",
 			Annotation: "MySQL需要单独维护重复的索引，冗余索引增加维护成本，影响更新性能",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		Message: "对于MySQL的DML, 不建议对表进行全索引扫描",
+		Message: "不建议对表进行全索引扫描",
 		AllowOffline: false,
 		Func:    RuleSQLE00085,
 	}

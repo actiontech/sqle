@@ -16,7 +16,7 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00002,
-			Desc:       "在 MySQL 中, SQL绑定的变量个数不建议超过阈值",
+			Desc:       "SQL绑定的变量个数不建议超过阈值",
 			Annotation: "过度使用绑定变量会增加查询的复杂度，从而降低查询性能。同时还会增加维护成本。SQLE设置MySQL绑定变量个数最大阈值：100",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
@@ -29,7 +29,7 @@ func init() {
 				},
 			},
 		},
-		Message:      "在 MySQL 中, SQL绑定的变量个数不建议超过阈值",
+		Message:      "SQL绑定的变量个数不建议超过阈值",
 		AllowOffline: true,
 		Func:         RuleSQLE00002,
 	}

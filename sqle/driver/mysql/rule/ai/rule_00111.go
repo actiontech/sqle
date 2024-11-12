@@ -16,12 +16,12 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00111,
-			Desc:       "对于MySQL的DML, 避免对条件字段使用表达式操作",
+			Desc:       "避免对条件字段使用表达式操作",
 			Annotation: "对条件字段做表达式操作，可能会破坏索引值的有序性，导致优化器选择放弃走索引，使查询性能大幅度降低。",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		Message: "对于MySQL的DML, 避免对条件字段使用表达式操作",
+		Message: "避免对条件字段使用表达式操作",
 		AllowOffline: false,
 		Func:    RuleSQLE00111,
 	}

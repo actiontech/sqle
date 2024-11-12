@@ -20,13 +20,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00082,
-			Desc:       "在 MySQL 中, 禁止使用文件排序",
+			Desc:       "禁止使用文件排序",
 			Annotation: "大数据量的情况下，文件排序意味着SQL性能较低，会增加OS的开销，影响数据库性能。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 禁止使用文件排序",
+		Message:      "禁止使用文件排序",
 		AllowOffline: false,
 		Func:         RuleSQLE00082,
 	}

@@ -18,12 +18,12 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00179,
-			Desc:       "对于MySQL的DML, 避免隐式数据类型转换的SQL查询",
+			Desc:       "避免隐式数据类型转换的SQL查询",
 			Annotation: "确保WHERE子句中用于索引列的条件字段与索引列的数据类型一致。不一致的数据类型会导致执行计划存在隐式类型转换操作。这种转换不仅增加CPU负担，还可能使得原本高效的索引无法使用，导致查询性能显著下降。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		Message: "对于MySQL的DML, 避免隐式数据类型转换的SQL查询",
+		Message: "避免隐式数据类型转换的SQL查询",
 		AllowOffline: false,
 		Func:    RuleSQLE00179,
 	}

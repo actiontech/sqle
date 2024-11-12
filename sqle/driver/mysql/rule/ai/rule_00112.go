@@ -25,13 +25,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00112,
-			Desc:       "在 MySQL 中, 禁止WHERE子句中条件字段与值的数据类型不一致",
+			Desc:       "禁止WHERE子句中条件字段与值的数据类型不一致",
 			Annotation: "WHERE子句中条件字段与值数据类型不一致会引发隐式数据类型转换，导致优化器选择错误的执行计划，在高并发、大数据量的情况下，不走索引会使得数据库的查询性能严重下降",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 禁止WHERE子句中条件字段与值的数据类型不一致",
+		Message:      "禁止WHERE子句中条件字段与值的数据类型不一致",
 		AllowOffline: false,
 		Func:         RuleSQLE00112,
 	}

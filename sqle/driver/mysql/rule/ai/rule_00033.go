@@ -19,7 +19,7 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00033,
-			Desc:       "对于MySQL的DDL, 建表DDL必须包含更新时间字段, 默认值为CURRENT_TIMESTAMP, ON UPDATE值为CURRENT_TIMESTAMP",
+			Desc:       "建表DDL必须包含更新时间字段, 默认值为CURRENT_TIMESTAMP, ON UPDATE值为CURRENT_TIMESTAMP",
 			Annotation: "使用更新时间字段，有利于问题查找跟踪和检索数据，同时避免后期对数据生命周期管理不便 ，默认值为UPDATE_TIME可保证时间的准确性",
 			Level:      driverV2.RuleLevelError,
 			Category:   rulepkg.RuleTypeDDLConvention,
@@ -32,7 +32,7 @@ func init() {
 				},
 			},
 		},
-		Message: "对于MySQL的DDL, 建表DDL必须包含更新时间字段, 默认值为CURRENT_TIMESTAMP, ON UPDATE值为CURRENT_TIMESTAMP. 更新时间字段名: %v",
+		Message: "建表DDL必须包含更新时间字段, 默认值为CURRENT_TIMESTAMP, ON UPDATE值为CURRENT_TIMESTAMP. 更新时间字段名: %v",
 		AllowOffline: true,
 		Func:    RuleSQLE00033,
 	}

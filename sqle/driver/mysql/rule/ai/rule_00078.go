@@ -16,13 +16,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00078,
-			Desc:       "在 MySQL 中, 禁止使用聚合函数",
+			Desc:       "禁止使用聚合函数",
 			Annotation: "禁止使用SQL聚合函数是为了确保查询的简单性、高性能和数据一致性。",
 			Level:      driverV2.RuleLevelError,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 禁止使用聚合函数",
+		Message:      "禁止使用聚合函数",
 		AllowOffline: true,
 		Func:         RuleSQLE00078,
 	}

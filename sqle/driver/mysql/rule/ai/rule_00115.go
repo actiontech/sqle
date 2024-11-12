@@ -16,12 +16,12 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00115,
-			Desc:       "对于MySQL的DML, 避免使用标量子查询",
+			Desc:       "避免使用标量子查询",
 			Annotation: "当查询条件包含联合索引的最左侧字段时，查询语句才能更好的利用索引的特性：有序性、过滤性等",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		Message: "对于MySQL的DML, 避免使用标量子查询",
+		Message: "避免使用标量子查询",
 		AllowOffline: true,
 		Func:    RuleSQLE00115,
 	}

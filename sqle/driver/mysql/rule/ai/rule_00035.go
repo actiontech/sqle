@@ -16,12 +16,12 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00035,
-			Desc:       "对于MySQL的DDL, DDL语句中不建议使用中文全角引号",
+			Desc:       "DDL语句中不建议使用中文全角引号",
 			Annotation: "建议开启此规则，可避免MySQL会将中文全角引号识别为命名的一部分，执行结果与业务预期不符",
 			Level:      driverV2.RuleLevelError,
 			Category:   rulepkg.RuleTypeDDLConvention,
 		},
-		Message: "对于MySQL的DDL, DDL语句中不建议使用中文全角引号",
+		Message: "DDL语句中不建议使用中文全角引号",
 		AllowOffline: true,
 		Func:    RuleSQLE00035,
 	}

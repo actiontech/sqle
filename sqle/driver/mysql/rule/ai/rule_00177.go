@@ -18,7 +18,7 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00177,
-			Desc:       "对于MySQL的DML, 建议Order By字段个数不超过指定阈值",
+			Desc:       "建议Order By字段个数不超过指定阈值",
 			Annotation: "使用过多的Order By字段会增加排序操作的复杂性，并可能导致性能下降。排序时，MySQL需要对结果集中的每一行进行多字段比较，这可能会耗费更多的CPU和内存资源。如果排序数据集大小超过了可用内存，则可能会导致创建临时表并在磁盘上进行排序，从而增加I/O开销。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
@@ -31,7 +31,7 @@ func init() {
 				},
 			},
 		},
-		Message: "对于MySQL的DML, 建议Order By字段个数不超过指定阈值. 阈值: %v",
+		Message: "建议Order By字段个数不超过指定阈值. 阈值: %v",
 		AllowOffline: true,
 		Func:    RuleSQLE00177,
 	}

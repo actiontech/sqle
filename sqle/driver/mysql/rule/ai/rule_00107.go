@@ -18,7 +18,7 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00107,
-			Desc:       "在 MySQL 中, 建议将过长的SQL分解成几个简单的SQL",
+			Desc:       "建议将过长的SQL分解成几个简单的SQL",
 			Annotation: "过长的SQL可读性较差，难以维护，且容易引发性能问题。",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
@@ -31,7 +31,7 @@ func init() {
 				},
 			},
 		},
-		Message:      "在 MySQL 中, 建议将过长的SQL分解成几个简单的SQL",
+		Message:      "建议将过长的SQL分解成几个简单的SQL",
 		AllowOffline: true,
 		Func:         RuleSQLE00107,
 	}

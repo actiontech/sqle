@@ -16,12 +16,12 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00218,
-			Desc:       "对于MySQL的DML, 联合索引最左侧的字段必须出现在查询条件内",
+			Desc:       "联合索引最左侧的字段必须出现在查询条件内",
 			Annotation: "当查询条件包含联合索引的最左侧字段时，查询语句才能更好的利用索引的特性：有序性、过滤性等",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeIndexInvalidation,
 		},
-		Message:      "对于MySQL的DML, 联合索引最左侧的字段必须出现在查询条件内. 不符合规范的字段: %v",
+		Message:      "联合索引最左侧的字段必须出现在查询条件内. 不符合规范的字段: %v",
 		AllowOffline: false,
 		Func:         RuleSQLE00218,
 	}

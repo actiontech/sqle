@@ -15,12 +15,12 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00017,
-			Desc:       "对于MySQL的DDL, 不建议使用 BLOB 或 TEXT 类型",
+			Desc:       "不建议使用 BLOB 或 TEXT 类型",
 			Annotation: "BLOB 或 TEXT 类型消耗大量的网络和IO带宽，同时在该表上的DML操作都会变得很慢",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDDLConvention,
 		},
-		Message: "对于MySQL的DDL, 不建议使用 BLOB 或 TEXT 类型. 不符合规定的字段: %v",
+		Message: "不建议使用 BLOB 或 TEXT 类型. 不符合规定的字段: %v",
 		AllowOffline: true,
 		Func:    RuleSQLE00017,
 	}

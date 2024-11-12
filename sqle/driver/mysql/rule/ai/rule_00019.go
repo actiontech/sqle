@@ -17,13 +17,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00019,
-			Desc:       "在 MySQL 中, 不建议使用复合类型（SET和ENUM类型）数据",
+			Desc:       "不建议使用复合类型（SET和ENUM类型）数据",
 			Annotation: "SET类型，ENUM类型不是SQL标准，移植性较差；后期如修改或增加枚举值需重建整张表，代价较大；且无法通过字面值进行排序；在插入数据时，必须带上引号，否则将写入枚举值的顺序值，造成不可预期的问题",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 不建议使用复合类型（SET和ENUM类型）数据",
+		Message:      "不建议使用复合类型（SET和ENUM类型）数据",
 		AllowOffline: true,
 		Func:         RuleSQLE00019,
 	}

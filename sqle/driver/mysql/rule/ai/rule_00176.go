@@ -16,13 +16,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00176,
-			Desc:       "在 MySQL 中, 不建议SQL中包含hint指令",
+			Desc:       "不建议SQL中包含hint指令",
 			Annotation: "使用hint可能会导致数据库走错误的执行计划，从而影响执行效率，消耗系统资源。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 不建议SQL中包含hint指令",
+		Message:      "不建议SQL中包含hint指令",
 		AllowOffline: true,
 		Func:         RuleSQLE00176,
 	}

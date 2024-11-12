@@ -16,13 +16,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00090,
-			Desc:       "在 MySQL 中, 建议使用UNION ALL替代UNION",
+			Desc:       "建议使用UNION ALL替代UNION",
 			Annotation: "union会对结果集进行去重，union all只是简单的将两个结果合并后就返回，从效率上看，union all 要比union快很多；如果合并的两个结果集中允许包含重复数据的话，建议开启此规则，使用union all替代union",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 建议使用UNION ALL替代UNION",
+		Message:      "建议使用UNION ALL替代UNION",
 		AllowOffline: true,
 		Func:         RuleSQLE00090,
 	}

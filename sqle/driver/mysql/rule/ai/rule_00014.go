@@ -17,13 +17,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00014,
-			Desc:       "在 MySQL 中, 不建议使用自定义函数",
+			Desc:       "不建议使用自定义函数",
 			Annotation: "自定义函数和存储过程维护较困难，且依赖性高，可能导致SQL无法跨库使用。此外，它们在使用时存在一些限制，如无法使用事务相关语句、无法直接产生输出的语句，以及无法在函数体内使用USE语句指定数据库。",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 不建议使用自定义函数",
+		Message:      "不建议使用自定义函数",
 		AllowOffline: true,
 		Func:         RuleSQLE00014,
 	}

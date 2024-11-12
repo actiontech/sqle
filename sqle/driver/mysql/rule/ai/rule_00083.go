@@ -20,13 +20,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00083,
-			Desc:       "在 MySQL 中, 不建议对表进行索引跳跃扫描",
+			Desc:       "不建议对表进行索引跳跃扫描",
 			Annotation: "索引扫描是跳跃扫描，未遵循最左匹配原则，可能降低索引的使用效率，影响查询性能，尽量避免使用。",
 			Level:      driverV2.RuleLevelError,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 不建议对表进行索引跳跃扫描",
+		Message:      "不建议对表进行索引跳跃扫描",
 		AllowOffline: false,
 		Func:         RuleSQLE00083,
 	}

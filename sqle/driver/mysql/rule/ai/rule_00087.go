@@ -21,7 +21,7 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00087,
-			Desc:       "在 MySQL 中, 避免WHERE条件内IN语句中的参数值个数过多",
+			Desc:       "避免WHERE条件内IN语句中的参数值个数过多",
 			Annotation: "当IN值过多时，有可能会出现无法使用索引，导致查询走全表扫描、性能变差、资源消耗过多等问题。",
 			Level:      driverV2.RuleLevelError,
 			Category:   rulepkg.RuleTypeDMLConvention,
@@ -34,7 +34,7 @@ func init() {
 				},
 			},
 		},
-		Message:      "在 MySQL 中, 避免WHERE条件内IN语句中的参数值个数过多",
+		Message:      "避免WHERE条件内IN语句中的参数值个数过多",
 		AllowOffline: false,
 		Func:         RuleSQLE00087,
 	}

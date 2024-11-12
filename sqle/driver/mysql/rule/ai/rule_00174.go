@@ -16,7 +16,7 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00174,
-			Desc:       "在 MySQL 中, 禁止GRANT 授予过高权限",
+			Desc:       "禁止GRANT 授予过高权限",
 			Annotation: "授予过高权限，可能会带来严重的安全风险。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
@@ -29,7 +29,7 @@ func init() {
 				},
 			},
 		},
-		Message:      "在 MySQL 中, 禁止GRANT 授予过高权限",
+		Message:      "禁止GRANT 授予过高权限",
 		AllowOffline: true,
 		Func:         RuleSQLE00174,
 	}

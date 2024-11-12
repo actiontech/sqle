@@ -15,12 +15,12 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00075,
-			Desc:       "对于MySQL的DDL, 建议列与表使用同一个字符集",
+			Desc:       "建议列与表使用同一个字符集",
 			Annotation: "统一字符集可以避免由于字符集转换产生的乱码，不同的字符集进行比较前需要进行转换会造成索引失效",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDDLConvention,
 		},
-		Message: "对于MySQL的DDL, 建议列与表使用同一个字符集. 不符合规则的字段: %v",
+		Message: "建议列与表使用同一个字符集. 不符合规则的字段: %v",
 		AllowOffline: false,
 		Func:    RuleSQLE00075,
 	}

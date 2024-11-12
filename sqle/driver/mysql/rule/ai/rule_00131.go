@@ -15,12 +15,12 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00131,
-			Desc:       "对于MySQL的DML, 避免使用 ORDER BY RAND() 进行随机排序",
+			Desc:       "避免使用 ORDER BY RAND() 进行随机排序",
 			Annotation: "使用 ORDER BY RAND() 会导致 MySQL 生成临时表并进行完整的表扫描和排序，这在处理大数据量时会显著增加查询时间和服务器负载。建议采用更高效的随机数据检索方法，如利用主键或其他索引实现快速随机访问。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
 		},
-		Message: "对于MySQL的DML, 避免使用 ORDER BY RAND() 进行随机排序",
+		Message: "避免使用 ORDER BY RAND() 进行随机排序",
 		AllowOffline: true,
 		Func:    RuleSQLE00131,
 	}

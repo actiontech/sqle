@@ -19,13 +19,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00049,
-			Desc:       "在 MySQL 中, 数据库对象命名禁止使用保留字",
+			Desc:       "数据库对象命名禁止使用保留字",
 			Annotation: "通过配置该规则可以规范指定业务的数据对象命名规则，避免发生冲突，以及混淆",
 			Level:      driverV2.RuleLevelError,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 数据库对象命名禁止使用保留字",
+		Message:      "数据库对象命名禁止使用保留字",
 		AllowOffline: true,
 		Func:         RuleSQLE00049,
 	}

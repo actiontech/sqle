@@ -15,12 +15,12 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00074,
-			Desc:       "对于MySQL的DDL, 禁止使用RENAME或CHANGE对表名字段名进行修改",
+			Desc:       "禁止使用RENAME或CHANGE对表名字段名进行修改",
 			Annotation: "RENAME/CHANGE 表名/列名会对线上业务不停机发布造成影响，如需这种操作应当DBA手工干预",
 			Level:      driverV2.RuleLevelError,
 			Category:   rulepkg.RuleTypeDDLConvention,
 		},
-		Message: "对于MySQL的DDL, 禁止使用RENAME或CHANGE对表名字段名进行修改",
+		Message: "禁止使用RENAME或CHANGE对表名字段名进行修改",
 		AllowOffline: true,
 		Func:    RuleSQLE00074,
 	}

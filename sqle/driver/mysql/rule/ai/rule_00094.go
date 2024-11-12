@@ -19,7 +19,7 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00094,
-			Desc:       "在 MySQL 中, 避免使用不必要的内置函数",
+			Desc:       "避免使用不必要的内置函数",
 			Annotation: "通过配置该规则可以指定业务中需要禁止使用的内置函数，使用内置函数可能会导致SQL无法走索引或者产生一些非预期的结果。实际需要禁用的函数可通过规则设置。",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDMLConvention,
@@ -32,7 +32,7 @@ func init() {
 				},
 			},
 		},
-		Message:      "在 MySQL 中, 避免使用不必要的内置函数：%v",
+		Message:      "避免使用不必要的内置函数：%v",
 		AllowOffline: true,
 		Func:         RuleSQLE00094,
 	}

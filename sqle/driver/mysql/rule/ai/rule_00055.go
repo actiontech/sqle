@@ -15,7 +15,7 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00055,
-			Desc:       "对于MySQL的索引, 不建议创建冗余索引",
+			Desc:       "不建议创建冗余索引",
 			Annotation: "MySQL需要单独维护重复的索引，冗余索引增加维护成本，影响更新性能",
 			Level:      driverV2.RuleLevelError,
 			Category:   rulepkg.RuleTypeIndexOptimization,

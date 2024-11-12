@@ -17,13 +17,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00068,
-			Desc:       "在 MySQL 中, 禁止使用TIMESTAMP字段",
+			Desc:       "禁止使用TIMESTAMP字段",
 			Annotation: "TIMESTAMP类型字段受制于2038年问题，其时间范围仅限于1970-01-01 00:00:01 UTC至2038-01-19 03:14:07 UTC。超过这个时间范围，TIMESTAMP将无法存储更晚的时间点，导致应用报错。此外，TIMESTAMP字段在存储时会根据数据库服务器的时区进行转换，这可能导致跨时区应用中的时间不一致问题。",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 禁止使用TIMESTAMP字段",
+		Message:      "禁止使用TIMESTAMP字段",
 		AllowOffline: true,
 		Func:         RuleSQLE00068,
 	}

@@ -17,13 +17,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00030,
-			Desc:       "在 MySQL 中, 禁止使用触发器",
+			Desc:       "禁止使用触发器",
 			Annotation: "触发器难以开发和维护，不能高效移植，且在复杂的逻辑以及高并发下，容易出现死锁影响业务。",
 			Level:      driverV2.RuleLevelError,
 			Category:   rulepkg.RuleTypeUsageSuggestion,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 禁止使用触发器",
+		Message:      "禁止使用触发器",
 		AllowOffline: true,
 		Func:         RuleSQLE00030,
 	}

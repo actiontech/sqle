@@ -19,13 +19,13 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00220,
-			Desc:       "在 MySQL 中, 避免不带where条件的count(*)或者count(1)",
+			Desc:       "避免不带where条件的count(*)或者count(1)",
 			Annotation: "不带 where 条件的 count(*) 或者 count(1) 都是对表进行暴力扫描，极其耗费系统资源",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDMLConvention,
 			Params:     params.Params{},
 		},
-		Message:      "在 MySQL 中, 避免不带where条件的count(*)或者count(1)",
+		Message:      "避免不带where条件的count(*)或者count(1)",
 		AllowOffline: true,
 		Func:         RuleSQLE00220,
 	}

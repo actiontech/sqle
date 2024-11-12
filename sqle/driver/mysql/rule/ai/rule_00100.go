@@ -22,7 +22,7 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00100,
-			Desc:       "在 MySQL 中, 避免SELECT语句一次性返回的结果过多",
+			Desc:       "避免SELECT语句一次性返回的结果过多",
 			Annotation: "如果查询的扫描行数很大，会导致IO、网络资源消耗过大，并且可能会导致优化器选择错误的执行计划而不走索引。",
 			Level:      driverV2.RuleLevelError,
 			Category:   rulepkg.RuleTypeDMLConvention,
@@ -35,7 +35,7 @@ func init() {
 				},
 			},
 		},
-		Message:      "在 MySQL 中, 避免SELECT语句一次性返回的结果过多",
+		Message:      "避免SELECT语句一次性返回的结果过多",
 		AllowOffline: false,
 		Func:         RuleSQLE00100,
 	}

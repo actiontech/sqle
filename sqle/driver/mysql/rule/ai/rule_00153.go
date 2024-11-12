@@ -15,12 +15,12 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00153,
-			Desc:       "对于MySQL的DDL, 创建表建议添加索引",
+			Desc:       "创建表建议添加索引",
 			Annotation: "规划和设计表时，索引应根据业务需求和数据分布合理创建，无索引通常是不合理的情况",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDDLConvention,
 		},
-		Message: "对于MySQL的DDL, 创建表建议添加索引.",
+		Message: "创建表建议添加索引.",
 		AllowOffline: true,
 		Func:    RuleSQLE00153,
 	}

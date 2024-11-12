@@ -18,7 +18,7 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00023,
-			Desc:       "对于MySQL的DDL, 主键包含的列数不建议超过阈值",
+			Desc:       "主键包含的列数不建议超过阈值",
 			Annotation: "主建中的列过多，会导致二级索引占用更多的空间，同时增加索引维护的开销；具体规则阈值可根据业务需求调整，默认值：2",
 			Level:      driverV2.RuleLevelWarn,
 			Category:   rulepkg.RuleTypeDDLConvention,
@@ -32,7 +32,7 @@ func init() {
 			},
 		},
 
-		Message: "对于MySQL的DDL, 主键包含的列数不建议超过阈值. 阈值: %v",
+		Message: "主键包含的列数不建议超过阈值. 阈值: %v",
 		AllowOffline: true,
 		Func:    RuleSQLE00023,
 	}

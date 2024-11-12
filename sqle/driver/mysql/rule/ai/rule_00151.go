@@ -17,12 +17,12 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00151,
-			Desc:       "对于MySQL的DDL, 避免CREATE TABLE/ALTER TABLE 使用禁止的表空间",
+			Desc:       "避免CREATE TABLE/ALTER TABLE 使用禁止的表空间",
 			Annotation: "不允许在系统表空间上创建用户对象，避免不必要的安全风险，方便维护",
 			Level:      driverV2.RuleLevelError,
 			Category:   rulepkg.RuleTypeDDLConvention,
 		},
-		Message: "对于MySQL的DDL, 避免CREATE TABLE/ALTER TABLE 使用禁止的表空间.",
+		Message: "避免CREATE TABLE/ALTER TABLE 使用禁止的表空间.",
 		AllowOffline: true,
 		Func:    RuleSQLE00151,
 	}

@@ -17,12 +17,12 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00113,
-			Desc:       "对于MySQL的DML, 不建议对条件字段使用负向查询",
+			Desc:       "不建议对条件字段使用负向查询",
 			Annotation: "SQL查询条件中存在NOT IN、NOT LIKE、NOT EXISTS、不等于等负向查询条件，将导致全表扫描，出现慢SQL",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeIndexInvalidation,
 		},
-		Message: "对于MySQL的DML, 不建议对条件字段使用负向查询",
+		Message: "不建议对条件字段使用负向查询",
 		AllowOffline: true,
 		Func:    RuleSQLE00113,
 	}

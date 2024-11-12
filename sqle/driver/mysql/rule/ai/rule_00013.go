@@ -16,12 +16,12 @@ func init() {
 	rh := rulepkg.RuleHandler{
 		Rule: driverV2.Rule{
 			Name:       SQLE00013,
-			Desc:       "对于MySQL的DDL, 精确浮点数建议使用DECIMAL",
+			Desc:       "精确浮点数建议使用DECIMAL",
 			Annotation: "对于浮点数运算，DECIMAL精确度较高",
 			Level:      driverV2.RuleLevelNotice,
 			Category:   rulepkg.RuleTypeDDLConvention,
 		},
-		Message: "对于MySQL的DDL, 精确浮点数建议使用DECIMAL. 不符合规定的字段: %v",
+		Message: "精确浮点数建议使用DECIMAL. 不符合规定的字段: %v",
 		AllowOffline: true,
 		Func:    RuleSQLE00013,
 	}
