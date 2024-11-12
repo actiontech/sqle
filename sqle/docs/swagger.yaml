@@ -493,6 +493,11 @@ definitions:
           type: string
         type: array
       backup_strategy:
+        enum:
+        - none
+        - manual
+        - reverse_sql
+        - origin_row
         type: string
       description:
         type: string
@@ -502,7 +507,7 @@ definitions:
         type: integer
       exec_status:
         type: string
-      'instance_id ':
+      instance_id:
         type: string
       instance_name:
         type: string
@@ -4437,6 +4442,11 @@ definitions:
   v1.UpdateSqlBackupStrategyReq:
     properties:
       strategy:
+        enum:
+        - none
+        - manual
+        - reverse_sql
+        - origin_row
         type: string
     type: object
   v1.UpdateSqlFileOrderV1Req:
@@ -4492,6 +4502,11 @@ definitions:
   v1.UpdateTaskBackupStrategyReq:
     properties:
       strategy:
+        enum:
+        - none
+        - manual
+        - reverse_sql
+        - origin_row
         type: string
     type: object
   v1.UpdateWechatConfigurationReqV1:
@@ -5255,6 +5270,11 @@ definitions:
       audit_status:
         type: string
       backup_strategy:
+        enum:
+        - none
+        - manual
+        - reverse_sql
+        - origin_row
         type: string
       backup_strategy_tip:
         type: string

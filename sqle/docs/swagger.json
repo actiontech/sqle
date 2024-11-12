@@ -11771,7 +11771,13 @@
                     }
                 },
                 "backup_strategy": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "none",
+                        "manual",
+                        "reverse_sql",
+                        "origin_row"
+                    ]
                 },
                 "description": {
                     "type": "string"
@@ -11785,7 +11791,7 @@
                 "exec_status": {
                     "type": "string"
                 },
-                "instance_id ": {
+                "instance_id": {
                     "type": "string"
                 },
                 "instance_name": {
@@ -17554,7 +17560,13 @@
             "type": "object",
             "properties": {
                 "strategy": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "none",
+                        "manual",
+                        "reverse_sql",
+                        "origin_row"
+                    ]
                 }
             }
         },
@@ -17637,7 +17649,13 @@
             "type": "object",
             "properties": {
                 "strategy": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "none",
+                        "manual",
+                        "reverse_sql",
+                        "origin_row"
+                    ]
                 }
             }
         },
@@ -18746,7 +18764,13 @@
                     "type": "string"
                 },
                 "backup_strategy": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "none",
+                        "manual",
+                        "reverse_sql",
+                        "origin_row"
+                    ]
                 },
                 "backup_strategy_tip": {
                     "type": "string"
