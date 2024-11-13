@@ -5226,7 +5226,6 @@ func checkTableRowLength(input *RuleHandlerInput) error {
 			if charsetNum != colCharsetNum {
 				charsetNum = colCharsetNum
 			}
-
 			oneColumnLength := ComputeOneColumnLength(col, charsetNum)
 			rowLength += oneColumnLength
 			columnLengthMap[col.Name.String()] = oneColumnLength
@@ -5239,7 +5238,10 @@ func checkTableRowLength(input *RuleHandlerInput) error {
 					continue
 				}
 				// 可能会设置列级别的字符串
-				charsetNum = MappingCharsetLength(alterCol.Tp.Charset)
+				colCharsetNum := MappingCharsetLength(alterCol.Tp.Charset)
+				if charsetNum != colCharsetNum {
+					charsetNum = colCharsetNum
+				}
 				if alteredSpec.Tp == ast.AlterTableAddColumns {
 					rowLength += ComputeOneColumnLength(alterCol, charsetNum)
 				}
