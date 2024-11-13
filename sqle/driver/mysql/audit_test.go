@@ -614,7 +614,7 @@ ALTER TABLE exist_db.exist_tb_1 Add index idx_2 (id,id);
 ALTER TABLE exist_db.exist_tb_1 Add index (id,id);
 `,
 		newTestResult().add(driver.RuleLevelError, DuplicateIndexedColumnMessage, "(匿名)",
-			"id").addResult(rulepkg.DDLCheckIndexPrefix, "idx_"),
+			"id").addResult(rulepkg.DDLCheckIndexPrefix, "idx_").addResult(rulepkg.DDLCheckIndexNameExisted),
 	)
 }
 
