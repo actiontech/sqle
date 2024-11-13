@@ -105,6 +105,7 @@ const (
 	DDLNotAllowRenaming                                = "ddl_not_allow_renaming"
 	DDLCheckObjectNameIsUpperAndLowerLetterMixed       = "ddl_check_object_name_is_upper_and_lower_letter_mixed"
 	DDLCheckFieldNotNUllMustContainDefaultValue        = "ddl_check_field_not_null_must_contain_default_value"
+	DDLCheckIndexNameExisted                           = "ddl_check_index_name_existed"
 )
 
 // inspector DML rules
@@ -1880,6 +1881,18 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: true,
 		Message:      "禁止使用rename或change对表名字段名进行修改",
 		Func:         ddlNotAllowRenaming,
+	},
+	{
+		Rule: driver.Rule{
+			Name:       DDLCheckIndexNameExisted,
+			Desc:       "索引必须设置索引名",
+			Annotation: "普通索引定义索引名，且名称遵循固定的命名规范、避免特殊字符的使用，可以提高代码的可读性、可维护性，并减少潜在的兼容性和语法问题。",
+			Level:      driver.RuleLevelNormal,
+			Category:   RuleTypeNamingConvention,
+		},
+		AllowOffline: true,
+		Message:      "索引必须设置索引名",
+		Func:         checkIndexNameExisted,
 	},
 }
 
@@ -4352,12 +4365,13 @@ var createTriggerReg1 = regexp.MustCompile(`(?i)create[\s]+trigger[\s]+[\S\s]+be
 var createTriggerReg2 = regexp.MustCompile(`(?i)create[\s]+[\s\S]+[\s]+trigger[\s]+[\S\s]+before|after`)
 
 // CREATE
-//    [DEFINER = user]
-//    TRIGGER trigger_name
-//    trigger_time trigger_event
-//    ON tbl_name FOR EACH ROW
-//    [trigger_order]
-//    trigger_body
+//
+//	[DEFINER = user]
+//	TRIGGER trigger_name
+//	trigger_time trigger_event
+//	ON tbl_name FOR EACH ROW
+//	[trigger_order]
+//	trigger_body
 //
 // ref:https://dev.mysql.com/doc/refman/8.0/en/create-trigger.html
 //
@@ -4378,10 +4392,11 @@ var createFunctionReg1 = regexp.MustCompile(`(?i)create[\s]+function[\s]+[\S\s]+
 var createFunctionReg2 = regexp.MustCompile(`(?i)create[\s]+[\s\S]+[\s]+function[\s]+[\S\s]+returns`)
 
 // CREATE
-//    [DEFINER = user]
-//    FUNCTION sp_name ([func_parameter[,...]])
-//    RETURNS type
-//    [characteristic ...] routine_body
+//
+//	[DEFINER = user]
+//	FUNCTION sp_name ([func_parameter[,...]])
+//	RETURNS type
+//	[characteristic ...] routine_body
 //
 // ref: https://dev.mysql.com/doc/refman/5.7/en/create-procedure.html
 // For now, we do character matching for CREATE FUNCTION Statement. Maybe we need
@@ -4401,9 +4416,10 @@ var createProcedureReg1 = regexp.MustCompile(`(?i)create[\s]+procedure[\s]+[\S\s
 var createProcedureReg2 = regexp.MustCompile(`(?i)create[\s]+[\s\S]+[\s]+procedure[\s]+[\S\s]+`)
 
 // CREATE
-//    [DEFINER = user]
-//    PROCEDURE sp_name ([proc_parameter[,...]])
-//    [characteristic ...] routine_body
+//
+//	[DEFINER = user]
+//	PROCEDURE sp_name ([proc_parameter[,...]])
+//	[characteristic ...] routine_body
 //
 // ref: https://dev.mysql.com/doc/refman/8.0/en/create-procedure.html
 // For now, we do character matching for CREATE PROCEDURE Statement. Maybe we need
@@ -5096,4 +5112,40 @@ func ddlNotAllowRenaming(input *RuleHandlerInput) error {
 		}
 	}
 	return nil
+}
+
+func checkIndexNameExisted(input *RuleHandlerInput) error {
+	indexNameNotExisted := false
+	switch stmt := input.Node.(type) {
+	case *ast.CreateTableStmt:
+		for _, constraint := range stmt.Constraints {
+			switch constraint.Tp {
+			case ast.ConstraintIndex, ast.ConstraintUniqIndex, ast.ConstraintKey, ast.ConstraintUniqKey:
+				if constraint.Name == "" {
+					indexNameNotExisted = true
+				}
+			default:
+				return nil
+			}
+		}
+	case *ast.AlterTableStmt:
+		for _, spec := range stmt.Specs {
+			if spec.Tp == ast.AlterTableAddConstraint && IsIndexConstraint(spec.Constraint.Tp) {
+				// 遍历Keys
+				if spec.Constraint.Name == "" {
+					indexNameNotExisted = true
+				}
+			}
+		}
+	default:
+		return nil
+	}
+	if indexNameNotExisted {
+		addResult(input.Res, input.Rule, DDLCheckIndexNameExisted)
+	}
+	return nil
+}
+
+func IsIndexConstraint(constraintType ast.ConstraintType) bool {
+	return constraintType == ast.ConstraintIndex || constraintType == ast.ConstraintUniqIndex || constraintType == ast.ConstraintKey || constraintType == ast.ConstraintUniqKey
 }
