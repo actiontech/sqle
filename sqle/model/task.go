@@ -60,6 +60,7 @@ type Task struct {
 	ExecStartAt     *time.Time
 	ExecEndAt       *time.Time
 	ExecMode        string         `json:"exec_mode" gorm:"default:'sqls';type:varchar(255)" example:"sqls"`
+	EnableBackup    bool           `gorm:"column:enable_backup"`
 	FileOrderMethod string         `json:"file_order_method" gorm:"column:file_order_method;type:varchar(255)"`
 	Instance        *Instance      `json:"-" gorm:"-"`
 	ExecuteSQLs     []*ExecuteSQL  `json:"-" gorm:"foreignkey:TaskId"`
