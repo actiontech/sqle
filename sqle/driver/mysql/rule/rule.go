@@ -106,6 +106,7 @@ const (
 	DDLCheckObjectNameIsUpperAndLowerLetterMixed       = "ddl_check_object_name_is_upper_and_lower_letter_mixed"
 	DDLCheckFieldNotNUllMustContainDefaultValue        = "ddl_check_field_not_null_must_contain_default_value"
 	DDLCheckIndexNameExisted                           = "ddl_check_index_name_existed"
+	DDLCheckTableRowLength                             = "ddl_check_table_row_length"
 )
 
 // inspector DML rules
@@ -1893,6 +1894,26 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: true,
 		Message:      "索引必须设置索引名",
 		Func:         checkIndexNameExisted,
+	},
+	{
+		Rule: driver.Rule{
+			Name:       DDLCheckTableRowLength,
+			Desc:       "表设计做到行不跨页",
+			Annotation: "在表设计时,应该尽量确保每一行数据都不会跨越数据页(Page)的边界,以提高数据的读取和写入性能,减少物理I/O操作,并优化存储空间的利用率。",
+			Level:      driver.RuleLevelWarn,
+			Category:   RuleTypeDDLConvention,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "65535",
+					Desc:  "最大行长 (byte)",
+					Type:  params.ParamTypeInt,
+				},
+			},
+		},
+		AllowOffline: true,
+		Message:      "表设计做到行不跨页",
+		Func:         checkTableRowLength,
 	},
 }
 
@@ -5148,4 +5169,192 @@ func checkIndexNameExisted(input *RuleHandlerInput) error {
 
 func IsIndexConstraint(constraintType ast.ConstraintType) bool {
 	return constraintType == ast.ConstraintIndex || constraintType == ast.ConstraintUniqIndex || constraintType == ast.ConstraintKey || constraintType == ast.ConstraintUniqKey
+}
+
+func checkTableRowLength(input *RuleHandlerInput) error {
+	var rowLengthLimit = input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+	rowLength := 0
+	switch stmt := input.Node.(type) {
+	case *ast.CreateTableStmt:
+		charsetNum := GetTableCharsetNum(stmt.Options)
+		for _, col := range stmt.Cols {
+			colCharsetNum := MappingCharsetLength(col.Tp.Charset)
+			// 可能会设置列级别的字符串
+			if charsetNum != colCharsetNum {
+				charsetNum = colCharsetNum
+			}
+			oneColumnLength := ComputeOneColumnLength(col, charsetNum)
+			rowLength += oneColumnLength
+		}
+	case *ast.AlterTableStmt:
+		// 获取在线表信息
+		tableStmt, tableExist, err := input.Ctx.GetCreateTableStmt(stmt.Table)
+		if !tableExist || err != nil {
+			return err
+		}
+		charsetNum := GetTableCharsetNum(tableStmt.Options)
+		columnLengthMap := make(map[string]int, len(tableStmt.Cols))
+		// 计算原表的长度
+		for _, col := range tableStmt.Cols {
+			colCharsetNum := MappingCharsetLength(col.Tp.Charset)
+			if charsetNum != colCharsetNum {
+				charsetNum = colCharsetNum
+			}
+
+			oneColumnLength := ComputeOneColumnLength(col, charsetNum)
+			rowLength += oneColumnLength
+			columnLengthMap[col.Name.String()] = oneColumnLength
+		}
+		// 计算alter语句修改列之后的长度
+		for _, alteredSpec := range stmt.Specs {
+			for _, alterCol := range alteredSpec.NewColumns {
+				if alterCol.Tp == nil {
+					// 不是对于列类型相关的变更
+					continue
+				}
+				// 可能会设置列级别的字符串
+				charsetNum = MappingCharsetLength(alterCol.Tp.Charset)
+				if alteredSpec.Tp == ast.AlterTableAddColumns {
+					rowLength += ComputeOneColumnLength(alterCol, charsetNum)
+				}
+				if alteredSpec.Tp == ast.AlterTableModifyColumn {
+					// 如果是修改某个字段，减去原来字段的长度，使用新的字段长度
+					rowLength -= columnLengthMap[alterCol.Name.String()]
+					rowLength += ComputeOneColumnLength(alterCol, charsetNum)
+				}
+			}
+		}
+	default:
+		return nil
+	}
+	if rowLength > rowLengthLimit {
+		addResult(input.Res, input.Rule, DDLCheckTableRowLength)
+	}
+	return nil
+}
+
+func GetTableCharsetNum(options []*ast.TableOption) int {
+	charsetNum := 4
+	for _, opt := range options {
+		if opt.Tp == ast.TableOptionCharset {
+			charsetNum = MappingCharsetLength(opt.StrValue)
+		}
+	}
+	return charsetNum
+}
+
+// ComputeOneColumnLength 计算一个列的长度
+func ComputeOneColumnLength(columnDef *ast.ColumnDef, charsetNum int) int {
+	oneColumnLength := 0
+	switch columnDef.Tp.Tp {
+	case mysql.TypeVarchar:
+		// 0~255 长度需要一个字节存储长度
+		lLength := 1
+		if columnDef.Tp.Flen > 255 {
+			// > 255 需要两个字节来存储长度
+			lLength = 2
+		}
+		// length * charsetNum + notNull + lLength
+		oneColumnLength = columnDef.Tp.Flen*charsetNum + OptionNotNullLength(columnDef.Options) + lLength
+	case mysql.TypeString:
+		oneColumnLength = columnDef.Tp.Flen*charsetNum + OptionNotNullLength(columnDef.Options)
+	case mysql.TypeYear, mysql.TypeTiny:
+		oneColumnLength = 1 + OptionNotNullLength(columnDef.Options)
+	case mysql.TypeDate, mysql.TypeInt24:
+		// DATE MEDIUMINT
+		oneColumnLength = 3 + OptionNotNullLength(columnDef.Options)
+	case mysql.TypeDuration:
+		// TIME
+		oneColumnLength = 3 + OptionNotNullLength(columnDef.Options) + typeTimePrecisionLength(columnDef.Tp.Decimal)
+	case mysql.TypeDatetime:
+		oneColumnLength = 5 + OptionNotNullLength(columnDef.Options) + typeTimePrecisionLength(columnDef.Tp.Decimal)
+	case mysql.TypeTimestamp:
+		oneColumnLength = 4 + OptionNotNullLength(columnDef.Options) + typeTimePrecisionLength(columnDef.Tp.Decimal)
+	case mysql.TypeShort:
+		// SMALLINT
+		oneColumnLength = 2 + OptionNotNullLength(columnDef.Options)
+	case mysql.TypeLong, mysql.TypeFloat:
+		// INT FLOAT
+		oneColumnLength = 4 + OptionNotNullLength(columnDef.Options)
+	case mysql.TypeLonglong:
+		// BIGINT
+		oneColumnLength = 8 + OptionNotNullLength(columnDef.Options)
+	case mysql.TypeDouble:
+		// BIGINT DOUBLE REAL
+		oneColumnLength = 8 + OptionNotNullLength(columnDef.Options)
+	case mysql.TypeNewDecimal:
+		// 整数部分
+		partition := (columnDef.Tp.Flen - columnDef.Tp.Decimal) / 9
+		oneColumnLength += partition * 4
+		oneColumnLength += decimalLeftoverLength((columnDef.Tp.Flen - columnDef.Tp.Decimal) % 9)
+		// 小数部分
+		decimalPartition := columnDef.Tp.Decimal / 9
+		oneColumnLength += decimalPartition * 4
+		oneColumnLength += decimalLeftoverLength((columnDef.Tp.Decimal) % 9)
+	}
+	return oneColumnLength
+}
+
+// typeTimePrecisionLength 时间类型会根据精度的不同有不同的存储大小
+// decimal bytes
+// 0       0
+// 1,2     1
+// 3,4     2
+// 5,6     3
+func typeTimePrecisionLength(decimal int) int {
+	if decimal < 0 {
+		return 0
+	} else if decimal < 3 {
+		return 1
+	} else if decimal < 5 {
+		return 2
+	} else if decimal < 7 {
+		return 3
+	}
+	return 0
+}
+
+// decimalLeftoverLength decimal被9整除后的部分，根据位数使用相印字节数
+// leftover bytes
+// 1-2      1
+// 3-4      2
+// 5-6      3
+// 7-9      4
+func decimalLeftoverLength(leftover int) int {
+	if leftover < 0 {
+		return 0
+	} else if leftover < 3 {
+		return 1
+	} else if leftover < 5 {
+		return 2
+	} else if leftover < 7 {
+		return 3
+	} else if leftover < 10 {
+		return 4
+	}
+	return 0
+}
+
+// OptionNotNullLength 当有not null 约束时会占用一个字节
+func OptionNotNullLength(columnOptions []*ast.ColumnOption) int {
+	for _, option := range columnOptions {
+		if option.Tp == ast.ColumnOptionNotNull {
+			return 0
+		}
+	}
+	return 1
+}
+
+// MappingCharsetLength 不同的字符集会用不同数量表示一个字符
+func MappingCharsetLength(charset string) int {
+	charNum := 4
+	switch charset {
+	case "utf8mb4", "utf16", "utf16le", "utf32":
+		charNum = 4
+	case "utf8":
+		charNum = 3
+	default:
+		charNum = 4
+	}
+	return charNum
 }
