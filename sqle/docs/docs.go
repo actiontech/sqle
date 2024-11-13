@@ -11809,6 +11809,9 @@ var doc = `{
                 },
                 "origin_sql": {
                     "type": "string"
+                },
+                "origin_task_id": {
+                    "type": "integer"
                 }
             }
         },
