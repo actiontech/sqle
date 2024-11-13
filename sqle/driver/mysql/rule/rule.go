@@ -171,6 +171,7 @@ const (
 	ConfigOptimizeIndexEnabled     = "optimize_index_enabled"
 	ConfigDMLExplainPreCheckEnable = "dml_enable_explain_pre_check"
 	ConfigSQLIsExecuted            = "sql_is_executed"
+	ConfigAvoidSet                 = "config_avoid_set"
 )
 
 type RuleHandlerInput struct {
@@ -1914,6 +1915,18 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: true,
 		Message:      "表设计做到行不跨页",
 		Func:         checkTableRowLength,
+	},
+	{
+		Rule: driver.Rule{
+			Name:       ConfigAvoidSet,
+			Desc:       "不允许使用SET操作",
+			Annotation: "禁止使用SET命令来修改MySQL的系统参数,以确保数据库的稳定性、一致性和安全性。",
+			Level:      driver.RuleLevelError,
+			Category:   RuleTypeGlobalConfig,
+		},
+		AllowOffline: true,
+		Message:      "不允许使用SET操作",
+		Func:         avoidSet,
 	},
 }
 
@@ -5357,4 +5370,14 @@ func MappingCharsetLength(charset string) int {
 		charNum = 4
 	}
 	return charNum
+}
+
+func avoidSet(input *RuleHandlerInput) error {
+	switch input.Node.(type) {
+	case *ast.SetStmt:
+		addResult(input.Res, input.Rule, ConfigAvoidSet)
+	default:
+		return nil
+	}
+	return nil
 }
