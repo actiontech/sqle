@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -205,4 +206,10 @@ func GenUid() (string, error) {
 		}
 	}
 	return node.Generate().String(), nil
+}
+
+func IsOpenEventScheduler(sql string) bool {
+	pattern := `(?i)^SET\s+GLOBAL\s+event_scheduler\s*=\s*(ON|1)\s*;`
+	reg := regexp.MustCompile(pattern)
+	return reg.MatchString(strings.TrimSpace(sql))
 }

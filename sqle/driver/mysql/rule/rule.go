@@ -172,6 +172,7 @@ const (
 	ConfigDMLExplainPreCheckEnable = "dml_enable_explain_pre_check"
 	ConfigSQLIsExecuted            = "sql_is_executed"
 	ConfigAvoidSet                 = "config_avoid_set"
+	ConfigCheckEventScheduler      = "config_check_event_scheduler"
 )
 
 type RuleHandlerInput struct {
@@ -1927,6 +1928,18 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: true,
 		Message:      "不允许使用SET操作",
 		Func:         avoidSet,
+	},
+	{
+		Rule: driver.Rule{
+			Name:       ConfigCheckEventScheduler,
+			Desc:       "禁止使用event scheduler",
+			Annotation: "禁用MySQL的事件调度器(event_scheduler),以提高数据库的安全性、稳定性和可控性,避免非预期的事件执行对系统造成影响。",
+			Level:      driver.RuleLevelError,
+			Category:   RuleTypeGlobalConfig,
+		},
+		AllowOffline: true,
+		Message:      "禁止使用event schedule",
+		Func:         checkEventScheduler,
 	},
 }
 
@@ -5378,6 +5391,13 @@ func avoidSet(input *RuleHandlerInput) error {
 		addResult(input.Res, input.Rule, ConfigAvoidSet)
 	default:
 		return nil
+	}
+	return nil
+}
+
+func checkEventScheduler(input *RuleHandlerInput) error {
+	if utils.IsOpenEventScheduler(input.Node.Text()) {
+		addResult(input.Res, input.Rule, input.Rule.Name)
 	}
 	return nil
 }
