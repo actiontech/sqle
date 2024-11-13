@@ -5209,13 +5209,7 @@ func checkTableRowLength(input *RuleHandlerInput) error {
 	rowLength := 0
 	switch stmt := input.Node.(type) {
 	case *ast.CreateTableStmt:
-		charsetNum := 4
-		for _, opt := range stmt.Options {
-			if opt.Tp == ast.TableOptionCharset {
-				charsetNum = MappingCharsetLength(opt.StrValue)
-				break
-			}
-		}
+		charsetNum := GetTableCharsetNum(stmt.Options)
 		for _, col := range stmt.Cols {
 			// 可能会设置列级别的字符串
 			charsetNum = MappingCharsetLength(col.Tp.Charset)
@@ -5228,13 +5222,7 @@ func checkTableRowLength(input *RuleHandlerInput) error {
 		if !tableExist || err != nil {
 			return err
 		}
-		charsetNum := 4
-		for _, opt := range tableStmt.Options {
-			if opt.Tp == ast.TableOptionCharset {
-				charsetNum = MappingCharsetLength(opt.StrValue)
-				break
-			}
-		}
+		charsetNum := GetTableCharsetNum(tableStmt.Options)
 		columnLengthMap := make(map[string]int, len(tableStmt.Cols))
 		// 计算原表的长度
 		for _, col := range tableStmt.Cols {
@@ -5266,6 +5254,16 @@ func checkTableRowLength(input *RuleHandlerInput) error {
 		addResult(input.Res, input.Rule, DDLCheckTableRowLength)
 	}
 	return nil
+}
+
+func GetTableCharsetNum(options []*ast.TableOption) int {
+	charsetNum := 4
+	for _, opt := range options {
+		if opt.Tp == ast.TableOptionCharset {
+			charsetNum = MappingCharsetLength(opt.StrValue)
+		}
+	}
+	return charsetNum
 }
 
 // ComputeOneColumnLength 计算一个列的长度
