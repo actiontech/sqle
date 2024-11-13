@@ -86,6 +86,7 @@ func convertTaskToRes(task *model.Task) *AuditTaskResV1 {
 		ExecStartTime:   task.ExecStartAt,
 		ExecEndTime:     task.ExecEndAt,
 		ExecMode:        task.ExecMode,
+		EnableBackup:    task.EnableBackup,
 		FileOrderMethod: task.FileOrderMethod,
 		AuditFiles:      convertToAuditFileResp(task.AuditFiles),
 	}
@@ -346,6 +347,18 @@ func CreateAndAuditTask(c echo.Context) error {
 
 	task.ExecMode = req.ExecMode
 	task.FileOrderMethod = req.FileOrderMethod
+	if req.EnableBackup {
+		backupService := server.BackupService{}
+		err = backupService.CheckBackupConflictWithExecMode(req.EnableBackup, req.ExecMode)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		err = backupService.CheckIsDbTypeSupportEnableBackup(task.DBType)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		task.EnableBackup = req.EnableBackup
+	}
 
 	err = convertSQLSourceEncodingFromTask(task)
 	if err != nil {
@@ -967,7 +980,7 @@ type AuditTaskGroupResV1 struct {
 // @Param input_zip_file formData file false "input ZIP file"
 // @Success 200 {object} v1.AuditTaskGroupResV1
 // @router /v1/task_groups/audit [post]
-func AuditTaskGroupV1(c echo.Context) error { 
+func AuditTaskGroupV1(c echo.Context) error {
 	// TODO 单数据源审核，以及多数据源相同SQL模式审核，增加备份配置
 	req := new(AuditTaskGroupReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
@@ -1033,6 +1046,18 @@ func AuditTaskGroupV1(c echo.Context) error {
 
 		for _, task := range tasks {
 			task.SQLSource = sqls.SourceType
+			if req.EnableBackup {
+				backupService := server.BackupService{}
+				err = backupService.CheckBackupConflictWithExecMode(req.EnableBackup, task.ExecMode)
+				if err != nil {
+					return controller.JSONBaseErrorReq(c, err)
+				}
+				err = backupService.CheckIsDbTypeSupportEnableBackup(task.DBType)
+				if err != nil {
+					return controller.JSONBaseErrorReq(c, err)
+				}
+				task.EnableBackup = req.EnableBackup
+			}
 			err := addSQLsFromFileToTasks(sqls, task, plugin)
 			if err != nil {
 				return controller.JSONBaseErrorReq(c, errors.New(errors.GenericError, fmt.Errorf("add sqls from file to task failed: %v", err)))
@@ -1087,6 +1112,7 @@ func AuditTaskGroupV1(c echo.Context) error {
 			Score:          task.Score,
 			PassRate:       task.PassRate,
 			Status:         task.Status,
+			EnableBackup:   task.EnableBackup,
 			SQLSource:      task.SQLSource,
 			ExecStartTime:  task.ExecStartAt,
 			ExecEndTime:    task.ExecEndAt,
