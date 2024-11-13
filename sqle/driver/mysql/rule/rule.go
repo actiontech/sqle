@@ -5235,6 +5235,10 @@ func checkTableRowLength(input *RuleHandlerInput) error {
 		// 计算alter语句修改列之后的长度
 		for _, alteredSpec := range stmt.Specs {
 			for _, alterCol := range alteredSpec.NewColumns {
+				if alterCol.Tp == nil {
+					// 不是对于列类型相关的变更
+					continue
+				}
 				// 可能会设置列级别的字符串
 				charsetNum = MappingCharsetLength(alterCol.Tp.Charset)
 				if alteredSpec.Tp == ast.AlterTableAddColumns {
