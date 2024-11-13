@@ -5211,8 +5211,11 @@ func checkTableRowLength(input *RuleHandlerInput) error {
 	case *ast.CreateTableStmt:
 		charsetNum := GetTableCharsetNum(stmt.Options)
 		for _, col := range stmt.Cols {
+			colCharsetNum := MappingCharsetLength(col.Tp.Charset)
 			// 可能会设置列级别的字符串
-			charsetNum = MappingCharsetLength(col.Tp.Charset)
+			if charsetNum != colCharsetNum {
+				charsetNum = colCharsetNum
+			}
 			oneColumnLength := ComputeOneColumnLength(col, charsetNum)
 			rowLength += oneColumnLength
 		}
@@ -5226,8 +5229,11 @@ func checkTableRowLength(input *RuleHandlerInput) error {
 		columnLengthMap := make(map[string]int, len(tableStmt.Cols))
 		// 计算原表的长度
 		for _, col := range tableStmt.Cols {
-			// 可能会设置列级别的字符串
-			charsetNum = MappingCharsetLength(col.Tp.Charset)
+			colCharsetNum := MappingCharsetLength(col.Tp.Charset)
+			if charsetNum != colCharsetNum {
+				charsetNum = colCharsetNum
+			}
+
 			oneColumnLength := ComputeOneColumnLength(col, charsetNum)
 			rowLength += oneColumnLength
 			columnLengthMap[col.Name.String()] = oneColumnLength
