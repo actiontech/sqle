@@ -16357,9 +16357,6 @@ var doc = `{
                 "desc": {
                     "type": "string"
                 },
-                "is_default_rule_template": {
-                    "type": "boolean"
-                },
                 "rule_template_name": {
                     "type": "string"
                 }
@@ -16370,6 +16367,9 @@ var doc = `{
             "properties": {
                 "db_type": {
                     "type": "string"
+                },
+                "is_default_rule_template": {
+                    "type": "boolean"
                 },
                 "rule_template_id": {
                     "type": "string"
