@@ -396,10 +396,9 @@ type GetRuleTemplatesResV1 struct {
 }
 
 type RuleTemplateResV1 struct {
-	Name                  string `json:"rule_template_name"`
-	Desc                  string `json:"desc"`
-	DBType                string `json:"db_type"`
-	IsDefaultRuleTemplate bool   `json:"is_default_rule_template"`
+	Name   string `json:"rule_template_name"`
+	Desc   string `json:"desc"`
+	DBType string `json:"db_type"`
 }
 
 // @Summary 全局规则模板列表
@@ -607,9 +606,10 @@ type RuleTemplateTipReqV1 struct {
 }
 
 type RuleTemplateTipResV1 struct {
-	ID     string `json:"rule_template_id"`
-	Name   string `json:"rule_template_name"`
-	DBType string `json:"db_type"`
+	ID                    string `json:"rule_template_id"`
+	Name                  string `json:"rule_template_name"`
+	DBType                string `json:"db_type"`
+	IsDefaultRuleTemplate bool   `json:"is_default_rule_template"`
 }
 
 type GetRuleTemplateTipsResV1 struct {
