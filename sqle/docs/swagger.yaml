@@ -513,6 +513,8 @@ definitions:
         type: string
       origin_sql:
         type: string
+      origin_task_id:
+        type: integer
     type: object
   v1.BackupSqlListRes:
     properties:
