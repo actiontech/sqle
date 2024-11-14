@@ -17,10 +17,6 @@ func (BackupService) CheckIsDbTypeSupportEnableBackup(dbType string) error {
 	return nil
 }
 
-func toBackupTask(a *action, sql *model.ExecuteSQL) BackupTask {
-	return &BaseBackupTask{}
-}
-
 type BaseBackupTask struct{}
 
 func (t BaseBackupTask) Backup() error {
