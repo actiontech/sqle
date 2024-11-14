@@ -3,6 +3,10 @@
 
 package server
 
+import (
+	"github.com/actiontech/sqle/sqle/model"
+)
+
 type BackupService struct{}
 
 func (BackupService) CheckBackupConflictWithExecMode(EnableBackup bool, ExecMode string) error {
@@ -11,4 +15,18 @@ func (BackupService) CheckBackupConflictWithExecMode(EnableBackup bool, ExecMode
 
 func (BackupService) CheckIsDbTypeSupportEnableBackup(dbType string) error {
 	return nil
+}
+
+func toBackupTask(a *action, sql *model.ExecuteSQL) BackupTask {
+	return &BaseBackupTask{}
+}
+
+type BaseBackupTask struct{}
+
+func (t BaseBackupTask) Backup() error {
+	return nil
+}
+
+func initModelBackupTask(task *model.Task, sql *model.ExecuteSQL) *model.BackupTask {
+	return &model.BackupTask{}
 }
