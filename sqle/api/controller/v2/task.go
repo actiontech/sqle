@@ -60,7 +60,7 @@ type AuditResult struct {
 // @Id getAuditTaskSQLsV2
 // @Security ApiKeyAuth
 // @Param task_id path string true "task id"
-// @Param filter_exec_status query string false "filter: exec status of task sql" Enums(initialized,doing,succeeded,failed,manually_executed,terminating,terminate_succeeded,terminate_failed)
+// @Param filter_exec_status query string false "filter: exec status of task sql" Enums(initialized,doing,succeeded,failed,manually_executed,terminating,terminate_succeeded,terminate_failed,execute_rollback)
 // @Param filter_audit_status query string false "filter: audit status of task sql" Enums(initialized,doing,finished)
 // @Param filter_audit_level query string false "filter: audit level of task sql" Enums(normal,notice,warn,error)
 // @Param no_duplicate query boolean false "select unique (fingerprint and audit result) for task sql"
