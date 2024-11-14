@@ -106,17 +106,19 @@ func GetTaskSQLs(c echo.Context) error {
 	taskSQLsRes := make([]*AuditTaskSQLResV2, 0, len(taskSQLs))
 	for _, taskSQL := range taskSQLs {
 		taskSQLRes := &AuditTaskSQLResV2{
-			Number:        taskSQL.Number,
-			Description:   taskSQL.Description,
-			ExecSQL:       taskSQL.ExecSQL,
-			SQLSourceFile: taskSQL.SQLSourceFile.String,
-			SQLStartLine:  taskSQL.SQLStartLine,
-			AuditLevel:    taskSQL.AuditLevel,
-			AuditStatus:   taskSQL.AuditStatus,
-			ExecResult:    taskSQL.ExecResult,
-			ExecStatus:    taskSQL.ExecStatus,
-			RollbackSQL:   taskSQL.RollbackSQL.String,
-			SQLType:       taskSQL.SQLType.String,
+			Number:            taskSQL.Number,
+			Description:       taskSQL.Description,
+			ExecSQL:           taskSQL.ExecSQL,
+			SQLSourceFile:     taskSQL.SQLSourceFile.String,
+			SQLStartLine:      taskSQL.SQLStartLine,
+			AuditLevel:        taskSQL.AuditLevel,
+			AuditStatus:       taskSQL.AuditStatus,
+			ExecResult:        taskSQL.ExecResult,
+			ExecStatus:        taskSQL.ExecStatus,
+			RollbackSQL:       taskSQL.RollbackSQL.String,
+			SQLType:           taskSQL.SQLType.String,
+			BackupStrategy:    taskSQL.BackupStrategy,
+			BackupStrategyTip: taskSQL.BackupStrategyTip.String,
 		}
 		for i := range taskSQL.AuditResults {
 			ar := taskSQL.AuditResults[i]
