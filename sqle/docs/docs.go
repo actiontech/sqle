@@ -7144,7 +7144,8 @@ var doc = `{
                             "manually_executed",
                             "terminating",
                             "terminate_succeeded",
-                            "terminate_failed"
+                            "terminate_failed",
+                            "execute_rollback"
                         ],
                         "type": "string",
                         "description": "filter: exec status of task sql",
@@ -9123,7 +9124,9 @@ var doc = `{
                         }
                     }
                 }
-            },
+            }
+        },
+        "/v1/tasks/audits/{task_id}/backup_strategy": {
             "patch": {
                 "security": [
                     {
@@ -9331,7 +9334,8 @@ var doc = `{
                             "doing",
                             "succeeded",
                             "failed",
-                            "manually_executed"
+                            "manually_executed",
+                            "execute_rollback"
                         ],
                         "type": "string",
                         "description": "filter: exec status of task sql",
@@ -9482,7 +9486,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/tasks/audits/{task_id}/sqls/{sql_id}/": {
+        "/v1/tasks/audits/{task_id}/sqls/{sql_id}/backup_strategy": {
             "patch": {
                 "security": [
                     {
@@ -10918,7 +10922,8 @@ var doc = `{
                             "manually_executed",
                             "terminating",
                             "terminate_succeeded",
-                            "terminate_failed"
+                            "terminate_failed",
+                            "execute_rollback"
                         ],
                         "type": "string",
                         "description": "filter: exec status of task sql",
