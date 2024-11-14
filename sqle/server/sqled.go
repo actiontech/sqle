@@ -299,25 +299,17 @@ func (a *action) audit() (err error) {
 		return err
 	}
 
-	// skip generate if audit is static
-	if a.task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile || a.task.SQLSource == model.TaskSQLSourceFromZipFile || a.task.SQLSource == model.TaskSQLSourceFromGitRepository || a.task.InstanceId == 0 {
-		a.entry.Warn("skip generate rollback SQLs")
-	} else if !driver.GetPluginManager().IsOptionalModuleEnabled(a.task.DBType, driverV2.OptionalModuleGenRollbackSQL) {
-		a.entry.Infof("skip generate rollback SQLs, %v", driver.NewErrPluginAPINotImplement(driverV2.OptionalModuleGenRollbackSQL))
-	} else {
-		p, err := newDriverManagerWithAudit(a.entry, a.task.Instance, a.task.Schema, a.task.DBType, a.rules)
-		if err != nil {
-			return xerrors.Wrap(err, "new driver for generate rollback SQL")
+	if a.task.EnableBackup {
+		backupTasks := make([]*model.BackupTask, 0, len(a.task.ExecuteSQLs))
+		for _, sql := range a.task.ExecuteSQLs {
+			affectedRows, err := a.plugin.EstimateSQLAffectRows(context.TODO(), sql.Content)
+			if err == nil {
+				sql.RowAffects = affectedRows.Count
+			}
+			backupTasks = append(backupTasks, initModelBackupTask(a.task, sql))
 		}
-		defer p.Close(context.TODO())
-
-		rollbackSQLs, err := genRollbackSQL(a.entry, a.task, p)
+		err = st.BatchCreateBackupTasks(backupTasks)
 		if err != nil {
-			return err
-		}
-
-		if err = st.UpdateRollbackSQLs(rollbackSQLs); err != nil {
-			a.entry.Errorf("save rollback SQLs error:%v", err)
 			return err
 		}
 	}
