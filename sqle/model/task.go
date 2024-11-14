@@ -321,6 +321,7 @@ type ExecuteSQL struct {
 	AuditFingerprint string `json:"audit_fingerprint" gorm:"index;type:char(32)"`
 	// AuditLevel has four level: error, warn, notice, normal.
 	AuditLevel string `json:"audit_level" gorm:"type:varchar(255)"`
+	BackupTask *BackupTask `json:"-" gorm:"foreignkey:execute_sql_id"`
 }
 
 func (s ExecuteSQL) TableName() string {
@@ -590,18 +591,21 @@ func (s *Storage) GetTaskByInstanceId(instanceId uint64) ([]Task, error) {
 }
 
 type TaskSQLDetail struct {
-	Number        uint           `json:"number"`
-	Description   string         `json:"description"`
-	ExecSQL       string         `json:"exec_sql"`
-	SQLSourceFile sql.NullString `json:"sql_source_file"`
-	SQLStartLine  uint64         `json:"sql_start_line"`
-	AuditResults  AuditResults   `json:"audit_results"`
-	AuditLevel    string         `json:"audit_level"`
-	AuditStatus   string         `json:"audit_status"`
-	ExecResult    string         `json:"exec_result"`
-	ExecStatus    string         `json:"exec_status"`
-	RollbackSQL   sql.NullString `json:"rollback_sql"`
-	SQLType       sql.NullString `json:"sql_type"`
+	Id                uint           `json:"id"`
+	Number            uint           `json:"number"`
+	Description       string         `json:"description"`
+	ExecSQL           string         `json:"exec_sql"`
+	SQLSourceFile     sql.NullString `json:"sql_source_file"`
+	SQLStartLine      uint64         `json:"sql_start_line"`
+	AuditResults      AuditResults   `json:"audit_results"`
+	AuditLevel        string         `json:"audit_level"`
+	AuditStatus       string         `json:"audit_status"`
+	ExecResult        string         `json:"exec_result"`
+	ExecStatus        string         `json:"exec_status"`
+	RollbackSQL       sql.NullString `json:"rollback_sql"`
+	SQLType           sql.NullString `json:"sql_type"`
+	BackupStrategy    string         `json:"backup_strategy"`
+	BackupStrategyTip sql.NullString `json:"backup_strategy_tip"`
 }
 
 func (t *TaskSQLDetail) GetAuditResults(ctx context.Context) string {
@@ -612,8 +616,10 @@ func (t *TaskSQLDetail) GetAuditResults(ctx context.Context) string {
 	return t.AuditResults.String(ctx)
 }
 
-var taskSQLsQueryTpl = `SELECT e_sql.number, e_sql.description, e_sql.content AS exec_sql,  e_sql.source_file AS sql_source_file, e_sql.start_line AS sql_start_line, e_sql.sql_type, r_sql.content AS rollback_sql,
-e_sql.audit_results, e_sql.audit_level, e_sql.audit_status, e_sql.exec_result, e_sql.exec_status
+var taskSQLsQueryTpl = `SELECT e_sql.id,e_sql.number, e_sql.description, e_sql.content AS exec_sql,  e_sql.source_file AS sql_source_file, e_sql.start_line AS sql_start_line, e_sql.sql_type, r_sql.content AS rollback_sql,
+e_sql.audit_results, e_sql.audit_level, e_sql.audit_status, e_sql.exec_result, e_sql.exec_status,
+	IFNULL(backup_tasks.backup_strategy, '') AS backup_strategy,
+	IFNULL(backup_tasks.backup_strategy_tip, '') AS backup_strategy_tip
 
 {{- template "body" . -}}
 
@@ -635,6 +641,7 @@ LEFT JOIN audit_files ON audit_files.task_id = e_sql.task_id
 AND audit_files.file_name = e_sql.source_file
 {{- end }}
 LEFT JOIN rollback_sql_detail AS r_sql ON e_sql.id = r_sql.execute_sql_id
+LEFT JOIN backup_tasks ON e_sql.id = backup_tasks.execute_sql_id
 WHERE
 e_sql.deleted_at IS NULL
 AND e_sql.task_id = :task_id
