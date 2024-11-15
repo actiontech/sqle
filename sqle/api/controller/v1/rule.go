@@ -643,10 +643,12 @@ func getRuleTemplateTips(c echo.Context, projectId string, filterDBType string) 
 
 	ruleTemplateTipsRes := make([]RuleTemplateTipResV1, 0, len(ruleTemplates))
 	for _, roleTemplate := range ruleTemplates {
+		isDefaultRuleTemplate := roleTemplate.Name == fmt.Sprintf("default_%s", roleTemplate.DBType)
 		ruleTemplateTipRes := RuleTemplateTipResV1{
-			ID:     roleTemplate.GetIDStr(),
-			Name:   roleTemplate.Name,
-			DBType: roleTemplate.DBType,
+			ID:                    roleTemplate.GetIDStr(),
+			Name:                  roleTemplate.Name,
+			DBType:                roleTemplate.DBType,
+			IsDefaultRuleTemplate: isDefaultRuleTemplate,
 		}
 		ruleTemplateTipsRes = append(ruleTemplateTipsRes, ruleTemplateTipRes)
 	}

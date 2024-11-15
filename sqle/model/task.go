@@ -57,15 +57,24 @@ type Task struct {
 	Status          string  `json:"status" gorm:"default:\"initialized\";type:varchar(255)"`
 	GroupId         uint    `json:"group_id" gorm:"column:group_id"`
 	CreateUserId    uint64
+	RuleTemplateID  uint `json:"rule_template_id" gorm:"column:rule_template_id"`
 	ExecStartAt     *time.Time
 	ExecEndAt       *time.Time
 	ExecMode        string         `json:"exec_mode" gorm:"default:'sqls';type:varchar(255)" example:"sqls"`
 	EnableBackup    bool           `gorm:"column:enable_backup"`
 	FileOrderMethod string         `json:"file_order_method" gorm:"column:file_order_method;type:varchar(255)"`
 	Instance        *Instance      `json:"-" gorm:"-"`
+	RuleTemplate    *RuleTemplate  `json:"-" gorm:"foreignkey:RuleTemplateID"`
 	ExecuteSQLs     []*ExecuteSQL  `json:"-" gorm:"foreignkey:TaskId"`
 	RollbackSQLs    []*RollbackSQL `json:"-" gorm:"foreignkey:TaskId"`
 	AuditFiles      []*AuditFile   `json:"-" gorm:"foreignkey:TaskId"`
+}
+
+func (t *Task) RuleTemplateName() string {
+	if t.RuleTemplate != nil {
+		return t.RuleTemplate.Name
+	}
+	return ""
 }
 
 func (t *Task) InstanceName() string {
@@ -445,7 +454,7 @@ func (s *Storage) GetTasksByIds(taskIds []uint) (tasks []*Task, foundAllIds bool
 func (s *Storage) GetTaskDetailById(taskId string) (*Task, bool, error) {
 	task := &Task{}
 	err := s.db.Where("id = ?", taskId).
-		Preload("ExecuteSQLs").Preload("RollbackSQLs").First(task).Error
+		Preload("RuleTemplate").Preload("ExecuteSQLs").Preload("RollbackSQLs").First(task).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, false, nil
 	}
