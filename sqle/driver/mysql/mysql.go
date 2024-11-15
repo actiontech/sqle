@@ -99,7 +99,7 @@ func (inspect *MysqlDriverImpl) applyConfig(cfg *driverV2.Config) {
 	inspect.isOfflineAudit = cfg.DSN == nil
 
 	inspect.cnf = &Config{
-		DMLRollbackMaxRows: -1,
+		DMLRollbackMaxRows: 1000,// TODO 暂时将备份影响行数上限设置为1000，后续需要将对应该配置项的规则移除。备份影响行数上限设置将会在备份任务中设置。
 		DDLOSCMinSize:      -1,
 		DDLGhostMinSize:    -1,
 	}
