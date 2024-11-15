@@ -348,6 +348,7 @@ type InstanceTipResV1 struct {
 	WorkflowTemplateId uint32 `json:"workflow_template_id"`
 	Host               string `json:"host"`
 	Port               string `json:"port"`
+	EnableBackup       bool   `json:"enable_backup"`
 }
 
 type GetInstanceTipsResV1 struct {
