@@ -2,7 +2,9 @@ package auditplan
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
@@ -124,7 +126,7 @@ func handlerSQLAudit(entry *logrus.Entry, sqlList []*model.SQLManageRecord) {
 }
 
 func BatchAuditSQLs(sqlList []*model.SQLManageRecord, isSkipAuditedSql bool) ([]*model.SQLManageRecord, error) {
-
+	s := model.GetStorage()
 	// SQL聚合
 	sqlMap := make(map[string][]*model.SQLManageRecord)
 	for _, sql := range sqlList {
@@ -153,6 +155,20 @@ func BatchAuditSQLs(sqlList []*model.SQLManageRecord, isSkipAuditedSql bool) ([]
 			return nil, err
 		}
 		resp, err := meta.Handler.Audit(sqls)
+		// 当管控队列表中sql出栈审核时扫描任务被删除，则清空已经save到管控表的sql。
+		if err != nil && errors.Is(err, model.ErrAuditPlanNotFound) {
+			log.NewEntry().Warnf("audit sqls in task fail %v,cant find audit plan by id %s", err, sqls[0].SourceId)
+			err := s.DeleteSQLManageRecordBySourceId(sqls[0].SourceId)
+			if err != nil {
+				log.NewEntry().Errorf("delete sql manage record fail %v", err)
+			}
+			for k := range sqlMap {
+				if strings.HasPrefix(k, sqls[0].SourceId+":") {
+					delete(sqlMap, k)
+				}
+			}
+			continue
+		}
 		if err != nil {
 			log.NewEntry().Errorf("audit sqls in task fail %v,ignore audit result", err)
 			auditSQLs = append(auditSQLs, sqls...)
