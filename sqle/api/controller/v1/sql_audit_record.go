@@ -96,6 +96,19 @@ func CreateSQLAuditRecord(c echo.Context) error {
 	}
 
 	s := model.GetStorage()
+
+	var ruleTemplateID uint
+	if req.RuleTemplateName != nil {
+		ruleTemplate, exist, err := s.GetGlobalAndProjectRuleTemplateByNameAndProjectId(*req.RuleTemplateName, projectUid)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if !exist {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("rule template %v not exist", *req.RuleTemplateName)))
+		}
+		ruleTemplateID = ruleTemplate.ID
+	}
+
 	sqls := getSQLFromFileResp{}
 	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
@@ -125,6 +138,7 @@ func CreateSQLAuditRecord(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
+	task.RuleTemplateID = ruleTemplateID
 	// if task instance is not nil, gorm will update instance when save task.
 	task.Instance = nil
 
