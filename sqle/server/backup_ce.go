@@ -26,3 +26,7 @@ func (t BaseBackupTask) Backup() error {
 func initModelBackupTask(task *model.Task, sql *model.ExecuteSQL) *model.BackupTask {
 	return &model.BackupTask{}
 }
+
+func toBackupTask(a *action, sql *model.ExecuteSQL) BackupTask {
+	return &BaseBackupTask{}
+}
