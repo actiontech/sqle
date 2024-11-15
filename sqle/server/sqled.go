@@ -449,7 +449,13 @@ func (a *action) GetTaskStatus(st *model.Storage) string {
 }
 
 func (a *action) execTask() (err error) {
-
+	if a.task.EnableBackup {
+		err = a.backupAndExecSql()
+		if err != nil {
+			return err
+		}
+		return nil
+	}
 	switch a.task.ExecMode {
 	case model.ExecModeSqlFile:
 		// check plugin can exec batch sqls
@@ -472,6 +478,24 @@ func (a *action) execTask() (err error) {
 	}
 	return nil
 
+}
+
+/*
+backupAndExecSql() 备份与执行SQL：
+
+	按照顺序，先根据一条SQL备份，再执行该SQL。备份过程中涉及连库查询和保存数据。
+*/
+func (a *action) backupAndExecSql() error {
+	var err error
+	for _, executeSQL := range a.task.ExecuteSQLs {
+		if err = toBackupTask(a, executeSQL).Backup(); err != nil {
+			return err
+		}
+		if err = a.execSQL(executeSQL); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (a *action) execSqlSqlMode() error {
