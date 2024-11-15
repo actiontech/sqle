@@ -10461,6 +10461,7 @@ paths:
         - terminating
         - terminate_succeeded
         - terminate_failed
+        - execute_rollback
         in: query
         name: filter_exec_status
         type: string
@@ -11871,6 +11872,7 @@ paths:
       summary: 获取Sql扫描任务信息
       tags:
       - task
+  /v1/tasks/audits/{task_id}/backup_strategy:
     patch:
       consumes:
       - application/json
@@ -12002,6 +12004,7 @@ paths:
         - succeeded
         - failed
         - manually_executed
+        - execute_rollback
         in: query
         name: filter_exec_status
         type: string
@@ -12105,7 +12108,7 @@ paths:
       summary: 获取task相关的SQL执行计划和表元数据
       tags:
       - task
-  /v1/tasks/audits/{task_id}/sqls/{sql_id}/:
+  /v1/tasks/audits/{task_id}/sqls/{sql_id}/backup_strategy:
     patch:
       consumes:
       - application/json
@@ -13039,6 +13042,7 @@ paths:
         - terminating
         - terminate_succeeded
         - terminate_failed
+        - execute_rollback
         in: query
         name: filter_exec_status
         type: string

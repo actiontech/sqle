@@ -21,7 +21,7 @@ type UpdateSqlBackupStrategyReq struct {
 // @Param sql_id path string true "sql id"
 // @Param strategy body v1.UpdateSqlBackupStrategyReq true "update back up strategy for one sql in workflow"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/tasks/audits/{task_id}/sqls/{sql_id}/ [patch]
+// @router /v1/tasks/audits/{task_id}/sqls/{sql_id}/backup_strategy [patch]
 func UpdateSqlBackupStrategy(c echo.Context) error {
 	return nil
 }
@@ -41,7 +41,7 @@ type UpdateTaskBackupStrategyReq struct {
 // @Param task_id path string true "task id"
 // @Param strategy body v1.UpdateTaskBackupStrategyReq true "update back up strategy for sqls in workflow"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/tasks/audits/{task_id}/ [patch]
+// @router /v1/tasks/audits/{task_id}/backup_strategy [patch]
 func UpdateTaskBackupStrategy(c echo.Context) error {
 	return nil
 }
@@ -91,7 +91,7 @@ type BackupSqlListRes struct {
 // @Tags workflow
 // @Id GetBackupSqlListV1
 // @Security ApiKeyAuth
-// @Param filter_exec_status query string false "filter: exec status of task sql" Enums(initialized,doing,succeeded,failed,manually_executed,terminating,terminate_succeeded,terminate_failed)
+// @Param filter_exec_status query string false "filter: exec status of task sql" Enums(initialized,doing,succeeded,failed,manually_executed,terminating,terminate_succeeded,terminate_failed,execute_rollback)
 // @Param project_name path string true "project name"
 // @Param workflow_id path string true "workflow id"
 // @Param filter_instance_id query uint false "filter: instance id in workflow"
