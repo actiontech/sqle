@@ -15449,6 +15449,9 @@ var doc = `{
         "v1.InstanceTipResV1": {
             "type": "object",
             "properties": {
+                "enable_backup": {
+                    "type": "boolean"
+                },
                 "host": {
                     "type": "string"
                 },
