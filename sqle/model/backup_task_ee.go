@@ -4,7 +4,7 @@
 package model
 
 /*
-	the default batch size is 100, if the length of input backup task slice is shorter than 100, the batch will set as the length of slice
+the default batch size is 100, if the length of input backup task slice is shorter than 100, the batch will set as the length of slice
 */
 func (s *Storage) BatchCreateBackupTasks(backupTasks []*BackupTask) error {
 	var batchSize = 100
@@ -15,7 +15,7 @@ func (s *Storage) BatchCreateBackupTasks(backupTasks []*BackupTask) error {
 }
 
 /*
-	update backup status and backup execute information
+update backup status and backup execute information
 */
 func (s *Storage) UpdateBackupExecuteResult(task *BackupTask) error {
 	return s.db.Model(&BackupTask{}).
@@ -24,4 +24,13 @@ func (s *Storage) UpdateBackupExecuteResult(task *BackupTask) error {
 			"backup_status":    task.BackupStatus,
 			"backup_exec_info": task.BackupExecInfo,
 		}).Error
+}
+
+func (s *Storage) GetBackupTaskByExecuteSqlId(executeSqlId uint) (*BackupTask, error) {
+	var backupTask BackupTask
+	err := s.db.Model(&BackupTask{}).Where("execute_sql_id = ?", executeSqlId).First(&backupTask).Error
+	if err != nil {
+		return nil, err
+	}
+	return &backupTask, nil
 }

@@ -74,39 +74,43 @@ func initModelBackupTask(task *model.Task, sql *model.ExecuteSQL) *model.BackupT
 	}
 }
 
-func toBackupTask(a *action, sql *model.ExecuteSQL) BackupTask {
-	task := sql.BackupTask
-	switch task.BackupStrategy {
+func toBackupTask(a *action, sql *model.ExecuteSQL) (BackupTask, error) {
+	s := model.GetStorage()
+	backupTask, err := s.GetBackupTaskByExecuteSqlId(sql.ID)
+	if err != nil {
+		return nil, err
+	}
+	switch backupTask.BackupStrategy {
 	case string(BackupStrategyManually):
 		// 当用户选择手工备份时
-		return &BackupManually{}
+		return &BackupManually{}, nil
 	case string(BackupStrategyOriginRow):
 		// 当用户选择备份行时
-		return &BackupOriginRow{}
+		return &BackupOriginRow{}, nil
 	case string(BackupStrategyNone):
 		// 当用户选择不备份时
-		return &BackupNothing{}
+		return &BackupNothing{}, nil
 	case string(BackupStrategyReverseSql):
 		// 当用户不选择备份策略或选择了反向SQL
 		return &BackupReverseSql{
 			action: a,
 			BaseBackupTask: BaseBackupTask{
-				ID:                task.ID,
+				ID:                backupTask.ID,
 				ExecTaskId:        sql.TaskId,
-				ExecuteSqlId:      task.ExecuteSqlId,
+				ExecuteSqlId:      backupTask.ExecuteSqlId,
 				ExecuteSql:        sql.Content,
 				SqlType:           sql.SQLType,
-				BackupStatus:      BackupStatus(task.BackupStatus),
-				InstanceId:        task.InstanceId,
-				SchemaName:        task.SchemaName,
-				TableName:         task.TableName,
-				BackupStrategy:    BackupStrategy(task.BackupStrategy),
-				BackupStrategyTip: task.BackupStrategyTip,
-				BackupExecInfo:    task.BackupExecInfo,
+				BackupStatus:      BackupStatus(backupTask.BackupStatus),
+				InstanceId:        backupTask.InstanceId,
+				SchemaName:        backupTask.SchemaName,
+				TableName:         backupTask.TableName,
+				BackupStrategy:    BackupStrategy(backupTask.BackupStrategy),
+				BackupStrategyTip: backupTask.BackupStrategyTip,
+				BackupExecInfo:    backupTask.BackupExecInfo,
 			},
-		}
+		}, nil
 	default:
-		return &BackupNothing{}
+		return &BackupNothing{}, nil
 	}
 }
 
