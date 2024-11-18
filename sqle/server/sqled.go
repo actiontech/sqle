@@ -486,9 +486,12 @@ backupAndExecSql() 备份与执行SQL：
 	按照顺序，先根据一条SQL备份，再执行该SQL。备份过程中涉及连库查询和保存数据。
 */
 func (a *action) backupAndExecSql() error {
-	var err error
 	for _, executeSQL := range a.task.ExecuteSQLs {
-		if err = toBackupTask(a, executeSQL).Backup(); err != nil {
+		backupTask, err := toBackupTask(a, executeSQL)
+		if err != nil {
+			return err
+		}
+		if err = backupTask.Backup(); err != nil {
 			return err
 		}
 		if err = a.execSQL(executeSQL); err != nil {
