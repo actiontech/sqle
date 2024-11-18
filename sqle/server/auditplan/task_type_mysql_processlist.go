@@ -3,9 +3,10 @@ package auditplan
 import (
 	"context"
 	"fmt"
-	"github.com/actiontech/sqle/sqle/errors"
 	"strconv"
 	"time"
+
+	"github.com/actiontech/sqle/sqle/errors"
 
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
@@ -110,12 +111,13 @@ func (at *MySQLProcessListTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan
 	for i := range res {
 		query := res[i]["info"].String
 		sqlV2 := &SQLV2{
-			Source:     ap.Type,
-			SourceId:   strconv.FormatUint(uint64(ap.InstanceAuditPlanId), 10),
-			ProjectId:  ap.ProjectId,
-			InstanceID: ap.InstanceID,
-			SchemaName: res[i]["db"].String,
-			SQLContent: query,
+			Source:      ap.Type,
+			SourceId:    strconv.FormatUint(uint64(ap.InstanceAuditPlanId), 10),
+			AuditPlanId: strconv.FormatUint(uint64(ap.ID), 10),
+			ProjectId:   ap.ProjectId,
+			InstanceID:  ap.InstanceID,
+			SchemaName:  res[i]["db"].String,
+			SQLContent:  query,
 		}
 		fp, err := util.Fingerprint(query, true)
 		if err != nil {

@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/actiontech/sqle/sqle/errors"
 	"strconv"
 	"time"
+
+	"github.com/actiontech/sqle/sqle/errors"
 
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
@@ -161,25 +162,25 @@ func (at *BaseSchemaMetaTaskV2) Metrics() []string {
 func (at *BaseSchemaMetaTaskV2) genSQLId(sql *SQLV2) string {
 	md5Json, err := json.Marshal(
 		struct {
-			ProjectId string
-			Schema    string
-			InstName  string
-			Source    string
-			ApID      string
-			MetaName  string
-			MetaType  string
+			ProjectId   string
+			Schema      string
+			InstName    string
+			Source      string
+			AuditPlanId string
+			MetaName    string
+			MetaType    string
 		}{
-			ProjectId: sql.ProjectId,
-			Schema:    sql.SchemaName,
-			InstName:  sql.InstanceID,
-			Source:    sql.Source,
-			ApID:      sql.SourceId,
-			MetaName:  sql.Info.Get(MetricNameMetaName).String(),
-			MetaType:  sql.Info.Get(MetricNameMetaType).String(),
+			ProjectId:   sql.ProjectId,
+			Schema:      sql.SchemaName,
+			InstName:    sql.InstanceID,
+			Source:      sql.Source,
+			AuditPlanId: sql.AuditPlanId,
+			MetaName:    sql.Info.Get(MetricNameMetaName).String(),
+			MetaType:    sql.Info.Get(MetricNameMetaType).String(),
 		},
 	)
 	if err != nil { // todo: 处理错误
-		return utils.Md5String(fmt.Sprintf("%s:%s:%s:%s", sql.SourceId, sql.SchemaName, sql.Info.Get(MetricNameMetaName).String(), sql.Info.Get(MetricNameMetaType).String()))
+		return utils.Md5String(fmt.Sprintf("%s:%s:%s:%s", sql.AuditPlanId, sql.SchemaName, sql.Info.Get(MetricNameMetaName).String(), sql.Info.Get(MetricNameMetaType).String()))
 	} else {
 		return utils.Md5String(string(md5Json))
 	}
@@ -239,6 +240,7 @@ func (at *BaseSchemaMetaTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, 
 		sqlV2 := &SQLV2{
 			Source:      ap.Type,
 			SourceId:    strconv.FormatUint(uint64(ap.InstanceAuditPlanId), 10),
+			AuditPlanId: strconv.FormatUint(uint64(ap.ID), 10),
 			ProjectId:   ap.ProjectId,
 			InstanceID:  ap.InstanceID,
 			SchemaName:  sql.SchemaName,

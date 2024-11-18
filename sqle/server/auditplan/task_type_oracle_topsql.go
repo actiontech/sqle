@@ -3,9 +3,10 @@ package auditplan
 import (
 	"context"
 	"fmt"
-	"github.com/actiontech/sqle/sqle/errors"
 	"strconv"
 	"time"
+
+	"github.com/actiontech/sqle/sqle/errors"
 
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/locale"
@@ -135,6 +136,7 @@ func (at *OracleTopSQLTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, pe
 		sqlV2 := &SQLV2{
 			Source:      ap.Type,
 			SourceId:    strconv.FormatUint(uint64(ap.InstanceAuditPlanId), 10),
+			AuditPlanId: strconv.FormatUint(uint64(ap.ID), 10),
 			ProjectId:   ap.ProjectId,
 			InstanceID:  ap.InstanceID,
 			SchemaName:  "", // todo: top sql 未采集schema, 需要填充
