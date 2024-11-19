@@ -28,22 +28,27 @@ type GetAuditTaskSQLsResV2 struct {
 }
 
 type AuditTaskSQLResV2 struct {
-	ExecSqlID             uint           `json:"exec_sql_id"`
-	Number                uint           `json:"number"`
-	ExecSQL               string         `json:"exec_sql"`
-	SQLSourceFile         string         `json:"sql_source_file"`
-	SQLStartLine          uint64         `json:"sql_start_line"`
-	AuditResult           []*AuditResult `json:"audit_result"`
-	AuditLevel            string         `json:"audit_level"`
-	AuditStatus           string         `json:"audit_status"`
-	ExecResult            string         `json:"exec_result"`
-	ExecStatus            string         `json:"exec_status"`
-	RollbackSQL           string         `json:"rollback_sql,omitempty"`
-	Description           string         `json:"description"`
-	SQLType               string         `json:"sql_type"`
-	BackupStrategy        string         `json:"backup_strategy" enums:"none,manual,reverse_sql,origin_row"`
-	BackupStrategyTip     string         `json:"backup_strategy_tip"`
-	AssociatedWorkflowIds []string       `json:"associate_workflow_ids"`
+	ExecSqlID                   uint                         `json:"exec_sql_id"`
+	Number                      uint                         `json:"number"`
+	ExecSQL                     string                       `json:"exec_sql"`
+	SQLSourceFile               string                       `json:"sql_source_file"`
+	SQLStartLine                uint64                       `json:"sql_start_line"`
+	AuditResult                 []*AuditResult               `json:"audit_result"`
+	AuditLevel                  string                       `json:"audit_level"`
+	AuditStatus                 string                       `json:"audit_status"`
+	ExecResult                  string                       `json:"exec_result"`
+	ExecStatus                  string                       `json:"exec_status"`
+	RollbackSQLs                []string                     `json:"rollback_sqls,omitempty"`
+	Description                 string                       `json:"description"`
+	SQLType                     string                       `json:"sql_type"`
+	BackupStrategy              string                       `json:"backup_strategy" enums:"none,manual,reverse_sql,origin_row"`
+	BackupStrategyTip           string                       `json:"backup_strategy_tip"`
+	AssociatedRollbackWorkflows []AssociatedRollbackWorkflow `json:"associated_rollback_workflows"`
+}
+
+type AssociatedRollbackWorkflow struct {
+	WorkflowID   string `json:"workflow_id"`
+	WorkflowName string `json:"workflow_name"`
 }
 
 type AuditResult struct {
@@ -115,7 +120,7 @@ func GetTaskSQLs(c echo.Context) error {
 			AuditStatus:   taskSQL.AuditStatus,
 			ExecResult:    taskSQL.ExecResult,
 			ExecStatus:    taskSQL.ExecStatus,
-			RollbackSQL:   taskSQL.RollbackSQL.String,
+			RollbackSQLs:  []string{taskSQL.RollbackSQL.String},
 			SQLType:       taskSQL.SQLType.String,
 		}
 		for i := range taskSQL.AuditResults {

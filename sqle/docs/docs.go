@@ -18510,6 +18510,17 @@ var doc = `{
                 }
             }
         },
+        "v2.AssociatedRollbackWorkflow": {
+            "type": "object",
+            "properties": {
+                "workflow_id": {
+                    "type": "string"
+                },
+                "workflow_name": {
+                    "type": "string"
+                }
+            }
+        },
         "v2.AssociatedStageWorkflows": {
             "type": "object",
             "properties": {
@@ -18775,10 +18786,10 @@ var doc = `{
         "v2.AuditTaskSQLResV2": {
             "type": "object",
             "properties": {
-                "associate_workflow_ids": {
+                "associated_rollback_workflows": {
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "$ref": "#/definitions/v2.AssociatedRollbackWorkflow"
                     }
                 },
                 "audit_level": {
@@ -18823,8 +18834,11 @@ var doc = `{
                 "number": {
                     "type": "integer"
                 },
-                "rollback_sql": {
-                    "type": "string"
+                "rollback_sqls": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "sql_source_file": {
                     "type": "string"
@@ -19639,6 +19653,12 @@ var doc = `{
         "v2.WorkflowResV2": {
             "type": "object",
             "properties": {
+                "associated_rollback_workflows": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.AssociatedRollbackWorkflow"
+                    }
+                },
                 "associated_stage_workflows": {
                     "type": "array",
                     "items": {
