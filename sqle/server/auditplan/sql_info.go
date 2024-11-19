@@ -11,10 +11,11 @@ import (
 type SQLV2 struct {
 	SQLId string
 	// from audit plan
-	Source     string
-	SourceId   string
-	ProjectId  string
-	InstanceID string
+	Source      string
+	SourceId    string // 实例扫描任务id: instance audit plan id
+	ProjectId   string
+	InstanceID  string
+	AuditPlanId string // 扫描任务id: audit plan id
 
 	// from collect
 	SQLContent  string
@@ -31,14 +32,14 @@ func (s *SQLV2) GenSQLId() {
 			Schema      string
 			InstID      string
 			Source      string
-			ApID        string
+			AuditPlanID string
 		}{
 			ProjectId:   s.ProjectId,
 			Fingerprint: s.Fingerprint,
 			Schema:      s.SchemaName,
 			InstID:      s.InstanceID,
 			Source:      s.Source,
-			ApID:        s.SourceId,
+			AuditPlanID: s.AuditPlanId,
 		},
 	)
 	if err != nil {

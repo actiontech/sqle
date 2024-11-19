@@ -147,12 +147,13 @@ func (at *MySQLAuditLogAliTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan
 	cache := NewSQLV2Cache()
 	for _, sql := range slowSqls {
 		sqlV2 := &SQLV2{
-			Source:     ap.Type,
-			SourceId:   strconv.FormatUint(uint64(ap.InstanceAuditPlanId), 10),
-			ProjectId:  ap.ProjectId,
-			InstanceID: ap.InstanceID,
-			SchemaName: sql.schema,
-			SQLContent: sql.sql,
+			Source:      ap.Type,
+			SourceId:    strconv.FormatUint(uint64(ap.InstanceAuditPlanId), 10),
+			AuditPlanId: strconv.FormatUint(uint64(ap.ID), 10),
+			ProjectId:   ap.ProjectId,
+			InstanceID:  ap.InstanceID,
+			SchemaName:  sql.schema,
+			SQLContent:  sql.sql,
 		}
 		fp, err := util.Fingerprint(sql.sql, true)
 		if err != nil {
