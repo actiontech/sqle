@@ -231,12 +231,13 @@ func (at *DB2TopSQLTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, persi
 		row := result.Rows[i]
 		info := NewMetrics()
 		sqlV2 := &SQLV2{
-			Source:     ap.Type,
-			SourceId:   strconv.FormatUint(uint64(ap.InstanceAuditPlanId), 10),
-			ProjectId:  ap.ProjectId,
-			InstanceID: ap.InstanceID,
-			SchemaName: "", // todo: top sql 未采集schema, 需要填充
-			Info:       info,
+			Source:      ap.Type,
+			SourceId:    strconv.FormatUint(uint64(ap.InstanceAuditPlanId), 10),
+			AuditPlanId: strconv.FormatUint(uint64(ap.ID), 10),
+			ProjectId:   ap.ProjectId,
+			InstanceID:  ap.InstanceID,
+			SchemaName:  "", // todo: top sql 未采集schema, 需要填充
+			Info:        info,
 		}
 
 		info.SetString(MetricNameLastReceiveTimestamp, time.Now().Format(time.RFC3339)) // todo: 没啥大用

@@ -290,6 +290,7 @@ func (at *ObForOracleTopSQLTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPla
 		sqlV2 := &SQLV2{
 			Source:      ap.Type,
 			SourceId:    strconv.FormatUint(uint64(ap.InstanceAuditPlanId), 10),
+			AuditPlanId: strconv.FormatUint(uint64(ap.ID), 10),
 			ProjectId:   ap.ProjectId,
 			InstanceID:  ap.InstanceID,
 			SchemaName:  "", // todo: top sql 未采集schema, 需要填充

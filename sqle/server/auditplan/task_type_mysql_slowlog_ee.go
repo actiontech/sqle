@@ -159,12 +159,13 @@ func (at *SlowLogTaskV2) mergeSQL(originSQL, mergedSQL *SQLV2) {
 func (at *SlowLogTaskV2) genSQLV2FromRow(ap *AuditPlan, row map[string]sql.NullString) (*SQLV2, error) {
 	query := row["sql_text"].String
 	sqlV2 := &SQLV2{
-		Source:     ap.Type,
-		SourceId:   strconv.FormatUint(uint64(ap.InstanceAuditPlanId), 10),
-		ProjectId:  ap.ProjectId,
-		InstanceID: ap.InstanceID,
-		SQLContent: query,
-		SchemaName: row["db"].String,
+		Source:      ap.Type,
+		SourceId:    strconv.FormatUint(uint64(ap.InstanceAuditPlanId), 10),
+		AuditPlanId: strconv.FormatUint(uint64(ap.ID), 10),
+		ProjectId:   ap.ProjectId,
+		InstanceID:  ap.InstanceID,
+		SQLContent:  query,
+		SchemaName:  row["db"].String,
 	}
 
 	fp, err := util.Fingerprint(query, true)
