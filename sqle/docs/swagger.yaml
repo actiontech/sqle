@@ -5078,6 +5078,13 @@ definitions:
       err_message:
         type: string
     type: object
+  v2.AssociatedRollbackWorkflow:
+    properties:
+      workflow_id:
+        type: string
+      workflow_name:
+        type: string
+    type: object
   v2.AssociatedStageWorkflows:
     properties:
       sql_version_stage_id:
@@ -5263,9 +5270,9 @@ definitions:
     type: object
   v2.AuditTaskSQLResV2:
     properties:
-      associate_workflow_ids:
+      associated_rollback_workflows:
         items:
-          type: string
+          $ref: '#/definitions/v2.AssociatedRollbackWorkflow'
         type: array
       audit_level:
         type: string
@@ -5296,8 +5303,10 @@ definitions:
         type: string
       number:
         type: integer
-      rollback_sql:
-        type: string
+      rollback_sqls:
+        items:
+          type: string
+        type: array
       sql_source_file:
         type: string
       sql_start_line:
@@ -5857,6 +5866,10 @@ definitions:
     type: object
   v2.WorkflowResV2:
     properties:
+      associated_rollback_workflows:
+        items:
+          $ref: '#/definitions/v2.AssociatedRollbackWorkflow'
+        type: array
       associated_stage_workflows:
         items:
           $ref: '#/definitions/v2.AssociatedStageWorkflows'
