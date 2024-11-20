@@ -26,9 +26,9 @@ func (s *Storage) RemoveProjectRelateData(projectID ProjectUID) error {
 			return err
 		}
 
-		if err := s.deleteAllAuditPlanByProjectID(txDB, projectID); err != nil {
-			return err
-		}
+		// if err := s.deleteAllAuditPlanByProjectID(txDB, projectID); err != nil {
+		// 	return err
+		// }
 
 		return nil
 	}))
@@ -62,9 +62,9 @@ func (s *Storage) deleteAllWorkflowByProjectID(tx *gorm.DB, projectID ProjectUID
 }
 
 // 删除项目中所有扫描任务
-func (s *Storage) deleteAllAuditPlanByProjectID(tx *gorm.DB, projectID ProjectUID) error {
-	return tx.Where("project_id = ?", projectID).Delete(&AuditPlan{}).Error
-}
+// func (s *Storage) deleteAllAuditPlanByProjectID(tx *gorm.DB, projectID ProjectUID) error {
+// 	return tx.Where("project_id = ?", projectID).Delete(&AuditPlan{}).Error
+// }
 
 // // 删除项目中所有实例
 // func (s *Storage) deleteAllInstanceByProjectID(tx *gorm.DB, projectID uint) error {
