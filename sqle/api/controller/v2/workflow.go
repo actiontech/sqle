@@ -1145,7 +1145,7 @@ type WorkflowResV2 struct {
 	Record                      *WorkflowRecordResV2          `json:"record"`
 	RecordHistory               []*WorkflowRecordResV2        `json:"record_history_list,omitempty"`
 	AssociatedStageWorkflows    []*AssociatedStageWorkflows   `json:"associated_stage_workflows,omitempty"`
-	AssociatedRollbackWorkflows []*AssociatedRollbackWorkflow `json:"associated_rollback_workflows"`
+	AssociatedRollbackWorkflows []*AssociatedRollbackWorkflow `json:"associated_rollback_workflows,omitempty"`
 }
 
 type AssociatedStageWorkflows struct {
