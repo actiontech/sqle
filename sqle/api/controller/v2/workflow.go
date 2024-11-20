@@ -1134,17 +1134,18 @@ type WorkflowRecordResV2 struct {
 }
 
 type WorkflowResV2 struct {
-	Name                     string                      `json:"workflow_name"`
-	WorkflowID               string                      `json:"workflow_id"`
-	Desc                     string                      `json:"desc,omitempty"`
-	Mode                     string                      `json:"mode" enums:"same_sqls,different_sqls"`
-	ExecMode                 string                      `json:"exec_mode" enums:"sql_file,sqls"`
-	CreateUser               string                      `json:"create_user_name"`
-	CreateTime               *time.Time                  `json:"create_time"`
-	SqlVersion               *SqlVersion                 `json:"sql_version,omitempty"`
-	Record                   *WorkflowRecordResV2        `json:"record"`
-	RecordHistory            []*WorkflowRecordResV2      `json:"record_history_list,omitempty"`
-	AssociatedStageWorkflows []*AssociatedStageWorkflows `json:"associated_stage_workflows,omitempty"`
+	Name                        string                        `json:"workflow_name"`
+	WorkflowID                  string                        `json:"workflow_id"`
+	Desc                        string                        `json:"desc,omitempty"`
+	Mode                        string                        `json:"mode" enums:"same_sqls,different_sqls"`
+	ExecMode                    string                        `json:"exec_mode" enums:"sql_file,sqls"`
+	CreateUser                  string                        `json:"create_user_name"`
+	CreateTime                  *time.Time                    `json:"create_time"`
+	SqlVersion                  *SqlVersion                   `json:"sql_version,omitempty"`
+	Record                      *WorkflowRecordResV2          `json:"record"`
+	RecordHistory               []*WorkflowRecordResV2        `json:"record_history_list,omitempty"`
+	AssociatedStageWorkflows    []*AssociatedStageWorkflows   `json:"associated_stage_workflows,omitempty"`
+	AssociatedRollbackWorkflows []*AssociatedRollbackWorkflow `json:"associated_rollback_workflows,omitempty"`
 }
 
 type AssociatedStageWorkflows struct {
