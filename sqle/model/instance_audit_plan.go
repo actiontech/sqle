@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/errors"
@@ -528,6 +529,25 @@ func (s *Storage) UpdateAuditPlanLastCollectionTime(auditPlanID uint, collection
 	err := s.db.Model(AuditPlanTaskInfo{}).Where("audit_plan_id = ?", auditPlanID).Update("last_collection_time", collectionTime).Error
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+func (s *Storage) GetAuditPlansByProjectId(projectID string) ([]*InstanceAuditPlan, error) {
+	instanceAuditPlan := []*InstanceAuditPlan{}
+	err := s.db.Model(InstanceAuditPlan{}).Where("project_id = ?", projectID).Find(&instanceAuditPlan).Error
+	return instanceAuditPlan, err
+}
+
+func (s Storage) DeleteAuditPlansInProject(projectID string) error {
+	instAuditPlans, err := s.GetAuditPlansByProjectId(projectID)
+	if err != nil {
+		return err
+	}
+	for _, instAP := range instAuditPlans {
+		if err := s.DeleteInstanceAuditPlan(strconv.FormatUint(uint64(instAP.ID), 10)); err != nil {
+			return err
+		}
 	}
 	return nil
 }
