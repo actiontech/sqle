@@ -1,5 +1,7 @@
 package server
 
+import "github.com/actiontech/sqle/sqle/model"
+
 type BackupTask interface {
 	Backup() error
 }
@@ -22,3 +24,20 @@ const (
 	BackupStatusFailed              BackupStatus = "failed"                // 备份失败
 	BackupStatusSucceed             BackupStatus = "succeed"               // 备份成功
 )
+
+/* backupTaskMap mapping origin sql id to backup task */
+type backupTaskMap map[uint]*model.BackupTask
+
+func (m backupTaskMap) GetBackupStrategy(sqlId uint) string {
+	if task, exist := m[sqlId]; exist {
+		return task.BackupStrategy
+	}
+	return ""
+}
+
+func (m backupTaskMap) GetBackupStrategyTip(sqlId uint) string {
+	if task, exist := m[sqlId]; exist {
+		return task.BackupStrategyTip
+	}
+	return ""
+}
