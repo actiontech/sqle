@@ -39,10 +39,10 @@ func initModelBackupTask(task *model.Task, sql *model.ExecuteSQL) *model.BackupT
 	var schemaName string
 	var strategy BackupStrategy = BackupStrategyReverseSql
 	var reason string = "default backup strategy is reverse sql in mvp1"
-	if sql.RowAffects > int64(BackupRowsAffectedLimit) {
-		strategy = BackupStrategyManually
-		reason = fmt.Sprintf("the rows affected by this sql, is bigger than limit:%v", BackupRowsAffectedLimit)
-	}
+	// if sql.RowAffects > int64(BackupRowsAffectedLimit) {
+	// 	strategy = BackupStrategyManually
+	// 	reason = fmt.Sprintf("the rows affected by this sql, is bigger than limit:%v", BackupRowsAffectedLimit)
+	// }
 	// TODO 根据SQL的类型来推荐备份策略
 	if sql.SQLType == driverV2.SQLTypeDQL {
 		strategy = BackupStrategyNone
