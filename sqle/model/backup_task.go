@@ -13,7 +13,7 @@ type BackupTask struct {
 	TaskId            uint   `gorm:"column:task_id"`                                                                                 // 备份任务关联原始SQL的任务的id
 	InstanceId        uint64 `gorm:"column:instance_id"`                                                                             // 备份任务关联原始SQL对应的数据源
 	ExecuteSqlId      uint   `gorm:"index;column:execute_sql_id"`                                                                    // 备份任务关联原始SQL的id
-	BackupStrategy    string `gorm:"type:enum('none','reverse_sql','origin_row','manual');column:backup_strategy;size:20"`           // 备份任务支持的备份策略
+	BackupStrategy    string `gorm:"type:enum('none','reverse_sql','original_row','manual');column:backup_strategy;size:20"`         // 备份任务支持的备份策略
 	BackupStrategyTip string `gorm:"column:backup_strategy_tip;size:255"`                                                            // 推荐备份任务的原因
 	BackupStatus      string `gorm:"type:enum('waiting_for_execution','executing','failed','succeed');column:backup_status;size:20"` // 备份任务的执行状态
 	BackupExecInfo    string `gorm:"column:backup_exec_info;size:255"`                                                               // 备份任务的执行信息，如错误原因
