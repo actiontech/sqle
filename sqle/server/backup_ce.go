@@ -30,3 +30,11 @@ func initModelBackupTask(task *model.Task, sql *model.ExecuteSQL) *model.BackupT
 func toBackupTask(a *action, sql *model.ExecuteSQL) (BackupTask, error) {
 	return &BaseBackupTask{}, nil
 }
+
+func (BackupService) GetRollbackSqlsMap(taskId uint) (map[uint][]string, error) {
+	return make(map[uint][]string), nil
+}
+
+func (BackupService) GetBackupTasksMap(taskId uint) (backupTaskMap, error) {
+	return make(backupTaskMap), nil
+}
