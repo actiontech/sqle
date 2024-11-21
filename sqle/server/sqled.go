@@ -302,10 +302,6 @@ func (a *action) audit() (err error) {
 	if a.task.EnableBackup {
 		backupTasks := make([]*model.BackupTask, 0, len(a.task.ExecuteSQLs))
 		for _, sql := range a.task.ExecuteSQLs {
-			affectedRows, err := a.plugin.EstimateSQLAffectRows(context.TODO(), sql.Content)
-			if err == nil {
-				sql.RowAffects = affectedRows.Count
-			}
 			backupTasks = append(backupTasks, initModelBackupTask(a.task, sql))
 		}
 		err = st.BatchCreateBackupTasks(backupTasks)
