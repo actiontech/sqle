@@ -11735,8 +11735,11 @@ var doc = `{
                 "number": {
                     "type": "integer"
                 },
-                "rollback_sql": {
-                    "type": "string"
+                "rollback_sqls": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
