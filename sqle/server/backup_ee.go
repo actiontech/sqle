@@ -17,6 +17,31 @@ var ErrUnsupportedBackupInFileMode error = errors.New("enable backup in file mod
 
 type BackupService struct{}
 
+func (BackupService) GetBackupTasksMap(taskId uint) (backupTaskMap, error) {
+	backupTasks, err := model.GetStorage().GetBackupTaskByTaskId(taskId)
+	if err != nil {
+		return nil, err
+	}
+	backupTaskMap := make(backupTaskMap)
+	for _, task := range backupTasks {
+		backupTaskMap[task.ExecuteSqlId] = task
+	}
+	return backupTaskMap, nil
+}
+
+/* rollbackSqlMap mapping origin sql id to rollback sqls */
+func (BackupService) GetRollbackSqlsMap(taskId uint) (map[uint][]string, error) {
+	rollbackSqls, err := model.GetStorage().GetRollbackSqlByTaskId(taskId)
+	if err != nil {
+		return nil, err
+	}
+	rollbackSqlMap := make(map[uint][]string)
+	for _, sql := range rollbackSqls {
+		rollbackSqlMap[sql.ExecuteSQLId] = append(rollbackSqlMap[sql.ExecuteSQLId], sql.Content)
+	}
+	return rollbackSqlMap, nil
+}
+
 // 文件模式不支持备份，仅支持SQL模式上线
 func (BackupService) CheckBackupConflictWithExecMode(EnableBackup bool, ExecMode string) error {
 	if EnableBackup && ExecMode == executeSqlFileMode {
@@ -106,7 +131,7 @@ func toBackupTask(a *action, sql *model.ExecuteSQL) (BackupTask, error) {
 				TableName:         backupTask.TableName,
 				BackupStrategy:    BackupStrategy(backupTask.BackupStrategy),
 				BackupStrategyTip: backupTask.BackupStrategyTip,
-				BackupExecInfo:    backupTask.BackupExecInfo,
+				BackupExecResult:  backupTask.BackupExecResult,
 			},
 		}, nil
 	default:
@@ -122,7 +147,7 @@ func (task BaseBackupTask) toModel() *model.BackupTask {
 		BackupStrategy:    string(task.BackupStrategy),
 		BackupStrategyTip: task.BackupStrategyTip,
 		BackupStatus:      string(task.BackupStatus),
-		BackupExecInfo:    task.BackupExecInfo,
+		BackupExecResult:  task.BackupExecResult,
 		SchemaName:        task.SchemaName,
 		TableName:         task.TableName,
 	}
@@ -142,7 +167,7 @@ type BaseBackupTask struct {
 	BackupStrategy    BackupStrategy // 备份策略
 	BackupStrategyTip string         // 备份策略推荐原因
 	BackupStatus      BackupStatus   // 备份执行状态
-	BackupExecInfo    string         // 备份执行详情信息
+	BackupExecResult  string         // 备份执行详情信息
 }
 
 func (t BaseBackupTask) Backup() error {
@@ -225,10 +250,10 @@ func (backup *BackupReverseSql) Backup() (backupErr error) {
 	if updateStatusErr != nil {
 		return updateStatusErr
 	}
-	// set backup info
-	backup.BaseBackupTask.BackupExecInfo = info.GetStrInLang(language.Chinese)
-	if backup.BaseBackupTask.BackupExecInfo == "" {
-		backup.BaseBackupTask.BackupExecInfo = string(BackupStatusSucceed)
+	// set backup execute result
+	backup.BaseBackupTask.BackupExecResult = info.GetStrInLang(language.Chinese)
+	if backup.BaseBackupTask.BackupExecResult == "" {
+		backup.BaseBackupTask.BackupExecResult = string(BackupStatusSucceed)
 	}
 	// save backup result into database
 	updateStatusErr = s.UpdateRollbackSQLs([]*model.RollbackSQL{

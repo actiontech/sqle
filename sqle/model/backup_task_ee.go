@@ -22,7 +22,7 @@ func (s *Storage) UpdateBackupExecuteResult(task *BackupTask) error {
 		Where("id = ?", task.ID).
 		UpdateColumns(map[string]interface{}{
 			"backup_status":    task.BackupStatus,
-			"backup_exec_info": task.BackupExecInfo,
+			"backup_exec_result": task.BackupExecResult,
 		}).Error
 }
 
@@ -33,4 +33,23 @@ func (s *Storage) GetBackupTaskByExecuteSqlId(executeSqlId uint) (*BackupTask, e
 		return nil, err
 	}
 	return &backupTask, nil
+}
+
+
+func (s *Storage) GetBackupTaskByTaskId(taskId uint) ([]*BackupTask, error) {
+	var backupTasks []*BackupTask
+	err := s.db.Model(&BackupTask{}).Where("task_id = ?", taskId).Find(&backupTasks).Error
+	if err != nil {
+		return nil, err
+	}
+	return backupTasks, nil
+}
+
+func (s *Storage) GetRollbackSqlByTaskId(taskId uint) ([]*RollbackSQL, error) {
+	var rollbackSqls []*RollbackSQL
+	err := s.db.Model(&RollbackSQL{}).Where("task_id = ?", taskId).Find(&rollbackSqls).Error
+	if err != nil {
+		return nil, err
+	}
+	return rollbackSqls, nil
 }
