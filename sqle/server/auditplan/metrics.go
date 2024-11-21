@@ -51,7 +51,7 @@ var ALLMetric = map[string]MetricType{
 	MetricNameMetaType:                  MetricTypeString, // MySQL schema meta
 	MetricNameRecordDeleted:             MetricTypeBool,   // MySQL schema meta
 
-	MetricNameQueryTimeTotal:      MetricTypeInt,   // DB2 TOP SQL | OB Oracle TOP SQL
+	MetricNameQueryTimeTotal:      MetricTypeFloat, // DB2 TOP SQL | OB Oracle TOP SQL
 	MetricNameCPUTimeAvg:          MetricTypeFloat, // DB2 TOP SQL | OB MySQL TOP SQL
 	MetricNameLockWaitTimeTotal:   MetricTypeFloat, // DB2 TOP SQL
 	MetricNameLockWaitCounter:     MetricTypeInt,   // DB2 TOP SQL

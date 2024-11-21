@@ -83,10 +83,10 @@ func (at *OracleTopSQLTaskV2) mergeSQL(originSQL, mergedSQL *SQLV2) {
 	originSQL.Info.SetFloat(MetricNameCPUTimeTotal, mergedSQL.Info.Get(MetricNameCPUTimeTotal).Float())
 
 	// // MetricNameDiskReadTotal
-	originSQL.Info.SetFloat(MetricNameDiskReadTotal, mergedSQL.Info.Get(MetricNameDiskReadTotal).Float())
+	originSQL.Info.SetInt(MetricNameDiskReadTotal, mergedSQL.Info.Get(MetricNameDiskReadTotal).Int())
 
 	// MetricNameBufferGetCounter
-	originSQL.Info.SetFloat(MetricNameBufferGetCounter, mergedSQL.Info.Get(MetricNameBufferGetCounter).Float())
+	originSQL.Info.SetInt(MetricNameBufferGetCounter, mergedSQL.Info.Get(MetricNameBufferGetCounter).Int())
 	return
 }
 
@@ -148,8 +148,8 @@ func (at *OracleTopSQLTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, pe
 		info.SetFloat(MetricNameQueryTimeTotal, float64(sql.ElapsedTime))
 		info.SetFloat(MetricNameUserIOWaitTimeTotal, float64(sql.UserIOWaitTime))
 		info.SetFloat(MetricNameCPUTimeTotal, float64(sql.CPUTime))
-		info.SetFloat(MetricNameDiskReadTotal, float64(sql.DiskReads))
-		info.SetFloat(MetricNameBufferGetCounter, float64(sql.BufferGets))
+		info.SetInt(MetricNameDiskReadTotal, sql.DiskReads)
+		info.SetInt(MetricNameBufferGetCounter, sql.BufferGets)
 		sqlV2.GenSQLId()
 		err = at.AggregateSQL(cache, sqlV2)
 		if err != nil {
