@@ -84,9 +84,9 @@ func toBackupTask(a *action, sql *model.ExecuteSQL) (BackupTask, error) {
 	case string(BackupStrategyManually):
 		// 当用户选择手工备份时
 		return &BackupManually{}, nil
-	case string(BackupStrategyOriginRow):
+	case string(BackupStrategyOriginalRow):
 		// 当用户选择备份行时
-		return &BackupOriginRow{}, nil
+		return &BackupOriginalRow{}, nil
 	case string(BackupStrategyNone):
 		// 当用户选择不备份时
 		return &BackupNothing{}, nil
@@ -181,7 +181,7 @@ type BackupNothing struct {
 	BaseBackupTask
 }
 
-type BackupOriginRow struct {
+type BackupOriginalRow struct {
 	BaseBackupTask
 }
 
