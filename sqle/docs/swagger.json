@@ -11781,7 +11781,7 @@
                         "none",
                         "manual",
                         "reverse_sql",
-                        "origin_row"
+                        "original_row"
                     ]
                 },
                 "description": {
@@ -17579,7 +17579,7 @@
                         "none",
                         "manual",
                         "reverse_sql",
-                        "origin_row"
+                        "original_row"
                     ]
                 }
             }
@@ -17668,7 +17668,7 @@
                         "none",
                         "manual",
                         "reverse_sql",
-                        "origin_row"
+                        "original_row"
                     ]
                 }
             }

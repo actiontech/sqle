@@ -11797,7 +11797,7 @@ var doc = `{
                         "none",
                         "manual",
                         "reverse_sql",
-                        "origin_row"
+                        "original_row"
                     ]
                 },
                 "description": {
@@ -17595,7 +17595,7 @@ var doc = `{
                         "none",
                         "manual",
                         "reverse_sql",
-                        "origin_row"
+                        "original_row"
                     ]
                 }
             }
@@ -17684,7 +17684,7 @@ var doc = `{
                         "none",
                         "manual",
                         "reverse_sql",
-                        "origin_row"
+                        "original_row"
                     ]
                 }
             }
