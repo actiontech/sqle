@@ -456,8 +456,10 @@ definitions:
         type: string
       number:
         type: integer
-      rollback_sql:
-        type: string
+      rollback_sqls:
+        items:
+          type: string
+        type: array
     type: object
   v1.AuditTasksGroupResV1:
     properties:
