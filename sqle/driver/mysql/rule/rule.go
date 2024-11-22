@@ -5207,7 +5207,7 @@ func checkTableRowLength(input *RuleHandlerInput) error {
 		charsetNum := GetTableCharsetNum(stmt.Options)
 		for _, col := range stmt.Cols {
 			colCharsetNum := MappingCharsetLength(col.Tp.Charset)
-			// 可能会设置列级别的字符串
+			// 可能会设置列级别的字符串,例如: username VARCHAR(50) CHARACTER SET
 			if charsetNum != colCharsetNum {
 				charsetNum = colCharsetNum
 			}
@@ -5217,8 +5217,11 @@ func checkTableRowLength(input *RuleHandlerInput) error {
 	case *ast.AlterTableStmt:
 		// 获取在线表信息
 		tableStmt, tableExist, err := input.Ctx.GetCreateTableStmt(stmt.Table)
-		if !tableExist || err != nil {
+		if err != nil {
 			return err
+		}
+		if !tableExist {
+			return nil
 		}
 		charsetNum := GetTableCharsetNum(tableStmt.Options)
 		columnLengthMap := make(map[string]int, len(tableStmt.Cols))
@@ -5239,7 +5242,7 @@ func checkTableRowLength(input *RuleHandlerInput) error {
 					// 不是对于列类型相关的变更
 					continue
 				}
-				// 可能会设置列级别的字符串
+				// 可能会设置列级别的字符串, username VARCHAR(50) CHARACTER SET
 				colCharsetNum := MappingCharsetLength(alterCol.Tp.Charset)
 				if charsetNum != colCharsetNum {
 					charsetNum = colCharsetNum
@@ -5274,6 +5277,35 @@ func GetTableCharsetNum(options []*ast.TableOption) int {
 }
 
 // ComputeOneColumnLength 计算一个列的长度
+// https://dev.mysql.com/doc/refman/8.0/en/column-count-limit.html#row-size-limits
+// +------------------+---------------------------+---------------------+-----------------------------------------------+
+// | 数据类型分类      | 数据类型名称              | 存储大小（字节）    | 描述                                          |
+// +------------------+---------------------------+---------------------+-----------------------------------------------+
+// | 数值类型         |                         数值类型包括整数和浮点数                                     |
+// +------------------+---------------------------+---------------------+-----------------------------------------------+
+// |                  | TINYINT                   | 1                   | 有符号范围：-128 到 127；无符号范围：0 到 255 |
+// |                  | SMALLINT                  | 2                   | 有符号范围：-32,768 到 32,767                 |
+// |                  | MEDIUMINT                 | 3                   | 有符号范围：-8,388,608 到 8,388,607           |
+// |                  | INT (或 INTEGER)          | 4                   | 有符号范围：-2,147,483,648 到 2,147,483,647   |
+// |                  | BIGINT                    | 8                   | 有符号范围：-9,223,372,036,854,775,808 到     |
+// |                  |                           |                     | 9,223,372,036,854,775,807                     |
+// |                  | DECIMAL (或 NUMERIC)      | 取决于定义           | 精确的定点数，用于存储货币等精确数据          |
+// |                  | FLOAT                     | 4 或 8              | 单精度浮点数（近似值）                        |
+// |                  | DOUBLE (或 REAL)          | 8                   | 双精度浮点数（近似值）                        |
+// +------------------+---------------------------+---------------------+-----------------------------------------------+
+// | 日期与时间类型    |                         用于存储日期、时间或日期-时间的组合                          |
+// +------------------+---------------------------+---------------------+-----------------------------------------------+
+// |                  | DATE                      | 3                   | 日期格式：YYYY-MM-DD                          |
+// |                  | DATETIME                  | 8                   | 日期和时间格式：YYYY-MM-DD HH:MM:SS           |
+// |                  | TIMESTAMP                 | 4                   | 时间戳格式：YYYY-MM-DD HH:MM:SS，同 UTC 对齐  |
+// |                  | TIME                      | 3                   | 时间格式：HH:MM:SS                            |
+// |                  | YEAR                      | 1                   | 年份格式：YYYY                                |
+// +------------------+---------------------------+---------------------+-----------------------------------------------+
+// | 字符串类型        |                         字符串类型包括固定长度和可变长度的字符存储                  |
+// +------------------+---------------------------+---------------------+-----------------------------------------------+
+// |                  | CHAR(M)                  | M (1 到 255)        | 固定长度字符串，存储长度指定为 M              |
+// |                  | VARCHAR(M)               | M+1 或 M+2          | 可变长度字符串，M 最大为 65535（取决于行大小）|
+// +------------------+---------------------------+---------------------+-----------------------------------------------+
 func ComputeOneColumnLength(columnDef *ast.ColumnDef, charsetNum int) int {
 	oneColumnLength := 0
 	switch columnDef.Tp.Tp {
