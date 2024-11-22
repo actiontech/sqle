@@ -531,3 +531,9 @@ func (s *Storage) UpdateAuditPlanLastCollectionTime(auditPlanID uint, collection
 	}
 	return nil
 }
+
+func (s *Storage) GetAuditPlansByProjectId(projectID string) ([]*InstanceAuditPlan, error) {
+	instanceAuditPlan := []*InstanceAuditPlan{}
+	err := s.db.Model(InstanceAuditPlan{}).Where("project_id = ?", projectID).Find(&instanceAuditPlan).Error
+	return instanceAuditPlan, err
+}
