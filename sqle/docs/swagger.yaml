@@ -5080,6 +5080,16 @@ definitions:
     type: object
   v2.AssociatedRollbackWorkflow:
     properties:
+      status:
+        enum:
+        - wait_for_audit
+        - wait_for_execution
+        - rejected
+        - canceled
+        - exec_failed
+        - executing
+        - finished
+        type: string
       workflow_id:
         type: string
       workflow_name:

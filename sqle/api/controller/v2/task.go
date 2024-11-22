@@ -49,6 +49,7 @@ type AuditTaskSQLResV2 struct {
 type AssociatedRollbackWorkflow struct {
 	WorkflowID   string `json:"workflow_id"`
 	WorkflowName string `json:"workflow_name"`
+	Status       string `json:"status" enums:"wait_for_audit,wait_for_execution,rejected,canceled,exec_failed,executing,finished"`
 }
 
 type AuditResult struct {
