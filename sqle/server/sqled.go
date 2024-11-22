@@ -298,7 +298,7 @@ func (a *action) audit() (err error) {
 	if err != nil {
 		return err
 	}
-
+	// TODO  if enable backup and plugin support backup
 	if a.task.EnableBackup {
 		backupTasks := make([]*model.BackupTask, 0, len(a.task.ExecuteSQLs))
 		for _, sql := range a.task.ExecuteSQLs {
@@ -445,6 +445,7 @@ func (a *action) GetTaskStatus(st *model.Storage) string {
 }
 
 func (a *action) execTask() (err error) {
+	// TODO  if enable backup and plugin support backup
 	if a.task.EnableBackup {
 		err = a.backupAndExecSql()
 		if err != nil {
