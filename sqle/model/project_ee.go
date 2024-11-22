@@ -26,10 +26,9 @@ func (s *Storage) RemoveProjectRelateData(projectID ProjectUID) error {
 			return err
 		}
 
-		// if err := s.deleteAllAuditPlanByProjectID(txDB, projectID); err != nil {
-		// 	return err
-		// }
-
+		if err := s.deleteAuditPlansInProject(txDB, projectID); err != nil {
+			return err
+		}
 		return nil
 	}))
 }
@@ -58,6 +57,45 @@ func (s *Storage) deleteAllWorkflowByProjectID(tx *gorm.DB, projectID ProjectUID
 		}
 	}
 
+	return nil
+}
+
+// 删除项目中所有扫描任务
+func (s Storage) deleteAuditPlansInProject(txDB *gorm.DB, projectID ProjectUID) error {
+	instAuditPlans, err := s.GetAuditPlansByProjectId(string(projectID))
+	if err != nil {
+		return err
+	}
+	for _, instAP := range instAuditPlans {
+		if err := s.deleteInstanceAuditPlan(txDB, instAP.ID); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *Storage) deleteInstanceAuditPlan(txDB *gorm.DB, instanceAuditPlanId uint) error {
+	// 删除队列表中数据
+	err := txDB.Exec(`DELETE FROM sql_manage_queues USING sql_manage_queues
+		JOIN instance_audit_plans iap ON iap.id = sql_manage_queues.source_id
+		WHERE iap.ID = ?`, instanceAuditPlanId).Error
+	if err != nil {
+		return err
+	}
+	err = txDB.Exec(`UPDATE instance_audit_plans iap 
+		LEFT JOIN audit_plans_v2 ap ON iap.id = ap.instance_audit_plan_id
+		LEFT JOIN audit_plan_task_infos apti ON apti.audit_plan_id = ap.id
+		LEFT JOIN sql_manage_records smr ON smr.source_id = ap.instance_audit_plan_id AND smr.source = ap.type
+		LEFT JOIN sql_manage_record_processes smrp ON smrp.sql_manage_record_id = smr.id
+		SET iap.deleted_at = now(),
+		ap.deleted_at = now(),
+		smr.deleted_at = now(),
+		smrp.deleted_at = now(),
+		apti.deleted_at = now()
+		WHERE iap.ID = ?`, instanceAuditPlanId).Error
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

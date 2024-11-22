@@ -65,12 +65,6 @@ func (h AfterDeleteProject) Handle(ctx context.Context, currentUserId string, da
 	if err != nil {
 		return err
 	}
-
-	err = s.DeleteAuditPlansInProject(dataResourceId)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
