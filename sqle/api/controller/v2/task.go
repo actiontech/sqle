@@ -41,7 +41,7 @@ type AuditTaskSQLResV2 struct {
 	RollbackSQLs                []string                      `json:"rollback_sqls,omitempty"`
 	Description                 string                        `json:"description"`
 	SQLType                     string                        `json:"sql_type"`
-	BackupStrategy              string                        `json:"backup_strategy" enums:"none,manual,reverse_sql,origin_row"`
+	BackupStrategy              string                        `json:"backup_strategy" enums:"none,manual,reverse_sql,original_row"`
 	BackupStrategyTip           string                        `json:"backup_strategy_tip"`
 	AssociatedRollbackWorkflows []*AssociatedRollbackWorkflow `json:"associated_rollback_workflows"`
 }
