@@ -108,7 +108,7 @@ type GetUserOpPermissionReq struct {
 
 type UserOpPermission struct {
 	// uesr project uid
-	ProjectUid string `json:"project_uid" validate:"required"`
+	ProjectUid string `json:"project_uid"`
 }
 
 // swagger:model GetUserOpPermissionReply
@@ -264,7 +264,7 @@ func GetOperationTypeDesc(opType OpPermissionType) string {
 	case OpPermissionTypeSaveAuditPlan:
 		return "创建扫描任务权限"
 	case OpPermissionTypeSQLQuery:
-		return "SQL查询"
+		return "SQL工作台查询"
 	case OpPermissionTypeCreateOptimization:
 		return "创建智能调优"
 	case OpPermissionTypeViewOthersOptimization:

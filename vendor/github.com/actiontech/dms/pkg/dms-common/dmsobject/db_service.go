@@ -29,7 +29,7 @@ func ListDbServices(ctx context.Context, dmsAddr string, req dmsV1.ListDBService
 		query.Set("order_by", fmt.Sprintf("%v", req.OrderBy))
 	}
 	if req.FilterByBusiness != "" {
-		query.Set("filter_by_business", url.QueryEscape(req.FilterByBusiness))
+		query.Set("filter_by_business", req.FilterByBusiness)
 	}
 	if req.FilterByHost != "" {
 		query.Set("filter_by_host", req.FilterByHost)
