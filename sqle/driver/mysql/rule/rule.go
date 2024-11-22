@@ -5209,7 +5209,7 @@ func checkTableRowLength(input *RuleHandlerInput) error {
 		charsetNum := GetTableCharsetNum(stmt.Options)
 		for _, col := range stmt.Cols {
 			colCharsetNum := MappingCharsetLength(col.Tp.Charset)
-			// 可能会设置列级别的字符串,例如: username VARCHAR(50) CHARACTER SET
+			// 可能会设置列级别的字符集,例如: username VARCHAR(50) CHARACTER SET
 			if charsetNum != colCharsetNum {
 				charsetNum = colCharsetNum
 			}
@@ -5244,7 +5244,7 @@ func checkTableRowLength(input *RuleHandlerInput) error {
 					// 不是对于列类型相关的变更
 					continue
 				}
-				// 可能会设置列级别的字符串, username VARCHAR(50) CHARACTER SET
+				// 可能会设置列级别的字符集, username VARCHAR(50) CHARACTER SET
 				colCharsetNum := MappingCharsetLength(alterCol.Tp.Charset)
 				if charsetNum != colCharsetNum {
 					charsetNum = colCharsetNum
