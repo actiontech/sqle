@@ -456,8 +456,10 @@ definitions:
         type: string
       number:
         type: integer
-      rollback_sql:
-        type: string
+      rollback_sqls:
+        items:
+          type: string
+        type: array
     type: object
   v1.AuditTasksGroupResV1:
     properties:
@@ -497,7 +499,7 @@ definitions:
         - none
         - manual
         - reverse_sql
-        - origin_row
+        - original_row
         type: string
       description:
         type: string
@@ -4452,7 +4454,7 @@ definitions:
         - none
         - manual
         - reverse_sql
-        - origin_row
+        - original_row
         type: string
     type: object
   v1.UpdateSqlFileOrderV1Req:
@@ -4512,7 +4514,7 @@ definitions:
         - none
         - manual
         - reverse_sql
-        - origin_row
+        - original_row
         type: string
     type: object
   v1.UpdateWechatConfigurationReqV1:
