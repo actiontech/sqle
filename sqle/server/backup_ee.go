@@ -24,7 +24,7 @@ func (BackupService) GetBackupTasksMap(taskId uint) (backupTaskMap, error) {
 	}
 	backupTaskMap := make(backupTaskMap)
 	for _, task := range backupTasks {
-		backupTaskMap[task.ExecuteSqlId] = task
+		backupTaskMap.AddBackupTask(task)
 	}
 	return backupTaskMap, nil
 }
