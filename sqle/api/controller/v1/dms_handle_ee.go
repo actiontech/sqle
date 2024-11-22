@@ -39,9 +39,19 @@ func (h BeforeDeleteProject) Handle(ctx context.Context, currentUserId string, d
 	}
 	for _, config := range configs {
 		if config.Enabled {
-			return fmt.Errorf("current project has running push job for %v,You need to modify the configuration to stop it ", config.Type)
+			return fmt.Errorf("current project has running push job for %v, you need to modify the configuration to stop it ", config.Type)
 		}
 	}
+	instAuditPlans, err := s.GetAuditPlansByProjectId(dataResourceId)
+	if err != nil {
+		return err
+	}
+	for _, instAP := range instAuditPlans {
+		if instAP.ActiveStatus == model.ActiveStatusNormal {
+			return fmt.Errorf("current project has running audit plan, you need to stop or delete it")
+		}
+	}
+
 	return nil
 }
 
