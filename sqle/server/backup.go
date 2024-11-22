@@ -41,3 +41,12 @@ func (m backupTaskMap) GetBackupStrategyTip(sqlId uint) string {
 	}
 	return ""
 }
+
+func (m backupTaskMap) AddBackupTask(backupTask *model.BackupTask) {
+	if backupTask == nil {
+		return
+	}
+	if _, exist := m[backupTask.ExecuteSqlId]; !exist {
+		m[backupTask.ExecuteSqlId] = backupTask
+	}
+}
