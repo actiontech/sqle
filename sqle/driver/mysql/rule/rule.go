@@ -5170,6 +5170,7 @@ func checkIndexNameExisted(input *RuleHandlerInput) error {
 			case ast.ConstraintIndex, ast.ConstraintUniqIndex, ast.ConstraintKey, ast.ConstraintUniqKey:
 				if constraint.Name == "" {
 					indexNameNotExisted = true
+					break
 				}
 			default:
 				return nil
@@ -5181,6 +5182,7 @@ func checkIndexNameExisted(input *RuleHandlerInput) error {
 				// 遍历Keys
 				if spec.Constraint.Name == "" {
 					indexNameNotExisted = true
+					break
 				}
 			}
 		}
