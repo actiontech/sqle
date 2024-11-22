@@ -5170,10 +5170,12 @@ func checkIndexNameExisted(input *RuleHandlerInput) error {
 			case ast.ConstraintIndex, ast.ConstraintUniqIndex, ast.ConstraintKey, ast.ConstraintUniqKey:
 				if constraint.Name == "" {
 					indexNameNotExisted = true
-					break
+					if indexNameNotExisted {
+						break
+					}
 				}
 			default:
-				return nil
+				continue
 			}
 		}
 	case *ast.AlterTableStmt:

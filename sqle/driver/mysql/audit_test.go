@@ -5208,3 +5208,28 @@ func TestDDLNotAllowRenaming(t *testing.T) {
 	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLNotAllowRenaming].Rule, t, "rename 2", DefaultMysqlInspect(), "ALTER TABLE exist_tb_1 RENAME TO test", newTestResult().addResult(rulepkg.DDLNotAllowRenaming))
 
 }
+
+func TestCheckIndexNameExisted(t *testing.T) {
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckIndexNameExisted].Rule, t, "", DefaultMysqlInspect(), "create table large_table(id int,type varchar(100),other text,INDEX (type), PRIMARY KEY (id));", newTestResult().addResult(rulepkg.DDLCheckIndexNameExisted))
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckIndexNameExisted].Rule, t, "", DefaultMysqlInspect(), "create table large_table(id int,type varchar(100),other text,INDEX (type),INDEX key_id(id));", newTestResult().addResult(rulepkg.DDLCheckIndexNameExisted))
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckIndexNameExisted].Rule, t, "", DefaultMysqlInspect(), "create table large_table(id int,type varchar(100),other text, dsc varchar(255),INDEX idx_type(type),INDEX key_id(id), INDEX (dsc));", newTestResult().addResult(rulepkg.DDLCheckIndexNameExisted))
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckIndexNameExisted].Rule, t, "", DefaultMysqlInspect(), "alter table exist_tb_1 add index (v1);", newTestResult().addResult(rulepkg.DDLCheckIndexNameExisted))
+}
+
+func TestCheckEventScheduler(t *testing.T) {
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.ConfigCheckEventScheduler].Rule, t, "", DefaultMysqlInspect(), "set GLOBAL event_scheduler = ON;", newTestResult().addResult(rulepkg.ConfigCheckEventScheduler))
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.ConfigCheckEventScheduler].Rule, t, "", DefaultMysqlInspect(), "set GLOBAL event_scheduler = 1;", newTestResult().addResult(rulepkg.ConfigCheckEventScheduler))
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.ConfigCheckEventScheduler].Rule, t, "", DefaultMysqlInspect(), "set\n    GLOBAL event_scheduler = ON;", newTestResult().addResult(rulepkg.ConfigCheckEventScheduler))
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.ConfigCheckEventScheduler].Rule, t, "", DefaultMysqlInspect(), "set\n    GLOBAL event_scheduler = 1;", newTestResult().addResult(rulepkg.ConfigCheckEventScheduler))
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.ConfigCheckEventScheduler].Rule, t, "", DefaultMysqlInspect(), "set\n    GLOBAL event_scheduler\n        = ON;", newTestResult().addResult(rulepkg.ConfigCheckEventScheduler))
+}
+
+func TestAvoidSet(t *testing.T) {
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.ConfigAvoidSet].Rule, t, "SET SESSION autocommit = 0;", DefaultMysqlInspect(), "set GLOBAL event_scheduler = ON;", newTestResult().addResult(rulepkg.ConfigAvoidSet))
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.ConfigAvoidSet].Rule, t, "success", DefaultMysqlInspect(), "show variables like 'innodb_page_size';", newTestResult())
+}
+
+func TestCheckTableRowLength(t *testing.T) {
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckTableRowLength].Rule, t, "success", DefaultMysqlInspect(), "CREATE TABLE t6(\n        c1 VARCHAR(16111) NOT NULL,\n        c2 CHAR(255) NOT NULL,\n        c3 YEAR NOT NULL,\n        c4 DATE NOT NULL,\n        c5 TIME NOT NULL, \n        c6 DATETIME NOT NULL, \n        c7 TIMESTAMP NOT NULL,\n        c8 TINYINT NOT NULL,\n        c9 SMALLINT NOT NULL,\n        c10 MEDIUMINT NOT NULL,\n        c11 INT NOT NULL,\n        c12 INTEGER NOT NULL,\n        c13 BIGINT NOT NULL,\n        c14 FLOAT NOT NULL,\n        c15 DOUBLE NOT NULL,\n        c16 REAL NOT NULL,\n        c17 DECIMAL(18,4) NOT NULL\n);", newTestResult())
+	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckTableRowLength].Rule, t, "success", DefaultMysqlInspect(), "CREATE TABLE t6(\n        c1 VARCHAR(16111) NOT NULL,\n        c2 CHAR(255) NOT NULL,\n        c3 YEAR NOT NULL,\n        c4 DATE NOT NULL,\n        c5 TIME NOT NULL, \n        c6 DATETIME NOT NULL, \n        c7 TIMESTAMP NOT NULL,\n        c8 TINYINT NOT NULL,\n        c9 SMALLINT NOT NULL,\n        c10 MEDIUMINT NOT NULL,\n        c11 INT NOT NULL,\n        c12 INTEGER NOT NULL,\n        c13 BIGINT NOT NULL,\n        c14 FLOAT NOT NULL,\n        c15 DOUBLE NOT NULL,\n        c16 REAL NOT NULL,\n        c17 DECIMAL(18,4) NOT NULL,\n c18 DATE NOT NULL\n);", newTestResult().addResult(rulepkg.DDLCheckTableRowLength))
+}
