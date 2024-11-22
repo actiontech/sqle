@@ -18513,6 +18513,18 @@ var doc = `{
         "v2.AssociatedRollbackWorkflow": {
             "type": "object",
             "properties": {
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "wait_for_audit",
+                        "wait_for_execution",
+                        "rejected",
+                        "canceled",
+                        "exec_failed",
+                        "executing",
+                        "finished"
+                    ]
+                },
                 "workflow_id": {
                     "type": "string"
                 },
