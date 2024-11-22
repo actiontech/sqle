@@ -11797,7 +11797,7 @@ var doc = `{
                         "none",
                         "manual",
                         "reverse_sql",
-                        "origin_row"
+                        "original_row"
                     ]
                 },
                 "description": {
@@ -17595,7 +17595,7 @@ var doc = `{
                         "none",
                         "manual",
                         "reverse_sql",
-                        "origin_row"
+                        "original_row"
                     ]
                 }
             }
@@ -17684,7 +17684,7 @@ var doc = `{
                         "none",
                         "manual",
                         "reverse_sql",
-                        "origin_row"
+                        "original_row"
                     ]
                 }
             }
@@ -18513,6 +18513,18 @@ var doc = `{
         "v2.AssociatedRollbackWorkflow": {
             "type": "object",
             "properties": {
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "wait_for_audit",
+                        "wait_for_execution",
+                        "rejected",
+                        "canceled",
+                        "exec_failed",
+                        "executing",
+                        "finished"
+                    ]
+                },
                 "workflow_id": {
                     "type": "string"
                 },
@@ -18810,7 +18822,7 @@ var doc = `{
                         "none",
                         "manual",
                         "reverse_sql",
-                        "origin_row"
+                        "original_row"
                     ]
                 },
                 "backup_strategy_tip": {
