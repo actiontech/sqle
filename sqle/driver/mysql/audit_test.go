@@ -452,7 +452,7 @@ INDEX (v1,v1)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
 `,
 		newTestResult().add(driver.RuleLevelError, DuplicateIndexedColumnMessage, "(匿名)",
-			"v1").addResult(rulepkg.DDLCheckIndexPrefix, "idx_"))
+			"v1").addResult(rulepkg.DDLCheckIndexPrefix, "idx_").addResult(rulepkg.DDLCheckIndexNameExisted))
 
 	runDefaultRulesInspectCase(t, "create_table: index column is duplicate(3)", DefaultMysqlInspect(),
 		`
