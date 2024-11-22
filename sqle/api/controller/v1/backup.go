@@ -6,7 +6,7 @@ import (
 )
 
 type UpdateSqlBackupStrategyReq struct {
-	Strategy string `json:"strategy" enums:"none,manual,reverse_sql,origin_row"`
+	Strategy string `json:"strategy" enums:"none,manual,reverse_sql,original_row"`
 }
 
 // UpdateSqlBackupStrategy
@@ -27,7 +27,7 @@ func UpdateSqlBackupStrategy(c echo.Context) error {
 }
 
 type UpdateTaskBackupStrategyReq struct {
-	Strategy string `json:"strategy" enums:"none,manual,reverse_sql,origin_row"`
+	Strategy string `json:"strategy" enums:"none,manual,reverse_sql,original_row"`
 }
 
 // UpdateTaskBackupStrategy
@@ -73,7 +73,7 @@ type BackupSqlData struct {
 	OriginSQL      string   `json:"origin_sql"`
 	OriginTaskId   uint     `json:"origin_task_id"`
 	BackupSqls     []string `json:"backup_sqls"`
-	BackupStrategy string   `json:"backup_strategy" enums:"none,manual,reverse_sql,origin_row"`
+	BackupStrategy string   `json:"backup_strategy" enums:"none,manual,reverse_sql,original_row"`
 	InstanceName   string   `json:"instance_name"`
 	InstanceId     string   `json:"instance_id"`
 	ExecStatus     string   `json:"exec_status"`
