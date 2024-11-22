@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/actiontech/sqle/sqle/driver"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/model"
 	"golang.org/x/text/language"
@@ -118,7 +119,7 @@ func toBackupTask(a *action, sql *model.ExecuteSQL) (BackupTask, error) {
 	case string(BackupStrategyReverseSql):
 		// 当用户不选择备份策略或选择了反向SQL
 		return &BackupReverseSql{
-			action: a,
+			plugin: a.plugin,
 			BaseBackupTask: BaseBackupTask{
 				ID:                backupTask.ID,
 				ExecTaskId:        sql.TaskId,
@@ -216,7 +217,7 @@ type BackupManually struct {
 
 type BackupReverseSql struct {
 	BaseBackupTask
-	action *action
+	plugin driver.Plugin
 }
 
 // TODO 不同数据库的备份方式可能不同,备份动作，应该放到插件里面
@@ -246,12 +247,12 @@ func (backup *BackupReverseSql) Backup() (backupErr error) {
 		return err
 	}
 	// generate reverse sql
-	rollbackSQL, info, updateStatusErr := backup.action.plugin.GenRollbackSQL(context.TODO(), backup.ExecuteSql)
+	rollbackSQL, info, updateStatusErr := backup.plugin.GenRollbackSQL(context.TODO(), backup.ExecuteSql)
 	if updateStatusErr != nil {
 		return updateStatusErr
 	}
 	// set backup execute result
-	backup.BaseBackupTask.BackupExecResult = info.GetStrInLang(language.Chinese)
+	backup.BackupExecResult = info.GetStrInLang(language.Chinese)
 	if backup.BaseBackupTask.BackupExecResult == "" {
 		backup.BaseBackupTask.BackupExecResult = string(BackupStatusSucceed)
 	}
