@@ -109,8 +109,13 @@ func CreateInstanceAuditPlan(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	instID, err := strconv.Atoi(req.InstanceId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	// check instance
-	inst, exist, err := dms.GetInstancesById(c.Request().Context(), req.InstanceId)
+	inst, exist, err := dms.GetInstanceInProjectById(c.Request().Context(), projectUid, uint64(instID))
 	if !exist {
 		return controller.JSONBaseErrorReq(c, ErrInstanceNotExist)
 	} else if err != nil {
