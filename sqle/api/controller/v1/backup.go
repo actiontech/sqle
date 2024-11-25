@@ -23,7 +23,7 @@ type UpdateSqlBackupStrategyReq struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/tasks/audits/{task_id}/sqls/{sql_id}/backup_strategy [patch]
 func UpdateSqlBackupStrategy(c echo.Context) error {
-	return nil
+	return updateSqlBackupStrategy(c)
 }
 
 type UpdateTaskBackupStrategyReq struct {
