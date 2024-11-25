@@ -105,6 +105,8 @@ const (
 	DDLNotAllowRenaming                                = "ddl_not_allow_renaming"
 	DDLCheckObjectNameIsUpperAndLowerLetterMixed       = "ddl_check_object_name_is_upper_and_lower_letter_mixed"
 	DDLCheckFieldNotNUllMustContainDefaultValue        = "ddl_check_field_not_null_must_contain_default_value"
+	DDLCheckIndexNameExisted                           = "ddl_check_index_name_existed"
+	DDLCheckTableRowLength                             = "ddl_check_table_row_length"
 )
 
 // inspector DML rules
@@ -169,6 +171,8 @@ const (
 	ConfigOptimizeIndexEnabled     = "optimize_index_enabled"
 	ConfigDMLExplainPreCheckEnable = "dml_enable_explain_pre_check"
 	ConfigSQLIsExecuted            = "sql_is_executed"
+	ConfigAvoidSet                 = "config_avoid_set"
+	ConfigCheckEventScheduler      = "config_check_event_scheduler"
 )
 
 type RuleHandlerInput struct {
@@ -1880,6 +1884,62 @@ var RuleHandlers = []RuleHandler{
 		AllowOffline: true,
 		Message:      "禁止使用rename或change对表名字段名进行修改",
 		Func:         ddlNotAllowRenaming,
+	},
+	{
+		Rule: driver.Rule{
+			Name:       DDLCheckIndexNameExisted,
+			Desc:       "索引必须设置索引名",
+			Annotation: "普通索引定义索引名，且名称遵循固定的命名规范、避免特殊字符的使用，可以提高代码的可读性、可维护性，并减少潜在的兼容性和语法问题。",
+			Level:      driver.RuleLevelNormal,
+			Category:   RuleTypeNamingConvention,
+		},
+		AllowOffline: true,
+		Message:      "索引必须设置索引名",
+		Func:         checkIndexNameExisted,
+	},
+	{
+		Rule: driver.Rule{
+			Name:       DDLCheckTableRowLength,
+			Desc:       "表设计做到行不跨页",
+			Annotation: "在表设计时,应该尽量确保每一行数据都不会跨越数据页(Page)的边界,以提高数据的读取和写入性能,减少物理I/O操作,并优化存储空间的利用率。",
+			Level:      driver.RuleLevelWarn,
+			Category:   RuleTypeDDLConvention,
+			Params: params.Params{
+				&params.Param{
+					Key:   DefaultSingleParamKeyName,
+					Value: "65535",
+					Desc:  "最大行长 (byte)",
+					Type:  params.ParamTypeInt,
+				},
+			},
+		},
+		AllowOffline: true,
+		Message:      "表设计做到行不跨页",
+		Func:         checkTableRowLength,
+	},
+	{
+		Rule: driver.Rule{
+			Name:       ConfigAvoidSet,
+			Desc:       "不允许使用SET操作",
+			Annotation: "禁止使用SET命令来修改MySQL的系统参数,以确保数据库的稳定性、一致性和安全性。",
+			Level:      driver.RuleLevelError,
+			Category:   RuleTypeGlobalConfig,
+		},
+		AllowOffline: true,
+		Message:      "不允许使用SET操作",
+		Func:         avoidSet,
+	},
+	{
+		Rule: driver.Rule{
+			Name:       ConfigCheckEventScheduler,
+			Desc:       "禁止使用event scheduler",
+			Annotation: "禁用MySQL的事件调度器(event_scheduler),以提高数据库的安全性、稳定性和可控性,避免非预期的事件执行对系统造成影响。",
+			Level:      driver.RuleLevelError,
+			Category:   RuleTypeGlobalConfig,
+		},
+		AllowOffline: true,
+		Message:      "禁止使用event schedule",
+		Func:         checkEventScheduler,
 	},
 }
 
@@ -4352,12 +4412,13 @@ var createTriggerReg1 = regexp.MustCompile(`(?i)create[\s]+trigger[\s]+[\S\s]+be
 var createTriggerReg2 = regexp.MustCompile(`(?i)create[\s]+[\s\S]+[\s]+trigger[\s]+[\S\s]+before|after`)
 
 // CREATE
-//    [DEFINER = user]
-//    TRIGGER trigger_name
-//    trigger_time trigger_event
-//    ON tbl_name FOR EACH ROW
-//    [trigger_order]
-//    trigger_body
+//
+//	[DEFINER = user]
+//	TRIGGER trigger_name
+//	trigger_time trigger_event
+//	ON tbl_name FOR EACH ROW
+//	[trigger_order]
+//	trigger_body
 //
 // ref:https://dev.mysql.com/doc/refman/8.0/en/create-trigger.html
 //
@@ -4378,10 +4439,11 @@ var createFunctionReg1 = regexp.MustCompile(`(?i)create[\s]+function[\s]+[\S\s]+
 var createFunctionReg2 = regexp.MustCompile(`(?i)create[\s]+[\s\S]+[\s]+function[\s]+[\S\s]+returns`)
 
 // CREATE
-//    [DEFINER = user]
-//    FUNCTION sp_name ([func_parameter[,...]])
-//    RETURNS type
-//    [characteristic ...] routine_body
+//
+//	[DEFINER = user]
+//	FUNCTION sp_name ([func_parameter[,...]])
+//	RETURNS type
+//	[characteristic ...] routine_body
 //
 // ref: https://dev.mysql.com/doc/refman/5.7/en/create-procedure.html
 // For now, we do character matching for CREATE FUNCTION Statement. Maybe we need
@@ -4401,9 +4463,10 @@ var createProcedureReg1 = regexp.MustCompile(`(?i)create[\s]+procedure[\s]+[\S\s
 var createProcedureReg2 = regexp.MustCompile(`(?i)create[\s]+[\s\S]+[\s]+procedure[\s]+[\S\s]+`)
 
 // CREATE
-//    [DEFINER = user]
-//    PROCEDURE sp_name ([proc_parameter[,...]])
-//    [characteristic ...] routine_body
+//
+//	[DEFINER = user]
+//	PROCEDURE sp_name ([proc_parameter[,...]])
+//	[characteristic ...] routine_body
 //
 // ref: https://dev.mysql.com/doc/refman/8.0/en/create-procedure.html
 // For now, we do character matching for CREATE PROCEDURE Statement. Maybe we need
@@ -5094,6 +5157,285 @@ func ddlNotAllowRenaming(input *RuleHandlerInput) error {
 				return nil
 			}
 		}
+	}
+	return nil
+}
+
+func checkIndexNameExisted(input *RuleHandlerInput) error {
+	indexNameNotExisted := false
+	switch stmt := input.Node.(type) {
+	case *ast.CreateTableStmt:
+		for _, constraint := range stmt.Constraints {
+			switch constraint.Tp {
+			case ast.ConstraintIndex, ast.ConstraintUniqIndex, ast.ConstraintKey, ast.ConstraintUniqKey:
+				if constraint.Name == "" {
+					indexNameNotExisted = true
+				}
+			default:
+				continue
+			}
+			if indexNameNotExisted {
+				break
+			}
+		}
+	case *ast.AlterTableStmt:
+		for _, spec := range stmt.Specs {
+			if spec.Tp == ast.AlterTableAddConstraint && IsIndexConstraint(spec.Constraint.Tp) {
+				// 遍历Keys
+				if spec.Constraint.Name == "" {
+					indexNameNotExisted = true
+					break
+				}
+			}
+		}
+	default:
+		return nil
+	}
+	if indexNameNotExisted {
+		addResult(input.Res, input.Rule, DDLCheckIndexNameExisted)
+	}
+	return nil
+}
+
+func IsIndexConstraint(constraintType ast.ConstraintType) bool {
+	return constraintType == ast.ConstraintIndex || constraintType == ast.ConstraintUniqIndex || constraintType == ast.ConstraintKey || constraintType == ast.ConstraintUniqKey
+}
+
+func checkTableRowLength(input *RuleHandlerInput) error {
+	var rowLengthLimit = input.Rule.Params.GetParam(DefaultSingleParamKeyName).Int()
+	rowLength := 0
+	switch stmt := input.Node.(type) {
+	case *ast.CreateTableStmt:
+		charsetNum := GetTableCharsetNum(stmt.Options)
+		for _, col := range stmt.Cols {
+			colCharsetNum := MappingCharsetLength(col.Tp.Charset)
+			// 可能会设置列级别的字符集,例如: username VARCHAR(50) CHARACTER SET
+			if charsetNum != colCharsetNum {
+				charsetNum = colCharsetNum
+			}
+			oneColumnLength := ComputeOneColumnLength(col, charsetNum)
+			rowLength += oneColumnLength
+		}
+	case *ast.AlterTableStmt:
+		// 获取在线表信息
+		tableStmt, tableExist, err := input.Ctx.GetCreateTableStmt(stmt.Table)
+		if err != nil {
+			return err
+		}
+		if !tableExist {
+			return nil
+		}
+		charsetNum := GetTableCharsetNum(tableStmt.Options)
+		columnLengthMap := make(map[string]int, len(tableStmt.Cols))
+		// 计算原表的长度
+		for _, col := range tableStmt.Cols {
+			colCharsetNum := MappingCharsetLength(col.Tp.Charset)
+			if charsetNum != colCharsetNum {
+				charsetNum = colCharsetNum
+			}
+			oneColumnLength := ComputeOneColumnLength(col, charsetNum)
+			rowLength += oneColumnLength
+			columnLengthMap[col.Name.String()] = oneColumnLength
+		}
+		// 计算alter语句修改列之后的长度
+		for _, alteredSpec := range stmt.Specs {
+			for _, alterCol := range alteredSpec.NewColumns {
+				if alterCol.Tp == nil {
+					// 不是对于列类型相关的变更
+					continue
+				}
+				// 可能会设置列级别的字符集, username VARCHAR(50) CHARACTER SET
+				colCharsetNum := MappingCharsetLength(alterCol.Tp.Charset)
+				if charsetNum != colCharsetNum {
+					charsetNum = colCharsetNum
+				}
+				if alteredSpec.Tp == ast.AlterTableAddColumns {
+					rowLength += ComputeOneColumnLength(alterCol, charsetNum)
+				}
+				if alteredSpec.Tp == ast.AlterTableModifyColumn {
+					// 如果是修改某个字段，减去原来字段的长度，使用新的字段长度
+					rowLength -= columnLengthMap[alterCol.Name.String()]
+					rowLength += ComputeOneColumnLength(alterCol, charsetNum)
+				}
+			}
+		}
+	default:
+		return nil
+	}
+	if rowLength > rowLengthLimit {
+		addResult(input.Res, input.Rule, DDLCheckTableRowLength)
+	}
+	return nil
+}
+
+func GetTableCharsetNum(options []*ast.TableOption) int {
+	charsetNum := 4
+	for _, opt := range options {
+		if opt.Tp == ast.TableOptionCharset {
+			charsetNum = MappingCharsetLength(opt.StrValue)
+		}
+	}
+	return charsetNum
+}
+
+// ComputeOneColumnLength 计算一个列的长度
+// https://dev.mysql.com/doc/refman/8.0/en/column-count-limit.html#row-size-limits
+// +------------------+---------------------------+---------------------+-----------------------------------------------+
+// | 数据类型分类      | 数据类型名称              | 存储大小（字节）    | 描述                                          |
+// +------------------+---------------------------+---------------------+-----------------------------------------------+
+// | 数值类型         |                         数值类型包括整数和浮点数                                     |
+// +------------------+---------------------------+---------------------+-----------------------------------------------+
+// |                  | TINYINT                   | 1                   | 有符号范围：-128 到 127；无符号范围：0 到 255 |
+// |                  | SMALLINT                  | 2                   | 有符号范围：-32,768 到 32,767                 |
+// |                  | MEDIUMINT                 | 3                   | 有符号范围：-8,388,608 到 8,388,607           |
+// |                  | INT (或 INTEGER)          | 4                   | 有符号范围：-2,147,483,648 到 2,147,483,647   |
+// |                  | BIGINT                    | 8                   | 有符号范围：-9,223,372,036,854,775,808 到     |
+// |                  |                           |                     | 9,223,372,036,854,775,807                     |
+// |                  | DECIMAL (或 NUMERIC)      | 取决于定义           | 精确的定点数，用于存储货币等精确数据          |
+// |                  | FLOAT                     | 4 或 8              | 单精度浮点数（近似值）                        |
+// |                  | DOUBLE (或 REAL)          | 8                   | 双精度浮点数（近似值）                        |
+// +------------------+---------------------------+---------------------+-----------------------------------------------+
+// | 日期与时间类型    |                         用于存储日期、时间或日期-时间的组合                          |
+// +------------------+---------------------------+---------------------+-----------------------------------------------+
+// |                  | DATE                      | 3                   | 日期格式：YYYY-MM-DD                          |
+// |                  | DATETIME                  | 8                   | 日期和时间格式：YYYY-MM-DD HH:MM:SS           |
+// |                  | TIMESTAMP                 | 4                   | 时间戳格式：YYYY-MM-DD HH:MM:SS，同 UTC 对齐  |
+// |                  | TIME                      | 3                   | 时间格式：HH:MM:SS                            |
+// |                  | YEAR                      | 1                   | 年份格式：YYYY                                |
+// +------------------+---------------------------+---------------------+-----------------------------------------------+
+// | 字符串类型        |                         字符串类型包括固定长度和可变长度的字符存储                  |
+// +------------------+---------------------------+---------------------+-----------------------------------------------+
+// |                  | CHAR(M)                  | M (1 到 255)        | 固定长度字符串，存储长度指定为 M              |
+// |                  | VARCHAR(M)               | M+1 或 M+2          | 可变长度字符串，M 最大为 65535（取决于行大小）|
+// +------------------+---------------------------+---------------------+-----------------------------------------------+
+func ComputeOneColumnLength(columnDef *ast.ColumnDef, charsetNum int) int {
+	oneColumnLength := 0
+	switch columnDef.Tp.Tp {
+	case mysql.TypeVarchar:
+		// 0~255 长度需要一个字节存储长度
+		lLength := 1
+		if columnDef.Tp.Flen > 255 {
+			// > 255 需要两个字节来存储长度
+			lLength = 2
+		}
+		// length * charsetNum + notNull + lLength
+		oneColumnLength = columnDef.Tp.Flen*charsetNum + OptionNotNullLength(columnDef.Options) + lLength
+	case mysql.TypeString:
+		oneColumnLength = columnDef.Tp.Flen*charsetNum + OptionNotNullLength(columnDef.Options)
+	case mysql.TypeYear, mysql.TypeTiny:
+		oneColumnLength = 1 + OptionNotNullLength(columnDef.Options)
+	case mysql.TypeDate, mysql.TypeInt24:
+		// DATE MEDIUMINT
+		oneColumnLength = 3 + OptionNotNullLength(columnDef.Options)
+	case mysql.TypeDuration:
+		// TIME
+		oneColumnLength = 3 + OptionNotNullLength(columnDef.Options) + typeTimePrecisionLength(columnDef.Tp.Decimal)
+	case mysql.TypeDatetime:
+		oneColumnLength = 5 + OptionNotNullLength(columnDef.Options) + typeTimePrecisionLength(columnDef.Tp.Decimal)
+	case mysql.TypeTimestamp:
+		oneColumnLength = 4 + OptionNotNullLength(columnDef.Options) + typeTimePrecisionLength(columnDef.Tp.Decimal)
+	case mysql.TypeShort:
+		// SMALLINT
+		oneColumnLength = 2 + OptionNotNullLength(columnDef.Options)
+	case mysql.TypeLong, mysql.TypeFloat:
+		// INT FLOAT
+		oneColumnLength = 4 + OptionNotNullLength(columnDef.Options)
+	case mysql.TypeLonglong:
+		// BIGINT
+		oneColumnLength = 8 + OptionNotNullLength(columnDef.Options)
+	case mysql.TypeDouble:
+		// BIGINT DOUBLE REAL
+		oneColumnLength = 8 + OptionNotNullLength(columnDef.Options)
+	case mysql.TypeNewDecimal:
+		// 整数部分
+		partition := (columnDef.Tp.Flen - columnDef.Tp.Decimal) / 9
+		oneColumnLength += partition * 4
+		oneColumnLength += decimalLeftoverLength((columnDef.Tp.Flen - columnDef.Tp.Decimal) % 9)
+		// 小数部分
+		decimalPartition := columnDef.Tp.Decimal / 9
+		oneColumnLength += decimalPartition * 4
+		oneColumnLength += decimalLeftoverLength((columnDef.Tp.Decimal) % 9)
+	}
+	return oneColumnLength
+}
+
+// typeTimePrecisionLength 时间类型会根据精度的不同有不同的存储大小
+// decimal bytes
+// 0       0
+// 1,2     1
+// 3,4     2
+// 5,6     3
+func typeTimePrecisionLength(decimal int) int {
+	if decimal < 0 {
+		return 0
+	} else if decimal < 3 {
+		return 1
+	} else if decimal < 5 {
+		return 2
+	} else if decimal < 7 {
+		return 3
+	}
+	return 0
+}
+
+// decimalLeftoverLength decimal被9整除后的部分，根据位数使用相印字节数
+// leftover bytes
+// 1-2      1
+// 3-4      2
+// 5-6      3
+// 7-9      4
+func decimalLeftoverLength(leftover int) int {
+	if leftover < 0 {
+		return 0
+	} else if leftover < 3 {
+		return 1
+	} else if leftover < 5 {
+		return 2
+	} else if leftover < 7 {
+		return 3
+	} else if leftover < 10 {
+		return 4
+	}
+	return 0
+}
+
+// OptionNotNullLength 当有not null 约束时会占用一个字节
+func OptionNotNullLength(columnOptions []*ast.ColumnOption) int {
+	for _, option := range columnOptions {
+		if option.Tp == ast.ColumnOptionNotNull {
+			return 0
+		}
+	}
+	return 1
+}
+
+// MappingCharsetLength 不同的字符集会用不同数量表示一个字符
+func MappingCharsetLength(charset string) int {
+	charNum := 4
+	switch charset {
+	case "utf8mb4", "utf16", "utf16le", "utf32":
+		charNum = 4
+	case "utf8":
+		charNum = 3
+	default:
+		charNum = 4
+	}
+	return charNum
+}
+
+func avoidSet(input *RuleHandlerInput) error {
+	switch input.Node.(type) {
+	case *ast.SetStmt:
+		addResult(input.Res, input.Rule, ConfigAvoidSet)
+	default:
+		return nil
+	}
+	return nil
+}
+
+func checkEventScheduler(input *RuleHandlerInput) error {
+	if utils.IsOpenEventScheduler(input.Node.Text()) {
+		addResult(input.Res, input.Rule, input.Rule.Name)
 	}
 	return nil
 }
