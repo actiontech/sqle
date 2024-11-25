@@ -509,5 +509,15 @@ func (BackupService) UpdateBackupStrategyForSql(sqlId, backupStrategy string) er
 	default:
 		return fmt.Errorf("strategy %v is unsupported", backupStrategy)
 	}
-	return model.GetStorage().UpdateBackupStrategyForSql(sqlId, backupStrategy, "该备份状态由人工手动修改")
+	return model.GetStorage().UpdateBackupStrategyForSql(sqlId, backupStrategy, "该备份策略由人工手动修改")
+}
+
+func (BackupService) BatchUpdateBackupStrategyForTask(taskId, backupStrategy string) error {
+	switch backupStrategy {
+	case string(BackupStrategyManually), string(BackupStrategyNone), string(BackupStrategyOriginalRow), string(BackupStrategyReverseSql):
+	default:
+		return fmt.Errorf("strategy %v is unsupported", backupStrategy)
+	}
+
+	return model.GetStorage().BatchUpdateBackupStrategyForTask(taskId, backupStrategy, "该备份策略由人工手动批量修改")
 }

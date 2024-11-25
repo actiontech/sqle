@@ -241,3 +241,10 @@ func (s *Storage) UpdateBackupStrategyForSql(sqlId string, backupStrategy, backu
 		"backup_strategy_tip": backupStrategyTip,
 	}).Error
 }
+
+func (s *Storage) BatchUpdateBackupStrategyForTask(taskId string, backupStrategy, backupStrategyTip string) error {
+	return s.db.Model(&BackupTask{}).Where("task_id = ?", taskId).Updates(map[string]interface{}{
+		"backup_strategy":     backupStrategy,
+		"backup_strategy_tip": backupStrategyTip,
+	}).Error
+}

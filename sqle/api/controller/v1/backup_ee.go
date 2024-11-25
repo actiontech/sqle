@@ -89,3 +89,34 @@ func updateSqlBackupStrategy(c echo.Context) error{
 	}
 	return controller.JSONBaseErrorReq(c, nil)
 }
+
+func updateTaskBackupStrategy(c echo.Context) error{
+	req := new(UpdateTaskBackupStrategyReq)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+	taskId := c.Param("task_id")
+
+	task, err := getTaskById(c.Request().Context(), taskId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	err = CheckCurrentUserCanOpTask(c, task)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	backupService := server.BackupService{}
+
+	err = backupService.CanUpdateStrategyForTask(task)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	err = backupService.BatchUpdateBackupStrategyForTask(taskId, req.Strategy)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return controller.JSONBaseErrorReq(c, nil)
+}
