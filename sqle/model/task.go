@@ -119,6 +119,7 @@ const (
 	SQLExecuteStatusManuallyExecuted = "manually_executed"
 	SQLExecuteStatusTerminateSucc    = "terminate_succeeded"
 	SQLExecuteStatusTerminateFailed  = "terminate_failed"
+	SQLExecuteStatusExecuteRollback  = "execute_rollback" // 执行回滚
 )
 
 type BaseSQL struct {
@@ -320,7 +321,7 @@ type ExecuteSQL struct {
 	// it used for deduplication in one audit task.
 	AuditFingerprint string `json:"audit_fingerprint" gorm:"index;type:char(32)"`
 	// AuditLevel has four level: error, warn, notice, normal.
-	AuditLevel string `json:"audit_level" gorm:"type:varchar(255)"`
+	AuditLevel string      `json:"audit_level" gorm:"type:varchar(255)"`
 	BackupTask *BackupTask `json:"-" gorm:"foreignkey:execute_sql_id"`
 }
 
@@ -591,19 +592,19 @@ func (s *Storage) GetTaskByInstanceId(instanceId uint64) ([]Task, error) {
 }
 
 type TaskSQLDetail struct {
-	Id                uint           `json:"id"`
-	Number            uint           `json:"number"`
-	Description       string         `json:"description"`
-	ExecSQL           string         `json:"exec_sql"`
-	SQLSourceFile     sql.NullString `json:"sql_source_file"`
-	SQLStartLine      uint64         `json:"sql_start_line"`
-	AuditResults      AuditResults   `json:"audit_results"`
-	AuditLevel        string         `json:"audit_level"`
-	AuditStatus       string         `json:"audit_status"`
-	ExecResult        string         `json:"exec_result"`
-	ExecStatus        string         `json:"exec_status"`
-	RollbackSQL       sql.NullString `json:"rollback_sql"`
-	SQLType           sql.NullString `json:"sql_type"`
+	Id            uint           `json:"id"`
+	Number        uint           `json:"number"`
+	Description   string         `json:"description"`
+	ExecSQL       string         `json:"exec_sql"`
+	SQLSourceFile sql.NullString `json:"sql_source_file"`
+	SQLStartLine  uint64         `json:"sql_start_line"`
+	AuditResults  AuditResults   `json:"audit_results"`
+	AuditLevel    string         `json:"audit_level"`
+	AuditStatus   string         `json:"audit_status"`
+	ExecResult    string         `json:"exec_result"`
+	ExecStatus    string         `json:"exec_status"`
+	RollbackSQL   sql.NullString `json:"rollback_sql"`
+	SQLType       sql.NullString `json:"sql_type"`
 }
 
 func (t *TaskSQLDetail) GetAuditResults(ctx context.Context) string {
@@ -613,7 +614,6 @@ func (t *TaskSQLDetail) GetAuditResults(ctx context.Context) string {
 
 	return t.AuditResults.String(ctx)
 }
-
 
 var taskSQLsQueryTpl = `SELECT e_sql.id,e_sql.number, e_sql.description, e_sql.content AS exec_sql,  e_sql.source_file AS sql_source_file, e_sql.start_line AS sql_start_line, e_sql.sql_type,
 e_sql.audit_results, e_sql.audit_level, e_sql.audit_status, e_sql.exec_result, e_sql.exec_status
