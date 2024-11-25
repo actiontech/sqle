@@ -43,7 +43,7 @@ type UpdateTaskBackupStrategyReq struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/tasks/audits/{task_id}/backup_strategy [patch]
 func UpdateTaskBackupStrategy(c echo.Context) error {
-	return nil
+	return updateTaskBackupStrategy(c)
 }
 
 // @Summary 下载工单中的SQL备份

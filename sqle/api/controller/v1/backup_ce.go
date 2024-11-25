@@ -18,6 +18,10 @@ func createRollbackWorkflow(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errors.NewNotSupportBackupErr())
 }
 
-func updateSqlBackupStrategy(c echo.Context) error{
+func updateSqlBackupStrategy(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, errors.NewNotSupportGetAuditPlanAnalysisDataErr())
+}
+
+func updateTaskBackupStrategy(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errors.NewNotSupportGetAuditPlanAnalysisDataErr())
 }
