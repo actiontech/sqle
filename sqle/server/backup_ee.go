@@ -521,3 +521,8 @@ func (BackupService) BatchUpdateBackupStrategyForTask(taskId, backupStrategy str
 
 	return model.GetStorage().BatchUpdateBackupStrategyForTask(taskId, backupStrategy, "该备份策略由人工手动批量修改")
 }
+
+// 如果数据源的备份开启，工单的备份关闭，则返回true
+func (BackupService) IsBackupConflictWithInstance(taskEnableBackup, instanceEnableBackup bool) bool {
+	return instanceEnableBackup && !taskEnableBackup
+}
