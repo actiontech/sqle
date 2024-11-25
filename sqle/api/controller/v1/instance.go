@@ -425,6 +425,7 @@ func GetInstanceTips(c echo.Context) error {
 			Host:               inst.Host,
 			Port:               inst.Port,
 			WorkflowTemplateId: uint32(template.ID),
+			EnableBackup:       inst.EnableBackup,
 		}
 		instanceTipsResV1 = append(instanceTipsResV1, instanceTipRes)
 	}

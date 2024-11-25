@@ -38,3 +38,7 @@ func (BackupService) GetRollbackSqlsMap(taskId uint) (map[uint][]string, error) 
 func (BackupService) GetBackupTasksMap(taskId uint) (backupTaskMap, error) {
 	return make(backupTaskMap), nil
 }
+
+func (BackupService) IsBackupConflictWithInstance(taskEnableBackup, instanceEnableBackup bool) bool {
+	return false
+}
