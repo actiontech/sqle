@@ -1085,23 +1085,27 @@ func GetWorkflowV2(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
+	associatedRollbackWorkflows, err := s.GetRollbackWorkflowByOriginalWorkflowId(workflow.WorkflowId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 	return c.JSON(http.StatusOK, &GetWorkflowResV2{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertWorkflowToRes(c.Request().Context(), workflow, sqlVersion, associatedWorkflows),
+		Data:    convertWorkflowToRes(c.Request().Context(), workflow, sqlVersion, associatedWorkflows, associatedRollbackWorkflows),
 	})
 }
 
-func convertWorkflowToRes(ctx context.Context, workflow *model.Workflow, sqlVersion *model.SqlVersion, associatedWorkflows []*model.AssociatedStageWorkflow) *WorkflowResV2 {
+func convertWorkflowToRes(ctx context.Context, workflow *model.Workflow, sqlVersion *model.SqlVersion, associatedWorkflows []*model.AssociatedStageWorkflow, associatedRollbackWorkflows []*model.RollbackWorkflowOriginalWorkflowsRelation) *WorkflowResV2 {
 	workflowRes := &WorkflowResV2{
-		Name:                     workflow.Subject,
-		WorkflowID:               workflow.WorkflowId,
-		Desc:                     workflow.Desc,
-		Mode:                     workflow.Mode,
-		ExecMode:                 workflow.ExecMode,
-		CreateUser:               dms.GetUserNameWithDelTag(workflow.CreateUserId),
-		CreateTime:               &workflow.CreatedAt,
-		AssociatedStageWorkflows: convertAssociatedWorkflowToRes(associatedWorkflows),
+		Name:                        workflow.Subject,
+		WorkflowID:                  workflow.WorkflowId,
+		Desc:                        workflow.Desc,
+		Mode:                        workflow.Mode,
+		ExecMode:                    workflow.ExecMode,
+		CreateUser:                  dms.GetUserNameWithDelTag(workflow.CreateUserId),
+		CreateTime:                  &workflow.CreatedAt,
+		AssociatedStageWorkflows:    convertAssociatedWorkflowToRes(associatedWorkflows),
+		AssociatedRollbackWorkflows: convertAssociatedRollbackWorkflowToRes(associatedRollbackWorkflows),
 	}
 	sqlVersionRes := &SqlVersion{
 		SqlVersionId:   sqlVersion.ID,
@@ -1136,6 +1140,19 @@ func convertAssociatedWorkflowToRes(associatedWorkflows []*model.AssociatedStage
 	}
 
 	return associatedWorkflowsRes
+}
+
+func convertAssociatedRollbackWorkflowToRes(associatedRollbackWorkflow []*model.RollbackWorkflowOriginalWorkflowsRelation) []*AssociatedRollbackWorkflow {
+	ret := make([]*AssociatedRollbackWorkflow, 0, len(associatedRollbackWorkflow))
+	for _, rollbackWorkflow := range associatedRollbackWorkflow {
+		ret = append(ret, &AssociatedRollbackWorkflow{
+			WorkflowID:   rollbackWorkflow.RollbackWorkflowId,
+			WorkflowName: rollbackWorkflow.RollbackWorkflowSubject,
+			Status:       rollbackWorkflow.RollbackWorkflowStatus,
+		},
+		)
+	}
+	return ret
 }
 
 func convertWorkflowRecordToRes(ctx context.Context, workflow *model.Workflow, record *model.WorkflowRecord) *WorkflowRecordResV2 {
