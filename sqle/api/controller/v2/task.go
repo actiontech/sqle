@@ -109,7 +109,20 @@ func GetTaskSQLs(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
+	relations, err := s.GetExecuteSqlRollbackWorkflowRelationByTaskId(task.ID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	associatedRollbackWorkflowsMap := make(map[uint][]*AssociatedRollbackWorkflow)
+	workflowIdMap := make(map[string]struct{})
+	for _, relation := range relations {
+		associatedRollbackWorkflowsMap[relation.ExecuteSqlId] = append(associatedRollbackWorkflowsMap[relation.ExecuteSqlId], &AssociatedRollbackWorkflow{
+			WorkflowID:   relation.RollbackWorkflowId,
+			WorkflowName: relation.RollbackWorkflowSubject,
+			Status:       relation.RollbackWorkflowStatus,
+		})
+		workflowIdMap[relation.RollbackWorkflowId] = struct{}{}
+	}
 	taskSQLsRes := make([]*AuditTaskSQLResV2, 0, len(taskSQLs))
 	backupService := server.BackupService{}
 	rollbackSqlMap, err := backupService.GetRollbackSqlsMap(task.ID)
@@ -138,6 +151,7 @@ func GetTaskSQLs(c echo.Context) error {
 			SQLType:                     taskSQL.SQLType.String,
 			BackupStrategy:              backupTaskMap.GetBackupStrategy(taskSQL.Id),
 			BackupStrategyTip:           backupTaskMap.GetBackupStrategyTip(taskSQL.Id),
+			AssociatedRollbackWorkflows: associatedRollbackWorkflowsMap[taskSQL.Id],
 		}
 		for i := range taskSQL.AuditResults {
 			ar := taskSQL.AuditResults[i]
