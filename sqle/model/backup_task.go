@@ -6,6 +6,8 @@ import (
 
 func init() {
 	autoMigrateList = append(autoMigrateList, &BackupTask{})
+	autoMigrateList = append(autoMigrateList, &ExecuteSqlRollbackWorkflows{})
+	autoMigrateList = append(autoMigrateList, &RollbackWorkflowOriginalWorkflows{})
 }
 
 type BackupTask struct {
@@ -19,4 +21,29 @@ type BackupTask struct {
 	BackupExecResult  string `gorm:"column:backup_exec_result;size:255;not null;default:''"`                                          // 备份任务的执行结果
 	SchemaName        string `gorm:"column:schema_name;size:50;not null;default:''"`                                                  // 备份的SQL对应的schema
 	TableName         string `gorm:"column:table_name;size:50;not null;default:''"`                                                   // 备份的SQL对应的table
+}
+
+type ExecuteSqlRollbackWorkflows struct {
+	gorm.Model
+	TaskId             uint   `gorm:"column:task_id;index;not null"`        // 执行的SQL所属的执行任务id
+	ExecuteSqlId       uint   `gorm:"column:execute_sql_id;not null"`       // 执行的SQL的id
+	RollbackWorkflowId string `gorm:"column:rollback_workflow_id;not null"` // 回滚工单的id
+}
+
+type RollbackWorkflowOriginalWorkflows struct {
+	gorm.Model
+	OriginalWorkflowId string `gorm:"column:original_workflow_id;not null"` // 原始工单的id
+	RollbackWorkflowId string `gorm:"column:rollback_workflow_id;not null"` // 回滚工单的id
+}
+
+type ExecuteSqlRollbackWorkflowsRelation struct {
+	ExecuteSqlRollbackWorkflows
+	RollbackWorkflowSubject string `gorm:"column:subject" json:"subject"`
+	RollbackWorkflowStatus  string `gorm:"column:status"  json:"status"`
+}
+
+type RollbackWorkflowOriginalWorkflowsRelation struct {
+	RollbackWorkflowOriginalWorkflows
+	RollbackWorkflowSubject string `gorm:"column:subject" json:"subject"`
+	RollbackWorkflowStatus  string `gorm:"column:status"  json:"status"`
 }
