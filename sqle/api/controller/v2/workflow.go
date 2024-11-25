@@ -10,7 +10,7 @@ import (
 	"time"
 
 	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
-	"github.com/actiontech/dms/pkg/dms-common/dmsobject"
+
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/errors"
@@ -583,10 +583,10 @@ func convertWorkflowToTasksSummaryRes(taskDetails []*model.WorkflowTasksSummaryD
 }
 
 type CreateWorkflowReqV2 struct {
-	Subject              string `json:"workflow_subject" form:"workflow_subject" valid:"required,name"`
-	Desc                 string `json:"desc" form:"desc"`
-	SqlVersionID         *uint  `json:"sql_version_id" form:"sql_version_id"`
-	TaskIds              []uint `json:"task_ids" form:"task_ids" valid:"required"`
+	Subject      string `json:"workflow_subject" form:"workflow_subject" valid:"required,name"`
+	Desc         string `json:"desc" form:"desc"`
+	SqlVersionID *uint  `json:"sql_version_id" form:"sql_version_id"`
+	TaskIds      []uint `json:"task_ids" form:"task_ids" valid:"required"`
 }
 
 type CreateWorkflowResV2 struct {
@@ -616,159 +616,24 @@ func CreateWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"), true)
+	w, err := v1.CheckWorkflowCreationPrerequisites(c, c.Param("project_name"), req.TaskIds)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
-	s := model.GetStorage()
-
-	user, err := controller.GetCurrentUser(c, dms.GetUser)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	// dms-todo: 与 dms 生成uid保持一致
-	workflowId, err := utils.GenUid()
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	_, exist, err := s.GetWorkflowByProjectAndWorkflowId(projectUid, workflowId)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataExist, fmt.Errorf("workflow[%v] is exist", workflowId)))
-	}
-
-	taskIds := utils.RemoveDuplicateUint(req.TaskIds)
-	if len(taskIds) > v1.MaximumDataSourceNum {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, fmt.Errorf("the max task count of a workflow is %v", v1.MaximumDataSourceNum)))
-	}
-	tasks, foundAllTasks, err := s.GetTasksByIds(taskIds)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !foundAllTasks {
-		return controller.JSONBaseErrorReq(c, errors.NewTaskNoExistOrNoAccessErr())
-	}
-
-	instanceIdsOfWorkflowTasks := make([]uint64, 0, len(tasks))
-	for _, task := range tasks {
-		instanceIdsOfWorkflowTasks = append(instanceIdsOfWorkflowTasks, task.InstanceId)
-	}
-
-	instancesOfWorkflowInProject, err := dms.GetInstancesInProjectByIds(c.Request().Context(), projectUid, instanceIdsOfWorkflowTasks)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	projectInstanceMap := map[uint64]*model.Instance{}
-	for _, instance := range instancesOfWorkflowInProject {
-		projectInstanceMap[instance.ID] = instance
-	}
-
-	workflowTemplate, exist, err := s.GetWorkflowTemplateByProjectId(model.ProjectUID(projectUid))
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("the task instance is not bound workflow template")))
-	}
-
-	for _, task := range tasks {
-		if instance, ok := projectInstanceMap[task.InstanceId]; ok {
-			task.Instance = instance
-		}
-
-		if task.Instance == nil {
-			return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist. taskId=%v", task.ID)))
-		}
-
-		if task.Instance.ProjectId != projectUid {
-			return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("instance is not in project. taskId=%v", task.ID)))
-		}
-
-		count, err := s.GetTaskSQLCountByTaskID(task.ID)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-		if count == 0 {
-			return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("workflow's execute sql is null. taskId=%v", task.ID)))
-		}
-
-		if task.CreateUserId != uint64(user.ID) {
-			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict,
-				fmt.Errorf("the task is not created by yourself. taskId=%v", task.ID)))
-		}
-
-		if task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile {
-			return controller.JSONBaseErrorReq(c, v1.ErrForbidMyBatisXMLTask(task.ID))
-		}
-	}
-
-	// check user role operations
-	{
-
-		canOperationInstance, err := v1.CheckCurrentUserCanCreateWorkflow(c.Request().Context(), projectUid, user, tasks)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-		if !canOperationInstance {
-			return controller.JSONBaseErrorReq(c, fmt.Errorf("can't operation instance"))
-		}
-
-	}
-
-	count, err := s.GetWorkflowRecordCountByTaskIds(taskIds)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if count > 0 {
-		return controller.JSONBaseErrorReq(c, errTaskHasBeenUsed)
-	}
-
-	stepTemplates, err := s.GetWorkflowStepsByTemplateId(workflowTemplate.ID)
-	if err != nil {
-		return err
-	}
-
-	memberWithPermissions, _, err := dmsobject.ListMembersInProject(c.Request().Context(), controller.GetDMSServerAddress(), dmsV1.ListMembersForInternalReq{
-		ProjectUid: projectUid,
-		PageSize:   999,
-		PageIndex:  1,
-	})
-	if err != nil {
-		return err
-	}
-
+	//
 	if req.SqlVersionID != nil {
-		err = sqlversion.CheckInstanceInWorkflowCanAssociateToTheFirstStageOfVersion(*req.SqlVersionID, instanceIdsOfWorkflowTasks)
+		err = sqlversion.CheckInstanceInWorkflowCanAssociateToTheFirstStageOfVersion(*req.SqlVersionID, w.InstanceIds)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
-
-	err = s.CreateWorkflowV2(req.Subject, workflowId, req.Desc, user, tasks, stepTemplates, model.ProjectUID(projectUid), req.SqlVersionID, nil, nil, func(tasks []*model.Task) (auditWorkflowUsers, canExecUser [][]*model.User) {
-		auditWorkflowUsers = make([][]*model.User, len(tasks))
-		executorWorkflowUsers := make([][]*model.User, len(tasks))
-		for i, task := range tasks {
-			auditWorkflowUsers[i], err = v1.GetCanOpInstanceUsers(memberWithPermissions, task.Instance, []dmsV1.OpPermissionType{dmsV1.OpPermissionTypeAuditWorkflow})
-			if err != nil {
-				return
-			}
-			executorWorkflowUsers[i], err = v1.GetCanOpInstanceUsers(memberWithPermissions, task.Instance, []dmsV1.OpPermissionType{dmsV1.OpPermissionTypeExecuteWorkflow})
-			if err != nil {
-				return
-			}
-		}
-		return auditWorkflowUsers, executorWorkflowUsers
-	})
+	s := model.GetStorage()
+	// create workflow with checking op permission in task
+	err = s.CreateWorkflowV2(req.Subject, w.WorkflowId, req.Desc, w.User, w.Tasks, w.StepTemplates, w.ProjectId, req.SqlVersionID, nil, nil, w.GetOpExecUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
+	// get workflow and send notification
 	workflow, exist, err := s.GetLastWorkflow()
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
