@@ -74,21 +74,22 @@ type AuditFileResp struct {
 
 func convertTaskToRes(task *model.Task) *AuditTaskResV1 {
 	return &AuditTaskResV1{
-		Id:              task.ID,
-		InstanceName:    task.InstanceName(),
-		InstanceDbType:  task.DBType,
-		InstanceSchema:  task.Schema,
-		AuditLevel:      task.AuditLevel,
-		Score:           task.Score,
-		PassRate:        task.PassRate,
-		Status:          task.Status,
-		SQLSource:       task.SQLSource,
-		ExecStartTime:   task.ExecStartAt,
-		ExecEndTime:     task.ExecEndAt,
-		ExecMode:        task.ExecMode,
-		EnableBackup:    task.EnableBackup,
-		FileOrderMethod: task.FileOrderMethod,
-		AuditFiles:      convertToAuditFileResp(task.AuditFiles),
+		Id:                         task.ID,
+		InstanceName:               task.InstanceName(),
+		InstanceDbType:             task.DBType,
+		InstanceSchema:             task.Schema,
+		AuditLevel:                 task.AuditLevel,
+		Score:                      task.Score,
+		PassRate:                   task.PassRate,
+		Status:                     task.Status,
+		SQLSource:                  task.SQLSource,
+		ExecStartTime:              task.ExecStartAt,
+		ExecEndTime:                task.ExecEndAt,
+		ExecMode:                   task.ExecMode,
+		EnableBackup:               task.EnableBackup,
+		BackupConflictWithInstance: server.BackupService{}.IsBackupConflictWithInstance(task.EnableBackup, task.InstanceEnableBackup),
+		FileOrderMethod:            task.FileOrderMethod,
+		AuditFiles:                 convertToAuditFileResp(task.AuditFiles),
 	}
 }
 func convertToAuditFileResp(files []*model.AuditFile) []AuditFileResp {
@@ -359,6 +360,7 @@ func CreateAndAuditTask(c echo.Context) error {
 		}
 		task.EnableBackup = req.EnableBackup
 	}
+	task.InstanceEnableBackup = tmpInst.EnableBackup
 
 	err = convertSQLSourceEncodingFromTask(task)
 	if err != nil {
@@ -1050,6 +1052,10 @@ func AuditTaskGroupV1(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 		defer plugin.Close(context.TODO())
+		instanceMap := make(map[uint64]*model.Instance)
+		for _, instance := range instances {
+			instanceMap[instance.ID] = instance
+		}
 
 		for _, task := range tasks {
 			task.SQLSource = sqls.SourceType
@@ -1064,6 +1070,11 @@ func AuditTaskGroupV1(c echo.Context) error {
 					return controller.JSONBaseErrorReq(c, err)
 				}
 				task.EnableBackup = req.EnableBackup
+			}
+			if instance, exist := instanceMap[task.InstanceId]; exist {
+				task.InstanceEnableBackup = instance.EnableBackup
+			} else {
+				return controller.JSONBaseErrorReq(c, fmt.Errorf("can not find instance in task"))
 			}
 			err := addSQLsFromFileToTasks(sqls, task, plugin)
 			if err != nil {
@@ -1111,18 +1122,19 @@ func AuditTaskGroupV1(c echo.Context) error {
 	tasksRes := make([]*AuditTaskResV1, len(tasks))
 	for i, task := range tasks {
 		tasksRes[i] = &AuditTaskResV1{
-			Id:             task.ID,
-			InstanceName:   task.InstanceName(),
-			InstanceDbType: task.DBType,
-			InstanceSchema: task.Schema,
-			AuditLevel:     task.AuditLevel,
-			Score:          task.Score,
-			PassRate:       task.PassRate,
-			Status:         task.Status,
-			EnableBackup:   task.EnableBackup,
-			SQLSource:      task.SQLSource,
-			ExecStartTime:  task.ExecStartAt,
-			ExecEndTime:    task.ExecEndAt,
+			Id:                         task.ID,
+			InstanceName:               task.InstanceName(),
+			InstanceDbType:             task.DBType,
+			InstanceSchema:             task.Schema,
+			AuditLevel:                 task.AuditLevel,
+			Score:                      task.Score,
+			PassRate:                   task.PassRate,
+			Status:                     task.Status,
+			EnableBackup:               task.EnableBackup,
+			BackupConflictWithInstance: server.BackupService{}.IsBackupConflictWithInstance(task.EnableBackup, task.InstanceEnableBackup),
+			SQLSource:                  task.SQLSource,
+			ExecStartTime:              task.ExecStartAt,
+			ExecEndTime:                task.ExecEndAt,
 		}
 	}
 
