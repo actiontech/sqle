@@ -165,3 +165,53 @@ AND backup_strategy = "reverse_sql"
 
 {{ end }}
 `
+
+
+type ExecuteSqlRollbackWorkflows struct {
+	gorm.Model
+	TaskId             uint   `gorm:"column:task_id;index;not null"`
+	ExecuteSqlId       uint   `gorm:"column:execute_sql_id;not null"`
+	RollbackWorkflowId string `gorm:"column:rollback_workflow_id;not null"`
+}
+
+type RollbackWorkflowOriginalWorkflows struct {
+	gorm.Model
+	OriginalWorkflowId string `gorm:"column:original_workflow_id;not null"`
+	RollbackWorkflowId string `gorm:"column:rollback_workflow_id;not null"`
+}
+
+func CreateRollbackWorkflowOriginalWorkflowRelation(txDB *gorm.DB, relation *RollbackWorkflowOriginalWorkflows) error {
+	return txDB.Model(&RollbackWorkflowOriginalWorkflows{}).Create(&relation).Error
+}
+
+func CreateExecuteSqlRollbackWorkflowRelation(txDB *gorm.DB, relations []ExecuteSqlRollbackWorkflows) error {
+	return txDB.Model(&ExecuteSqlRollbackWorkflows{}).Create(&relations).Error
+}
+
+func UpdateWorkflowByWorkflowId(txDB *gorm.DB, workflowRecordId string, workflowParam map[string]interface{}) error {
+	err := txDB.Model(&WorkflowRecord{}).
+		Where("id = ?", workflowRecordId).
+		Updates(workflowParam).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func BatchUpdateExecuteSqlExecuteStatus(txDB *gorm.DB, executeSqlIds []uint, status string) error {
+	return txDB.Model(&ExecuteSQL{}).Where("id IN ?", executeSqlIds).Update("exec_status", status).Error
+}
+
+func UpdateTaskStatusByIDsTx(txDB *gorm.DB, taskIDs []uint, attrs map[string]interface{}) error {
+	err := txDB.Model(&Task{}).Where("id IN (?)", taskIDs).Updates(attrs).Error
+	return errors.ConnectStorageErrWrapper(err)
+}
+
+func (s *Storage) GetExecuteSQLByTaskId(taskId uint) ([]*ExecuteSQL, error) {
+	var executeSqls []*ExecuteSQL
+	err := s.db.Model(&ExecuteSQL{}).Where("task_id = ?", taskId).Find(&executeSqls).Error
+	if err != nil {
+		return nil, err
+	}
+	return executeSqls, nil
+}

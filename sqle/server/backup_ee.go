@@ -361,3 +361,134 @@ func (BackupService) GetBackupSqlList(ctx context.Context, workflowId, filterIns
 	}
 	return backupSqlList, count, nil
 }
+
+func (BackupService) CheckOriginWorkflowCanRollback(workflowId string) (*model.Workflow, error) {
+	s := model.GetStorage()
+	workflow, exist, err := s.GetWorkflowByWorkflowId(workflowId)
+	if err != nil {
+		return nil, err
+	}
+	if !exist {
+		return nil, fmt.Errorf("workflow does not exist")
+	}
+	switch workflow.Record.Status {
+	case model.WorkflowStatusCancel, model.WorkflowStatusExecFailed, model.WorkflowStatusReject, model.SQLAuditStatusFinished:
+		return workflow, nil
+	default:
+		return nil, fmt.Errorf("can not create rollback workflow, because the status of origin workflow is %v", workflow.Record.Status)
+	}
+}
+
+func (BackupService) CheckSqlsTasksMappingRelationship(taskIds, sqlIds []uint) (map[uint][]uint, error) {
+	s := model.GetStorage()
+	// check origin sql belongs to origin task
+	originSqlMap := make(map[uint] /* sql id  */ uint /* task id */)
+	for _, taskId := range taskIds {
+		executeSQLs, err := s.GetExecuteSQLByTaskId(taskId)
+		if err != nil {
+			return nil, err
+		}
+		for _, sql := range executeSQLs {
+			originSqlMap[sql.ID] = taskId
+		}
+	}
+	originTaskSqlMap := make(map[uint] /* task id  */ []uint /* sql id */)
+	for _, execSqlId := range sqlIds {
+		if taskId, exist := originSqlMap[execSqlId]; exist {
+			originTaskSqlMap[taskId] = append(originTaskSqlMap[taskId], execSqlId)
+		} else {
+			return nil, fmt.Errorf("sql id %v not exist in task %v", execSqlId, taskId)
+		}
+	}
+	return originTaskSqlMap, nil
+}
+
+/*
+备份服务更新原有工单:
+ 1. 建立原有工单、原有工单的任务以及原有工单的执行SQL和回滚工单的关联关系
+ 2. 更新原有工单的状态至执行失败
+ 3. 更新开启回滚工单的原有SQL对应的任务的任务状态至执行失败
+ 4. 更新开启回滚工单的SQL对应其原有工单的SQL状态为执行回滚
+*/
+func (svc BackupService) UpdateOriginWorkflow(rollbackWorkflowId, originWorkflowId, originWorkflowRecordId string, originTaskSqlsMap map[uint] /* task id  */ []uint /* sql id */) error {
+	var sqlsNeedToRollback []uint
+	var tasksNeedToRollback []uint
+	for taskId, sqlId := range originTaskSqlsMap {
+		sqlsNeedToRollback = append(sqlsNeedToRollback, sqlId...)
+		tasksNeedToRollback = append(tasksNeedToRollback, taskId)
+	}
+	return model.GetStorage().Tx(
+		func(txDB *gorm.DB) error {
+			err := svc.AssociateRollbackWorkflowWithOriginTaskSqls(txDB, rollbackWorkflowId, originTaskSqlsMap)
+			if err != nil {
+				return err
+			}
+			err = svc.AssociateRollbackWorkflowWithOriginalWorkflow(txDB, rollbackWorkflowId, originWorkflowId)
+			if err != nil {
+				return err
+			}
+			err = svc.UpdateOriginSqlExecuteStatusToExecuteRollback(txDB, sqlsNeedToRollback)
+			if err != nil {
+				return err
+			}
+			err = svc.UpdateOriginTaskStatusToExecuteFailed(txDB, tasksNeedToRollback)
+			if err != nil {
+				return err
+			}
+			err = svc.UpdateOriginWorkflowStatusToExecuteFailed(txDB, originWorkflowRecordId)
+			if err != nil {
+				return err
+			}
+			return nil
+
+		},
+	)
+}
+
+func (BackupService) AssociateRollbackWorkflowWithOriginTaskSqls(txDB *gorm.DB, rollbackWorkflowId string, originTaskSqlMap map[uint][]uint) error {
+	var relations []model.ExecuteSqlRollbackWorkflows
+	for taskId, rollbackSqlIds := range originTaskSqlMap {
+		for _, sqlId := range rollbackSqlIds {
+			relations = append(relations, model.ExecuteSqlRollbackWorkflows{
+				TaskId:             taskId,
+				ExecuteSqlId:       sqlId,
+				RollbackWorkflowId: rollbackWorkflowId,
+			})
+		}
+	}
+	err := model.CreateExecuteSqlRollbackWorkflowRelation(txDB, relations)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (BackupService) AssociateRollbackWorkflowWithOriginalWorkflow(txDB *gorm.DB, rollbackWorkflowId, originWorkflowId string) error {
+	err := model.CreateRollbackWorkflowOriginalWorkflowRelation(txDB, &model.RollbackWorkflowOriginalWorkflows{
+		RollbackWorkflowId: rollbackWorkflowId,
+		OriginalWorkflowId: originWorkflowId,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// 更新原始工单的状态为执行失败
+func (BackupService) UpdateOriginWorkflowStatusToExecuteFailed(txDB *gorm.DB, originWorkflowId string) error {
+	return model.UpdateWorkflowByWorkflowId(txDB, originWorkflowId, map[string]interface{}{
+		"status": model.WorkflowStatusExecFailed,
+	})
+}
+
+// 在原始工单执行失败的SQL处，可以看到已回滚/正在回滚的标记
+func (BackupService) UpdateOriginSqlExecuteStatusToExecuteRollback(txDB *gorm.DB, sqlsNeedToRollback []uint) error {
+	return model.BatchUpdateExecuteSqlExecuteStatus(txDB, sqlsNeedToRollback, model.SQLExecuteStatusExecuteRollback)
+}
+
+// 在原始工单执行失败的SQL对应的task的状态变更为失败
+func (BackupService) UpdateOriginTaskStatusToExecuteFailed(txDB *gorm.DB, tasksNeedToRollback []uint) error {
+	return model.UpdateTaskStatusByIDsTx(txDB, tasksNeedToRollback, map[string]interface{}{
+		"status": model.TaskStatusExecuteFailed,
+	})
+}
