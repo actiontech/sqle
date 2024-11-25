@@ -495,3 +495,19 @@ func (BackupService) UpdateOriginTaskStatusToExecuteFailed(txDB *gorm.DB, tasksN
 		"status": model.TaskStatusExecuteFailed,
 	})
 }
+
+func (BackupService) CanUpdateStrategyForTask(task *model.Task) error {
+	if task.EnableBackup {
+		return nil
+	}
+	return fmt.Errorf("can not update strategy for task which did not enable backup, task id %v", task.ID)
+}
+
+func (BackupService) UpdateBackupStrategyForSql(sqlId, backupStrategy string) error {
+	switch backupStrategy {
+	case string(BackupStrategyManually), string(BackupStrategyNone), string(BackupStrategyOriginalRow), string(BackupStrategyReverseSql):
+	default:
+		return fmt.Errorf("strategy %v is unsupported", backupStrategy)
+	}
+	return model.GetStorage().UpdateBackupStrategyForSql(sqlId, backupStrategy, "该备份状态由人工手动修改")
+}

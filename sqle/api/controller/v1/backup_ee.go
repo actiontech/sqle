@@ -6,6 +6,7 @@ package v1
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/server"
@@ -47,4 +48,44 @@ func toApiBackupSqlData(sqlList []*server.BackupSqlData) []*BackupSqlData {
 		})
 	}
 	return apiSqlList
+}
+
+func updateSqlBackupStrategy(c echo.Context) error{
+	req := new(UpdateSqlBackupStrategyReq)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+	taskId := c.Param("task_id")
+	sqlId := c.Param("sql_id")
+	sqlIdInt, err := strconv.Atoi(sqlId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	task, err := getTaskById(c.Request().Context(), taskId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	err = CheckCurrentUserCanOpTask(c, task)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	backupService := server.BackupService{}
+	err = backupService.CanUpdateStrategyForTask(task)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	_, err = backupService.CheckSqlsTasksMappingRelationship([]uint{task.ID}, []uint{uint(sqlIdInt)})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	err = backupService.UpdateBackupStrategyForSql(sqlId, req.Strategy)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return controller.JSONBaseErrorReq(c, nil)
 }

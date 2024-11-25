@@ -234,3 +234,10 @@ func (s *Storage) GetRollbackWorkflowByOriginalWorkflowId(workflowId string) ([]
 	}
 	return relations, nil
 }
+
+func (s *Storage) UpdateBackupStrategyForSql(sqlId string, backupStrategy, backupStrategyTip string) error {
+	return s.db.Model(&BackupTask{}).Where("execute_sql_id = ?", sqlId).Updates(map[string]interface{}{
+		"backup_strategy":     backupStrategy,
+		"backup_strategy_tip": backupStrategyTip,
+	}).Error
+}
