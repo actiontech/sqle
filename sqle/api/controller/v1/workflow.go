@@ -480,6 +480,170 @@ func CreateWorkflowV1(c echo.Context) error {
 	return nil
 }
 
+type CheckedWorkflowInfo struct {
+	WorkflowId    string
+	User          *model.User
+	Tasks         []*model.Task
+	InstanceIds   []uint64
+	StepTemplates []*model.WorkflowStepTemplate
+	ProjectId     model.ProjectUID
+	GetOpExecUser func([]*model.Task) (canAuditUsers [][]*model.User, canExecUsers [][]*model.User)
+}
+
+func CheckWorkflowCreationPrerequisites(c echo.Context, projectName string, taskIdsToBindWithWorkflow []uint) (*CheckedWorkflowInfo, error) {
+	// check project
+	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), projectName, true)
+	if err != nil {
+		return nil, err
+	}
+
+	s := model.GetStorage()
+	// check user
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
+	if err != nil {
+		return nil, err
+	}
+
+	// new workflow check id duplicated
+	// dms-todo: 与 dms 生成uid保持一致
+	workflowId, err := utils.GenUid()
+	if err != nil {
+		return nil, err
+	}
+
+	_, exist, err := s.GetWorkflowByProjectAndWorkflowId(projectUid, workflowId)
+	if err != nil {
+		return nil, err
+	}
+	if exist {
+		return nil, errors.New(errors.DataExist, fmt.Errorf("workflow[%v] is exist", workflowId))
+	}
+	// check task exist
+	taskIds := utils.RemoveDuplicateUint(taskIdsToBindWithWorkflow)
+	if len(taskIds) > MaximumDataSourceNum {
+		return nil, errors.New(errors.DataConflict, fmt.Errorf("the max task count of a workflow is %v", MaximumDataSourceNum))
+	}
+	tasks, foundAllTasks, err := s.GetTasksByIds(taskIds)
+	if err != nil {
+		return nil, err
+	}
+	if !foundAllTasks {
+		return nil, errors.NewTaskNoExistOrNoAccessErr()
+	}
+	// check instances exist
+	instanceIdsOfWorkflowTasks := make([]uint64, 0, len(tasks))
+	for _, task := range tasks {
+		instanceIdsOfWorkflowTasks = append(instanceIdsOfWorkflowTasks, task.InstanceId)
+	}
+
+	instancesOfWorkflowInProject, err := dms.GetInstancesInProjectByIds(c.Request().Context(), projectUid, instanceIdsOfWorkflowTasks)
+	if err != nil {
+		return nil, err
+	}
+
+	projectInstanceMap := map[uint64]*model.Instance{}
+	for _, instance := range instancesOfWorkflowInProject {
+		projectInstanceMap[instance.ID] = instance
+	}
+	// check template of workflow exist
+	workflowTemplate, exist, err := s.GetWorkflowTemplateByProjectId(model.ProjectUID(projectUid))
+	if err != nil {
+		return nil, err
+	}
+	if !exist {
+		return nil, errors.New(errors.DataNotExist, fmt.Errorf("the task instance is not bound workflow template"))
+	}
+	// check tasks instance
+	for _, task := range tasks {
+		if instance, ok := projectInstanceMap[task.InstanceId]; ok {
+			task.Instance = instance
+		}
+
+		if task.Instance == nil {
+			return nil, errors.New(errors.DataNotExist, fmt.Errorf("instance is not exist. taskId=%v", task.ID))
+		}
+
+		if task.Instance.ProjectId != projectUid {
+			return nil, errors.New(errors.DataNotExist, fmt.Errorf("instance is not in project. taskId=%v", task.ID))
+		}
+
+		count, err := s.GetTaskSQLCountByTaskID(task.ID)
+		if err != nil {
+			return nil, err
+		}
+		if count == 0 {
+			return nil, errors.New(errors.DataInvalid, fmt.Errorf("workflow's execute sql is null. taskId=%v", task.ID))
+		}
+
+		if task.CreateUserId != uint64(user.ID) {
+			return nil, errors.New(errors.DataConflict,
+				fmt.Errorf("the task is not created by yourself. taskId=%v", task.ID))
+		}
+
+		if task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile {
+			return nil, ErrForbidMyBatisXMLTask(task.ID)
+		}
+	}
+
+	// check user role operations
+	{
+
+		canOperationInstance, err := CheckCurrentUserCanCreateWorkflow(c.Request().Context(), projectUid, user, tasks)
+		if err != nil {
+			return nil, err
+		}
+		if !canOperationInstance {
+			return nil, fmt.Errorf("can't operation instance")
+		}
+
+	}
+	// check if task been used
+	count, err := s.GetWorkflowRecordCountByTaskIds(taskIds)
+	if err != nil {
+		return nil, err
+	}
+	if count > 0 {
+		return nil, errors.New(errors.DataConflict, fmt.Errorf("task has been used in other workflow"))
+	}
+
+	stepTemplates, err := s.GetWorkflowStepsByTemplateId(workflowTemplate.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	memberWithPermissions, _, err := dmsobject.ListMembersInProject(c.Request().Context(), controller.GetDMSServerAddress(), dmsV1.ListMembersForInternalReq{
+		ProjectUid: projectUid,
+		PageSize:   999,
+		PageIndex:  1,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &CheckedWorkflowInfo{
+		WorkflowId:    workflowId,
+		User:          user,
+		Tasks:         tasks,
+		StepTemplates: stepTemplates,
+		InstanceIds:   instanceIdsOfWorkflowTasks,
+		ProjectId:     model.ProjectUID(projectUid),
+		GetOpExecUser: func(tasks []*model.Task) (auditWorkflowUsers, canExecUser [][]*model.User) {
+			auditWorkflowUsers = make([][]*model.User, len(tasks))
+			executorWorkflowUsers := make([][]*model.User, len(tasks))
+			for i, task := range tasks {
+				auditWorkflowUsers[i], err = GetCanOpInstanceUsers(memberWithPermissions, task.Instance, []dmsV1.OpPermissionType{dmsV1.OpPermissionTypeAuditWorkflow})
+				if err != nil {
+					return
+				}
+				executorWorkflowUsers[i], err = GetCanOpInstanceUsers(memberWithPermissions, task.Instance, []dmsV1.OpPermissionType{dmsV1.OpPermissionTypeExecuteWorkflow})
+				if err != nil {
+					return
+				}
+			}
+			return auditWorkflowUsers, executorWorkflowUsers
+		},
+	}, nil
+}
+
 func CheckWorkflowCanCommit(template *model.WorkflowTemplate, tasks []*model.Task) error {
 	allowLevel := driverV2.RuleLevelError
 	if template.AllowSubmitWhenLessAuditLevel != "" {
