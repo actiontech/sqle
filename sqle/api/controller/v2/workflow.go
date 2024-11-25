@@ -765,9 +765,10 @@ func UpdateWorkflowV2(c echo.Context) error {
 	if count > 0 {
 		return controller.JSONBaseErrorReq(c, errTaskHasBeenUsed)
 	}
-	// When workflow status is rejected or exec failed, the user can recommit workflow. And the workflow becomes waiting for the audit process.
-	// TODO 重试工单 驳回、成功、失败、关闭的工单可以重试，应抽离出一个函数
-	if workflow.Record.Status != model.WorkflowStatusReject && workflow.Record.Status != model.WorkflowStatusExecFailed {
+	// 重试工单 驳回、成功、失败、关闭的工单可以重试，重试后，工单状态变更为待审核
+	switch workflow.Record.Status {
+	case model.WorkflowStatusReject, model.WorkflowStatusFinish, model.WorkflowStatusExecFailed, model.WorkflowStatusCancel:
+	default:
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
 			fmt.Errorf("workflow status is %s, not allow operate it", workflow.Record.Status)))
 	}
