@@ -134,5 +134,5 @@ type CreateRollbackWorkflowResData struct {
 // @Success 200 {object} CreateRollbackWorkflowRes
 // @router /v1/projects/{project_name}/workflows/{workflow_id}/rollback [post]
 func CreateRollbackWorkflow(c echo.Context) error {
-	return nil
+	return createRollbackWorkflow(c)
 }

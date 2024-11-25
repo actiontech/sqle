@@ -13,3 +13,7 @@ import (
 func getBackupSqlList(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errors.NewNotSupportGetAuditPlanAnalysisDataErr())
 }
+
+func createRollbackWorkflow(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, errors.NewNotSupportGetAuditPlanAnalysisDataErr())
+}
