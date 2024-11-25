@@ -8,10 +8,12 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/driver"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/model"
 	"golang.org/x/text/language"
+	"gorm.io/gorm"
 )
 
 var ErrUnsupportedBackupInFileMode error = errors.New("enable backup in file mode is unsupported")
@@ -270,4 +272,92 @@ func (backup *BackupReverseSql) Backup() (backupErr error) {
 		return updateStatusErr
 	}
 	return nil
+}
+
+type BackupSqlData struct {
+	ExecOrder      uint     `json:"exec_order"`
+	ExecSqlID      uint     `json:"exec_sql_id"`
+	OriginSQL      string   `json:"origin_sql"`
+	OriginTaskId   uint     `json:"origin_task_id"`
+	BackupSqls     []string `json:"backup_sqls"`
+	BackupStrategy string   `json:"backup_strategy" enum:"none,manual,reverse_sql,original_row"`
+	InstanceName   string   `json:"instance_name"`
+	InstanceId     uint64   `json:"instance_id "`
+	ExecStatus     string   `json:"exec_status"`
+	Description    string   `json:"description"`
+}
+
+func (BackupService) GetBackupSqlList(ctx context.Context, workflowId, filterInstanceId, filterExecStatus string, limit, offset uint32) (backupSqlList []*BackupSqlData, count uint64, err error) {
+	s := model.GetStorage()
+	// 1. get origin sql filter by filters and limit and offset
+	data := map[string]interface{}{
+		"filter_workflow_id": workflowId,
+		"filter_exec_status": filterExecStatus,
+		"filter_instance_id": filterInstanceId,
+		"limit":              limit,
+		"offset":             offset,
+	}
+	sqlsOfWorkflow, count, err := s.GetWorkflowSqlsByReq(data)
+	if err != nil {
+		return nil, 0, err
+	}
+	if len(sqlsOfWorkflow) == 0 {
+		return []*BackupSqlData{}, 0, nil
+	}
+
+	// 2. get instance from dms
+	instanceIds := []uint64{}
+	instanceIdMap := make(map[uint64]struct{})
+	originSqlIds := make([]uint, 0, len(sqlsOfWorkflow))
+	for _, sql := range sqlsOfWorkflow {
+		if _, exist := instanceIdMap[sql.InstanceId]; !exist {
+			instanceIdMap[sql.InstanceId] = struct{}{}
+			instanceIds = append(instanceIds, sql.InstanceId)
+		}
+		originSqlIds = append(originSqlIds, sql.Id)
+	}
+	instances, err := dms.GetInstancesByIds(ctx, instanceIds)
+	if err != nil {
+		return nil, 0, err
+	}
+	instanceMap := make(map[uint64]*model.Instance, len(instances))
+	for _, instance := range instances {
+		instanceMap[instance.ID] = instance
+	}
+
+	// 3. get rollback sql
+	backupSqlMap := make(map[uint][]string)
+	if len(originSqlIds) > 0 {
+		backupSqls, err := s.GetRollbackSqlByFilters(map[string]interface{}{
+			"filter_execute_sql_ids": originSqlIds,
+		})
+		if err != nil {
+			return nil, 0, err
+		}
+		for _, backupSql := range backupSqls {
+			backupSqlMap[backupSql.OriginSqlId] = append(backupSqlMap[backupSql.OriginSqlId], backupSql.BackupSqls)
+		}
+	}
+
+	// 4. fill sqls with instance and rollback sqls content
+	backupSqlList = make([]*BackupSqlData, 0, len(sqlsOfWorkflow))
+	for _, originSql := range sqlsOfWorkflow {
+		var instanceName string
+		if inst, exist := instanceMap[originSql.InstanceId]; exist {
+			instanceName = inst.Name
+		}
+		backupSqlList = append(backupSqlList, &BackupSqlData{
+			ExecSqlID:      originSql.Id,
+			OriginTaskId:   originSql.TaskId,
+			ExecOrder:      originSql.ExecuteOrder,
+			OriginSQL:      originSql.ExecuteSql,
+			BackupSqls:     backupSqlMap[originSql.Id],
+			BackupStrategy: originSql.BackupStrategy,
+			InstanceName:   instanceName,
+			InstanceId:     originSql.InstanceId,
+			ExecStatus:     originSql.ExecStatus,
+			Description:    originSql.Description,
+		})
+	}
+	return backupSqlList, count, nil
 }
