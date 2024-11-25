@@ -166,20 +166,6 @@ AND backup_strategy = "reverse_sql"
 {{ end }}
 `
 
-
-type ExecuteSqlRollbackWorkflows struct {
-	gorm.Model
-	TaskId             uint   `gorm:"column:task_id;index;not null"`
-	ExecuteSqlId       uint   `gorm:"column:execute_sql_id;not null"`
-	RollbackWorkflowId string `gorm:"column:rollback_workflow_id;not null"`
-}
-
-type RollbackWorkflowOriginalWorkflows struct {
-	gorm.Model
-	OriginalWorkflowId string `gorm:"column:original_workflow_id;not null"`
-	RollbackWorkflowId string `gorm:"column:rollback_workflow_id;not null"`
-}
-
 func CreateRollbackWorkflowOriginalWorkflowRelation(txDB *gorm.DB, relation *RollbackWorkflowOriginalWorkflows) error {
 	return txDB.Model(&RollbackWorkflowOriginalWorkflows{}).Create(&relation).Error
 }
@@ -214,4 +200,38 @@ func (s *Storage) GetExecuteSQLByTaskId(taskId uint) ([]*ExecuteSQL, error) {
 		return nil, err
 	}
 	return executeSqls, nil
+}
+
+func (s *Storage) GetExecuteSqlRollbackWorkflowRelationByTaskId(taskId uint) ([]*ExecuteSqlRollbackWorkflowsRelation, error) {
+	var relations []*ExecuteSqlRollbackWorkflowsRelation
+	err := s.db.
+		Table("execute_sql_rollback_workflows").
+		Select("execute_sql_rollback_workflows.*,workflows.`subject`,workflow_records.`status`").
+		Joins(`
+			LEFT JOIN workflows ON workflows.workflow_id = execute_sql_rollback_workflows.rollback_workflow_id 
+			LEFT JOIN workflow_records ON workflows.workflow_record_id = workflow_records.id
+		`).
+		Where("execute_sql_rollback_workflows.task_id = ?", taskId).
+		Scan(&relations).Error
+	if err != nil {
+		return nil, err
+	}
+	return relations, nil
+}
+
+func (s *Storage) GetRollbackWorkflowByOriginalWorkflowId(workflowId string) ([]*RollbackWorkflowOriginalWorkflowsRelation, error) {
+	var relations []*RollbackWorkflowOriginalWorkflowsRelation
+	err := s.db.
+		Table("rollback_workflow_original_workflows").
+		Select("rollback_workflow_id,workflows.`subject`,workflow_records.`status`").
+		Joins(`
+			LEFT JOIN workflows ON workflows.workflow_id = rollback_workflow_original_workflows.rollback_workflow_id 
+			LEFT JOIN workflow_records ON workflows.workflow_record_id = workflow_records.id
+		`).
+		Where("original_workflow_id = ?", workflowId).
+		Scan(&relations).Error
+	if err != nil {
+		return nil, err
+	}
+	return relations, nil
 }
