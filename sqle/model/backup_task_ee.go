@@ -161,7 +161,6 @@ var reverseBackupSqlBodyTpl = `
 FROM backup_tasks 
 LEFT JOIN rollback_sql_detail ON backup_tasks.execute_sql_id = rollback_sql_detail.execute_sql_id
 WHERE backup_tasks.execute_sql_id IN ( {{range $index, $element := .filter_execute_sql_ids}}{{if $index}},{{end}}{{$element}}{{end}} )
-AND backup_strategy = "reverse_sql"
 
 {{ end }}
 `
