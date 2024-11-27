@@ -1857,7 +1857,7 @@ var sourceRuleHandlers = []*SourceHandler{
 			Name:       DMLCheckAffectedRows,
 			Desc:       plocale.DMLCheckAffectedRowsDesc,
 			Annotation: plocale.DMLCheckAffectedRowsAnnotation,
-			Level:      driverV2.RuleLevelError,
+			Level:      driverV2.RuleLevelWarn,
 			Category:   plocale.RuleTypeDMLConvention,
 			Params: []*SourceParam{
 				{
@@ -2001,7 +2001,7 @@ var sourceRuleHandlers = []*SourceHandler{
 			Name:       DMLCheckSelectRows,
 			Desc:       plocale.DMLCheckSelectRowsDesc,
 			Annotation: plocale.DMLCheckSelectRowsAnnotation,
-			Level:      driverV2.RuleLevelError,
+			Level:      driverV2.RuleLevelWarn,
 			Category:   plocale.RuleTypeDMLConvention,
 			Params: []*SourceParam{
 				{
