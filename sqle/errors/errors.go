@@ -154,3 +154,7 @@ func NewInstanceNoExistErr() error {
 func NewNotSupportGetSqlFileOrderMethodErr() error {
 	return New(EnterpriseEditionFeatures, fmt.Errorf("get sql file order method is enterprise version function"))
 }
+
+func NewNotSupportBackupErr() error {
+	return New(EnterpriseEditionFeatures, fmt.Errorf("backup and recovery is enterprise version function"))
+}
