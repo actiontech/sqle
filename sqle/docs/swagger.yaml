@@ -10524,7 +10524,7 @@ paths:
       summary: 获取工单下所有回滚SQL的列表
       tags:
       - workflow
-  /v1/projects/{project_name}/workflows/{workflow_id}/rollback:
+  /v1/projects/{project_name}/workflows/{workflow_id}/rollback_workflows:
     post:
       consumes:
       - application/json
