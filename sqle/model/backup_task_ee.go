@@ -25,7 +25,7 @@ update backup status and backup execute information
 func (s *Storage) UpdateBackupExecuteResult(task *BackupTask) error {
 	return s.db.Model(&BackupTask{}).
 		Where("id = ?", task.ID).
-		UpdateColumns(map[string]interface{}{
+		Updates(map[string]interface{}{
 			"backup_status":      task.BackupStatus,
 			"backup_exec_result": task.BackupExecResult,
 		}).Error

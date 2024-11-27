@@ -144,6 +144,9 @@ func toBackupTask(a *action, sql *model.ExecuteSQL) (BackupTask, error) {
 
 func (task BaseBackupTask) toModel() *model.BackupTask {
 	return &model.BackupTask{
+		Model: gorm.Model{
+			ID: task.ID,
+		},
 		TaskId:            task.ExecTaskId,
 		InstanceId:        task.InstanceId,
 		ExecuteSqlId:      task.ExecuteSqlId,
