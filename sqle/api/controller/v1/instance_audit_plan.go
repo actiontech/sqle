@@ -29,7 +29,6 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/server/auditplan"
-
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/labstack/echo/v4"
 	dry "github.com/ungerik/go-dry"
@@ -1422,13 +1421,10 @@ func AuditPlanTriggerSqlAudit(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	auditedSqls, err := auditplan.BatchAuditSQLs(auditPlanSqls, false)
+	auditedSqlList, err := auditplan.BatchAuditSQLs(auditPlanSqls, false)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	err = s.Save(auditedSqls)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	return controller.JSONBaseErrorReq(c, nil)
+
+	return controller.JSONBaseErrorReq(c, s.BatchSave(auditedSqlList, 50))
 }
