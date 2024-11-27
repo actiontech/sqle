@@ -13,6 +13,7 @@ import (
 	"text/template"
 	"time"
 
+	mysqlRule "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
@@ -441,6 +442,9 @@ func (s *Storage) CreateDefaultTemplateIfNotExist(projectId ProjectUID, rules ma
 			if rule.Level != driverV2.RuleLevelError {
 				continue
 			}
+			if forbiddenRules[dbType+"_"+rule.Name] {
+				continue
+			}
 			modelRule := GenerateRuleByDriverRule(rule, dbType)
 			ruleList = append(ruleList, RuleTemplateRule{
 				RuleTemplateId: t.ID,
@@ -456,6 +460,27 @@ func (s *Storage) CreateDefaultTemplateIfNotExist(projectId ProjectUID, rules ma
 	}
 
 	return nil
+}
+
+// 这里禁止了会向数据源下发SQL的规则，防止影响数据库性能
+var forbiddenRules = map[string]bool{
+	"MySQL_" + mysqlRule.DMLCheckSelectRows:                true,
+	"MySQL_" + mysqlRule.DMLCheckAffectedRows:              true,
+	"MySQL_" + mysqlRule.ConfigOptimizeIndexEnabled:        true,
+	"MySQL_" + mysqlRule.DDLCheckIndexOption:               true,
+	"MySQL_" + mysqlRule.DDLCheckCompositeIndexDistinction: true,
+	"Oracle_011":                       true,
+	"Oracle_012":                       true,
+	"Oracle_017":                       true,
+	"Oracle_019":                       true,
+	"Oracle_044":                       true,
+	"Oracle_046":                       true,
+	"Oracle_050":                       true,
+	"Oracle_077":                       true,
+	"Oracle_078":                       true,
+	"Oracle_080":                       true,
+	"SQL Server_ddl_check_index_count": true,
+	"SQL Server_ddl_check_index_column_with_blob": true,
 }
 
 func (s *Storage) GetDefaultRuleTemplateName(dbType string) string {
