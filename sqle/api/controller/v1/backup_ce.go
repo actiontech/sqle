@@ -11,9 +11,9 @@ import (
 )
 
 func getBackupSqlList(c echo.Context) error {
-	return controller.JSONBaseErrorReq(c, errors.NewNotSupportGetAuditPlanAnalysisDataErr())
+	return controller.JSONBaseErrorReq(c, errors.NewNotSupportBackupErr())
 }
 
 func createRollbackWorkflow(c echo.Context) error {
-	return controller.JSONBaseErrorReq(c, errors.NewNotSupportGetAuditPlanAnalysisDataErr())
+	return controller.JSONBaseErrorReq(c, errors.NewNotSupportBackupErr())
 }
