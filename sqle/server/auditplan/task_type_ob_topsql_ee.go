@@ -6,18 +6,22 @@ package auditplan
 import (
 	"context"
 	"fmt"
-	"strconv"
-
+	"github.com/actiontech/sqle/sqle/common"
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/driver"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/locale"
+	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/params"
+	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/sirupsen/logrus"
+	"strconv"
+	"time"
 )
 
 type ObForMysqlTopSQLTaskV2 struct {
+	obVersion string
 	DefaultTaskV2
 }
 
@@ -103,6 +107,7 @@ func (at *ObForMysqlTopSQLTaskV2) mergeSQL(originSQL, mergedSQL *SQLV2) {
 
 const (
 	// 通用采集项
+	OBMySQLSQLKeyQuerySQL           = "query_sql"
 	OBMySQLSQLKeySQLText            = "sql_text"
 	OBMySQLSQLInfoKeyFirstRequest   = "first_request"
 	OBMySQLSQLInfoKeyExecCount      = "exec_count"
@@ -121,21 +126,68 @@ const (
 	OBMySQLSQLInfoKeyBufferRead    = "buffer_read"
 )
 
-func (at *ObForMysqlTopSQLTaskV2) getCollectSQL(ap *AuditPlan) string {
-	topN := ap.Params.GetParam(paramKeyTopN).Int()
+const SQLViewNameOBV4Before string = "GV$SQL"
 
+/*
+查询OceanBase版本的SQL语句
+
+ 1. 根据文档查询到的支持范围包括：3.2.3-4.3.1(最新)
+ 2. 测试时使用OceanBase版本3.1.5，3.1.5也支持该用法
+
+参考链接：https://www.oceanbase.com/quicksearch?q=OB_VERSION
+*/
+const GetOceanbaseVersionSQL string = "SELECT OB_VERSION() FROM DUAL"
+
+func getOceanBaseVersion(inst *model.Instance, database string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
+	defer cancel()
+	plugin, err := common.NewDriverManagerWithoutAudit(log.NewEntry(), inst, database)
+	if err != nil {
+		return "", err
+	}
+	defer plugin.Close(context.TODO())
+	versionResult, err := plugin.Query(ctx, GetOceanbaseVersionSQL, &driverV2.QueryConf{TimeOutSecond: 20})
+	if err != nil {
+		return "", err
+	}
+	if len(versionResult.Column) == 1 && len(versionResult.Rows) == 1 {
+		return versionResult.Rows[0].Values[0].Value, nil
+	}
+	return "", fmt.Errorf("unexpected result of ob version")
+}
+
+// 根据ob不同的版本切换不同的性能视图
+// https://www.oceanbase.com/docs/common-oceanbase-database-cn-1000000001351398
+func (at *ObForMysqlTopSQLTaskV2) getViewNameAndSQLKeyByObVersion(obVersion string) (string, string) {
+	var viewName string = PlanCacheViewNameOBV4After
+	var sqlKeyName = OBMySQLSQLKeyQuerySQL
+	isLess, err := utils.IsVersionLessThan(obVersion, OceanBaseVersion4_0_0)
+	if err != nil {
+		log.Logger().Errorf("compare ocean base version failed, use default view name for top sql %v, error is %v", PlanCacheViewNameOBV4After, err)
+		isLess = false
+	}
+	if isLess {
+		viewName = SQLViewNameOBV4Before
+		sqlKeyName = OBMySQLSQLKeySQLText
+	}
+	return viewName, sqlKeyName
+}
+
+func (at *ObForMysqlTopSQLTaskV2) getCollectSQL(ap *AuditPlan, obVersion string) string {
+	topN := ap.Params.GetParam(paramKeyTopN).Int()
+	viewName, sqlKeyName := at.getViewNameAndSQLKeyByObVersion(obVersion)
 	switch ap.Params.GetParam(paramKeyIndicator).String() {
 	case OBMySQLIndicatorElapsedTime:
 		return fmt.Sprintf(`
 SELECT
-    SQL_TEXT AS %v, 
+    QUERY_SQL AS %v, 
     EXECUTIONS AS %v, 
     CEIL(AVG_EXE_USEC/1000) AS %v, 
     CEIL(SLOWEST_EXE_USEC/1000) AS %v, 
     FROM_UNIXTIME(TIME_TO_USEC(FIRST_LOAD_TIME)/1000000) AS %v,
     FROM_UNIXTIME(TIME_TO_USEC(LAST_ACTIVE_TIME)/1000000) AS %v
 FROM
-    OCEANBASE.GV$SQL
+    OCEANBASE.%v
 WHERE %v != ''
 GROUP BY
     SQL_ID
@@ -143,27 +195,28 @@ ORDER BY
     %v
 DESC
 LIMIT %v
-`, OBMySQLSQLKeySQLText,
+`, sqlKeyName,
 			OBMySQLSQLInfoKeyExecCount,
 			OBMySQLSQLInfoKeyAverageElapsed,
 			OBMySQLSQLInfoKeyMaxElapsed,
 			OBMySQLSQLInfoKeyFirstRequest,
 			OBMySQLSQLInfoKeyLastRequest,
-			OBMySQLSQLKeySQLText,
+			viewName,
+			sqlKeyName,
 			OBMySQLSQLInfoKeyMaxElapsed,
 			topN)
 
 	case OBMySQLIndicatorCPUTime:
 		return fmt.Sprintf(`
 SELECT
-    SQL_TEXT AS %v, 
+    QUERY_SQL AS %v, 
     EXECUTIONS AS %v, 
     CEIL(AVG_EXE_USEC/1000) AS %v,
     CEIL(CPU_TIME/EXECUTIONS/1000) AS %v, 
     FROM_UNIXTIME(TIME_TO_USEC(FIRST_LOAD_TIME)/1000000) AS %v,
     FROM_UNIXTIME(TIME_TO_USEC(LAST_ACTIVE_TIME)/1000000) AS %v
 FROM
-    OCEANBASE.GV$SQL
+    OCEANBASE.%v
 WHERE %v != ''
 GROUP BY
     SQL_ID
@@ -171,13 +224,14 @@ ORDER BY
     %v
 DESC
 LIMIT %v
-`, OBMySQLSQLKeySQLText,
+`, sqlKeyName,
 			OBMySQLSQLInfoKeyExecCount,
 			OBMySQLSQLInfoKeyAverageElapsed,
 			OBMySQLSQLInfoKeyAverageCPU,
 			OBMySQLSQLInfoKeyFirstRequest,
 			OBMySQLSQLInfoKeyLastRequest,
-			OBMySQLSQLKeySQLText,
+			viewName,
+			sqlKeyName,
 			OBMySQLSQLInfoKeyAverageCPU,
 			topN,
 		)
@@ -185,7 +239,7 @@ LIMIT %v
 	case OBMySQLIndicatorIOWait:
 		return fmt.Sprintf(`
 SELECT
-    SQL_TEXT AS %v, 
+    QUERY_SQL AS %v, 
     EXECUTIONS AS %v, 
     CEIL(USER_IO_WAIT_TIME/EXECUTIONS/1000) AS %v, 
     CEIL(BUFFER_GETS/EXECUTIONS) AS %v,
@@ -193,7 +247,7 @@ SELECT
     FROM_UNIXTIME(TIME_TO_USEC(FIRST_LOAD_TIME)/1000000) AS %v,
     FROM_UNIXTIME(TIME_TO_USEC(LAST_ACTIVE_TIME)/1000000) AS %v
 FROM
-    OCEANBASE.GV$SQL
+    OCEANBASE.%v
 WHERE %v != ''
 GROUP BY
     SQL_ID
@@ -201,14 +255,15 @@ ORDER BY
     %v
 DESC
 LIMIT %v
-`, OBMySQLSQLKeySQLText,
+`, sqlKeyName,
 			OBMySQLSQLInfoKeyExecCount,
 			OBMySQLSQLInfoKeyAverageIOWait,
 			OBMySQLSQLInfoKeyBufferRead,
 			OBMySQLSQLInfoKeyDiskRead,
 			OBMySQLSQLInfoKeyFirstRequest,
 			OBMySQLSQLInfoKeyLastRequest,
-			OBMySQLSQLKeySQLText,
+			viewName,
+			sqlKeyName,
 			OBMySQLSQLInfoKeyAverageIOWait,
 			topN,
 		)
@@ -245,7 +300,7 @@ func (at *ObForMysqlTopSQLTaskV2) collect(ap *AuditPlan, persist *model.Storage,
 		s := &DynPerformanceObForMySQLColumns{}
 		for i, value := range row.Values {
 			switch result.Column[i].Key {
-			case OBMySQLSQLKeySQLText:
+			case OBMySQLSQLKeySQLText, OBMySQLSQLKeyQuerySQL:
 				s.SQLText = value.Value
 			case OBMySQLSQLInfoKeyFirstRequest:
 				s.FirstQueryAt = value.Value
@@ -314,6 +369,14 @@ func (at *ObForMysqlTopSQLTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan
 		return nil, fmt.Errorf("instance: %v is not exist", ap.InstanceID)
 	}
 
+	if at.obVersion == "" {
+		at.obVersion, err = getOceanBaseVersion(inst, "")
+		if err != nil {
+			log.Logger().Errorf("get ocean base version failed, use default version %v, error is %v", OceanBaseVersion4_0_0, err)
+			at.obVersion = OceanBaseVersion4_0_0
+		}
+	}
+
 	if !driver.GetPluginManager().IsOptionalModuleEnabled(inst.DbType, driverV2.OptionalModuleQuery) {
 		return nil, fmt.Errorf("can not do this task, %v", driver.NewErrPluginAPINotImplement(driverV2.OptionalModuleQuery))
 	}
@@ -332,7 +395,7 @@ func (at *ObForMysqlTopSQLTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan
 	}
 	defer plugin.Close(context.Background())
 
-	sql := at.getCollectSQL(ap)
+	sql := at.getCollectSQL(ap, at.obVersion)
 	if sql == "" {
 		return nil, fmt.Errorf("unknown metric of interest")
 	}

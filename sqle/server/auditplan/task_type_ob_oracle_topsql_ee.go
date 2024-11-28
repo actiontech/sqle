@@ -142,35 +142,10 @@ FETCH FIRST %v ROWS ONLY
 	DynPerformanceViewObForOracleColumnUserIOWaitTime = "user_io_wait_time"
 )
 
-/*
-查询OceanBase版本的SQL语句
-
- 1. 根据文档查询到的支持范围包括：3.2.3-4.3.1(最新)
- 2. 测试时使用OceanBase版本3.1.5，3.1.5也支持该用法
-
-参考链接：https://www.oceanbase.com/quicksearch?q=OB_VERSION
-*/
-const GetOceanbaseVersionSQL string = "SELECT OB_VERSION() FROM DUAL"
 const OceanBaseVersion4_0_0 string = "4.0.0"
 
 // ob for oracle 是从4.1.0开始适配的，因此默认版本设定为4.1.0
 const DefaultOBForOracleVersion string = "4.1.0"
-
-func (at *ObForOracleTopSQLTaskV2) getOceanBaseVersion(ctx context.Context, inst *model.Instance, database string) (string, error) {
-	plugin, err := common.NewDriverManagerWithoutAudit(log.NewEntry(), inst, database)
-	if err != nil {
-		return "", err
-	}
-	defer plugin.Close(context.TODO())
-	versionResult, err := plugin.Query(ctx, GetOceanbaseVersionSQL, &driverV2.QueryConf{TimeOutSecond: 20})
-	if err != nil {
-		return "", err
-	}
-	if len(versionResult.Column) == 1 && len(versionResult.Rows) == 1 {
-		return versionResult.Rows[0].Values[0].Value, nil
-	}
-	return "", fmt.Errorf("unexpected result of ob version")
-}
 
 // 从OceanBase4.0.0版本开始，GV$PLAN_CACHE_PLAN_STAT视图名称调整为GV$OB_PLAN_CACHE_PLAN_STAT
 // 参考：https://www.oceanbase.com/docs/common-oceanbase-database-cn-1000000000820360
@@ -269,7 +244,7 @@ func (at *ObForOracleTopSQLTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPla
 	}
 
 	if at.obVersion == "" {
-		at.obVersion, err = at.getOceanBaseVersion(ctx, inst, "")
+		at.obVersion, err = getOceanBaseVersion(inst, "")
 		if err != nil {
 			log.Logger().Errorf("get ocean base version failed, use default version %v, error is %v", DefaultOBForOracleVersion, err)
 			at.obVersion = DefaultOBForOracleVersion
