@@ -298,11 +298,11 @@ func (a *action) audit() (err error) {
 	if err != nil {
 		return err
 	}
-	// TODO  if enable backup and plugin support backup
-	if a.task.EnableBackup {
+	backupService := BackupService{}
+	if backupService.CheckCanTaskBackup(a.task) {
 		backupTasks := make([]*model.BackupTask, 0, len(a.task.ExecuteSQLs))
 		for _, sql := range a.task.ExecuteSQLs {
-			backupTasks = append(backupTasks, initModelBackupTask(a.task, sql))
+			backupTasks = append(backupTasks, initModelBackupTask(a.plugin, a.task, sql))
 		}
 		err = st.BatchCreateBackupTasks(backupTasks)
 		if err != nil {
@@ -483,15 +483,18 @@ backupAndExecSql() 备份与执行SQL：
 	按照顺序，先根据一条SQL备份，再执行该SQL。备份过程中涉及连库查询和保存数据。
 */
 func (a *action) backupAndExecSql() error {
+	svc := BackupService{}
 	for _, executeSQL := range a.task.ExecuteSQLs {
-		backupTask, err := toBackupTask(a, executeSQL)
-		if err != nil {
-			return err
+		if svc.CheckCanTaskBackup(a.task) {
+			backupTask, err := toBackupTask(a.plugin, executeSQL)
+			if err != nil {
+				return err
+			}
+			if err = backupTask.Backup(); err != nil {
+				return err
+			}
 		}
-		if err = backupTask.Backup(); err != nil {
-			return err
-		}
-		if err = a.execSQL(executeSQL); err != nil {
+		if err := a.execSQL(executeSQL); err != nil {
 			return err
 		}
 	}

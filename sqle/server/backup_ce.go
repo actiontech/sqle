@@ -4,6 +4,7 @@
 package server
 
 import (
+	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/model"
 )
 
@@ -23,11 +24,11 @@ func (t BaseBackupTask) Backup() error {
 	return nil
 }
 
-func initModelBackupTask(task *model.Task, sql *model.ExecuteSQL) *model.BackupTask {
+func initModelBackupTask(p driver.Plugin, task *model.Task, sql *model.ExecuteSQL) *model.BackupTask {
 	return &model.BackupTask{}
 }
 
-func toBackupTask(a *action, sql *model.ExecuteSQL) (BackupTask, error) {
+func toBackupTask(a driver.Plugin, sql *model.ExecuteSQL) (BackupTask, error) {
 	return &BaseBackupTask{}, nil
 }
 
@@ -40,5 +41,9 @@ func (BackupService) GetBackupTasksMap(taskId uint) (backupTaskMap, error) {
 }
 
 func (BackupService) IsBackupConflictWithInstance(taskEnableBackup, instanceEnableBackup bool) bool {
+	return false
+}
+
+func (BackupService) CheckCanTaskBackup(task *model.Task) bool {
 	return false
 }
