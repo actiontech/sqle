@@ -100,7 +100,7 @@ type BackupSqlListRes struct {
 // @Success 200 {object} v1.BackupSqlListRes
 // @router /v1/projects/{project_name}/workflows/{workflow_id}/backup_sqls [get]
 func GetBackupSqlList(c echo.Context) error {
-	return nil
+	return getBackupSqlList(c)
 }
 
 type CreateRollbackWorkflowReq struct {
@@ -132,7 +132,7 @@ type CreateRollbackWorkflowResData struct {
 // @Param project_name path string true "project name"
 // @Param workflow_id path string true "origin workflow id to rollback"
 // @Success 200 {object} CreateRollbackWorkflowRes
-// @router /v1/projects/{project_name}/workflows/{workflow_id}/rollback [post]
+// @router /v1/projects/{project_name}/workflows/{workflow_id}/rollback_workflows [post]
 func CreateRollbackWorkflow(c echo.Context) error {
-	return nil
+	return createRollbackWorkflow(c)
 }
