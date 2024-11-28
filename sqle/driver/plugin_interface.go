@@ -46,6 +46,17 @@ type Plugin interface {
 	GetDatabaseObjectDDL(ctx context.Context, objInfos []*driverV2.DatabasSchemaInfo) ([]*driverV2.DatabaseSchemaObjectResult, error)
 
 	GetDatabaseDiffModifySQL(ctx context.Context, calibratedDSN *driverV2.DSN, objInfos []*driverV2.DatabasCompareSchemaInfo) ([]*driverV2.DatabaseDiffModifySQLResult, error)
+
+	Backup(ctx context.Context, backupStrategy string, sql string) (BackupSql []string, ExecuteInfo string, err error)
+
+	GetBackupStrategy(ctx context.Context, sql string) (*GetBackupStrategyRes, error)
+}
+
+type GetBackupStrategyRes struct {
+    BackupStrategy    string
+    BackupStrategyTip string
+    TablesRefer       []string
+    SchemasRefer      []string
 }
 
 type PluginProcessor interface {

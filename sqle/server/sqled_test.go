@@ -48,6 +48,14 @@ type mockDriver struct {
 	parseError bool
 }
 
+func (p *mockDriver) Backup(ctx context.Context, backupStrategy string, sql string) (backupSql []string, executeInfo string, err error) {
+	return nil, "", nil
+}
+
+func (p *mockDriver) GetBackupStrategy(ctx context.Context, sql string) (*driver.GetBackupStrategyRes, error) {
+	return nil, nil
+}
+
 func (d *mockDriver) Close(ctx context.Context) {}
 
 func (d *mockDriver) Ping(ctx context.Context) error {
