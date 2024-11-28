@@ -7,18 +7,17 @@ import (
 	"context"
 	"fmt"
 	"github.com/actiontech/sqle/sqle/common"
-	"github.com/actiontech/sqle/sqle/log"
-	"github.com/actiontech/sqle/sqle/utils"
-	"strconv"
-	"time"
-
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/driver"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/locale"
+	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/params"
+	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/sirupsen/logrus"
+	"strconv"
+	"time"
 )
 
 type ObForMysqlTopSQLTaskV2 struct {
@@ -127,7 +126,19 @@ const (
 	OBMySQLSQLInfoKeyBufferRead    = "buffer_read"
 )
 
-func (at *ObForMysqlTopSQLTaskV2) getOceanBaseVersion(inst *model.Instance, database string) (string, error) {
+const SQLViewNameOBV4Before string = "GV$SQL"
+
+/*
+查询OceanBase版本的SQL语句
+
+ 1. 根据文档查询到的支持范围包括：3.2.3-4.3.1(最新)
+ 2. 测试时使用OceanBase版本3.1.5，3.1.5也支持该用法
+
+参考链接：https://www.oceanbase.com/quicksearch?q=OB_VERSION
+*/
+const GetOceanbaseVersionSQL string = "SELECT OB_VERSION() FROM DUAL"
+
+func getOceanBaseVersion(inst *model.Instance, database string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
 	defer cancel()
 	plugin, err := common.NewDriverManagerWithoutAudit(log.NewEntry(), inst, database)
@@ -144,8 +155,6 @@ func (at *ObForMysqlTopSQLTaskV2) getOceanBaseVersion(inst *model.Instance, data
 	}
 	return "", fmt.Errorf("unexpected result of ob version")
 }
-
-const SQLViewNameOBV4Before string = "GV$SQL"
 
 // 根据ob不同的版本切换不同的性能视图
 // https://www.oceanbase.com/docs/common-oceanbase-database-cn-1000000001351398
@@ -361,7 +370,7 @@ func (at *ObForMysqlTopSQLTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan
 	}
 
 	if at.obVersion == "" {
-		at.obVersion, err = at.getOceanBaseVersion(inst, "")
+		at.obVersion, err = getOceanBaseVersion(inst, "")
 		if err != nil {
 			log.Logger().Errorf("get ocean base version failed, use default version %v, error is %v", OceanBaseVersion4_0_0, err)
 			at.obVersion = OceanBaseVersion4_0_0
