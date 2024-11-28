@@ -27,6 +27,10 @@ service Driver {
   rpc Query(QueryRequest) returns (QueryResponse);
   rpc Explain(ExplainRequest) returns (ExplainResponse);
 
+  // db backup
+  rpc GetBackupStrategy(GetBackupStrategyReq) returns(GetBackupStrategyRes);
+  rpc Backup(BackupReq) returns(BackupRes);
+
   // db metadata
   rpc GetDatabases(GetDatabasesRequest) returns (GetDatabasesResponse);
   rpc GetTableMeta(GetTableMetaRequest) returns (GetTableMetaResponse);
@@ -42,6 +46,36 @@ message Session {
   string id = 1;
 }
 
+message BackupReq {
+  Session session = 1;
+  BackupStrategy backupStrategy = 2;
+  string sql = 3;
+}
+
+message BackupRes {
+  repeated string backupSql = 1;
+  string executeInfo = 2;
+}
+
+message GetBackupStrategyReq {
+  Session session = 1;
+  string sql = 2;
+}
+
+message GetBackupStrategyRes {
+  BackupStrategy backupStrategy = 1;
+  string backupStrategyTip = 2;
+  repeated string tablesRefer =3;
+  repeated string schemasRefer =4;
+}
+
+enum BackupStrategy {
+    None = 0;
+    ReverseSql = 1;
+    OriginalRow = 2;
+    Manually = 3;
+}
+
 enum OptionalModule {
   GenRollbackSQL = 0;
   Query = 1;
@@ -54,6 +88,7 @@ enum OptionalModule {
   I18n = 8; // 插件是否支持国际化
   GetDatabaseObjectDDL = 9;
   GetDatabaseDiffModifySQL = 10;
+  Backup = 11;
 }
 
 message Param {

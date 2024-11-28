@@ -174,6 +174,30 @@ type PluginImplV2 struct {
 	meta    *driverV2.DriverMetas
 }
 
+func (s *PluginImplV2) Backup(ctx context.Context, backupStrategy string, sql string) (BackupSql []string, ExecuteInfo string, err error) {
+	api := "Backup"
+	s.preLog(api)
+	var strategy protoV2.BackupStrategy = protoV2.BackupStrategy_ReverseSql
+	switch backupStrategy {
+	case "reverse_sql":
+		strategy = protoV2.BackupStrategy_ReverseSql
+	}
+	resp, err := s.client.Backup(ctx, &protoV2.BackupReq{
+		Session:        s.Session,
+		BackupStrategy: strategy,
+		Sql:            sql,
+	})
+	s.afterLog(api, err)
+	if err != nil {
+		return nil, "", err
+	}
+	return resp.GetBackupSql(), resp.GetExecuteInfo(), nil
+}
+
+func (p *PluginImplV2) GetBackupStrategy(ctx context.Context, sql string) (*GetBackupStrategyRes, error) {
+	return nil, nil
+}
+
 func (s *PluginImplV2) preLog(ApiName string) {
 	s.l.Infof("starting call plugin interface [%s]", ApiName)
 }

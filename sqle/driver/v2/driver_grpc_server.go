@@ -103,6 +103,14 @@ func (d *DriverGrpcServer) getDriverBySession(session *protoV2.Session) (Driver,
 		return nil, fmt.Errorf("session %s not found", session.Id)
 	}
 	return driver, nil
+
+}
+func (d *DriverGrpcServer) Backup(ctx context.Context, req *protoV2.BackupReq) (*protoV2.BackupRes, error) {
+	return nil, nil
+}
+
+func (d *DriverGrpcServer) GetBackupStrategy(ctx context.Context, req *protoV2.GetBackupStrategyReq) (*protoV2.GetBackupStrategyRes, error) {
+	return nil, nil
 }
 
 func (d *DriverGrpcServer) Metas(ctx context.Context, req *protoV2.Empty) (*protoV2.MetasResponse, error) {

@@ -93,6 +93,30 @@ type Driver interface {
 	KillProcess(ctx context.Context) (*KillProcessInfo, error)
 	GetDatabaseObjectDDL(ctx context.Context, objInfos []*DatabasSchemaInfo) ([]*DatabaseSchemaObjectResult, error)
 	GetDatabaseDiffModifySQL(ctx context.Context, calibratedDSN *DSN, objInfos []*DatabasCompareSchemaInfo) ([]*DatabaseDiffModifySQLResult, error)
+
+	Backup(ctx context.Context, req *BackupReq) (*BackupRes, error)
+	GetBackupStrategy(ctx context.Context, req *GetBackupStrategyReq) (*GetBackupStrategyRes, error)
+}
+
+type BackupReq struct {
+	BackupStrategy string
+	Sql            string
+}
+
+type BackupRes struct {
+	BackupSql   []string
+	ExecuteInfo string
+}
+
+type GetBackupStrategyReq struct {
+	Sql string
+}
+
+type GetBackupStrategyRes struct {
+	BackupStrategy    string
+	BackupStrategyTip string
+	TablesRefer       []string
+	SchemasRefer      []string
 }
 
 type Node struct {
