@@ -103,7 +103,7 @@ func (at *ObForMysqlTopSQLTaskV2) mergeSQL(originSQL, mergedSQL *SQLV2) {
 
 const (
 	// 通用采集项
-	OBMySQLSQLKeySQLText            = "sql_text"
+	OBMySQLSQLKeySQLText            = "query_sql"
 	OBMySQLSQLInfoKeyFirstRequest   = "first_request"
 	OBMySQLSQLInfoKeyExecCount      = "exec_count"
 	OBMySQLSQLInfoKeyLastRequest    = "last_request"
@@ -128,14 +128,14 @@ func (at *ObForMysqlTopSQLTaskV2) getCollectSQL(ap *AuditPlan) string {
 	case OBMySQLIndicatorElapsedTime:
 		return fmt.Sprintf(`
 SELECT
-    SQL_TEXT AS %v, 
+    QUERY_SQL AS %v, 
     EXECUTIONS AS %v, 
     CEIL(AVG_EXE_USEC/1000) AS %v, 
     CEIL(SLOWEST_EXE_USEC/1000) AS %v, 
     FROM_UNIXTIME(TIME_TO_USEC(FIRST_LOAD_TIME)/1000000) AS %v,
     FROM_UNIXTIME(TIME_TO_USEC(LAST_ACTIVE_TIME)/1000000) AS %v
 FROM
-    OCEANBASE.GV$SQL
+    OCEANBASE.GV$OB_PLAN_CACHE_PLAN_STAT
 WHERE %v != ''
 GROUP BY
     SQL_ID
@@ -156,14 +156,14 @@ LIMIT %v
 	case OBMySQLIndicatorCPUTime:
 		return fmt.Sprintf(`
 SELECT
-    SQL_TEXT AS %v, 
+    QUERY_SQL AS %v, 
     EXECUTIONS AS %v, 
     CEIL(AVG_EXE_USEC/1000) AS %v,
     CEIL(CPU_TIME/EXECUTIONS/1000) AS %v, 
     FROM_UNIXTIME(TIME_TO_USEC(FIRST_LOAD_TIME)/1000000) AS %v,
     FROM_UNIXTIME(TIME_TO_USEC(LAST_ACTIVE_TIME)/1000000) AS %v
 FROM
-    OCEANBASE.GV$SQL
+    OCEANBASE.GV$OB_PLAN_CACHE_PLAN_STAT
 WHERE %v != ''
 GROUP BY
     SQL_ID
@@ -185,7 +185,7 @@ LIMIT %v
 	case OBMySQLIndicatorIOWait:
 		return fmt.Sprintf(`
 SELECT
-    SQL_TEXT AS %v, 
+    QUERY_SQL AS %v, 
     EXECUTIONS AS %v, 
     CEIL(USER_IO_WAIT_TIME/EXECUTIONS/1000) AS %v, 
     CEIL(BUFFER_GETS/EXECUTIONS) AS %v,
@@ -193,7 +193,7 @@ SELECT
     FROM_UNIXTIME(TIME_TO_USEC(FIRST_LOAD_TIME)/1000000) AS %v,
     FROM_UNIXTIME(TIME_TO_USEC(LAST_ACTIVE_TIME)/1000000) AS %v
 FROM
-    OCEANBASE.GV$SQL
+    OCEANBASE.GV$OB_PLAN_CACHE_PLAN_STAT
 WHERE %v != ''
 GROUP BY
     SQL_ID

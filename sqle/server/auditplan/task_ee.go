@@ -6,7 +6,7 @@ package auditplan
 const (
 	OBMySQLIndicatorCPUTime     = "cpu_time"
 	OBMySQLIndicatorIOWait      = "io_wait"
-	OBMySQLIndicatorElapsedTime = "elapsed_time"
+	OBMySQLIndicatorElapsedTime = "avg_elapsed_time_ms"
 	SlowLogQueryNums            = 1000
 )
 
