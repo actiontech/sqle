@@ -47,27 +47,28 @@ const ExecModeSqls = "sqls"
 
 type Task struct {
 	Model
-	InstanceId      uint64  `json:"instance_id"`
-	Schema          string  `json:"instance_schema" gorm:"column:instance_schema;type:varchar(255)" example:"db1"`
-	PassRate        float64 `json:"pass_rate"`
-	Score           int32   `json:"score"`
-	AuditLevel      string  `json:"audit_level" gorm:"type:varchar(255)"`
-	SQLSource       string  `json:"sql_source" gorm:"column:sql_source;type:varchar(255)"`
-	DBType          string  `json:"db_type" gorm:"default:'mysql';type:varchar(255)" example:"mysql"`
-	Status          string  `json:"status" gorm:"default:\"initialized\";type:varchar(255)"`
-	GroupId         uint    `json:"group_id" gorm:"column:group_id"`
-	CreateUserId    uint64
-	RuleTemplateID  uint `json:"rule_template_id" gorm:"column:rule_template_id"`
-	ExecStartAt     *time.Time
-	ExecEndAt       *time.Time
-	ExecMode        string         `json:"exec_mode" gorm:"default:'sqls';type:varchar(255)" example:"sqls"`
-	EnableBackup    bool           `gorm:"column:enable_backup"`
-	FileOrderMethod string         `json:"file_order_method" gorm:"column:file_order_method;type:varchar(255)"`
-	Instance        *Instance      `json:"-" gorm:"-"`
-	RuleTemplate    *RuleTemplate  `json:"-" gorm:"foreignkey:RuleTemplateID"`
-	ExecuteSQLs     []*ExecuteSQL  `json:"-" gorm:"foreignkey:TaskId"`
-	RollbackSQLs    []*RollbackSQL `json:"-" gorm:"foreignkey:TaskId"`
-	AuditFiles      []*AuditFile   `json:"-" gorm:"foreignkey:TaskId"`
+	InstanceId           uint64  `json:"instance_id"`
+	Schema               string  `json:"instance_schema" gorm:"column:instance_schema;type:varchar(255)" example:"db1"`
+	PassRate             float64 `json:"pass_rate"`
+	Score                int32   `json:"score"`
+	AuditLevel           string  `json:"audit_level" gorm:"type:varchar(255)"`
+	SQLSource            string  `json:"sql_source" gorm:"column:sql_source;type:varchar(255)"`
+	DBType               string  `json:"db_type" gorm:"default:'mysql';type:varchar(255)" example:"mysql"`
+	Status               string  `json:"status" gorm:"default:\"initialized\";type:varchar(255)"`
+	GroupId              uint    `json:"group_id" gorm:"column:group_id"`
+	CreateUserId         uint64
+	RuleTemplateID       uint `json:"rule_template_id" gorm:"column:rule_template_id"`
+	ExecStartAt          *time.Time
+	ExecEndAt            *time.Time
+	ExecMode             string         `json:"exec_mode" gorm:"default:'sqls';type:varchar(255)" example:"sqls"`
+	EnableBackup         bool           `gorm:"column:enable_backup"`
+	InstanceEnableBackup bool           `gorm:"column:instance_enable_backup"`
+	FileOrderMethod      string         `json:"file_order_method" gorm:"column:file_order_method;type:varchar(255)"`
+	Instance             *Instance      `json:"-" gorm:"-"`
+	RuleTemplate         *RuleTemplate  `json:"-" gorm:"foreignkey:RuleTemplateID"`
+	ExecuteSQLs          []*ExecuteSQL  `json:"-" gorm:"foreignkey:TaskId"`
+	RollbackSQLs         []*RollbackSQL `json:"-" gorm:"foreignkey:TaskId"`
+	AuditFiles           []*AuditFile   `json:"-" gorm:"foreignkey:TaskId"`
 }
 
 func (t *Task) RuleTemplateName() string {
