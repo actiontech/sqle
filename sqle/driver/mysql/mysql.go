@@ -99,7 +99,7 @@ func (inspect *MysqlDriverImpl) applyConfig(cfg *driverV2.Config) {
 	inspect.isOfflineAudit = cfg.DSN == nil
 
 	inspect.cnf = &Config{
-		DMLRollbackMaxRows: 1000,// TODO 暂时将备份影响行数上限设置为1000，后续需要将对应该配置项的规则移除。备份影响行数上限设置将会在备份任务中设置。
+		DMLRollbackMaxRows: 1000,
 		DDLOSCMinSize:      -1,
 		DDLGhostMinSize:    -1,
 	}
@@ -631,7 +631,7 @@ func (p *PluginProcessor) GetDriverMetas() (*driverV2.DriverMetas, error) {
 	for i := range rulepkg.RuleHandlers {
 		allRules[i] = &rulepkg.RuleHandlers[i].Rule
 	}
-	return &driverV2.DriverMetas{
+	metas := &driverV2.DriverMetas{
 		PluginName:               driverV2.DriverTypeMySQL,
 		DatabaseDefaultPort:      3306,
 		Logo:                     logo,
@@ -648,7 +648,9 @@ func (p *PluginProcessor) GetDriverMetas() (*driverV2.DriverMetas, error) {
 			driverV2.OptionalExecBatch,
 			driverV2.OptionalModuleI18n,
 		},
-	}, nil
+	}
+	addOptionModules(metas)
+	return metas, nil
 }
 
 func (p *PluginProcessor) Open(l *logrus.Entry, cfg *driverV2.Config) (driver.Plugin, error) {
