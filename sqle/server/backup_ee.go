@@ -11,6 +11,7 @@ import (
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/driver"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"gorm.io/gorm"
 )
@@ -389,10 +390,11 @@ func (BackupService) CheckOriginWorkflowCanRollback(workflowId string) (*model.W
 	s := model.GetStorage()
 	workflow, exist, err := s.GetWorkflowByWorkflowId(workflowId)
 	if err != nil {
+		log.Logger().Errorf("in CheckOriginWorkflowCanRollback when GetWorkflowByWorkflowId %v failed, error is %v", workflowId, err)
 		return nil, err
 	}
 	if !exist {
-		return nil, fmt.Errorf("workflow does not exist")
+		return nil, fmt.Errorf("in CheckOriginWorkflowCanRollback when GetWorkflowByWorkflowId %v workflow does not exist", workflowId)
 	}
 	switch workflow.Record.Status {
 	case model.WorkflowStatusCancel, model.WorkflowStatusExecFailed, model.WorkflowStatusReject, model.SQLAuditStatusFinished:
@@ -409,6 +411,7 @@ func (BackupService) CheckSqlsTasksMappingRelationship(taskIds, sqlIds []uint) (
 	for _, taskId := range taskIds {
 		executeSQLs, err := s.GetExecuteSQLByTaskId(taskId)
 		if err != nil {
+			log.Logger().Errorf("in CheckSqlsTasksMappingRelationship when get execute sql by task id %v failed, error is: %v", taskId, err)
 			return nil, err
 		}
 		for _, sql := range executeSQLs {
@@ -420,7 +423,7 @@ func (BackupService) CheckSqlsTasksMappingRelationship(taskIds, sqlIds []uint) (
 		if taskId, exist := originSqlMap[execSqlId]; exist {
 			originTaskSqlMap[taskId] = append(originTaskSqlMap[taskId], execSqlId)
 		} else {
-			return nil, fmt.Errorf("sql id %v not exist in task %v", execSqlId, taskId)
+			return nil, fmt.Errorf("in CheckSqlsTasksMappingRelationship sql id %v not exist in task %v", execSqlId, taskId)
 		}
 	}
 	return originTaskSqlMap, nil
