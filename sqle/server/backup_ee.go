@@ -66,7 +66,7 @@ func (svc BackupService) CheckCanTaskBackup(task *model.Task) bool {
 }
 
 func initModelBackupTask(p driver.Plugin, task *model.Task, sql *model.ExecuteSQL) *model.BackupTask {
-	strategyRes, err := p.GetBackupStrategy(context.TODO(), sql.Content)
+	strategyRes, err := p.RecommendBackupStrategy(context.TODO(), sql.Content)
 	if err != nil {
 		strategyRes.BackupStrategy = string(BackupStrategyManually)
 		strategyRes.BackupStrategyTip = err.Error()

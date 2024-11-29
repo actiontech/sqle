@@ -15,8 +15,6 @@ import (
 	"golang.org/x/text/language"
 )
 
-
-
 func (i *MysqlDriverImpl) Backup(ctx context.Context, backupStrategy string, sql string) (BackupSql []string, ExecuteInfo string, err error) {
 	if i.IsOfflineAudit() {
 		return nil, "暂不支持不连库备份", nil
@@ -62,7 +60,7 @@ const (
 	BackupStrategyManually    string = "manual"       // 标记为人工备份
 )
 
-func (i *MysqlDriverImpl) GetBackupStrategy(ctx context.Context, sql string) (*driver.GetBackupStrategyRes, error) {
+func (i *MysqlDriverImpl) RecommendBackupStrategy(ctx context.Context, sql string) (*driver.RecommendBackupStrategyRes, error) {
 	var BackupStrategy string
 	var BackupStrategyTip string
 	var TablesRefer []string
@@ -126,7 +124,7 @@ func (i *MysqlDriverImpl) GetBackupStrategy(ctx context.Context, sql string) (*d
 			}
 		}
 	}
-	return &driver.GetBackupStrategyRes{
+	return &driver.RecommendBackupStrategyRes{
 		BackupStrategyTip: BackupStrategyTip,
 		BackupStrategy:    BackupStrategy,
 		TablesRefer:       TablesRefer,
