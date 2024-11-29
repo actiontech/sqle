@@ -22,8 +22,11 @@ func (i *MysqlDriverImpl) GenerateRollbackSqls(node ast.Node) ([]string, i18nPkg
 		return i.GenerateDDLStmtRollbackSqls(node)
 	case ast.DMLNode:
 		return i.GenerateDMLStmtRollbackSqls(node)
+	// other
+	case *ast.UnparsedStmt:
+		return []string{}, i18nPkg.ConvertStr2I18nAsDefaultLang("无法正常解析该SQL，无法进行备份"), nil
 	}
-	return []string{}, nil, nil
+	return []string{}, i18nPkg.ConvertStr2I18nAsDefaultLang("暂不支持，该SQL的行备份"), nil
 }
 
 func (i *MysqlDriverImpl) GenerateDDLStmtRollbackSqls(node ast.Node) (rollbackSql []string, unableRollbackReason i18nPkg.I18nStr, err error) {
