@@ -1699,7 +1699,7 @@ type CreateRollbackWorkflowResData struct {
 // @Param project_name path string true "project name"
 // @Param workflow_id path string true "origin workflow id to rollback"
 // @Success 200 {object} CreateRollbackWorkflowRes
-// @router /v1/projects/{project_name}/workflows/{workflow_id}/create_rollback_workflows [post]
+// @router /v1/projects/{project_name}/workflows/{workflow_id}/create_rollback_workflow [post]
 func CreateRollbackWorkflow(c echo.Context) error {
 	return createRollbackWorkflow(c)
 }
