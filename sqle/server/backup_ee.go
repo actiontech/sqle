@@ -226,12 +226,12 @@ func (backup *BaseBackupTask) Backup() (backupErr error) {
 			status = BackupStatusSucceed
 		}
 		if updateStatusErr := backup.UpdateStatusTo(status); updateStatusErr != nil {
-			backupErr = fmt.Errorf("%v%w", backupErr, updateStatusErr)
+			backupErr = fmt.Errorf("in backup task %v, when UpdateStatusTo %v failed %v %w", backup.ID, status, backupErr, updateStatusErr)
 		}
 
 		updateTaskErr := s.UpdateBackupExecuteResult(backup.toModel())
 		if updateTaskErr != nil {
-			backupErr = fmt.Errorf("%v%w", backupErr, updateTaskErr)
+			backupErr = fmt.Errorf("in backup task %v, when UpdateBackupExecuteResult failed %v %w", backup.ID, backupErr, updateTaskErr)
 		}
 	}()
 	// update status in memory

@@ -32,11 +32,13 @@ func (i *MysqlDriverImpl) Backup(ctx context.Context, backupStrategy string, sql
 	case "reverse_sql":
 		rollbackSqls, info, err = i.GenerateRollbackSqls(nodes[0])
 		if err != nil {
+			i.Logger().Errorf("in plugin when backup GenerateRollbackSqls for sql %v failed: %v", sql, err)
 			return nil, err.Error(), err
 		}
 	case "original_row":
 		rollbackSqls, info, err = i.GetOriginalRow(nodes[0])
 		if err != nil {
+			i.Logger().Errorf("in plugin when backup GetOriginalRow for sql %v failed: %v", sql, err)
 			return nil, err.Error(), err
 		}
 	case "manual", "none":
@@ -67,6 +69,7 @@ func (i *MysqlDriverImpl) RecommendBackupStrategy(ctx context.Context, sql strin
 	var SchemasRefer []string
 	nodes, err := i.ParseSql(sql)
 	if err != nil {
+		i.Logger().Errorf("in plugin when RecommendBackupStrategy ParseSql %v failed: %v", sql, err)
 		return nil, err
 	}
 	switch nodes[0].(type) {
