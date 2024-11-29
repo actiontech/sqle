@@ -64,7 +64,7 @@ type AuditTaskResV1 struct {
 	FileOrderMethod            string          `json:"file_order_method,omitempty"`
 	ExecMode                   string          `json:"exec_mode,omitempty"`
 	EnableBackup               bool            `json:"enable_backup"`
-	BackupConflictWithInstance bool            `json:"backup_conflict_with_instance"`
+	BackupConflictWithInstance bool            `json:"backup_conflict_with_instance"` // 当数据源备份开启，工单备份关闭，则需要提示审核人工单备份策略与数据源备份策略不一致
 	AuditFiles                 []AuditFileResp `json:"audit_files,omitempty"`
 }
 
@@ -74,21 +74,22 @@ type AuditFileResp struct {
 
 func convertTaskToRes(task *model.Task) *AuditTaskResV1 {
 	return &AuditTaskResV1{
-		Id:              task.ID,
-		InstanceName:    task.InstanceName(),
-		InstanceDbType:  task.DBType,
-		InstanceSchema:  task.Schema,
-		AuditLevel:      task.AuditLevel,
-		Score:           task.Score,
-		PassRate:        task.PassRate,
-		Status:          task.Status,
-		SQLSource:       task.SQLSource,
-		ExecStartTime:   task.ExecStartAt,
-		ExecEndTime:     task.ExecEndAt,
-		ExecMode:        task.ExecMode,
-		EnableBackup:    task.EnableBackup,
-		FileOrderMethod: task.FileOrderMethod,
-		AuditFiles:      convertToAuditFileResp(task.AuditFiles),
+		Id:                         task.ID,
+		InstanceName:               task.InstanceName(),
+		InstanceDbType:             task.DBType,
+		InstanceSchema:             task.Schema,
+		AuditLevel:                 task.AuditLevel,
+		Score:                      task.Score,
+		PassRate:                   task.PassRate,
+		Status:                     task.Status,
+		SQLSource:                  task.SQLSource,
+		ExecStartTime:              task.ExecStartAt,
+		ExecEndTime:                task.ExecEndAt,
+		ExecMode:                   task.ExecMode,
+		EnableBackup:               task.EnableBackup,
+		BackupConflictWithInstance: server.BackupService{}.IsBackupConflictWithInstance(task.EnableBackup, task.InstanceEnableBackup),
+		FileOrderMethod:            task.FileOrderMethod,
+		AuditFiles:                 convertToAuditFileResp(task.AuditFiles),
 	}
 }
 func convertToAuditFileResp(files []*model.AuditFile) []AuditFileResp {
@@ -359,6 +360,7 @@ func CreateAndAuditTask(c echo.Context) error {
 		}
 		task.EnableBackup = req.EnableBackup
 	}
+	task.InstanceEnableBackup = tmpInst.EnableBackup
 
 	err = convertSQLSourceEncodingFromTask(task)
 	if err != nil {
@@ -484,15 +486,15 @@ type GetAuditTaskSQLsResV1 struct {
 }
 
 type AuditTaskSQLResV1 struct {
-	Number      uint   `json:"number"`
-	ExecSQL     string `json:"exec_sql"`
-	AuditResult string `json:"audit_result"`
-	AuditLevel  string `json:"audit_level"`
-	AuditStatus string `json:"audit_status"`
-	ExecResult  string `json:"exec_result"`
-	ExecStatus  string `json:"exec_status"`
-	RollbackSQL string `json:"rollback_sql,omitempty"`
-	Description string `json:"description"`
+	Number       uint     `json:"number"`
+	ExecSQL      string   `json:"exec_sql"`
+	AuditResult  string   `json:"audit_result"`
+	AuditLevel   string   `json:"audit_level"`
+	AuditStatus  string   `json:"audit_status"`
+	ExecResult   string   `json:"exec_result"`
+	ExecStatus   string   `json:"exec_status"`
+	RollbackSQLs []string `json:"rollback_sqls,omitempty"`
+	Description  string   `json:"description"`
 }
 
 // @Summary 获取指定扫描任务的SQLs信息
@@ -542,19 +544,22 @@ func GetTaskSQLs(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
+	rollbackSqlMap, err := server.BackupService{}.GetRollbackSqlsMap(task.ID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 	taskSQLsRes := make([]*AuditTaskSQLResV1, 0, len(taskSQLs))
 	for _, taskSQL := range taskSQLs {
 		taskSQLRes := &AuditTaskSQLResV1{
-			Number:      taskSQL.Number,
-			Description: taskSQL.Description,
-			ExecSQL:     taskSQL.ExecSQL,
-			AuditResult: taskSQL.GetAuditResults(ctx),
-			AuditLevel:  taskSQL.AuditLevel,
-			AuditStatus: taskSQL.AuditStatus,
-			ExecResult:  taskSQL.ExecResult,
-			ExecStatus:  taskSQL.ExecStatus,
-			RollbackSQL: taskSQL.RollbackSQL.String,
+			Number:       taskSQL.Number,
+			Description:  taskSQL.Description,
+			ExecSQL:      taskSQL.ExecSQL,
+			AuditResult:  taskSQL.GetAuditResults(ctx),
+			AuditLevel:   taskSQL.AuditLevel,
+			AuditStatus:  taskSQL.AuditStatus,
+			ExecResult:   taskSQL.ExecResult,
+			ExecStatus:   taskSQL.ExecStatus,
+			RollbackSQLs: rollbackSqlMap[taskSQL.Id],
 		}
 		taskSQLsRes = append(taskSQLsRes, taskSQLRes)
 	}
@@ -623,6 +628,10 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.WriteDataToTheFileError, err))
 	}
+	rollbackSqlMap, err := server.BackupService{}.GetRollbackSqlsMap(task.ID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 	for _, td := range taskSQLsDetail {
 		taskSql := &model.ExecuteSQL{
 			AuditResults: td.AuditResults,
@@ -636,7 +645,7 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 			taskSql.GetAuditResultDesc(ctx),
 			taskSql.GetExecStatusDesc(ctx),
 			td.ExecResult,
-			td.RollbackSQL.String,
+			strings.Join(rollbackSqlMap[taskSql.ID], "\n"),
 			td.Description,
 		})
 		if err != nil {
@@ -1043,6 +1052,10 @@ func AuditTaskGroupV1(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 		defer plugin.Close(context.TODO())
+		instanceMap := make(map[uint64]*model.Instance)
+		for _, instance := range instances {
+			instanceMap[instance.ID] = instance
+		}
 
 		for _, task := range tasks {
 			task.SQLSource = sqls.SourceType
@@ -1057,6 +1070,11 @@ func AuditTaskGroupV1(c echo.Context) error {
 					return controller.JSONBaseErrorReq(c, err)
 				}
 				task.EnableBackup = req.EnableBackup
+			}
+			if instance, exist := instanceMap[task.InstanceId]; exist {
+				task.InstanceEnableBackup = instance.EnableBackup
+			} else {
+				return controller.JSONBaseErrorReq(c, fmt.Errorf("can not find instance in task"))
 			}
 			err := addSQLsFromFileToTasks(sqls, task, plugin)
 			if err != nil {
@@ -1104,18 +1122,19 @@ func AuditTaskGroupV1(c echo.Context) error {
 	tasksRes := make([]*AuditTaskResV1, len(tasks))
 	for i, task := range tasks {
 		tasksRes[i] = &AuditTaskResV1{
-			Id:             task.ID,
-			InstanceName:   task.InstanceName(),
-			InstanceDbType: task.DBType,
-			InstanceSchema: task.Schema,
-			AuditLevel:     task.AuditLevel,
-			Score:          task.Score,
-			PassRate:       task.PassRate,
-			Status:         task.Status,
-			EnableBackup:   task.EnableBackup,
-			SQLSource:      task.SQLSource,
-			ExecStartTime:  task.ExecStartAt,
-			ExecEndTime:    task.ExecEndAt,
+			Id:                         task.ID,
+			InstanceName:               task.InstanceName(),
+			InstanceDbType:             task.DBType,
+			InstanceSchema:             task.Schema,
+			AuditLevel:                 task.AuditLevel,
+			Score:                      task.Score,
+			PassRate:                   task.PassRate,
+			Status:                     task.Status,
+			EnableBackup:               task.EnableBackup,
+			BackupConflictWithInstance: server.BackupService{}.IsBackupConflictWithInstance(task.EnableBackup, task.InstanceEnableBackup),
+			SQLSource:                  task.SQLSource,
+			ExecStartTime:              task.ExecStartAt,
+			ExecEndTime:                task.ExecEndAt,
 		}
 	}
 

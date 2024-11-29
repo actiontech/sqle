@@ -46,6 +46,14 @@ func NewDriverImpl(l hclog.Logger, dt Dialector, ah *AuditHandler, cfg *driverV2
 	return di, nil
 }
 
+func (p *DriverImpl) Backup(ctx context.Context, req *driverV2.BackupReq) (*driverV2.BackupRes, error) {
+	return nil, nil
+}
+
+func (p *DriverImpl) RecommendBackupStrategy(ctx context.Context, req *driverV2.RecommendBackupStrategyReq) (*driverV2.RecommendBackupStrategyRes, error) {
+	return nil, nil
+}
+
 func (p *DriverImpl) GetConn() (*sql.Conn, error) {
 	if p.Conn == nil {
 		return nil, fmt.Errorf("database conn not initialized")

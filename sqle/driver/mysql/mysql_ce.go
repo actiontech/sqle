@@ -21,3 +21,5 @@ func (i *MysqlDriverImpl) GetDatabaseDiffModifySQL(ctx context.Context, calibrat
 func (i *MysqlDriverImpl) GetDatabaseObjectDDL(ctx context.Context, objInfos []*driverV2.DatabasSchemaInfo) ([]*driverV2.DatabaseSchemaObjectResult, error) {
 	return nil, fmt.Errorf("only support Query in enterprise edition")
 }
+
+func addOptionModules(metas *driverV2.DriverMetas) {}

@@ -7,6 +7,7 @@ import (
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
 	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/server"
 
 	"github.com/labstack/echo/v4"
 )
@@ -108,21 +109,49 @@ func GetTaskSQLs(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
+	relations, err := s.GetExecuteSqlRollbackWorkflowRelationByTaskId(task.ID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	associatedRollbackWorkflowsMap := make(map[uint][]*AssociatedRollbackWorkflow)
+	workflowIdMap := make(map[string]struct{})
+	for _, relation := range relations {
+		associatedRollbackWorkflowsMap[relation.ExecuteSqlId] = append(associatedRollbackWorkflowsMap[relation.ExecuteSqlId], &AssociatedRollbackWorkflow{
+			WorkflowID:   relation.RollbackWorkflowId,
+			WorkflowName: relation.RollbackWorkflowSubject,
+			Status:       relation.RollbackWorkflowStatus,
+		})
+		workflowIdMap[relation.RollbackWorkflowId] = struct{}{}
+	}
 	taskSQLsRes := make([]*AuditTaskSQLResV2, 0, len(taskSQLs))
+	backupService := server.BackupService{}
+	rollbackSqlMap, err := backupService.GetRollbackSqlsMap(task.ID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	backupTaskMap, err := backupService.GetBackupTasksMap(task.ID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
 	for _, taskSQL := range taskSQLs {
 		taskSQLRes := &AuditTaskSQLResV2{
-			Number:        taskSQL.Number,
-			Description:   taskSQL.Description,
-			ExecSQL:       taskSQL.ExecSQL,
-			SQLSourceFile: taskSQL.SQLSourceFile.String,
-			SQLStartLine:  taskSQL.SQLStartLine,
-			AuditLevel:    taskSQL.AuditLevel,
-			AuditStatus:   taskSQL.AuditStatus,
-			ExecResult:    taskSQL.ExecResult,
-			ExecStatus:    taskSQL.ExecStatus,
-			RollbackSQLs:  []string{taskSQL.RollbackSQL.String},
-			SQLType:       taskSQL.SQLType.String,
+			ExecSqlID:                   taskSQL.Id,
+			Number:                      taskSQL.Number,
+			Description:                 taskSQL.Description,
+			ExecSQL:                     taskSQL.ExecSQL,
+			SQLSourceFile:               taskSQL.SQLSourceFile.String,
+			SQLStartLine:                taskSQL.SQLStartLine,
+			AuditLevel:                  taskSQL.AuditLevel,
+			AuditStatus:                 taskSQL.AuditStatus,
+			ExecResult:                  taskSQL.ExecResult,
+			ExecStatus:                  taskSQL.ExecStatus,
+			RollbackSQLs:                rollbackSqlMap[taskSQL.Id],
+			SQLType:                     taskSQL.SQLType.String,
+			BackupStrategy:              backupTaskMap.GetBackupStrategy(taskSQL.Id),
+			BackupStrategyTip:           backupTaskMap.GetBackupStrategyTip(taskSQL.Id),
+			AssociatedRollbackWorkflows: associatedRollbackWorkflowsMap[taskSQL.Id],
 		}
 		for i := range taskSQL.AuditResults {
 			ar := taskSQL.AuditResults[i]

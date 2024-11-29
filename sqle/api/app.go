@@ -231,6 +231,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1ProjectOpRouter.PUT("/:project_name/workflows/:workflow_name/tasks/:task_id/schedule", DeprecatedBy(apiV2))
 		v1ProjectOpRouter.PATCH("/:project_name/workflows/:workflow_name/", DeprecatedBy(apiV2))
 		v1ProjectOpRouter.POST("/:project_name/workflows/:workflow_id/tasks/:task_id/order_file", v1.UpdateSqlFileOrderByWorkflowV1)
+		v1ProjectOpRouter.GET("/:project_name/workflows/:workflow_id/backup_sqls", v1.GetBackupSqlList)
+		v1ProjectOpRouter.POST("/:project_name/workflows/:workflow_id/create_rollback_workflow", v1.CreateRollbackWorkflow)
 
 		// sql version
 		v1ProjectOpRouter.POST("/:project_name/sql_versions/:sql_version_id/batch_release_workflows", v1.BatchReleaseWorkflows)
@@ -448,6 +450,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		// task
 		v1Router.GET("/tasks/audits/:task_id/", v1.GetTask)
 		v1Router.GET("/tasks/audits/:task_id/sqls", v1.GetTaskSQLs)
+		v1Router.PATCH("/tasks/audits/:task_id/sqls/:sql_id/backup_strategy", v1.UpdateSqlBackupStrategy)
+		v1Router.PATCH("/tasks/audits/:task_id/backup_strategy", v1.UpdateTaskBackupStrategy)
 		v2Router.GET("/tasks/audits/:task_id/sqls", v2.GetTaskSQLs)
 		v2Router.GET("/tasks/audits/:task_id/files", v2.GetAuditFileList)
 		v2Router.GET("/tasks/audits/:task_id/files/:file_id/", v2.GetAuditFileExecStatistic)
