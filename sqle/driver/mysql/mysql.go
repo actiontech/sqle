@@ -99,15 +99,10 @@ func (inspect *MysqlDriverImpl) applyConfig(cfg *driverV2.Config) {
 	inspect.isOfflineAudit = cfg.DSN == nil
 
 	inspect.cnf = &Config{
-		DMLRollbackMaxRows: 1000,
 		DDLOSCMinSize:      -1,
 		DDLGhostMinSize:    -1,
 	}
 	for _, rule := range cfg.Rules {
-		if rule.Name == rulepkg.ConfigDMLRollbackMaxRows {
-			max := rule.Params.GetParam(rulepkg.DefaultSingleParamKeyName).Int()
-			inspect.cnf.DMLRollbackMaxRows = int64(max)
-		}
 		if rule.Name == rulepkg.ConfigDDLOSCMinSize {
 			min := rule.Params.GetParam(rulepkg.DefaultSingleParamKeyName).Int()
 			inspect.cnf.DDLOSCMinSize = int64(min)
