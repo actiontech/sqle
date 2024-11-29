@@ -33,6 +33,9 @@ func (i *MysqlDriverImpl) Backup(ctx context.Context, backupStrategy string, sql
 	if err != nil {
 		return nil, "", err
 	}
+	if len(nodes) == 0 {
+		return []string{}, fmt.Sprintf("in plugin, when backup ParseSql for sql %v extract 0 ast node of sql", sql), nil
+	}
 	var info i18nPkg.I18nStr
 	var rollbackSqls []string
 	switch backupStrategy {
