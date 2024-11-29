@@ -17,28 +17,33 @@ import (
 
 func (i *MysqlDriverImpl) GetOriginalRow(node ast.Node) (rollbackSql []string, unableRollbackReason i18nPkg.I18nStr, err error) {
 	switch stmt := node.(type) {
+	// row
 	case *ast.DeleteStmt:
 		return i.GetOriginalRowDelete(stmt)
 	case *ast.UpdateStmt:
 		return i.GetOriginalRowUpdate(stmt)
 	case *ast.InsertStmt:
 		return i.generateInsertRollbackSqls(stmt)
+	// table
 	case *ast.DropTableStmt:
 		return i.generateDropTableRollbackSqls(stmt)
 	case *ast.AlterTableStmt:
 		return i.generateAlterTableRollbackSqls(stmt)
+	case *ast.CreateTableStmt:
+		return i.generateCreateTableRollbackSqls(stmt)
+	// index
 	case *ast.CreateIndexStmt:
 		return i.generateCreateIndexRollbackSqls(stmt)
 	case *ast.DropIndexStmt:
 		return i.generateDropIndexRollbackSqls(stmt)
-	case *ast.CreateTableStmt:
-		return i.generateCreateTableRollbackSqls(stmt)
+	// database
 	case *ast.CreateDatabaseStmt:
 		return i.generateCreateSchemaRollbackSqls(stmt)
-	case *ast.UnparsedStmt:
-		return []string{}, i18nPkg.ConvertStr2I18nAsDefaultLang("无法正常解析该SQL，无法进行备份"), nil
 	case *ast.DropDatabaseStmt:
 		return i.generateDropDatabaseRollbackSqls(stmt)
+	// other
+	case *ast.UnparsedStmt:
+		return []string{}, i18nPkg.ConvertStr2I18nAsDefaultLang("无法正常解析该SQL，无法进行备份"), nil
 	default:
 		return []string{}, i18nPkg.ConvertStr2I18nAsDefaultLang("暂不支持，该SQL的行备份"), nil
 	}
