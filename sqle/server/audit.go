@@ -327,38 +327,6 @@ func parse(l *logrus.Entry, p driver.Plugin, sql string) (node driverV2.Node, er
 	return nodes[0], nil
 }
 
-// func genRollbackSQL(l *logrus.Entry, task *model.Task, p driver.Plugin) ([]*model.RollbackSQL, error) {
-// 	rollbackSQLs := make([]*model.RollbackSQL, 0, len(task.ExecuteSQLs))
-// 	for _, executeSQL := range task.ExecuteSQLs {
-// 		rollbackSQL, i18nReason, err := p.GenRollbackSQL(context.TODO(), executeSQL.Content)
-// 		if err != nil && session.IsParseShowCreateTableContentErr(err) {
-// 			l.Errorf("gen rollback sql error, %v", err) // todo #1630 临时跳过创表语句解析错误
-// 			return nil, nil
-// 		} else if err != nil {
-// 			l.Errorf("gen rollback sql error, %v", err)
-// 			return nil, err
-// 		}
-// 		result := driverV2.NewAuditResults()
-// 		for i := range executeSQL.AuditResults {
-// 			ar := executeSQL.AuditResults[i]
-// 			result.Add(driverV2.RuleLevel(ar.Level), ar.RuleName, model.ConvertI18NAuditResultInfoMapToI18nStr(ar.I18nAuditResultInfo))
-// 		}
-// 		result.Add(driverV2.RuleLevelNotice, "", i18nReason)
-
-// 		executeSQL.AuditLevel = string(result.Level())
-// 		appendExecuteSqlResults(executeSQL, result)
-
-// 		rollbackSQLs = append(rollbackSQLs, &model.RollbackSQL{
-// 			BaseSQL: model.BaseSQL{
-// 				TaskId:  executeSQL.TaskId,
-// 				Content: rollbackSQL,
-// 			},
-// 			ExecuteSQLId: executeSQL.ID,
-// 		})
-// 	}
-// 	return rollbackSQLs, nil
-// }
-
 func appendExecuteSqlResults(executeSQL *model.ExecuteSQL, result *driverV2.AuditResults) {
 	for i := range result.Results {
 		executeSQL.AuditResults.Append(result.Results[i])
