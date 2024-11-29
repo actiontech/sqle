@@ -23,6 +23,9 @@ import (
 	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/notification"
+	"github.com/actiontech/sqle/sqle/pkg/im"
+	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/labstack/echo/v4"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -532,4 +535,65 @@ func fillUnadjustedFiles(orderedFiles, unadjustedFiles []*model.AuditFile) {
 	for i, file := range orderedFiles {
 		file.ExecOrder = uint(i)
 	}
+}
+
+func createRollbackWorkflow(c echo.Context) error {
+	req := new(CreateRollbackWorkflowReq)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if req.SqlVersionID != nil {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("can not bind rollback workflow with sql version"))
+	}
+
+	var backupService server.BackupService
+	originWorkflowId := c.Param("workflow_id")
+
+	checkedOriginWorkflow, err := backupService.CheckOriginWorkflowCanRollback(originWorkflowId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	checkedRollbackWorkflow, err := CheckWorkflowCreationPrerequisites(c, c.Param("project_name"), req.TaskIds)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	originTaskSqlMap, err := backupService.CheckSqlsTasksMappingRelationship(checkedOriginWorkflow.GetTaskIds(), req.RollbackSqlIds)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	rollbackWorkflowId := checkedRollbackWorkflow.WorkflowId
+
+	s := model.GetStorage()
+	err = s.CreateWorkflowV2(req.Subject, rollbackWorkflowId, req.Desc, checkedRollbackWorkflow.User, checkedRollbackWorkflow.Tasks, checkedRollbackWorkflow.StepTemplates, checkedRollbackWorkflow.ProjectId, req.SqlVersionID, nil, nil, checkedRollbackWorkflow.GetOpExecUser)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	err = backupService.UpdateOriginWorkflow(rollbackWorkflowId, originWorkflowId, checkedOriginWorkflow.Record.GetIDStr(), originTaskSqlMap)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	// get workflow and send notification
+	rollbackWorkflow, exist, err := s.GetLastWorkflow()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("should exist at least one workflow after create workflow")))
+	}
+
+	go notification.NotifyWorkflow(string(rollbackWorkflow.ProjectId), rollbackWorkflow.WorkflowId, notification.WorkflowNotifyTypeCreate)
+
+	go im.CreateApprove(string(rollbackWorkflow.ProjectId), rollbackWorkflow.WorkflowId)
+
+	return c.JSON(http.StatusOK, &CreateRollbackWorkflowRes{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: &CreateRollbackWorkflowResData{
+			WorkflowID: rollbackWorkflow.WorkflowId,
+		},
+	})
 }

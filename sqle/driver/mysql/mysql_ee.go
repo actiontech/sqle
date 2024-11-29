@@ -17,6 +17,10 @@ import (
 	"github.com/actiontech/sqle/sqle/utils"
 )
 
+func addOptionModules(metas *driverV2.DriverMetas) {
+	metas.EnabledOptionalModule = append(metas.EnabledOptionalModule, driverV2.OptionalBackup)
+}
+
 // func (*MysqlDriverImpl) QueryPrepare(ctx context.Context, sql string, conf *driver.QueryPrepareConf) (*driver.QueryPrepareResult, error) {
 // 	return QueryPrepare(ctx, sql, conf)
 // }
