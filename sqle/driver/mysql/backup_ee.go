@@ -58,7 +58,7 @@ func (i *MysqlDriverImpl) Backup(ctx context.Context, backupStrategy string, sql
 	i.Ctx.UpdateContext(nodes[0])
 	ExecuteInfo = info.GetStrInLang(language.Chinese)
 	if len(rollbackSqls) == 0 && ExecuteInfo == "" {
-		ExecuteInfo = "当前SQL无影响范围，无备份回滚语句"
+		ExecuteInfo = "无影响范围或不支持回滚，无备份回滚语句"
 	} else {
 		ExecuteInfo = "备份成功"
 	}
