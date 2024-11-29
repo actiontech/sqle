@@ -105,12 +105,55 @@ func (d *DriverGrpcServer) getDriverBySession(session *protoV2.Session) (Driver,
 	return driver, nil
 
 }
+
 func (d *DriverGrpcServer) Backup(ctx context.Context, req *protoV2.BackupReq) (*protoV2.BackupRes, error) {
-	return nil, nil
+	driver, err := d.getDriverBySession(req.Session)
+	if err != nil {
+		return &protoV2.BackupRes{}, err
+	}
+	res, err := driver.Backup(ctx, &BackupReq{
+		BackupStrategy: req.BackupStrategy.String(),
+		Sql:            req.Sql,
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "backup")
+	}
+	return &protoV2.BackupRes{
+		BackupSql:   res.BackupSql,
+		ExecuteInfo: res.ExecuteInfo,
+	}, nil
 }
 
 func (d *DriverGrpcServer) RecommendBackupStrategy(ctx context.Context, req *protoV2.RecommendBackupStrategyReq) (*protoV2.RecommendBackupStrategyRes, error) {
-	return nil, nil
+	driver, err := d.getDriverBySession(req.Session)
+	if err != nil {
+		return &protoV2.RecommendBackupStrategyRes{}, err
+	}
+	res, err := driver.RecommendBackupStrategy(ctx, &RecommendBackupStrategyReq{
+		Sql: req.Sql,
+	})
+	if err != nil {
+		return &protoV2.RecommendBackupStrategyRes{}, errors.Wrap(err, "backup")
+	}
+	var backupStrategyProtoV2 protoV2.BackupStrategy
+	switch res.BackupStrategy {
+	case BackupStrategyReverseSql:
+		backupStrategyProtoV2 = protoV2.BackupStrategy_ReverseSql
+	case BackupStrategyManually:
+		backupStrategyProtoV2 = protoV2.BackupStrategy_Manually
+	case BackupStrategyNone:
+		backupStrategyProtoV2 = protoV2.BackupStrategy_None
+	case BackupStrategyOriginalRow:
+		backupStrategyProtoV2 = protoV2.BackupStrategy_OriginalRow
+	default:
+		return nil, fmt.Errorf("unsupported strategy %v", res.BackupStrategy)
+	}
+	return &protoV2.RecommendBackupStrategyRes{
+		BackupStrategy:    backupStrategyProtoV2,
+		BackupStrategyTip: res.BackupStrategyTip,
+		TablesRefer:       res.TablesRefer,
+		SchemasRefer:      res.SchemasRefer,
+	}, nil
 }
 
 func (d *DriverGrpcServer) Metas(ctx context.Context, req *protoV2.Empty) (*protoV2.MetasResponse, error) {
