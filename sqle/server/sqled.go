@@ -298,26 +298,14 @@ func (a *action) audit() (err error) {
 	if err != nil {
 		return err
 	}
-
-	// skip generate if audit is static
-	if a.task.SQLSource == model.TaskSQLSourceFromMyBatisXMLFile || a.task.SQLSource == model.TaskSQLSourceFromZipFile || a.task.SQLSource == model.TaskSQLSourceFromGitRepository || a.task.InstanceId == 0 {
-		a.entry.Warn("skip generate rollback SQLs")
-	} else if !driver.GetPluginManager().IsOptionalModuleEnabled(a.task.DBType, driverV2.OptionalModuleGenRollbackSQL) {
-		a.entry.Infof("skip generate rollback SQLs, %v", driver.NewErrPluginAPINotImplement(driverV2.OptionalModuleGenRollbackSQL))
-	} else {
-		p, err := newDriverManagerWithAudit(a.entry, a.task.Instance, a.task.Schema, a.task.DBType, a.rules)
-		if err != nil {
-			return xerrors.Wrap(err, "new driver for generate rollback SQL")
+	backupService := BackupService{}
+	if backupService.CheckCanTaskBackup(a.task) {
+		backupTasks := make([]*model.BackupTask, 0, len(a.task.ExecuteSQLs))
+		for _, sql := range a.task.ExecuteSQLs {
+			backupTasks = append(backupTasks, initModelBackupTask(a.plugin, a.task, sql))
 		}
-		defer p.Close(context.TODO())
-
-		rollbackSQLs, err := genRollbackSQL(a.entry, a.task, p)
+		err = st.BatchCreateBackupTasks(backupTasks)
 		if err != nil {
-			return err
-		}
-
-		if err = st.UpdateRollbackSQLs(rollbackSQLs); err != nil {
-			a.entry.Errorf("save rollback SQLs error:%v", err)
 			return err
 		}
 	}
@@ -457,7 +445,14 @@ func (a *action) GetTaskStatus(st *model.Storage) string {
 }
 
 func (a *action) execTask() (err error) {
-
+	// TODO  if enable backup and plugin support backup
+	if a.task.EnableBackup {
+		err = a.backupAndExecSql()
+		if err != nil {
+			return err
+		}
+		return nil
+	}
 	switch a.task.ExecMode {
 	case model.ExecModeSqlFile:
 		// check plugin can exec batch sqls
@@ -480,6 +475,30 @@ func (a *action) execTask() (err error) {
 	}
 	return nil
 
+}
+
+/*
+backupAndExecSql() 备份与执行SQL：
+
+	按照顺序，先根据一条SQL备份，再执行该SQL。备份过程中涉及连库查询和保存数据。
+*/
+func (a *action) backupAndExecSql() error {
+	svc := BackupService{}
+	for _, executeSQL := range a.task.ExecuteSQLs {
+		if svc.CheckCanTaskBackup(a.task) {
+			backupTask, err := toBackupTask(a.plugin, executeSQL)
+			if err != nil {
+				return fmt.Errorf("in backupAndExecSql when convert toBackupTask, err %w , backup task: %v, task: %v", err, executeSQL.BackupTask.ID, a.task.ID)
+			}
+			if err = backupTask.Backup(); err != nil {
+				return fmt.Errorf("in backupAndExecSql when backupTask Backup, err %w, backup task: %v, task: %v", err, executeSQL.BackupTask.ID, a.task.ID)
+			}
+		}
+		if err := a.execSQL(executeSQL); err != nil {
+			return fmt.Errorf("in backupAndExecSql when execSQL %v, err %w, backup task: %v, task: %v", executeSQL, err, executeSQL.BackupTask.ID, a.task.ID)
+		}
+	}
+	return nil
 }
 
 func (a *action) execSqlSqlMode() error {

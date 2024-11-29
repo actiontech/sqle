@@ -129,6 +129,14 @@ type PluginImplV1 struct {
 	driverV1.DriverManager
 }
 
+func (d *PluginImplV1) Backup(ctx context.Context, backupStrategy string, sql string) (backupSql []string, executeInfo string, err error) {
+	return nil, "", nil
+}
+
+func (d *PluginImplV1) RecommendBackupStrategy(ctx context.Context, sql string) (*RecommendBackupStrategyRes, error) {
+	return nil, nil
+}
+
 func (p *PluginImplV1) Close(ctx context.Context) {
 	p.DriverManager.Close(ctx)
 }

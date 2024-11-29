@@ -25,25 +25,6 @@ var sourceRuleHandlers = []*SourceHandler{
 	},
 	{
 		Rule: SourceRule{
-			Name:       ConfigDMLRollbackMaxRows,
-			Desc:       plocale.ConfigDMLRollbackMaxRowsDesc,
-			Annotation: plocale.ConfigDMLRollbackMaxRowsAnnotation,
-			//Value:    "1000",
-			Level:    driverV2.RuleLevelNotice,
-			Category: plocale.RuleTypeGlobalConfig,
-			Params: []*SourceParam{
-				{
-					Key:   DefaultSingleParamKeyName,
-					Value: "1000",
-					Desc:  plocale.ConfigDMLRollbackMaxRowsParams1,
-					Type:  params.ParamTypeInt,
-				},
-			},
-		},
-		Func: nil,
-	},
-	{
-		Rule: SourceRule{
 			Name:       ConfigDDLOSCMinSize,
 			Desc:       plocale.ConfigDDLOSCMinSizeDesc,
 			Annotation: plocale.ConfigDDLOSCMinSizeAnnotation,
@@ -1857,7 +1838,7 @@ var sourceRuleHandlers = []*SourceHandler{
 			Name:       DMLCheckAffectedRows,
 			Desc:       plocale.DMLCheckAffectedRowsDesc,
 			Annotation: plocale.DMLCheckAffectedRowsAnnotation,
-			Level:      driverV2.RuleLevelError,
+			Level:      driverV2.RuleLevelWarn,
 			Category:   plocale.RuleTypeDMLConvention,
 			Params: []*SourceParam{
 				{
@@ -2001,7 +1982,7 @@ var sourceRuleHandlers = []*SourceHandler{
 			Name:       DMLCheckSelectRows,
 			Desc:       plocale.DMLCheckSelectRowsDesc,
 			Annotation: plocale.DMLCheckSelectRowsAnnotation,
-			Level:      driverV2.RuleLevelError,
+			Level:      driverV2.RuleLevelWarn,
 			Category:   plocale.RuleTypeDMLConvention,
 			Params: []*SourceParam{
 				{

@@ -522,6 +522,44 @@ func (s *Storage) Save(model interface{}) error {
 	return errors.New(errors.ConnectStorageError, s.db.Save(model).Error)
 }
 
+func (s *Storage) BatchSave(value any, batchSize int) error {
+	reflectValue := reflect.Indirect(reflect.ValueOf(value))
+	if reflectValue.Kind() != reflect.Slice && reflectValue.Kind() != reflect.Array {
+		return s.db.Save(value).Error
+	}
+
+	sliceLen := reflectValue.Len()
+	if sliceLen == 0 {
+		return nil
+	}
+
+	txDB := s.db.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			txDB.Rollback()
+		}
+	}()
+
+	for i := 0; i < sliceLen; i += batchSize {
+		end := i + batchSize
+		if end > sliceLen {
+			end = sliceLen
+		}
+
+		if err := txDB.Save(reflectValue.Slice(i, end).Interface()).Error; err != nil {
+			txDB.Rollback()
+			return errors.ConnectStorageErrWrapper(err)
+		}
+	}
+
+	if err := txDB.Commit().Error; err != nil {
+		txDB.Rollback()
+		return errors.ConnectStorageErrWrapper(err)
+	}
+
+	return nil
+}
+
 func (s *Storage) Update(model interface{}, attrs ...interface{}) error {
 	return errors.New(errors.ConnectStorageError, s.db.Model(model).UpdateColumns(attrs).Error)
 }
