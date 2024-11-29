@@ -99,13 +99,15 @@ func (i *MysqlDriverImpl) getCreateTableStmt(table *ast.TableName) (string, erro
 	return stmt.Text() + ";\n", nil
 }
 
+const TemporaryMaxRows int64 = 10000 // 临时限制备份行数上限为10000
+
 func (i *MysqlDriverImpl) getOriginalRowReplaceIntoSql(table *ast.TableName, whereClause ast.ExprNode, orderClause *ast.OrderByClause) ([]string, error) {
 	createTableStmt, exist, err := i.Ctx.GetCreateTableStmt(table)
 	if err != nil || !exist {
 		return []string{}, err
 	}
 
-	records, err := i.getRecords(table, "", whereClause, orderClause, 10000)
+	records, err := i.getRecords(table, "", whereClause, orderClause, TemporaryMaxRows)
 	if err != nil {
 		return []string{}, err
 	}
