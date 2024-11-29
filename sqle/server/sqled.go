@@ -488,13 +488,16 @@ func (a *action) backupAndExecSql() error {
 		if svc.CheckCanTaskBackup(a.task) {
 			backupTask, err := toBackupTask(a.plugin, executeSQL)
 			if err != nil {
+				log.Logger().Errorf("in backupAndExecSql when convert toBackupTask, err %v ", err)
 				return err
 			}
 			if err = backupTask.Backup(); err != nil {
+				log.Logger().Errorf("in backupAndExecSql when backupTask Backup, err %v ", err)
 				return err
 			}
 		}
 		if err := a.execSQL(executeSQL); err != nil {
+			log.Logger().Errorf("in backupAndExecSql when execSQL %v, err %v ", executeSQL, err)
 			return err
 		}
 	}
