@@ -7197,7 +7197,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_name}/workflows/{workflow_id}/create_rollback_workflows": {
+        "/v1/projects/{project_name}/workflows/{workflow_id}/create_rollback_workflow": {
             "post": {
                 "security": [
                     {
