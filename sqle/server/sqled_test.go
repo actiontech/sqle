@@ -52,7 +52,7 @@ func (p *mockDriver) Backup(ctx context.Context, backupStrategy string, sql stri
 	return nil, "", nil
 }
 
-func (p *mockDriver) GetBackupStrategy(ctx context.Context, sql string) (*driver.GetBackupStrategyRes, error) {
+func (p *mockDriver) RecommendBackupStrategy(ctx context.Context, sql string) (*driver.RecommendBackupStrategyRes, error) {
 	return nil, nil
 }
 

@@ -109,7 +109,7 @@ func (d *DriverGrpcServer) Backup(ctx context.Context, req *protoV2.BackupReq) (
 	return nil, nil
 }
 
-func (d *DriverGrpcServer) GetBackupStrategy(ctx context.Context, req *protoV2.GetBackupStrategyReq) (*protoV2.GetBackupStrategyRes, error) {
+func (d *DriverGrpcServer) RecommendBackupStrategy(ctx context.Context, req *protoV2.RecommendBackupStrategyReq) (*protoV2.RecommendBackupStrategyRes, error) {
 	return nil, nil
 }
 

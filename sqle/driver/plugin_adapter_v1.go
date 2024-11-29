@@ -133,7 +133,7 @@ func (d *PluginImplV1) Backup(ctx context.Context, backupStrategy string, sql st
 	return nil, "", nil
 }
 
-func (d *PluginImplV1) GetBackupStrategy(ctx context.Context, sql string) (*GetBackupStrategyRes, error) {
+func (d *PluginImplV1) RecommendBackupStrategy(ctx context.Context, sql string) (*RecommendBackupStrategyRes, error) {
 	return nil, nil
 }
 
