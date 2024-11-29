@@ -28,7 +28,7 @@ service Driver {
   rpc Explain(ExplainRequest) returns (ExplainResponse);
 
   // db backup
-  rpc GetBackupStrategy(GetBackupStrategyReq) returns(GetBackupStrategyRes);
+  rpc RecommendBackupStrategy(RecommendBackupStrategyReq) returns(RecommendBackupStrategyRes);
   rpc Backup(BackupReq) returns(BackupRes);
 
   // db metadata
@@ -57,12 +57,12 @@ message BackupRes {
   string executeInfo = 2;
 }
 
-message GetBackupStrategyReq {
+message RecommendBackupStrategyReq {
   Session session = 1;
   string sql = 2;
 }
 
-message GetBackupStrategyRes {
+message RecommendBackupStrategyRes {
   BackupStrategy backupStrategy = 1;
   string backupStrategyTip = 2;
   repeated string tablesRefer =3;

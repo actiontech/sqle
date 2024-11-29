@@ -50,7 +50,7 @@ func (p *DriverImpl) Backup(ctx context.Context, req *driverV2.BackupReq) (*driv
 	return nil, nil
 }
 
-func (p *DriverImpl) GetBackupStrategy(ctx context.Context, req *driverV2.GetBackupStrategyReq) (*driverV2.GetBackupStrategyRes, error) {
+func (p *DriverImpl) RecommendBackupStrategy(ctx context.Context, req *driverV2.RecommendBackupStrategyReq) (*driverV2.RecommendBackupStrategyRes, error) {
 	return nil, nil
 }
 

@@ -49,14 +49,14 @@ type Plugin interface {
 
 	Backup(ctx context.Context, backupStrategy string, sql string) (BackupSql []string, ExecuteInfo string, err error)
 
-	GetBackupStrategy(ctx context.Context, sql string) (*GetBackupStrategyRes, error)
+	RecommendBackupStrategy(ctx context.Context, sql string) (*RecommendBackupStrategyRes, error)
 }
 
-type GetBackupStrategyRes struct {
-    BackupStrategy    string
-    BackupStrategyTip string
-    TablesRefer       []string
-    SchemasRefer      []string
+type RecommendBackupStrategyRes struct {
+	BackupStrategy    string
+	BackupStrategyTip string
+	TablesRefer       []string
+	SchemasRefer      []string
 }
 
 type PluginProcessor interface {

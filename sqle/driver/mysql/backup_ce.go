@@ -6,6 +6,7 @@ package mysql
 import (
 	"context"
 	"fmt"
+
 	"github.com/actiontech/sqle/sqle/driver"
 )
 
@@ -15,6 +16,6 @@ func (i *MysqlDriverImpl) Backup(ctx context.Context, backupStrategy string, sql
 	return nil, "", ErrUnsupportedBackup
 }
 
-func (i *MysqlDriverImpl) GetBackupStrategy(ctx context.Context, sql string) (*driver.GetBackupStrategyRes, error) {
+func (i *MysqlDriverImpl) RecommendBackupStrategy(ctx context.Context, sql string) (*driver.RecommendBackupStrategyRes, error) {
 	return nil, ErrUnsupportedBackup
 }
