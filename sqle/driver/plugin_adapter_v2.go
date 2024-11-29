@@ -194,7 +194,7 @@ func (s *PluginImplV2) Backup(ctx context.Context, backupStrategy string, sql st
 	return resp.GetBackupSql(), resp.GetExecuteInfo(), nil
 }
 
-func (p *PluginImplV2) GetBackupStrategy(ctx context.Context, sql string) (*GetBackupStrategyRes, error) {
+func (p *PluginImplV2) RecommendBackupStrategy(ctx context.Context, sql string) (*RecommendBackupStrategyRes, error) {
 	return nil, nil
 }
 

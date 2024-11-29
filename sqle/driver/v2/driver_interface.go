@@ -95,7 +95,7 @@ type Driver interface {
 	GetDatabaseDiffModifySQL(ctx context.Context, calibratedDSN *DSN, objInfos []*DatabasCompareSchemaInfo) ([]*DatabaseDiffModifySQLResult, error)
 
 	Backup(ctx context.Context, req *BackupReq) (*BackupRes, error)
-	GetBackupStrategy(ctx context.Context, req *GetBackupStrategyReq) (*GetBackupStrategyRes, error)
+	RecommendBackupStrategy(ctx context.Context, req *RecommendBackupStrategyReq) (*RecommendBackupStrategyRes, error)
 }
 
 type BackupReq struct {
@@ -108,11 +108,11 @@ type BackupRes struct {
 	ExecuteInfo string
 }
 
-type GetBackupStrategyReq struct {
+type RecommendBackupStrategyReq struct {
 	Sql string
 }
 
-type GetBackupStrategyRes struct {
+type RecommendBackupStrategyRes struct {
 	BackupStrategy    string
 	BackupStrategyTip string
 	TablesRefer       []string
