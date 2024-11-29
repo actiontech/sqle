@@ -63,17 +63,17 @@ message RecommendBackupStrategyReq {
 }
 
 message RecommendBackupStrategyRes {
-  BackupStrategy backupStrategy = 1;
-  string backupStrategyTip = 2;
-  repeated string tablesRefer =3;
-  repeated string schemasRefer =4;
+  BackupStrategy backupStrategy = 1;  // 备份策略
+  string backupStrategyTip = 2;       // 推荐备份策略的原因
+  repeated string tablesRefer =3;     // sql引用的表，用于备份
+  repeated string schemasRefer =4;    // sql引用的数据库，用于备份
 }
 
 enum BackupStrategy {
-    None = 0;
-    ReverseSql = 1;
-    OriginalRow = 2;
-    Manually = 3;
+    None = 0;         // 备份策略为不备份
+    ReverseSql = 1;   // 备份策略为反向SQL
+    OriginalRow = 2;  // 备份策略为备份原始行
+    Manually = 3;     // 备份策略为人工手动备份
 }
 
 enum OptionalModule {

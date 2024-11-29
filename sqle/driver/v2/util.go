@@ -78,7 +78,7 @@ func (m OptionalModule) String() string {
 	case OptionalModuleI18n:
 		return "I18n"
 	case OptionalBackup:
-		return "backup"
+		return "Backup"
 	default:
 		return "Unknown"
 	}
