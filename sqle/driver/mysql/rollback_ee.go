@@ -101,7 +101,7 @@ func (i *MysqlDriverImpl) generateDeleteRollbackSqls(stmt *ast.DeleteStmt) ([]st
 		return []string{}, plocale.Bundle.LocalizeAll(plocale.NotSupportNoPrimaryKeyTableRollback), nil
 	}
 
-	var max = i.cnf.DMLRollbackMaxRows
+	var max = TemporaryMaxRows
 	limit, err := util.GetLimitCount(stmt.Limit, max+1)
 	if err != nil {
 		return []string{}, nil, err
@@ -191,7 +191,7 @@ func (i *MysqlDriverImpl) generateUpdateRollbackSqls(stmt *ast.UpdateStmt) ([]st
 		return []string{}, plocale.Bundle.LocalizeAll(plocale.NotSupportNoPrimaryKeyTableRollback), nil
 	}
 
-	var max = i.cnf.DMLRollbackMaxRows
+	var max = TemporaryMaxRows
 	limit, err := util.GetLimitCount(stmt.Limit, max+1)
 	if err != nil {
 		return []string{}, nil, err
@@ -588,7 +588,7 @@ func (i *MysqlDriverImpl) generateInsertRollbackSqls(stmt *ast.InsertStmt) ([]st
 	// match "insert into table_name (column_name,...) value (v1,...)"
 	// match "insert into table_name value (v1,...)"
 	if stmt.Lists != nil {
-		if int64(len(stmt.Lists)) > i.cnf.DMLRollbackMaxRows {
+		if int64(len(stmt.Lists)) > TemporaryMaxRows {
 			return []string{}, plocale.Bundle.LocalizeAll(plocale.NotSupportExceedMaxRowsRollback), nil
 		}
 		columnsName := []string{}
@@ -624,9 +624,6 @@ func (i *MysqlDriverImpl) generateInsertRollbackSqls(stmt *ast.InsertStmt) ([]st
 
 	// match "insert into table_name set col_name = value1, ..."
 	if stmt.Setlist != nil {
-		if 1 > i.cnf.DMLRollbackMaxRows {
-			return []string{}, plocale.Bundle.LocalizeAll(plocale.NotSupportExceedMaxRowsRollback), nil
-		}
 		where := []string{}
 		for _, setExpr := range stmt.Setlist {
 			name := setExpr.Column.Name.String()
