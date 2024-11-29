@@ -177,10 +177,18 @@ type PluginImplV2 struct {
 func (s *PluginImplV2) Backup(ctx context.Context, backupStrategy string, sql string) (BackupSql []string, ExecuteInfo string, err error) {
 	api := "Backup"
 	s.preLog(api)
-	var strategy protoV2.BackupStrategy = protoV2.BackupStrategy_ReverseSql
+	var strategy protoV2.BackupStrategy
 	switch backupStrategy {
-	case "reverse_sql":
+	case driverV2.BackupStrategyReverseSql:
 		strategy = protoV2.BackupStrategy_ReverseSql
+	case driverV2.BackupStrategyNone:
+		strategy = protoV2.BackupStrategy_None
+	case driverV2.BackupStrategyOriginalRow:
+		strategy = protoV2.BackupStrategy_OriginalRow
+	case driverV2.BackupStrategyManually:
+		strategy = protoV2.BackupStrategy_Manually
+	default:
+		return []string{}, "", fmt.Errorf("unsupported strategy %v", backupStrategy)
 	}
 	resp, err := s.client.Backup(ctx, &protoV2.BackupReq{
 		Session:        s.Session,
@@ -195,7 +203,23 @@ func (s *PluginImplV2) Backup(ctx context.Context, backupStrategy string, sql st
 }
 
 func (p *PluginImplV2) RecommendBackupStrategy(ctx context.Context, sql string) (*RecommendBackupStrategyRes, error) {
-	return nil, nil
+	api := "RecommendBackupStrategy"
+	p.preLog(api)
+
+	resp, err := p.client.RecommendBackupStrategy(ctx, &protoV2.RecommendBackupStrategyReq{
+		Session: p.Session,
+		Sql:     sql,
+	})
+	p.afterLog(api, err)
+	if err != nil {
+		return nil, err
+	}
+	return &RecommendBackupStrategyRes{
+		BackupStrategy:    resp.BackupStrategy.String(),
+		BackupStrategyTip: resp.BackupStrategyTip,
+		TablesRefer:       resp.TablesRefer,
+		SchemasRefer:      resp.SchemasRefer,
+	}, nil
 }
 
 func (s *PluginImplV2) preLog(ApiName string) {

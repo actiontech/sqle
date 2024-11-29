@@ -98,6 +98,13 @@ type Driver interface {
 	RecommendBackupStrategy(ctx context.Context, req *RecommendBackupStrategyReq) (*RecommendBackupStrategyRes, error)
 }
 
+const (
+	BackupStrategyNone        string = "none"         // 不备份(不支持备份、无需备份、选择不备份)
+	BackupStrategyReverseSql  string = "reverse_sql"  // 备份为反向SQL
+	BackupStrategyOriginalRow string = "original_row" // 备份为原始行
+	BackupStrategyManually    string = "manual"       // 标记为人工备份
+)
+
 type BackupReq struct {
 	BackupStrategy string
 	Sql            string
