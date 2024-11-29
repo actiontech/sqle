@@ -64,7 +64,7 @@ type AuditTaskResV1 struct {
 	FileOrderMethod            string          `json:"file_order_method,omitempty"`
 	ExecMode                   string          `json:"exec_mode,omitempty"`
 	EnableBackup               bool            `json:"enable_backup"`
-	BackupConflictWithInstance bool            `json:"backup_conflict_with_instance"`
+	BackupConflictWithInstance bool            `json:"backup_conflict_with_instance"` // 当数据源备份开启，工单备份关闭，则需要提示审核人工单备份策略与数据源备份策略不一致
 	AuditFiles                 []AuditFileResp `json:"audit_files,omitempty"`
 }
 
