@@ -54,6 +54,7 @@ const (
 	OptionalModuleKillProcess
 	OptionalExecBatch
 	OptionalModuleI18n
+	OptionalBackup
 )
 
 func (m OptionalModule) String() string {
@@ -76,6 +77,8 @@ func (m OptionalModule) String() string {
 		return "ExecBatch"
 	case OptionalModuleI18n:
 		return "I18n"
+	case OptionalBackup:
+		return "Backup"
 	default:
 		return "Unknown"
 	}

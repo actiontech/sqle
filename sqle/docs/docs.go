@@ -7197,7 +7197,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_name}/workflows/{workflow_id}/rollback": {
+        "/v1/projects/{project_name}/workflows/{workflow_id}/create_rollback_workflow": {
             "post": {
                 "security": [
                     {
@@ -11639,6 +11639,7 @@ var doc = `{
                     ]
                 },
                 "backup_conflict_with_instance": {
+                    "description": "当数据源备份开启，工单备份关闭，则需要提示审核人工单备份策略与数据源备份策略不一致",
                     "type": "boolean"
                 },
                 "enable_backup": {
@@ -11735,8 +11736,11 @@ var doc = `{
                 "number": {
                     "type": "integer"
                 },
-                "rollback_sql": {
-                    "type": "string"
+                "rollback_sqls": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },

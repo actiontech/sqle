@@ -206,7 +206,6 @@ const (
 
 // inspector config code
 const (
-	ConfigDMLRollbackMaxRows       = "dml_rollback_max_rows"
 	ConfigDDLOSCMinSize            = "ddl_osc_min_size"
 	ConfigDDLGhostMinSize          = "ddl_ghost_min_size"
 	ConfigOptimizeIndexEnabled     = "optimize_index_enabled"

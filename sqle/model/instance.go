@@ -36,6 +36,7 @@ type Instance struct {
 	Source             string         `json:"source" gorm:"not null"`
 	SyncInstanceTaskID uint           `json:"sync_instance_task_id"`
 	Business           string         `json:"business"`
+	EnableBackup       bool           `json:"enable_backup"`
 
 	// relation table
 	RuleTemplates    []RuleTemplate    `json:"-" gorm:"many2many:instance_rule_template"`

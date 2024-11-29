@@ -389,6 +389,7 @@ definitions:
         - ""
         type: string
       backup_conflict_with_instance:
+        description: 当数据源备份开启，工单备份关闭，则需要提示审核人工单备份策略与数据源备份策略不一致
         type: boolean
       enable_backup:
         type: boolean
@@ -456,8 +457,10 @@ definitions:
         type: string
       number:
         type: integer
-      rollback_sql:
-        type: string
+      rollback_sqls:
+        items:
+          type: string
+        type: array
     type: object
   v1.AuditTasksGroupResV1:
     properties:
@@ -10522,7 +10525,7 @@ paths:
       summary: 获取工单下所有回滚SQL的列表
       tags:
       - workflow
-  /v1/projects/{project_name}/workflows/{workflow_id}/rollback:
+  /v1/projects/{project_name}/workflows/{workflow_id}/create_rollback_workflow:
     post:
       consumes:
       - application/json

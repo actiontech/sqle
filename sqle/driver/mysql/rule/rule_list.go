@@ -25,25 +25,6 @@ var sourceRuleHandlers = []*SourceHandler{
 	},
 	{
 		Rule: SourceRule{
-			Name:       ConfigDMLRollbackMaxRows,
-			Desc:       plocale.ConfigDMLRollbackMaxRowsDesc,
-			Annotation: plocale.ConfigDMLRollbackMaxRowsAnnotation,
-			//Value:    "1000",
-			Level:    driverV2.RuleLevelNotice,
-			Category: plocale.RuleTypeGlobalConfig,
-			Params: []*SourceParam{
-				{
-					Key:   DefaultSingleParamKeyName,
-					Value: "1000",
-					Desc:  plocale.ConfigDMLRollbackMaxRowsParams1,
-					Type:  params.ParamTypeInt,
-				},
-			},
-		},
-		Func: nil,
-	},
-	{
-		Rule: SourceRule{
 			Name:       ConfigDDLOSCMinSize,
 			Desc:       plocale.ConfigDDLOSCMinSizeDesc,
 			Annotation: plocale.ConfigDDLOSCMinSizeAnnotation,

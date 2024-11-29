@@ -47,27 +47,28 @@ const ExecModeSqls = "sqls"
 
 type Task struct {
 	Model
-	InstanceId      uint64  `json:"instance_id"`
-	Schema          string  `json:"instance_schema" gorm:"column:instance_schema;type:varchar(255)" example:"db1"`
-	PassRate        float64 `json:"pass_rate"`
-	Score           int32   `json:"score"`
-	AuditLevel      string  `json:"audit_level" gorm:"type:varchar(255)"`
-	SQLSource       string  `json:"sql_source" gorm:"column:sql_source;type:varchar(255)"`
-	DBType          string  `json:"db_type" gorm:"default:'mysql';type:varchar(255)" example:"mysql"`
-	Status          string  `json:"status" gorm:"default:\"initialized\";type:varchar(255)"`
-	GroupId         uint    `json:"group_id" gorm:"column:group_id"`
-	CreateUserId    uint64
-	RuleTemplateID  uint `json:"rule_template_id" gorm:"column:rule_template_id"`
-	ExecStartAt     *time.Time
-	ExecEndAt       *time.Time
-	ExecMode        string         `json:"exec_mode" gorm:"default:'sqls';type:varchar(255)" example:"sqls"`
-	EnableBackup    bool           `gorm:"column:enable_backup"`
-	FileOrderMethod string         `json:"file_order_method" gorm:"column:file_order_method;type:varchar(255)"`
-	Instance        *Instance      `json:"-" gorm:"-"`
-	RuleTemplate    *RuleTemplate  `json:"-" gorm:"foreignkey:RuleTemplateID"`
-	ExecuteSQLs     []*ExecuteSQL  `json:"-" gorm:"foreignkey:TaskId"`
-	RollbackSQLs    []*RollbackSQL `json:"-" gorm:"foreignkey:TaskId"`
-	AuditFiles      []*AuditFile   `json:"-" gorm:"foreignkey:TaskId"`
+	InstanceId           uint64  `json:"instance_id"`
+	Schema               string  `json:"instance_schema" gorm:"column:instance_schema;type:varchar(255)" example:"db1"`
+	PassRate             float64 `json:"pass_rate"`
+	Score                int32   `json:"score"`
+	AuditLevel           string  `json:"audit_level" gorm:"type:varchar(255)"`
+	SQLSource            string  `json:"sql_source" gorm:"column:sql_source;type:varchar(255)"`
+	DBType               string  `json:"db_type" gorm:"default:'mysql';type:varchar(255)" example:"mysql"`
+	Status               string  `json:"status" gorm:"default:\"initialized\";type:varchar(255)"`
+	GroupId              uint    `json:"group_id" gorm:"column:group_id"`
+	CreateUserId         uint64
+	RuleTemplateID       uint `json:"rule_template_id" gorm:"column:rule_template_id"`
+	ExecStartAt          *time.Time
+	ExecEndAt            *time.Time
+	ExecMode             string         `json:"exec_mode" gorm:"default:'sqls';type:varchar(255)" example:"sqls"`
+	EnableBackup         bool           `gorm:"column:enable_backup"`
+	InstanceEnableBackup bool           `gorm:"column:instance_enable_backup"` // 用于记录创建task时，instance备份开关的状态
+	FileOrderMethod      string         `json:"file_order_method" gorm:"column:file_order_method;type:varchar(255)"`
+	Instance             *Instance      `json:"-" gorm:"-"`
+	RuleTemplate         *RuleTemplate  `json:"-" gorm:"foreignkey:RuleTemplateID"`
+	ExecuteSQLs          []*ExecuteSQL  `json:"-" gorm:"foreignkey:TaskId"`
+	RollbackSQLs         []*RollbackSQL `json:"-" gorm:"foreignkey:TaskId"`
+	AuditFiles           []*AuditFile   `json:"-" gorm:"foreignkey:TaskId"`
 }
 
 func (t *Task) RuleTemplateName() string {
@@ -119,6 +120,7 @@ const (
 	SQLExecuteStatusManuallyExecuted = "manually_executed"
 	SQLExecuteStatusTerminateSucc    = "terminate_succeeded"
 	SQLExecuteStatusTerminateFailed  = "terminate_failed"
+	SQLExecuteStatusExecuteRollback  = "execute_rollback" // 执行回滚
 )
 
 type BaseSQL struct {
@@ -320,7 +322,8 @@ type ExecuteSQL struct {
 	// it used for deduplication in one audit task.
 	AuditFingerprint string `json:"audit_fingerprint" gorm:"index;type:char(32)"`
 	// AuditLevel has four level: error, warn, notice, normal.
-	AuditLevel string `json:"audit_level" gorm:"type:varchar(255)"`
+	AuditLevel string      `json:"audit_level" gorm:"type:varchar(255)"`
+	BackupTask *BackupTask `json:"-" gorm:"foreignkey:execute_sql_id"`
 }
 
 func (s ExecuteSQL) TableName() string {
@@ -590,6 +593,7 @@ func (s *Storage) GetTaskByInstanceId(instanceId uint64) ([]Task, error) {
 }
 
 type TaskSQLDetail struct {
+	Id            uint           `json:"id"`
 	Number        uint           `json:"number"`
 	Description   string         `json:"description"`
 	ExecSQL       string         `json:"exec_sql"`
@@ -612,7 +616,7 @@ func (t *TaskSQLDetail) GetAuditResults(ctx context.Context) string {
 	return t.AuditResults.String(ctx)
 }
 
-var taskSQLsQueryTpl = `SELECT e_sql.number, e_sql.description, e_sql.content AS exec_sql,  e_sql.source_file AS sql_source_file, e_sql.start_line AS sql_start_line, e_sql.sql_type, r_sql.content AS rollback_sql,
+var taskSQLsQueryTpl = `SELECT e_sql.id,e_sql.number, e_sql.description, e_sql.content AS exec_sql,  e_sql.source_file AS sql_source_file, e_sql.start_line AS sql_start_line, e_sql.sql_type,
 e_sql.audit_results, e_sql.audit_level, e_sql.audit_status, e_sql.exec_result, e_sql.exec_status
 
 {{- template "body" . -}}
@@ -634,7 +638,6 @@ FROM execute_sql_detail AS e_sql
 LEFT JOIN audit_files ON audit_files.task_id = e_sql.task_id
 AND audit_files.file_name = e_sql.source_file
 {{- end }}
-LEFT JOIN rollback_sql_detail AS r_sql ON e_sql.id = r_sql.execute_sql_id
 WHERE
 e_sql.deleted_at IS NULL
 AND e_sql.task_id = :task_id

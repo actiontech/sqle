@@ -934,6 +934,7 @@ func (s *Storage) GetWorkflowByProjectAndWorkflowId(projectId, workflowId string
 func (s *Storage) GetWorkflowByWorkflowId(workflowId string) (workflow *Workflow, exist bool, err error) {
 	err = s.db.
 		Preload("Record").
+		Preload("Record.InstanceRecords").
 		Where("workflow_id = ?", workflowId).
 		First(&workflow).Error
 	if err != nil {
