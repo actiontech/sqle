@@ -50,10 +50,6 @@ func (i *MysqlDriverImpl) GenerateDDLStmtRollbackSqls(node ast.Node) (rollbackSq
 }
 
 func (i *MysqlDriverImpl) GenerateDMLStmtRollbackSqls(node ast.Node) (rollbackSql []string, unableRollbackReason i18nPkg.I18nStr, err error) {
-	// MysqlDriverImpl may skip initialized cnf when Audited SQLs in whitelist.
-	if i.cnf == nil || i.cnf.DMLRollbackMaxRows < 0 {
-		return []string{}, nil, nil
-	}
 
 	paramMarkerChecker := util.ParamMarkerChecker{}
 	node.Accept(&paramMarkerChecker)
