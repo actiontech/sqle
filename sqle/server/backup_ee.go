@@ -7,12 +7,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/driver"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
+	"golang.org/x/text/language"
 	"gorm.io/gorm"
 )
 
@@ -55,6 +57,9 @@ func (BackupService) CheckBackupConflictWithExecMode(EnableBackup bool, ExecMode
 
 // 检查数据源类型是否支持备份
 func (BackupService) CheckIsDbTypeSupportEnableBackup(dbType string) error {
+	if driver.GetPluginManager().IsOptionalModuleEnabled(dbType, driverV2.OptionalModuleGenRollbackSQL) {
+		return nil
+	}
 	if !driver.GetPluginManager().IsOptionalModuleEnabled(dbType, driverV2.OptionalBackup) {
 		return fmt.Errorf("db type %v can not enable backup", dbType)
 	}
@@ -62,11 +67,20 @@ func (BackupService) CheckIsDbTypeSupportEnableBackup(dbType string) error {
 }
 
 func (svc BackupService) CheckCanTaskBackup(task *model.Task) bool {
-	return task.EnableBackup && driver.GetPluginManager().IsOptionalModuleEnabled(task.DBType, driverV2.OptionalBackup)
+	return task.EnableBackup && svc.CheckIsDbTypeSupportEnableBackup(task.DBType) == nil
 }
 
 func initModelBackupTask(p driver.Plugin, task *model.Task, sql *model.ExecuteSQL) *model.BackupTask {
-	strategyRes, err := p.RecommendBackupStrategy(context.TODO(), sql.Content)
+	var err error
+	var strategyRes *driver.RecommendBackupStrategyRes
+	if driver.GetPluginManager().IsOptionalModuleEnabled(task.DBType, driverV2.OptionalBackup) {
+		strategyRes, err = p.RecommendBackupStrategy(context.TODO(), sql.Content)
+	} else if driver.GetPluginManager().IsOptionalModuleEnabled(task.DBType, driverV2.OptionalModuleGenRollbackSQL) {
+		strategyRes = &driver.RecommendBackupStrategyRes{
+			BackupStrategy:    driverV2.BackupStrategyReverseSql,
+			BackupStrategyTip: fmt.Sprintf("数据源：%v,目前只支持根据反向SQL回滚", task.DBType),
+		}
+	}
 	if err != nil {
 		strategyRes.BackupStrategy = string(BackupStrategyManually)
 		strategyRes.BackupStrategyTip = err.Error()
@@ -95,40 +109,17 @@ func initModelBackupTask(p driver.Plugin, task *model.Task, sql *model.ExecuteSQ
 	}
 }
 
-func toBackupTask(p driver.Plugin, sql *model.ExecuteSQL) (BackupTask, error) {
+func toBackupTask(p driver.Plugin, sql *model.ExecuteSQL) (*BaseBackupTask, error) {
 	s := model.GetStorage()
 	backupTask, err := s.GetBackupTaskByExecuteSqlId(sql.ID)
 	if err != nil {
 		return nil, err
 	}
-	switch backupTask.BackupStrategy {
-	case string(BackupStrategyManually):
-		// 当用户选择手工备份时
-		return &BackupManually{
-			BaseBackupTask: NewBaseBackupTask(p, backupTask, sql),
-		}, nil
-	case string(BackupStrategyOriginalRow):
-		// 当用户选择备份行时
-		return &BackupOriginalRow{
-			BaseBackupTask: NewBaseBackupTask(p, backupTask, sql),
-		}, nil
-	case string(BackupStrategyNone):
-		// 当用户选择不备份时
-		return &BackupNothing{
-			BaseBackupTask: NewBaseBackupTask(p, backupTask, sql),
-		}, nil
-	case string(BackupStrategyReverseSql):
-		// 当用户不选择备份策略或选择了反向SQL
-		return &BackupReverseSql{
-			BaseBackupTask: NewBaseBackupTask(p, backupTask, sql),
-		}, nil
-	default:
-		return &BackupNothing{}, nil
-	}
+	return NewBaseBackupTask(p, backupTask, sql), nil
 }
 
-func NewBaseBackupTask(p driver.Plugin, backupTask *model.BackupTask, sql *model.ExecuteSQL) BaseBackupTask {
-	return BaseBackupTask{
+func NewBaseBackupTask(p driver.Plugin, backupTask *model.BackupTask, sql *model.ExecuteSQL) *BaseBackupTask {
+	baseBackupTask := &BaseBackupTask{
 		plugin:            p,
 		ID:                backupTask.ID,
 		ExecTaskId:        sql.TaskId,
@@ -143,6 +134,23 @@ func NewBaseBackupTask(p driver.Plugin, backupTask *model.BackupTask, sql *model
 		BackupStrategyTip: backupTask.BackupStrategyTip,
 		BackupExecResult:  backupTask.BackupExecResult,
 	}
+	switch backupTask.BackupStrategy {
+	case string(BackupStrategyManually):
+		// 当用户选择手工备份时
+		baseBackupTask.backupTask = &BackupManually{}
+	case string(BackupStrategyOriginalRow):
+		// 当用户选择备份行时
+		baseBackupTask.backupTask = &BackupOriginalRow{BaseBackupTask: baseBackupTask}
+	case string(BackupStrategyNone):
+		// 当用户选择不备份时
+		baseBackupTask.backupTask = &BackupNothing{}
+	case string(BackupStrategyReverseSql):
+		// 当用户不选择备份策略或选择了反向SQL
+		baseBackupTask.backupTask = &BackupReverseSqlUseRollbackApi{BaseBackupTask: baseBackupTask}
+	default:
+
+	}
+	return baseBackupTask
 }
 
 func (task BaseBackupTask) toModel() *model.BackupTask {
@@ -163,8 +171,8 @@ func (task BaseBackupTask) toModel() *model.BackupTask {
 }
 
 type BaseBackupTask struct {
-	plugin driver.Plugin
-
+	plugin     driver.Plugin
+	backupTask BackupTask
 	ID         uint   // 备份任务id
 	ExecTaskId uint   // 备份任务对应的执行任务id
 	InstanceId uint64 // 备份任务对应的数据源id
@@ -187,32 +195,7 @@ type BaseBackupTask struct {
  2. 备份结果的保存
 */
 func (backup *BaseBackupTask) doBackup() (backupErr error) {
-	s := model.GetStorage()
-	var modelBackupTask *model.BackupTask = backup.toModel()
-	// generate reverse sql
-	backupSqls, executeInfo, updateStatusErr := backup.plugin.Backup(context.TODO(), string(backup.BackupStrategy), backup.ExecuteSql)
-	backup.BackupExecResult = executeInfo
-	if updateStatusErr != nil {
-		return updateStatusErr
-	}
-
-	rollbackSqls := make([]*model.RollbackSQL, 0, len(backupSqls))
-	for idx, rollbackSql := range backupSqls {
-		rollbackSqls = append(rollbackSqls, &model.RollbackSQL{
-			BaseSQL: model.BaseSQL{
-				Number:      uint(idx) + 1,
-				TaskId:      modelBackupTask.TaskId,
-				Content:     rollbackSql,
-				Description: executeInfo,
-			},
-			ExecuteSQLId: modelBackupTask.ExecuteSqlId,
-		})
-	}
-	// save backup result into database
-	if updateStatusErr = s.UpdateRollbackSQLs(rollbackSqls); updateStatusErr != nil {
-		return updateStatusErr
-	}
-	return nil
+	return backup.backupTask.backup()
 }
 
 func (backup *BaseBackupTask) Backup() (backupErr error) {
@@ -278,7 +261,7 @@ type BackupNothing struct {
 	BaseBackupTask
 }
 
-func (BackupNothing) doBackup() (backupErr error) {
+func (BackupNothing) backup() (backupErr error) {
 	return nil
 }
 
@@ -286,16 +269,114 @@ type BackupManually struct {
 	BaseBackupTask
 }
 
-func (BackupManually) doBackup() (backupErr error) {
+func (BackupManually) backup() (backupErr error) {
 	return nil
 }
 
 type BackupOriginalRow struct {
-	BaseBackupTask
+	*BaseBackupTask
+}
+
+func (backup *BackupOriginalRow) backup() (backupErr error) {
+	s := model.GetStorage()
+	var modelBackupTask *model.BackupTask = backup.toModel()
+	// generate reverse sql
+	backupSqls, executeInfo, updateStatusErr := backup.plugin.Backup(context.TODO(), string(backup.BackupStrategy), backup.ExecuteSql)
+	backup.BackupExecResult = executeInfo
+	if updateStatusErr != nil {
+		return updateStatusErr
+	}
+
+	rollbackSqls := make([]*model.RollbackSQL, 0, len(backupSqls))
+	for idx, rollbackSql := range backupSqls {
+		rollbackSqls = append(rollbackSqls, &model.RollbackSQL{
+			BaseSQL: model.BaseSQL{
+				Number:      uint(idx) + 1,
+				TaskId:      modelBackupTask.TaskId,
+				Content:     rollbackSql,
+				Description: executeInfo,
+			},
+			ExecuteSQLId: modelBackupTask.ExecuteSqlId,
+		})
+	}
+	// save backup result into database
+	if updateStatusErr = s.UpdateRollbackSQLs(rollbackSqls); updateStatusErr != nil {
+		return updateStatusErr
+	}
+	// TODO 保存原始行到备份表中
+	return nil
 }
 
 type BackupReverseSql struct {
-	BaseBackupTask
+	*BaseBackupTask
+}
+
+func (backup *BackupReverseSql) backup() (backupErr error) {
+	s := model.GetStorage()
+	var modelBackupTask *model.BackupTask = backup.toModel()
+	// generate reverse sql
+	backupSqls, executeInfo, updateStatusErr := backup.plugin.Backup(context.TODO(), string(backup.BackupStrategy), backup.ExecuteSql)
+	backup.BackupExecResult = executeInfo
+	if updateStatusErr != nil {
+		return updateStatusErr
+	}
+
+	rollbackSqls := make([]*model.RollbackSQL, 0, len(backupSqls))
+	for idx, rollbackSql := range backupSqls {
+		rollbackSqls = append(rollbackSqls, &model.RollbackSQL{
+			BaseSQL: model.BaseSQL{
+				Number:      uint(idx) + 1,
+				TaskId:      modelBackupTask.TaskId,
+				Content:     rollbackSql,
+				Description: executeInfo,
+			},
+			ExecuteSQLId: modelBackupTask.ExecuteSqlId,
+		})
+	}
+	// save backup result into database
+	if updateStatusErr = s.UpdateRollbackSQLs(rollbackSqls); updateStatusErr != nil {
+		return updateStatusErr
+	}
+	return nil
+}
+
+type BackupReverseSqlUseRollbackApi struct {
+	*BaseBackupTask
+}
+
+func (backup *BackupReverseSqlUseRollbackApi) backup() (backupErr error) {
+	s := model.GetStorage()
+	var modelBackupTask *model.BackupTask = backup.toModel()
+	// generate reverse sql
+	backupSql, executeInfo, updateStatusErr := backup.plugin.GenRollbackSQL(context.TODO(), backup.ExecuteSql)
+	backup.BackupExecResult = executeInfo.GetStrInLang(language.Chinese)
+	if updateStatusErr != nil {
+		return updateStatusErr
+	}
+	backupSqls, err := backup.plugin.Parse(context.TODO(), backupSql)
+	if err != nil {
+		return err
+	}
+	rollbackSqls := make([]*model.RollbackSQL, 0, len(backupSqls))
+	for idx, rollbackSql := range backupSqls {
+		if !strings.HasSuffix(rollbackSql.Text, ";") {
+			rollbackSql.Text = rollbackSql.Text + ";"
+		}
+		rollbackSqls = append(rollbackSqls, &model.RollbackSQL{
+			BaseSQL: model.BaseSQL{
+				Number:      uint(idx) + 1,
+				TaskId:      modelBackupTask.TaskId,
+				Content:     rollbackSql.Text,
+				Description: executeInfo.GetStrInLang(language.Chinese),
+			},
+			ExecuteSQLId: modelBackupTask.ExecuteSqlId,
+		})
+	}
+	// save backup result into database
+	if updateStatusErr = s.UpdateRollbackSQLs(rollbackSqls); updateStatusErr != nil {
+		return updateStatusErr
+	}
+	return nil
 }
 
 type BackupSqlData struct {
