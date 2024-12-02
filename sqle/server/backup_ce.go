@@ -28,7 +28,7 @@ func initModelBackupTask(p driver.Plugin, task *model.Task, sql *model.ExecuteSQ
 	return &model.BackupTask{}
 }
 
-func toBackupTask(a driver.Plugin, sql *model.ExecuteSQL) (BackupTask, error) {
+func toBackupTask(p driver.Plugin, sql *model.ExecuteSQL) (*BaseBackupTask, error) {
 	return &BaseBackupTask{}, nil
 }
 
