@@ -109,16 +109,16 @@ func initModelBackupTask(p driver.Plugin, task *model.Task, sql *model.ExecuteSQ
 	}
 }
 
-func toBackupTask(p driver.Plugin, sql *model.ExecuteSQL) (*BaseBackupTask, error) {
+func toBackupTask(p driver.Plugin, sql *model.ExecuteSQL, dbType string) (*BaseBackupTask, error) {
 	s := model.GetStorage()
 	backupTask, err := s.GetBackupTaskByExecuteSqlId(sql.ID)
 	if err != nil {
 		return nil, err
 	}
-	return NewBaseBackupTask(p, backupTask, sql), nil
+	return NewBaseBackupTask(p, backupTask, sql, dbType), nil
 }
 
-func NewBaseBackupTask(p driver.Plugin, backupTask *model.BackupTask, sql *model.ExecuteSQL) *BaseBackupTask {
+func NewBaseBackupTask(p driver.Plugin, backupTask *model.BackupTask, sql *model.ExecuteSQL, dbType string) *BaseBackupTask {
 	baseBackupTask := &BaseBackupTask{
 		plugin:            p,
 		ID:                backupTask.ID,
@@ -146,9 +146,16 @@ func NewBaseBackupTask(p driver.Plugin, backupTask *model.BackupTask, sql *model
 		baseBackupTask.backupTask = &BackupNothing{}
 	case string(BackupStrategyReverseSql):
 		// 当用户不选择备份策略或选择了反向SQL
-		baseBackupTask.backupTask = &BackupReverseSqlUseRollbackApi{BaseBackupTask: baseBackupTask}
+		baseBackupTask.backupTask = &BackupReverseSql{BaseBackupTask: baseBackupTask}
 	default:
-
+		baseBackupTask.backupTask = &BackupNothing{}
+	}
+	if !driver.GetPluginManager().IsOptionalModuleEnabled(dbType, driverV2.OptionalBackup) {
+		if driver.GetPluginManager().IsOptionalModuleEnabled(dbType, driverV2.OptionalModuleGenRollbackSQL) {
+			baseBackupTask.backupTask = &BackupReverseSqlUseRollbackApi{BaseBackupTask: baseBackupTask}
+		} else {
+			baseBackupTask.backupTask = &BackupNothing{}
+		}
 	}
 	return baseBackupTask
 }
