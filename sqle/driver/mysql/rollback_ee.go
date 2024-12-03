@@ -231,7 +231,7 @@ func (i *MysqlDriverImpl) generateUpdateRollbackSqls(stmt *ast.UpdateStmt) ([]st
 					colChanged = true
 					if isPk {
 						isPkChanged = true
-						pkValue = util.ExprFormat(l.Expr)
+						pkValue = restore(l.Expr)
 					}
 				}
 			}
@@ -610,7 +610,7 @@ func (i *MysqlDriverImpl) generateInsertRollbackSqls(stmt *ast.InsertStmt) ([]st
 			for n, name := range columnsName {
 				_, isPk := pkColumnsName[name]
 				if isPk {
-					where = append(where, fmt.Sprintf("%s = %s", name, util.ExprFormat(value[n])))
+					where = append(where, fmt.Sprintf("%s = %s", name, restore(value[n])))
 				}
 			}
 			if len(where) != len(pkColumnsName) {
@@ -629,7 +629,7 @@ func (i *MysqlDriverImpl) generateInsertRollbackSqls(stmt *ast.InsertStmt) ([]st
 			name := setExpr.Column.Name.String()
 			_, isPk := pkColumnsName[name]
 			if isPk {
-				where = append(where, fmt.Sprintf("%s = '%s'", name, util.ExprFormat(setExpr.Expr)))
+				where = append(where, fmt.Sprintf("%s = '%s'", name, restore(setExpr.Expr)))
 			}
 		}
 		if len(where) != len(pkColumnsName) {
