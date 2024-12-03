@@ -2246,6 +2246,13 @@ ALTER TABLE exist_db.exist_tb_1 CHANGE COLUMN v2 v3 varchar(255) NOT NULL DEFAUL
 `,
 		newTestResult().addResult(rulepkg.DDLCheckColumnWithoutComment),
 	)
+
+	runSingleRuleInspectCase(rule, t, "alter_table: column without comment(1)", DefaultMysqlInspect(),
+`
+ALTER TABLE exist_db.exist_tb_1 MODIFY COLUMN v3 varchar(500) NOT NULL DEFAULT "modified unit test";
+`,
+newTestResult().addResult(rulepkg.DDLCheckColumnWithoutComment),
+)
 }
 
 func TestCheckIndexPrefix(t *testing.T) {
