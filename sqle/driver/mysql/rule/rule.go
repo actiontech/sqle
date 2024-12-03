@@ -2220,7 +2220,7 @@ func checkColumnWithoutComment(input *RuleHandlerInput) error {
 		if stmt.Specs == nil {
 			return nil
 		}
-		for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns, ast.AlterTableChangeColumn) {
+		for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddColumns, ast.AlterTableChangeColumn, ast.AlterTableModifyColumn) {
 			for _, col := range spec.NewColumns {
 				columnHasComment := false
 				for _, op := range col.Options {
