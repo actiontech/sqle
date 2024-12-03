@@ -60,7 +60,9 @@ func (i *MysqlDriverImpl) Backup(ctx context.Context, backupStrategy string, sql
 	if len(rollbackSqls) == 0 && ExecuteInfo == "" {
 		ExecuteInfo = "无影响范围或不支持回滚，无备份回滚语句"
 	} else {
-		ExecuteInfo = "备份成功"
+		if ExecuteInfo == "" {
+			ExecuteInfo = "备份成功"
+		}
 	}
 	return rollbackSqls, ExecuteInfo, nil
 }
