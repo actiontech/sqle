@@ -415,7 +415,7 @@ func (i *MysqlDriverImpl) generateInsertRollbackSql(stmt *ast.InsertStmt) (strin
 			for n, name := range columnsName {
 				_, isPk := pkColumnsName[name]
 				if isPk {
-					where = append(where, fmt.Sprintf("%s = '%s'", name, util.ExprFormat(value[n])))
+					where = append(where, fmt.Sprintf("%s = '%s'", name, restore(value[n])))
 				}
 			}
 			if len(where) != len(pkColumnsName) {
@@ -437,7 +437,7 @@ func (i *MysqlDriverImpl) generateInsertRollbackSql(stmt *ast.InsertStmt) (strin
 			name := setExpr.Column.Name.String()
 			_, isPk := pkColumnsName[name]
 			if isPk {
-				where = append(where, fmt.Sprintf("%s = '%s'", name, util.ExprFormat(setExpr.Expr)))
+				where = append(where, fmt.Sprintf("%s = '%s'", name, restore(setExpr.Expr)))
 			}
 		}
 		if len(where) != len(pkColumnsName) {
@@ -617,7 +617,7 @@ func (i *MysqlDriverImpl) generateUpdateRollbackSql(stmt *ast.UpdateStmt) (strin
 					colChanged = true
 					if isPk {
 						isPkChanged = true
-						pkValue = util.ExprFormat(l.Expr)
+						pkValue = restore(l.Expr)
 					}
 				}
 			}
@@ -702,12 +702,12 @@ func (i *MysqlDriverImpl) generateGetRecordsSql(expr string, tableName *ast.Tabl
 		recordSql = fmt.Sprintf("%s AS %s", recordSql, tableAlias)
 	}
 	if where != nil {
-		recordSql = fmt.Sprintf("%s WHERE %s", recordSql, util.ExprFormat(where))
+		recordSql = fmt.Sprintf("%s WHERE %s", recordSql, restore(where))
 	}
 	if order != nil {
 		recordSql = fmt.Sprintf("%s ORDER BY", recordSql)
 		for _, item := range order.Items {
-			recordSql = fmt.Sprintf("%s %s", recordSql, util.ExprFormat(item.Expr))
+			recordSql = fmt.Sprintf("%s %s", recordSql, restore(item.Expr))
 			if item.Desc {
 				recordSql = fmt.Sprintf("%s DESC", recordSql)
 			}
