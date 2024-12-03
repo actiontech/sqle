@@ -124,7 +124,7 @@ func (a *OptimizationPawSQLServer) createOptimization(ctx context.Context, works
 	}
 
 	reply := new(CreateOptimizationReply)
-	err = dmsCommonHttp.POST(dmsCommonHttp.SetTimeoutValueContext(ctx, defaultPawSQLTimeOutSecond), workspaceId+"/api/v1/createAnalysis", nil, req, reply)
+	err = dmsCommonHttp.POST(dmsCommonHttp.SetTimeoutValueContext(ctx, defaultPawSQLTimeOutSecond), getPawHost()+"/api/v1/createAnalysis", nil, req, reply)
 	if err != nil {
 		return "", err
 	}
