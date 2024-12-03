@@ -486,13 +486,13 @@ func (a *action) backupAndExecSql() error {
 	for _, executeSQL := range a.task.ExecuteSQLs {
 		backupTask, err := toBackupTask(a.plugin, executeSQL, a.task.DBType)
 		if err != nil {
-			return fmt.Errorf("in backupAndExecSql when convert toBackupTask, err %w , backup task: %v, task: %v", err, executeSQL.BackupTask.ID, a.task.ID)
+			return fmt.Errorf("in backupAndExecSql when convert toBackupTask, err %w , backup task: %v, task: %v", err, backupTask, a.task.ID)
 		}
 		if err = backupTask.Backup(); err != nil {
-			return fmt.Errorf("in backupAndExecSql when backupTask Backup, err %w, backup task: %v, task: %v", err, executeSQL.BackupTask.ID, a.task.ID)
+			return fmt.Errorf("in backupAndExecSql when backupTask Backup, err %w, backup task: %v, task: %v", err, backupTask, a.task.ID)
 		}
 		if err := a.execSQL(executeSQL); err != nil {
-			return fmt.Errorf("in backupAndExecSql when execSQL %v, err %w, backup task: %v, task: %v", executeSQL, err, executeSQL.BackupTask.ID, a.task.ID)
+			return fmt.Errorf("in backupAndExecSql when execSQL %v, err %w, backup task: %v, task: %v", executeSQL, err, backupTask, a.task.ID)
 		}
 	}
 	return nil
