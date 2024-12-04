@@ -44,6 +44,8 @@ type AuditTaskSQLResV2 struct {
 	SQLType                     string                        `json:"sql_type"`
 	BackupStrategy              string                        `json:"backup_strategy" enums:"none,manual,reverse_sql,original_row"`
 	BackupStrategyTip           string                        `json:"backup_strategy_tip"`
+	BackupStatus                string                        `json:"backup_status" enums:"waiting_for_execution,executing,failed,succeed"`
+	BackupResult                string                        `json:"backup_result"`
 	AssociatedRollbackWorkflows []*AssociatedRollbackWorkflow `json:"associated_rollback_workflows"`
 }
 
