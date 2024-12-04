@@ -36,12 +36,13 @@ import (
 var ErrTooManyDataSource = errors.New(errors.DataConflict, fmt.Errorf("the number of data sources must be less than %v", MaximumDataSourceNum))
 
 type CreateAuditTaskReqV1 struct {
-	InstanceName    string `json:"instance_name" form:"instance_name" example:"inst_1" valid:"required"`
-	InstanceSchema  string `json:"instance_schema" form:"instance_schema" example:"db1"`
-	Sql             string `json:"sql" form:"sql" example:"alter table tb1 drop columns c1"`
-	ExecMode        string `json:"exec_mode" form:"exec_mode" enums:"sql_file,sqls"`
-	EnableBackup    bool   `json:"enable_backup" form:"enable_backup"`
-	FileOrderMethod string `json:"file_order_method" form:"file_order_method"`
+	InstanceName    string  `json:"instance_name" form:"instance_name" example:"inst_1" valid:"required"`
+	InstanceSchema  string  `json:"instance_schema" form:"instance_schema" example:"db1"`
+	Sql             string  `json:"sql" form:"sql" example:"alter table tb1 drop columns c1"`
+	ExecMode        string  `json:"exec_mode" form:"exec_mode" enums:"sql_file,sqls"`
+	EnableBackup    bool    `json:"enable_backup" form:"enable_backup"`
+	BackupMaxRows   *uint64 `json:"backup_max_rows,omitempty"`
+	FileOrderMethod string  `json:"file_order_method" form:"file_order_method"`
 }
 
 type GetAuditTaskResV1 struct {
@@ -64,6 +65,7 @@ type AuditTaskResV1 struct {
 	FileOrderMethod            string          `json:"file_order_method,omitempty"`
 	ExecMode                   string          `json:"exec_mode,omitempty"`
 	EnableBackup               bool            `json:"enable_backup"`
+	BackupMaxRows              uint64          `json:"backup_max_rows,omitempty"`
 	BackupConflictWithInstance bool            `json:"backup_conflict_with_instance"` // 当数据源备份开启，工单备份关闭，则需要提示审核人工单备份策略与数据源备份策略不一致
 	AuditFiles                 []AuditFileResp `json:"audit_files,omitempty"`
 }
@@ -953,9 +955,10 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 }
 
 type AuditTaskGroupReqV1 struct {
-	TaskGroupId  uint   `json:"task_group_id" form:"task_group_id" valid:"required"`
-	Sql          string `json:"sql" form:"sql" example:"alter table tb1 drop columns c1"`
-	EnableBackup bool   `json:"enable_backup" form:"enable_backup"`
+	TaskGroupId   uint    `json:"task_group_id" form:"task_group_id" valid:"required"`
+	Sql           string  `json:"sql" form:"sql" example:"alter table tb1 drop columns c1"`
+	EnableBackup  bool    `json:"enable_backup" form:"enable_backup"`
+	BackupMaxRows *uint64 `json:"backup_max_rows,omitempty"`
 }
 
 type AuditTaskGroupRes struct {

@@ -74,6 +74,8 @@ type BackupSqlData struct {
 	OriginTaskId   uint     `json:"origin_task_id"`
 	BackupSqls     []string `json:"backup_sqls"`
 	BackupStrategy string   `json:"backup_strategy" enums:"none,manual,reverse_sql,original_row"`
+	BackupStatus   string   `json:"backup_status" enums:"waiting_for_execution,executing,failed,succeed"`
+	BackupResult   string   `json:"backup_result"`
 	InstanceName   string   `json:"instance_name"`
 	InstanceId     string   `json:"instance_id"`
 	ExecStatus     string   `json:"exec_status"`
