@@ -11793,11 +11793,23 @@ var doc = `{
         "v1.BackupSqlData": {
             "type": "object",
             "properties": {
+                "backup_result": {
+                    "type": "string"
+                },
                 "backup_sqls": {
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
+                },
+                "backup_status": {
+                    "type": "string",
+                    "enum": [
+                        "waiting_for_execution",
+                        "executing",
+                        "failed",
+                        "succeed"
+                    ]
                 },
                 "backup_strategy": {
                     "type": "string",
@@ -18838,6 +18850,18 @@ var doc = `{
                 },
                 "audit_status": {
                     "type": "string"
+                },
+                "backup_result": {
+                    "type": "string"
+                },
+                "backup_status": {
+                    "type": "string",
+                    "enum": [
+                        "waiting_for_execution",
+                        "executing",
+                        "failed",
+                        "succeed"
+                    ]
                 },
                 "backup_strategy": {
                     "type": "string",
