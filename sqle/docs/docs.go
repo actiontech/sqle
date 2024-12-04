@@ -8977,7 +8977,7 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "get module status for modulealities in the system",
+                "description": "get module status for module in the system",
                 "tags": [
                     "system"
                 ],
@@ -9002,7 +9002,8 @@ var doc = `{
                     {
                         "enum": [
                             "execute_sql_file_mode",
-                            "sql_optimization"
+                            "sql_optimization",
+                            "backup"
                         ],
                         "type": "string",
                         "description": "module name",
@@ -11642,6 +11643,9 @@ var doc = `{
                     "description": "当数据源备份开启，工单备份关闭，则需要提示审核人工单备份策略与数据源备份策略不一致",
                     "type": "boolean"
                 },
+                "backup_max_rows": {
+                    "type": "integer"
+                },
                 "enable_backup": {
                     "type": "boolean"
                 },
@@ -12122,6 +12126,9 @@ var doc = `{
         "v1.CreateAuditTaskReqV1": {
             "type": "object",
             "properties": {
+                "backup_max_rows": {
+                    "type": "integer"
+                },
                 "enable_backup": {
                     "type": "boolean"
                 },
@@ -15475,6 +15482,18 @@ var doc = `{
                 },
                 "port": {
                     "type": "string"
+                },
+                "supported_backup_strategy": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": [
+                            "none",
+                            "manual",
+                            "reverse_sql",
+                            "original_row"
+                        ]
+                    }
                 },
                 "workflow_template_id": {
                     "type": "integer"
