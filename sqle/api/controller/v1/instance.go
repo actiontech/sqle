@@ -342,13 +342,14 @@ type InstanceTipReqV1 struct {
 }
 
 type InstanceTipResV1 struct {
-	ID                 string `json:"instance_id"`
-	Name               string `json:"instance_name"`
-	Type               string `json:"instance_type"`
-	WorkflowTemplateId uint32 `json:"workflow_template_id"`
-	Host               string `json:"host"`
-	Port               string `json:"port"`
-	EnableBackup       bool   `json:"enable_backup"`
+	ID                      string   `json:"instance_id"`
+	Name                    string   `json:"instance_name"`
+	Type                    string   `json:"instance_type"`
+	WorkflowTemplateId      uint32   `json:"workflow_template_id"`
+	Host                    string   `json:"host"`
+	Port                    string   `json:"port"`
+	EnableBackup            bool     `json:"enable_backup"`
+	SupportedBackupStrategy []string `json:"supported_backup_strategy"  enums:"none,manual,reverse_sql,original_row"`
 }
 
 type GetInstanceTipsResV1 struct {
