@@ -493,10 +493,19 @@ definitions:
     type: object
   v1.BackupSqlData:
     properties:
+      backup_result:
+        type: string
       backup_sqls:
         items:
           type: string
         type: array
+      backup_status:
+        enum:
+        - waiting_for_execution
+        - executing
+        - failed
+        - succeed
+        type: string
       backup_strategy:
         enum:
         - none
@@ -5307,6 +5316,15 @@ definitions:
           $ref: '#/definitions/v2.AuditResult'
         type: array
       audit_status:
+        type: string
+      backup_result:
+        type: string
+      backup_status:
+        enum:
+        - waiting_for_execution
+        - executing
+        - failed
+        - succeed
         type: string
       backup_strategy:
         enum:
