@@ -24,12 +24,12 @@ type ModuleStatusRes struct {
 }
 
 // @Summary 查询系统功能支持情况信息
-// @Description get module status for modulealities in the system
+// @Description get module status for module in the system
 // @Id getSystemModuleStatus
 // @Tags system
 // @Security ApiKeyAuth
 // @Param db_type query string false "db type" Enums(MySQL,Oracle,TiDB,OceanBase For MySQL,PostgreSQL,DB2,SQL Server)
-// @Param module_name query string false "module name" Enums(execute_sql_file_mode,sql_optimization)
+// @Param module_name query string false "module name" Enums(execute_sql_file_mode,sql_optimization,backup)
 // @Success 200 {object} v1.GetModuleStatusResV1
 // @router /v1/system/module_status [get]
 func GetSystemModuleStatus(c echo.Context) error {
