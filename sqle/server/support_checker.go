@@ -11,6 +11,7 @@ import (
 const (
 	executeSqlFileMode string = "execute_sql_file_mode"
 	sqlOptimization    string = "sql_optimization"
+	backup             string = "backup"
 )
 
 type StatusChecker interface {
@@ -23,8 +24,10 @@ func NewModuleStatusChecker(driverType string, moduleName string) (StatusChecker
 		return executeSqlFileChecker{driverType: driverType, moduleName: moduleName}, nil
 	case sqlOptimization:
 		return sqlOptimizationChecker{}, nil
+	case backup:
+		return sqlBackupChecker{driverType: driverType}, nil
 	}
-	return nil, fmt.Errorf("no checker mached")
+	return nil, fmt.Errorf("no checker matched")
 }
 
 type executeSqlFileChecker struct {
@@ -40,4 +43,13 @@ type sqlOptimizationChecker struct{}
 
 func (s sqlOptimizationChecker) CheckIsSupport() bool {
 	return len(optimization.OptimizationRuleMap) > 0
+}
+
+type sqlBackupChecker struct {
+	driverType string
+}
+
+func (s sqlBackupChecker) CheckIsSupport() bool {
+	svc := BackupService{}
+	return svc.CheckIsDbTypeSupportEnableBackup(s.driverType) == nil
 }
