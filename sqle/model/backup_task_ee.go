@@ -124,14 +124,14 @@ AND w_instance.instance_id = :filter_instance_id
 {{ end }}
 `
 
-type BackupSql struct {
+type BackupInfo struct {
 	OriginSqlId      uint   `json:"origin_sql_id"`
 	BackupSqls       string `json:"backup_sql"`
 	BackupStatus     string `json:"backup_status"`
 	BackupExecResult string `json:"backup_exec_result"`
 }
 
-func (s *Storage) GetRollbackSqlByFilters(data map[string]interface{}) (list []*BackupSql, err error) {
+func (s *Storage) GetBackupInfoFilterBy(data map[string]interface{}) (list []*BackupInfo, err error) {
 	err = s.getListResult(reverseBackupSqlBodyTpl, reverseBackupSqlListQueryTpl, data, &list)
 	if err != nil {
 		return nil, err

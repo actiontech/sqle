@@ -358,19 +358,19 @@ func (BackupService) GetBackupSqlList(ctx context.Context, workflowId, filterIns
 	// 3. get rollback sql
 	backupSqlMap := make(map[uint]*backupSqlInfo)
 	if len(originSqlIds) > 0 {
-		backupSqls, err := s.GetRollbackSqlByFilters(map[string]interface{}{
+		backupInfos, err := s.GetBackupInfoFilterBy(map[string]interface{}{
 			"filter_execute_sql_ids": originSqlIds,
 		})
 		if err != nil {
 			return nil, 0, err
 		}
-		for _, backupSql := range backupSqls {
-			if _, exist := backupSqlMap[backupSql.OriginSqlId]; !exist {
-				backupSqlMap[backupSql.OriginSqlId] = &backupSqlInfo{}
-				backupSqlMap[backupSql.OriginSqlId].backupResult = backupSql.BackupExecResult
-				backupSqlMap[backupSql.OriginSqlId].backupStatus = backupSql.BackupStatus
+		for _, backupInfo := range backupInfos {
+			if _, exist := backupSqlMap[backupInfo.OriginSqlId]; !exist {
+				backupSqlMap[backupInfo.OriginSqlId] = &backupSqlInfo{}
+				backupSqlMap[backupInfo.OriginSqlId].backupResult = backupInfo.BackupExecResult
+				backupSqlMap[backupInfo.OriginSqlId].backupStatus = backupInfo.BackupStatus
 			}
-			backupSqlMap[backupSql.OriginSqlId].backupSqls = append(backupSqlMap[backupSql.OriginSqlId].backupSqls, backupSql.BackupSqls)
+			backupSqlMap[backupInfo.OriginSqlId].backupSqls = append(backupSqlMap[backupInfo.OriginSqlId].backupSqls, backupInfo.BackupSqls)
 		}
 	}
 
