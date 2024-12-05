@@ -33,7 +33,7 @@ func OperateDataResourceHandle(c echo.Context) error {
 	}
 	h := dmsobject.GetOperateHandle(fmt.Sprintf("%s_%s_%s", req.OperationTiming, req.OperationType, req.DataResourceType))
 
-	if err := h.Handle(c.Request().Context(), "", req.DataResourceUid); err != nil {
+	if err := h.Handle(c.Request().Context(), "", req.DataResourceUid, req.ExtraParams); err != nil {
 		return c.JSON(http.StatusOK, dmsV1.OperateDataResourceHandleReply{GenericResp: baseV1.GenericResp{Code: http.StatusBadRequest, Message: err.Error()}})
 	}
 
@@ -58,7 +58,7 @@ type BeforeDeleteDbService struct {
 type AfterUpdateDbService struct {
 }
 
-func (h BeforeDeleteDbService) Handle(ctx context.Context, currentUserId string, instanceIdStr string) error {
+func (h BeforeDeleteDbService) Handle(ctx context.Context, currentUserId string, instanceIdStr string, extraParams string) error {
 	instanceId, err := strconv.ParseInt(instanceIdStr, 10, 64)
 	if err != nil {
 		return err
@@ -67,6 +67,6 @@ func (h BeforeDeleteDbService) Handle(ctx context.Context, currentUserId string,
 	return common.CheckDeleteInstance(instanceId)
 }
 
-func (h AfterUpdateDbService) Handle(ctx context.Context, currentUserId string, instanceIdStr string) error {
+func (h AfterUpdateDbService) Handle(ctx context.Context, currentUserId string, instanceIdStr string, extraParams string) error {
 	return nil
 }
