@@ -6619,6 +6619,12 @@ var doc = `{
                         "in": "formData"
                     },
                     {
+                        "type": "integer",
+                        "description": "backup max rows",
+                        "name": "backup_max_rows",
+                        "in": "formData"
+                    },
+                    {
                         "type": "string",
                         "description": "sqls for audit",
                         "name": "sql",
@@ -9058,6 +9064,12 @@ var doc = `{
                         "type": "boolean",
                         "description": "enable backup",
                         "name": "enable_backup",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "backup max rows",
+                        "name": "backup_max_rows",
                         "in": "formData"
                     },
                     {
