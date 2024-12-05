@@ -48,7 +48,10 @@ func (BackupService) CheckCanTaskBackup(task *model.Task) bool {
 	return false
 }
 
-
 func (BackupService) SupportedBackupStrategy(dbType string) []string {
 	return []string{}
+}
+
+func (BackupService) AutoChooseBackupMaxRows(enableBackup bool, backupMaxRows *uint64, instance model.Instance) uint64 {
+	return 0
 }
