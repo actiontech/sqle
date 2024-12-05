@@ -3028,6 +3028,8 @@ definitions:
     type: object
   v1.InstanceTipResV1:
     properties:
+      backup_max_rows:
+        type: integer
       enable_backup:
         type: boolean
       host:
@@ -10292,6 +10294,10 @@ paths:
         in: formData
         name: enable_backup
         type: boolean
+      - description: backup max rows
+        in: formData
+        name: backup_max_rows
+        type: integer
       - description: sqls for audit
         in: formData
         name: sql
@@ -11882,6 +11888,10 @@ paths:
         in: formData
         name: enable_backup
         type: boolean
+      - description: backup max rows
+        in: formData
+        name: backup_max_rows
+        type: integer
       - description: file order method
         in: formData
         name: file_order_method
