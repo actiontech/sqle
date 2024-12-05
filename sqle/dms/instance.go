@@ -140,6 +140,7 @@ func convertInstance(instance *dmsV1.ListDBService) (*model.Instance, error) {
 		SqlQueryConfig:    sqlQueryConfig,
 		Business:          instance.Business,
 		EnableBackup:      instance.EnableBackup,
+		BackupMaxRows:     instance.BackupMaxRows,
 	}, nil
 }
 
