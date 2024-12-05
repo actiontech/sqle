@@ -91,19 +91,19 @@ func newBackupManager(p driver.Plugin, modelBackupTask *model.BackupTask, sql *m
 		handler = &BackupManually{}
 	case string(BackupStrategyOriginalRow):
 		// 当用户选择备份行时
-		handler = &BackupOriginalRow{plugin: p, task: task}
+		handler = &BackupOriginalRow{baseBackupHandler: baseBackupHandler{plugin: p, task: task}}
 	case string(BackupStrategyNone):
 		// 当用户选择不备份时
 		handler = &BackupNothing{}
 	case string(BackupStrategyReverseSql):
 		// 当用户不选择备份策略或选择了反向SQL
-		handler = &BackupReverseSql{plugin: p, task: task}
+		handler = &BackupReverseSql{baseBackupHandler: baseBackupHandler{plugin: p, task: task}}
 	default:
 		handler = &BackupNothing{}
 	}
 	if !driver.GetPluginManager().IsOptionalModuleEnabled(dbType, driverV2.OptionalBackup) {
 		if driver.GetPluginManager().IsOptionalModuleEnabled(dbType, driverV2.OptionalModuleGenRollbackSQL) {
-			handler = &BackupReverseSqlUseRollbackApi{plugin: p, task: task}
+			handler = &BackupReverseSqlUseRollbackApi{baseBackupHandler: baseBackupHandler{plugin: p, task: task}}
 		} else {
 			handler = &BackupNothing{}
 		}
@@ -215,6 +215,25 @@ func (task *BackupManager) UpdateStatusForBackupTaskTo(targetStatus BackupStatus
 	return fmt.Errorf("invalid status transition from %s to %s", task.BackupStatus, targetStatus)
 }
 
+type baseBackupHandler struct{
+	plugin driver.Plugin
+	task   backupTask
+	svc    BackupService
+}
+
+func (backup *baseBackupHandler) backup() (backupResult string, backupErr error) {
+	// generate reverse sql
+	backupSqls, executeInfo, backupErr := backup.plugin.Backup(context.TODO(), string(BackupStrategyOriginalRow), backup.task.ExecuteSql)
+	if backupErr != nil {
+		return executeInfo, backupErr
+	}
+	if backupErr = backup.svc.saveBackupResultToRollbackSQLs(backup.task, backupSqls, executeInfo); backupErr != nil {
+		return executeInfo, backupErr
+	}
+	return executeInfo, nil
+}
+
+
 type BackupNothing struct{}
 
 func (BackupNothing) backup() (backupResult string, backupErr error) {
@@ -228,48 +247,16 @@ func (BackupManually) backup() (backupResult string, backupErr error) {
 }
 
 type BackupOriginalRow struct {
-	plugin driver.Plugin
-	task   backupTask
-	svc    BackupService
-}
-
-func (backup *BackupOriginalRow) backup() (backupResult string, backupErr error) {
-	// generate reverse sql
-	backupSqls, executeInfo, backupErr := backup.plugin.Backup(context.TODO(), string(BackupStrategyOriginalRow), backup.task.ExecuteSql)
-	if backupErr != nil {
-		return executeInfo, backupErr
-	}
-	if backupErr = backup.svc.saveBackupResultToRollbackSQLs(backup.task, backupSqls, executeInfo); backupErr != nil {
-		return executeInfo, backupErr
-	}
-	// TODO 保存原始行到备份表中
-	return executeInfo, nil
+	baseBackupHandler
 }
 
 type BackupReverseSql struct {
-	plugin driver.Plugin
-	task   backupTask
-	svc    BackupService
-}
-
-func (backup *BackupReverseSql) backup() (backupResult string, backupErr error) {
-	// generate reverse sql
-	backupSqls, executeInfo, backupErr := backup.plugin.Backup(context.TODO(), string(BackupStrategyReverseSql), backup.task.ExecuteSql)
-	if backupErr != nil {
-		return executeInfo, backupErr
-	}
-	// save to table RollbackSQLs
-	if backupErr = backup.svc.saveBackupResultToRollbackSQLs(backup.task, backupSqls, executeInfo); backupErr != nil {
-		return executeInfo, backupErr
-	}
-	return executeInfo, nil
+	baseBackupHandler
 }
 
 // TODO 为了兼容暂不支持backup接口但是支持rollback sql 接口的插件，这里新增一个用于兼容的备份handler
 type BackupReverseSqlUseRollbackApi struct {
-	plugin driver.Plugin
-	task   backupTask
-	svc    BackupService
+	baseBackupHandler
 }
 
 func (backup *BackupReverseSqlUseRollbackApi) backup() (backupResult string, backupErr error) {
