@@ -15477,6 +15477,9 @@ var doc = `{
         "v1.InstanceTipResV1": {
             "type": "object",
             "properties": {
+                "backup_max_rows": {
+                    "type": "integer"
+                },
                 "enable_backup": {
                     "type": "boolean"
                 },
