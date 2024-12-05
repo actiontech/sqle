@@ -22,7 +22,7 @@ const (
 	BackupStrategyManually    string = "manual"       // 标记为人工备份
 )
 
-func (i *MysqlDriverImpl) Backup(ctx context.Context, backupStrategy string, sql string) (BackupSql []string, ExecuteInfo string, err error) {
+func (i *MysqlDriverImpl) Backup(ctx context.Context, backupStrategy string, sql string) (backupSqls []string, executeResult string, err error) {
 	if i.IsOfflineAudit() {
 		return nil, "暂不支持不连库备份", nil
 	}
@@ -37,16 +37,15 @@ func (i *MysqlDriverImpl) Backup(ctx context.Context, backupStrategy string, sql
 		return []string{}, fmt.Sprintf("in plugin, when backup ParseSql for sql %v extract 0 ast node of sql", sql), nil
 	}
 	var info i18nPkg.I18nStr
-	var rollbackSqls []string
 	switch backupStrategy {
 	case BackupStrategyReverseSql:
-		rollbackSqls, info, err = i.GenerateRollbackSqls(nodes[0])
+		backupSqls, info, err = i.GenerateRollbackSqls(nodes[0])
 		if err != nil {
 			i.Logger().Errorf("in plugin when backup GenerateRollbackSqls for sql %v failed: %v", sql, err)
 			return nil, err.Error(), err
 		}
 	case BackupStrategyOriginalRow:
-		rollbackSqls, info, err = i.GetOriginalRow(nodes[0])
+		backupSqls, info, err = i.GetOriginalRow(nodes[0])
 		if err != nil {
 			i.Logger().Errorf("in plugin when backup GetOriginalRow for sql %v failed: %v", sql, err)
 			return nil, err.Error(), err
@@ -56,16 +55,16 @@ func (i *MysqlDriverImpl) Backup(ctx context.Context, backupStrategy string, sql
 		return []string{}, fmt.Sprintf("不支持的备份类型: %v,未执行备份", backupStrategy), nil
 	}
 	i.Ctx.UpdateContext(nodes[0])
-	ExecuteInfo = info.GetStrInLang(language.Chinese)
+	executeResult = info.GetStrInLang(language.Chinese)
 
-	if ExecuteInfo == "" {
-		if len(rollbackSqls) == 0 {
-			ExecuteInfo = "无影响范围或不支持回滚，无备份回滚语句"
+	if executeResult == "" {
+		if len(backupSqls) == 0 {
+			executeResult = "无影响范围或不支持回滚，无备份回滚语句"
 		} else {
-			ExecuteInfo = "备份成功"
+			executeResult = "备份成功"
 		}
 	}
-	return rollbackSqls, ExecuteInfo, nil
+	return backupSqls, executeResult, nil
 }
 
 func (i *MysqlDriverImpl) RecommendBackupStrategy(ctx context.Context, sql string) (*driver.RecommendBackupStrategyRes, error) {
