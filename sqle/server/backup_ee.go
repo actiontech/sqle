@@ -566,3 +566,22 @@ func (BackupService) checkStrategyIsSupported(backupStrategy BackupStrategy) err
 func (BackupService) IsBackupConflictWithInstance(taskEnableBackup, instanceEnableBackup bool) bool {
 	return instanceEnableBackup && !taskEnableBackup
 }
+
+func (BackupService) SupportedBackupStrategy(dbType string) []string {
+	if driver.GetPluginManager().IsOptionalModuleEnabled(dbType, driverV2.OptionalBackup) {
+		return []string{
+			string(BackupStrategyManually),
+			string(BackupStrategyNone),
+			string(BackupStrategyOriginalRow),
+			string(BackupStrategyReverseSql),
+		}
+	}
+	if driver.GetPluginManager().IsOptionalModuleEnabled(dbType, driverV2.OptionalModuleGenRollbackSQL) {
+		return []string{
+			string(BackupStrategyNone),
+			string(BackupStrategyOriginalRow),
+			string(BackupStrategyReverseSql),
+		}
+	}
+	return []string{}
+}
