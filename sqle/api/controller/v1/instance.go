@@ -350,6 +350,7 @@ type InstanceTipResV1 struct {
 	Port                    string   `json:"port"`
 	EnableBackup            bool     `json:"enable_backup"`
 	SupportedBackupStrategy []string `json:"supported_backup_strategy"  enums:"none,manual,reverse_sql,original_row"`
+	BackupMaxRows           uint64   `json:"backup_max_rows"`
 }
 
 type GetInstanceTipsResV1 struct {
