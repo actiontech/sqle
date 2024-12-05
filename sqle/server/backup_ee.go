@@ -625,6 +625,28 @@ func (BackupService) IsBackupConflictWithInstance(taskEnableBackup, instanceEnab
 	return instanceEnableBackup && !taskEnableBackup
 }
 
+const DefaultBackupMaxRows uint64 = 1000
+
+
+// AutoChooseBackupMaxRows 方法根据是否启用备份以及备份最大行数的设置来确定最终的备份最大行数。
+func (BackupService) AutoChooseBackupMaxRows(enableBackup bool, backupMaxRows *uint64, instance model.Instance) uint64 {
+	// 如果未启用备份，则返回 0。
+	if!enableBackup {
+		return 0
+	}
+	// 如果实例启用了备份并且实例的备份最大行数大于等于 0，则返回实例的备份最大行数。
+	if instance.EnableBackup && instance.BackupMaxRows >= 0 {
+		return instance.BackupMaxRows
+	}
+	// 如果 backupMaxRows 不为 nil 并且其值大于 0，则返回 backupMaxRows 的值。
+	if backupMaxRows!= nil && *backupMaxRows >= 0{
+		return *backupMaxRows
+	}
+	// 如果以上条件都不满足，则返回默认的备份最大行数 DefaultBackupMaxRows。
+	return DefaultBackupMaxRows
+}
+
+
 func (BackupService) SupportedBackupStrategy(dbType string) []string {
 	if driver.GetPluginManager().IsOptionalModuleEnabled(dbType, driverV2.OptionalBackup) {
 		return []string{
