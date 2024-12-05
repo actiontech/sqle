@@ -40,6 +40,7 @@ type SqleOptions struct {
 	DMSServerAddress          string             `yaml:"dms_server_address"`
 	Service                   SeviceOpts         `yaml:"service"`
 	OptimizationConfig        OptimizationConfig `yaml:"optimization_config"`
+	SQLRewritingConfig        SQLRewritingConfig `yaml:"sql_rewriting_config"`
 }
 
 type SeviceOpts struct {
@@ -71,4 +72,8 @@ type PluginConfig struct {
 type OptimizationConfig struct {
 	OptimizationKey string `yaml:"optimization_key"`
 	OptimizationURL string `yaml:"optimization_url"`
+}
+
+type SQLRewritingConfig struct {
+	RewritingURL string `yaml:"rewriting_url"`
 }
