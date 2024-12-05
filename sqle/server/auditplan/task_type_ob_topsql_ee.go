@@ -51,7 +51,7 @@ func (at *ObForMysqlTopSQLTaskV2) Params(instanceId ...string) params.Params {
 		},
 		{
 			Key:      paramKeyIndicator,
-			Value:    DB2IndicatorAverageElapsedTime,
+			Value:    OBMySQLIndicatorElapsedTime,
 			Type:     params.ParamTypeString,
 			I18nDesc: locale.Bundle.LocalizeAll(locale.ParamIndicator),
 		},
