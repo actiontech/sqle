@@ -2,8 +2,8 @@ package server
 
 import "github.com/actiontech/sqle/sqle/model"
 
-type BackupTask interface {
-	backup() error
+type backupHandler interface {
+	backup() (backupResult string, err error)
 }
 
 type BackupStrategy string
