@@ -305,6 +305,8 @@ type BackupSqlData struct {
 	OriginTaskId   uint     `json:"origin_task_id"`
 	BackupSqls     []string `json:"backup_sqls"`
 	BackupStrategy string   `json:"backup_strategy" enum:"none,manual,reverse_sql,original_row"`
+	BackupResult   string   `json:"backup_result"`
+	BackupStatus   string   `json:"backup_status" enum:"waiting_for_execution,executing,succeed,failed"`
 	InstanceName   string   `json:"instance_name"`
 	InstanceId     uint64   `json:"instance_id "`
 	ExecStatus     string   `json:"exec_status"`
@@ -348,9 +350,13 @@ func (BackupService) GetBackupSqlList(ctx context.Context, workflowId, filterIns
 	for _, instance := range instances {
 		instanceMap[instance.ID] = instance
 	}
-
+	type backupSqlInfo struct {
+		backupSqls   []string
+		backupResult string
+		backupStatus string
+	}
 	// 3. get rollback sql
-	backupSqlMap := make(map[uint][]string)
+	backupSqlMap := make(map[uint]*backupSqlInfo)
 	if len(originSqlIds) > 0 {
 		backupSqls, err := s.GetRollbackSqlByFilters(map[string]interface{}{
 			"filter_execute_sql_ids": originSqlIds,
@@ -359,7 +365,12 @@ func (BackupService) GetBackupSqlList(ctx context.Context, workflowId, filterIns
 			return nil, 0, err
 		}
 		for _, backupSql := range backupSqls {
-			backupSqlMap[backupSql.OriginSqlId] = append(backupSqlMap[backupSql.OriginSqlId], backupSql.BackupSqls)
+			if _, exist := backupSqlMap[backupSql.OriginSqlId]; !exist {
+				backupSqlMap[backupSql.OriginSqlId] = &backupSqlInfo{}
+				backupSqlMap[backupSql.OriginSqlId].backupResult = backupSql.BackupExecResult
+				backupSqlMap[backupSql.OriginSqlId].backupStatus = backupSql.BackupStatus
+			}
+			backupSqlMap[backupSql.OriginSqlId].backupSqls = append(backupSqlMap[backupSql.OriginSqlId].backupSqls, backupSql.BackupSqls)
 		}
 	}
 
@@ -375,7 +386,9 @@ func (BackupService) GetBackupSqlList(ctx context.Context, workflowId, filterIns
 			OriginTaskId:   originSql.TaskId,
 			ExecOrder:      originSql.ExecuteOrder,
 			OriginSQL:      originSql.ExecuteSql,
-			BackupSqls:     backupSqlMap[originSql.Id],
+			BackupSqls:     backupSqlMap[originSql.Id].backupSqls,
+			BackupStatus:   backupSqlMap[originSql.Id].backupStatus,
+			BackupResult:   backupSqlMap[originSql.Id].backupResult,
 			BackupStrategy: originSql.BackupStrategy,
 			InstanceName:   instanceName,
 			InstanceId:     originSql.InstanceId,
