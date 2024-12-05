@@ -18,9 +18,9 @@ func (BackupService) CheckIsDbTypeSupportEnableBackup(dbType string) error {
 	return nil
 }
 
-type BaseBackupTask struct{}
+type BackupManager struct{}
 
-func (t BaseBackupTask) Backup() error {
+func (t BackupManager) Backup() error {
 	return nil
 }
 
@@ -28,8 +28,8 @@ func initModelBackupTask(p driver.Plugin, task *model.Task, sql *model.ExecuteSQ
 	return &model.BackupTask{}
 }
 
-func toBackupTask(p driver.Plugin, sql *model.ExecuteSQL, dbType string) (*BaseBackupTask, error)  {
-	return &BaseBackupTask{}, nil
+func getBackupManager(p driver.Plugin, sql *model.ExecuteSQL, dbType string) (*BackupManager, error) {
+	return &BackupManager{}, nil
 }
 
 func (BackupService) GetRollbackSqlsMap(taskId uint) (map[uint][]string, error) {
