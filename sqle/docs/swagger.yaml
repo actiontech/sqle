@@ -3028,6 +3028,8 @@ definitions:
     type: object
   v1.InstanceTipResV1:
     properties:
+      backup_max_rows:
+        type: integer
       enable_backup:
         type: boolean
       host:
