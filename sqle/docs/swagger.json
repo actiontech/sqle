@@ -9471,6 +9471,45 @@
                 }
             }
         },
+        "/v1/tasks/audits/{task_id}/sqls/{number}/rewrite": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "获取特定任务中某条SQL语句的重写后的SQL及相关建议",
+                "tags": [
+                    "task"
+                ],
+                "summary": "获取任务中指定SQL的重写结果和建议",
+                "operationId": "getTaskSQLRewritten",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "task id",
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "sql number",
+                        "name": "number",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功返回重写结果",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetTaskSQLRewrittenRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/tasks/audits/{task_id}/sqls/{sql_id}/backup_strategy": {
             "patch": {
                 "security": [
@@ -14732,6 +14771,23 @@
                 }
             }
         },
+        "v1.GetTaskSQLRewrittenRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TaskSQLRewrittenData"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetUserTipsResV1": {
             "type": "object",
             "properties": {
@@ -16555,6 +16611,50 @@
                 }
             }
         },
+        "v1.SQLRewrittenSuggestion": {
+            "type": "object",
+            "properties": {
+                "audit_level": {
+                    "description": "@Description 审核规则等级\n@Required",
+                    "type": "string",
+                    "enum": [
+                        "normal",
+                        "notice",
+                        "warn",
+                        "error"
+                    ]
+                },
+                "ddl_dcl": {
+                    "description": "@Description ddl dcl(适用于结构级重写)",
+                    "type": "string"
+                },
+                "ddl_dcl_desc": {
+                    "description": "@Description ddl dcl 描述(适用于结构级重写)",
+                    "type": "string"
+                },
+                "desc": {
+                    "description": "@Description 重写描述（适用于所有类型）\n@Required",
+                    "type": "string"
+                },
+                "rewritten_sql": {
+                    "description": "@Description 重写后的SQL（适用于语句级重写和结构级重写）",
+                    "type": "string"
+                },
+                "rule_name": {
+                    "description": "@Description 审核规则名称\n@Required",
+                    "type": "string"
+                },
+                "type": {
+                    "description": "@Description 重写建议类型：语句级重写、结构级重写、其他\n@Required",
+                    "type": "string",
+                    "enum": [
+                        "statement",
+                        "structure",
+                        "other"
+                    ]
+                }
+            }
+        },
         "v1.SQLStatement": {
             "type": "object",
             "properties": {
@@ -17111,6 +17211,31 @@
                 },
                 "target_instance_schema": {
                     "type": "string"
+                }
+            }
+        },
+        "v1.TaskSQLRewrittenData": {
+            "type": "object",
+            "properties": {
+                "business_non_equivalent_desc": {
+                    "description": "@Description 业务不等价性描述，为空表示等价",
+                    "type": "string"
+                },
+                "rewritten_sql": {
+                    "description": "@Description 重写后的SQL",
+                    "type": "string"
+                },
+                "suggestions": {
+                    "description": "@Description 重写建议列表",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.SQLRewrittenSuggestion"
+                    }
+                },
+                "table_metas": {
+                    "description": "@Description 表结构",
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TableMetas"
                 }
             }
         },
