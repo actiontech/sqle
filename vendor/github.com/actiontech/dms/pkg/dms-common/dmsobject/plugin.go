@@ -12,13 +12,13 @@ var operateHandlers map[string]OperationHandler = make(map[string]OperationHandl
 // OperationHandler NOTE:
 // The implemented structure must be named[CamelCase] by the combination of DataResourceType, OperationType, and OperationTimingType
 type OperationHandler interface {
-	Handle(ctx context.Context, currentUserId string, objId string) error
+	Handle(ctx context.Context, currentUserId string, objId string, extraParams string) error
 }
 
 type DefaultOperateHandle struct {
 }
 
-func (f DefaultOperateHandle) Handle(ctx context.Context, currentUserId string, objId string) error {
+func (f DefaultOperateHandle) Handle(ctx context.Context, currentUserId string, objId string, extraParams string) error {
 	return nil
 }
 

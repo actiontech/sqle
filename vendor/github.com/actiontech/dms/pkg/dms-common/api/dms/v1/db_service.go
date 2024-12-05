@@ -151,6 +151,8 @@ type ListDBService struct {
 	IsEnableMasking bool `json:"is_enable_masking"`
 	// backup switch
 	EnableBackup bool `json:"enable_backup"`
+	// backup max rows
+	BackupMaxRows uint64 `json:"backup_max_rows"`
 	// audit plan types
 	AuditPlanTypes []*AuditPlanTypes `json:"audit_plan_types"`
 	// instance audit plan id
