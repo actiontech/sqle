@@ -40,6 +40,8 @@ func toApiBackupSqlData(sqlList []*server.BackupSqlData) []*BackupSqlData {
 			OriginSQL:      sql.OriginSQL,
 			OriginTaskId:   sql.OriginTaskId,
 			BackupSqls:     sql.BackupSqls,
+			BackupStatus:   sql.BackupStatus,
+			BackupResult:   sql.BackupResult,
 			BackupStrategy: sql.BackupStrategy,
 			InstanceName:   sql.InstanceName,
 			InstanceId:     fmt.Sprintf("%d", sql.InstanceId),
@@ -50,7 +52,7 @@ func toApiBackupSqlData(sqlList []*server.BackupSqlData) []*BackupSqlData {
 	return apiSqlList
 }
 
-func updateSqlBackupStrategy(c echo.Context) error{
+func updateSqlBackupStrategy(c echo.Context) error {
 	req := new(UpdateSqlBackupStrategyReq)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
@@ -90,7 +92,7 @@ func updateSqlBackupStrategy(c echo.Context) error{
 	return controller.JSONBaseErrorReq(c, nil)
 }
 
-func updateTaskBackupStrategy(c echo.Context) error{
+func updateTaskBackupStrategy(c echo.Context) error {
 	req := new(UpdateTaskBackupStrategyReq)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
