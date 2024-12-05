@@ -16,6 +16,7 @@ import (
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/server"
 	opt "github.com/actiontech/sqle/sqle/server/optimization/rule"
 	"github.com/actiontech/sqle/sqle/utils"
 
@@ -416,18 +417,20 @@ func GetInstanceTips(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, fmt.Errorf("current project doesn't has workflow template"))
 	}
 	instanceTipsResV1 := make([]InstanceTipResV1, 0, len(instances))
+	svc := server.BackupService{}
 	for _, inst := range instances {
 		if operationType == v1.OpPermissionTypeCreateOptimization && !opt.CanOptimizeDbType(inst.DbType) {
 			continue
 		}
 		instanceTipRes := InstanceTipResV1{
-			ID:                 inst.GetIDStr(),
-			Name:               inst.Name,
-			Type:               inst.DbType,
-			Host:               inst.Host,
-			Port:               inst.Port,
-			WorkflowTemplateId: uint32(template.ID),
-			EnableBackup:       inst.EnableBackup,
+			ID:                      inst.GetIDStr(),
+			Name:                    inst.Name,
+			Type:                    inst.DbType,
+			Host:                    inst.Host,
+			Port:                    inst.Port,
+			WorkflowTemplateId:      uint32(template.ID),
+			EnableBackup:            inst.EnableBackup,
+			SupportedBackupStrategy: svc.SupportedBackupStrategy(inst.DbType),
 		}
 		instanceTipsResV1 = append(instanceTipsResV1, instanceTipRes)
 	}
