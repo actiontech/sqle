@@ -107,6 +107,12 @@ type BatchUpdateSqlManageReq struct {
 	Remark          *string   `json:"remark"`
 }
 
+type SqlManageCodingReq struct {
+	Priority    *string `json:"priority"`
+	ProjectName *string `json:"project_name"`
+	Type        *string `json:"type"`
+}
+
 // BatchUpdateSqlManage batch update sql manage
 // @Summary 批量更新SQL管控
 // @Description batch update sql manage
@@ -223,6 +229,16 @@ type GetSqlManageSqlAnalysisResp struct {
 	Data *SqlAnalysis `json:"data"`
 }
 
+type PostSqlManageCodingResp struct {
+	controller.BaseRes
+	Data *CodingResp `json:"data"`
+}
+
+type CodingResp struct {
+	Message string `json:"message"`
+	Code    string `json:"code"`
+}
+
 // GetSqlManageSqlAnalysisV1
 // @Summary 获取SQL管控SQL分析
 // @Description get sql manage analysis
@@ -235,6 +251,20 @@ type GetSqlManageSqlAnalysisResp struct {
 // @Router /v1/projects/{project_name}/sql_manages/{sql_manage_id}/sql_analysis [get]
 func GetSqlManageSqlAnalysisV1(c echo.Context) error {
 	return getSqlManageSqlAnalysisV1(c)
+}
+
+// PostSqlManageToCoding
+// @Summary 推送SQL管控结果到Coding
+// @Description get sql manage analysis
+// @Id PostSqlManageToCoding
+// @Tags SqlManage
+// @Param project_name path string true "project name"
+// @Param SqlManageCodingReq body SqlManageCodingReq true "batch update sql manage request"
+// @Security ApiKeyAuth
+// @Success 200 {object} PostSqlManageCodingResp
+// @Router /v1/projects/{project_name}/sql_manages/coding [post]
+func PostSqlManageToCoding(c echo.Context) error {
+	return postSqlManageToCoding(c)
 }
 
 func convertSQLAnalysisResultToRes(ctx context.Context, res *AnalysisResult, rawSQL string) *SqlAnalysis {

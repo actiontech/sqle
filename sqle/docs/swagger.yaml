@@ -664,6 +664,20 @@ definitions:
       new_rule_template_name:
         type: string
     type: object
+  v1.CodingConfigurationV1:
+    properties:
+      coding_url:
+        type: string
+      is_coding_notification_enabled:
+        type: boolean
+    type: object
+  v1.CodingResp:
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+    type: object
   v1.CompanyNotice:
     properties:
       notice_str:
@@ -1648,6 +1662,18 @@ definitions:
         type: string
       total_nums:
         type: integer
+    type: object
+  v1.GetCodingAuditConfigurationResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.CodingConfigurationV1'
+        type: object
+      message:
+        example: ok
+        type: string
     type: object
   v1.GetCompanyNoticeResp:
     properties:
@@ -3388,6 +3414,18 @@ definitions:
         $ref: '#/definitions/v1.AffectRows'
         type: object
     type: object
+  v1.PostSqlManageCodingResp:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.CodingResp'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.ProjectRuleTemplateResV1:
     properties:
       db_type:
@@ -3930,6 +3968,15 @@ definitions:
         - manual_audited
         type: string
     type: object
+  v1.SqlManageCodingReq:
+    properties:
+      priority:
+        type: string
+      project_name:
+        type: string
+      type:
+        type: string
+    type: object
   v1.SqlVersionDetailResV1:
     properties:
       desc:
@@ -4130,6 +4177,30 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.TestCodingConfigResDataV1:
+    properties:
+      error_message:
+        type: string
+      is_message_sent_normally:
+        type: boolean
+    type: object
+  v1.TestCodingConfigResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.TestCodingConfigResDataV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.TestCodingConfigurationReqV1:
+    properties:
+      project_name:
+        type: string
+    type: object
   v1.TestDingTalkConfigResDataV1:
     properties:
       is_ding_talk_send_normal:
@@ -4308,6 +4379,15 @@ definitions:
         - host
         - instance
         example: sql
+        type: string
+    type: object
+  v1.UpdateCodingAuditConfigurationReqV1:
+    properties:
+      coding_url:
+        type: string
+      is_coding_notification_enabled:
+        type: boolean
+      token:
         type: string
     type: object
   v1.UpdateCompanyNoticeReq:
@@ -6072,6 +6152,65 @@ paths:
       summary: 更新企业公告
       tags:
       - companyNotice
+  /v1/configurations/coding_audit:
+    get:
+      description: get coding audit configuration
+      operationId: getCodingAuditConfigurationV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetCodingAuditConfigurationResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取Coding审核配置
+      tags:
+      - configuration
+    patch:
+      consumes:
+      - application/json
+      description: update coding audit configuration
+      operationId: UpdateCodingAuditConfigurationV1
+      parameters:
+      - description: update coding audit configuration req
+        in: body
+        name: param
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateCodingAuditConfigurationReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 添加或更新Coding配置
+      tags:
+      - configuration
+  /v1/configurations/coding_audit/test:
+    post:
+      consumes:
+      - application/json
+      description: test coding audit configuration
+      operationId: testCodingAuditConfigV1
+      parameters:
+      - description: test coding configuration req
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/v1.TestCodingConfigurationReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.TestCodingConfigResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 测试Coding审批配置
+      tags:
+      - configuration
   /v1/configurations/ding_talk:
     get:
       description: get dingTalk configuration
@@ -9272,6 +9411,32 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 批量更新SQL管控
+      tags:
+      - SqlManage
+  /v1/projects/{project_name}/sql_manages/coding:
+    post:
+      description: get sql manage analysis
+      operationId: PostSqlManageToCoding
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: batch update sql manage request
+        in: body
+        name: SqlManageCodingReq
+        required: true
+        schema:
+          $ref: '#/definitions/v1.SqlManageCodingReq'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.PostSqlManageCodingResp'
+      security:
+      - ApiKeyAuth: []
+      summary: 推送SQL管控结果到Coding
       tags:
       - SqlManage
   /v1/projects/{project_name}/sql_manages/exports:

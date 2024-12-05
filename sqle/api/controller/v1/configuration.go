@@ -285,6 +285,17 @@ type WechatConfigurationV1 struct {
 	IsWechatNotificationEnabled bool `json:"is_wechat_notification_enabled"`
 }
 
+type GetCodingAuditConfigurationResV1 struct {
+	controller.BaseRes
+	Data CodingConfigurationV1 `json:"data"`
+}
+
+type CodingConfigurationV1 struct {
+	CodingUrl string `json:"coding_url"`
+
+	IsCodingNotificationEnabled bool `json:"is_coding_notification_enabled"`
+}
+
 // GetWechatAuditConfigurationV1
 // @Summary 获取微信审核配置
 // @Description get wechat audit configuration
@@ -295,6 +306,18 @@ type WechatConfigurationV1 struct {
 // @router /v1/configurations/wechat_audit [get]
 func GetWechatAuditConfigurationV1(c echo.Context) error {
 	return getWechatAuditConfigurationV1(c)
+}
+
+// GetCodingAuditConfigurationV1
+// @Summary 获取Coding审核配置
+// @Description get coding audit configuration
+// @Id getCodingAuditConfigurationV1
+// @Tags configuration
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetCodingAuditConfigurationResV1
+// @router /v1/configurations/coding_audit [get]
+func GetCodingAuditConfigurationV1(c echo.Context) error {
+	return getCodingAuditConfigurationV1(c)
 }
 
 type UpdateWechatConfigurationReqV1 struct {
@@ -317,6 +340,26 @@ func UpdateWechatAuditConfigurationV1(c echo.Context) error {
 	return updateWechatAuditConfigurationV1(c)
 }
 
+type UpdateCodingAuditConfigurationReqV1 struct {
+	CodingUrl                   *string `json:"coding_url" from:"coding_url" description:"Coding平台的地址"`
+	Token                       *string `json:"token" from:"token" description:"访问令牌"`
+	IsCodingNotificationEnabled *bool   `json:"is_coding_notification_enabled" from:"is_coding_notification_enabled" description:"是否启用Coding对接流程"`
+}
+
+// UpdateCodingAuditConfigurationV1
+// @Summary 添加或更新Coding配置
+// @Description update coding audit configuration
+// @Accept json
+// @Id UpdateCodingAuditConfigurationV1
+// @Tags configuration
+// @Security ApiKeyAuth
+// @Param param body v1.UpdateCodingAuditConfigurationReqV1 true "update coding audit configuration req"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/configurations/coding_audit [patch]
+func UpdateCodingAuditConfigurationV1(c echo.Context) error {
+	return updateCodingAuditConfigurationV1(c)
+}
+
 type TestWechatConfigResDataV1 struct {
 	IsMessageSentNormally bool   `json:"is_message_sent_normally"`
 	ErrorMessage          string `json:"error_message,omitempty"`
@@ -325,6 +368,16 @@ type TestWechatConfigResDataV1 struct {
 type TestWechatConfigResV1 struct {
 	controller.BaseRes
 	Data TestWechatConfigResDataV1 `json:"data"`
+}
+
+type TestCodingConfigResV1 struct {
+	controller.BaseRes
+	Data TestCodingConfigResDataV1 `json:"data"`
+}
+
+type TestCodingConfigResDataV1 struct {
+	IsMessageSentNormally bool   `json:"is_message_sent_normally"`
+	ErrorMessage          string `json:"error_message,omitempty"`
 }
 
 type TestWechatConfigurationReqV1 struct {
@@ -343,6 +396,24 @@ type TestWechatConfigurationReqV1 struct {
 // @router /v1/configurations/wechat_audit/test [post]
 func TestWechatAuditConfigV1(c echo.Context) error {
 	return testWechatAuditConfigV1(c)
+}
+
+type TestCodingConfigurationReqV1 struct {
+	ProjectName string `json:"project_name" form:"project_name" valid:"required" description:"项目名称"`
+}
+
+// TestCodingAuditConfigV1
+// @Summary 测试Coding审批配置
+// @Description test coding audit configuration
+// @Accept json
+// @Id testCodingAuditConfigV1
+// @Tags configuration
+// @Param req body v1.TestCodingConfigurationReqV1 true "test coding configuration req"
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.TestCodingConfigResV1
+// @router /v1/configurations/coding_audit/test [post]
+func TestCodingAuditConfigV1(c echo.Context) error {
+	return testCodingAuditConfigV1(c)
 }
 
 type ScheduleTaskDefaultOption struct {
