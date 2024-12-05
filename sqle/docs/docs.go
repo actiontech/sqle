@@ -180,6 +180,101 @@ var doc = `{
                 }
             }
         },
+        "/v1/configurations/coding_audit": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get coding audit configuration",
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "获取Coding审核配置",
+                "operationId": "getCodingAuditConfigurationV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetCodingAuditConfigurationResV1"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update coding audit configuration",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "添加或更新Coding配置",
+                "operationId": "UpdateCodingAuditConfigurationV1",
+                "parameters": [
+                    {
+                        "description": "update coding audit configuration req",
+                        "name": "param",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateCodingAuditConfigurationReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/configurations/coding_audit/test": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "test coding audit configuration",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "测试Coding审批配置",
+                "operationId": "testCodingAuditConfigV1",
+                "parameters": [
+                    {
+                        "description": "test coding configuration req",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.TestCodingConfigurationReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.TestCodingConfigResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/configurations/ding_talk": {
             "get": {
                 "security": [
@@ -5063,6 +5158,47 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/sql_manages/coding": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get sql manage analysis",
+                "tags": [
+                    "SqlManage"
+                ],
+                "summary": "推送SQL管控结果到Coding",
+                "operationId": "PostSqlManageToCoding",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "batch update sql manage request",
+                        "name": "SqlManageCodingReq",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.SqlManageCodingReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.PostSqlManageCodingResp"
                         }
                     }
                 }
@@ -12047,6 +12183,28 @@ var doc = `{
                 }
             }
         },
+        "v1.CodingConfigurationV1": {
+            "type": "object",
+            "properties": {
+                "coding_url": {
+                    "type": "string"
+                },
+                "is_coding_notification_enabled": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "v1.CodingResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.CompanyNotice": {
             "type": "object",
             "properties": {
@@ -13480,6 +13638,23 @@ var doc = `{
                 },
                 "total_nums": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.GetCodingAuditConfigurationResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.CodingConfigurationV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
@@ -16015,6 +16190,23 @@ var doc = `{
                 }
             }
         },
+        "v1.PostSqlManageCodingResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.CodingResp"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.ProjectRuleTemplateResV1": {
             "type": "object",
             "properties": {
@@ -16826,6 +17018,20 @@ var doc = `{
                 }
             }
         },
+        "v1.SqlManageCodingReq": {
+            "type": "object",
+            "properties": {
+                "priority": {
+                    "type": "string"
+                },
+                "project_name": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.SqlVersionDetailResV1": {
             "type": "object",
             "properties": {
@@ -17127,6 +17333,42 @@ var doc = `{
                 }
             }
         },
+        "v1.TestCodingConfigResDataV1": {
+            "type": "object",
+            "properties": {
+                "error_message": {
+                    "type": "string"
+                },
+                "is_message_sent_normally": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "v1.TestCodingConfigResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TestCodingConfigResDataV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.TestCodingConfigurationReqV1": {
+            "type": "object",
+            "properties": {
+                "project_name": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.TestDingTalkConfigResDataV1": {
             "type": "object",
             "properties": {
@@ -17384,6 +17626,20 @@ var doc = `{
                         "instance"
                     ],
                     "example": "sql"
+                }
+            }
+        },
+        "v1.UpdateCodingAuditConfigurationReqV1": {
+            "type": "object",
+            "properties": {
+                "coding_url": {
+                    "type": "string"
+                },
+                "is_coding_notification_enabled": {
+                    "type": "boolean"
+                },
+                "token": {
+                    "type": "string"
                 }
             }
         },
