@@ -35,6 +35,20 @@ func (m backupTaskMap) GetBackupStrategy(sqlId uint) string {
 	return ""
 }
 
+func (m backupTaskMap) GetBackupStatus(sqlId uint) string {
+	if task, exist := m[sqlId]; exist {
+		return task.BackupStatus
+	}
+	return ""
+}
+
+func (m backupTaskMap) GetBackupResult(sqlId uint) string {
+	if task, exist := m[sqlId]; exist {
+		return task.BackupExecResult
+	}
+	return ""
+}
+
 func (m backupTaskMap) GetBackupStrategyTip(sqlId uint) string {
 	if task, exist := m[sqlId]; exist {
 		return task.BackupStrategyTip

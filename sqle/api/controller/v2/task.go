@@ -153,6 +153,8 @@ func GetTaskSQLs(c echo.Context) error {
 			SQLType:                     taskSQL.SQLType.String,
 			BackupStrategy:              backupTaskMap.GetBackupStrategy(taskSQL.Id),
 			BackupStrategyTip:           backupTaskMap.GetBackupStrategyTip(taskSQL.Id),
+			BackupStatus:                backupTaskMap.GetBackupStatus(taskSQL.Id),
+			BackupResult:                backupTaskMap.GetBackupResult(taskSQL.Id),
 			AssociatedRollbackWorkflows: associatedRollbackWorkflowsMap[taskSQL.Id],
 		}
 		for i := range taskSQL.AuditResults {
