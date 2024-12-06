@@ -174,7 +174,7 @@ type PluginImplV2 struct {
 	meta    *driverV2.DriverMetas
 }
 
-func (s *PluginImplV2) Backup(ctx context.Context, backupStrategy string, sql string) (BackupSql []string, ExecuteInfo string, err error) {
+func (s *PluginImplV2) Backup(ctx context.Context, backupStrategy string, sql string, backupMaxRows uint64) (backupSqls []string, executeResult string, err error) {
 	api := "Backup"
 	s.preLog(api)
 	var strategy protoV2.BackupStrategy
@@ -194,12 +194,13 @@ func (s *PluginImplV2) Backup(ctx context.Context, backupStrategy string, sql st
 		Session:        s.Session,
 		BackupStrategy: strategy,
 		Sql:            sql,
+		BackupMaxRows:  backupMaxRows,
 	})
 	s.afterLog(api, err)
 	if err != nil {
 		return nil, "", err
 	}
-	return resp.GetBackupSql(), resp.GetExecuteInfo(), nil
+	return resp.GetBackupSql(), resp.GetExecuteResult(), nil
 }
 
 func (p *PluginImplV2) RecommendBackupStrategy(ctx context.Context, sql string) (*RecommendBackupStrategyRes, error) {

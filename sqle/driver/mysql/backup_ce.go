@@ -12,7 +12,7 @@ import (
 
 var ErrUnsupportedBackup error = fmt.Errorf("backup is unsupported for sqle community version")
 
-func (i *MysqlDriverImpl) Backup(ctx context.Context, backupStrategy string, sql string) (BackupSql []string, ExecuteInfo string, err error) {
+func (i *MysqlDriverImpl) Backup(ctx context.Context, backupStrategy string, sql string, backupMaxRows uint64) (backupSqls []string, executeResult string, err error) {
 	return nil, "", ErrUnsupportedBackup
 }
 

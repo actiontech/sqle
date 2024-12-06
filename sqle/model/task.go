@@ -62,6 +62,7 @@ type Task struct {
 	ExecEndAt            *time.Time
 	ExecMode             string         `json:"exec_mode" gorm:"default:'sqls';type:varchar(255)" example:"sqls"`
 	EnableBackup         bool           `gorm:"column:enable_backup"`
+	BackupMaxRows        uint64         `json:"backup_max_rows" gorm:"column:backup_max_rows;not null;default:0"`
 	InstanceEnableBackup bool           `gorm:"column:instance_enable_backup"` // 用于记录创建task时，instance备份开关的状态
 	FileOrderMethod      string         `json:"file_order_method" gorm:"column:file_order_method;type:varchar(255)"`
 	Instance             *Instance      `json:"-" gorm:"-"`
