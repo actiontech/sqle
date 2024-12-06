@@ -274,15 +274,21 @@ func (backup *BackupReverseSqlUseRollbackApi) backup() (backupResult string, bac
 	}
 	// adapter to backup sqls
 	backupSqlNodes, backupErr := backup.plugin.Parse(context.TODO(), backupSqlText)
-	if backupErr != nil {
-		return executeInfoInChinese, backupErr
-	}
 	backupSqls := make([]string, 0, len(backupSqlNodes))
+	if backupErr != nil {
+		backupSqls = append(backupSqls, backupSqlText)
+		log.Logger().Errorf("in backup %v, parse reverse sql  %v failed %v", backup.task.ID, backupSqlText, backupErr)
+		// TODO 这里需要处理一下error，分情况处理
+		// return executeInfoInChinese, backupErr
+	}
 	for _, sql := range backupSqlNodes {
-		if !strings.HasSuffix(sql.Text, ";") {
+		if !strings.HasSuffix(strings.TrimSpace(sql.Text), ";") {
 			sql.Text = sql.Text + ";"
 		}
 		backupSqls = append(backupSqls, sql.Text)
+	}
+	if executeInfoInChinese == "" {
+		executeInfoInChinese = "备份成功"
 	}
 	// save backup result into database
 	if backupErr = backup.svc.saveBackupResultToRollbackSQLs(backup.task, backupSqls, executeInfoInChinese); backupErr != nil {
