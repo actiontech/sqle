@@ -660,7 +660,7 @@ func (BackupService) SupportedBackupStrategy(dbType string) []string {
 	if driver.GetPluginManager().IsOptionalModuleEnabled(dbType, driverV2.OptionalModuleGenRollbackSQL) {
 		return []string{
 			string(BackupStrategyNone),
-			string(BackupStrategyOriginalRow),
+			string(BackupStrategyManually),
 			string(BackupStrategyReverseSql),
 		}
 	}
@@ -786,10 +786,10 @@ func modifyRulesForMySQLLikeDriver(rules []*model.Rule, backupMaxRows uint64) []
 			},
 			HasAuditPower: true,
 			I18nRuleInfo: driverV2.I18nRuleInfo{
-				language.Tag{}: &driverV2.RuleInfo {
-					Desc: "在 DML 语句中预计影响行数超过指定值则不回滚", 
-					Annotation: "大事务回滚，容易影响数据库性能，使得业务发生波动；具体规则阈值可以根据业务需求调整，默认值：1000", 
-					Category: "全局配置",
+				language.Tag{}: &driverV2.RuleInfo{
+					Desc:       "在 DML 语句中预计影响行数超过指定值则不回滚",
+					Annotation: "大事务回滚，容易影响数据库性能，使得业务发生波动；具体规则阈值可以根据业务需求调整，默认值：1000",
+					Category:   "全局配置",
 					Knowledge:  driverV2.RuleKnowledge{},
 				},
 			},
@@ -828,7 +828,7 @@ func modifyRulesForPgLikeDriver(rules []*model.Rule, backupMaxRows uint64) []*mo
 	}
 	if !rule24 {
 		rules = append(rules, &model.Rule{
-			Name: "pg_024",
+			Name:   "pg_024",
 			DBType: driverV2.DriverTypePostgreSQL,
 			Level:  model.NoticeAuditLevel,
 			Params: params.Params{
@@ -841,10 +841,10 @@ func modifyRulesForPgLikeDriver(rules []*model.Rule, backupMaxRows uint64) []*mo
 			},
 			HasAuditPower: true,
 			I18nRuleInfo: driverV2.I18nRuleInfo{
-				language.Tag{}: &driverV2.RuleInfo {
-					Desc: "在 DML 语句中预计影响行数超过指定值则不回滚", 
-					Annotation: "大事务回滚，容易影响数据库性能，使得业务发生波动；具体规则阈值可以根据业务需求调整，默认值：1000", 
-					Category: "全局配置",
+				language.Tag{}: &driverV2.RuleInfo{
+					Desc:       "在 DML 语句中预计影响行数超过指定值则不回滚",
+					Annotation: "大事务回滚，容易影响数据库性能，使得业务发生波动；具体规则阈值可以根据业务需求调整，默认值：1000",
+					Category:   "全局配置",
 					Knowledge:  driverV2.RuleKnowledge{},
 				},
 			},
