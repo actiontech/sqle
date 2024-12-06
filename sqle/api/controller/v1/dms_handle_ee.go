@@ -11,29 +11,29 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 )
 
-func (h AfterCreateProject) Handle(ctx context.Context, currentUserId string, dataResourceId string) error {
+func (h AfterCreateProject) Handle(ctx context.Context, currentUserId string, projectId string, extraParams string) error {
 	s := model.GetStorage()
 	// 添加默认模板
-	td := model.DefaultWorkflowTemplate(dataResourceId)
+	td := model.DefaultWorkflowTemplate(projectId)
 	err := s.SaveWorkflowTemplate(td)
 
 	// 添加默认推送报告
-	err = s.CreateDefaultReportPushConfigIfNotExist(dataResourceId)
+	err = s.CreateDefaultReportPushConfigIfNotExist(projectId)
 	if err != nil {
 		return err
 	}
 	return nil
 }
-func (h BeforeDeleteProject) Handle(ctx context.Context, currentUserId string, dataResourceId string) error {
+func (h BeforeDeleteProject) Handle(ctx context.Context, currentUserId string, projectId string, extraParams string) error {
 	s := model.GetStorage()
-	has, err := s.HasNotEndWorkflowByProjectId(dataResourceId)
+	has, err := s.HasNotEndWorkflowByProjectId(projectId)
 	if err != nil {
 		return err
 	}
 	if has {
 		return errors.New(errors.UserNotPermission, fmt.Errorf("there are unfinished work orders, and the current project cannot be archived"))
 	}
-	configs, err := s.GetReportPushConfigListInProject(dataResourceId)
+	configs, err := s.GetReportPushConfigListInProject(projectId)
 	if err != nil {
 		return err
 	}
@@ -42,7 +42,7 @@ func (h BeforeDeleteProject) Handle(ctx context.Context, currentUserId string, d
 			return fmt.Errorf("current project has running push job for %v, you need to modify the configuration to stop it ", config.Type)
 		}
 	}
-	instAuditPlans, err := s.GetAuditPlansByProjectId(dataResourceId)
+	instAuditPlans, err := s.GetAuditPlansByProjectId(projectId)
 	if err != nil {
 		return err
 	}
@@ -55,22 +55,22 @@ func (h BeforeDeleteProject) Handle(ctx context.Context, currentUserId string, d
 	return nil
 }
 
-func (h AfterDeleteProject) Handle(ctx context.Context, currentUserId string, dataResourceId string) error {
+func (h AfterDeleteProject) Handle(ctx context.Context, currentUserId string, projectId string, extraParams string) error {
 	s := model.GetStorage()
-	err := s.RemoveProjectRelateData(model.ProjectUID(dataResourceId))
+	err := s.RemoveProjectRelateData(model.ProjectUID(projectId))
 	if err != nil {
 		return err
 	}
-	err = s.DeleteReportPushConfigInProject(dataResourceId)
+	err = s.DeleteReportPushConfigInProject(projectId)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (h BeforeArchiveProject) Handle(ctx context.Context, currentUserId string, dataResourceId string) error {
+func (h BeforeArchiveProject) Handle(ctx context.Context, currentUserId string, projectId string, extraParams string) error {
 	s := model.GetStorage()
-	has, err := s.HasNotEndWorkflowByProjectId(dataResourceId)
+	has, err := s.HasNotEndWorkflowByProjectId(projectId)
 	if err != nil {
 		return err
 	}

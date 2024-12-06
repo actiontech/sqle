@@ -16,7 +16,7 @@ import (
 func testBackupOneSql(t *testing.T, caseName, querySql string, expectedBackupResults []string, expectedQueryResult []*queryResult) {
 	mockExecutor, mockHandler, err := executor.NewMockExecutor()
 	// 预期无错误产生
-	if err != nil{
+	if err != nil {
 		t.Errorf("caseName: %s\n, err: %s\n", caseName, err.Error())
 	}
 
@@ -27,16 +27,16 @@ func testBackupOneSql(t *testing.T, caseName, querySql string, expectedBackupRes
 	mysqlDriverImpl := NewMockInspectWithIsExecutedSQL(mockExecutor)
 
 	// 执行备份
-	backupResults, _, err := mysqlDriverImpl.Backup(context.TODO(), BackupStrategyOriginalRow, querySql)
+	backupResults, _, err := mysqlDriverImpl.Backup(context.TODO(), BackupStrategyOriginalRow, querySql, 1000)
 	// 预期无错误产生
-	if err != nil{
+	if err != nil {
 		t.Errorf("caseName: %s\n, err: %s\n", caseName, err.Error())
 	}
 
 	// 预期备份结果和预期结果一致
 	if assert.Equal(t, len(expectedBackupResults), len(backupResults), caseName) {
 		for idx := range backupResults {
-			if expectedBackupResults[idx]!=backupResults[idx]{
+			if expectedBackupResults[idx] != backupResults[idx] {
 				t.Errorf("caseName: %s\nexpectedBackupResults[%d]: %s\nactualBackupResults[%d]: %s\n", caseName, idx, expectedBackupResults[idx], idx, backupResults[idx])
 			}
 		}
@@ -89,7 +89,7 @@ func TestBackupOriginalRowForUpdateClause(t *testing.T) {
 				"REPLACE INTO `exist_db`.`exist_tb_1` (`id`, `v1`, `v2`) VALUES ('1', 'v1', 'updated_value');",
 				"REPLACE INTO `exist_db`.`exist_tb_2` (`id`, `v1`, `v2`, `user_id`) VALUES ('1', 'v1', 'updated_value', '1');",
 			},
-		},		
+		},
 		*/
 		{
 			caseName: "update with conditional WHERE clause in exist_tb_1",
@@ -103,7 +103,7 @@ func TestBackupOriginalRowForUpdateClause(t *testing.T) {
 			expectedBackupResults: []string{
 				"REPLACE INTO `exist_db`.`exist_tb_1` (`id`, `v1`, `v2`) VALUES ('2', 'v1', 'conditional_update');",
 			},
-		},		
+		},
 		{
 			caseName: "update column v1 of exist_tb_1",
 			querySql: "update exist_tb_1 set v1 = 1 where id = 1;",
@@ -227,8 +227,8 @@ func TestBackupOriginalRowForDeleteClause(t *testing.T) {
 				"REPLACE INTO `exist_db`.`exist_tb_1` (`id`, `v1`, `v2`) VALUES ('1', 'v1', 'old_value');", // 删除前备份的结果
 				"REPLACE INTO `exist_db`.`exist_tb_2` (`id`, `v1`, `v2`, `user_id`) VALUES ('1', 'v1', 'old_value', '1');",
 			},
-		},		
-		
+		},
+
 		*/
 		{
 			caseName: "delete multiple rows with LIMIT from exist_tb_1",
@@ -243,7 +243,7 @@ func TestBackupOriginalRowForDeleteClause(t *testing.T) {
 				"REPLACE INTO `exist_db`.`exist_tb_1` (`id`, `v1`, `v2`) VALUES ('1', 'v1', 'old_value');", // 删除前的备份数据
 				"REPLACE INTO `exist_db`.`exist_tb_1` (`id`, `v1`, `v2`) VALUES ('2', 'v1', 'old_value');",
 			},
-		},		
+		},
 		{
 			caseName: "delete rows using subquery from exist_tb_1",
 			querySql: "DELETE FROM exist_tb_1 WHERE id IN (SELECT id FROM exist_tb_2 WHERE v1 = 'v1');",
@@ -256,7 +256,7 @@ func TestBackupOriginalRowForDeleteClause(t *testing.T) {
 			expectedBackupResults: []string{
 				"REPLACE INTO `exist_db`.`exist_tb_1` (`id`, `v1`, `v2`) VALUES ('1', 'v1', 'old_value');", // 删除前的备份数据
 			},
-		},		
+		},
 		{
 			caseName: "delete from exist_tb_1 with condition",
 			querySql: "DELETE FROM exist_tb_1 WHERE v1 = 'v1' AND id = 1 ORDER BY v1 DESC;",
@@ -324,8 +324,6 @@ func TestBackupOriginalRowForDeleteClause(t *testing.T) {
 				// 所有行都会备份
 			},
 		},
-
-		
 	}
 	for _, testCase := range testCases {
 		testBackupOneSql(t, testCase.caseName, testCase.querySql, testCase.expectedBackupResults, testCase.expectedQueryResult)

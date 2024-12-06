@@ -14,6 +14,7 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/pkg/params"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
 )
@@ -60,16 +61,16 @@ func initModelBackupTask(p driver.Plugin, task *model.Task, sql *model.ExecuteSQ
 	}
 }
 
-func getBackupManager(p driver.Plugin, sql *model.ExecuteSQL, dbType string) (*BackupManager, error) {
+func getBackupManager(p driver.Plugin, sql *model.ExecuteSQL, dbType string, backupMaxRows uint64) (*BackupManager, error) {
 	s := model.GetStorage()
 	backupTask, err := s.GetBackupTaskByExecuteSqlId(sql.ID)
 	if err != nil {
 		return nil, err
 	}
-	return newBackupManager(p, backupTask, sql, dbType), nil
+	return newBackupManager(p, backupTask, sql, dbType, backupMaxRows), nil
 }
 
-func newBackupManager(p driver.Plugin, modelBackupTask *model.BackupTask, sql *model.ExecuteSQL, dbType string) *BackupManager {
+func newBackupManager(p driver.Plugin, modelBackupTask *model.BackupTask, sql *model.ExecuteSQL, dbType string, backupMaxRows uint64) *BackupManager {
 	task := backupTask{
 		ID:                modelBackupTask.ID,
 		ExecTaskId:        sql.TaskId,
@@ -83,6 +84,7 @@ func newBackupManager(p driver.Plugin, modelBackupTask *model.BackupTask, sql *m
 		BackupStrategy:    BackupStrategy(modelBackupTask.BackupStrategy),
 		BackupStrategyTip: modelBackupTask.BackupStrategyTip,
 		BackupExecResult:  modelBackupTask.BackupExecResult,
+		BackupMaxRows:     backupMaxRows,
 	}
 	var handler backupHandler
 	switch modelBackupTask.BackupStrategy {
@@ -138,6 +140,7 @@ type backupTask struct {
 	BackupStrategyTip string         // 备份策略推荐原因
 	BackupStatus      BackupStatus   // 备份执行状态
 	BackupExecResult  string         // 备份执行详情信息
+	BackupMaxRows     uint64         // 备份的最大行数
 }
 
 func (backup backupTask) toModel() *model.BackupTask {
@@ -227,7 +230,7 @@ type baseBackupHandler struct {
 
 func (backup *baseBackupHandler) backup() (backupResult string, backupErr error) {
 	// generate reverse sql
-	backupSqls, executeInfo, backupErr := backup.plugin.Backup(context.TODO(), string(BackupStrategyOriginalRow), backup.task.ExecuteSql)
+	backupSqls, executeInfo, backupErr := backup.plugin.Backup(context.TODO(), string(BackupStrategyOriginalRow), backup.task.ExecuteSql, backup.task.BackupMaxRows)
 	if backupErr != nil {
 		return executeInfo, backupErr
 	}
@@ -271,15 +274,21 @@ func (backup *BackupReverseSqlUseRollbackApi) backup() (backupResult string, bac
 	}
 	// adapter to backup sqls
 	backupSqlNodes, backupErr := backup.plugin.Parse(context.TODO(), backupSqlText)
-	if backupErr != nil {
-		return executeInfoInChinese, backupErr
-	}
 	backupSqls := make([]string, 0, len(backupSqlNodes))
+	if backupErr != nil {
+		backupSqls = append(backupSqls, backupSqlText)
+		log.Logger().Errorf("in backup %v, parse reverse sql  %v failed %v", backup.task.ID, backupSqlText, backupErr)
+		// TODO 这里需要处理一下error，分情况处理
+		// return executeInfoInChinese, backupErr
+	}
 	for _, sql := range backupSqlNodes {
-		if !strings.HasSuffix(sql.Text, ";") {
+		if !strings.HasSuffix(strings.TrimSpace(sql.Text), ";") {
 			sql.Text = sql.Text + ";"
 		}
 		backupSqls = append(backupSqls, sql.Text)
+	}
+	if executeInfoInChinese == "" {
+		executeInfoInChinese = "备份成功"
 	}
 	// save backup result into database
 	if backupErr = backup.svc.saveBackupResultToRollbackSQLs(backup.task, backupSqls, executeInfoInChinese); backupErr != nil {
@@ -439,20 +448,23 @@ func (BackupService) GetBackupSqlList(ctx context.Context, workflowId, filterIns
 		if inst, exist := instanceMap[originSql.InstanceId]; exist {
 			instanceName = inst.Name
 		}
-		backupSqlList = append(backupSqlList, &BackupSqlData{
+		backupSqlData := &BackupSqlData{
 			ExecSqlID:      originSql.Id,
 			OriginTaskId:   originSql.TaskId,
 			ExecOrder:      originSql.ExecuteOrder,
 			OriginSQL:      originSql.ExecuteSql,
-			BackupSqls:     backupSqlMap[originSql.Id].backupSqls,
-			BackupStatus:   backupSqlMap[originSql.Id].backupStatus,
-			BackupResult:   backupSqlMap[originSql.Id].backupResult,
 			BackupStrategy: originSql.BackupStrategy,
 			InstanceName:   instanceName,
 			InstanceId:     originSql.InstanceId,
 			ExecStatus:     originSql.ExecStatus,
 			Description:    originSql.Description,
-		})
+		}
+		if sql, exist := backupSqlMap[originSql.Id]; exist {
+			backupSqlData.BackupSqls = sql.backupSqls
+			backupSqlData.BackupStatus = sql.backupStatus
+			backupSqlData.BackupResult = sql.backupResult
+		}
+		backupSqlList = append(backupSqlList, backupSqlData)
 	}
 	return backupSqlList, count, nil
 }
@@ -625,6 +637,26 @@ func (BackupService) IsBackupConflictWithInstance(taskEnableBackup, instanceEnab
 	return instanceEnableBackup && !taskEnableBackup
 }
 
+const DefaultBackupMaxRows uint64 = 1000
+
+// AutoChooseBackupMaxRows 方法根据是否启用备份以及备份最大行数的设置来确定最终的备份最大行数。
+func (BackupService) AutoChooseBackupMaxRows(enableBackup bool, backupMaxRows *uint64, instance model.Instance) uint64 {
+	// 如果未启用备份，则返回 0。
+	if !enableBackup {
+		return 0
+	}
+	// 如果 backupMaxRows 不为 nil 并且其值大于 0，则返回 backupMaxRows 的值。
+	if backupMaxRows != nil && *backupMaxRows >= 0 {
+		return *backupMaxRows
+	}
+	// 如果实例启用了备份并且实例的备份最大行数大于等于 0，则返回实例的备份最大行数。
+	if instance.EnableBackup && instance.BackupMaxRows >= 0 {
+		return instance.BackupMaxRows
+	}
+	// 如果以上条件都不满足，则返回默认的备份最大行数 DefaultBackupMaxRows。
+	return DefaultBackupMaxRows
+}
+
 func (BackupService) SupportedBackupStrategy(dbType string) []string {
 	if driver.GetPluginManager().IsOptionalModuleEnabled(dbType, driverV2.OptionalBackup) {
 		return []string{
@@ -637,9 +669,211 @@ func (BackupService) SupportedBackupStrategy(dbType string) []string {
 	if driver.GetPluginManager().IsOptionalModuleEnabled(dbType, driverV2.OptionalModuleGenRollbackSQL) {
 		return []string{
 			string(BackupStrategyNone),
-			string(BackupStrategyOriginalRow),
+			string(BackupStrategyManually),
 			string(BackupStrategyReverseSql),
 		}
 	}
 	return []string{}
+}
+
+func modifyRulesWithBackupMaxRows(rules []*model.Rule, dbType string, backupMaxRows uint64) []*model.Rule {
+	if backupMaxRows == 0 {
+		return rules
+	}
+	svc := BackupService{}
+	if err := svc.CheckIsDbTypeSupportEnableBackup(dbType); err != nil {
+		return rules
+	}
+	switch dbType {
+	case driverV2.DriverTypeTBase, driverV2.DriverTypePostgreSQL, "GaussDB for MySQL":
+		return modifyRulesForPgLikeDriver(rules, backupMaxRows)
+	case driverV2.DriverTypeOceanBase, "GoldenDB", "TiDB", driverV2.DriverTypeSQLServer, driverV2.DriverTypeTDSQLForInnoDB:
+		return modifyRulesForMySQLLikeDriver(rules, backupMaxRows)
+	case driverV2.DriverTypeOracle, "DM", "OceanBase For Oracle":
+		return modifyRulesForOracleLikeDriver(rules, backupMaxRows)
+	case driverV2.DriverTypeDB2:
+		// 没有限制行数，找不到对应规则
+	}
+	return rules
+}
+func modifyRulesForOracleLikeDriver(rules []*model.Rule, backupMaxRows uint64) []*model.Rule {
+	// [{"key": "first_key", "desc": "影响行数", "type": "string", "enums": null, "value": "1000", "i18n_desc": null}] Oracle_084
+	var Oracle84 bool
+	var Oracle85 bool
+	for i := range rules {
+		if Oracle84 && Oracle85 {
+			break
+		}
+		if rules[i].Name == "Oracle_084" {
+			rules[i].Params = params.Params{
+				&params.Param{
+					Key:   "first_key",
+					Desc:  "影响行数",
+					Value: fmt.Sprint(backupMaxRows),
+					Type:  "int",
+				},
+			}
+			Oracle84 = true
+			continue
+		}
+		if rules[i].Name == "Oracle_085" {
+			Oracle85 = true
+			continue
+		}
+	}
+	if !Oracle84 {
+		rules = append(rules, &model.Rule{
+			Name: "Oracle_084",
+			Params: params.Params{
+				&params.Param{
+					Key:   "first_key",
+					Desc:  "影响行数",
+					Value: fmt.Sprint(backupMaxRows),
+					Type:  "int",
+				},
+			},
+			Level:         model.NoticeAuditLevel,
+			DBType:        driverV2.DriverTypeOracle,
+			HasAuditPower: true,
+			I18nRuleInfo: driverV2.I18nRuleInfo{
+				language.Tag{}: &driverV2.RuleInfo{
+					Desc:       "在 DML 语句中预计影响行数超过指定值时不生成回滚语句",
+					Annotation: "大事务回滚，容易影响数据库性能，使得业务发生波动；具体规则阈值可以根据业务需求调整，默认值：1000",
+					Category:   "全局配置",
+					Knowledge:  driverV2.RuleKnowledge{},
+				},
+			},
+		})
+	}
+	if !Oracle85 {
+		rules = append(rules, &model.Rule{
+			Name:          "Oracle_085",
+			Level:         model.NoticeAuditLevel,
+			DBType:        driverV2.DriverTypeOracle,
+			HasAuditPower: true,
+			I18nRuleInfo: driverV2.I18nRuleInfo{
+				language.Tag{}: &driverV2.RuleInfo{
+					Desc:       "开启审核时生成回滚语句",
+					Annotation: "回滚语句可以挽回错误的sql执行,提供容错机制",
+					Category:   "全局配置",
+					Knowledge:  driverV2.RuleKnowledge{},
+				},
+			},
+		})
+	}
+	return rules
+}
+
+func modifyRulesForMySQLLikeDriver(rules []*model.Rule, backupMaxRows uint64) []*model.Rule {
+	var ruleRollBackMaxRows bool
+	for i := range rules {
+		if rules[i].Name == "dml_rollback_max_rows" {
+			rules[i].Params = params.Params{
+				&params.Param{
+					Key:   "first_key",
+					Desc:  "最大影响行数",
+					Value: fmt.Sprint(backupMaxRows),
+					Type:  "int",
+				},
+			}
+			ruleRollBackMaxRows = true
+			break
+		}
+	}
+	if !ruleRollBackMaxRows {
+		rules = append(rules, &model.Rule{
+			Name:   "dml_rollback_max_rows",
+			DBType: driverV2.DriverTypeOceanBase,
+			Level:  model.NoticeAuditLevel,
+			Params: params.Params{
+				&params.Param{
+					Key:   "first_key",
+					Desc:  "最大影响行数",
+					Value: fmt.Sprint(backupMaxRows),
+					Type:  "int",
+				},
+			},
+			HasAuditPower: true,
+			I18nRuleInfo: driverV2.I18nRuleInfo{
+				language.Tag{}: &driverV2.RuleInfo{
+					Desc:       "在 DML 语句中预计影响行数超过指定值则不回滚",
+					Annotation: "大事务回滚，容易影响数据库性能，使得业务发生波动；具体规则阈值可以根据业务需求调整，默认值：1000",
+					Category:   "全局配置",
+					Knowledge:  driverV2.RuleKnowledge{},
+				},
+			},
+		})
+	}
+	return rules
+}
+
+func modifyRulesForPgLikeDriver(rules []*model.Rule, backupMaxRows uint64) []*model.Rule {
+	var rule24 bool
+	var rule25 bool
+
+	for i := range rules {
+		if rule24 && rule25 {
+			break
+		}
+		// [{"key": "max_affected_rows", "desc": "回滚语句影响行数", "type": "int", "enums": null, "value": "1000", "i18n_desc": null}]
+		if !rule24 && rules[i].Name == "pg_024" {
+			rules[i].Params = params.Params{
+				&params.Param{
+					Key:   "max_affected_rows",
+					Desc:  "回滚语句影响行数",
+					Value: fmt.Sprint(backupMaxRows),
+					Type:  "int",
+				},
+			}
+			rule24 = true
+			continue
+		}
+		// 这条规则无param
+		if !rule25 && rules[i].Name == "pg_025" {
+			rule25 = true
+			rules[i].HasAuditPower = true
+			continue
+		}
+	}
+	if !rule24 {
+		rules = append(rules, &model.Rule{
+			Name:   "pg_024",
+			DBType: driverV2.DriverTypePostgreSQL,
+			Level:  model.NoticeAuditLevel,
+			Params: params.Params{
+				&params.Param{
+					Key:   "max_affected_rows",
+					Desc:  "回滚语句影响行数",
+					Value: fmt.Sprint(backupMaxRows),
+					Type:  "int",
+				},
+			},
+			HasAuditPower: true,
+			I18nRuleInfo: driverV2.I18nRuleInfo{
+				language.Tag{}: &driverV2.RuleInfo{
+					Desc:       "在 DML 语句中预计影响行数超过指定值则不回滚",
+					Annotation: "大事务回滚，容易影响数据库性能，使得业务发生波动；具体规则阈值可以根据业务需求调整，默认值：1000",
+					Category:   "全局配置",
+					Knowledge:  driverV2.RuleKnowledge{},
+				},
+			},
+		})
+	}
+	if !rule25 {
+		rules = append(rules, &model.Rule{
+			Name:          "pg_025",
+			DBType:        driverV2.DriverTypePostgreSQL,
+			Level:         model.NoticeAuditLevel,
+			HasAuditPower: true,
+			I18nRuleInfo: driverV2.I18nRuleInfo{
+				language.Tag{}: &driverV2.RuleInfo{
+					Desc:       "使用sql语句回滚功能",
+					Annotation: "回滚语句可以挽回错误的sql执行,提供容错机制",
+					Category:   "全局配置",
+					Knowledge:  driverV2.RuleKnowledge{},
+				},
+			},
+		})
+	}
+	return rules
 }

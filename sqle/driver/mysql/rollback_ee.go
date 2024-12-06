@@ -4,24 +4,28 @@
 package mysql
 
 import (
+	"database/sql"
+	"encoding/hex"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
 	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
+	"github.com/actiontech/sqle/sqle/errors"
 
 	"github.com/pingcap/parser/ast"
 	_model "github.com/pingcap/parser/model"
 	parserMysql "github.com/pingcap/parser/mysql"
 )
 
-func (i *MysqlDriverImpl) GenerateRollbackSqls(node ast.Node) ([]string, i18nPkg.I18nStr, error) {
+func (i *MysqlDriverImpl) GenerateRollbackSqls(node ast.Node, backupMaxRows uint64) ([]string, i18nPkg.I18nStr, error) {
 	switch node.(type) {
 	case ast.DDLNode:
-		return i.GenerateDDLStmtRollbackSqls(node)
+		return i.GenerateDDLStmtRollbackSqls(node, backupMaxRows)
 	case ast.DMLNode:
-		return i.GenerateDMLStmtRollbackSqls(node)
+		return i.GenerateDMLStmtRollbackSqls(node, backupMaxRows)
 	// other
 	case *ast.UnparsedStmt:
 		return []string{}, i18nPkg.ConvertStr2I18nAsDefaultLang("无法正常解析该SQL，无法进行备份"), nil
@@ -29,27 +33,27 @@ func (i *MysqlDriverImpl) GenerateRollbackSqls(node ast.Node) ([]string, i18nPkg
 	return []string{}, i18nPkg.ConvertStr2I18nAsDefaultLang("暂不支持，该SQL的行备份"), nil
 }
 
-func (i *MysqlDriverImpl) GenerateDDLStmtRollbackSqls(node ast.Node) (rollbackSql []string, unableRollbackReason i18nPkg.I18nStr, err error) {
+func (i *MysqlDriverImpl) GenerateDDLStmtRollbackSqls(node ast.Node, backupMaxRows uint64) (rollbackSql []string, unableRollbackReason i18nPkg.I18nStr, err error) {
 	switch stmt := node.(type) {
 	case *ast.AlterTableStmt:
-		rollbackSql, unableRollbackReason, err = i.generateAlterTableRollbackSqls(stmt)
+		rollbackSql, unableRollbackReason, err = i.generateAlterTableRollbackSqls(stmt, backupMaxRows)
 	case *ast.CreateTableStmt:
-		rollbackSql, unableRollbackReason, err = i.generateCreateTableRollbackSqls(stmt)
+		rollbackSql, unableRollbackReason, err = i.generateCreateTableRollbackSqls(stmt, backupMaxRows)
 	case *ast.CreateDatabaseStmt:
-		rollbackSql, unableRollbackReason, err = i.generateCreateSchemaRollbackSqls(stmt)
+		rollbackSql, unableRollbackReason, err = i.generateCreateSchemaRollbackSqls(stmt, backupMaxRows)
 	case *ast.DropDatabaseStmt:
-		return i.generateDropDatabaseRollbackSqls(stmt)
+		return i.generateDropDatabaseRollbackSqls(stmt, backupMaxRows)
 	case *ast.DropTableStmt:
-		rollbackSql, unableRollbackReason, err = i.generateDropTableRollbackSqls(stmt)
+		rollbackSql, unableRollbackReason, err = i.generateDropTableRollbackSqls(stmt, backupMaxRows)
 	case *ast.CreateIndexStmt:
-		rollbackSql, unableRollbackReason, err = i.generateCreateIndexRollbackSqls(stmt)
+		rollbackSql, unableRollbackReason, err = i.generateCreateIndexRollbackSqls(stmt, backupMaxRows)
 	case *ast.DropIndexStmt:
-		rollbackSql, unableRollbackReason, err = i.generateDropIndexRollbackSqls(stmt)
+		rollbackSql, unableRollbackReason, err = i.generateDropIndexRollbackSqls(stmt, backupMaxRows)
 	}
 	return rollbackSql, unableRollbackReason, err
 }
 
-func (i *MysqlDriverImpl) GenerateDMLStmtRollbackSqls(node ast.Node) (rollbackSql []string, unableRollbackReason i18nPkg.I18nStr, err error) {
+func (i *MysqlDriverImpl) GenerateDMLStmtRollbackSqls(node ast.Node, backupMaxRows uint64) (rollbackSql []string, unableRollbackReason i18nPkg.I18nStr, err error) {
 
 	paramMarkerChecker := util.ParamMarkerChecker{}
 	node.Accept(&paramMarkerChecker)
@@ -65,17 +69,17 @@ func (i *MysqlDriverImpl) GenerateDMLStmtRollbackSqls(node ast.Node) (rollbackSq
 
 	switch stmt := node.(type) {
 	case *ast.InsertStmt:
-		rollbackSql, unableRollbackReason, err = i.generateInsertRollbackSqls(stmt)
+		rollbackSql, unableRollbackReason, err = i.generateInsertRollbackSqls(stmt, backupMaxRows)
 	case *ast.DeleteStmt:
-		rollbackSql, unableRollbackReason, err = i.generateDeleteRollbackSqls(stmt)
+		rollbackSql, unableRollbackReason, err = i.generateDeleteRollbackSqls(stmt, backupMaxRows)
 	case *ast.UpdateStmt:
-		rollbackSql, unableRollbackReason, err = i.generateUpdateRollbackSqls(stmt)
+		rollbackSql, unableRollbackReason, err = i.generateUpdateRollbackSqls(stmt, backupMaxRows)
 	}
 	return
 }
 
 // generateDeleteRollbackSql generate insert SQL for delete.
-func (i *MysqlDriverImpl) generateDeleteRollbackSqls(stmt *ast.DeleteStmt) ([]string, i18nPkg.I18nStr, error) {
+func (i *MysqlDriverImpl) generateDeleteRollbackSqls(stmt *ast.DeleteStmt, backupMaxRows uint64) ([]string, i18nPkg.I18nStr, error) {
 	// not support multi-table syntax
 	if stmt.IsMultiTable {
 		i.Logger().Infof("not support generate rollback sql with multi-delete statement")
@@ -101,7 +105,7 @@ func (i *MysqlDriverImpl) generateDeleteRollbackSqls(stmt *ast.DeleteStmt) ([]st
 		return []string{}, plocale.Bundle.LocalizeAll(plocale.NotSupportNoPrimaryKeyTableRollback), nil
 	}
 
-	var max = TemporaryMaxRows
+	var max = int64(backupMaxRows)
 	limit, err := util.GetLimitCount(stmt.Limit, max+1)
 	if err != nil {
 		return []string{}, nil, err
@@ -152,7 +156,7 @@ func (i *MysqlDriverImpl) generateDeleteRollbackSqls(stmt *ast.DeleteStmt) ([]st
 }
 
 // generateUpdateRollbackSql generate update SQL for update.
-func (i *MysqlDriverImpl) generateUpdateRollbackSqls(stmt *ast.UpdateStmt) ([]string, i18nPkg.I18nStr, error) {
+func (i *MysqlDriverImpl) generateUpdateRollbackSqls(stmt *ast.UpdateStmt, backupMaxRows uint64) ([]string, i18nPkg.I18nStr, error) {
 	tableSources := util.GetTableSources(stmt.TableRefs.TableRefs)
 	// multi table syntax
 	if len(tableSources) != 1 {
@@ -191,7 +195,7 @@ func (i *MysqlDriverImpl) generateUpdateRollbackSqls(stmt *ast.UpdateStmt) ([]st
 		return []string{}, plocale.Bundle.LocalizeAll(plocale.NotSupportNoPrimaryKeyTableRollback), nil
 	}
 
-	var max = TemporaryMaxRows
+	var max = int64(backupMaxRows)
 	limit, err := util.GetLimitCount(stmt.Limit, max+1)
 	if err != nil {
 		return []string{}, nil, err
@@ -266,7 +270,7 @@ func (i *MysqlDriverImpl) generateUpdateRollbackSqls(stmt *ast.UpdateStmt) ([]st
 }
 
 // generateAlterTableRollbackSql generate alter table SQL for alter table.
-func (i *MysqlDriverImpl) generateAlterTableRollbackSqls(stmt *ast.AlterTableStmt) ([]string, i18nPkg.I18nStr, error) {
+func (i *MysqlDriverImpl) generateAlterTableRollbackSqls(stmt *ast.AlterTableStmt, backupMaxRows uint64) ([]string, i18nPkg.I18nStr, error) {
 	schemaName := i.Ctx.GetSchemaName(stmt.Table)
 	tableName := stmt.Table.Name.String()
 
@@ -459,7 +463,7 @@ func (i *MysqlDriverImpl) generateAlterTableRollbackSqls(stmt *ast.AlterTableStm
 }
 
 // generateCreateSchemaRollbackSql generate drop database SQL for create database.
-func (i *MysqlDriverImpl) generateCreateSchemaRollbackSqls(stmt *ast.CreateDatabaseStmt) ([]string, i18nPkg.I18nStr, error) {
+func (i *MysqlDriverImpl) generateCreateSchemaRollbackSqls(stmt *ast.CreateDatabaseStmt, backupMaxRows uint64) ([]string, i18nPkg.I18nStr, error) {
 	schemaName := stmt.Name
 	schemaExist, err := i.Ctx.IsSchemaExist(schemaName)
 	if err != nil {
@@ -473,12 +477,12 @@ func (i *MysqlDriverImpl) generateCreateSchemaRollbackSqls(stmt *ast.CreateDatab
 }
 
 // generateDropDatabaseRollbackSqls generate create database SQL for dropping database.
-func (i *MysqlDriverImpl) generateDropDatabaseRollbackSqls(stmt *ast.DropDatabaseStmt) ([]string, i18nPkg.I18nStr, error) {
+func (i *MysqlDriverImpl) generateDropDatabaseRollbackSqls(stmt *ast.DropDatabaseStmt, backupMaxRows uint64) ([]string, i18nPkg.I18nStr, error) {
 	return []string{fmt.Sprintf("CREATE DATABASE IF NOT EXISTS `%s`", stmt.Name)}, nil, nil
 }
 
 // generateCreateTableRollbackSql generate drop table SQL for create table.
-func (i *MysqlDriverImpl) generateCreateTableRollbackSqls(stmt *ast.CreateTableStmt) ([]string, i18nPkg.I18nStr, error) {
+func (i *MysqlDriverImpl) generateCreateTableRollbackSqls(stmt *ast.CreateTableStmt, backupMaxRows uint64) ([]string, i18nPkg.I18nStr, error) {
 	schemaExist, err := i.Ctx.IsSchemaExist(i.Ctx.GetSchemaName(stmt.Table))
 	if err != nil {
 		return []string{}, nil, err
@@ -501,7 +505,7 @@ func (i *MysqlDriverImpl) generateCreateTableRollbackSqls(stmt *ast.CreateTableS
 }
 
 // generateDropTableRollbackSql generate create table SQL for drop table.
-func (i *MysqlDriverImpl) generateDropTableRollbackSqls(stmt *ast.DropTableStmt) ([]string, i18nPkg.I18nStr, error) {
+func (i *MysqlDriverImpl) generateDropTableRollbackSqls(stmt *ast.DropTableStmt, backupMaxRows uint64) ([]string, i18nPkg.I18nStr, error) {
 	rollbackSql := ""
 	for _, table := range stmt.Tables {
 		stmt, tableExist, err := i.Ctx.GetCreateTableStmt(table)
@@ -518,12 +522,12 @@ func (i *MysqlDriverImpl) generateDropTableRollbackSqls(stmt *ast.DropTableStmt)
 }
 
 // generateCreateIndexRollbackSql generate drop index SQL for create index.
-func (i *MysqlDriverImpl) generateCreateIndexRollbackSqls(stmt *ast.CreateIndexStmt) ([]string, i18nPkg.I18nStr, error) {
+func (i *MysqlDriverImpl) generateCreateIndexRollbackSqls(stmt *ast.CreateIndexStmt, backupMaxRows uint64) ([]string, i18nPkg.I18nStr, error) {
 	return []string{fmt.Sprintf("DROP INDEX `%s` ON %s", stmt.IndexName, i.getTableNameWithQuote(stmt.Table))}, nil, nil
 }
 
 // generateDropIndexRollbackSql generate create index SQL for drop index.
-func (i *MysqlDriverImpl) generateDropIndexRollbackSqls(stmt *ast.DropIndexStmt) ([]string, i18nPkg.I18nStr, error) {
+func (i *MysqlDriverImpl) generateDropIndexRollbackSqls(stmt *ast.DropIndexStmt, backupMaxRows uint64) ([]string, i18nPkg.I18nStr, error) {
 	indexName := stmt.IndexName
 	createTableStmt, tableExist, err := i.Ctx.GetCreateTableStmt(stmt.Table)
 	if err != nil {
@@ -557,7 +561,7 @@ func (i *MysqlDriverImpl) generateDropIndexRollbackSqls(stmt *ast.DropIndexStmt)
 }
 
 // generateInsertRollbackSql generate delete SQL for insert.
-func (i *MysqlDriverImpl) generateInsertRollbackSqls(stmt *ast.InsertStmt) ([]string, i18nPkg.I18nStr, error) {
+func (i *MysqlDriverImpl) generateInsertRollbackSqls(stmt *ast.InsertStmt, backupMaxRows uint64) ([]string, i18nPkg.I18nStr, error) {
 	tables := util.GetTables(stmt.Table.TableRefs)
 	// table just has one in insert stmt.
 	if len(tables) != 1 {
@@ -588,7 +592,7 @@ func (i *MysqlDriverImpl) generateInsertRollbackSqls(stmt *ast.InsertStmt) ([]st
 	// match "insert into table_name (column_name,...) value (v1,...)"
 	// match "insert into table_name value (v1,...)"
 	if stmt.Lists != nil {
-		if int64(len(stmt.Lists)) > TemporaryMaxRows {
+		if uint64(len(stmt.Lists)) > backupMaxRows {
 			return []string{}, plocale.Bundle.LocalizeAll(plocale.NotSupportExceedMaxRowsRollback), nil
 		}
 		columnsName := []string{}
@@ -639,4 +643,79 @@ func (i *MysqlDriverImpl) generateInsertRollbackSqls(stmt *ast.InsertStmt) ([]st
 			i.getTableNameWithQuote(table), strings.Join(where, " AND ")))
 	}
 	return rollbackSqls, nil, nil
+}
+
+// 将二进制字段转化为十六进制字段
+func getHexStrFromBytesStr(byteStr string) string {
+	encode := []byte(byteStr)
+	return hex.EncodeToString(encode)
+}
+
+// getRecords select all data which will be update or delete.
+func (i *MysqlDriverImpl) getRecords(tableName *ast.TableName, tableAlias string, where ast.ExprNode,
+	order *ast.OrderByClause, limit int64) ([]map[string]sql.NullString, error) {
+	conn, err := i.getDbConn()
+	if err != nil {
+		return nil, err
+	}
+	sql := i.generateGetRecordsSql("*", tableName, tableAlias, where, order, limit)
+	return conn.Db.Query(sql)
+}
+
+// getRecordCount select all data count which will be update or delete.
+func (i *MysqlDriverImpl) getRecordCount(tableName *ast.TableName, tableAlias string, where ast.ExprNode,
+	order *ast.OrderByClause, limit int64) (int64, error) {
+	conn, err := i.getDbConn()
+	if err != nil {
+		return 0, err
+	}
+	sql := i.generateGetRecordsSql("count(*) as count", tableName, tableAlias, where, order, limit)
+
+	var count int64
+	var ok bool
+	records, err := conn.Db.Query(sql)
+	if err != nil {
+		return 0, err
+	}
+	if len(records) != 1 {
+		goto ERROR
+	}
+	_, ok = records[0]["count"]
+	if !ok {
+		goto ERROR
+	}
+	count, err = strconv.ParseInt(records[0]["count"].String, 10, 64)
+	if err != nil {
+		goto ERROR
+	}
+	return count, nil
+
+ERROR:
+	return 0, errors.New(errors.ConnectRemoteDatabaseError, fmt.Errorf("do not match records for select count(*)"))
+}
+
+// generateGetRecordsSql generate select SQL.
+func (i *MysqlDriverImpl) generateGetRecordsSql(expr string, tableName *ast.TableName, tableAlias string, where ast.ExprNode,
+	order *ast.OrderByClause, limit int64) string {
+	recordSql := fmt.Sprintf("SELECT %s FROM %s", expr, i.getTableNameWithQuote(tableName))
+	if tableAlias != "" {
+		recordSql = fmt.Sprintf("%s AS %s", recordSql, tableAlias)
+	}
+	if where != nil {
+		recordSql = fmt.Sprintf("%s WHERE %s", recordSql, restore(where))
+	}
+	if order != nil {
+		recordSql = fmt.Sprintf("%s ORDER BY", recordSql)
+		for _, item := range order.Items {
+			recordSql = fmt.Sprintf("%s %s", recordSql, restore(item.Expr))
+			if item.Desc {
+				recordSql = fmt.Sprintf("%s DESC", recordSql)
+			}
+		}
+	}
+	if limit > 0 {
+		recordSql = fmt.Sprintf("%s LIMIT %d", recordSql, limit)
+	}
+	recordSql += ";"
+	return recordSql
 }
