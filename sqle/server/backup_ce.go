@@ -28,7 +28,7 @@ func initModelBackupTask(p driver.Plugin, task *model.Task, sql *model.ExecuteSQ
 	return &model.BackupTask{}
 }
 
-func getBackupManager(p driver.Plugin, sql *model.ExecuteSQL, dbType string) (*BackupManager, error) {
+func getBackupManager(p driver.Plugin, sql *model.ExecuteSQL, dbType string, backupMaxRows uint64) (*BackupManager, error) {
 	return &BackupManager{}, nil
 }
 
