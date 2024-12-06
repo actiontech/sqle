@@ -12214,9 +12214,6 @@ var doc = `{
                 },
                 "url": {
                     "type": "string"
-                },
-                "workflow_expired_hours": {
-                    "type": "integer"
                 }
             }
         },
@@ -12701,10 +12698,6 @@ var doc = `{
                 "url": {
                     "type": "string",
                     "example": "http://10.186.61.32:8080"
-                },
-                "workflow_expired_hours": {
-                    "type": "integer",
-                    "example": 720
                 }
             }
         },

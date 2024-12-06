@@ -2770,8 +2770,6 @@ definitions:
         type: integer
       url:
         type: string
-      workflow_expired_hours:
-        type: integer
     type: object
   v1.Table:
     properties:
@@ -3099,9 +3097,6 @@ definitions:
       url:
         example: http://10.186.61.32:8080
         type: string
-      workflow_expired_hours:
-        example: 720
-        type: integer
     type: object
   v1.UpdateWechatConfigurationReqV1:
     properties:
