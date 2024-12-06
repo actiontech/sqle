@@ -723,13 +723,33 @@ func modifyRulesForOracleLikeDriver(rules []*model.Rule, backupMaxRows uint64) [
 					Type:  "int",
 				},
 			},
+			Level:         model.NoticeAuditLevel,
+			DBType:        driverV2.DriverTypeOracle,
 			HasAuditPower: true,
+			I18nRuleInfo: driverV2.I18nRuleInfo{
+				language.Tag{}: &driverV2.RuleInfo{
+					Desc:       "在 DML 语句中预计影响行数超过指定值时不生成回滚语句",
+					Annotation: "大事务回滚，容易影响数据库性能，使得业务发生波动；具体规则阈值可以根据业务需求调整，默认值：1000",
+					Category:   "全局配置",
+					Knowledge:  driverV2.RuleKnowledge{},
+				},
+			},
 		})
 	}
 	if !Oracle85 {
 		rules = append(rules, &model.Rule{
 			Name:          "Oracle_085",
+			Level:         model.NoticeAuditLevel,
+			DBType:        driverV2.DriverTypeOracle,
 			HasAuditPower: true,
+			I18nRuleInfo: driverV2.I18nRuleInfo{
+				language.Tag{}: &driverV2.RuleInfo{
+					Desc:       "开启审核时生成回滚语句",
+					Annotation: "回滚语句可以挽回错误的sql执行,提供容错机制",
+					Category:   "全局配置",
+					Knowledge:  driverV2.RuleKnowledge{},
+				},
+			},
 		})
 	}
 	return rules
@@ -753,7 +773,9 @@ func modifyRulesForMySQLLikeDriver(rules []*model.Rule, backupMaxRows uint64) []
 	}
 	if !ruleRollBackMaxRows {
 		rules = append(rules, &model.Rule{
-			Name: "dml_rollback_max_rows",
+			Name:   "dml_rollback_max_rows",
+			DBType: driverV2.DriverTypeOceanBase,
+			Level:  model.NoticeAuditLevel,
 			Params: params.Params{
 				&params.Param{
 					Key:   "first_key",
@@ -763,6 +785,14 @@ func modifyRulesForMySQLLikeDriver(rules []*model.Rule, backupMaxRows uint64) []
 				},
 			},
 			HasAuditPower: true,
+			I18nRuleInfo: driverV2.I18nRuleInfo{
+				language.Tag{}: &driverV2.RuleInfo {
+					Desc: "在 DML 语句中预计影响行数超过指定值则不回滚", 
+					Annotation: "大事务回滚，容易影响数据库性能，使得业务发生波动；具体规则阈值可以根据业务需求调整，默认值：1000", 
+					Category: "全局配置",
+					Knowledge:  driverV2.RuleKnowledge{},
+				},
+			},
 		})
 	}
 	return rules
@@ -799,6 +829,8 @@ func modifyRulesForPgLikeDriver(rules []*model.Rule, backupMaxRows uint64) []*mo
 	if !rule24 {
 		rules = append(rules, &model.Rule{
 			Name: "pg_024",
+			DBType: driverV2.DriverTypePostgreSQL,
+			Level:  model.NoticeAuditLevel,
 			Params: params.Params{
 				&params.Param{
 					Key:   "max_affected_rows",
@@ -807,17 +839,31 @@ func modifyRulesForPgLikeDriver(rules []*model.Rule, backupMaxRows uint64) []*mo
 					Type:  "int",
 				},
 			},
-			DBType:        driverV2.DriverTypePostgreSQL,
-			Level:         "notice",
 			HasAuditPower: true,
+			I18nRuleInfo: driverV2.I18nRuleInfo{
+				language.Tag{}: &driverV2.RuleInfo {
+					Desc: "在 DML 语句中预计影响行数超过指定值则不回滚", 
+					Annotation: "大事务回滚，容易影响数据库性能，使得业务发生波动；具体规则阈值可以根据业务需求调整，默认值：1000", 
+					Category: "全局配置",
+					Knowledge:  driverV2.RuleKnowledge{},
+				},
+			},
 		})
 	}
 	if !rule25 {
 		rules = append(rules, &model.Rule{
 			Name:          "pg_025",
 			DBType:        driverV2.DriverTypePostgreSQL,
-			Level:         "notice",
+			Level:         model.NoticeAuditLevel,
 			HasAuditPower: true,
+			I18nRuleInfo: driverV2.I18nRuleInfo{
+				language.Tag{}: &driverV2.RuleInfo{
+					Desc:       "使用sql语句回滚功能",
+					Annotation: "回滚语句可以挽回错误的sql执行,提供容错机制",
+					Category:   "全局配置",
+					Knowledge:  driverV2.RuleKnowledge{},
+				},
+			},
 		})
 	}
 	return rules
