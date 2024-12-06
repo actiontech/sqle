@@ -442,20 +442,23 @@ func (BackupService) GetBackupSqlList(ctx context.Context, workflowId, filterIns
 		if inst, exist := instanceMap[originSql.InstanceId]; exist {
 			instanceName = inst.Name
 		}
-		backupSqlList = append(backupSqlList, &BackupSqlData{
+		backupSqlData := &BackupSqlData{
 			ExecSqlID:      originSql.Id,
 			OriginTaskId:   originSql.TaskId,
 			ExecOrder:      originSql.ExecuteOrder,
 			OriginSQL:      originSql.ExecuteSql,
-			BackupSqls:     backupSqlMap[originSql.Id].backupSqls,
-			BackupStatus:   backupSqlMap[originSql.Id].backupStatus,
-			BackupResult:   backupSqlMap[originSql.Id].backupResult,
 			BackupStrategy: originSql.BackupStrategy,
 			InstanceName:   instanceName,
 			InstanceId:     originSql.InstanceId,
 			ExecStatus:     originSql.ExecStatus,
 			Description:    originSql.Description,
-		})
+		}
+		if sql, exist := backupSqlMap[originSql.Id]; exist {
+			backupSqlData.BackupSqls = sql.backupSqls
+			backupSqlData.BackupStatus = sql.backupStatus
+			backupSqlData.BackupResult = sql.backupResult
+		}
+		backupSqlList = append(backupSqlList, backupSqlData)
 	}
 	return backupSqlList, count, nil
 }
