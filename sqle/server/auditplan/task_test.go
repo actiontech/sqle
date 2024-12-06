@@ -108,7 +108,7 @@ func TestMergeSQLsByFingerprint(t *testing.T) {
 
 	for i, tt := range tests {
 		t.Run(fmt.Sprintf("test sqls NO.%v", i), func(t *testing.T) {
-			actual := mergeSQLsByFingerprint(tt.sqls)
+			actual := mergeSQLsByFingerprint(nil, tt.sqls)
 			if !assert.EqualValues(t, actual, tt.want) {
 				t.Fatal("unexpected result")
 			}
