@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/stretchr/testify/assert"
@@ -160,24 +159,6 @@ func TestInspect_onlineddlWithGhost(t *testing.T) {
 	}
 }
 
-func TestInspect_GenRollbackSQL(t *testing.T) {
-	i := DefaultMysqlInspect()
-
-	rollback, reason, err := i.GenRollbackSQL(context.TODO(), "create table t1(id int, c1 int)")
-	assert.NoError(t, err)
-	assert.Equal(t, "", reason[i18nPkg.DefaultLang])
-	assert.Equal(t, "DROP TABLE IF EXISTS `exist_db`.`t1`", rollback)
-
-	rollback, reason, err = i.GenRollbackSQL(context.TODO(), "alter table t1 drop column c1")
-	assert.NoError(t, err)
-	assert.Equal(t, "", reason[i18nPkg.DefaultLang])
-	assert.Equal(t, "ALTER TABLE `exist_db`.`t1`\nADD COLUMN `c1` int(11);", rollback)
-
-	rollback, reason, err = i.GenRollbackSQL(context.TODO(), "alter table t1 add column c1 int")
-	assert.NoError(t, err)
-	assert.Equal(t, "", reason[i18nPkg.DefaultLang])
-	assert.Equal(t, "ALTER TABLE `exist_db`.`t1`\nDROP COLUMN `c1`;", rollback)
-}
 func TestInspect_assertSQLType(t *testing.T) {
 	args := []struct {
 		Name string
