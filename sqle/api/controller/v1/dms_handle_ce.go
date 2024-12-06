@@ -7,15 +7,15 @@ import (
 	"context"
 )
 
-func (h BeforeArchiveProject) Handle(ctx context.Context, currentUserId string, dataResourceId string) error {
+func (h BeforeArchiveProject) Handle(ctx context.Context, currentUserId string, objId string, extraParams string) error {
 	return nil
 }
-func (h AfterDeleteProject) Handle(ctx context.Context, currentUserId string, dataResourceId string) error {
+func (h AfterDeleteProject) Handle(ctx context.Context, currentUserId string, objId string, extraParams string) error {
 	return nil
 }
-func (h BeforeDeleteProject) Handle(ctx context.Context, currentUserId string, dataResourceId string) error {
+func (h BeforeDeleteProject) Handle(ctx context.Context, currentUserId string, objId string, extraParams string) error {
 	return nil
 }
-func (h AfterCreateProject) Handle(ctx context.Context, currentUserId string, dataResourceId string) error {
+func (h AfterCreateProject) Handle(ctx context.Context, currentUserId string, objId string, extraParams string) error {
 	return nil
 }

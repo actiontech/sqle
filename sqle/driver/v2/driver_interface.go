@@ -108,11 +108,12 @@ const (
 type BackupReq struct {
 	BackupStrategy string
 	Sql            string
+	BackupMaxRows  uint64
 }
 
 type BackupRes struct {
-	BackupSql   []string
-	ExecuteInfo string
+	BackupSql     []string
+	ExecuteResult string
 }
 
 type RecommendBackupStrategyReq struct {

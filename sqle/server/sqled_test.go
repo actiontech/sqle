@@ -48,7 +48,7 @@ type mockDriver struct {
 	parseError bool
 }
 
-func (p *mockDriver) Backup(ctx context.Context, backupStrategy string, sql string) (backupSql []string, executeInfo string, err error) {
+func (p *mockDriver) Backup(ctx context.Context, backupStrategy string, sql string, backupMaxRows uint64) (backupSqls []string, executeResult string, err error) {
 	return nil, "", nil
 }
 

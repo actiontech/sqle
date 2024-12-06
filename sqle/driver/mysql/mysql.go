@@ -455,26 +455,7 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 }
 
 func (i *MysqlDriverImpl) GenRollbackSQL(ctx context.Context, sql string) (string, i18nPkg.I18nStr, error) {
-	if i.IsOfflineAudit() {
-		return "", nil, nil
-	}
-	if i.HasInvalidSql {
-		return "", nil, nil
-	}
-
-	nodes, err := i.ParseSql(sql)
-	if err != nil {
-		return "", nil, err
-	}
-
-	rollback, i18nReason, err := i.GenerateRollbackSql(nodes[0])
-	if err != nil {
-		return "", nil, err
-	}
-
-	i.Ctx.UpdateContext(nodes[0])
-
-	return rollback, i18nReason, nil
+	return "", nil, nil
 }
 
 func (i *MysqlDriverImpl) Close(ctx context.Context) {
@@ -633,7 +614,6 @@ func (p *PluginProcessor) GetDriverMetas() (*driverV2.DriverMetas, error) {
 		Rules:                    allRules,
 		DatabaseAdditionalParams: params.Params{},
 		EnabledOptionalModule: []driverV2.OptionalModule{
-			driverV2.OptionalModuleGenRollbackSQL,
 			driverV2.OptionalModuleQuery,
 			driverV2.OptionalModuleExplain,
 			driverV2.OptionalModuleGetTableMeta,

@@ -17,6 +17,7 @@ service Driver {
   // db audit
   rpc Parse(ParseRequest) returns (ParseResponse);
   rpc Audit(AuditRequest) returns (AuditResponse);
+  // Deprecated By Backup and RecommendBackupStrategy
   rpc GenRollbackSQL(GenRollbackSQLRequest) returns (GenRollbackSQLResponse);
 
   // db executor
@@ -50,11 +51,12 @@ message BackupReq {
   Session session = 1;
   BackupStrategy backupStrategy = 2;
   string sql = 3;
+  uint64 backupMaxRows = 4;
 }
 
 message BackupRes {
   repeated string backupSql = 1;
-  string executeInfo = 2;
+  string executeResult = 2;
 }
 
 message RecommendBackupStrategyReq {
