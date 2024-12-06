@@ -153,7 +153,7 @@ func (backup backupTask) toModel() *model.BackupTask {
 	}
 }
 
-func (mng *BackupManager) Backup() (backupErr error) {
+func (mgr *BackupManager) Backup() (backupErr error) {
 	s := model.GetStorage()
 	var backupResult string
 	defer func() {
@@ -164,22 +164,22 @@ func (mng *BackupManager) Backup() (backupErr error) {
 		} else {
 			status = BackupStatusSucceed
 		}
-		if updateStatusErr := mng.UpdateStatusForBackupTaskTo(status); updateStatusErr != nil {
-			backupErr = fmt.Errorf("in backup task %v, when UpdateStatusForBackupTaskTo %v failed %v %w", mng.backupTask.ID, status, backupErr, updateStatusErr)
+		if updateStatusErr := mgr.UpdateStatusForBackupTaskTo(status); updateStatusErr != nil {
+			backupErr = fmt.Errorf("in backup task %v, when UpdateStatusForBackupTaskTo %v failed %v %w", mgr.backupTask.ID, status, backupErr, updateStatusErr)
 		}
-		mng.backupTask.BackupExecResult = backupResult
-		updateTaskErr := s.UpdateBackupExecuteResult(mng.backupTask.toModel())
+		mgr.backupTask.BackupExecResult = backupResult
+		updateTaskErr := s.UpdateBackupExecuteResult(mgr.backupTask.toModel())
 		if updateTaskErr != nil {
-			backupErr = fmt.Errorf("in backup task %v, when UpdateBackupExecuteResult failed %v %w", mng.backupTask.ID, backupErr, updateTaskErr)
+			backupErr = fmt.Errorf("in backup task %v, when UpdateBackupExecuteResult failed %v %w", mgr.backupTask.ID, backupErr, updateTaskErr)
 		}
 	}()
 	// update status in memory
-	if err := mng.UpdateStatusForBackupTaskTo(BackupStatusExecuting); err != nil {
+	if err := mgr.UpdateStatusForBackupTaskTo(BackupStatusExecuting); err != nil {
 		return err
 	}
 
 	// 执行备份操作
-	backupResult, backupErr = mng.backupHandler.backup()
+	backupResult, backupErr = mgr.backupHandler.backup()
 	if backupErr != nil {
 		return backupErr
 	}
@@ -215,7 +215,7 @@ func (task *BackupManager) UpdateStatusForBackupTaskTo(targetStatus BackupStatus
 	return fmt.Errorf("invalid status transition from %s to %s", task.BackupStatus, targetStatus)
 }
 
-type baseBackupHandler struct{
+type baseBackupHandler struct {
 	plugin driver.Plugin
 	task   backupTask
 	svc    BackupService
@@ -232,7 +232,6 @@ func (backup *baseBackupHandler) backup() (backupResult string, backupErr error)
 	}
 	return executeInfo, nil
 }
-
 
 type BackupNothing struct{}
 
