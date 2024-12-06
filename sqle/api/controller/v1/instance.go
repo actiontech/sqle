@@ -423,13 +423,13 @@ func GetInstanceTips(c echo.Context) error {
 			continue
 		}
 		instanceTipRes := InstanceTipResV1{
-			ID:                           inst.GetIDStr(),
-			Name:                         inst.Name,
-			Type:                         inst.DbType,
-			Host:                         inst.Host,
-			Port:                         inst.Port,
-			WorkflowTemplateId:           uint32(template.ID),
-			EnableBackup:                 inst.EnableBackup,
+			ID:                      inst.GetIDStr(),
+			Name:                    inst.Name,
+			Type:                    inst.DbType,
+			Host:                    inst.Host,
+			Port:                    inst.Port,
+			WorkflowTemplateId:      uint32(template.ID),
+			EnableBackup:            inst.EnableBackup,
 			BackupMaxRows:           inst.BackupMaxRows,
 			SupportedBackupStrategy: svc.SupportedBackupStrategy(inst.DbType),
 		}
