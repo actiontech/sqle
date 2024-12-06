@@ -41,7 +41,7 @@ type CreateAuditTaskReqV1 struct {
 	Sql             string  `json:"sql" form:"sql" example:"alter table tb1 drop columns c1"`
 	ExecMode        string  `json:"exec_mode" form:"exec_mode" enums:"sql_file,sqls"`
 	EnableBackup    bool    `json:"enable_backup" form:"enable_backup"`
-	BackupMaxRows   *uint64 `json:"backup_max_rows,omitempty"`
+	BackupMaxRows   *uint64 `json:"backup_max_rows,omitempty" form:"backup_max_rows"`
 	FileOrderMethod string  `json:"file_order_method" form:"file_order_method"`
 }
 
@@ -961,7 +961,7 @@ type AuditTaskGroupReqV1 struct {
 	TaskGroupId   uint    `json:"task_group_id" form:"task_group_id" valid:"required"`
 	Sql           string  `json:"sql" form:"sql" example:"alter table tb1 drop columns c1"`
 	EnableBackup  bool    `json:"enable_backup" form:"enable_backup"`
-	BackupMaxRows *uint64 `json:"backup_max_rows,omitempty"`
+	BackupMaxRows *uint64 `json:"backup_max_rows,omitempty" form:"backup_max_rows"`
 }
 
 type AuditTaskGroupRes struct {
