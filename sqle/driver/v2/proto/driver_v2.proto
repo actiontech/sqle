@@ -17,6 +17,7 @@ service Driver {
   // db audit
   rpc Parse(ParseRequest) returns (ParseResponse);
   rpc Audit(AuditRequest) returns (AuditResponse);
+  // Deprecated By Backup and RecommendBackupStrategy
   rpc GenRollbackSQL(GenRollbackSQLRequest) returns (GenRollbackSQLResponse);
 
   // db executor

@@ -2183,6 +2183,7 @@ type DriverClient interface {
 	// db audit
 	Parse(ctx context.Context, in *ParseRequest, opts ...grpc.CallOption) (*ParseResponse, error)
 	Audit(ctx context.Context, in *AuditRequest, opts ...grpc.CallOption) (*AuditResponse, error)
+	// Deprecated By Backup and RecommendBackupStrategy
 	GenRollbackSQL(ctx context.Context, in *GenRollbackSQLRequest, opts ...grpc.CallOption) (*GenRollbackSQLResponse, error)
 	// db executor
 	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*Empty, error)
@@ -2415,6 +2416,7 @@ type DriverServer interface {
 	// db audit
 	Parse(context.Context, *ParseRequest) (*ParseResponse, error)
 	Audit(context.Context, *AuditRequest) (*AuditResponse, error)
+	// Deprecated By Backup and RecommendBackupStrategy
 	GenRollbackSQL(context.Context, *GenRollbackSQLRequest) (*GenRollbackSQLResponse, error)
 	// db executor
 	Ping(context.Context, *PingRequest) (*Empty, error)
