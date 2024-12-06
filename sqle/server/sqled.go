@@ -484,15 +484,15 @@ backupAndExecSql() 备份与执行SQL：
 */
 func (a *action) backupAndExecSql() error {
 	for _, executeSQL := range a.task.ExecuteSQLs {
-		backupMng, err := getBackupManager(a.plugin, executeSQL, a.task.DBType)
+		backupMgr, err := getBackupManager(a.plugin, executeSQL, a.task.DBType)
 		if err != nil {
 			return fmt.Errorf("in backupAndExecSql when getBackupManager, err %w , task: %v", err, a.task.ID)
 		}
-		if err = backupMng.Backup(); err != nil {
-			return fmt.Errorf("in backupAndExecSql when backupMng Backup, err %w, backup manager: %v, task: %v", err, backupMng, a.task.ID)
+		if err = backupMgr.Backup(); err != nil {
+			return fmt.Errorf("in backupAndExecSql when backupMgr Backup, err %w, backup manager: %v, task: %v", err, backupMgr, a.task.ID)
 		}
 		if err := a.execSQL(executeSQL); err != nil {
-			return fmt.Errorf("in backupAndExecSql when execSQL %v, err %w, backup manager: %v, task: %v", executeSQL, err, backupMng, a.task.ID)
+			return fmt.Errorf("in backupAndExecSql when execSQL %v, err %w, backup manager: %v, task: %v", executeSQL, err, backupMgr, a.task.ID)
 		}
 	}
 	return nil
