@@ -14,6 +14,7 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/pkg/params"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
 )
@@ -635,13 +636,13 @@ func (BackupService) AutoChooseBackupMaxRows(enableBackup bool, backupMaxRows *u
 	if !enableBackup {
 		return 0
 	}
-	// 如果实例启用了备份并且实例的备份最大行数大于等于 0，则返回实例的备份最大行数。
-	if instance.EnableBackup && instance.BackupMaxRows >= 0 {
-		return instance.BackupMaxRows
-	}
 	// 如果 backupMaxRows 不为 nil 并且其值大于 0，则返回 backupMaxRows 的值。
 	if backupMaxRows != nil && *backupMaxRows >= 0 {
 		return *backupMaxRows
+	}
+	// 如果实例启用了备份并且实例的备份最大行数大于等于 0，则返回实例的备份最大行数。
+	if instance.EnableBackup && instance.BackupMaxRows >= 0 {
+		return instance.BackupMaxRows
 	}
 	// 如果以上条件都不满足，则返回默认的备份最大行数 DefaultBackupMaxRows。
 	return DefaultBackupMaxRows
@@ -664,4 +665,160 @@ func (BackupService) SupportedBackupStrategy(dbType string) []string {
 		}
 	}
 	return []string{}
+}
+
+func modifyRulesWithBackupMaxRows(rules []*model.Rule, dbType string, backupMaxRows uint64) []*model.Rule {
+	if backupMaxRows == 0 {
+		return rules
+	}
+	svc := BackupService{}
+	if err := svc.CheckIsDbTypeSupportEnableBackup(dbType); err != nil {
+		return rules
+	}
+	switch dbType {
+	case driverV2.DriverTypeTBase, driverV2.DriverTypePostgreSQL, "GaussDB for MySQL":
+		return modifyRulesForPgLikeDriver(rules, backupMaxRows)
+	case driverV2.DriverTypeOceanBase, "GoldenDB", "TiDB", driverV2.DriverTypeSQLServer, driverV2.DriverTypeTDSQLForInnoDB:
+		return modifyRulesForMySQLLikeDriver(rules, backupMaxRows)
+	case driverV2.DriverTypeOracle, "DM", "OceanBase For Oracle":
+		return modifyRulesForOracleLikeDriver(rules, backupMaxRows)
+	case driverV2.DriverTypeDB2:
+		// 没有限制行数，找不到对应规则
+	}
+	return rules
+}
+func modifyRulesForOracleLikeDriver(rules []*model.Rule, backupMaxRows uint64) []*model.Rule {
+	// [{"key": "first_key", "desc": "影响行数", "type": "string", "enums": null, "value": "1000", "i18n_desc": null}] Oracle_084
+	var Oracle84 bool
+	var Oracle85 bool
+	for i := range rules {
+		if Oracle84 && Oracle85 {
+			break
+		}
+		if rules[i].Name == "Oracle_084" {
+			rules[i].Params = params.Params{
+				&params.Param{
+					Key:   "first_key",
+					Desc:  "影响行数",
+					Value: fmt.Sprint(backupMaxRows),
+					Type:  "int",
+				},
+			}
+			Oracle84 = true
+			continue
+		}
+		if rules[i].Name == "Oracle_085" {
+			Oracle85 = true
+			continue
+		}
+	}
+	if !Oracle84 {
+		rules = append(rules, &model.Rule{
+			Name: "Oracle_084",
+			Params: params.Params{
+				&params.Param{
+					Key:   "first_key",
+					Desc:  "影响行数",
+					Value: fmt.Sprint(backupMaxRows),
+					Type:  "int",
+				},
+			},
+			HasAuditPower: true,
+		})
+	}
+	if !Oracle85 {
+		rules = append(rules, &model.Rule{
+			Name:          "Oracle_085",
+			HasAuditPower: true,
+		})
+	}
+	return rules
+}
+
+func modifyRulesForMySQLLikeDriver(rules []*model.Rule, backupMaxRows uint64) []*model.Rule {
+	var ruleRollBackMaxRows bool
+	for i := range rules {
+		if rules[i].Name == "dml_rollback_max_rows" {
+			rules[i].Params = params.Params{
+				&params.Param{
+					Key:   "first_key",
+					Desc:  "最大影响行数",
+					Value: fmt.Sprint(backupMaxRows),
+					Type:  "int",
+				},
+			}
+			ruleRollBackMaxRows = true
+			break
+		}
+	}
+	if !ruleRollBackMaxRows {
+		rules = append(rules, &model.Rule{
+			Name: "dml_rollback_max_rows",
+			Params: params.Params{
+				&params.Param{
+					Key:   "first_key",
+					Desc:  "最大影响行数",
+					Value: fmt.Sprint(backupMaxRows),
+					Type:  "int",
+				},
+			},
+			HasAuditPower: true,
+		})
+	}
+	return rules
+}
+
+func modifyRulesForPgLikeDriver(rules []*model.Rule, backupMaxRows uint64) []*model.Rule {
+	var rule24 bool
+	var rule25 bool
+
+	for i := range rules {
+		if rule24 && rule25 {
+			break
+		}
+		// [{"key": "max_affected_rows", "desc": "回滚语句影响行数", "type": "int", "enums": null, "value": "1000", "i18n_desc": null}]
+		if !rule24 && rules[i].Name == "pg_024" {
+			rules[i].Params = params.Params{
+				&params.Param{
+					Key:   "max_affected_rows",
+					Desc:  "回滚语句影响行数",
+					Value: fmt.Sprint(backupMaxRows),
+					Type:  "int",
+				},
+			}
+			rule24 = true
+			continue
+		}
+		// 这条规则无param
+		if !rule25 && rules[i].Name == "pg_025" {
+			rule25 = true
+			rules[i].HasAuditPower = true
+			continue
+		}
+	}
+	if !rule24 {
+		rules = append(rules, &model.Rule{
+			Name: "pg_024",
+			Params: params.Params{
+				&params.Param{
+					Key:   "max_affected_rows",
+					Desc:  "回滚语句影响行数",
+					Value: fmt.Sprint(backupMaxRows),
+					Type:  "int",
+				},
+			},
+			DBType:        driverV2.DriverTypePostgreSQL,
+			Level:         "notice",
+			HasAuditPower: true,
+		})
+	}
+	if !rule25 {
+		rules = append(rules, &model.Rule{
+			Name:          "pg_025",
+			DBType:        driverV2.DriverTypePostgreSQL,
+			Level:         "notice",
+			HasAuditPower: true,
+		})
+	}
+	return rules
 }
