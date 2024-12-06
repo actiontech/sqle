@@ -28,7 +28,7 @@ func initModelBackupTask(p driver.Plugin, task *model.Task, sql *model.ExecuteSQ
 	return &model.BackupTask{}
 }
 
-func getBackupManager(p driver.Plugin, sql *model.ExecuteSQL, dbType string) (*BackupManager, error) {
+func getBackupManager(p driver.Plugin, sql *model.ExecuteSQL, dbType string, backupMaxRows uint64) (*BackupManager, error) {
 	return &BackupManager{}, nil
 }
 
@@ -48,7 +48,14 @@ func (BackupService) CheckCanTaskBackup(task *model.Task) bool {
 	return false
 }
 
-
 func (BackupService) SupportedBackupStrategy(dbType string) []string {
 	return []string{}
+}
+
+func (BackupService) AutoChooseBackupMaxRows(enableBackup bool, backupMaxRows *uint64, instance model.Instance) uint64 {
+	return 0
+}
+
+func modifyRulesWithBackupMaxRows(rules []*model.Rule, dbType string, backupMaxRows uint64) []*model.Rule {
+	return rules
 }

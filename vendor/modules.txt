@@ -47,7 +47,7 @@ github.com/StackExchange/wmi
 # github.com/acomagu/bufpipe v1.0.4
 ## explicit; go 1.12
 github.com/acomagu/bufpipe
-# github.com/actiontech/dms v0.0.0-20241122070816-a943dbc68714
+# github.com/actiontech/dms v0.0.0-20241205071755-3b81d30f71c3
 ## explicit; go 1.19
 github.com/actiontech/dms/pkg/dms-common/api/accesstoken
 github.com/actiontech/dms/pkg/dms-common/api/base/v1
@@ -59,6 +59,7 @@ github.com/actiontech/dms/pkg/dms-common/i18nPkg
 github.com/actiontech/dms/pkg/dms-common/pkg/aes
 github.com/actiontech/dms/pkg/dms-common/pkg/http
 github.com/actiontech/dms/pkg/dms-common/register
+github.com/actiontech/dms/pkg/params
 # github.com/actiontech/java-sql-extractor v0.0.0-20231103015812-cdd5fc040f62
 ## explicit; go 1.19
 github.com/actiontech/java-sql-extractor/java_antlr

@@ -41,7 +41,7 @@ type CreateAuditTaskReqV1 struct {
 	Sql             string  `json:"sql" form:"sql" example:"alter table tb1 drop columns c1"`
 	ExecMode        string  `json:"exec_mode" form:"exec_mode" enums:"sql_file,sqls"`
 	EnableBackup    bool    `json:"enable_backup" form:"enable_backup"`
-	BackupMaxRows   *uint64 `json:"backup_max_rows,omitempty"`
+	BackupMaxRows   *uint64 `json:"backup_max_rows,omitempty" form:"backup_max_rows"`
 	FileOrderMethod string  `json:"file_order_method" form:"file_order_method"`
 }
 
@@ -89,6 +89,7 @@ func convertTaskToRes(task *model.Task) *AuditTaskResV1 {
 		ExecEndTime:                task.ExecEndAt,
 		ExecMode:                   task.ExecMode,
 		EnableBackup:               task.EnableBackup,
+		BackupMaxRows:              task.BackupMaxRows,
 		BackupConflictWithInstance: server.BackupService{}.IsBackupConflictWithInstance(task.EnableBackup, task.InstanceEnableBackup),
 		FileOrderMethod:            task.FileOrderMethod,
 		AuditFiles:                 convertToAuditFileResp(task.AuditFiles),
@@ -351,8 +352,8 @@ func CreateAndAuditTask(c echo.Context) error {
 
 	task.ExecMode = req.ExecMode
 	task.FileOrderMethod = req.FileOrderMethod
+	backupService := server.BackupService{}
 	if req.EnableBackup {
-		backupService := server.BackupService{}
 		err = backupService.CheckBackupConflictWithExecMode(req.EnableBackup, req.ExecMode)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
@@ -363,6 +364,7 @@ func CreateAndAuditTask(c echo.Context) error {
 		}
 		task.EnableBackup = req.EnableBackup
 	}
+	task.BackupMaxRows = backupService.AutoChooseBackupMaxRows(req.EnableBackup, req.BackupMaxRows, tmpInst)
 	task.InstanceEnableBackup = tmpInst.EnableBackup
 
 	err = convertSQLSourceEncodingFromTask(task)
@@ -959,7 +961,7 @@ type AuditTaskGroupReqV1 struct {
 	TaskGroupId   uint    `json:"task_group_id" form:"task_group_id" valid:"required"`
 	Sql           string  `json:"sql" form:"sql" example:"alter table tb1 drop columns c1"`
 	EnableBackup  bool    `json:"enable_backup" form:"enable_backup"`
-	BackupMaxRows *uint64 `json:"backup_max_rows,omitempty"`
+	BackupMaxRows *uint64 `json:"backup_max_rows,omitempty" form:"backup_max_rows"`
 }
 
 type AuditTaskGroupRes struct {
@@ -1064,8 +1066,8 @@ func AuditTaskGroupV1(c echo.Context) error {
 
 		for _, task := range tasks {
 			task.SQLSource = sqls.SourceType
+			backupService := server.BackupService{}
 			if req.EnableBackup {
-				backupService := server.BackupService{}
 				err = backupService.CheckBackupConflictWithExecMode(req.EnableBackup, task.ExecMode)
 				if err != nil {
 					return controller.JSONBaseErrorReq(c, err)
@@ -1077,6 +1079,7 @@ func AuditTaskGroupV1(c echo.Context) error {
 				task.EnableBackup = req.EnableBackup
 			}
 			if instance, exist := instanceMap[task.InstanceId]; exist {
+				task.BackupMaxRows = backupService.AutoChooseBackupMaxRows(req.EnableBackup, req.BackupMaxRows, *instance)
 				task.InstanceEnableBackup = instance.EnableBackup
 			} else {
 				return controller.JSONBaseErrorReq(c, fmt.Errorf("can not find instance in task"))

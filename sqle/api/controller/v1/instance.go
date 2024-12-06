@@ -430,6 +430,7 @@ func GetInstanceTips(c echo.Context) error {
 			Port:                    inst.Port,
 			WorkflowTemplateId:      uint32(template.ID),
 			EnableBackup:            inst.EnableBackup,
+			BackupMaxRows:           inst.BackupMaxRows,
 			SupportedBackupStrategy: svc.SupportedBackupStrategy(inst.DbType),
 		}
 		instanceTipsResV1 = append(instanceTipsResV1, instanceTipRes)

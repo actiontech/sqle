@@ -118,7 +118,8 @@ func (s *Sqled) addTask(projectId string, taskId string, typ int) (*action, erro
 	if err != nil {
 		goto Error
 	}
-	p, err = newDriverManagerWithAudit(entry, task.Instance, task.Schema, task.DBType, rules)
+
+	p, err = newDriverManagerWithAudit(entry, task.Instance, task.Schema, task.DBType, modifyRulesWithBackupMaxRows(rules, task.DBType, task.BackupMaxRows))
 	if err != nil {
 		goto Error
 	}
@@ -484,7 +485,7 @@ backupAndExecSql() 备份与执行SQL：
 */
 func (a *action) backupAndExecSql() error {
 	for _, executeSQL := range a.task.ExecuteSQLs {
-		backupMgr, err := getBackupManager(a.plugin, executeSQL, a.task.DBType)
+		backupMgr, err := getBackupManager(a.plugin, executeSQL, a.task.DBType, a.task.BackupMaxRows)
 		if err != nil {
 			return fmt.Errorf("in backupAndExecSql when getBackupManager, err %w , task: %v", err, a.task.ID)
 		}

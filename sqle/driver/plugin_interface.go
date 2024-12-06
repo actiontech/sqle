@@ -47,7 +47,7 @@ type Plugin interface {
 
 	GetDatabaseDiffModifySQL(ctx context.Context, calibratedDSN *driverV2.DSN, objInfos []*driverV2.DatabasCompareSchemaInfo) ([]*driverV2.DatabaseDiffModifySQLResult, error)
 
-	Backup(ctx context.Context, backupStrategy string, sql string) (BackupSql []string, ExecuteInfo string, err error)
+	Backup(ctx context.Context, backupStrategy string, sql string, backupMaxRows uint64) (backupSqls []string, executeResult string, err error)
 
 	RecommendBackupStrategy(ctx context.Context, sql string) (*RecommendBackupStrategyRes, error)
 }
