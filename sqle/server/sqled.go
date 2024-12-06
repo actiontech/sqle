@@ -445,8 +445,8 @@ func (a *action) GetTaskStatus(st *model.Storage) string {
 }
 
 func (a *action) execTask() (err error) {
-	// TODO  if enable backup and plugin support backup
-	if a.task.EnableBackup {
+	svc := BackupService{}
+	if svc.CheckCanTaskBackup(a.task) {
 		err = a.backupAndExecSql()
 		if err != nil {
 			return err
@@ -483,19 +483,16 @@ backupAndExecSql() 备份与执行SQL：
 	按照顺序，先根据一条SQL备份，再执行该SQL。备份过程中涉及连库查询和保存数据。
 */
 func (a *action) backupAndExecSql() error {
-	svc := BackupService{}
 	for _, executeSQL := range a.task.ExecuteSQLs {
-		if svc.CheckCanTaskBackup(a.task) {
-			backupTask, err := toBackupTask(a.plugin, executeSQL)
-			if err != nil {
-				return fmt.Errorf("in backupAndExecSql when convert toBackupTask, err %w , backup task: %v, task: %v", err, executeSQL.BackupTask.ID, a.task.ID)
-			}
-			if err = backupTask.Backup(); err != nil {
-				return fmt.Errorf("in backupAndExecSql when backupTask Backup, err %w, backup task: %v, task: %v", err, executeSQL.BackupTask.ID, a.task.ID)
-			}
+		backupMgr, err := getBackupManager(a.plugin, executeSQL, a.task.DBType)
+		if err != nil {
+			return fmt.Errorf("in backupAndExecSql when getBackupManager, err %w , task: %v", err, a.task.ID)
+		}
+		if err = backupMgr.Backup(); err != nil {
+			return fmt.Errorf("in backupAndExecSql when backupMgr Backup, err %w, backup manager: %v, task: %v", err, backupMgr, a.task.ID)
 		}
 		if err := a.execSQL(executeSQL); err != nil {
-			return fmt.Errorf("in backupAndExecSql when execSQL %v, err %w, backup task: %v, task: %v", executeSQL, err, executeSQL.BackupTask.ID, a.task.ID)
+			return fmt.Errorf("in backupAndExecSql when execSQL %v, err %w, backup manager: %v, task: %v", executeSQL, err, backupMgr, a.task.ID)
 		}
 	}
 	return nil
