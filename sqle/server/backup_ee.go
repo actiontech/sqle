@@ -23,7 +23,7 @@ var ErrUnsupportedBackupInFileMode error = errors.New("enable backup in file mod
 func initModelBackupTask(p driver.Plugin, task *model.Task, sql *model.ExecuteSQL) *model.BackupTask {
 	var err error
 	var strategyRes *driver.RecommendBackupStrategyRes
-	// TODO 为了兼容暂不支持backup接口但是支持rollback sql 接口的插件，这里将满足上述条件的插件的备份策略统一配置为生成反向SQL
+	// 为了兼容暂不支持backup接口但是支持rollback sql 接口的插件，这里将满足上述条件的插件的备份策略统一配置为生成反向SQL
 	if driver.GetPluginManager().IsOptionalModuleEnabled(task.DBType, driverV2.OptionalBackup) {
 		strategyRes, err = p.RecommendBackupStrategy(context.TODO(), sql.Content)
 	} else if driver.GetPluginManager().IsOptionalModuleEnabled(task.DBType, driverV2.OptionalModuleGenRollbackSQL) {
@@ -253,7 +253,7 @@ type BackupReverseSql struct {
 	baseBackupHandler
 }
 
-// TODO 为了兼容暂不支持backup接口但是支持rollback sql 接口的插件，这里新增一个用于兼容的备份handler
+// 为了兼容暂不支持backup接口但是支持rollback sql 接口的插件，这里新增一个用于兼容的备份handler
 type BackupReverseSqlUseRollbackApi struct {
 	baseBackupHandler
 }
