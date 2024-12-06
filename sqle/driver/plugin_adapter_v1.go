@@ -129,7 +129,7 @@ type PluginImplV1 struct {
 	driverV1.DriverManager
 }
 
-func (d *PluginImplV1) Backup(ctx context.Context, backupStrategy string, sql string) (backupSql []string, executeInfo string, err error) {
+func (d *PluginImplV1) Backup(ctx context.Context, backupStrategy string, sql string, backupMaxRows uint64) (backupSqls []string, executeResult string, err error) {
 	return nil, "", nil
 }
 

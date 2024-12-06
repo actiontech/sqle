@@ -114,13 +114,14 @@ func (d *DriverGrpcServer) Backup(ctx context.Context, req *protoV2.BackupReq) (
 	res, err := driver.Backup(ctx, &BackupReq{
 		BackupStrategy: req.BackupStrategy.String(),
 		Sql:            req.Sql,
+		BackupMaxRows:  req.BackupMaxRows,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "backup")
 	}
 	return &protoV2.BackupRes{
-		BackupSql:   res.BackupSql,
-		ExecuteInfo: res.ExecuteInfo,
+		BackupSql:     res.BackupSql,
+		ExecuteResult: res.ExecuteResult,
 	}, nil
 }
 
