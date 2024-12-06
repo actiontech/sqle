@@ -114,7 +114,8 @@ func NewMockInspectWithIsExecutedSQL(e *executor.Executor) *MysqlDriverImpl {
 			Password:     "123456",
 			DatabaseName: "mysql",
 		},
-		Ctx: session.NewMockContext(e),
+		isConnected: true,
+		Ctx:         session.NewMockContext(e),
 		cnf: &Config{
 			DDLOSCMinSize:      16,
 			DDLGhostMinSize:    16,
