@@ -15,32 +15,32 @@ import (
 	parserMysql "github.com/pingcap/parser/mysql"
 )
 
-func (i *MysqlDriverImpl) GetOriginalRow(node ast.Node) (rollbackSql []string, unableRollbackReason i18nPkg.I18nStr, err error) {
+func (i *MysqlDriverImpl) GetOriginalRow(node ast.Node, backupMaxRows uint64) (rollbackSql []string, unableRollbackReason i18nPkg.I18nStr, err error) {
 	switch stmt := node.(type) {
 	// row
 	case *ast.DeleteStmt:
-		return i.GetOriginalRowDelete(stmt)
+		return i.GetOriginalRowDelete(stmt, backupMaxRows)
 	case *ast.UpdateStmt:
-		return i.GetOriginalRowUpdate(stmt)
+		return i.GetOriginalRowUpdate(stmt, backupMaxRows)
 	case *ast.InsertStmt:
-		return i.generateInsertRollbackSqls(stmt)
+		return i.generateInsertRollbackSqls(stmt, backupMaxRows)
 	// table
 	case *ast.DropTableStmt:
-		return i.generateDropTableRollbackSqls(stmt)
+		return i.generateDropTableRollbackSqls(stmt, backupMaxRows)
 	case *ast.AlterTableStmt:
-		return i.generateAlterTableRollbackSqls(stmt)
+		return i.generateAlterTableRollbackSqls(stmt, backupMaxRows)
 	case *ast.CreateTableStmt:
-		return i.generateCreateTableRollbackSqls(stmt)
+		return i.generateCreateTableRollbackSqls(stmt, backupMaxRows)
 	// index
 	case *ast.CreateIndexStmt:
-		return i.generateCreateIndexRollbackSqls(stmt)
+		return i.generateCreateIndexRollbackSqls(stmt, backupMaxRows)
 	case *ast.DropIndexStmt:
-		return i.generateDropIndexRollbackSqls(stmt)
+		return i.generateDropIndexRollbackSqls(stmt, backupMaxRows)
 	// database
 	case *ast.CreateDatabaseStmt:
-		return i.generateCreateSchemaRollbackSqls(stmt)
+		return i.generateCreateSchemaRollbackSqls(stmt, backupMaxRows)
 	case *ast.DropDatabaseStmt:
-		return i.generateDropDatabaseRollbackSqls(stmt)
+		return i.generateDropDatabaseRollbackSqls(stmt, backupMaxRows)
 	// other
 	case *ast.UnparsedStmt:
 		return []string{}, i18nPkg.ConvertStr2I18nAsDefaultLang("无法正常解析该SQL，无法进行备份"), nil
@@ -50,12 +50,12 @@ func (i *MysqlDriverImpl) GetOriginalRow(node ast.Node) (rollbackSql []string, u
 }
 
 // generateDeleteRollbackSql generate insert SQL for delete.
-func (i *MysqlDriverImpl) GetOriginalRowDelete(stmt *ast.DeleteStmt) ([]string, i18nPkg.I18nStr, error) {
+func (i *MysqlDriverImpl) GetOriginalRowDelete(stmt *ast.DeleteStmt, backupMaxRows uint64) ([]string, i18nPkg.I18nStr, error) {
 	tables := util.GetTables(stmt.TableRefs.TableRefs)
 	if len(tables) == 0 {
 		return []string{}, nil, fmt.Errorf("can not extract table from sql")
 	}
-	originRowInsertSql, err := i.getOriginalRowReplaceIntoSql(tables[0], stmt.Where, stmt.Order)
+	originRowInsertSql, err := i.getOriginalRowReplaceIntoSql(tables[0], stmt.Where, stmt.Order, backupMaxRows)
 	if err != nil {
 		return []string{}, nil, err
 	}
@@ -63,12 +63,12 @@ func (i *MysqlDriverImpl) GetOriginalRowDelete(stmt *ast.DeleteStmt) ([]string, 
 }
 
 // generateDeleteRollbackSql generate insert SQL for delete.
-func (i *MysqlDriverImpl) GetOriginalRowUpdate(stmt *ast.UpdateStmt) ([]string, i18nPkg.I18nStr, error) {
+func (i *MysqlDriverImpl) GetOriginalRowUpdate(stmt *ast.UpdateStmt, backupMaxRows uint64) ([]string, i18nPkg.I18nStr, error) {
 	tables := util.GetTables(stmt.TableRefs.TableRefs)
 	if len(tables) == 0 {
 		return []string{}, nil, fmt.Errorf("can not extract table from sql")
 	}
-	originRowInsertSql, err := i.getOriginalRowReplaceIntoSql(tables[0], stmt.Where, stmt.Order)
+	originRowInsertSql, err := i.getOriginalRowReplaceIntoSql(tables[0], stmt.Where, stmt.Order, backupMaxRows)
 	if err != nil {
 		return []string{}, nil, err
 	}
@@ -99,15 +99,13 @@ func (i *MysqlDriverImpl) getCreateTableStmt(table *ast.TableName) (string, erro
 	return stmt.Text() + ";\n", nil
 }
 
-const TemporaryMaxRows int64 = 10000 // 临时限制备份行数上限为10000
-
-func (i *MysqlDriverImpl) getOriginalRowReplaceIntoSql(table *ast.TableName, whereClause ast.ExprNode, orderClause *ast.OrderByClause) ([]string, error) {
+func (i *MysqlDriverImpl) getOriginalRowReplaceIntoSql(table *ast.TableName, whereClause ast.ExprNode, orderClause *ast.OrderByClause, backupMaxRows uint64) ([]string, error) {
 	createTableStmt, exist, err := i.Ctx.GetCreateTableStmt(table)
 	if err != nil || !exist {
 		return []string{}, err
 	}
 
-	records, err := i.getRecords(table, "", whereClause, orderClause, TemporaryMaxRows)
+	records, err := i.getRecords(table, "", whereClause, orderClause, int64(backupMaxRows))
 	if err != nil {
 		return []string{}, err
 	}

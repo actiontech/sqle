@@ -60,16 +60,16 @@ func initModelBackupTask(p driver.Plugin, task *model.Task, sql *model.ExecuteSQ
 	}
 }
 
-func getBackupManager(p driver.Plugin, sql *model.ExecuteSQL, dbType string) (*BackupManager, error) {
+func getBackupManager(p driver.Plugin, sql *model.ExecuteSQL, dbType string, backupMaxRows uint64) (*BackupManager, error) {
 	s := model.GetStorage()
 	backupTask, err := s.GetBackupTaskByExecuteSqlId(sql.ID)
 	if err != nil {
 		return nil, err
 	}
-	return newBackupManager(p, backupTask, sql, dbType), nil
+	return newBackupManager(p, backupTask, sql, dbType, backupMaxRows), nil
 }
 
-func newBackupManager(p driver.Plugin, modelBackupTask *model.BackupTask, sql *model.ExecuteSQL, dbType string) *BackupManager {
+func newBackupManager(p driver.Plugin, modelBackupTask *model.BackupTask, sql *model.ExecuteSQL, dbType string, backupMaxRows uint64) *BackupManager {
 	task := backupTask{
 		ID:                modelBackupTask.ID,
 		ExecTaskId:        sql.TaskId,
@@ -83,6 +83,7 @@ func newBackupManager(p driver.Plugin, modelBackupTask *model.BackupTask, sql *m
 		BackupStrategy:    BackupStrategy(modelBackupTask.BackupStrategy),
 		BackupStrategyTip: modelBackupTask.BackupStrategyTip,
 		BackupExecResult:  modelBackupTask.BackupExecResult,
+		BackupMaxRows:     backupMaxRows,
 	}
 	var handler backupHandler
 	switch modelBackupTask.BackupStrategy {
@@ -138,6 +139,7 @@ type backupTask struct {
 	BackupStrategyTip string         // 备份策略推荐原因
 	BackupStatus      BackupStatus   // 备份执行状态
 	BackupExecResult  string         // 备份执行详情信息
+	BackupMaxRows     uint64         // 备份的最大行数
 }
 
 func (backup backupTask) toModel() *model.BackupTask {
@@ -227,7 +229,7 @@ type baseBackupHandler struct {
 
 func (backup *baseBackupHandler) backup() (backupResult string, backupErr error) {
 	// generate reverse sql
-	backupSqls, executeInfo, backupErr := backup.plugin.Backup(context.TODO(), string(BackupStrategyOriginalRow), backup.task.ExecuteSql)
+	backupSqls, executeInfo, backupErr := backup.plugin.Backup(context.TODO(), string(BackupStrategyOriginalRow), backup.task.ExecuteSql, backup.task.BackupMaxRows)
 	if backupErr != nil {
 		return executeInfo, backupErr
 	}
@@ -627,11 +629,10 @@ func (BackupService) IsBackupConflictWithInstance(taskEnableBackup, instanceEnab
 
 const DefaultBackupMaxRows uint64 = 1000
 
-
 // AutoChooseBackupMaxRows 方法根据是否启用备份以及备份最大行数的设置来确定最终的备份最大行数。
 func (BackupService) AutoChooseBackupMaxRows(enableBackup bool, backupMaxRows *uint64, instance model.Instance) uint64 {
 	// 如果未启用备份，则返回 0。
-	if!enableBackup {
+	if !enableBackup {
 		return 0
 	}
 	// 如果实例启用了备份并且实例的备份最大行数大于等于 0，则返回实例的备份最大行数。
@@ -639,13 +640,12 @@ func (BackupService) AutoChooseBackupMaxRows(enableBackup bool, backupMaxRows *u
 		return instance.BackupMaxRows
 	}
 	// 如果 backupMaxRows 不为 nil 并且其值大于 0，则返回 backupMaxRows 的值。
-	if backupMaxRows!= nil && *backupMaxRows >= 0{
+	if backupMaxRows != nil && *backupMaxRows >= 0 {
 		return *backupMaxRows
 	}
 	// 如果以上条件都不满足，则返回默认的备份最大行数 DefaultBackupMaxRows。
 	return DefaultBackupMaxRows
 }
-
 
 func (BackupService) SupportedBackupStrategy(dbType string) []string {
 	if driver.GetPluginManager().IsOptionalModuleEnabled(dbType, driverV2.OptionalBackup) {

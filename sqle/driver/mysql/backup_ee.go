@@ -22,7 +22,7 @@ const (
 	BackupStrategyManually    string = "manual"       // 标记为人工备份
 )
 
-func (i *MysqlDriverImpl) Backup(ctx context.Context, backupStrategy string, sql string) (backupSqls []string, executeResult string, err error) {
+func (i *MysqlDriverImpl) Backup(ctx context.Context, backupStrategy string, sql string, backupMaxRows uint64) (backupSqls []string, executeResult string, err error) {
 	if i.IsOfflineAudit() {
 		return nil, "暂不支持不连库备份", nil
 	}
@@ -39,13 +39,13 @@ func (i *MysqlDriverImpl) Backup(ctx context.Context, backupStrategy string, sql
 	var info i18nPkg.I18nStr
 	switch backupStrategy {
 	case BackupStrategyReverseSql:
-		backupSqls, info, err = i.GenerateRollbackSqls(nodes[0])
+		backupSqls, info, err = i.GenerateRollbackSqls(nodes[0], backupMaxRows)
 		if err != nil {
 			i.Logger().Errorf("in plugin when backup GenerateRollbackSqls for sql %v failed: %v", sql, err)
 			return nil, err.Error(), err
 		}
 	case BackupStrategyOriginalRow:
-		backupSqls, info, err = i.GetOriginalRow(nodes[0])
+		backupSqls, info, err = i.GetOriginalRow(nodes[0], backupMaxRows)
 		if err != nil {
 			i.Logger().Errorf("in plugin when backup GetOriginalRow for sql %v failed: %v", sql, err)
 			return nil, err.Error(), err
