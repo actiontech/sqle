@@ -118,7 +118,8 @@ func (s *Sqled) addTask(projectId string, taskId string, typ int) (*action, erro
 	if err != nil {
 		goto Error
 	}
-	p, err = newDriverManagerWithAudit(entry, task.Instance, task.Schema, task.DBType, rules)
+
+	p, err = newDriverManagerWithAudit(entry, task.Instance, task.Schema, task.DBType, modifyRulesWithBackupMaxRows(rules, task.DBType, task.BackupMaxRows))
 	if err != nil {
 		goto Error
 	}

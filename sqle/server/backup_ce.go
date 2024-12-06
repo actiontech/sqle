@@ -55,3 +55,7 @@ func (BackupService) SupportedBackupStrategy(dbType string) []string {
 func (BackupService) AutoChooseBackupMaxRows(enableBackup bool, backupMaxRows *uint64, instance model.Instance) uint64 {
 	return 0
 }
+
+func modifyRulesWithBackupMaxRows(rules []*model.Rule, dbType string, backupMaxRows uint64) []*model.Rule {
+	return rules
+}
