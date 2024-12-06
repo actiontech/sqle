@@ -4,12 +4,16 @@
 package mysql
 
 import (
+	"database/sql"
+	"encoding/hex"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
 	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
+	"github.com/actiontech/sqle/sqle/errors"
 
 	"github.com/pingcap/parser/ast"
 	_model "github.com/pingcap/parser/model"
@@ -152,7 +156,7 @@ func (i *MysqlDriverImpl) generateDeleteRollbackSqls(stmt *ast.DeleteStmt, backu
 }
 
 // generateUpdateRollbackSql generate update SQL for update.
-func (i *MysqlDriverImpl) generateUpdateRollbackSqls(stmt *ast.UpdateStmt, backupMaxRows uint64) ([]string, i18nPkg.I18nStr, error)  {
+func (i *MysqlDriverImpl) generateUpdateRollbackSqls(stmt *ast.UpdateStmt, backupMaxRows uint64) ([]string, i18nPkg.I18nStr, error) {
 	tableSources := util.GetTableSources(stmt.TableRefs.TableRefs)
 	// multi table syntax
 	if len(tableSources) != 1 {
@@ -266,7 +270,7 @@ func (i *MysqlDriverImpl) generateUpdateRollbackSqls(stmt *ast.UpdateStmt, backu
 }
 
 // generateAlterTableRollbackSql generate alter table SQL for alter table.
-func (i *MysqlDriverImpl) generateAlterTableRollbackSqls(stmt *ast.AlterTableStmt, backupMaxRows uint64) ([]string, i18nPkg.I18nStr, error)  {
+func (i *MysqlDriverImpl) generateAlterTableRollbackSqls(stmt *ast.AlterTableStmt, backupMaxRows uint64) ([]string, i18nPkg.I18nStr, error) {
 	schemaName := i.Ctx.GetSchemaName(stmt.Table)
 	tableName := stmt.Table.Name.String()
 
@@ -639,4 +643,79 @@ func (i *MysqlDriverImpl) generateInsertRollbackSqls(stmt *ast.InsertStmt, backu
 			i.getTableNameWithQuote(table), strings.Join(where, " AND ")))
 	}
 	return rollbackSqls, nil, nil
+}
+
+// 将二进制字段转化为十六进制字段
+func getHexStrFromBytesStr(byteStr string) string {
+	encode := []byte(byteStr)
+	return hex.EncodeToString(encode)
+}
+
+// getRecords select all data which will be update or delete.
+func (i *MysqlDriverImpl) getRecords(tableName *ast.TableName, tableAlias string, where ast.ExprNode,
+	order *ast.OrderByClause, limit int64) ([]map[string]sql.NullString, error) {
+	conn, err := i.getDbConn()
+	if err != nil {
+		return nil, err
+	}
+	sql := i.generateGetRecordsSql("*", tableName, tableAlias, where, order, limit)
+	return conn.Db.Query(sql)
+}
+
+// getRecordCount select all data count which will be update or delete.
+func (i *MysqlDriverImpl) getRecordCount(tableName *ast.TableName, tableAlias string, where ast.ExprNode,
+	order *ast.OrderByClause, limit int64) (int64, error) {
+	conn, err := i.getDbConn()
+	if err != nil {
+		return 0, err
+	}
+	sql := i.generateGetRecordsSql("count(*) as count", tableName, tableAlias, where, order, limit)
+
+	var count int64
+	var ok bool
+	records, err := conn.Db.Query(sql)
+	if err != nil {
+		return 0, err
+	}
+	if len(records) != 1 {
+		goto ERROR
+	}
+	_, ok = records[0]["count"]
+	if !ok {
+		goto ERROR
+	}
+	count, err = strconv.ParseInt(records[0]["count"].String, 10, 64)
+	if err != nil {
+		goto ERROR
+	}
+	return count, nil
+
+ERROR:
+	return 0, errors.New(errors.ConnectRemoteDatabaseError, fmt.Errorf("do not match records for select count(*)"))
+}
+
+// generateGetRecordsSql generate select SQL.
+func (i *MysqlDriverImpl) generateGetRecordsSql(expr string, tableName *ast.TableName, tableAlias string, where ast.ExprNode,
+	order *ast.OrderByClause, limit int64) string {
+	recordSql := fmt.Sprintf("SELECT %s FROM %s", expr, i.getTableNameWithQuote(tableName))
+	if tableAlias != "" {
+		recordSql = fmt.Sprintf("%s AS %s", recordSql, tableAlias)
+	}
+	if where != nil {
+		recordSql = fmt.Sprintf("%s WHERE %s", recordSql, restore(where))
+	}
+	if order != nil {
+		recordSql = fmt.Sprintf("%s ORDER BY", recordSql)
+		for _, item := range order.Items {
+			recordSql = fmt.Sprintf("%s %s", recordSql, restore(item.Expr))
+			if item.Desc {
+				recordSql = fmt.Sprintf("%s DESC", recordSql)
+			}
+		}
+	}
+	if limit > 0 {
+		recordSql = fmt.Sprintf("%s LIMIT %d", recordSql, limit)
+	}
+	recordSql += ";"
+	return recordSql
 }
