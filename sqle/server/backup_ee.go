@@ -114,6 +114,10 @@ func newBackupManager(p driver.Plugin, modelBackupTask *model.BackupTask, sql *m
 	}
 }
 
+type backupHandler interface {
+	backup() (backupResult string, err error)
+}
+
 type BackupManager struct {
 	backupHandler
 	backupTask
