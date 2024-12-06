@@ -205,12 +205,12 @@ func RegisterDrivers(c *goPlugin.Client, clientCfg func(cmdBase string, cmdArgs 
 
 // DSN provide necessary information to connect to database.
 type DSN struct {
-	Host             string
-	Port             string
-	User             string
-	Password         string
-	AdditionalParams params.Params
-
+	Host                    string
+	Port                    string
+	User                    string
+	Password                string
+	AdditionalParams        params.Params
+	SQLAllowQueryAuditLevel string
 	// DatabaseName is the default database to connect.
 	DatabaseName string
 }

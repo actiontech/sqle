@@ -294,7 +294,7 @@ func (a *action) validation(task *model.Task) error {
 func (a *action) audit() (err error) {
 	st := model.GetStorage()
 
-	err = audit(a.projectId, a.entry, a.task, a.plugin, a.customRules)
+	err = audit(a.projectId, "", a.entry, a.task, a.plugin, a.customRules)
 	if err != nil {
 		return err
 	}
@@ -812,8 +812,7 @@ func newDriverManagerWithAudit(l *logrus.Entry, inst *model.Instance, database s
 			User:             inst.User,
 			Password:         inst.Password,
 			AdditionalParams: inst.AdditionalParams,
-
-			DatabaseName: database,
+			DatabaseName:     database,
 		}
 	}
 
