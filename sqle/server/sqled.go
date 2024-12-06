@@ -484,7 +484,7 @@ backupAndExecSql() 备份与执行SQL：
 */
 func (a *action) backupAndExecSql() error {
 	for _, executeSQL := range a.task.ExecuteSQLs {
-		backupMgr, err := getBackupManager(a.plugin, executeSQL, a.task.DBType)
+		backupMgr, err := getBackupManager(a.plugin, executeSQL, a.task.DBType, a.task.BackupMaxRows)
 		if err != nil {
 			return fmt.Errorf("in backupAndExecSql when getBackupManager, err %w , task: %v", err, a.task.ID)
 		}
