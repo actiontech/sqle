@@ -45,7 +45,7 @@ func HookAudit(l *logrus.Entry, task *model.Task, hook AuditHook, projectId *mod
 	if task.Instance == nil {
 		task.Instance = &model.Instance{ProjectId: string(*projectId)}
 	}
-	return hookAudit(l, task, plugin, hook, string(*projectId), "", customRules)
+	return hookAudit(l, task, plugin, hook, string(*projectId), customRules)
 }
 
 const AuditSchema = "AuditSchema"
@@ -67,7 +67,7 @@ func DirectAuditByInstance(l *logrus.Entry, sql, schemaName string, instance *mo
 		return nil, err
 	}
 	task.Instance = instance
-	return task, audit(instance.ProjectId, instance.SqlQueryConfig.AllowQueryWhenLessThanAuditLevel, l, task, plugin, customRules)
+	return task, audit(instance.ProjectId, l, task, plugin, customRules)
 }
 
 func AuditSQLByDBType(l *logrus.Entry, sql string, dbType string, projectId string, ruleTemplateName string) (*model.Task, error) {
@@ -90,7 +90,7 @@ func AuditSQLByDriver(projectId string, l *logrus.Entry, sql string, p driver.Pl
 	if err != nil {
 		return nil, err
 	}
-	return task, audit(projectId, "", l, task, p, customRules)
+	return task, audit(projectId, l, task, p, customRules)
 }
 
 func convertSQLsToTask(sql string, p driver.Plugin) (*model.Task, error) {
@@ -110,8 +110,8 @@ func convertSQLsToTask(sql string, p driver.Plugin) (*model.Task, error) {
 	return task, nil
 }
 
-func audit(projectId string, allowQueryWhenLessThanAuditLevel string, l *logrus.Entry, task *model.Task, p driver.Plugin, customRules []*model.CustomRule) (err error) {
-	return hookAudit(l, task, p, &EmptyAuditHook{}, projectId, allowQueryWhenLessThanAuditLevel, customRules)
+func audit(projectId string, l *logrus.Entry, task *model.Task, p driver.Plugin, customRules []*model.CustomRule) (err error) {
+	return hookAudit(l, task, p, &EmptyAuditHook{}, projectId, customRules)
 }
 
 type AuditHook interface {
@@ -125,7 +125,7 @@ func (e *EmptyAuditHook) BeforeAudit(sql *model.ExecuteSQL) {}
 
 func (e *EmptyAuditHook) AfterAudit(sql *model.ExecuteSQL) {}
 
-func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHook, projectId string, allowQueryWhenLessThanAuditLevel string, customRules []*model.CustomRule) (err error) {
+func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHook, projectId string, customRules []*model.CustomRule) (err error) {
 	defer func() {
 		if errRecover := recover(); errRecover != nil {
 			debug.PrintStack()
@@ -140,7 +140,6 @@ func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHoo
 	if err != nil {
 		return err
 	}
-
 	auditSqls := []*model.ExecuteSQL{}
 	sqls := []string{}
 	nodes := []driverV2.Node{}
@@ -209,7 +208,7 @@ func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHoo
 		for i, sql := range auditSqls {
 			hook.AfterAudit(sql)
 			sql.AuditStatus = model.SQLAuditStatusFinished
-			filteredResults := filterAuditResults(allowQueryWhenLessThanAuditLevel, results[i])
+			filteredResults := FilterAuditResults(GetAllowQueryWhenLessThanAuditLevel(task), results[i])
 			sql.AuditLevel = string(filteredResults.Level())
 			sql.AuditFingerprint = utils.Md5String(string(append([]byte(filteredResults.Message()), []byte(nodes[i].Fingerprint)...)))
 			appendExecuteSqlResults(sql, filteredResults)
@@ -220,7 +219,14 @@ func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHoo
 	return nil
 }
 
-func filterAuditResults(allowQueryWhenLessThanAuditLevel string, auditResult *driverV2.AuditResults) *driverV2.AuditResults {
+func GetAllowQueryWhenLessThanAuditLevel(task *model.Task) string {
+	if task.Instance == nil {
+		return ""
+	}
+	return task.Instance.SqlQueryConfig.AllowQueryWhenLessThanAuditLevel
+}
+
+func FilterAuditResults(allowQueryWhenLessThanAuditLevel string, auditResult *driverV2.AuditResults) *driverV2.AuditResults {
 	var filteredAuditResult = make([]*driverV2.AuditResult, 0)
 	for _, auditResult := range auditResult.Results {
 		if driverV2.IsAllowAuditPass(driverV2.RuleLevel(allowQueryWhenLessThanAuditLevel), auditResult.Level) {

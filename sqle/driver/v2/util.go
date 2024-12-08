@@ -119,9 +119,6 @@ func ConvertI18nAuditResultsFromProtoToDriver(pars []*protoV2.AuditResult, isI18
 
 // IsAllowAuditPass 判断运行查询的最高审核等级，如果审核等级低于或等于这个等级将会放行
 func IsAllowAuditPass(sqlAllowQueryAuditLevel RuleLevel, auditResultLevel RuleLevel) bool {
-	if sqlAllowQueryAuditLevel == "" {
-		return false
-	}
 	return auditResultLevel.LessOrEqual(sqlAllowQueryAuditLevel)
 }
 
