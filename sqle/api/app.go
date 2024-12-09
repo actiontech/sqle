@@ -465,7 +465,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1Router.POST("/projects/:project_name/task_groups", v1.CreateAuditTasksGroupV1)
 		v1Router.POST("/task_groups/audit", v1.AuditTaskGroupV1)
 		v1Router.GET("/tasks/file_order_methods", v1.GetSqlFileOrderMethodV1)
-		v1Router.GET("/tasks/audits/:task_id/sqls/:number/rewrite", v1.GetTaskSQLRewritten)
+		v1Router.GET("/tasks/audits/:task_id/sqls/:number/rewrite", v1.GetTaskRewrittenSQL)
 
 		// dashboard
 		v1Router.GET("/dashboard", v1.Dashboard)
