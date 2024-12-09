@@ -5,7 +5,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-type TaskSQLRewrittenData struct {
+type TaskRewrittenSQLData struct {
 	// @Description 表结构
 	TableMetas *TableMetas `json:"table_metas"`
 	// @Description 重写建议列表
@@ -33,27 +33,27 @@ type SQLRewrittenSuggestion struct {
 	Desc string `json:"desc"`
 	// @Description 重写后的SQL（适用于语句级重写和结构级重写）
 	RewrittenSQL string `json:"rewritten_sql"`
-	// @Description ddl dcl 描述(适用于结构级重写)
+	// @Description 数据库结构变更建议说明（例如：建议添加索引、修改表结构等优化建议）（适用于结构级重写）
 	DDL_DCL_desc string `json:"ddl_dcl_desc"`
-	// @Description ddl dcl(适用于结构级重写)
+	// @Description 具体的数据库结构变更语句，需要在数据库中执行该变更语句之后再应用重写SQL（包含CREATE/ALTER/DROP等DDL语句，或SET等DCL语句）（适用于结构级重写）
 	DDL_DCL string `json:"ddl_dcl"`
 }
 
-type GetTaskSQLRewrittenRes struct {
+type GetTaskRewrittenSQLRes struct {
 	controller.BaseRes
-	Data *TaskSQLRewrittenData `json:"data"`
+	Data *TaskRewrittenSQLData `json:"data"`
 }
 
-// GetTaskSQLRewritten retrieves the rewritten SQL and associated suggestions for a specific SQL statement within a task.
+// GetTaskRewrittenSQL retrieves the rewritten SQL and associated suggestions for a specific SQL statement within a task.
 // @Summary 获取任务中指定SQL的重写结果和建议
 // @Description 获取特定任务中某条SQL语句的重写后的SQL及相关建议
-// @Id getTaskSQLRewritten
+// @Id getTaskRewrittenSQL
 // @Tags task
 // @Param task_id path string true "task id"
 // @Param number path uint true "sql number"
 // @Security ApiKeyAuth
-// @Success 200 {object} v1.GetTaskSQLRewrittenRes "成功返回重写结果"
+// @Success 200 {object} v1.GetTaskRewrittenSQLRes "成功返回重写结果"
 // @router /v1/tasks/audits/{task_id}/sqls/{number}/rewrite [get]
-func GetTaskSQLRewritten(c echo.Context) error {
-	return getTaskSQLRewrittenData(c)
+func GetTaskRewrittenSQL(c echo.Context) error {
+	return getTaskRewrittenSQLData(c)
 }
