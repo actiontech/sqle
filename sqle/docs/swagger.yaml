@@ -2524,13 +2524,13 @@ definitions:
         example: ok
         type: string
     type: object
-  v1.GetTaskSQLRewrittenRes:
+  v1.GetTaskRewrittenSQLRes:
     properties:
       code:
         example: 0
         type: integer
       data:
-        $ref: '#/definitions/v1.TaskSQLRewrittenData'
+        $ref: '#/definitions/v1.TaskRewrittenSQLData'
         type: object
       message:
         example: ok
@@ -3785,10 +3785,10 @@ definitions:
         - error
         type: string
       ddl_dcl:
-        description: '@Description ddl dcl(适用于结构级重写)'
+        description: '@Description 具体的数据库结构变更语句，需要在数据库中执行该变更语句之后再应用重写SQL（包含CREATE/ALTER/DROP等DDL语句，或SET等DCL语句）（适用于结构级重写）'
         type: string
       ddl_dcl_desc:
-        description: '@Description ddl dcl 描述(适用于结构级重写)'
+        description: '@Description 数据库结构变更建议说明（例如：建议添加索引、修改表结构等优化建议）（适用于结构级重写）'
         type: string
       desc:
         description: |-
@@ -4186,7 +4186,7 @@ definitions:
       target_instance_schema:
         type: string
     type: object
-  v1.TaskSQLRewrittenData:
+  v1.TaskRewrittenSQLData:
     properties:
       business_non_equivalent_desc:
         description: '@Description 业务不等价性描述，为空表示等价'
@@ -12240,7 +12240,7 @@ paths:
   /v1/tasks/audits/{task_id}/sqls/{number}/rewrite:
     get:
       description: 获取特定任务中某条SQL语句的重写后的SQL及相关建议
-      operationId: getTaskSQLRewritten
+      operationId: getTaskRewrittenSQL
       parameters:
       - description: task id
         in: path
@@ -12256,7 +12256,7 @@ paths:
         "200":
           description: 成功返回重写结果
           schema:
-            $ref: '#/definitions/v1.GetTaskSQLRewrittenRes'
+            $ref: '#/definitions/v1.GetTaskRewrittenSQLRes'
       security:
       - ApiKeyAuth: []
       summary: 获取任务中指定SQL的重写结果和建议

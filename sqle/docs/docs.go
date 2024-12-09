@@ -9499,7 +9499,7 @@ var doc = `{
                     "task"
                 ],
                 "summary": "获取任务中指定SQL的重写结果和建议",
-                "operationId": "getTaskSQLRewritten",
+                "operationId": "getTaskRewrittenSQL",
                 "parameters": [
                     {
                         "type": "string",
@@ -9520,7 +9520,7 @@ var doc = `{
                     "200": {
                         "description": "成功返回重写结果",
                         "schema": {
-                            "$ref": "#/definitions/v1.GetTaskSQLRewrittenRes"
+                            "$ref": "#/definitions/v1.GetTaskRewrittenSQLRes"
                         }
                     }
                 }
@@ -14787,7 +14787,7 @@ var doc = `{
                 }
             }
         },
-        "v1.GetTaskSQLRewrittenRes": {
+        "v1.GetTaskRewrittenSQLRes": {
             "type": "object",
             "properties": {
                 "code": {
@@ -14796,7 +14796,7 @@ var doc = `{
                 },
                 "data": {
                     "type": "object",
-                    "$ref": "#/definitions/v1.TaskSQLRewrittenData"
+                    "$ref": "#/definitions/v1.TaskRewrittenSQLData"
                 },
                 "message": {
                     "type": "string",
@@ -16641,11 +16641,11 @@ var doc = `{
                     ]
                 },
                 "ddl_dcl": {
-                    "description": "@Description ddl dcl(适用于结构级重写)",
+                    "description": "@Description 具体的数据库结构变更语句，需要在数据库中执行该变更语句之后再应用重写SQL（包含CREATE/ALTER/DROP等DDL语句，或SET等DCL语句）（适用于结构级重写）",
                     "type": "string"
                 },
                 "ddl_dcl_desc": {
-                    "description": "@Description ddl dcl 描述(适用于结构级重写)",
+                    "description": "@Description 数据库结构变更建议说明（例如：建议添加索引、修改表结构等优化建议）（适用于结构级重写）",
                     "type": "string"
                 },
                 "desc": {
@@ -17230,7 +17230,7 @@ var doc = `{
                 }
             }
         },
-        "v1.TaskSQLRewrittenData": {
+        "v1.TaskRewrittenSQLData": {
             "type": "object",
             "properties": {
                 "business_non_equivalent_desc": {
