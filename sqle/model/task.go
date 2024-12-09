@@ -434,6 +434,15 @@ func (s *Storage) GetTaskStatusByID(id string) (string, error) {
 	return task.Status, nil
 }
 
+func (s *Storage) GetTaskDbTypeByID(id string) (string, error) {
+	task := &Task{}
+	err := s.db.Select("db_type").Where("id = (?)", id).First(task).Error
+	if err != nil {
+		return "", err
+	}
+	return task.DBType, nil
+}
+
 func (s *Storage) GetTaskById(taskId string) (*Task, bool, error) {
 	task := &Task{}
 	err := s.db.Where("id = ?", taskId).First(task).Error
