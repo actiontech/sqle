@@ -25,7 +25,7 @@ func TestMergeSQLsByFingerprint(t *testing.T) {
 			want: []sqlInfo{
 				{
 					counter:     1,
-					fingerprint: "select sleep(?)",
+					fingerprint: "SELECT SLEEP(?)",
 					sql:         "select sleep(2)",
 				},
 			},
@@ -44,7 +44,7 @@ func TestMergeSQLsByFingerprint(t *testing.T) {
 			want: []sqlInfo{
 				{
 					counter:     3,
-					fingerprint: "select sleep(?)",
+					fingerprint: "SELECT SLEEP(?)",
 					sql:         "select sleep(3)",
 				},
 			},
@@ -53,7 +53,7 @@ func TestMergeSQLsByFingerprint(t *testing.T) {
 			want: []sqlInfo{
 				{
 					counter:     1,
-					fingerprint: "select * from tb1 where a=?",
+					fingerprint: "SELECT * FROM `tb1` WHERE `a`=?",
 					sql:         "select * from tb1 where a=1",
 				},
 			},
@@ -72,7 +72,7 @@ func TestMergeSQLsByFingerprint(t *testing.T) {
 			want: []sqlInfo{
 				{
 					counter:     3,
-					fingerprint: "select * from tb1 where a=?",
+					fingerprint: "SELECT * FROM `tb1` WHERE `a`=?",
 					sql:         "select * from tb1 where a=3",
 				},
 			},
@@ -94,12 +94,12 @@ func TestMergeSQLsByFingerprint(t *testing.T) {
 			want: []sqlInfo{
 				{
 					counter:     2,
-					fingerprint: "select * from tb1 where a=?",
+					fingerprint: "SELECT * FROM `tb1` WHERE `a`=?",
 					sql:         "select * from tb1 where a=3",
 				},
 				{
 					counter:     2,
-					fingerprint: "select sleep(?)",
+					fingerprint: "SELECT SLEEP(?)",
 					sql:         "select sleep(4)",
 				},
 			},
@@ -109,7 +109,7 @@ func TestMergeSQLsByFingerprint(t *testing.T) {
 	for i, tt := range tests {
 		t.Run(fmt.Sprintf("test sqls NO.%v", i), func(t *testing.T) {
 			actual := mergeSQLsByFingerprint(nil, tt.sqls)
-			if !assert.EqualValues(t, actual, tt.want) {
+			if !assert.EqualValues(t, tt.want, actual) {
 				t.Fatal("unexpected result")
 			}
 		})
