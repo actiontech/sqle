@@ -107,6 +107,32 @@ type BatchUpdateSqlManageReq struct {
 	Remark          *string   `json:"remark"`
 }
 
+type SqlManageCodingReq struct {
+	SqlManageIdList   []*uint64       `json:"sql_manage_id_list"`
+	Priority          *CodingPriority `json:"priority" enums:"LOW,MEDIUM,HIGH,EMERGENCY"`
+	CodingProjectName *string         `json:"coding_project_name"`
+	Type              *CodingType     `json:"type" enums:"DEFECT,MISSION,REQUIREMENT,EPIC,SUB_TASK"`
+}
+
+type CodingType string
+
+const (
+	CodingTypeDefect      CodingType = "DEFECT"
+	CodingTypeMission     CodingType = "MISSION"
+	CodingTypeRequirement CodingType = "REQUIREMENT"
+	CodingTypeEpic        CodingType = "EPIC"
+	CodingTypeSubTask     CodingType = "SUB_TASK"
+)
+
+type CodingPriority string
+
+const (
+	CodingPriorityLow       CodingPriority = "LOW"
+	CodingPriorityMedium    CodingPriority = "MEDIUM"
+	CodingPriorityHigh      CodingPriority = "HIGH"
+	CodingPriorityEmergency CodingPriority = "EMERGENCY"
+)
+
 // BatchUpdateSqlManage batch update sql manage
 // @Summary 批量更新SQL管控
 // @Description batch update sql manage
@@ -223,6 +249,16 @@ type GetSqlManageSqlAnalysisResp struct {
 	Data *SqlAnalysis `json:"data"`
 }
 
+type PostSqlManageCodingResp struct {
+	controller.BaseRes
+	Data *CodingResp `json:"data"`
+}
+
+type CodingResp struct {
+	Message string `json:"message"`
+	Code    string `json:"code"`
+}
+
 // GetSqlManageSqlAnalysisV1
 // @Summary 获取SQL管控SQL分析
 // @Description get sql manage analysis
@@ -235,6 +271,20 @@ type GetSqlManageSqlAnalysisResp struct {
 // @Router /v1/projects/{project_name}/sql_manages/{sql_manage_id}/sql_analysis [get]
 func GetSqlManageSqlAnalysisV1(c echo.Context) error {
 	return getSqlManageSqlAnalysisV1(c)
+}
+
+// PostSqlManageToCoding
+// @Summary 推送SQL管控结果到Coding
+// @Description get sql manage analysis
+// @Id PostSqlManageToCoding
+// @Tags SqlManage
+// @Param project_name path string true "project name"
+// @Param SqlManageCodingReq body SqlManageCodingReq true "batch update sql manage request"
+// @Security ApiKeyAuth
+// @Success 200 {object} PostSqlManageCodingResp
+// @Router /v1/projects/{project_name}/sql_manages/coding [post]
+func PostSqlManageToCoding(c echo.Context) error {
+	return postSqlManageToCoding(c)
 }
 
 func convertSQLAnalysisResultToRes(ctx context.Context, res *AnalysisResult, rawSQL string) *SqlAnalysis {
