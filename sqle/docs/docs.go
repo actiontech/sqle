@@ -17022,13 +17022,32 @@ var doc = `{
             "type": "object",
             "properties": {
                 "priority": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "LOW",
+                        "MEDIUM",
+                        "HIGH",
+                        "EMERGENCY"
+                    ]
                 },
                 "project_name": {
                     "type": "string"
                 },
+                "sql_manage_id_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
                 "type": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "DEFECT",
+                        "MISSION",
+                        "REQUIREMENT",
+                        "EPIC",
+                        "SUB_TASK"
+                    ]
                 }
             }
         },
@@ -17635,7 +17654,7 @@ var doc = `{
                 "coding_url": {
                     "type": "string"
                 },
-                "is_coding_notification_enabled": {
+                "is_coding_enabled": {
                     "type": "boolean"
                 },
                 "token": {

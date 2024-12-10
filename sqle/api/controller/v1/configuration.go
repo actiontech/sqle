@@ -341,9 +341,9 @@ func UpdateWechatAuditConfigurationV1(c echo.Context) error {
 }
 
 type UpdateCodingAuditConfigurationReqV1 struct {
-	CodingUrl                   *string `json:"coding_url" from:"coding_url" description:"Coding平台的地址"`
-	Token                       *string `json:"token" from:"token" description:"访问令牌"`
-	IsCodingNotificationEnabled *bool   `json:"is_coding_notification_enabled" from:"is_coding_notification_enabled" description:"是否启用Coding对接流程"`
+	CodingUrl       *string `json:"coding_url" from:"coding_url" description:"Coding平台的地址"`
+	Token           *string `json:"token" from:"token" description:"访问令牌"`
+	IsCodingEnabled *bool   `json:"is_coding_enabled" from:"is_coding_enabled" description:"是否启用Coding对接流程"`
 }
 
 // UpdateCodingAuditConfigurationV1

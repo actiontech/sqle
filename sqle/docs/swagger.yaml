@@ -3971,10 +3971,25 @@ definitions:
   v1.SqlManageCodingReq:
     properties:
       priority:
+        enum:
+        - LOW
+        - MEDIUM
+        - HIGH
+        - EMERGENCY
         type: string
       project_name:
         type: string
+      sql_manage_id_list:
+        items:
+          type: integer
+        type: array
       type:
+        enum:
+        - DEFECT
+        - MISSION
+        - REQUIREMENT
+        - EPIC
+        - SUB_TASK
         type: string
     type: object
   v1.SqlVersionDetailResV1:
@@ -4385,7 +4400,7 @@ definitions:
     properties:
       coding_url:
         type: string
-      is_coding_notification_enabled:
+      is_coding_enabled:
         type: boolean
       token:
         type: string
