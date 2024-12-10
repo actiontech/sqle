@@ -399,7 +399,7 @@ func TestWechatAuditConfigV1(c echo.Context) error {
 }
 
 type TestCodingConfigurationReqV1 struct {
-	ProjectName string `json:"project_name" form:"project_name" valid:"required" description:"项目名称"`
+	CodingProjectName string `json:"coding_project_name" form:"coding_project_name" valid:"required" description:"coding项目名称"`
 }
 
 // TestCodingConfigV1

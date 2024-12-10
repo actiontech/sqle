@@ -17383,7 +17383,7 @@ var doc = `{
         "v1.TestCodingConfigurationReqV1": {
             "type": "object",
             "properties": {
-                "project_name": {
+                "coding_project_name": {
                     "type": "string"
                 }
             }

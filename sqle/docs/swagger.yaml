@@ -4213,7 +4213,7 @@ definitions:
     type: object
   v1.TestCodingConfigurationReqV1:
     properties:
-      project_name:
+      coding_project_name:
         type: string
     type: object
   v1.TestDingTalkConfigResDataV1:
