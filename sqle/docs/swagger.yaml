@@ -1663,7 +1663,7 @@ definitions:
       total_nums:
         type: integer
     type: object
-  v1.GetCodingAuditConfigurationResV1:
+  v1.GetCodingConfigurationResV1:
     properties:
       code:
         example: 0
@@ -4396,7 +4396,7 @@ definitions:
         example: sql
         type: string
     type: object
-  v1.UpdateCodingAuditConfigurationReqV1:
+  v1.UpdateCodingConfigurationReqV1:
     properties:
       coding_url:
         type: string
@@ -6167,15 +6167,15 @@ paths:
       summary: 更新企业公告
       tags:
       - companyNotice
-  /v1/configurations/coding_audit:
+  /v1/configurations/coding:
     get:
-      description: get coding audit configuration
-      operationId: getCodingAuditConfigurationV1
+      description: get coding configuration
+      operationId: getCodingConfigurationV1
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.GetCodingAuditConfigurationResV1'
+            $ref: '#/definitions/v1.GetCodingConfigurationResV1'
       security:
       - ApiKeyAuth: []
       summary: 获取Coding审核配置
@@ -6184,15 +6184,15 @@ paths:
     patch:
       consumes:
       - application/json
-      description: update coding audit configuration
-      operationId: UpdateCodingAuditConfigurationV1
+      description: update coding configuration
+      operationId: UpdateCodingConfigurationV1
       parameters:
-      - description: update coding audit configuration req
+      - description: update coding configuration req
         in: body
         name: param
         required: true
         schema:
-          $ref: '#/definitions/v1.UpdateCodingAuditConfigurationReqV1'
+          $ref: '#/definitions/v1.UpdateCodingConfigurationReqV1'
       responses:
         "200":
           description: OK
@@ -6207,8 +6207,8 @@ paths:
     post:
       consumes:
       - application/json
-      description: test coding audit configuration
-      operationId: testCodingAuditConfigV1
+      description: test coding configuration
+      operationId: testCodingConfigV1
       parameters:
       - description: test coding configuration req
         in: body

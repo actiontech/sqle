@@ -55,11 +55,11 @@ func testWechatAuditConfigV1(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionNotSupportWechatAudit)
 }
 
-func getCodingAuditConfigurationV1(c echo.Context) error {
+func getCodingConfigurationV1(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionNotSupportWechatAudit)
 }
 
-func updateCodingAuditConfigurationV1(c echo.Context) error {
+func updateCodingConfigurationV1(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionNotSupportWechatAudit)
 }
 
