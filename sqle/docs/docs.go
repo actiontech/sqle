@@ -180,24 +180,24 @@ var doc = `{
                 }
             }
         },
-        "/v1/configurations/coding_audit": {
+        "/v1/configurations/coding": {
             "get": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "get coding audit configuration",
+                "description": "get coding configuration",
                 "tags": [
                     "configuration"
                 ],
                 "summary": "获取Coding审核配置",
-                "operationId": "getCodingAuditConfigurationV1",
+                "operationId": "getCodingConfigurationV1",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.GetCodingAuditConfigurationResV1"
+                            "$ref": "#/definitions/v1.GetCodingConfigurationResV1"
                         }
                     }
                 }
@@ -208,7 +208,7 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "update coding audit configuration",
+                "description": "update coding configuration",
                 "consumes": [
                     "application/json"
                 ],
@@ -216,15 +216,15 @@ var doc = `{
                     "configuration"
                 ],
                 "summary": "添加或更新Coding配置",
-                "operationId": "UpdateCodingAuditConfigurationV1",
+                "operationId": "UpdateCodingConfigurationV1",
                 "parameters": [
                     {
-                        "description": "update coding audit configuration req",
+                        "description": "update coding configuration req",
                         "name": "param",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/v1.UpdateCodingAuditConfigurationReqV1"
+                            "$ref": "#/definitions/v1.UpdateCodingConfigurationReqV1"
                         }
                     }
                 ],
@@ -245,7 +245,7 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "test coding audit configuration",
+                "description": "test coding configuration",
                 "consumes": [
                     "application/json"
                 ],
@@ -253,7 +253,7 @@ var doc = `{
                     "configuration"
                 ],
                 "summary": "测试Coding审批配置",
-                "operationId": "testCodingAuditConfigV1",
+                "operationId": "testCodingConfigV1",
                 "parameters": [
                     {
                         "description": "test coding configuration req",
@@ -13641,7 +13641,7 @@ var doc = `{
                 }
             }
         },
-        "v1.GetCodingAuditConfigurationResV1": {
+        "v1.GetCodingConfigurationResV1": {
             "type": "object",
             "properties": {
                 "code": {
@@ -17648,7 +17648,7 @@ var doc = `{
                 }
             }
         },
-        "v1.UpdateCodingAuditConfigurationReqV1": {
+        "v1.UpdateCodingConfigurationReqV1": {
             "type": "object",
             "properties": {
                 "coding_url": {
