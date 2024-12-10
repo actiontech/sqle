@@ -108,10 +108,30 @@ type BatchUpdateSqlManageReq struct {
 }
 
 type SqlManageCodingReq struct {
-	Priority    *string `json:"priority"`
-	ProjectName *string `json:"project_name"`
-	Type        *string `json:"type"`
+	SqlManageIdList   []*uint64       `json:"sql_manage_id_list"`
+	Priority          *CodingPriority `json:"priority" enums:"LOW,MEDIUM,HIGH,EMERGENCY"`
+	CodingProjectName *string         `json:"project_name"`
+	Type              *CodingType     `json:"type" enums:"DEFECT,MISSION,REQUIREMENT,EPIC,SUB_TASK"`
 }
+
+type CodingType string
+
+const (
+	CodingTypeDefect      CodingType = "DEFECT"
+	CodingTypeMission     CodingType = "MISSION"
+	CodingTypeRequirement CodingType = "REQUIREMENT"
+	CodingTypeEpic        CodingType = "EPIC"
+	CodingTypeSubTask     CodingType = "SUB_TASK"
+)
+
+type CodingPriority string
+
+const (
+	CodingPriorityLow       CodingPriority = "LOW"
+	CodingPriorityMedium    CodingPriority = "MEDIUM"
+	CodingPriorityHigh      CodingPriority = "HIGH"
+	CodingPriorityEmergency CodingPriority = "EMERGENCY"
+)
 
 // BatchUpdateSqlManage batch update sql manage
 // @Summary 批量更新SQL管控
