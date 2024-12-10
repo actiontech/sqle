@@ -3970,14 +3970,14 @@ definitions:
     type: object
   v1.SqlManageCodingReq:
     properties:
+      coding_project_name:
+        type: string
       priority:
         enum:
         - LOW
         - MEDIUM
         - HIGH
         - EMERGENCY
-        type: string
-      project_name:
         type: string
       sql_manage_id_list:
         items:
