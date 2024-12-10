@@ -17021,6 +17021,9 @@ var doc = `{
         "v1.SqlManageCodingReq": {
             "type": "object",
             "properties": {
+                "coding_project_name": {
+                    "type": "string"
+                },
                 "priority": {
                     "type": "string",
                     "enum": [
@@ -17029,9 +17032,6 @@ var doc = `{
                         "HIGH",
                         "EMERGENCY"
                     ]
-                },
-                "project_name": {
-                    "type": "string"
                 },
                 "sql_manage_id_list": {
                     "type": "array",

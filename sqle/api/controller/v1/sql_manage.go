@@ -110,7 +110,7 @@ type BatchUpdateSqlManageReq struct {
 type SqlManageCodingReq struct {
 	SqlManageIdList   []*uint64       `json:"sql_manage_id_list"`
 	Priority          *CodingPriority `json:"priority" enums:"LOW,MEDIUM,HIGH,EMERGENCY"`
-	CodingProjectName *string         `json:"project_name"`
+	CodingProjectName *string         `json:"coding_project_name"`
 	Type              *CodingType     `json:"type" enums:"DEFECT,MISSION,REQUIREMENT,EPIC,SUB_TASK"`
 }
 
