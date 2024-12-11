@@ -128,10 +128,27 @@ type CodingPriority string
 
 const (
 	CodingPriorityLow       CodingPriority = "LOW"
-	CodingPriorityMedium    CodingPriority = "MEDIUM"
-	CodingPriorityHigh      CodingPriority = "HIGH"
-	CodingPriorityEmergency CodingPriority = "EMERGENCY"
+	CodingPriorityMedium                   = "MEDIUM"
+	CodingPriorityHigh                     = "HIGH"
+	CodingPriorityEmergency                = "EMERGENCY"
 )
+
+func (codingPriority CodingPriority) Weight() string {
+	weight := "-1"
+	switch codingPriority {
+	case CodingPriorityLow:
+		weight = "0"
+	case CodingPriorityMedium:
+		weight = "1"
+	case CodingPriorityHigh:
+		weight = "2"
+	case CodingPriorityEmergency:
+		weight = "3"
+	default:
+		weight = "-1"
+	}
+	return weight
+}
 
 // BatchUpdateSqlManage batch update sql manage
 // @Summary 批量更新SQL管控

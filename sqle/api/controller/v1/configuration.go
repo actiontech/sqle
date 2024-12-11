@@ -403,7 +403,7 @@ type TestCodingConfigurationReqV1 struct {
 }
 
 // TestCodingConfigV1
-// @Summary 测试Coding审批配置
+// @Summary 测试Coding配置
 // @Description test coding configuration
 // @Accept json
 // @Id testCodingConfigV1
@@ -411,7 +411,7 @@ type TestCodingConfigurationReqV1 struct {
 // @Param req body v1.TestCodingConfigurationReqV1 true "test coding configuration req"
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.TestCodingConfigResV1
-// @router /v1/configurations/coding_audit/test [post]
+// @router /v1/configurations/coding/test [post]
 func TestCodingConfigV1(c echo.Context) error {
 	return testCodingAuditConfigV1(c)
 }
