@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/actiontech/sqle/sqle/log"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/format"
 	"github.com/stretchr/testify/assert"
@@ -48,5 +49,40 @@ func TestGetSelectNodeFromSelect(t *testing.T) {
 		assert.NoError(t, err)
 
 		assert.Equal(t, test.expect, sqlBuilder.String())
+	}
+}
+
+func TestSaveFingerprint(t *testing.T) {
+	type FpCase struct {
+		input  string
+		expect string
+	}
+
+	cases := []FpCase{
+		{
+			input:  `update  tb1 set a = "2" where a = "3" and b = 4`,
+			expect: "update tb1 set a = ? where a = ? and b = ?",
+		},
+		// not sql
+		{
+			input:  "SELECT*FROM (SELECT * FROM tb values(1));",
+			expect: "SELECT*FROM (SELECT * FROM tb values(1));",
+		},
+		{
+			input:  "not sql",
+			expect: "not sql",
+		},
+		// https://github.com/actiontech/sqle/issues/2603
+		{
+			input:  "insert into tb values(1)",
+			expect: "insert into tb values(1)",
+		},
+	}
+
+	for i := range cases {
+		t.Run(t.Name(), func(t *testing.T) {
+			fp := SafeFingerprint(log.NewEntry(), cases[i].input)
+			assert.Equal(t, cases[i].expect, fp)
+		})
 	}
 }
