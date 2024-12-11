@@ -342,8 +342,12 @@ func IsIndex(columnMap map[string] /*column name*/ struct{}, constraints []*ast.
 func SafeFingerprint(logger *logrus.Entry, sql string) (fp string) {
 	defer func() {
 		if r := recover(); r != nil {
-			logger.Warnf("set fingerprint as SQL text because of panic: %v", r)
-			fp = sql
+			var err error
+			if fp, err = Fingerprint(sql, true); err != nil {
+				fp = sql
+				logger.Warnf("set fingerprint as original SQL text because get fingerprint failed:%v", err)
+			}
+
 		}
 	}()
 

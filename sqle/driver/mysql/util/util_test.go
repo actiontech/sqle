@@ -75,7 +75,7 @@ func TestSaveFingerprint(t *testing.T) {
 		// https://github.com/actiontech/sqle/issues/2603
 		{
 			input:  "insert into tb values(1)",
-			expect: "insert into tb values(1)",
+			expect: "INSERT INTO `tb` VALUES (?)",
 		},
 	}
 
