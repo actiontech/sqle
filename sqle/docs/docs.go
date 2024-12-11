@@ -9636,13 +9636,19 @@ var doc = `{
             }
         },
         "/v1/tasks/audits/{task_id}/sqls/{number}/rewrite": {
-            "get": {
+            "post": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
                 "description": "获取特定任务中某条SQL语句的重写后的SQL及相关建议",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
                 "tags": [
                     "task"
                 ],
@@ -9662,6 +9668,15 @@ var doc = `{
                         "name": "number",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "request body",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetTaskRewrittenSQLReq"
+                        }
                     }
                 ],
                 "responses": {
@@ -14974,6 +14989,17 @@ var doc = `{
                 }
             }
         },
+        "v1.GetTaskRewrittenSQLReq": {
+            "type": "object",
+            "properties": {
+                "enable_structure_type": {
+                    "description": "@Description 是否启用结构化类型的重写",
+                    "type": "boolean",
+                    "default": false,
+                    "example": false
+                }
+            }
+        },
         "v1.GetTaskRewrittenSQLRes": {
             "type": "object",
             "properties": {
@@ -17487,11 +17513,6 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v1.SQLRewrittenSuggestion"
                     }
-                },
-                "table_metas": {
-                    "description": "@Description 表结构",
-                    "type": "object",
-                    "$ref": "#/definitions/v1.TableMetas"
                 }
             }
         },

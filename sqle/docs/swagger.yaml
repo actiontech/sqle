@@ -2550,6 +2550,14 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetTaskRewrittenSQLReq:
+    properties:
+      enable_structure_type:
+        default: false
+        description: '@Description 是否启用结构化类型的重写'
+        example: false
+        type: boolean
+    type: object
   v1.GetTaskRewrittenSQLRes:
     properties:
       code:
@@ -4263,10 +4271,6 @@ definitions:
         items:
           $ref: '#/definitions/v1.SQLRewrittenSuggestion'
         type: array
-      table_metas:
-        $ref: '#/definitions/v1.TableMetas'
-        description: '@Description 表结构'
-        type: object
     type: object
   v1.TestAuditPlanNotifyConfigResDataV1:
     properties:
@@ -12428,7 +12432,9 @@ paths:
       tags:
       - task
   /v1/tasks/audits/{task_id}/sqls/{number}/rewrite:
-    get:
+    post:
+      consumes:
+      - application/json
       description: 获取特定任务中某条SQL语句的重写后的SQL及相关建议
       operationId: getTaskRewrittenSQL
       parameters:
@@ -12442,6 +12448,14 @@ paths:
         name: number
         required: true
         type: integer
+      - description: request body
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/v1.GetTaskRewrittenSQLReq'
+      produces:
+      - application/json
       responses:
         "200":
           description: 成功返回重写结果
