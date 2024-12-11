@@ -7,12 +7,13 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/utils"
 	hclog "github.com/hashicorp/go-hclog"
 
-	"github.com/percona/go-mysql/query"
 	"github.com/pkg/errors"
 	"vitess.io/vitess/go/vt/sqlparser"
 )
@@ -203,7 +204,7 @@ func (p *DriverImpl) Parse(ctx context.Context, sql string) ([]driverV2.Node, er
 		n := driverV2.Node{
 			Text:        sql,
 			Type:        classifySQL(sql),
-			Fingerprint: query.Fingerprint(sql),
+			Fingerprint: util.SafeFingerprint(log.NewEntry(), sql),
 		}
 		nodes = append(nodes, n)
 	}

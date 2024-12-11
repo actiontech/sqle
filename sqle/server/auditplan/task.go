@@ -13,6 +13,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
+	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
@@ -27,7 +28,6 @@ import (
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/baidubce/bce-sdk-go/bce"
 	"github.com/baidubce/bce-sdk-go/services/rds"
-	"github.com/percona/go-mysql/query"
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/format"
@@ -874,7 +874,7 @@ func (at *aliRdsMySQLTask) collectorDo() {
 		pageNum++
 	}
 
-	mergedSlowSqls := mergeSQLsByFingerprint(slowSqls)
+	mergedSlowSqls := mergeSQLsByFingerprint(at.logger, slowSqls)
 	if len(mergedSlowSqls) > 0 {
 		if at.isFirstScrap() {
 			err = at.persist.OverrideAuditPlanSQLs(at.ap.ID, at.convertSQLInfosToModelSQLs(mergedSlowSqls, now))
@@ -926,12 +926,12 @@ type sqlInfo struct {
 	rowExaminedAvg float64
 }
 
-func mergeSQLsByFingerprint(sqls []SqlFromAliCloud) []sqlInfo {
+func mergeSQLsByFingerprint(logger *logrus.Entry, sqls []SqlFromAliCloud) []sqlInfo {
 	sqlInfos := []sqlInfo{}
 
 	counter := map[string]int /*slice subscript*/ {}
 	for _, sql := range sqls {
-		fp := query.Fingerprint(sql.sql)
+		fp := util.SafeFingerprint(logger, sql.sql)
 		if index, exist := counter[fp]; exist {
 			sqlInfos[index].counter += 1
 			sqlInfos[index].fingerprint = fp
@@ -1295,7 +1295,7 @@ func (at *MySQLProcesslistTask) collectorDo() {
 		sqls[i] = SqlFromAliCloud{sql: res[i]["info"].String, schema: res[i]["db"].String}
 	}
 
-	sqlInfos := mergeSQLsByFingerprint(sqls)
+	sqlInfos := mergeSQLsByFingerprint(at.logger, sqls)
 
 	if len(sqlInfos) > 0 {
 		err = at.persist.UpdateDefaultAuditPlanSQLs(at.ap.ID,
@@ -1407,7 +1407,7 @@ func (bt *baiduRdsMySQLTask) collectorDo() {
 		pageNum++
 	}
 
-	mergedSlowSqlList := mergerSqlListByFingerprint(slowSqlList)
+	mergedSlowSqlList := mergerSqlListByFingerprint(bt.logger, slowSqlList)
 	if len(mergedSlowSqlList) > 0 {
 		if bt.isFirstScrap() {
 			err = bt.persist.OverrideAuditPlanSQLs(bt.ap.ID, bt.convertSQLInfoListToModelSQLList(mergedSlowSqlList, now))
@@ -1430,11 +1430,11 @@ func (bt *baiduRdsMySQLTask) collectorDo() {
 	}
 }
 
-func mergerSqlListByFingerprint(sqlList []SqlFromBaiduCloud) []sqlInfo {
+func mergerSqlListByFingerprint(logger *logrus.Entry, sqlList []SqlFromBaiduCloud) []sqlInfo {
 	sqlInfoList := make([]sqlInfo, 0)
 	counter := map[string] /*finger*/ int /*slice subscript*/ {}
 	for _, sql := range sqlList {
-		fp := query.Fingerprint(sql.sql)
+		fp := util.SafeFingerprint(logger, sql.sql)
 		if index, exist := counter[fp]; exist {
 			sqlInfoList[index].counter += 1
 			sqlInfoList[index].fingerprint = fp

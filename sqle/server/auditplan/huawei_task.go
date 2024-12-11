@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/huaweicloud/huaweicloud-sdk-go-v3/core/auth/basic"
@@ -14,7 +15,6 @@ import (
 	rds "github.com/huaweicloud/huaweicloud-sdk-go-v3/services/rds/v3"
 	rdsModel "github.com/huaweicloud/huaweicloud-sdk-go-v3/services/rds/v3/model"
 	rdsRegion "github.com/huaweicloud/huaweicloud-sdk-go-v3/services/rds/v3/region"
-	"github.com/percona/go-mysql/query"
 	"github.com/sirupsen/logrus"
 )
 
@@ -226,7 +226,7 @@ func (at *huaweiRdsMySQLTask) collectorDo() {
 	}
 
 	//4. Merge SQL
-	mergedSlowSqls := mergeSQLsFromHuaweiCloud(slowSqls)
+	mergedSlowSqls := mergeSQLsFromHuaweiCloud(at.logger, slowSqls)
 	if len(mergedSlowSqls) > 0 {
 		if at.isFirstScrap() {
 			err = at.persist.OverrideAuditPlanSQLs(at.ap.ID, at.convertSQLInfosToModelSQLs(mergedSlowSqls, now))
@@ -255,12 +255,12 @@ func (at *huaweiRdsMySQLTask) convertSQLInfosToModelSQLs(sqls []sqlInfo, now tim
 	return convertRawSlowSQLWitchFromSqlInfo(sqls, now)
 }
 
-func mergeSQLsFromHuaweiCloud(sqls []SqlFromHuaweiCloud) []sqlInfo {
+func mergeSQLsFromHuaweiCloud(logger *logrus.Entry, sqls []SqlFromHuaweiCloud) []sqlInfo {
 	sqlInfos := []sqlInfo{}
 
 	counter := map[string]int /*slice subscript*/ {}
 	for _, sql := range sqls {
-		fp := query.Fingerprint(sql.sql)
+		fp := util.SafeFingerprint(logger, sql.sql)
 		if index, exist := counter[fp]; exist {
 			sqlInfos[index].counter += 1
 			sqlInfos[index].fingerprint = fp
