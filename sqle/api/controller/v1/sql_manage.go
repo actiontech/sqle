@@ -50,7 +50,7 @@ type SqlManage struct {
 	LastAppearTime  string         `json:"last_appear_time"`
 	AppearNum       uint64         `json:"appear_num"`
 	Assignees       []string       `json:"assignees"`
-	Status          string         `json:"status" enums:"unhandled,solved,ignored,manual_audited"`
+	Status          string         `json:"status" enums:"unhandled,solved,ignored,manual_audited,sent"`
 	Remark          string         `json:"remark"`
 	Endpoint        string         `json:"endpoint"`
 }
@@ -290,19 +290,18 @@ func GetSqlManageSqlAnalysisV1(c echo.Context) error {
 	return getSqlManageSqlAnalysisV1(c)
 }
 
-// PostSqlManageToCoding
-// @Summary 推送SQL管控结果到Coding
+// SendSqlManage
+// @Summary 推送SQL管控结果到外部系统
 // @Description get sql manage analysis
-// @Id PostSqlManageToCoding
+// @Id SendSqlManage
 // @Tags SqlManage
 // @Param project_name path string true "project name"
 // @Param SqlManageCodingReq body SqlManageCodingReq true "batch update sql manage request"
 // @Security ApiKeyAuth
 // @Success 200 {object} PostSqlManageCodingResp
-// @Router /v1/projects/{project_name}/sql_manages/coding [post]
-func PostSqlManageToCoding(c echo.Context) error {
-	// TODO
-	return nil
+// @Router /v1/projects/{project_name}/sql_manages/send [post]
+func SendSqlManage(c echo.Context) error {
+	return sendSqlManage(c)
 }
 
 func convertSQLAnalysisResultToRes(ctx context.Context, res *AnalysisResult, rawSQL string) *SqlAnalysis {
@@ -440,7 +439,7 @@ type GlobalSqlManage struct {
 	ProjectUid           string                `json:"project_uid"`
 	InstanceName         string                `json:"instance_name"`
 	InstanceId           string                `json:"instance_id"`
-	Status               string                `json:"status" enums:"unhandled,solved,ignored,manual_audited"`
+	Status               string                `json:"status" enums:"unhandled,solved,ignored,manual_audited,sent"`
 	ProjectPriority      dmsV1.ProjectPriority `json:"project_priority" enums:"high,medium,low"`
 	FirstAppearTimeStamp string                `json:"first_appear_timestamp"`
 	ProblemDescriptions  []string              `json:"problem_descriptions"` // 根据来源信息拼接
