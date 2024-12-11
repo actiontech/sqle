@@ -11,6 +11,7 @@ import (
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/utils"
+	"github.com/percona/go-mysql/query"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/format"
 	"github.com/pingcap/parser/mysql"
@@ -335,4 +336,22 @@ func IsIndex(columnMap map[string] /*column name*/ struct{}, constraints []*ast.
 		}
 	}
 	return false
+}
+
+// 处理panic问题：https://github.com/actiontech/sqle/issues/2603
+func SafeFingerprint(logger *logrus.Entry, sql string) (fp string) {
+	defer func() {
+		if r := recover(); r != nil {
+			var err error
+			if fp, err = Fingerprint(sql, true); err != nil {
+				fp = sql
+				logger.Warnf("set fingerprint as original SQL text because get fingerprint failed:%v", err)
+			}
+
+		}
+	}()
+
+	// 调用可能会 panic 的函数
+	fp = query.Fingerprint(sql)
+	return fp
 }
