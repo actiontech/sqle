@@ -5163,47 +5163,6 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_name}/sql_manages/coding": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get sql manage analysis",
-                "tags": [
-                    "SqlManage"
-                ],
-                "summary": "推送SQL管控结果到Coding",
-                "operationId": "PostSqlManageToCoding",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "project name",
-                        "name": "project_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "batch update sql manage request",
-                        "name": "SqlManageCodingReq",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.SqlManageCodingReq"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.PostSqlManageCodingResp"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/projects/{project_name}/sql_manages/exports": {
             "get": {
                 "security": [
@@ -5388,6 +5347,47 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetSqlManageRuleTipsResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/sql_manages/send": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get sql manage analysis",
+                "tags": [
+                    "SqlManage"
+                ],
+                "summary": "推送SQL管控结果到外部系统",
+                "operationId": "SendSqlManage",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "batch update sql manage request",
+                        "name": "SqlManageCodingReq",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.SqlManageCodingReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.PostSqlManageCodingResp"
                         }
                     }
                 }
@@ -10322,7 +10322,8 @@ var doc = `{
                             "unhandled",
                             "solved",
                             "ignored",
-                            "manual_audited"
+                            "manual_audited",
+                            "sent"
                         ],
                         "type": "string",
                         "description": "status",
@@ -15422,7 +15423,8 @@ var doc = `{
                         "unhandled",
                         "solved",
                         "ignored",
-                        "manual_audited"
+                        "manual_audited",
+                        "sent"
                     ]
                 }
             }
@@ -17159,7 +17161,8 @@ var doc = `{
                         "unhandled",
                         "solved",
                         "ignored",
-                        "manual_audited"
+                        "manual_audited",
+                        "sent"
                     ]
                 }
             }
@@ -19999,7 +20002,8 @@ var doc = `{
                         "unhandled",
                         "solved",
                         "ignored",
-                        "manual_audited"
+                        "manual_audited",
+                        "sent"
                     ]
                 }
             }
