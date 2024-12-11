@@ -317,7 +317,8 @@ func GetWechatAuditConfigurationV1(c echo.Context) error {
 // @Success 200 {object} v1.GetCodingConfigurationResV1
 // @router /v1/configurations/coding [get]
 func GetCodingConfigurationV1(c echo.Context) error {
-	return getCodingConfigurationV1(c)
+	// TODO
+	return nil
 }
 
 type UpdateWechatConfigurationReqV1 struct {
@@ -357,7 +358,8 @@ type UpdateCodingConfigurationReqV1 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v1/configurations/coding [patch]
 func UpdateCodingConfigurationV1(c echo.Context) error {
-	return updateCodingConfigurationV1(c)
+	// TODO
+	return nil
 }
 
 type TestWechatConfigResDataV1 struct {
@@ -403,7 +405,7 @@ type TestCodingConfigurationReqV1 struct {
 }
 
 // TestCodingConfigV1
-// @Summary 测试Coding审批配置
+// @Summary 测试Coding配置
 // @Description test coding configuration
 // @Accept json
 // @Id testCodingConfigV1
@@ -411,9 +413,10 @@ type TestCodingConfigurationReqV1 struct {
 // @Param req body v1.TestCodingConfigurationReqV1 true "test coding configuration req"
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.TestCodingConfigResV1
-// @router /v1/configurations/coding_audit/test [post]
+// @router /v1/configurations/coding/test [post]
 func TestCodingConfigV1(c echo.Context) error {
-	return testCodingAuditConfigV1(c)
+	// TODO
+	return nil
 }
 
 type ScheduleTaskDefaultOption struct {
