@@ -5,9 +5,12 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+type GetTaskRewrittenSQLReq struct {
+	// @Description 是否启用结构化类型的重写
+	EnableStructureType bool `json:"enable_structure_type" example:"false" default:"false"`
+}
+
 type TaskRewrittenSQLData struct {
-	// @Description 表结构
-	TableMetas *TableMetas `json:"table_metas"`
 	// @Description 重写建议列表
 	Suggestions []*SQLRewrittenSuggestion `json:"suggestions"`
 	// @Description 重写后的SQL
@@ -48,12 +51,15 @@ type GetTaskRewrittenSQLRes struct {
 // @Summary 获取任务中指定SQL的重写结果和建议
 // @Description 获取特定任务中某条SQL语句的重写后的SQL及相关建议
 // @Id getTaskRewrittenSQL
+// @Accept json
+// @Produce json
 // @Tags task
 // @Param task_id path string true "task id"
 // @Param number path uint true "sql number"
+// @Param req body v1.GetTaskRewrittenSQLReq true "request body"
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.GetTaskRewrittenSQLRes "成功返回重写结果"
-// @router /v1/tasks/audits/{task_id}/sqls/{number}/rewrite [get]
+// @router /v1/tasks/audits/{task_id}/sqls/{number}/rewrite [post]
 func GetTaskRewrittenSQL(c echo.Context) error {
 	return getTaskRewrittenSQLData(c)
 }
