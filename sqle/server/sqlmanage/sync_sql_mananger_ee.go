@@ -115,7 +115,7 @@ func NewSqlManageRecord(fp, sql, schemaName, instId, instName, source, sourceId,
 		SqlFingerprint: fp,
 		SqlText:        sql,
 		AuditLevel:     auditLevel,
-		AuditResults:   auditResult,
+		AuditResults:   &auditResult,
 		SQLID:          sqlId,
 	}
 	return sqlManage, nil

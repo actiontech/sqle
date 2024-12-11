@@ -825,9 +825,9 @@ func (s *Storage) InsertOrUpdateSqlManageRecord(sqlManageList []*SQLManageRecord
 			}
 
 			for _, sqlManage := range batchSqlManageList {
-				const query = `INSERT INTO sql_manage_record_processes (sql_manage_record_id)
-									SELECT oms.id FROM sql_manage_records oms WHERE oms.sql_id = ?
-								ON DUPLICATE KEY UPDATE sql_manage_record_id = VALUES(sql_manage_record_id),
+				const query = `INSERT INTO sql_manage_record_processes (sql_manage_record_id,last_audit_time)
+									SELECT oms.id as sql_manage_record_id,now() FROM sql_manage_records oms WHERE oms.sql_id = ?
+								ON DUPLICATE KEY UPDATE sql_manage_record_id = VALUES(sql_manage_record_id),last_audit_time = VALUES(last_audit_time),
 								deleted_at = NULL;`
 				err := tx.Exec(query, sqlManage.SQLID).Error
 				if err != nil {
