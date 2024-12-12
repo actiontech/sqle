@@ -20,7 +20,7 @@ func batchUpdateSqlManage(c echo.Context) error {
 	return ErrCommunityEditionNotSupportSqlManage
 }
 
-func sendSqlManage(c echo.Context) error {
+func postSqlManageToCoding(c echo.Context) error {
 	return ErrCommunityEditionNotSupportSqlManage
 }
 

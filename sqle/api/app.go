@@ -356,7 +356,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1ProjectViewRouter.GET("/:project_name/sql_manages/exports", v1.ExportSqlManagesV1)
 		v1ProjectViewRouter.GET("/:project_name/sql_manages/rule_tips", v1.GetSqlManageRuleTips)
 		v1ProjectViewRouter.GET("/:project_name/sql_manages/:sql_manage_id/sql_analysis", v1.GetSqlManageSqlAnalysisV1)
-		v1ProjectViewRouter.POST("/:project_name/sql_manages/send", v1.SendSqlManage)
+		v1ProjectViewRouter.POST("/:project_name/sql_manages/coding", v1.PostSqlManageToCoding)
 
 		// sql dev records
 		v1ProjectViewRouter.GET("/:project_name/sql_dev_records", v1.GetSqlDEVRecordList)
