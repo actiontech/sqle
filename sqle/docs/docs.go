@@ -238,7 +238,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/configurations/coding/test": {
+        "/v1/configurations/coding_audit/test": {
             "post": {
                 "security": [
                     {
@@ -252,7 +252,7 @@ var doc = `{
                 "tags": [
                     "configuration"
                 ],
-                "summary": "测试Coding配置",
+                "summary": "测试Coding审批配置",
                 "operationId": "testCodingConfigV1",
                 "parameters": [
                     {

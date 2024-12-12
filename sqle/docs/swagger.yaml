@@ -6307,7 +6307,7 @@ paths:
       summary: 添加或更新Coding配置
       tags:
       - configuration
-  /v1/configurations/coding/test:
+  /v1/configurations/coding_audit/test:
     post:
       consumes:
       - application/json
@@ -6327,7 +6327,7 @@ paths:
             $ref: '#/definitions/v1.TestCodingConfigResV1'
       security:
       - ApiKeyAuth: []
-      summary: 测试Coding配置
+      summary: 测试Coding审批配置
       tags:
       - configuration
   /v1/configurations/ding_talk:

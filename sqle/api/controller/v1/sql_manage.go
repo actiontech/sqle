@@ -128,27 +128,10 @@ type CodingPriority string
 
 const (
 	CodingPriorityLow       CodingPriority = "LOW"
-	CodingPriorityMedium                   = "MEDIUM"
-	CodingPriorityHigh                     = "HIGH"
-	CodingPriorityEmergency                = "EMERGENCY"
+	CodingPriorityMedium    CodingPriority = "MEDIUM"
+	CodingPriorityHigh      CodingPriority = "HIGH"
+	CodingPriorityEmergency CodingPriority = "EMERGENCY"
 )
-
-func (codingPriority CodingPriority) Weight() string {
-	weight := "-1"
-	switch codingPriority {
-	case CodingPriorityLow:
-		weight = "0"
-	case CodingPriorityMedium:
-		weight = "1"
-	case CodingPriorityHigh:
-		weight = "2"
-	case CodingPriorityEmergency:
-		weight = "3"
-	default:
-		weight = "-1"
-	}
-	return weight
-}
 
 // BatchUpdateSqlManage batch update sql manage
 // @Summary 批量更新SQL管控
@@ -301,8 +284,7 @@ func GetSqlManageSqlAnalysisV1(c echo.Context) error {
 // @Success 200 {object} PostSqlManageCodingResp
 // @Router /v1/projects/{project_name}/sql_manages/coding [post]
 func PostSqlManageToCoding(c echo.Context) error {
-	// TODO
-	return nil
+	return postSqlManageToCoding(c)
 }
 
 func convertSQLAnalysisResultToRes(ctx context.Context, res *AnalysisResult, rawSQL string) *SqlAnalysis {
