@@ -2864,7 +2864,6 @@ definitions:
         - solved
         - ignored
         - manual_audited
-        - sent
         type: string
     type: object
   v1.GlobalWorkflowStatisticsResV1:
@@ -4044,7 +4043,6 @@ definitions:
         - solved
         - ignored
         - manual_audited
-        - sent
         type: string
     type: object
   v1.SqlManageCodingReq:
@@ -5995,7 +5993,6 @@ definitions:
         - solved
         - ignored
         - manual_audited
-        - sent
         type: string
     type: object
   v2.SqlVersion:
@@ -9535,6 +9532,32 @@ paths:
       summary: 批量更新SQL管控
       tags:
       - SqlManage
+  /v1/projects/{project_name}/sql_manages/coding:
+    post:
+      description: get sql manage analysis
+      operationId: PostSqlManageToCoding
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: batch update sql manage request
+        in: body
+        name: SqlManageCodingReq
+        required: true
+        schema:
+          $ref: '#/definitions/v1.SqlManageCodingReq'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.PostSqlManageCodingResp'
+      security:
+      - ApiKeyAuth: []
+      summary: 推送SQL管控结果到Coding
+      tags:
+      - SqlManage
   /v1/projects/{project_name}/sql_manages/exports:
     get:
       description: export sql manage
@@ -9660,32 +9683,6 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取管控规则tips
-      tags:
-      - SqlManage
-  /v1/projects/{project_name}/sql_manages/send:
-    post:
-      description: get sql manage analysis
-      operationId: SendSqlManage
-      parameters:
-      - description: project name
-        in: path
-        name: project_name
-        required: true
-        type: string
-      - description: batch update sql manage request
-        in: body
-        name: SqlManageCodingReq
-        required: true
-        schema:
-          $ref: '#/definitions/v1.SqlManageCodingReq'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.PostSqlManageCodingResp'
-      security:
-      - ApiKeyAuth: []
-      summary: 推送SQL管控结果到外部系统
       tags:
       - SqlManage
   /v1/projects/{project_name}/sql_optimization_records:
@@ -12874,7 +12871,6 @@ paths:
         - solved
         - ignored
         - manual_audited
-        - sent
         in: query
         name: filter_status
         type: string

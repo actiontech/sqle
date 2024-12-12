@@ -27,7 +27,7 @@ type SqlManage struct {
 	LastReceiveTimeStamp string            `json:"last_receive_timestamp"`
 	FpCount              uint64            `json:"fp_count"`
 	Assignees            []string          `json:"assignees"`
-	Status               string            `json:"status" enums:"unhandled,solved,ignored,manual_audited,sent"`
+	Status               string            `json:"status" enums:"unhandled,solved,ignored,manual_audited"`
 	Remark               string            `json:"remark"`
 	Endpoints            []string          `json:"endpoints"`
 	Priority             string            `json:"priority"`
@@ -47,7 +47,7 @@ type SqlManage struct {
 // @Param filter_audit_level query string false "audit level" Enums(normal,notice,warn,error)
 // @Param filter_last_audit_start_time_from query string false "last audit start time from"
 // @Param filter_last_audit_start_time_to query string false "last audit start time to"
-// @Param filter_status query string false "status" Enums(unhandled,solved,ignored,manual_audited,sent)
+// @Param filter_status query string false "status" Enums(unhandled,solved,ignored,manual_audited)
 // @Param filter_rule_name query string false "rule name"
 // @Param filter_db_type query string false "db type"
 // @Param filter_business query string false "business"
