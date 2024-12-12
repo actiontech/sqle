@@ -10,6 +10,6 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func getTaskRewrittenSQLData(c echo.Context) error {
+func getRewriteSQLData(c echo.Context) error {
 	return errors.New(errors.EnterpriseEditionFeatures, e.New("sql rewriting is enterprise version feature"))
 }

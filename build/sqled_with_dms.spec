@@ -140,6 +140,8 @@ sqle:
       mysql_user: 'root'
       mysql_password: 'pass'
       mysql_schema: 'sqle'
+  sql_rewriting_config:
+    rewriting_url: '127.0.0.1:5891'
 EOF
 fi
 
