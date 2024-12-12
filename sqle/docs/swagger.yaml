@@ -2550,18 +2550,6 @@ definitions:
         example: ok
         type: string
     type: object
-  v1.GetTaskRewrittenSQLRes:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/v1.TaskRewrittenSQLData'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
   v1.GetUserTipsResV1:
     properties:
       code:
@@ -3540,6 +3528,84 @@ definitions:
       violated_queries_str:
         type: string
     type: object
+  v1.RewriteSQLData:
+    properties:
+      business_desc:
+        description: '@Description 重写前的SQL业务描述'
+        type: string
+      business_non_equivalent_desc:
+        description: '@Description 重写前后的业务不等价性描述，为空表示等价'
+        type: string
+      rewritten_sql:
+        description: '@Description 重写后的SQL'
+        type: string
+      suggestions:
+        description: '@Description 重写建议列表'
+        items:
+          $ref: '#/definitions/v1.RewriteSuggestion'
+        type: array
+    type: object
+  v1.RewriteSQLReq:
+    properties:
+      enable_structure_type:
+        default: false
+        description: '@Description 是否启用结构化类型的重写'
+        example: false
+        type: boolean
+    type: object
+  v1.RewriteSQLRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.RewriteSQLData'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.RewriteSuggestion:
+    properties:
+      audit_level:
+        description: |-
+          @Description 审核规则等级
+          @Required
+        enum:
+        - normal
+        - notice
+        - warn
+        - error
+        type: string
+      ddl_dcl:
+        description: '@Description 具体的数据库结构变更语句，需要在数据库中执行该变更语句之后再应用重写SQL（包含CREATE/ALTER/DROP等DDL语句，或SET等DCL语句）（适用于结构级重写）'
+        type: string
+      ddl_dcl_desc:
+        description: '@Description 数据库结构变更建议说明（例如：建议添加索引、修改表结构等优化建议）（适用于结构级重写）'
+        type: string
+      desc:
+        description: |-
+          @Description 重写描述（适用于所有类型）
+          @Required
+        type: string
+      rewritten_sql:
+        description: '@Description 重写后的SQL（适用于语句级重写和结构级重写）'
+        type: string
+      rule_name:
+        description: |-
+          @Description 审核规则名称
+          @Required
+        type: string
+      type:
+        description: |-
+          @Description 重写建议类型：语句级重写、结构级重写、其他
+          @Required
+        enum:
+        - statement
+        - structure
+        - other
+        type: string
+    type: object
   v1.RiskAuditPlan:
     properties:
       audit_plan_name:
@@ -3812,47 +3878,6 @@ definitions:
         type: integer
       query_timeout_second:
         type: integer
-    type: object
-  v1.SQLRewrittenSuggestion:
-    properties:
-      audit_level:
-        description: |-
-          @Description 审核规则等级
-          @Required
-        enum:
-        - normal
-        - notice
-        - warn
-        - error
-        type: string
-      ddl_dcl:
-        description: '@Description 具体的数据库结构变更语句，需要在数据库中执行该变更语句之后再应用重写SQL（包含CREATE/ALTER/DROP等DDL语句，或SET等DCL语句）（适用于结构级重写）'
-        type: string
-      ddl_dcl_desc:
-        description: '@Description 数据库结构变更建议说明（例如：建议添加索引、修改表结构等优化建议）（适用于结构级重写）'
-        type: string
-      desc:
-        description: |-
-          @Description 重写描述（适用于所有类型）
-          @Required
-        type: string
-      rewritten_sql:
-        description: '@Description 重写后的SQL（适用于语句级重写和结构级重写）'
-        type: string
-      rule_name:
-        description: |-
-          @Description 审核规则名称
-          @Required
-        type: string
-      type:
-        description: |-
-          @Description 重写建议类型：语句级重写、结构级重写、其他
-          @Required
-        enum:
-        - statement
-        - structure
-        - other
-        type: string
     type: object
   v1.SQLStatement:
     properties:
@@ -4251,24 +4276,6 @@ definitions:
         type: string
       target_instance_schema:
         type: string
-    type: object
-  v1.TaskRewrittenSQLData:
-    properties:
-      business_non_equivalent_desc:
-        description: '@Description 业务不等价性描述，为空表示等价'
-        type: string
-      rewritten_sql:
-        description: '@Description 重写后的SQL'
-        type: string
-      suggestions:
-        description: '@Description 重写建议列表'
-        items:
-          $ref: '#/definitions/v1.SQLRewrittenSuggestion'
-        type: array
-      table_metas:
-        $ref: '#/definitions/v1.TableMetas'
-        description: '@Description 表结构'
-        type: object
     type: object
   v1.TestAuditPlanNotifyConfigResDataV1:
     properties:
@@ -12431,9 +12438,11 @@ paths:
       tags:
       - task
   /v1/tasks/audits/{task_id}/sqls/{number}/rewrite:
-    get:
+    post:
+      consumes:
+      - application/json
       description: 获取特定任务中某条SQL语句的重写后的SQL及相关建议
-      operationId: getTaskRewrittenSQL
+      operationId: RewriteSQL
       parameters:
       - description: task id
         in: path
@@ -12445,11 +12454,19 @@ paths:
         name: number
         required: true
         type: integer
+      - description: request body
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/v1.RewriteSQLReq'
+      produces:
+      - application/json
       responses:
         "200":
           description: 成功返回重写结果
           schema:
-            $ref: '#/definitions/v1.GetTaskRewrittenSQLRes'
+            $ref: '#/definitions/v1.RewriteSQLRes'
       security:
       - ApiKeyAuth: []
       summary: 获取任务中指定SQL的重写结果和建议
