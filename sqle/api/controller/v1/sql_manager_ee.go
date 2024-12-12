@@ -9,6 +9,8 @@ import (
 	"encoding/csv"
 	e "errors"
 	"fmt"
+	"github.com/actiontech/sqle/sqle/pkg/im/coding"
+	"golang.org/x/text/language"
 	"mime"
 	"net/http"
 	"strconv"
@@ -670,4 +672,89 @@ func toGlobalSqlManage(ctx context.Context, modelGlobalSqlManages []*model.Globa
 		ret = append(ret, sqlMgr)
 	}
 	return ret
+}
+
+func sendSqlManage(c echo.Context) error {
+	req := new(SqlManageCodingReq)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if len(req.SqlManageIdList) == 0 {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("please select at least one record"))
+	}
+	lang := locale.Bundle.GetLangTagFromCtx(c.Request().Context())
+	s := model.GetStorage()
+	sqlManageRecordList, err := s.GetSqlManageRecordListByIds(req.SqlManageIdList)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("get sql manage list error: %v ", err))
+	}
+	codingConfig, exist, err := s.GetImConfigByType(model.ImTypeCoding)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("get coding config error: %v ", err))
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("coding config does not exist"))
+	}
+	if len(sqlManageRecordList) != len(req.SqlManageIdList) {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("sql manage records not equal to request id count"))
+	}
+	// 目前这里只实现单个推送，批量推送功能需要和产品确认具体实现
+	sqlManageRecord := sqlManageRecordList[0]
+	codingRequest := buildCodingSQLManageReq(lang, c.Param("project_name"), *req, *sqlManageRecord)
+	createIssueResponseBody, err := coding.NewCodingClient(codingConfig.AppKey, codingConfig.AppSecret).CreateIssue(codingRequest)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	sqlManageRecordProcess, err := s.GetSQLManageRecordProcess(sqlManageRecord.ID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	sqlManageRecordProcess.Status = model.SQLManageStatusSent
+	err = s.Save(sqlManageRecordProcess)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return c.JSON(http.StatusOK, &PostSqlManageCodingResp{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: &CodingResp{
+			Message: createIssueResponseBody.Response.RequestId,
+			Code:    "0",
+		},
+	})
+}
+
+func buildCodingSQLManageReq(lang language.Tag, projectName string, sqlManageCodingReq SqlManageCodingReq, sqlManageRecord model.SQLManageRecord) coding.CreateIssueRequestBody {
+	issueName := fmt.Sprintf("SQLE_%s", time.Now().Format("20060102150405"))
+	priority := "0"
+	if sqlManageCodingReq.Priority != nil {
+		priority = sqlManageCodingReq.Priority.Weight()
+	}
+	auditResult := ""
+	if len(sqlManageRecord.AuditResults) == 0 {
+		auditResult = "审核通过"
+	} else {
+		auditMessages := make([]string, 0, len(sqlManageRecord.AuditResults))
+		for _, result := range sqlManageRecord.AuditResults {
+			auditMessages = append(auditMessages, result.I18nAuditResultInfo.GetAuditResultInfoByLangTag(lang).Message)
+		}
+		auditResult = strings.Join(auditMessages, "\n")
+	}
+	instanceName := dms.GetInstancesByIdWithoutError(sqlManageRecord.InstanceID).Name
+	codingProjectName := projectName
+	if sqlManageCodingReq.CodingProjectName != nil {
+		codingProjectName = *sqlManageCodingReq.CodingProjectName
+	}
+	codingIssueType := CodingTypeMission
+	if sqlManageCodingReq.Type != nil {
+		codingIssueType = *sqlManageCodingReq.Type
+	}
+	description := fmt.Sprintf("- 数据源:%s\n- 数据库:%s\n- SQL:```%s```\n- 审核结果:%s", instanceName, sqlManageRecord.SchemaName, sqlManageRecord.SqlText, auditResult)
+	codingRequest := coding.CreateIssueRequestBody{
+		Name:        issueName,
+		Priority:    priority,
+		ProjectName: codingProjectName,
+		Type:        string(codingIssueType),
+		Description: description,
+	}
+	return codingRequest
 }

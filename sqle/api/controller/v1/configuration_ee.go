@@ -5,7 +5,9 @@ package v1
 
 import (
 	"fmt"
+	"github.com/actiontech/sqle/sqle/pkg/im/coding"
 	"net/http"
+	"time"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/errors"
@@ -368,6 +370,103 @@ func testWechatAuditConfigV1(c echo.Context) error {
 	return c.JSON(http.StatusOK, &TestWechatConfigResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data: TestWechatConfigResDataV1{
+			IsMessageSentNormally: true,
+		},
+	})
+}
+
+func getCodingConfigurationV1(c echo.Context) error {
+	s := model.GetStorage()
+	codingConfig, exist, err := s.GetImConfigByType(model.ImTypeCoding)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return c.JSON(http.StatusOK, &GetCodingConfigurationResV1{
+			BaseRes: controller.NewBaseReq(nil),
+			Data:    CodingConfigurationV1{},
+		})
+	}
+
+	return c.JSON(http.StatusOK, &GetCodingConfigurationResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: CodingConfigurationV1{
+			CodingUrl:       codingConfig.AppKey,
+			IsCodingEnabled: codingConfig.IsEnable,
+		},
+	})
+}
+
+func updateCodingConfigurationV1(c echo.Context) error {
+	req := new(UpdateCodingConfigurationReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	s := model.GetStorage()
+	codingCfg, _, err := s.GetImConfigByType(model.ImTypeCoding)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if req.IsCodingEnabled != nil && !(*req.IsCodingEnabled) {
+		codingCfg.IsEnable = false
+		return controller.JSONBaseErrorReq(c, s.Save(codingCfg))
+	}
+	var isChanged bool
+	if req.CodingUrl != nil {
+		if codingCfg.AppKey != *req.CodingUrl {
+			codingCfg.AppKey = *req.CodingUrl
+			isChanged = true
+		}
+	}
+	if req.Token != nil {
+		if codingCfg.AppSecret != *req.Token {
+			codingCfg.AppSecret = *req.Token
+			isChanged = true
+		}
+	}
+	if req.IsCodingEnabled != nil {
+		if codingCfg.IsEnable != *req.IsCodingEnabled {
+			codingCfg.IsEnable = *req.IsCodingEnabled
+			isChanged = true
+		}
+	}
+	codingCfg.Type = model.ImTypeCoding
+	if isChanged {
+		if err := s.Save(codingCfg); err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+}
+
+func testCodingAuditConfigV1(c echo.Context) error {
+	req := new(TestCodingConfigurationReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return err
+	}
+	s := model.GetStorage()
+	codingCfg, exist, err := s.GetImConfigByType(model.ImTypeCoding)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return c.JSON(http.StatusOK, &TestCodingConfigResV1{
+			BaseRes: controller.NewBaseReq(nil),
+			Data: TestCodingConfigResDataV1{
+				IsMessageSentNormally: false,
+				ErrorMessage:          "coding configuration doesn't exist",
+			},
+		})
+	}
+	issueName := fmt.Sprintf("SQLE_TEST_%s", time.Now().Format("20060102150405"))
+	description := locale.Bundle.LocalizeMsgByCtx(c.Request().Context(), locale.ConfigCoding)
+	_, err = coding.NewCodingClient(codingCfg.AppKey, codingCfg.AppSecret).CreateIssue(coding.CreateIssueRequestBody{Name: issueName, Priority: CodingPriorityLow.Weight(), ProjectName: req.CodingProjectName, Type: string(CodingTypeMission), Description: description})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return c.JSON(http.StatusOK, &TestCodingConfigResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: TestCodingConfigResDataV1{
 			IsMessageSentNormally: true,
 		},
 	})

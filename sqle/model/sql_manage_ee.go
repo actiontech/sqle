@@ -22,6 +22,7 @@ const (
 	SQLManageStatusSolved        = "solved"
 	SQLManageStatusIgnored       = "ignored"
 	SQLManageStatusManualAudited = "manual_audited"
+	SQLManageStatusSent          = "sent"
 
 	SQLManageSourceAuditPlan      = "audit_plan"
 	SQLManageSourceSqlAuditRecord = "sql_audit_record"
@@ -42,6 +43,7 @@ var SqlManageStatusMap = map[string]*i18n.Message{
 	SQLManageStatusSolved:        locale.SQLManageStatusSolved,
 	SQLManageStatusIgnored:       locale.SQLManageStatusIgnored,
 	SQLManageStatusManualAudited: locale.SQLManageStatusManualAudited,
+	SQLManageStatusSent:          locale.SQLManageStatusSent,
 }
 
 func (s *Storage) UpdateSqlManage(auditRecordId uint) error {
@@ -978,4 +980,13 @@ func (s *Storage) GetSqlManageRecordsBySourceId(source, sourceId string) ([]*SQL
 		return nil, err
 	}
 	return sqlManageRecors, nil
+}
+
+func (s *Storage) GetSqlManageRecordListByIds(ids []*uint64) ([]*SQLManageRecord, error) {
+	sqlManageRecordList := []*SQLManageRecord{}
+	err := s.db.Model(SQLManageRecord{}).Where("id IN (?)", ids).Find(&sqlManageRecordList).Error
+	if err != nil {
+		return nil, errors.New(errors.ConnectStorageError, err)
+	}
+	return sqlManageRecordList, nil
 }
