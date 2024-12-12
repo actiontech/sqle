@@ -293,7 +293,7 @@ type GetCodingConfigurationResV1 struct {
 type CodingConfigurationV1 struct {
 	CodingUrl string `json:"coding_url"`
 
-	IsCodingNotificationEnabled bool `json:"is_coding_notification_enabled"`
+	IsCodingEnabled bool `json:"is_coding_enabled"`
 }
 
 // GetWechatAuditConfigurationV1
