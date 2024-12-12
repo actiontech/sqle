@@ -55,18 +55,6 @@ func testWechatAuditConfigV1(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionNotSupportWechatAudit)
 }
 
-func getCodingConfigurationV1(c echo.Context) error {
-	return controller.JSONBaseErrorReq(c, errCommunityEditionNotSupportWechatAudit)
-}
-
-func updateCodingConfigurationV1(c echo.Context) error {
-	return controller.JSONBaseErrorReq(c, errCommunityEditionNotSupportWechatAudit)
-}
-
-func testCodingAuditConfigV1(c echo.Context) error {
-	return controller.JSONBaseErrorReq(c, errCommunityEditionNotSupportWechatAudit)
-}
-
 func getScheduledTaskDefaultOptionV1(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportScheduledNotify)
 }
