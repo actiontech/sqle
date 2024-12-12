@@ -12272,7 +12272,7 @@ var doc = `{
                 "coding_url": {
                     "type": "string"
                 },
-                "is_coding_notification_enabled": {
+                "is_coding_enabled": {
                     "type": "boolean"
                 }
             }
