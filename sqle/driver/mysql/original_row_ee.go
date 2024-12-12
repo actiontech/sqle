@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 
 	"github.com/pingcap/parser/ast"
@@ -26,21 +27,21 @@ func (i *MysqlDriverImpl) GetOriginalRow(node ast.Node, backupMaxRows uint64) (r
 		return i.generateInsertRollbackSqls(stmt, backupMaxRows)
 	// table
 	case *ast.DropTableStmt:
-		return i.generateDropTableRollbackSqls(stmt, backupMaxRows)
+		return i.generateDropTableRollbackSqls(stmt)
 	case *ast.AlterTableStmt:
-		return i.generateAlterTableRollbackSqls(stmt, backupMaxRows)
+		return i.generateAlterTableRollbackSqls(stmt)
 	case *ast.CreateTableStmt:
-		return i.generateCreateTableRollbackSqls(stmt, backupMaxRows)
+		return i.generateCreateTableRollbackSqls(stmt)
 	// index
 	case *ast.CreateIndexStmt:
-		return i.generateCreateIndexRollbackSqls(stmt, backupMaxRows)
+		return i.generateCreateIndexRollbackSqls(stmt)
 	case *ast.DropIndexStmt:
-		return i.generateDropIndexRollbackSqls(stmt, backupMaxRows)
+		return i.generateDropIndexRollbackSqls(stmt)
 	// database
 	case *ast.CreateDatabaseStmt:
-		return i.generateCreateSchemaRollbackSqls(stmt, backupMaxRows)
+		return i.generateCreateSchemaRollbackSqls(stmt)
 	case *ast.DropDatabaseStmt:
-		return i.generateDropDatabaseRollbackSqls(stmt, backupMaxRows)
+		return i.generateDropDatabaseRollbackSqls(stmt)
 	// other
 	case *ast.UnparsedStmt:
 		return []string{}, i18nPkg.ConvertStr2I18nAsDefaultLang("无法正常解析该SQL，无法进行备份"), nil
@@ -55,11 +56,7 @@ func (i *MysqlDriverImpl) GetOriginalRowDelete(stmt *ast.DeleteStmt, backupMaxRo
 	if len(tables) == 0 {
 		return []string{}, nil, fmt.Errorf("can not extract table from sql")
 	}
-	originRowInsertSql, err := i.getOriginalRowReplaceIntoSql(tables[0], stmt.Where, stmt.Order, backupMaxRows)
-	if err != nil {
-		return []string{}, nil, err
-	}
-	return originRowInsertSql, nil, nil
+	return i.getOriginalRowReplaceIntoSql(tables[0], stmt.Where, stmt.Order, stmt.Limit, backupMaxRows)
 }
 
 // generateDeleteRollbackSql generate insert SQL for delete.
@@ -68,11 +65,7 @@ func (i *MysqlDriverImpl) GetOriginalRowUpdate(stmt *ast.UpdateStmt, backupMaxRo
 	if len(tables) == 0 {
 		return []string{}, nil, fmt.Errorf("can not extract table from sql")
 	}
-	originRowInsertSql, err := i.getOriginalRowReplaceIntoSql(tables[0], stmt.Where, stmt.Order, backupMaxRows)
-	if err != nil {
-		return []string{}, nil, err
-	}
-	return originRowInsertSql, nil, nil
+	return i.getOriginalRowReplaceIntoSql(tables[0], stmt.Where, stmt.Order, stmt.Limit, backupMaxRows)
 }
 
 func (i *MysqlDriverImpl) GetCreateTableClause(tables []*ast.TableName) ([]string, i18nPkg.I18nStr, error) {
@@ -99,15 +92,30 @@ func (i *MysqlDriverImpl) getCreateTableStmt(table *ast.TableName) (string, erro
 	return stmt.Text() + ";\n", nil
 }
 
-func (i *MysqlDriverImpl) getOriginalRowReplaceIntoSql(table *ast.TableName, whereClause ast.ExprNode, orderClause *ast.OrderByClause, backupMaxRows uint64) ([]string, error) {
+func (i *MysqlDriverImpl) getOriginalRowReplaceIntoSql(table *ast.TableName, whereClause ast.ExprNode, orderClause *ast.OrderByClause, limitClause *ast.Limit, backupMaxRows uint64) ([]string, i18nPkg.I18nStr, error) {
 	createTableStmt, exist, err := i.Ctx.GetCreateTableStmt(table)
 	if err != nil || !exist {
-		return []string{}, err
+		return []string{}, nil, err
+	}
+
+	var max = int64(backupMaxRows)
+	limit, err := util.GetLimitCount(limitClause, max+1)
+	if err != nil {
+		return []string{}, nil, err
+	}
+	if limit > max {
+		count, err := i.getRecordCount(table, "", whereClause, orderClause, limit)
+		if err != nil {
+			return []string{}, nil, err
+		}
+		if count > max {
+			return []string{}, plocale.Bundle.LocalizeAll(plocale.NotSupportExceedMaxRowsRollback), nil
+		}
 	}
 
 	records, err := i.getRecords(table, "", whereClause, orderClause, int64(backupMaxRows))
 	if err != nil {
-		return []string{}, err
+		return []string{}, nil, err
 	}
 
 	columnNames := []string{}
@@ -119,7 +127,7 @@ func (i *MysqlDriverImpl) getOriginalRowReplaceIntoSql(table *ast.TableName, whe
 	originRowInsertSqls := make([]string, 0, len(records))
 	for _, record := range records {
 		if len(record) != len(columnNames) {
-			return []string{}, nil
+			return []string{}, nil, nil
 		}
 		values := []string{}
 		for _, name := range columnNames {
@@ -150,5 +158,5 @@ func (i *MysqlDriverImpl) getOriginalRowReplaceIntoSql(table *ast.TableName, whe
 				fmt.Sprintf("(%s)", strings.Join(values, ", ")),
 			))
 	}
-	return originRowInsertSqls, nil
+	return originRowInsertSqls, nil, nil
 }
