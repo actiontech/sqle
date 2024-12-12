@@ -12,7 +12,7 @@ type RewriteSQLReq struct {
 
 type RewriteSQLData struct {
 	// @Description 重写前的SQL业务描述
-	BussinessDesc string `json:"bussiness_desc"`
+	BusinessDesc string `json:"business_desc"`
 	// @Description 重写建议列表
 	Suggestions []*RewriteSuggestion `json:"suggestions"`
 	// @Description 重写后的SQL

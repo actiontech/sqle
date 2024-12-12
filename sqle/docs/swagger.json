@@ -16412,12 +16412,12 @@
         "v1.RewriteSQLData": {
             "type": "object",
             "properties": {
-                "business_non_equivalent_desc": {
-                    "description": "@Description 重写前后的业务不等价性描述，为空表示等价",
+                "business_desc": {
+                    "description": "@Description 重写前的SQL业务描述",
                     "type": "string"
                 },
-                "bussiness_desc": {
-                    "description": "@Description 重写前的SQL业务描述",
+                "business_non_equivalent_desc": {
+                    "description": "@Description 重写前后的业务不等价性描述，为空表示等价",
                     "type": "string"
                 },
                 "rewritten_sql": {
