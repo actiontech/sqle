@@ -158,7 +158,6 @@ var (
 	SQLManageStatusSolved         = &i18n.Message{ID: "SQLManageStatusSolved", Other: "已解决"}
 	SQLManageStatusIgnored        = &i18n.Message{ID: "SQLManageStatusIgnored", Other: "已忽略"}
 	SQLManageStatusManualAudited  = &i18n.Message{ID: "SQLManageStatusManualAudited", Other: "已人工审核"}
-	SQLManageStatusSent           = &i18n.Message{ID: "SQLManageStatusSent", Other: "已推送到其他平台"}
 )
 
 // license
