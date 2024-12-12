@@ -696,6 +696,9 @@ func sendSqlManage(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, fmt.Errorf("coding config does not exist"))
 	}
+	if len(sqlManageRecordList) != len(req.SqlManageIdList) {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("sql manage records not equal to request id count"))
+	}
 	sqlManageRecord := sqlManageRecordList[0]
 	codingRequest := buildCodingSQLManageReq(lang, c.Param("project_name"), *req, *sqlManageRecord)
 	createIssueResponseBody, err := coding.NewCodingClient(codingConfig.AppKey, codingConfig.AppSecret).CreateIssue(codingRequest)
