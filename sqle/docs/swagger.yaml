@@ -675,6 +675,20 @@ definitions:
       new_rule_template_name:
         type: string
     type: object
+  v1.CodingConfigurationV1:
+    properties:
+      coding_url:
+        type: string
+      is_coding_enabled:
+        type: boolean
+    type: object
+  v1.CodingResp:
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+    type: object
   v1.CompanyNotice:
     properties:
       notice_str:
@@ -1662,6 +1676,18 @@ definitions:
       total_nums:
         type: integer
     type: object
+  v1.GetCodingConfigurationResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.CodingConfigurationV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetCompanyNoticeResp:
     properties:
       code:
@@ -2524,18 +2550,6 @@ definitions:
         example: ok
         type: string
     type: object
-  v1.GetTaskRewrittenSQLRes:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/v1.TaskRewrittenSQLData'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
   v1.GetUserTipsResV1:
     properties:
       code:
@@ -2838,6 +2852,7 @@ definitions:
         - solved
         - ignored
         - manual_audited
+        - sent
         type: string
     type: object
   v1.GlobalWorkflowStatisticsResV1:
@@ -3424,6 +3439,18 @@ definitions:
         $ref: '#/definitions/v1.AffectRows'
         type: object
     type: object
+  v1.PostSqlManageCodingResp:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.CodingResp'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.ProjectRuleTemplateResV1:
     properties:
       db_type:
@@ -3499,6 +3526,84 @@ definitions:
       rule_name:
         type: string
       violated_queries_str:
+        type: string
+    type: object
+  v1.RewriteSQLData:
+    properties:
+      business_desc:
+        description: '@Description 重写前的SQL业务描述'
+        type: string
+      business_non_equivalent_desc:
+        description: '@Description 重写前后的业务不等价性描述，为空表示等价'
+        type: string
+      rewritten_sql:
+        description: '@Description 重写后的SQL'
+        type: string
+      suggestions:
+        description: '@Description 重写建议列表'
+        items:
+          $ref: '#/definitions/v1.RewriteSuggestion'
+        type: array
+    type: object
+  v1.RewriteSQLReq:
+    properties:
+      enable_structure_type:
+        default: false
+        description: '@Description 是否启用结构化类型的重写'
+        example: false
+        type: boolean
+    type: object
+  v1.RewriteSQLRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.RewriteSQLData'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.RewriteSuggestion:
+    properties:
+      audit_level:
+        description: |-
+          @Description 审核规则等级
+          @Required
+        enum:
+        - normal
+        - notice
+        - warn
+        - error
+        type: string
+      ddl_dcl:
+        description: '@Description 具体的数据库结构变更语句，需要在数据库中执行该变更语句之后再应用重写SQL（包含CREATE/ALTER/DROP等DDL语句，或SET等DCL语句）（适用于结构级重写）'
+        type: string
+      ddl_dcl_desc:
+        description: '@Description 数据库结构变更建议说明（例如：建议添加索引、修改表结构等优化建议）（适用于结构级重写）'
+        type: string
+      desc:
+        description: |-
+          @Description 重写描述（适用于所有类型）
+          @Required
+        type: string
+      rewritten_sql:
+        description: '@Description 重写后的SQL（适用于语句级重写和结构级重写）'
+        type: string
+      rule_name:
+        description: |-
+          @Description 审核规则名称
+          @Required
+        type: string
+      type:
+        description: |-
+          @Description 重写建议类型：语句级重写、结构级重写、其他
+          @Required
+        enum:
+        - statement
+        - structure
+        - other
         type: string
     type: object
   v1.RiskAuditPlan:
@@ -3774,47 +3879,6 @@ definitions:
       query_timeout_second:
         type: integer
     type: object
-  v1.SQLRewrittenSuggestion:
-    properties:
-      audit_level:
-        description: |-
-          @Description 审核规则等级
-          @Required
-        enum:
-        - normal
-        - notice
-        - warn
-        - error
-        type: string
-      ddl_dcl:
-        description: '@Description 具体的数据库结构变更语句，需要在数据库中执行该变更语句之后再应用重写SQL（包含CREATE/ALTER/DROP等DDL语句，或SET等DCL语句）（适用于结构级重写）'
-        type: string
-      ddl_dcl_desc:
-        description: '@Description 数据库结构变更建议说明（例如：建议添加索引、修改表结构等优化建议）（适用于结构级重写）'
-        type: string
-      desc:
-        description: |-
-          @Description 重写描述（适用于所有类型）
-          @Required
-        type: string
-      rewritten_sql:
-        description: '@Description 重写后的SQL（适用于语句级重写和结构级重写）'
-        type: string
-      rule_name:
-        description: |-
-          @Description 审核规则名称
-          @Required
-        type: string
-      type:
-        description: |-
-          @Description 重写建议类型：语句级重写、结构级重写、其他
-          @Required
-        enum:
-        - statement
-        - structure
-        - other
-        type: string
-    type: object
   v1.SQLStatement:
     properties:
       audit_error:
@@ -4005,6 +4069,31 @@ definitions:
         - solved
         - ignored
         - manual_audited
+        - sent
+        type: string
+    type: object
+  v1.SqlManageCodingReq:
+    properties:
+      coding_project_name:
+        type: string
+      priority:
+        enum:
+        - LOW
+        - MEDIUM
+        - HIGH
+        - EMERGENCY
+        type: string
+      sql_manage_id_list:
+        items:
+          type: integer
+        type: array
+      type:
+        enum:
+        - DEFECT
+        - MISSION
+        - REQUIREMENT
+        - EPIC
+        - SUB_TASK
         type: string
     type: object
   v1.SqlVersionDetailResV1:
@@ -4188,24 +4277,6 @@ definitions:
       target_instance_schema:
         type: string
     type: object
-  v1.TaskRewrittenSQLData:
-    properties:
-      business_non_equivalent_desc:
-        description: '@Description 业务不等价性描述，为空表示等价'
-        type: string
-      rewritten_sql:
-        description: '@Description 重写后的SQL'
-        type: string
-      suggestions:
-        description: '@Description 重写建议列表'
-        items:
-          $ref: '#/definitions/v1.SQLRewrittenSuggestion'
-        type: array
-      table_metas:
-        $ref: '#/definitions/v1.TableMetas'
-        description: '@Description 表结构'
-        type: object
-    type: object
   v1.TestAuditPlanNotifyConfigResDataV1:
     properties:
       is_notify_send_normal:
@@ -4223,6 +4294,30 @@ definitions:
         type: object
       message:
         example: ok
+        type: string
+    type: object
+  v1.TestCodingConfigResDataV1:
+    properties:
+      error_message:
+        type: string
+      is_message_sent_normally:
+        type: boolean
+    type: object
+  v1.TestCodingConfigResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.TestCodingConfigResDataV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.TestCodingConfigurationReqV1:
+    properties:
+      coding_project_name:
         type: string
     type: object
   v1.TestDingTalkConfigResDataV1:
@@ -4403,6 +4498,15 @@ definitions:
         - host
         - instance
         example: sql
+        type: string
+    type: object
+  v1.UpdateCodingConfigurationReqV1:
+    properties:
+      coding_url:
+        type: string
+      is_coding_enabled:
+        type: boolean
+      token:
         type: string
     type: object
   v1.UpdateCompanyNoticeReq:
@@ -5898,6 +6002,7 @@ definitions:
         - solved
         - ignored
         - manual_audited
+        - sent
         type: string
     type: object
   v2.SqlVersion:
@@ -6176,6 +6281,65 @@ paths:
       summary: 更新企业公告
       tags:
       - companyNotice
+  /v1/configurations/coding:
+    get:
+      description: get coding configuration
+      operationId: getCodingConfigurationV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetCodingConfigurationResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取Coding审核配置
+      tags:
+      - configuration
+    patch:
+      consumes:
+      - application/json
+      description: update coding configuration
+      operationId: UpdateCodingConfigurationV1
+      parameters:
+      - description: update coding configuration req
+        in: body
+        name: param
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateCodingConfigurationReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 添加或更新Coding配置
+      tags:
+      - configuration
+  /v1/configurations/coding/test:
+    post:
+      consumes:
+      - application/json
+      description: test coding configuration
+      operationId: testCodingConfigV1
+      parameters:
+      - description: test coding configuration req
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/v1.TestCodingConfigurationReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.TestCodingConfigResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 测试Coding配置
+      tags:
+      - configuration
   /v1/configurations/ding_talk:
     get:
       description: get dingTalk configuration
@@ -9505,6 +9669,32 @@ paths:
       summary: 获取管控规则tips
       tags:
       - SqlManage
+  /v1/projects/{project_name}/sql_manages/send:
+    post:
+      description: get sql manage analysis
+      operationId: SendSqlManage
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: batch update sql manage request
+        in: body
+        name: SqlManageCodingReq
+        required: true
+        schema:
+          $ref: '#/definitions/v1.SqlManageCodingReq'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.PostSqlManageCodingResp'
+      security:
+      - ApiKeyAuth: []
+      summary: 推送SQL管控结果到外部系统
+      tags:
+      - SqlManage
   /v1/projects/{project_name}/sql_optimization_records:
     get:
       description: get sql optimization records
@@ -12248,9 +12438,11 @@ paths:
       tags:
       - task
   /v1/tasks/audits/{task_id}/sqls/{number}/rewrite:
-    get:
+    post:
+      consumes:
+      - application/json
       description: 获取特定任务中某条SQL语句的重写后的SQL及相关建议
-      operationId: getTaskRewrittenSQL
+      operationId: RewriteSQL
       parameters:
       - description: task id
         in: path
@@ -12262,11 +12454,19 @@ paths:
         name: number
         required: true
         type: integer
+      - description: request body
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/v1.RewriteSQLReq'
+      produces:
+      - application/json
       responses:
         "200":
           description: 成功返回重写结果
           schema:
-            $ref: '#/definitions/v1.GetTaskRewrittenSQLRes'
+            $ref: '#/definitions/v1.RewriteSQLRes'
       security:
       - ApiKeyAuth: []
       summary: 获取任务中指定SQL的重写结果和建议
@@ -12691,6 +12891,7 @@ paths:
         - solved
         - ignored
         - manual_audited
+        - sent
         in: query
         name: filter_status
         type: string

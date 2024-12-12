@@ -146,6 +146,9 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1Router.PATCH("/configurations/wechat_audit", v1.UpdateWechatAuditConfigurationV1, sqleMiddleware.OpGlobalAllowed())
 		v1Router.GET("/configurations/wechat_audit", v1.GetWechatAuditConfigurationV1, sqleMiddleware.ViewGlobalAllowed())
 		v1Router.POST("/configurations/wechat_audit/test", v1.TestWechatAuditConfigV1, sqleMiddleware.OpGlobalAllowed())
+		v1Router.PATCH("/configurations/coding", v1.UpdateCodingConfigurationV1, sqleMiddleware.OpGlobalAllowed())
+		v1Router.GET("/configurations/coding", v1.GetCodingConfigurationV1, sqleMiddleware.ViewGlobalAllowed())
+		v1Router.POST("/configurations/coding/test", v1.TestCodingConfigV1, sqleMiddleware.OpGlobalAllowed())
 
 		// statistic
 		v1Router.GET("/statistic/instances/type_percent", v1.GetInstancesTypePercentV1, sqleMiddleware.ViewGlobalAllowed())
@@ -353,6 +356,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1ProjectViewRouter.GET("/:project_name/sql_manages/exports", v1.ExportSqlManagesV1)
 		v1ProjectViewRouter.GET("/:project_name/sql_manages/rule_tips", v1.GetSqlManageRuleTips)
 		v1ProjectViewRouter.GET("/:project_name/sql_manages/:sql_manage_id/sql_analysis", v1.GetSqlManageSqlAnalysisV1)
+		v1ProjectViewRouter.POST("/:project_name/sql_manages/send", v1.SendSqlManage)
 
 		// sql dev records
 		v1ProjectViewRouter.GET("/:project_name/sql_dev_records", v1.GetSqlDEVRecordList)
@@ -465,7 +469,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1Router.POST("/projects/:project_name/task_groups", v1.CreateAuditTasksGroupV1)
 		v1Router.POST("/task_groups/audit", v1.AuditTaskGroupV1)
 		v1Router.GET("/tasks/file_order_methods", v1.GetSqlFileOrderMethodV1)
-		v1Router.GET("/tasks/audits/:task_id/sqls/:number/rewrite", v1.GetTaskRewrittenSQL)
+		v1Router.POST("/tasks/audits/:task_id/sqls/:number/rewrite", v1.RewriteSQL)
 
 		// dashboard
 		v1Router.GET("/dashboard", v1.Dashboard)

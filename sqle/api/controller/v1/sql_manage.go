@@ -50,7 +50,7 @@ type SqlManage struct {
 	LastAppearTime  string         `json:"last_appear_time"`
 	AppearNum       uint64         `json:"appear_num"`
 	Assignees       []string       `json:"assignees"`
-	Status          string         `json:"status" enums:"unhandled,solved,ignored,manual_audited"`
+	Status          string         `json:"status" enums:"unhandled,solved,ignored,manual_audited,sent"`
 	Remark          string         `json:"remark"`
 	Endpoint        string         `json:"endpoint"`
 }
@@ -105,6 +105,49 @@ type BatchUpdateSqlManageReq struct {
 	Priority        *string   `json:"priority" enums:",high"`
 	Assignees       []string  `json:"assignees"`
 	Remark          *string   `json:"remark"`
+}
+
+type SqlManageCodingReq struct {
+	SqlManageIdList   []*uint64       `json:"sql_manage_id_list"`
+	Priority          *CodingPriority `json:"priority" enums:"LOW,MEDIUM,HIGH,EMERGENCY"`
+	CodingProjectName *string         `json:"coding_project_name"`
+	Type              *CodingType     `json:"type" enums:"DEFECT,MISSION,REQUIREMENT,EPIC,SUB_TASK"`
+}
+
+type CodingType string
+
+const (
+	CodingTypeDefect      CodingType = "DEFECT"
+	CodingTypeMission     CodingType = "MISSION"
+	CodingTypeRequirement CodingType = "REQUIREMENT"
+	CodingTypeEpic        CodingType = "EPIC"
+	CodingTypeSubTask     CodingType = "SUB_TASK"
+)
+
+type CodingPriority string
+
+const (
+	CodingPriorityLow       CodingPriority = "LOW"
+	CodingPriorityMedium                   = "MEDIUM"
+	CodingPriorityHigh                     = "HIGH"
+	CodingPriorityEmergency                = "EMERGENCY"
+)
+
+func (codingPriority CodingPriority) Weight() string {
+	weight := "-1"
+	switch codingPriority {
+	case CodingPriorityLow:
+		weight = "0"
+	case CodingPriorityMedium:
+		weight = "1"
+	case CodingPriorityHigh:
+		weight = "2"
+	case CodingPriorityEmergency:
+		weight = "3"
+	default:
+		weight = "-1"
+	}
+	return weight
 }
 
 // BatchUpdateSqlManage batch update sql manage
@@ -223,6 +266,16 @@ type GetSqlManageSqlAnalysisResp struct {
 	Data *SqlAnalysis `json:"data"`
 }
 
+type PostSqlManageCodingResp struct {
+	controller.BaseRes
+	Data *CodingResp `json:"data"`
+}
+
+type CodingResp struct {
+	Message string `json:"message"`
+	Code    string `json:"code"`
+}
+
 // GetSqlManageSqlAnalysisV1
 // @Summary 获取SQL管控SQL分析
 // @Description get sql manage analysis
@@ -235,6 +288,20 @@ type GetSqlManageSqlAnalysisResp struct {
 // @Router /v1/projects/{project_name}/sql_manages/{sql_manage_id}/sql_analysis [get]
 func GetSqlManageSqlAnalysisV1(c echo.Context) error {
 	return getSqlManageSqlAnalysisV1(c)
+}
+
+// SendSqlManage
+// @Summary 推送SQL管控结果到外部系统
+// @Description get sql manage analysis
+// @Id SendSqlManage
+// @Tags SqlManage
+// @Param project_name path string true "project name"
+// @Param SqlManageCodingReq body SqlManageCodingReq true "batch update sql manage request"
+// @Security ApiKeyAuth
+// @Success 200 {object} PostSqlManageCodingResp
+// @Router /v1/projects/{project_name}/sql_manages/send [post]
+func SendSqlManage(c echo.Context) error {
+	return sendSqlManage(c)
 }
 
 func convertSQLAnalysisResultToRes(ctx context.Context, res *AnalysisResult, rawSQL string) *SqlAnalysis {
@@ -372,7 +439,7 @@ type GlobalSqlManage struct {
 	ProjectUid           string                `json:"project_uid"`
 	InstanceName         string                `json:"instance_name"`
 	InstanceId           string                `json:"instance_id"`
-	Status               string                `json:"status" enums:"unhandled,solved,ignored,manual_audited"`
+	Status               string                `json:"status" enums:"unhandled,solved,ignored,manual_audited,sent"`
 	ProjectPriority      dmsV1.ProjectPriority `json:"project_priority" enums:"high,medium,low"`
 	FirstAppearTimeStamp string                `json:"first_appear_timestamp"`
 	ProblemDescriptions  []string              `json:"problem_descriptions"` // 根据来源信息拼接

@@ -278,9 +278,30 @@ type SQLManageRecordProcess struct {
 
 	SQLManageRecordID *uint `json:"sql_manage_record_id" gorm:"unique;not null"`
 	// 任务属性字段
-	Assignees string `json:"assignees" gorm:"type:varchar(2000)"`
-	Status    string `json:"status" gorm:"default:\"unhandled\""`
-	Remark    string `json:"remark" gorm:"type:varchar(4000)"`
+	Assignees string        `json:"assignees" gorm:"type:varchar(2000)"`
+	Status    ProcessStatus `json:"status" gorm:"default:\"unhandled\""`
+	Remark    string        `json:"remark" gorm:"type:varchar(4000)"`
+}
+
+type ProcessStatus string
+
+const (
+	ProcessStatusUnhandled     = "unhandled"
+	ProcessStatusSolved        = "solved"
+	ProcessStatusIgnored       = "ignored"
+	ProcessStatusManualAudited = "manual_audited"
+	ProcessStatusSent          = "sent"
+)
+
+func (s *Storage) GetSQLManageRecordProcess(sqlManageRecordID uint) (*SQLManageRecordProcess, error) {
+	sqlManageRecordProcess := &SQLManageRecordProcess{}
+	err := s.db.Model(SQLManageRecordProcess{}).
+		Where("sql_manage_record_id = ?", sqlManageRecordID).
+		First(sqlManageRecordProcess).Error
+	if err != nil {
+		return nil, err
+	}
+	return sqlManageRecordProcess, nil
 }
 
 func (s *Storage) GetAuditPlanByID(auditPlanID int) (*AuditPlanV2, bool, error) {

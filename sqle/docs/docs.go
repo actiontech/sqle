@@ -180,6 +180,101 @@ var doc = `{
                 }
             }
         },
+        "/v1/configurations/coding": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get coding configuration",
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "获取Coding审核配置",
+                "operationId": "getCodingConfigurationV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetCodingConfigurationResV1"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update coding configuration",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "添加或更新Coding配置",
+                "operationId": "UpdateCodingConfigurationV1",
+                "parameters": [
+                    {
+                        "description": "update coding configuration req",
+                        "name": "param",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateCodingConfigurationReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/configurations/coding/test": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "test coding configuration",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "测试Coding配置",
+                "operationId": "testCodingConfigV1",
+                "parameters": [
+                    {
+                        "description": "test coding configuration req",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.TestCodingConfigurationReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.TestCodingConfigResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/configurations/ding_talk": {
             "get": {
                 "security": [
@@ -5257,6 +5352,47 @@ var doc = `{
                 }
             }
         },
+        "/v1/projects/{project_name}/sql_manages/send": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get sql manage analysis",
+                "tags": [
+                    "SqlManage"
+                ],
+                "summary": "推送SQL管控结果到外部系统",
+                "operationId": "SendSqlManage",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "batch update sql manage request",
+                        "name": "SqlManageCodingReq",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.SqlManageCodingReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.PostSqlManageCodingResp"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{project_name}/sql_manages/{sql_manage_id}/sql_analysis": {
             "get": {
                 "security": [
@@ -9500,18 +9636,24 @@ var doc = `{
             }
         },
         "/v1/tasks/audits/{task_id}/sqls/{number}/rewrite": {
-            "get": {
+            "post": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
                 "description": "获取特定任务中某条SQL语句的重写后的SQL及相关建议",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
                 "tags": [
                     "task"
                 ],
                 "summary": "获取任务中指定SQL的重写结果和建议",
-                "operationId": "getTaskRewrittenSQL",
+                "operationId": "RewriteSQL",
                 "parameters": [
                     {
                         "type": "string",
@@ -9526,13 +9668,22 @@ var doc = `{
                         "name": "number",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "request body",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.RewriteSQLReq"
+                        }
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "成功返回重写结果",
                         "schema": {
-                            "$ref": "#/definitions/v1.GetTaskRewrittenSQLRes"
+                            "$ref": "#/definitions/v1.RewriteSQLRes"
                         }
                     }
                 }
@@ -10186,7 +10337,8 @@ var doc = `{
                             "unhandled",
                             "solved",
                             "ignored",
-                            "manual_audited"
+                            "manual_audited",
+                            "sent"
                         ],
                         "type": "string",
                         "description": "status",
@@ -12114,6 +12266,28 @@ var doc = `{
                 }
             }
         },
+        "v1.CodingConfigurationV1": {
+            "type": "object",
+            "properties": {
+                "coding_url": {
+                    "type": "string"
+                },
+                "is_coding_enabled": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "v1.CodingResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.CompanyNotice": {
             "type": "object",
             "properties": {
@@ -13553,6 +13727,23 @@ var doc = `{
                 }
             }
         },
+        "v1.GetCodingConfigurationResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.CodingConfigurationV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetCompanyNoticeResp": {
             "type": "object",
             "properties": {
@@ -14799,23 +14990,6 @@ var doc = `{
                 }
             }
         },
-        "v1.GetTaskRewrittenSQLRes": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.TaskRewrittenSQLData"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
         "v1.GetUserTipsResV1": {
             "type": "object",
             "properties": {
@@ -15247,7 +15421,8 @@ var doc = `{
                         "unhandled",
                         "solved",
                         "ignored",
-                        "manual_audited"
+                        "manual_audited",
+                        "sent"
                     ]
                 }
             }
@@ -16117,6 +16292,23 @@ var doc = `{
                 }
             }
         },
+        "v1.PostSqlManageCodingResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.CodingResp"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.ProjectRuleTemplateResV1": {
             "type": "object",
             "properties": {
@@ -16232,6 +16424,102 @@ var doc = `{
                 },
                 "violated_queries_str": {
                     "type": "string"
+                }
+            }
+        },
+        "v1.RewriteSQLData": {
+            "type": "object",
+            "properties": {
+                "business_desc": {
+                    "description": "@Description 重写前的SQL业务描述",
+                    "type": "string"
+                },
+                "business_non_equivalent_desc": {
+                    "description": "@Description 重写前后的业务不等价性描述，为空表示等价",
+                    "type": "string"
+                },
+                "rewritten_sql": {
+                    "description": "@Description 重写后的SQL",
+                    "type": "string"
+                },
+                "suggestions": {
+                    "description": "@Description 重写建议列表",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.RewriteSuggestion"
+                    }
+                }
+            }
+        },
+        "v1.RewriteSQLReq": {
+            "type": "object",
+            "properties": {
+                "enable_structure_type": {
+                    "description": "@Description 是否启用结构化类型的重写",
+                    "type": "boolean",
+                    "default": false,
+                    "example": false
+                }
+            }
+        },
+        "v1.RewriteSQLRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.RewriteSQLData"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.RewriteSuggestion": {
+            "type": "object",
+            "properties": {
+                "audit_level": {
+                    "description": "@Description 审核规则等级\n@Required",
+                    "type": "string",
+                    "enum": [
+                        "normal",
+                        "notice",
+                        "warn",
+                        "error"
+                    ]
+                },
+                "ddl_dcl": {
+                    "description": "@Description 具体的数据库结构变更语句，需要在数据库中执行该变更语句之后再应用重写SQL（包含CREATE/ALTER/DROP等DDL语句，或SET等DCL语句）（适用于结构级重写）",
+                    "type": "string"
+                },
+                "ddl_dcl_desc": {
+                    "description": "@Description 数据库结构变更建议说明（例如：建议添加索引、修改表结构等优化建议）（适用于结构级重写）",
+                    "type": "string"
+                },
+                "desc": {
+                    "description": "@Description 重写描述（适用于所有类型）\n@Required",
+                    "type": "string"
+                },
+                "rewritten_sql": {
+                    "description": "@Description 重写后的SQL（适用于语句级重写和结构级重写）",
+                    "type": "string"
+                },
+                "rule_name": {
+                    "description": "@Description 审核规则名称\n@Required",
+                    "type": "string"
+                },
+                "type": {
+                    "description": "@Description 重写建议类型：语句级重写、结构级重写、其他\n@Required",
+                    "type": "string",
+                    "enum": [
+                        "statement",
+                        "structure",
+                        "other"
+                    ]
                 }
             }
         },
@@ -16642,50 +16930,6 @@ var doc = `{
                 }
             }
         },
-        "v1.SQLRewrittenSuggestion": {
-            "type": "object",
-            "properties": {
-                "audit_level": {
-                    "description": "@Description 审核规则等级\n@Required",
-                    "type": "string",
-                    "enum": [
-                        "normal",
-                        "notice",
-                        "warn",
-                        "error"
-                    ]
-                },
-                "ddl_dcl": {
-                    "description": "@Description 具体的数据库结构变更语句，需要在数据库中执行该变更语句之后再应用重写SQL（包含CREATE/ALTER/DROP等DDL语句，或SET等DCL语句）（适用于结构级重写）",
-                    "type": "string"
-                },
-                "ddl_dcl_desc": {
-                    "description": "@Description 数据库结构变更建议说明（例如：建议添加索引、修改表结构等优化建议）（适用于结构级重写）",
-                    "type": "string"
-                },
-                "desc": {
-                    "description": "@Description 重写描述（适用于所有类型）\n@Required",
-                    "type": "string"
-                },
-                "rewritten_sql": {
-                    "description": "@Description 重写后的SQL（适用于语句级重写和结构级重写）",
-                    "type": "string"
-                },
-                "rule_name": {
-                    "description": "@Description 审核规则名称\n@Required",
-                    "type": "string"
-                },
-                "type": {
-                    "description": "@Description 重写建议类型：语句级重写、结构级重写、其他\n@Required",
-                    "type": "string",
-                    "enum": [
-                        "statement",
-                        "structure",
-                        "other"
-                    ]
-                }
-            }
-        },
         "v1.SQLStatement": {
             "type": "object",
             "properties": {
@@ -16967,7 +17211,41 @@ var doc = `{
                         "unhandled",
                         "solved",
                         "ignored",
-                        "manual_audited"
+                        "manual_audited",
+                        "sent"
+                    ]
+                }
+            }
+        },
+        "v1.SqlManageCodingReq": {
+            "type": "object",
+            "properties": {
+                "coding_project_name": {
+                    "type": "string"
+                },
+                "priority": {
+                    "type": "string",
+                    "enum": [
+                        "LOW",
+                        "MEDIUM",
+                        "HIGH",
+                        "EMERGENCY"
+                    ]
+                },
+                "sql_manage_id_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "DEFECT",
+                        "MISSION",
+                        "REQUIREMENT",
+                        "EPIC",
+                        "SUB_TASK"
                     ]
                 }
             }
@@ -17245,31 +17523,6 @@ var doc = `{
                 }
             }
         },
-        "v1.TaskRewrittenSQLData": {
-            "type": "object",
-            "properties": {
-                "business_non_equivalent_desc": {
-                    "description": "@Description 业务不等价性描述，为空表示等价",
-                    "type": "string"
-                },
-                "rewritten_sql": {
-                    "description": "@Description 重写后的SQL",
-                    "type": "string"
-                },
-                "suggestions": {
-                    "description": "@Description 重写建议列表",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.SQLRewrittenSuggestion"
-                    }
-                },
-                "table_metas": {
-                    "description": "@Description 表结构",
-                    "type": "object",
-                    "$ref": "#/definitions/v1.TableMetas"
-                }
-            }
-        },
         "v1.TestAuditPlanNotifyConfigResDataV1": {
             "type": "object",
             "properties": {
@@ -17295,6 +17548,42 @@ var doc = `{
                 "message": {
                     "type": "string",
                     "example": "ok"
+                }
+            }
+        },
+        "v1.TestCodingConfigResDataV1": {
+            "type": "object",
+            "properties": {
+                "error_message": {
+                    "type": "string"
+                },
+                "is_message_sent_normally": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "v1.TestCodingConfigResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TestCodingConfigResDataV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.TestCodingConfigurationReqV1": {
+            "type": "object",
+            "properties": {
+                "coding_project_name": {
+                    "type": "string"
                 }
             }
         },
@@ -17555,6 +17844,20 @@ var doc = `{
                         "instance"
                     ],
                     "example": "sql"
+                }
+            }
+        },
+        "v1.UpdateCodingConfigurationReqV1": {
+            "type": "object",
+            "properties": {
+                "coding_url": {
+                    "type": "string"
+                },
+                "is_coding_enabled": {
+                    "type": "boolean"
+                },
+                "token": {
+                    "type": "string"
                 }
             }
         },
@@ -19724,7 +20027,8 @@ var doc = `{
                         "unhandled",
                         "solved",
                         "ignored",
-                        "manual_audited"
+                        "manual_audited",
+                        "sent"
                     ]
                 }
             }

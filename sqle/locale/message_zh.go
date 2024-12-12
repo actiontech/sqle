@@ -158,6 +158,7 @@ var (
 	SQLManageStatusSolved         = &i18n.Message{ID: "SQLManageStatusSolved", Other: "已解决"}
 	SQLManageStatusIgnored        = &i18n.Message{ID: "SQLManageStatusIgnored", Other: "已忽略"}
 	SQLManageStatusManualAudited  = &i18n.Message{ID: "SQLManageStatusManualAudited", Other: "已人工审核"}
+	SQLManageStatusSent           = &i18n.Message{ID: "SQLManageStatusSent", Other: "已推送到其他平台"}
 )
 
 // license
@@ -183,6 +184,7 @@ var (
 var (
 	ConfigTestAudit         = &i18n.Message{ID: "ConfigTestAudit", Other: "测试审批"}
 	ConfigFeishuTestContent = &i18n.Message{ID: "ConfigFeishuTestContent", Other: "这是一条测试审批,用来测试SQLE飞书审批功能是否正常"}
+	ConfigCoding            = &i18n.Message{ID: "ConfigCodingTest", Other: "这是一条测试信息，用来测试SQLE推送事项到Coding平台功能是否正常"}
 )
 
 // operation_record
