@@ -684,7 +684,6 @@ func sendSqlManage(c echo.Context) error {
 	}
 	lang := locale.Bundle.GetLangTagFromCtx(c.Request().Context())
 	s := model.GetStorage()
-	// 目前这里只实现单个推送，批量推送功能需要和产品确认具体实现
 	sqlManageRecordList, err := s.GetSqlManageRecordListByIds(req.SqlManageIdList)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, fmt.Errorf("get sql manage list error: %v ", err))
@@ -699,6 +698,7 @@ func sendSqlManage(c echo.Context) error {
 	if len(sqlManageRecordList) != len(req.SqlManageIdList) {
 		return controller.JSONBaseErrorReq(c, fmt.Errorf("sql manage records not equal to request id count"))
 	}
+	// 目前这里只实现单个推送，批量推送功能需要和产品确认具体实现
 	sqlManageRecord := sqlManageRecordList[0]
 	codingRequest := buildCodingSQLManageReq(lang, c.Param("project_name"), *req, *sqlManageRecord)
 	createIssueResponseBody, err := coding.NewCodingClient(codingConfig.AppKey, codingConfig.AppSecret).CreateIssue(codingRequest)
