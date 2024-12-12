@@ -1434,7 +1434,7 @@ func AuditPlanTriggerSqlAudit(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	// 更新最后审核时间
-	err = s.UpdateManageSQLStatusByManageIDs(recordIds, map[string]interface{}{"last_audit_time": time.Now()})
+	err = s.UpdateManageSQLProcessByManageIDs(recordIds, map[string]interface{}{"last_audit_time": time.Now()})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
