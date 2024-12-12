@@ -560,6 +560,8 @@ func (s *Storage) GetAuditPlansByProjectId(projectID string) ([]*InstanceAuditPl
 	return instanceAuditPlan, err
 }
 
+// 获取需要审核的sql，
+// 当更新时间大于最后审核时间或最后审核时间为空时需要重新审核（采集或重新采集到的sql）
 func (s *Storage) GetSQLsToAuditFromManage() ([]*SQLManageRecord, error) {
 	manageRecords := []*SQLManageRecord{}
 	err := s.db.Limit(1000).Model(SQLManageRecord{}).
