@@ -5,14 +5,14 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-type GetTaskRewrittenSQLReq struct {
+type RewriteSQLReq struct {
 	// @Description 是否启用结构化类型的重写
 	EnableStructureType bool `json:"enable_structure_type" example:"false" default:"false"`
 }
 
-type TaskRewrittenSQLData struct {
+type RewriteSQLData struct {
 	// @Description 重写建议列表
-	Suggestions []*SQLRewrittenSuggestion `json:"suggestions"`
+	Suggestions []*RewriteSuggestion `json:"suggestions"`
 	// @Description 重写后的SQL
 	RewrittenSQL string `json:"rewritten_sql"`
 	// @Description 业务不等价性描述，为空表示等价
@@ -21,7 +21,7 @@ type TaskRewrittenSQLData struct {
 	// TODO: 重写SQL的审核结果
 }
 
-type SQLRewrittenSuggestion struct {
+type RewriteSuggestion struct {
 	// @Description 审核规则名称
 	// @Required
 	RuleName string `json:"rule_name"`
@@ -42,24 +42,24 @@ type SQLRewrittenSuggestion struct {
 	DDL_DCL string `json:"ddl_dcl"`
 }
 
-type GetTaskRewrittenSQLRes struct {
+type RewriteSQLRes struct {
 	controller.BaseRes
-	Data *TaskRewrittenSQLData `json:"data"`
+	Data *RewriteSQLData `json:"data"`
 }
 
-// GetTaskRewrittenSQL retrieves the rewritten SQL and associated suggestions for a specific SQL statement within a task.
+// RewriteSQL retrieves the rewritten SQL and associated suggestions for a specific SQL statement within a task.
 // @Summary 获取任务中指定SQL的重写结果和建议
 // @Description 获取特定任务中某条SQL语句的重写后的SQL及相关建议
-// @Id getTaskRewrittenSQL
+// @Id RewriteSQL
 // @Accept json
 // @Produce json
 // @Tags task
 // @Param task_id path string true "task id"
 // @Param number path uint true "sql number"
-// @Param req body v1.GetTaskRewrittenSQLReq true "request body"
+// @Param req body v1.RewriteSQLReq true "request body"
 // @Security ApiKeyAuth
-// @Success 200 {object} v1.GetTaskRewrittenSQLRes "成功返回重写结果"
+// @Success 200 {object} v1.RewriteSQLRes "成功返回重写结果"
 // @router /v1/tasks/audits/{task_id}/sqls/{number}/rewrite [post]
-func GetTaskRewrittenSQL(c echo.Context) error {
-	return getTaskRewrittenSQLData(c)
+func RewriteSQL(c echo.Context) error {
+	return getRewriteSQLData(c)
 }
