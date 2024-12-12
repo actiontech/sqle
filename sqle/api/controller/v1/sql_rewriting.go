@@ -11,11 +11,13 @@ type RewriteSQLReq struct {
 }
 
 type RewriteSQLData struct {
+	// @Description 重写前的SQL业务描述
+	BussinessDesc string `json:"bussiness_desc"`
 	// @Description 重写建议列表
 	Suggestions []*RewriteSuggestion `json:"suggestions"`
 	// @Description 重写后的SQL
 	RewrittenSQL string `json:"rewritten_sql"`
-	// @Description 业务不等价性描述，为空表示等价
+	// @Description 重写前后的业务不等价性描述，为空表示等价
 	BusinessNonEquivalentDesc string `json:"business_non_equivalent_desc"`
 
 	// TODO: 重写SQL的审核结果
