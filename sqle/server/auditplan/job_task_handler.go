@@ -55,7 +55,7 @@ func (j *AuditPlanHandlerJob) HandlerSQL(entry *logrus.Entry) {
 		}
 	}
 	// 更新最后审核时间
-	err = s.UpdateManageSQLStatusByManageIDs(recordIds, map[string]interface{}{"last_audit_time": time.Now()})
+	err = s.UpdateManageSQLProcessByManageIDs(recordIds, map[string]interface{}{"last_audit_time": time.Now()})
 	if err != nil {
 		entry.Warnf("update manage record process failed, error: %v", err)
 	}
@@ -82,33 +82,27 @@ func BatchAuditSQLs(sqlList []*model.SQLManageRecord) ([]*model.SQLManageRecord,
 		go func(sqls []*model.SQLManageRecord) {
 			defer wg.Done()
 
+			var resp *AuditResultResp
 			auditPlanType := sqls[0].Source
 			meta, err := GetMeta(auditPlanType)
+			// 当无法获取meta时，不执行审核，直接返回原始sql
 			if err != nil {
-				mu.Lock()
-				defer mu.Unlock()
-				auditSQLs = append(auditSQLs, sqls...)
 				log.NewEntry().Errorf("get meta to audit sql fail %v", err)
-				return
-			}
-
-			resp, err := meta.Handler.Audit(sqls)
-			if err != nil {
-				if errors.Is(err, model.ErrAuditPlanNotFound) {
-					log.NewEntry().Warnf("audit sqls in task fail %v, can't find audit plan by id %s", err, sqls[0].SourceId)
-					// TODO 调整值clear中清理未关联扫描任务的sql
-					if err := s.DeleteSQLManageRecordBySourceId(sqls[0].SourceId); err != nil {
-						log.NewEntry().Errorf("delete sql manage record fail %v", err)
+			} else {
+				resp, err = meta.Handler.Audit(sqls)
+				if err != nil {
+					if errors.Is(err, model.ErrAuditPlanNotFound) {
+						log.NewEntry().Warnf("audit sqls in task fail %v, can't find audit plan by id %s", err, sqls[0].SourceId)
+						// TODO 调整至clean中清理未关联扫描任务的sql
+						// 扫描任务已被删除的sql不需要save到管控中
+						if err := s.DeleteSQLManageRecordBySourceId(sqls[0].SourceId); err != nil {
+							log.NewEntry().Errorf("delete sql manage record fail %v", err)
+						}
+						return
 					}
-					return
+					log.NewEntry().Errorf("audit sqls in task fail %v, ignore audit result", err)
 				}
-				log.NewEntry().Errorf("audit sqls in task fail %v, ignore audit result", err)
-				mu.Lock()
-				auditSQLs = append(auditSQLs, sqls...)
-				mu.Unlock()
-				return
 			}
-
 			mu.Lock()
 			auditSQLs = append(auditSQLs, resp.AuditedSqls...)
 			mu.Unlock()
