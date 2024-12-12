@@ -16429,7 +16429,11 @@ var doc = `{
             "type": "object",
             "properties": {
                 "business_non_equivalent_desc": {
-                    "description": "@Description 业务不等价性描述，为空表示等价",
+                    "description": "@Description 重写前后的业务不等价性描述，为空表示等价",
+                    "type": "string"
+                },
+                "bussiness_desc": {
+                    "description": "@Description 重写前的SQL业务描述",
                     "type": "string"
                 },
                 "rewritten_sql": {
