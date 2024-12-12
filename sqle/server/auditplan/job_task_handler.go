@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"strings"
+	"sync"
 	"time"
 
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
@@ -12,7 +12,6 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 type AuditPlanHandlerJob struct {
@@ -28,82 +27,15 @@ func NewAuditPlanHandlerJob(entry *logrus.Entry) server.ServerJob {
 
 func (j *AuditPlanHandlerJob) HandlerSQL(entry *logrus.Entry) {
 	s := model.GetStorage()
-	queues, err := s.PullSQLFromManagerSQLQueue()
+	sqlList, err := s.GetSQLsToAuditFromManage()
 	if err != nil {
-		entry.Warnf("pull sql from queue failed, error: %v", err)
+		entry.Warnf("get sqls to audit failed, error: %v", err)
 		return
 	}
-	cache := NewSQLV2CacheWithPersist(s)
-	for _, sql := range queues {
-		sqlV2 := ConvertMangerSQLQueueToSQLV2(sql)
-		meta, err := GetMeta(sqlV2.Source)
-		if err != nil {
-			entry.Warnf("get meta failed, error: %v", err)
-			// todo: 有错误咋处理
-			continue
-		}
-		if meta.Handler == nil {
-			entry.Warnf("do not support this type (%s), error: %v", sqlV2.Source, err)
-			// todo: 没有处理器咋办
-			continue
-		}
-		err = meta.Handler.AggregateSQL(cache, sqlV2)
-		if err != nil {
-			entry.Warnf("aggregate sql failed, error: %v", err)
-			// todo: 有错误咋处理
-			continue
-		}
-
-	}
-
-	sqlList := make([]*model.SQLManageRecord, 0, len(cache.GetSQLs()))
-	for _, sql := range cache.GetSQLs() {
-		sqlList = append(sqlList, ConvertSQLV2ToMangerSQL(sql))
-	}
-
 	if len(sqlList) == 0 {
 		return
 	}
-
-	// todo: 错误处理
-	if err = s.Tx(func(txDB *gorm.DB) error {
-		for _, sql := range sqlList {
-			err := s.SaveManagerSQL(txDB, sql)
-			if err != nil {
-				entry.Warnf("update manager sql failed, error: %v", err)
-				return err
-			}
-
-			// 更新状态表
-			err = s.UpdateManagerSQLStatus(txDB, sql)
-			if err != nil {
-				entry.Warnf("update manager sql status failed, error: %v", err)
-				return err
-			}
-		}
-
-		for _, sql := range queues {
-			err := s.RemoveSQLFromQueue(txDB, sql)
-			if err != nil {
-				entry.Warnf("remove manager sql queue failed, error: %v", err)
-				return err
-			}
-		}
-
-		return nil
-
-	}); err != nil {
-		return
-	}
-
-	go handlerSQLAudit(entry, sqlList)
-
-}
-
-// todo: 错误处理
-func handlerSQLAudit(entry *logrus.Entry, sqlList []*model.SQLManageRecord) {
-	s := model.GetStorage()
-	sqlList, err := BatchAuditSQLs(sqlList, true)
+	sqlList, err = BatchAuditSQLs(sqlList)
 	if err != nil {
 		entry.Warnf("batch audit manager sql failed, error: %v", err)
 	}
@@ -112,73 +44,79 @@ func handlerSQLAudit(entry *logrus.Entry, sqlList []*model.SQLManageRecord) {
 	if err != nil {
 		entry.Warnf("set sql priority sql failed, error: %v", err)
 	}
-	for _, sql := range sqlList {
-		manageSqlParam := make(map[string]interface{}, 3)
-		manageSqlParam["audit_level"] = sql.AuditLevel
-		manageSqlParam["audit_results"] = sql.AuditResults
-		manageSqlParam["priority"] = sql.Priority
-		err = s.UpdateManagerSQLBySqlId(manageSqlParam, sql.SQLID)
+	// 更新审核结果和优先级
+	recordIds := make([]uint, len(sqlList))
+	for i, sql := range sqlList {
+		recordIds[i] = sql.ID
+		err = s.UpdateManagerSQLBySqlId(sql.SQLID, map[string]interface{}{"audit_level": sql.AuditLevel, "audit_results": sql.AuditResults, "priority": sql.Priority})
 		if err != nil {
 			entry.Warnf("update manager sql failed, error: %v", err)
 			continue
 		}
 	}
+	// 更新最后审核时间
+	err = s.UpdateManageSQLStatusByManageIDs(recordIds, map[string]interface{}{"last_audit_time": time.Now()})
+	if err != nil {
+		entry.Warnf("update manage record process failed, error: %v", err)
+	}
 }
 
-func BatchAuditSQLs(sqlList []*model.SQLManageRecord, isSkipAuditedSql bool) ([]*model.SQLManageRecord, error) {
+func BatchAuditSQLs(sqlList []*model.SQLManageRecord) ([]*model.SQLManageRecord, error) {
 	s := model.GetStorage()
-	// SQL聚合
 	sqlMap := make(map[string][]*model.SQLManageRecord)
+
 	for _, sql := range sqlList {
-		if isSkipAuditedSql && sql.AuditLevel != "" {
-			continue
-		}
-
-		// 根据source id和schema name 聚合sqls，避免task内需要切换schema上下文审核
-		key := fmt.Sprintf("%s:%s", sql.SourceId, sql.SchemaName)
-		_, ok := sqlMap[key]
-		if !ok {
-			sqlMap[key] = make([]*model.SQLManageRecord, 0)
-		}
+		// 根据扫描任务和 schema name 聚合 sqls，避免 task 内需要切换 schema 上下文审核
+		key := fmt.Sprintf("%s:%s:%s", sql.SourceId, sql.Source, sql.SchemaName)
 		sqlMap[key] = append(sqlMap[key], sql)
-
 	}
 
-	auditSQLs := make([]*model.SQLManageRecord, 0)
-	// 聚合的SQL批量审核
+	var (
+		auditSQLs []*model.SQLManageRecord
+		mu        sync.Mutex
+		wg        sync.WaitGroup
+	)
+
 	for _, sqls := range sqlMap {
-		// get audit plan by source id
-		auditPlanType := sqls[0].Source
+		wg.Add(1)
+		go func(sqls []*model.SQLManageRecord) {
+			defer wg.Done()
 
-		meta, err := GetMeta(auditPlanType)
-		if err != nil {
-			return nil, err
-		}
-		resp, err := meta.Handler.Audit(sqls)
-		// 当管控队列表中sql出栈审核时扫描任务被删除，则清空已经save到管控表的sql。
-		if err != nil && errors.Is(err, model.ErrAuditPlanNotFound) {
-			log.NewEntry().Warnf("audit sqls in task fail %v,cant find audit plan by id %s", err, sqls[0].SourceId)
-			err := s.DeleteSQLManageRecordBySourceId(sqls[0].SourceId)
+			auditPlanType := sqls[0].Source
+			meta, err := GetMeta(auditPlanType)
 			if err != nil {
-				log.NewEntry().Errorf("delete sql manage record fail %v", err)
+				mu.Lock()
+				defer mu.Unlock()
+				auditSQLs = append(auditSQLs, sqls...)
+				log.NewEntry().Errorf("get meta to audit sql fail %v", err)
+				return
 			}
-			for k := range sqlMap {
-				if strings.HasPrefix(k, sqls[0].SourceId+":") {
-					delete(sqlMap, k)
+
+			resp, err := meta.Handler.Audit(sqls)
+			if err != nil {
+				if errors.Is(err, model.ErrAuditPlanNotFound) {
+					log.NewEntry().Warnf("audit sqls in task fail %v, can't find audit plan by id %s", err, sqls[0].SourceId)
+					// TODO 调整值clear中清理未关联扫描任务的sql
+					if err := s.DeleteSQLManageRecordBySourceId(sqls[0].SourceId); err != nil {
+						log.NewEntry().Errorf("delete sql manage record fail %v", err)
+					}
+					return
 				}
+				log.NewEntry().Errorf("audit sqls in task fail %v, ignore audit result", err)
+				mu.Lock()
+				auditSQLs = append(auditSQLs, sqls...)
+				mu.Unlock()
+				return
 			}
-			continue
-		}
-		if err != nil {
-			log.NewEntry().Errorf("audit sqls in task fail %v,ignore audit result", err)
-			auditSQLs = append(auditSQLs, sqls...)
-			continue
-		}
 
-		// 更新原值
-		auditSQLs = append(auditSQLs, resp.AuditedSqls...)
-
+			mu.Lock()
+			auditSQLs = append(auditSQLs, resp.AuditedSqls...)
+			mu.Unlock()
+		}(sqls)
 	}
+
+	wg.Wait()
+
 	return auditSQLs, nil
 }
 

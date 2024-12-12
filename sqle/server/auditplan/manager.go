@@ -150,7 +150,7 @@ func GetSQLData(ctx context.Context, ap *AuditPlan, persist *model.Storage, filt
 }
 
 func init() {
-	server.OnlyRunOnLeaderJobs = append(server.OnlyRunOnLeaderJobs, NewManager, NewAuditPlanHandlerJob, NewAuditPlanAlertJob)
+	server.OnlyRunOnLeaderJobs = append(server.OnlyRunOnLeaderJobs, NewManager, NewAuditPlanHandlerJob, NewAuditPlanAggregateSQLJob)
 }
 
 func NewManager(entry *logrus.Entry) server.ServerJob {
