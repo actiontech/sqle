@@ -17,6 +17,8 @@ type RewriteSQLData struct {
 	Suggestions []*RewriteSuggestion `json:"suggestions"`
 	// @Description 重写后的SQL
 	RewrittenSQL string `json:"rewritten_sql"`
+	// @Description 重写后的SQL业务描述
+	RewrittenSQLBusinessDesc string `json:"rewritten_sql_business_desc"`
 	// @Description 重写前后的业务不等价性描述，为空表示等价
 	BusinessNonEquivalentDesc string `json:"business_non_equivalent_desc"`
 
