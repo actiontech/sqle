@@ -173,6 +173,8 @@ func (s *Storage) GetLatestStartTimeAuditPlanSQLV2(sourceId uint) (string, error
 	return info.StartTime, err
 }
 
+// 此表对于来源是扫描任务的相关sql, 目前仅在采集和审核时会更新, 如有其他场景更新此表, 需要考虑更新后会触发审核影响
+// 如有其他sql业务相关字段补充, 可新增至SQLManageRecordProcess中
 type SQLManageRecord struct {
 	Model
 
@@ -562,6 +564,7 @@ func (s *Storage) GetAuditPlansByProjectId(projectID string) ([]*InstanceAuditPl
 
 // 获取需要审核的sql，
 // 当更新时间大于最后审核时间或最后审核时间为空时需要重新审核（采集或重新采集到的sql）
+// 需要注意：当前仅在采集和审核时会更sql_manage_records中扫描任务相关的sql，所以使用了updated_at > last_audit_time条件。
 func (s *Storage) GetSQLsToAuditFromManage() ([]*SQLManageRecord, error) {
 	manageRecords := []*SQLManageRecord{}
 	err := s.db.Limit(1000).Model(SQLManageRecord{}).
