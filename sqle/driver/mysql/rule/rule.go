@@ -5398,7 +5398,7 @@ func mustMatchLeftMostPrefix(input *RuleHandlerInput) error {
 				addResult(input.Res, input.Rule, input.Rule.Name)
 			}
 		} else if input.Rule.Name == DMLMustUseLeftMostPrefix {
-			if !isColumnUseLeftMostPrefix(cols.AllCols, createTable.Constraints) {
+			if !isPassLeftmostPrefixCheck(cols.AllCols, createTable.Constraints) {
 				addResult(input.Res, input.Rule, input.Rule.Name)
 			}
 		}
@@ -5448,39 +5448,35 @@ func checkSingleIndex(allCols []string, constraint *ast.Constraint) bool {
 	return false
 }
 
-func isColumnUseLeftMostPrefix(allCols []string, constraints []*ast.Constraint) bool {
-	multiConstraints := make([]*ast.Constraint, 0)
-	for _, constraint := range constraints {
-		if len(constraint.Keys) == 1 {
-			if checkSingleIndex(allCols, constraint) {
-				return true
-			}
-			continue
-		}
-		multiConstraints = append(multiConstraints, constraint)
-	}
-	walkConstraint := func(constraint *ast.Constraint) bool {
-		isCurrentIndexUsed := false
-		for i, key := range constraint.Keys {
-			for _, col := range allCols {
-				if col != key.Column.Name.L {
-					// 不是这个索引的字段，跳过
-					continue
-				}
-				isCurrentIndexUsed = true
-				if i == 0 {
-					return true
-				}
-			}
-		}
-		return !isCurrentIndexUsed
+func isPassLeftmostPrefixCheck(allCols []string, constraints []*ast.Constraint) bool {
+	if len(allCols) == 0 || len(constraints) == 0 {
+		return true
 	}
 
-	for _, constraint := range multiConstraints {
-		if !walkConstraint(constraint) {
+	for _, constraint := range constraints {
+		if len(constraint.Keys) == 1 && checkSingleIndex(allCols, constraint) {
+			return true
+		}
+
+		if len(constraint.Keys) > 1 && constraint.Keys[0].Column.Name.L == allCols[0] {
+			return true
+		}
+	}
+
+	// where条件中的字段不在索引中,规则默认通过审核
+	columnMap := make(map[string]struct{})
+	for _, constraint := range constraints {
+		for _, key := range constraint.Keys {
+			columnMap[key.Column.Name.L] = struct{}{}
+		}
+	}
+
+	for _, col := range allCols {
+		if _, ok := columnMap[col]; ok {
 			return false
 		}
 	}
+
 	return true
 }
 

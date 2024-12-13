@@ -408,7 +408,10 @@ upgrade_time timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_T
 year_time year(4) NOT NULL DEFAULT '2020',
 data_time date NOT NULL DEFAULT '2020-01-01 00:00:00',
 data_time2 TIME NOT NULL DEFAULT '12:00:00', 
-PRIMARY KEY (id) USING BTREE
+PRIMARY KEY (id) USING BTREE,
+KEY idx_1 (data_time,data_time2),
+KEY idx_2 (data_time2,year_time),
+KEY idx_3 (create_time,upgrade_time)
 )ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COMMENT="unit test";
 `
 	node, err := util.ParseOneSql(baseCreateQuery)
