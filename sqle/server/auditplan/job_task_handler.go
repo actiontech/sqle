@@ -81,9 +81,12 @@ func BatchAuditSQLs(l *logrus.Entry, sqlList []*model.SQLManageRecord) ([]*model
 		go func(sqls []*model.SQLManageRecord) {
 			defer wg.Done()
 
+			sourceType := sqls[0].Source
+			sourceId := sqls[0].SourceId
+			l.Infof("processing audit for source id %s, type %s", sourceId, sourceType)
+
 			var resp *AuditResultResp
-			auditPlanType := sqls[0].Source
-			meta, err := GetMeta(auditPlanType)
+			meta, err := GetMeta(sourceType)
 			// 当无法获取meta时，不执行审核，直接返回原始sql
 			if err != nil {
 				l.Errorf("get meta to audit sql fail %v", err)
@@ -91,10 +94,10 @@ func BatchAuditSQLs(l *logrus.Entry, sqlList []*model.SQLManageRecord) ([]*model
 				resp, err = meta.Handler.Audit(sqls)
 				if err != nil {
 					if errors.Is(err, model.ErrAuditPlanNotFound) {
-						l.Warnf("audit sqls in task fail %v, can't find audit plan by id %s", err, sqls[0].SourceId)
+						l.Warnf("audit sqls in task fail %v, can't find source", err)
 						// TODO 调整至clean中清理未关联扫描任务的sql
 						// 扫描任务已被删除的sql不需要save到管控中
-						if err := s.DeleteSQLManageRecordBySourceId(sqls[0].SourceId); err != nil {
+						if err := s.DeleteSQLManageRecordBySourceId(sourceId); err != nil {
 							l.Errorf("delete sql manage record fail %v", err)
 						}
 						return
