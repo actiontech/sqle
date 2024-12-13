@@ -105,21 +105,11 @@ func (i *MysqlDriverImpl) generateDeleteRollbackSqls(stmt *ast.DeleteStmt, backu
 		return []string{}, plocale.Bundle.LocalizeAll(plocale.NotSupportNoPrimaryKeyTableRollback), nil
 	}
 
-	var max = int64(backupMaxRows)
-	limit, err := util.GetLimitCount(stmt.Limit, max+1)
-	if err != nil {
-		return []string{}, nil, err
+	if over, err := i.isAffectedRowsOverBackupMaxRows(table, stmt.Where, stmt.Order, stmt.Limit, backupMaxRows); over {
+		return []string{}, plocale.Bundle.LocalizeAll(plocale.NotSupportExceedMaxRowsRollback), err
 	}
-	if limit > max {
-		count, err := i.getRecordCount(table, "", stmt.Where, stmt.Order, limit)
-		if err != nil {
-			return []string{}, nil, err
-		}
-		if count > max {
-			return []string{}, plocale.Bundle.LocalizeAll(plocale.NotSupportExceedMaxRowsRollback), nil
-		}
-	}
-	records, err := i.getRecords(table, "", stmt.Where, stmt.Order, limit)
+
+	records, err := i.getRecords(table, "", stmt.Where, stmt.Order, int64(backupMaxRows))
 	if err != nil {
 		return []string{}, nil, err
 	}
@@ -195,21 +185,11 @@ func (i *MysqlDriverImpl) generateUpdateRollbackSqls(stmt *ast.UpdateStmt, backu
 		return []string{}, plocale.Bundle.LocalizeAll(plocale.NotSupportNoPrimaryKeyTableRollback), nil
 	}
 
-	var max = int64(backupMaxRows)
-	limit, err := util.GetLimitCount(stmt.Limit, max+1)
-	if err != nil {
-		return []string{}, nil, err
+	if over, err := i.isAffectedRowsOverBackupMaxRows(table, stmt.Where, stmt.Order, stmt.Limit, backupMaxRows); over {
+		return []string{}, plocale.Bundle.LocalizeAll(plocale.NotSupportExceedMaxRowsRollback), err
 	}
-	if limit > max {
-		count, err := i.getRecordCount(table, tableAlias, stmt.Where, stmt.Order, limit)
-		if err != nil {
-			return []string{}, nil, err
-		}
-		if count > max {
-			return []string{}, plocale.Bundle.LocalizeAll(plocale.NotSupportExceedMaxRowsRollback), nil
-		}
-	}
-	records, err := i.getRecords(table, tableAlias, stmt.Where, stmt.Order, limit)
+	
+	records, err := i.getRecords(table, tableAlias, stmt.Where, stmt.Order, int64(backupMaxRows))
 	if err != nil {
 		return []string{}, nil, err
 	}

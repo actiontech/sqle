@@ -92,25 +92,32 @@ func (i *MysqlDriverImpl) getCreateTableStmt(table *ast.TableName) (string, erro
 	return stmt.Text() + ";\n", nil
 }
 
+func (i *MysqlDriverImpl) isAffectedRowsOverBackupMaxRows(table *ast.TableName, whereClause ast.ExprNode, orderClause *ast.OrderByClause, limitClause *ast.Limit, backupMaxRows uint64) (bool, error) {
+	var max = int64(backupMaxRows)
+	limit, err := util.GetLimitCount(limitClause, max+1)
+	if err != nil {
+		return false, err
+	}
+	if limit > max {
+		count, err := i.getRecordCount(table, "", whereClause, orderClause, limit)
+		if err != nil {
+			return false, err
+		}
+		if count > max {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 func (i *MysqlDriverImpl) getOriginalRowReplaceIntoSql(table *ast.TableName, whereClause ast.ExprNode, orderClause *ast.OrderByClause, limitClause *ast.Limit, backupMaxRows uint64) ([]string, i18nPkg.I18nStr, error) {
 	createTableStmt, exist, err := i.Ctx.GetCreateTableStmt(table)
 	if err != nil || !exist {
 		return []string{}, nil, err
 	}
 
-	var max = int64(backupMaxRows)
-	limit, err := util.GetLimitCount(limitClause, max+1)
-	if err != nil {
-		return []string{}, nil, err
-	}
-	if limit > max {
-		count, err := i.getRecordCount(table, "", whereClause, orderClause, limit)
-		if err != nil {
-			return []string{}, nil, err
-		}
-		if count > max {
-			return []string{}, plocale.Bundle.LocalizeAll(plocale.NotSupportExceedMaxRowsRollback), nil
-		}
+	if over, err := i.isAffectedRowsOverBackupMaxRows(table, whereClause, orderClause, limitClause, backupMaxRows); over {
+		return []string{}, plocale.Bundle.LocalizeAll(plocale.NotSupportExceedMaxRowsRollback), err
 	}
 
 	records, err := i.getRecords(table, "", whereClause, orderClause, int64(backupMaxRows))
