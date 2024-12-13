@@ -173,6 +173,8 @@ func (s *Storage) GetLatestStartTimeAuditPlanSQLV2(sourceId uint) (string, error
 	return info.StartTime, err
 }
 
+// 此表对于来源是扫描任务的相关sql, 目前仅在采集和审核时会更新, 如有其他场景更新此表, 需要考虑更新后会触发审核影响
+// 如有其他sql业务相关字段补充, 可新增至SQLManageRecordProcess中
 type SQLManageRecord struct {
 	Model
 
@@ -185,7 +187,7 @@ type SQLManageRecord struct {
 	SqlText        string         `json:"sql_text" gorm:"type:mediumtext;not null"`
 	Info           JSON           `gorm:"type:json"` // 慢日志的 执行时间等特殊属性
 	AuditLevel     string         `json:"audit_level" gorm:"type:varchar(255)"`
-	AuditResults   AuditResults   `json:"audit_results" gorm:"type:json"`
+	AuditResults   *AuditResults  `json:"audit_results" gorm:"type:json"`
 	SQLID          string         `json:"sql_id" gorm:"type:varchar(255);unique;not null"`
 	Priority       sql.NullString `json:"priority" gorm:"type:varchar(255)"`
 
@@ -276,7 +278,8 @@ func (s *Storage) GetManagerSqlRuleTipsByAuditPlan(auditPlanId uint) ([]*SqlMana
 type SQLManageRecordProcess struct {
 	Model
 
-	SQLManageRecordID *uint `json:"sql_manage_record_id" gorm:"unique;not null"`
+	SQLManageRecordID *uint      `json:"sql_manage_record_id" gorm:"unique;not null"`
+	LastAuditTime     *time.Time `json:"last_audit_time" gorm:"type:datetime(3)"`
 	// 任务属性字段
 	Assignees string        `json:"assignees" gorm:"type:varchar(2000)"`
 	Status    ProcessStatus `json:"status" gorm:"default:\"unhandled\""`
@@ -523,10 +526,10 @@ func (s *Storage) DeleteSQLManageRecordBySourceId(sourceId string) error {
 }
 
 func (s *Storage) SaveManagerSQL(txDB *gorm.DB, sql *SQLManageRecord) error {
-	const query = "INSERT INTO `sql_manage_records` (`sql_id`,`source`,`source_id`,`project_id`,`instance_id`,`schema_name`,`sql_fingerprint`, `sql_text`, `info`) " +
-		"VALUES (?,?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE `source` = VALUES(source),`source_id` = VALUES(source_id),`project_id` = VALUES(project_id), `instance_id` = VALUES(instance_id), " +
-		"`schema_name` = VALUES(`schema_name`), `sql_text` = VALUES(sql_text), `sql_fingerprint` = VALUES(sql_fingerprint), `info`= VALUES(info)"
-	return txDB.Exec(query, sql.SQLID, sql.Source, sql.SourceId, sql.ProjectId, sql.InstanceID, sql.SchemaName, sql.SqlFingerprint, sql.SqlText, sql.Info).Error
+	const query = "INSERT INTO `sql_manage_records` (`sql_id`,`source`,`source_id`,`project_id`,`instance_id`,`schema_name`,`sql_fingerprint`, `sql_text`, `info`, `audit_level`, `audit_results`,`priority`) " +
+		"VALUES (?,?,?,?,?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE `source` = VALUES(source),`source_id` = VALUES(source_id),`project_id` = VALUES(project_id), `instance_id` = VALUES(instance_id), `priority` = VALUES(priority), " +
+		"`schema_name` = VALUES(`schema_name`), `sql_text` = VALUES(sql_text), `sql_fingerprint` = VALUES(sql_fingerprint), `info`= VALUES(info), `audit_level`= VALUES(audit_level), `audit_results`= VALUES(audit_results)"
+	return txDB.Exec(query, sql.SQLID, sql.Source, sql.SourceId, sql.ProjectId, sql.InstanceID, sql.SchemaName, sql.SqlFingerprint, sql.SqlText, sql.Info, sql.AuditLevel, sql.AuditResults, sql.Priority).Error
 }
 
 func (s *Storage) UpdateManagerSQLStatus(txDB *gorm.DB, sql *SQLManageRecord) error {
@@ -536,7 +539,7 @@ func (s *Storage) UpdateManagerSQLStatus(txDB *gorm.DB, sql *SQLManageRecord) er
 	return txDB.Exec(query, sql.SQLID).Error
 }
 
-func (s *Storage) UpdateManagerSQLBySqlId(sqlManageMap map[string]interface{}, sqlId string) error {
+func (s *Storage) UpdateManagerSQLBySqlId(sqlId string, sqlManageMap map[string]interface{}) error {
 	err := s.db.Model(&SQLManageRecord{}).Where("sql_id = ?", sqlId).
 		Updates(sqlManageMap).Error
 	if err != nil {
@@ -557,4 +560,28 @@ func (s *Storage) GetAuditPlansByProjectId(projectID string) ([]*InstanceAuditPl
 	instanceAuditPlan := []*InstanceAuditPlan{}
 	err := s.db.Model(InstanceAuditPlan{}).Where("project_id = ?", projectID).Find(&instanceAuditPlan).Error
 	return instanceAuditPlan, err
+}
+
+// 获取需要审核的sql，
+// 当更新时间大于最后审核时间或最后审核时间为空时需要重新审核（采集或重新采集到的sql）
+// 需要注意：当前仅在采集和审核时会更sql_manage_records中扫描任务相关的sql，所以使用了updated_at > last_audit_time条件。
+func (s *Storage) GetSQLsToAuditFromManage() ([]*SQLManageRecord, error) {
+	manageRecords := []*SQLManageRecord{}
+	err := s.db.Limit(1000).Model(SQLManageRecord{}).
+		Joins("JOIN audit_plans_v2 apv ON sql_manage_records.source_id = apv.instance_audit_plan_id AND sql_manage_records.source = apv.type AND apv.deleted_at IS NULL").
+		Joins("JOIN sql_manage_record_processes smrp ON sql_manage_records.id =smrp.sql_manage_record_id").
+		Where("sql_manage_records.updated_at > smrp.last_audit_time OR smrp.last_audit_time IS NULL").
+		Find(&manageRecords).Error
+	if err == gorm.ErrRecordNotFound {
+		return manageRecords, nil
+	}
+	return manageRecords, err
+}
+
+func (s *Storage) UpdateManageSQLProcessByManageIDs(ids []uint, attrs map[string]interface{}) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	err := s.db.Model(SQLManageRecordProcess{}).Where("sql_manage_record_id IN (?)", ids).Updates(attrs).Error
+	return errors.New(errors.ConnectStorageError, err)
 }

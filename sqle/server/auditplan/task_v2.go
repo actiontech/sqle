@@ -140,7 +140,7 @@ func auditSQLs(sqls []*model.SQLManageRecord) (*AuditResultResp, error) {
 
 	// update sql audit result
 	for i, sql := range task.ExecuteSQLs {
-		sqls[i].AuditResults = sql.AuditResults
+		sqls[i].AuditResults = &sql.AuditResults
 		sqls[i].AuditLevel = sql.AuditLevel
 	}
 
