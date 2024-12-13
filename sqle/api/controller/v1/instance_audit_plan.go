@@ -1421,7 +1421,7 @@ func AuditPlanTriggerSqlAudit(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	auditedSqlList, err := auditplan.BatchAuditSQLs(auditPlanSqls)
+	auditedSqlList, err := auditplan.BatchAuditSQLs(log.NewEntry(), auditPlanSqls)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
