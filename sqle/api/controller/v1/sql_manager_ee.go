@@ -9,13 +9,14 @@ import (
 	"encoding/csv"
 	e "errors"
 	"fmt"
-	"github.com/actiontech/sqle/sqle/pkg/im/coding"
-	"golang.org/x/text/language"
 	"mime"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/actiontech/sqle/sqle/pkg/im/coding"
+	"golang.org/x/text/language"
 
 	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"github.com/actiontech/dms/pkg/dms-common/dmsobject"
@@ -730,11 +731,11 @@ func buildCodingSQLManageReq(lang language.Tag, projectName string, sqlManageCod
 		priority = sqlManageCodingReq.Priority.Weight()
 	}
 	auditResult := ""
-	if len(sqlManageRecord.AuditResults) == 0 {
+	if len(*sqlManageRecord.AuditResults) == 0 {
 		auditResult = "审核通过"
 	} else {
-		auditMessages := make([]string, 0, len(sqlManageRecord.AuditResults))
-		for _, result := range sqlManageRecord.AuditResults {
+		auditMessages := make([]string, 0, len(*sqlManageRecord.AuditResults))
+		for _, result := range *sqlManageRecord.AuditResults {
 			auditMessages = append(auditMessages, result.I18nAuditResultInfo.GetAuditResultInfoByLangTag(lang).Message)
 		}
 		auditResult = strings.Join(auditMessages, "\n")
