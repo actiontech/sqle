@@ -42,6 +42,8 @@ type Suggestion struct {
 
 // 获取外部进程完成重写的响应结构
 type GetRewriteResponse struct {
+	// 重写前SQL的业务描述
+	BusinessDesc string `json:"business_desc"`
 	// 重写建议列表
 	Suggestions []Suggestion `json:"suggestions"`
 	// 重写后的SQL的业务差异描述
@@ -59,11 +61,12 @@ type Rule struct {
 
 // 调用外部进程完成重写的请求结构
 type CallRewriteSQLRequest struct {
-	DBType          string `json:"db_type"`
-	Rules           []Rule `json:"rules"`
-	SQL             string `json:"sql"`
-	TableStructures string `json:"table_structures"`
-	Explain         string `json:"explain"`
+	DBType              string `json:"db_type"`
+	Rules               []Rule `json:"rules"`
+	SQL                 string `json:"sql"`
+	TableStructures     string `json:"table_structures"`
+	Explain             string `json:"explain"`
+	EnableStructureType bool   `json:"enable_structure_type"`
 }
 
 // 现有规则名 到 重写功能使用的 新规则 ID 的映射
@@ -97,10 +100,11 @@ func ConvertRuleIDToRuleName(ruleID string) string {
 }
 
 type SQLRewritingParams struct {
-	DBType          string                  // 数据库类型
-	SQL             *model.ExecuteSQL       // 需要重写的SQL
-	TableStructures []*driver.TableMeta     // 表结构
-	Explain         *driverV2.ExplainResult // SQL 执行计划
+	DBType              string                  // 数据库类型
+	SQL                 *model.ExecuteSQL       // 需要重写的SQL
+	TableStructures     []*driver.TableMeta     // 表结构
+	Explain             *driverV2.ExplainResult // SQL 执行计划
+	EnableStructureType bool                    // 是否启用涉及数据库结构化的重写
 }
 
 func SQLRewriting(ctx context.Context, params *SQLRewritingParams) (*GetRewriteResponse, error) {
@@ -156,9 +160,10 @@ func SQLRewriting(ctx context.Context, params *SQLRewritingParams) (*GetRewriteR
 
 	// 定义要发送的参数
 	req := &CallRewriteSQLRequest{
-		DBType: params.DBType,
-		Rules:  rules,
-		SQL:    params.SQL.Content,
+		DBType:              params.DBType,
+		Rules:               rules,
+		SQL:                 params.SQL.Content,
+		EnableStructureType: params.EnableStructureType,
 	}
 
 	if s, err := json.Marshal(params.Explain); err != nil {

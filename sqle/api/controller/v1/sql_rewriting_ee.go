@@ -17,7 +17,22 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func getTaskRewrittenSQLData(c echo.Context) error {
+type RewriteType string
+
+const (
+	TypeStatement RewriteType = "statement" // 语句级重写
+	TypeStructure RewriteType = "structure" // 结构级重写
+	TypeOther     RewriteType = "other"     // 其他
+)
+
+func getRewriteSQLData(c echo.Context) error {
+	req := new(RewriteSQLReq)
+	err := controller.BindAndValidateReq(c, req)
+	if err != nil {
+		return err
+	}
+	enableStructure := req.EnableStructureType
+
 	taskID := c.Param("task_id")
 	sqlNumber := c.Param("number")
 	s := model.GetStorage()
@@ -53,10 +68,11 @@ func getTaskRewrittenSQLData(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	params := &sqlrewriting.SQLRewritingParams{
-		DBType:          taskDbType,
-		SQL:             taskSql,
-		TableStructures: res.TableMetaResult.TableMetas,
-		Explain:         nil,
+		DBType:              taskDbType,
+		SQL:                 taskSql,
+		TableStructures:     res.TableMetaResult.TableMetas,
+		Explain:             nil,
+		EnableStructureType: enableStructure,
 	}
 	// 进行重写
 	rewrittenRes, err := sqlrewriting.SQLRewriting(c.Request().Context(), params)
@@ -64,10 +80,8 @@ func getTaskRewrittenSQLData(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	// 以下开始构造返回结果
-	// 考虑将来可能也会需要ExplainResult和PerformanceStatistics，这里直接复用convertSQLAnalysisResultToRes
-	analysisResult := convertSQLAnalysisResultToRes(c.Request().Context(), res, taskSql.Content)
-	ret := &TaskRewrittenSQLData{
-		TableMetas:                analysisResult.TableMetas,
+	ret := &RewriteSQLData{
+		BusinessDesc:              rewrittenRes.BusinessDesc,
 		BusinessNonEquivalentDesc: rewrittenRes.BusinessNonEquivalent,
 	}
 	var lastRewrittenSQL string
@@ -84,10 +98,10 @@ func getTaskRewrittenSQLData(c echo.Context) error {
 		if suggestion.RewrittenSql != "" {
 			lastRewrittenSQL = suggestion.RewrittenSql
 		}
-		ret.Suggestions = append(ret.Suggestions, &SQLRewrittenSuggestion{
+		ret.Suggestions = append(ret.Suggestions, &RewriteSuggestion{
 			RuleName:     r.I18nRuleInfo.GetRuleInfoByLangTag(lang).Desc,
 			AuditLevel:   r.Level,
-			Type:         suggestion.Type,
+			Type:         string(sqlRewriteSuggestionTypeConvert(suggestion.Type)),
 			Desc:         suggestion.Description,
 			RewrittenSQL: suggestion.RewrittenSql,
 			DDL_DCL_desc: suggestion.DDLDCLDesc,
@@ -95,8 +109,19 @@ func getTaskRewrittenSQLData(c echo.Context) error {
 		})
 	}
 	ret.RewrittenSQL = lastRewrittenSQL
-	return c.JSON(http.StatusOK, &GetTaskRewrittenSQLRes{
+	return c.JSON(http.StatusOK, &RewriteSQLRes{
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    ret,
 	})
+}
+
+func sqlRewriteSuggestionTypeConvert(typ string) RewriteType {
+	switch typ {
+	case "语句级优化":
+		return TypeStatement
+	case "结构级优化":
+		return TypeStructure
+	default:
+		return TypeOther
+	}
 }
