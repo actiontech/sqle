@@ -91,19 +91,27 @@ func MergeAndDeduplicateSort(arr1, arr2 []string) []string {
 	// 合并两个数组
 	merged := append(arr1, arr2...)
 
-	// 排序
-	sort.Strings(merged)
+	// 如果合并后的数组是空的，直接返回空切片
+	if len(merged) == 0 {
+		return []string{}
+	}
 
-	// 去重
-	i := 0
-	for j := 1; j < len(merged); j++ {
-		if merged[i] != merged[j] {
-			i++
-			merged[i] = merged[j]
+	// 使用map去重
+	seen := make(map[string]struct{})
+	// 预分配足够的空间，避免多次内存分配
+	result := make([]string, 0, len(merged))
+
+	for _, str := range merged {
+		if _, exists := seen[str]; !exists {
+			seen[str] = struct{}{}
+			result = append(result, str)
 		}
 	}
 
-	return merged[:i+1]
+	// 排序
+	sort.Strings(result)
+
+	return result
 }
 
 func RemoveDuplicatePtrUint64(c []*uint64) []*uint64 {
