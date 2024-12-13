@@ -8,7 +8,6 @@ import (
 	"time"
 
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
-	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/sirupsen/logrus"
@@ -35,7 +34,7 @@ func (j *AuditPlanHandlerJob) HandlerSQL(entry *logrus.Entry) {
 	if len(sqlList) == 0 {
 		return
 	}
-	sqlList, err = BatchAuditSQLs(sqlList)
+	sqlList, err = BatchAuditSQLs(entry, sqlList)
 	if err != nil {
 		entry.Warnf("batch audit manager sql failed, error: %v", err)
 	}
@@ -61,7 +60,7 @@ func (j *AuditPlanHandlerJob) HandlerSQL(entry *logrus.Entry) {
 	}
 }
 
-func BatchAuditSQLs(sqlList []*model.SQLManageRecord) ([]*model.SQLManageRecord, error) {
+func BatchAuditSQLs(l *logrus.Entry, sqlList []*model.SQLManageRecord) ([]*model.SQLManageRecord, error) {
 	s := model.GetStorage()
 	sqlMap := make(map[string][]*model.SQLManageRecord)
 
@@ -72,9 +71,9 @@ func BatchAuditSQLs(sqlList []*model.SQLManageRecord) ([]*model.SQLManageRecord,
 	}
 
 	var (
-		auditSQLs []*model.SQLManageRecord
-		mu        sync.Mutex
-		wg        sync.WaitGroup
+		auditedSQLs []*model.SQLManageRecord
+		mu          sync.Mutex
+		wg          sync.WaitGroup
 	)
 
 	for _, sqls := range sqlMap {
@@ -87,31 +86,31 @@ func BatchAuditSQLs(sqlList []*model.SQLManageRecord) ([]*model.SQLManageRecord,
 			meta, err := GetMeta(auditPlanType)
 			// 当无法获取meta时，不执行审核，直接返回原始sql
 			if err != nil {
-				log.NewEntry().Errorf("get meta to audit sql fail %v", err)
+				l.Errorf("get meta to audit sql fail %v", err)
 			} else {
 				resp, err = meta.Handler.Audit(sqls)
 				if err != nil {
 					if errors.Is(err, model.ErrAuditPlanNotFound) {
-						log.NewEntry().Warnf("audit sqls in task fail %v, can't find audit plan by id %s", err, sqls[0].SourceId)
+						l.Warnf("audit sqls in task fail %v, can't find audit plan by id %s", err, sqls[0].SourceId)
 						// TODO 调整至clean中清理未关联扫描任务的sql
 						// 扫描任务已被删除的sql不需要save到管控中
 						if err := s.DeleteSQLManageRecordBySourceId(sqls[0].SourceId); err != nil {
-							log.NewEntry().Errorf("delete sql manage record fail %v", err)
+							l.Errorf("delete sql manage record fail %v", err)
 						}
 						return
 					}
-					log.NewEntry().Errorf("audit sqls in task fail %v, ignore audit result", err)
+					l.Errorf("audit sqls in task fail %v, ignore audit result", err)
 				}
 			}
 			mu.Lock()
-			auditSQLs = append(auditSQLs, resp.AuditedSqls...)
+			auditedSQLs = append(auditedSQLs, resp.AuditedSqls...)
 			mu.Unlock()
 		}(sqls)
 	}
 
 	wg.Wait()
 
-	return auditSQLs, nil
+	return auditedSQLs, nil
 }
 
 func SetSQLPriority(sqlList []*model.SQLManageRecord) ([]*model.SQLManageRecord, error) {
