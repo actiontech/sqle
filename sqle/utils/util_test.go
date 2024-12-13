@@ -42,18 +42,75 @@ func TestMergeAndDeduplicate(t *testing.T) {
 		expect []string
 	}{
 		{
+			// 普通情况：两个数组有重复元素，且有不同的元素
 			[]string{"apple", "banana", "cherry", "apple"},
 			[]string{"banana", "orange", "grape"},
 			[]string{"apple", "banana", "cherry", "grape", "orange"},
 		},
 		{
+			// 一个数组为空，另一个数组有多个元素
 			[]string{},
 			[]string{"apple", "banana"},
 			[]string{"apple", "banana"},
 		},
 		{
+			// 一个数组有单个元素，另一个数组为空
 			[]string{"apple"},
 			[]string{},
+			[]string{"apple"},
+		},
+		{
+			// 两个数组都为空
+			[]string{},
+			[]string{},
+			[]string{},
+		},
+		{
+			// 数组中所有元素相同
+			[]string{"apple", "apple", "apple"},
+			[]string{"apple", "apple"},
+			[]string{"apple"},
+		},
+		{
+			// 数组已经是有序的
+			[]string{"apple", "banana", "cherry"},
+			[]string{"date", "grape", "orange"},
+			[]string{"apple", "banana", "cherry", "date", "grape", "orange"},
+		},
+		{
+			// 两个数组完全不同，且没有重复
+			[]string{"apple", "banana", "cherry"},
+			[]string{"date", "grape", "orange"},
+			[]string{"apple", "banana", "cherry", "date", "grape", "orange"},
+		},
+		{
+			// 两个数组有重复元素，且重复项位于不同位置
+			[]string{"apple", "banana", "cherry"},
+			[]string{"banana", "cherry", "apple"},
+			[]string{"apple", "banana", "cherry"},
+		},
+		{
+			// 数组中有空字符串
+			[]string{"apple", "banana", "", "cherry"},
+			[]string{"", "grape", "orange"},
+			[]string{"", "apple", "banana", "cherry", "grape", "orange"},
+		},
+		{
+			// 数组中有大小写不同的相同元素
+			[]string{"apple", "banana", "Apple"},
+			[]string{"banana", "orange", "APPLE"},
+			[]string{"APPLE", "Apple", "apple", "banana", "orange"},
+		},
+		{
+			// 大数组测试，随机生成的大数据
+			[]string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"},
+			[]string{"j", "i", "h", "g", "f", "e", "d", "c", "b", "a"},
+			[]string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"},
+		},
+		{
+			// 边界情况：只有一个元素在两个数组中
+			[]string{"apple"},
+			[]string{"apple"},
 			[]string{"apple"},
 		},
 	}
