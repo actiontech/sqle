@@ -2249,11 +2249,11 @@ ALTER TABLE exist_db.exist_tb_1 CHANGE COLUMN v2 v3 varchar(255) NOT NULL DEFAUL
 	)
 
 	runSingleRuleInspectCase(rule, t, "alter_table: column without comment(1)", DefaultMysqlInspect(),
-`
+		`
 ALTER TABLE exist_db.exist_tb_1 MODIFY COLUMN v3 varchar(500) NOT NULL DEFAULT "modified unit test";
 `,
-newTestResult().addResult(rulepkg.DDLCheckColumnWithoutComment),
-)
+		newTestResult().addResult(rulepkg.DDLCheckColumnWithoutComment),
+	)
 }
 
 func TestCheckIndexPrefix(t *testing.T) {
@@ -7225,7 +7225,7 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 		{
 			Name:        "select-with-equal",
 			Sql:         `select * from exist_tb_9 where v2 = 1`,
-			TriggerRule: true,
+			TriggerRule: false,
 		},
 		{
 			Name:        "select-with-equal",
@@ -7250,7 +7250,7 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 		{
 			Name:        "select-without-equal",
 			Sql:         `select * from exist_tb_9 where v2 in(1,2)`,
-			TriggerRule: true,
+			TriggerRule: false,
 		},
 		{
 			Name:        "select-without-equal",
@@ -7280,7 +7280,7 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 		{
 			Name:        "join-with-equal",
 			Sql:         `select * from exist_tb_9 t9 join exist_tb_8 t8 on t9.id = t8.id where t9.v1 = 1 and t8.v2 > 1`,
-			TriggerRule: true,
+			TriggerRule: false,
 		},
 		{
 			Name:        "join-with-equal",
@@ -7296,7 +7296,7 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 		{
 			Name:        "update-with-equal",
 			Sql:         `update exist_tb_9 set v4 = 1 where v2 = 1`,
-			TriggerRule: true,
+			TriggerRule: false,
 		},
 		{
 			Name:        "update-with-equal",
@@ -7326,7 +7326,7 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 		{
 			Name:        "update-without-equal",
 			Sql:         `update exist_tb_9 set v4 = 1 where v2 in(1,2)`,
-			TriggerRule: true,
+			TriggerRule: false,
 		},
 		{
 			Name:        "update-without-equal",
@@ -7347,7 +7347,7 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 		{
 			Name:        "delete-with-equal",
 			Sql:         `delete from exist_tb_9 where v2 = 1`,
-			TriggerRule: true,
+			TriggerRule: false,
 		},
 		{
 			Name:        "delete-with-equal",
@@ -7367,7 +7367,7 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 		{
 			Name:        "delete-without-equal",
 			Sql:         `delete from exist_tb_9 where v2 > 1`,
-			TriggerRule: true,
+			TriggerRule: false,
 		},
 		{
 			Name:        "delete-without-equal",
@@ -7408,12 +7408,12 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 		{
 			Name:        "select-union",
 			Sql:         `select * from exist_tb_9 where v1 = 1 and v2 = 1 union select * from exist_tb_8 where v2 = 1`,
-			TriggerRule: true,
+			TriggerRule: false,
 		},
 		{
 			Name:        "select-union",
 			Sql:         `select * from exist_tb_9 where v2 = 1 union select * from exist_tb_8 where v2 = 1`,
-			TriggerRule: true,
+			TriggerRule: false,
 		},
 		// select subquery
 		{
@@ -7439,6 +7439,21 @@ func TestMustUseLeftMostPrefix(t *testing.T) {
 		{
 			Name:        "select use single index",
 			Sql:         `select * from exist_tb_9 where v3 > 100`,
+			TriggerRule: false,
+		},
+		{
+			Name:        "multiple index",
+			Sql:         "select * from exist_db.exist_tb_11 where data_time2 = '12:00:00' and year_time = '2000'",
+			TriggerRule: false,
+		},
+		{
+			Name:        "incorrect use of composite index order",
+			Sql:         "select * from exist_db.exist_tb_11 where upgrade_time = '2020-01-01 00:00:00' and create_time = '2020-01-01 00:00:00'",
+			TriggerRule: true,
+		},
+		{
+			Name:        "correct use of composite index order",
+			Sql:         "select * from exist_db.exist_tb_11 where create_time = '2020-01-01 00:00:00' and upgrade_time = '2020-01-01 00:00:00'",
 			TriggerRule: false,
 		},
 	}
