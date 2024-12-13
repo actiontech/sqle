@@ -16442,6 +16442,10 @@ var doc = `{
                     "description": "@Description 重写后的SQL",
                     "type": "string"
                 },
+                "rewritten_sql_business_desc": {
+                    "description": "@Description 重写后的SQL业务描述",
+                    "type": "string"
+                },
                 "suggestions": {
                     "description": "@Description 重写建议列表",
                     "type": "array",
