@@ -1421,10 +1421,22 @@ func AuditPlanTriggerSqlAudit(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	auditedSqlList, err := auditplan.BatchAuditSQLs(auditPlanSqls, false)
+	auditedSqlList, err := auditplan.BatchAuditSQLs(log.NewEntry(), auditPlanSqls)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
-	return controller.JSONBaseErrorReq(c, s.BatchSave(auditedSqlList, 50))
+	recordIds := make([]uint, len(auditPlanSqls))
+	for i, sqlId := range auditedSqlList {
+		recordIds[i] = sqlId.ID
+	}
+	err = s.BatchSave(auditedSqlList, 50)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	// 更新最后审核时间
+	err = s.UpdateManageSQLProcessByManageIDs(recordIds, map[string]interface{}{"last_audit_time": time.Now()})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return controller.JSONBaseErrorReq(c, nil)
 }
