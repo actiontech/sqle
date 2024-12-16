@@ -208,12 +208,6 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1OpProjectRouter.POST("/:project_name/sql_versions/:sql_version_id/lock", v1.LockSqlVersion)
 	}
 
-	// project admin and global view router
-	v1ViewProjectRouter := v1Router.Group("/projects", sqleMiddleware.ViewProjectAllowed())
-	{
-		v1ViewProjectRouter.GET("/:project_name/blacklist", v1.GetBlacklist)
-	}
-
 	// project member router
 	v1ProjectOpRouter := v1Router.Group("/projects", sqleMiddleware.ProjectMemberOpAllowed())
 	{
@@ -384,6 +378,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1ProjectViewRouter.GET("/:project_name/sql_versions/:sql_version_id/", v1.GetSqlVersionDetail)
 		v1ProjectViewRouter.GET("/:project_name/sql_versions/:sql_version_id/sql_version_stages/:sql_version_stage_id/dependencies", v1.GetDependenciesBetweenStageInstance)
 		v1ProjectViewRouter.GET("/:project_name/sql_versions/:sql_version_id/sql_version_stages/:sql_version_stage_id/associate_workflows", v1.GetWorkflowsThatCanBeAssociatedToVersion)
+
+		v1ProjectViewRouter.GET("/:project_name/blacklist", v1.GetBlacklist)
 	}
 
 	// project member router
