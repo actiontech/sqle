@@ -159,7 +159,7 @@ func DeleteAuditWhitelistById(c echo.Context) error {
 }
 
 type GetAuditWhitelistReqV1 struct {
-	FuzzySearchValue *string `json:"fuzzy_value" query:"fuzzy_value" valid:"omitempty"`
+	FuzzySearchValue *string `json:"fuzzy_search_value" query:"fuzzy_search_value" valid:"omitempty"`
 	FilterMatchType  *string `json:"filter_match_type" query:"filter_match_type" valid:"omitempty,oneof=exact_match fp_match" enums:"exact_match,fp_match"`
 	PageIndex        uint32  `json:"page_index" query:"page_index" valid:"required"`
 	PageSize         uint32  `json:"page_size" query:"page_size" valid:"required"`
