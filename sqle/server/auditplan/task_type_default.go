@@ -252,6 +252,7 @@ func (at *DefaultTaskV2) GetSQLData(ctx context.Context, ap *AuditPlan, persist 
 			MetricNameCounter:              strconv.Itoa(int(info.Get(MetricNameCounter).Int())),
 			MetricNameLastReceiveTimestamp: info.Get(MetricNameLastReceiveTimestamp).String(),
 			model.AuditResultName:          sql.AuditResult.GetAuditJsonStrByLangTag(locale.Bundle.GetLangTagFromCtx(ctx)),
+			model.AuditStatus:              sql.AuditStatus,
 		})
 	}
 	return rows, count, nil

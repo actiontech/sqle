@@ -242,6 +242,7 @@ func (at *OracleTopSQLTaskV2) GetSQLData(ctx context.Context, ap *AuditPlan, per
 			MetricNameBufferGetCounter:    strconv.Itoa(int(info.Get(MetricNameBufferGetCounter).Int())),
 			MetricNameUserIOWaitTimeTotal: fmt.Sprintf("%v", utils.Round(info.Get(MetricNameUserIOWaitTimeTotal).Float()/1000, 3)),
 			model.AuditResultName:         sql.AuditResult.GetAuditJsonStrByLangTag(locale.Bundle.GetLangTagFromCtx(ctx)),
+			model.AuditStatus:             sql.AuditStatus,
 		})
 	}
 	return rows, count, nil
