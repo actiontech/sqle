@@ -113,10 +113,14 @@ type InstanceAuditPlanSQLListDetail struct {
 	Schema         string         `json:"schema_name"`
 	Info           JSON           `json:"info"`
 	AuditResult    AuditResults   `json:"audit_results"`
+	AuditStatus    string         `json:"audit_status"`
 	Priority       sql.NullString `json:"priority"`
 }
 
-const AuditResultName = "audit_results"
+const (
+	AuditResultName = "audit_results"
+	AuditStatus     = "audit_status"
+)
 
 var AuditResultDesc = locale.ApAuditResult
 
@@ -170,7 +174,8 @@ audit_plan_sqls.sql_fingerprint,
 audit_plan_sqls.sql_text,
 audit_plan_sqls.schema_name,
 audit_plan_sqls.info,
-IF(audit_plan_sqls.audit_results IS NULL,'being_audited',audit_plan_sqls.audit_results) AS audit_results,
+audit_plan_sqls.audit_results,
+IF(audit_plan_sqls.audit_results IS NULL,'being_audited','') AS audit_status,
 audit_plan_sqls.priority
 
 {{- template "body" . -}} 
