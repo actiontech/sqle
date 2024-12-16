@@ -325,6 +325,7 @@ func (at *DmTopSQLTaskV2) GetSQLData(ctx context.Context, ap *AuditPlan, persist
 			MetricNamePhyReadPageTotal:   strconv.Itoa(int(info.Get(MetricNamePhyReadPageTotal).Int())),
 			MetricNameLogicReadPageTotal: strconv.Itoa(int(info.Get(MetricNameLogicReadPageTotal).Int())),
 			model.AuditResultName:        sql.AuditResult.GetAuditJsonStrByLangTag(locale.Bundle.GetLangTagFromCtx(ctx)),
+			model.AuditStatus:            sql.AuditStatus,
 		})
 	}
 	return rows, count, nil

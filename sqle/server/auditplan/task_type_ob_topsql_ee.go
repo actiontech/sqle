@@ -6,6 +6,9 @@ package auditplan
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"time"
+
 	"github.com/actiontech/sqle/sqle/common"
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/driver"
@@ -16,8 +19,6 @@ import (
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/sirupsen/logrus"
-	"strconv"
-	"time"
 )
 
 type ObForMysqlTopSQLTaskV2 struct {
@@ -555,6 +556,7 @@ func (at *ObForMysqlTopSQLTaskV2) GetSQLData(ctx context.Context, ap *AuditPlan,
 			"id":                  planSQL.AuditPlanSqlId,
 			"priority":            planSQL.Priority.String,
 			model.AuditResultName: planSQL.AuditResult.GetAuditJsonStrByLangTag(locale.Bundle.GetLangTagFromCtx(ctx)),
+			model.AuditStatus:     planSQL.AuditStatus,
 		}
 
 		origin, err := planSQL.Info.OriginValue()

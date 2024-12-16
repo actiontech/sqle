@@ -367,6 +367,7 @@ func (at *ObForOracleTopSQLTaskV2) GetSQLData(ctx context.Context, ap *AuditPlan
 			MetricNameBufferGetCounter:    strconv.Itoa(int(info.Get(MetricNameBufferGetCounter).Int())),
 			MetricNameUserIOWaitTimeTotal: fmt.Sprintf("%v", utils.Round(float64(info.Get(MetricNameUserIOWaitTimeTotal).Float())/1000, 3)), //视图中时间单位是毫秒，所以除以1000得到秒
 			model.AuditResultName:         sql.AuditResult.GetAuditJsonStrByLangTag(locale.Bundle.GetLangTagFromCtx(ctx)),
+			model.AuditStatus:             sql.AuditStatus,
 		})
 	}
 	return rows, count, nil

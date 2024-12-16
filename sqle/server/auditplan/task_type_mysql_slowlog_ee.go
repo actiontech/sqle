@@ -532,6 +532,7 @@ func (at *SlowLogTaskV2) GetSQLData(ctx context.Context, ap *AuditPlan, persist 
 			MetricNameRowExaminedAvg:       fmt.Sprint(utils.Round(info.Get(MetricNameRowExaminedAvg).Float(), 2)),
 			MetricNameDBUser:               info.Get(MetricNameDBUser).String(),
 			"schema_name":                  sql.Schema,
+			model.AuditStatus:              sql.AuditStatus,
 		})
 	}
 	return rows, count, nil

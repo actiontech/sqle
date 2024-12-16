@@ -396,6 +396,7 @@ func (at *DB2TopSQLTaskV2) GetSQLData(ctx context.Context, ap *AuditPlan, persis
 			"id":                  auditPlanSQLs[i].AuditPlanSqlId,
 			"priority":            auditPlanSQLs[i].Priority.String,
 			model.AuditResultName: auditPlanSQLs[i].AuditResult.GetAuditJsonStrByLangTag(locale.Bundle.GetLangTagFromCtx(ctx)),
+			model.AuditStatus:     auditPlanSQLs[i].AuditStatus,
 		}
 
 		origin, err := auditPlanSQLs[i].Info.OriginValue()
