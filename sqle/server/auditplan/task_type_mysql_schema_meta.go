@@ -361,6 +361,7 @@ func (at *BaseSchemaMetaTaskV2) GetSQLData(ctx context.Context, ap *AuditPlan, p
 			MetricNameMetaName:    info.Get(MetricNameMetaName).String(),
 			MetricNameMetaType:    info.Get(MetricNameMetaType).String(),
 			model.AuditResultName: sql.AuditResult.GetAuditJsonStrByLangTag(locale.Bundle.GetLangTagFromCtx(ctx)),
+			model.AuditStatus:     sql.AuditStatus,
 		})
 	}
 	return rows, count, nil
