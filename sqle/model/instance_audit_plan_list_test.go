@@ -32,7 +32,8 @@ audit_plan_sqls.sql_fingerprint,
 audit_plan_sqls.sql_text,
 audit_plan_sqls.schema_name,
 audit_plan_sqls.info,
-IF(audit_plan_sqls.audit_results IS NULL,'being_audited',audit_plan_sqls.audit_results) AS audit_results,
+audit_plan_sqls.audit_results,
+IF(audit_plan_sqls.audit_results IS NULL,'being_audited','') AS audit_status,
 audit_plan_sqls.priority
 
 FROM sql_manage_records AS audit_plan_sqls
@@ -59,7 +60,8 @@ audit_plan_sqls.sql_fingerprint,
 audit_plan_sqls.sql_text,
 audit_plan_sqls.schema_name,
 audit_plan_sqls.info,
-IF(audit_plan_sqls.audit_results IS NULL,'being_audited',audit_plan_sqls.audit_results) AS audit_results,
+audit_plan_sqls.audit_results,
+IF(audit_plan_sqls.audit_results IS NULL,'being_audited','') AS audit_status,
 audit_plan_sqls.priority
 
 FROM sql_manage_records AS audit_plan_sqls
@@ -87,7 +89,8 @@ audit_plan_sqls.sql_fingerprint,
 audit_plan_sqls.sql_text,
 audit_plan_sqls.schema_name,
 audit_plan_sqls.info,
-IF(audit_plan_sqls.audit_results IS NULL,'being_audited',audit_plan_sqls.audit_results) AS audit_results,
+audit_plan_sqls.audit_results,
+IF(audit_plan_sqls.audit_results IS NULL,'being_audited','') AS audit_status,
 audit_plan_sqls.priority
 
 FROM sql_manage_records AS audit_plan_sqls
@@ -115,7 +118,8 @@ audit_plan_sqls.sql_fingerprint,
 audit_plan_sqls.sql_text,
 audit_plan_sqls.schema_name,
 audit_plan_sqls.info,
-IF(audit_plan_sqls.audit_results IS NULL,'being_audited',audit_plan_sqls.audit_results) AS audit_results,
+audit_plan_sqls.audit_results,
+IF(audit_plan_sqls.audit_results IS NULL,'being_audited','') AS audit_status,
 audit_plan_sqls.priority
 
 FROM sql_manage_records AS audit_plan_sqls
@@ -144,7 +148,8 @@ audit_plan_sqls.sql_fingerprint,
 audit_plan_sqls.sql_text,
 audit_plan_sqls.schema_name,
 audit_plan_sqls.info,
-IF(audit_plan_sqls.audit_results IS NULL,'being_audited',audit_plan_sqls.audit_results) AS audit_results,
+audit_plan_sqls.audit_results,
+IF(audit_plan_sqls.audit_results IS NULL,'being_audited','') AS audit_status,
 audit_plan_sqls.priority
 
 FROM sql_manage_records AS audit_plan_sqls
@@ -172,7 +177,8 @@ audit_plan_sqls.sql_fingerprint,
 audit_plan_sqls.sql_text,
 audit_plan_sqls.schema_name,
 audit_plan_sqls.info,
-IF(audit_plan_sqls.audit_results IS NULL,'being_audited',audit_plan_sqls.audit_results) AS audit_results,
+audit_plan_sqls.audit_results,
+IF(audit_plan_sqls.audit_results IS NULL,'being_audited','') AS audit_status,
 audit_plan_sqls.priority
 
 FROM sql_manage_records AS audit_plan_sqls
