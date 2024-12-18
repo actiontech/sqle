@@ -220,7 +220,11 @@ func (i *MysqlDriverImpl) GetDatabaseDiffModifySQL(ctx context.Context, calibrat
 		cpAllSchemaMap[schemaName] = struct{}{}
 	}
 
-	mods := differ.StatementModifiers{AllowUnsafe: true}
+	mods := differ.StatementModifiers{
+		AllowUnsafe:            true, // 允许生成不安全语句，如不检查是否有内容的情况下生成drop table、drop database语句等
+		StrictIndexOrder:       true, // 强制保持索引顺序一致
+		StrictForeignKeyNaming: true, // 强制保持外键定义一致
+	}
 	// LockClause：
 	// 该字段在生成的 ALTER TABLE 语句中用于指定锁定的行为。通过设置 LOCK=[value] 来决定当修改表时是否锁定表以及锁定的方式。
 	// 例如，LOCK=none 表示在 ALTER TABLE 操作时不锁定任何内容。通常用于需要在不阻塞表读写的情况下修改表结构的场景。

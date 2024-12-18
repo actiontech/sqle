@@ -142,7 +142,11 @@ func (tp *TablePartitioning) Diff(other *TablePartitioning) (clauses []TableAlte
 		}
 	}
 	if foundPartitionsDiff && (strings.HasPrefix(tp.Method, "RANGE") || strings.HasPrefix(tp.Method, "LIST")) {
-		return []TableAlterClause{ModifyPartitions{}}, true
+		clause := PartitionBy{
+			Partitioning: other,
+			RePartition:  true,
+		}
+		return []TableAlterClause{clause}, true
 	}
 	return nil, !foundPartitionsDiff
 }
