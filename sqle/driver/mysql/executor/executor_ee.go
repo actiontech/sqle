@@ -28,9 +28,9 @@ func (c *Executor) ShowCreateSchema(schemaName string) (string, error) {
 }
 
 func (c *Executor) GetTableEngine(schemaName string, tableName string) (string, error) {
-	query := fmt.Sprintf("SELECT TABLE_NAME, ENGINE FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '%s' AND TABLE_NAME = '%s'", schemaName, tableName)
+	query := "SELECT TABLE_NAME, ENGINE FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?"
 
-	result, err := c.Db.Query(query)
+	result, err := c.Db.Query(query, schemaName, tableName)
 	if err != nil {
 		return "", err
 	}
