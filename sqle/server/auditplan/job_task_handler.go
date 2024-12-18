@@ -87,7 +87,6 @@ func BatchAuditSQLs(l *logrus.Entry, sqlList []*model.SQLManageRecord) ([]*model
 
 			var resp *AuditResultResp
 			meta, err := GetMeta(sourceType)
-			// 当无法获取meta时，不执行审核，直接返回原始sql
 			if err != nil {
 				l.Errorf("get meta to audit sql fail %v", err)
 			} else {
@@ -106,7 +105,12 @@ func BatchAuditSQLs(l *logrus.Entry, sqlList []*model.SQLManageRecord) ([]*model
 				}
 			}
 			mu.Lock()
-			auditedSQLs = append(auditedSQLs, resp.AuditedSqls...)
+			// 当审核结果不为nil时，从审核结果中获取sql，其他错误情况直接返回原始sql
+			if resp != nil {
+				auditedSQLs = append(auditedSQLs, resp.AuditedSqls...)
+			} else {
+				auditedSQLs = append(auditedSQLs, sqls...)
+			}
 			mu.Unlock()
 		}(sqls)
 	}
