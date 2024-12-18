@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/driver/mysql/differ"
@@ -331,10 +332,11 @@ func (i *MysqlDriverImpl) GetDatabaseObjectDDL(ctx context.Context, objInfos []*
 			objetDDL := ""
 			if obj.ObjectType == driverV2.ObjectType_TABLE {
 				tableDDL, err := conn.ShowCreateTable(objInfo.SchemaName, obj.ObjectName)
+				engine, err := conn.GetTableEngine(objInfo.SchemaName, strings.Trim(obj.ObjectName, "`"))
 				if err != nil {
 					return nil, err
 				}
-				objetDDL = sanitizeDDL(tableDDL)
+				objetDDL = sanitizeTableDDL(tableDDL, engine)
 			}
 			if obj.ObjectType == driverV2.ObjectType_PROCEDURE {
 				objetDDL, err = conn.ShowCreateProcedure(obj.ObjectName)
@@ -378,9 +380,14 @@ func (i *MysqlDriverImpl) GetDatabaseObjectDDL(ctx context.Context, objInfos []*
 // 去除DDL中不需要关注的token
 // 在建表的DDL语句中，表选项AUTO_INCREMENT表示自增起点为
 // 当表中存有数据时，已有记录数量 + 1，这个值根据表中记录数量所变化，获取ddl后续处理时一般不关心自增起点
-func sanitizeDDL(ddl string) string {
+func sanitizeTableDDL(ddl string, tableEngine string) string {
 	re := regexp.MustCompile(`AUTO_INCREMENT\s*=\s*\d+\s`)
-	return re.ReplaceAllString(ddl, "")
+	result := re.ReplaceAllString(ddl, "")
+	if tableEngine == "InnoDB" {
+		// 删除不影响 InnoDB 的创建选项
+		result = differ.NormalizeCreateOptions(result)
+	}
+	return result
 }
 
 func getAllSchemaObjects(conn *executor.Executor, schemaName string) ([]*driverV2.DatabaseObject, error) {
