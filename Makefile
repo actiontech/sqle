@@ -1,10 +1,11 @@
 ################################## Parameter Definition And Check ##########################################
-# 1. 如果HEAD存在tag，则GIT_VERSION=<tag> <commit>
-# e.g. 3.2411.0 a6355ff4cf8d181315a2b30341bc954b29576b11
-# e.g. 3.2412.0-pre1-1 f0bcb90e712cbdb6e16f122c1ebd623e90f9a905
+# 1. 如果HEAD存在tag，则GIT_VERSION=<版本名称> <commit>
+# PS: 通常会在版本名称前增加字符“v”作为tag内容，当版本名称为 3.2411.0时，tag内容为v3.2411.0 
+# e.g. tag为v3.2411.0时，GIT_VERSION=3.2411.0 a6355ff4cf8d181315a2b30341bc954b29576b11
+# e.g. tag为v3.2412.0-pre1-1时，GIT_VERSION=3.2412.0-pre1-1 f0bcb90e712cbdb6e16f122c1ebd623e90f9a905
 # 2. 如果HEAD没有tag，则GIT_VERSION=<分支名> <commit>
-# e.g. main a6355ff4cf8d181315a2b30341bc954b29576b11
-# e.g. release-3.2411.x a6355ff4cf8d181315a2b30341bc954b29576b11
+# e.g. 分支名为main时，GIT_VERSION=main a6355ff4cf8d181315a2b30341bc954b29576b11
+# e.g. 分支名为release-3.2411.x时，GIT_VERSION=release-3.2411.x a6355ff4cf8d181315a2b30341bc954b29576b11
 override GIT_VERSION    		= $(shell if git describe --exact-match --tags >/dev/null 2>&1; then git describe --exact-match --tags | sed 's/^v//'; else git rev-parse --abbrev-ref HEAD; fi)${CUSTOM} $(shell git rev-parse HEAD)
 override GIT_COMMIT     		= $(shell git rev-parse HEAD)
 override PROJECT_NAME 			= sqle
