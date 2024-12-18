@@ -27,6 +27,22 @@ func (c *Executor) ShowCreateSchema(schemaName string) (string, error) {
 	return result[0]["Create Database"].String, nil
 }
 
+func (c *Executor) GetTableEngine(schemaName string, tableName string) (string, error) {
+	query := "SELECT TABLE_NAME, ENGINE FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?"
+
+	result, err := c.Db.Query(query, schemaName, tableName)
+	if err != nil {
+		return "", err
+	}
+
+	if len(result) != 1 {
+		err := fmt.Errorf("get table engine, result is %v", result)
+		c.Db.Logger().Error(err)
+		return "", errors.New(errors.ConnectRemoteDatabaseError, err)
+	}
+	return result[0]["ENGINE"].String, nil
+}
+
 func (c *Executor) ShowSchemaProcedures(schema string) ([]string, error) {
 	query := fmt.Sprintf("select ROUTINE_NAME from information_schema.routines where routine_schema = '%s' AND routine_type = 'PROCEDURE'", schema)
 
