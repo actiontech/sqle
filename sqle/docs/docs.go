@@ -16438,12 +16438,20 @@ var doc = `{
                     "description": "@Description 重写前后的业务不等价性描述，为空表示等价",
                     "type": "string"
                 },
+                "logic_desc": {
+                    "description": "@Description 重写前的SQL执行逻辑描述",
+                    "type": "string"
+                },
                 "rewritten_sql": {
                     "description": "@Description 重写后的SQL",
                     "type": "string"
                 },
                 "rewritten_sql_business_desc": {
                     "description": "@Description 重写后的SQL业务描述",
+                    "type": "string"
+                },
+                "rewritten_sql_logic_desc": {
+                    "description": "@Description 重写后的SQL执行逻辑描述",
                     "type": "string"
                 },
                 "suggestions": {
