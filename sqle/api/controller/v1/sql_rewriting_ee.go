@@ -8,6 +8,8 @@ import (
 	"net/http"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/driver"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/log"
@@ -60,6 +62,9 @@ func getRewriteSQLData(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if res.TableMetaResultErr != nil {
+		if res.TableMetaResultErr == driverV2.ErrSQLIsNotSupported {
+			res.TableMetaResult = &driver.GetTableMetaBySQLResult{}
+		}
 		return controller.JSONBaseErrorReq(c, fmt.Errorf("get table meta failed: %v", res.TableMetaResultErr))
 	}
 	// TODO: 需要Explain和PerformanceStatistics
