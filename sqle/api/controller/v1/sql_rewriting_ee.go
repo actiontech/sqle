@@ -87,7 +87,10 @@ func getRewriteSQLData(c echo.Context) error {
 	// 以下开始构造返回结果
 	ret := &RewriteSQLData{
 		BusinessDesc:              rewrittenRes.BusinessDesc,
+		LogicDesc:                 rewrittenRes.LogicDesc,
 		BusinessNonEquivalentDesc: rewrittenRes.BusinessNonEquivalent,
+		RewrittenSQLBusinessDesc:  rewrittenRes.BusinessDescAfterOptimize,
+		RewrittenSQLLogicDesc:     rewrittenRes.LogicDescAfterOptimize,
 	}
 	var lastRewrittenSQL string
 	lang := locale.Bundle.GetLangTagFromCtx(c.Request().Context())

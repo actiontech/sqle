@@ -44,10 +44,16 @@ type Suggestion struct {
 type GetRewriteResponse struct {
 	// 重写前SQL的业务描述
 	BusinessDesc string `json:"business_desc"`
+	// 重写前SQL的执行逻辑描述
+	LogicDesc string `json:"logic_desc"`
 	// 重写建议列表
 	Suggestions []Suggestion `json:"suggestions"`
 	// 重写后的SQL的业务差异描述
 	BusinessNonEquivalent string `json:"business_non_equivalent,omitempty"`
+	// 重写后SQL的业务描述
+	BusinessDescAfterOptimize string `json:"business_desc_after_optimize"`
+	// 重写后的SQL执行逻辑描述
+	LogicDescAfterOptimize string `json:"logic_desc_after_optimize"`
 }
 
 type Rule struct {
