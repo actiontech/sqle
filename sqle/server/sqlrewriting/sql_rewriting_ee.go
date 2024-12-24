@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"strings"
 	"time"
 
 	pkgHttp "github.com/actiontech/dms/pkg/dms-common/pkg/http"
@@ -69,34 +70,69 @@ type CallRewriteSQLRequest struct {
 	EnableStructureType bool   `json:"enable_structure_type"`
 }
 
-// 现有规则名 到 重写功能使用的 新规则 ID 的映射
-// 只映射了部分规则，用于demo版本
-// TODO: 当SQLE使用 新规则ID后，可以去除这个映射
-var ruleIDConvert = map[string]string{
-	"dml_check_fuzzy_search":                      "00086",
-	"dml_check_limit_offset_num":                  "00045",
-	"dml_check_select_with_order_by":              "00101",
-	"dml_check_sort_direction":                    "00104",
-	"dml_check_using_index":                       "00110",
-	"dml_not_recommend_func_in_where":             "00009",
-	"dml_not_recommend_order_by_rand":             "00131",
-	"dml_check_where_exist_implicit_conversion":   "00179",
-	"dml_check_where_exist_not":                   "00113",
-	"dml_check_where_exist_null":                  "00001",
-	"dml_disable_select_all_column":               "00053",
-	"dml_check_math_computation_or_func_on_index": "00009",
-}
-
 // TODO: 更多预检查规则补充
 var rulePreCheck = []string{"dml_enable_explain_pre_check"}
 
-func ConvertRuleIDToRuleName(ruleID string) string {
-	for ruleName, id := range ruleIDConvert {
-		if id == ruleID {
-			return ruleName
+type ruleIdConvert struct {
+	Name   string `json:"Name"`
+	CH     string `json:"CH"`
+	RuleId string `json:"RuleId"`
+}
+
+// 已经使用新规则ID实现的数据库类型插件，不需要进行规则ID转换
+func noNeedConvert(dbType string) bool {
+	switch strings.ToLower(dbType) {
+	case "tbase", "hana":
+		return true
+	}
+	return false
+}
+
+func getRuleIdConvert(dbType string) ([]ruleIdConvert, error) {
+	switch strings.ToLower(dbType) {
+	case "mysql":
+		return MySQLRuleIdConvert, nil
+	case "postgresql":
+		return PostgreSQLRuleIdConvert, nil
+	case "oracle":
+		return OracleRuleIdConvert, nil
+	default:
+		return nil, fmt.Errorf("unsupported db type: %s", dbType)
+	}
+}
+
+func ConvertRuleNameToRuleId(dbType string, ruleName string) (string, error) {
+	if noNeedConvert(dbType) {
+		return ruleName, nil
+	}
+	ruleIdConvert, err := getRuleIdConvert(dbType)
+	if err != nil {
+		return "", err
+	}
+
+	for _, r := range ruleIdConvert {
+		if r.Name == ruleName {
+			return r.RuleId, nil
 		}
 	}
-	return ""
+	return "", fmt.Errorf("can't find rule id for rule name: %s", ruleName)
+}
+
+func ConvertRuleIDToRuleName(dbType string, ruleId string) (string, error) {
+	if noNeedConvert(dbType) {
+		return ruleId, nil
+	}
+	ruleIdConvert, err := getRuleIdConvert(dbType)
+	if err != nil {
+		return "", err
+	}
+
+	for _, r := range ruleIdConvert {
+		if r.RuleId == ruleId {
+			return r.Name, nil
+		}
+	}
+	return "", fmt.Errorf("can't find rule name for rule id: %s", ruleId)
 }
 
 type SQLRewritingParams struct {
@@ -134,10 +170,11 @@ func SQLRewriting(ctx context.Context, params *SQLRewritingParams) (*GetRewriteR
 			continue
 		}
 
-		ruleID, ok := ruleIDConvert[ar.RuleName]
-		if !ok {
-			return nil, fmt.Errorf("can't find rule id for rule name: %s", ar.RuleName)
+		ruleID, err := ConvertRuleNameToRuleId(params.DBType, ar.RuleName)
+		if err != nil {
+			return nil, err
 		}
+
 		r, exist, err := s.GetRule(ar.RuleName, params.DBType)
 		if err != nil {
 			return nil, fmt.Errorf("get rule failed: %v", err)
@@ -188,7 +225,7 @@ func SQLRewriting(ctx context.Context, params *SQLRewritingParams) (*GetRewriteR
 	// 先测试API端点的连通性
 	connectivityTimeout := 5 * time.Second // 设置连通性测试的超时时间
 	if err := checkAPIConnectivity(apiURL, connectivityTimeout); err != nil {
-		return nil, fmt.Errorf("API connectivity check failed: %v", err)
+		return nil, fmt.Errorf("请检查合规重写配置及联通性: API connectivity check failed: %v.", err)
 	}
 
 	// 发送 HTTP POST 请求
