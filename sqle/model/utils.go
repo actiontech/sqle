@@ -6,6 +6,8 @@ import (
 	sqlDriver "database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
+	"golang.org/x/text/language"
 	"reflect"
 	"strconv"
 	"strings"
@@ -130,6 +132,9 @@ var autoMigrateList = []interface{}{
 	&RuleTemplateRule{},
 	&RuleTemplate{},
 	&Rule{},
+	&AuditRuleCategory{},
+	&AuditRuleCategoryRel{},
+	&CustomRuleCategoryRel{},
 	&SqlWhitelist{},
 	&SystemVariable{},
 	&Task{},
@@ -177,11 +182,109 @@ func (s *Storage) AutoMigrate() error {
 	if err != nil {
 		return errors.New(errors.ConnectStorageError, err)
 	}
-
+	err = s.db.SetupJoinTable(&Rule{}, "Categories", &AuditRuleCategoryRel{})
+	if err != nil {
+		return errors.New(errors.ConnectStorageError, err)
+	}
+	err = s.db.SetupJoinTable(&CustomRule{}, "Categories", &CustomRuleCategoryRel{})
+	if err != nil {
+		return errors.New(errors.ConnectStorageError, err)
+	}
 	if !s.db.Migrator().HasIndex(&SqlManage{}, "idx_project_id_status_deleted_at") {
 		err = s.db.Exec("CREATE INDEX idx_project_id_status_deleted_at ON sql_manages (project_id, status, deleted_at)").Error
 		if err != nil {
 			return errors.New(errors.ConnectStorageError, err)
+		}
+	}
+	return nil
+}
+
+func (s *Storage) CreateRuleCategoriesRelated() error {
+	err := s.CreateRuleCategories()
+	if err != nil {
+		return err
+	}
+	// 创建自定义规则和分类的关系
+	err = s.UpdateCustomRuleCategoryRels()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Storage) UpdateCustomRuleCategoryRels() error {
+	customRules := []*CustomRule{}
+	s.db.Find(&customRules)
+	for _, customRule := range customRules {
+		if customRule.Typ == "" {
+			// 新的规则分类Typ字段为""说明已经有了新的分类关系，直接忽略
+			continue
+		}
+		_, existed, err := s.FirstCustomRuleCategoryRelByCustomRuleId(customRule.RuleId)
+		if err != nil {
+			return err
+		}
+		// 已存在规则关系直接忽略
+		if existed {
+			return nil
+		}
+		newCategoryMap := categoryMapping[customRule.Typ]
+		var tags []string
+		if newCategoryMap == nil {
+			// 自定义规则可以自己定义规则分类，对于这种分类的统一映射
+			tags = []string{plocale.RuleTagDatabase.ID, plocale.RuleTagTablespace.ID, plocale.RuleTagTable.ID, plocale.RuleTagColumn.ID, plocale.RuleTagIndex.ID, plocale.RuleTagView.ID, plocale.RuleTagProcedure.ID, plocale.RuleTagFunction.ID, plocale.RuleTagTrigger.ID, plocale.RuleTagEvent.ID, plocale.RuleTagUser.ID}
+		} else {
+			// 这里的newCategoryMap只会有一次循环
+			for _, newTags := range newCategoryMap {
+				tags = newTags
+			}
+		}
+		// 获取分类表中的分类信息
+		auditRuleCategories, err := s.GetAuditRuleCategoryByTagIn(tags)
+		if err != nil {
+			return err
+		}
+		for _, newCategory := range auditRuleCategories {
+			customerCategoryRel := CustomRuleCategoryRel{CategoryId: newCategory.ID, CustomRuleId: customRule.RuleId}
+			err = s.db.Create(&customerCategoryRel).Error
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (s *Storage) CreateRuleCategories() error {
+	isCategoryExistInDB := func(categories []*AuditRuleCategory, targetCategory *AuditRuleCategory) (*AuditRuleCategory, bool) {
+		for i := range categories {
+			if categories[i].Category != targetCategory.Category || categories[i].Tag != targetCategory.Tag {
+				continue
+			}
+			return categories[i], true
+		}
+		return nil, false
+	}
+	categories, err := s.GetAllCategories()
+	if err != nil {
+		return errors.New(errors.ConnectStorageError, err)
+	}
+	categoryTagMap := map[string][]string{
+		plocale.RuleCategoryOperand.ID:       {plocale.RuleTagDatabase.ID, plocale.RuleTagTablespace.ID, plocale.RuleTagTable.ID, plocale.RuleTagColumn.ID, plocale.RuleTagIndex.ID, plocale.RuleTagView.ID, plocale.RuleTagProcedure.ID, plocale.RuleTagFunction.ID, plocale.RuleTagTrigger.ID, plocale.RuleTagEvent.ID, plocale.RuleTagUser.ID},
+		plocale.RuleCategorySQL.ID:           {plocale.RuleTagDML.ID, plocale.RuleTagDDL.ID, plocale.RuleTagDCL.ID, plocale.RuleTagIntegrity.ID, plocale.RuleTagQuery.ID, plocale.RuleTagTransaction.ID, plocale.RuleTagPrivilege.ID, plocale.RuleTagManagement.ID},
+		plocale.RuleCategoryAuditPurpose.ID:  {plocale.RuleTagPerformance.ID, plocale.RuleTagMaintenance.ID, plocale.RuleTagSecurity.ID, plocale.RuleTagCorrection.ID},
+		plocale.RuleCategoryAuditAccuracy.ID: {plocale.RuleTagOnline.ID, plocale.RuleTagOffline.ID},
+	}
+	for category, tags := range categoryTagMap {
+		for _, tag := range tags {
+			auditRuleCategory := &AuditRuleCategory{Category: category, Tag: tag}
+			_, existed := isCategoryExistInDB(categories, auditRuleCategory)
+			if !existed {
+				err := s.Save(auditRuleCategory)
+				if err != nil {
+					return err
+				}
+			}
 		}
 	}
 	return nil
@@ -205,6 +308,11 @@ func (s *Storage) CreateRulesIfNotExist(rulesMap map[string][]*Rule) error {
 	}
 	for dbType, rules := range rulesMap {
 		for _, rule := range rules {
+			// 持久化规则分类信息
+			categoryError := s.UpdateRuleCategoryRels(rule)
+			if categoryError != nil {
+				return categoryError
+			}
 			existedRule, exist := isRuleExistInDB(rulesInDB, rule, dbType)
 			// rule will be created or update if:
 			// 1. rule not exist;
@@ -456,6 +564,81 @@ func (s *Storage) CreateDefaultTemplateIfNotExist(projectId ProjectUID, rules ma
 	}
 
 	return nil
+}
+
+var categoryMapping = map[string]map[string][]string{
+	plocale.RuleTypeGlobalConfig.Other: {
+		plocale.RuleCategoryAuditPurpose.ID: {plocale.RuleTagMaintenance.ID},
+	},
+	plocale.RuleTypeNamingConvention.Other: {
+		plocale.RuleCategoryOperand.ID: {plocale.RuleTagDatabase.ID, plocale.RuleTagTablespace.ID, plocale.RuleTagTable.ID, plocale.RuleTagColumn.ID, plocale.RuleTagIndex.ID, plocale.RuleTagView.ID, plocale.RuleTagProcedure.ID, plocale.RuleTagFunction.ID, plocale.RuleTagTrigger.ID, plocale.RuleTagEvent.ID, plocale.RuleTagUser.ID},
+	},
+	plocale.RuleTypeIndexingConvention.Other: {
+		plocale.RuleCategoryOperand.ID: {plocale.RuleTagIndex.ID},
+	},
+	plocale.RuleTypeIndexOptimization.Other: {
+		plocale.RuleCategoryOperand.ID: {plocale.RuleTagIndex.ID},
+	},
+	plocale.RuleTypeIndexInvalidation.Other: {
+		plocale.RuleCategoryOperand.ID: {plocale.RuleTagIndex.ID},
+	},
+	plocale.RuleTypeDDLConvention.Other: {
+		plocale.RuleCategorySQL.ID: {plocale.RuleTagDDL.ID},
+	},
+	plocale.RuleTypeDMLConvention.Other: {
+		plocale.RuleCategorySQL.ID: {plocale.RuleTagDML.ID},
+	},
+	plocale.RuleTypeUsageSuggestion.Other: {
+		plocale.RuleCategoryOperand.ID: {plocale.RuleTagDatabase.ID, plocale.RuleTagTablespace.ID, plocale.RuleTagTable.ID, plocale.RuleTagColumn.ID, plocale.RuleTagIndex.ID, plocale.RuleTagView.ID, plocale.RuleTagProcedure.ID, plocale.RuleTagFunction.ID, plocale.RuleTagTrigger.ID, plocale.RuleTagEvent.ID, plocale.RuleTagUser.ID},
+	},
+	plocale.RuleTypeExecutePlan.Other: {
+		plocale.RuleCategoryAuditPurpose.ID: {plocale.RuleTagPerformance.ID},
+	},
+	plocale.RuleTypeDistributedConvention.Other: {
+		plocale.RuleCategoryAuditPurpose.ID: {plocale.RuleTagMaintenance.ID},
+	},
+}
+
+func (s *Storage) UpdateRuleCategoryRels(rule *Rule) error {
+	oldCategory := rule.I18nRuleInfo.GetRuleInfoByLangTag(language.Chinese).Category
+	_, existed, err := s.FirstAuditRuleCategoryRelByRule(rule.Name, rule.DBType)
+	if err != nil {
+		return err
+	}
+	// 某个规则存在分类不做处理
+	if existed {
+		return nil
+	}
+	for _, tags := range categoryMapping[oldCategory] {
+		// 获取分类表中的分类信息
+		auditRuleCategories, err := s.GetAuditRuleCategoryByTagIn(tags)
+		if err != nil {
+			return err
+		}
+		for _, newCategory := range auditRuleCategories {
+			auditRuleCategoryRel := AuditRuleCategoryRel{CategoryId: newCategory.ID, RuleName: rule.Name, RuleDBType: rule.DBType}
+			err = s.db.Create(&auditRuleCategoryRel).Error
+			if err != nil {
+				return err
+			}
+		}
+	}
+	auditAccuracyCategories, err := s.GetAuditRuleCategoryByCategory(plocale.RuleCategoryAuditAccuracy.ID)
+	if err != nil {
+		return err
+	}
+	// 根据离线/在线审核生成规则的分类关系
+	for _, auditAccuracyCategory := range auditAccuracyCategories {
+		if !rule.AllowOffline && auditAccuracyCategory.Tag == plocale.RuleTagOffline.ID {
+			continue
+		}
+		auditRuleCategoryRel := AuditRuleCategoryRel{CategoryId: auditAccuracyCategory.ID, RuleName: rule.Name, RuleDBType: rule.DBType}
+		err = s.db.Create(&auditRuleCategoryRel).Error
+		if err != nil {
+			return err
+		}
+	}
+	return err
 }
 
 func (s *Storage) GetDefaultRuleTemplateName(dbType string) string {
