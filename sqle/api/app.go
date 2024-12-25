@@ -450,6 +450,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1Router.GET("/custom_rules", v1.GetCustomRules)
 		v1Router.GET("/custom_rules/:rule_id", v1.GetCustomRule)
 		v1Router.GET("/custom_rules/:db_type/rule_types", v1.GetRuleTypeByDBType)
+		// rule category
+		v1Router.GET("/rules/categoryStatistics", v1.GetCategoryStatistics)
 
 		// task
 		v1Router.GET("/tasks/audits/:task_id/", v1.GetTask)

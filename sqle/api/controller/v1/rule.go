@@ -7,6 +7,9 @@ import (
 	"encoding/json"
 	e "errors"
 	"fmt"
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
+	"golang.org/x/text/language"
 	"io"
 	"mime"
 	"net/http"
@@ -264,6 +267,7 @@ func UpdateRuleTemplate(c echo.Context) error {
 
 type GetRuleTemplateReqV1 struct {
 	FuzzyKeywordRule string `json:"fuzzy_keyword_rule" query:"fuzzy_keyword_rule"`
+	Tags             string `json:"tags" query:"tags"`
 }
 
 type GetRuleTemplateResV1 struct {
@@ -308,6 +312,7 @@ func convertRuleTemplateToRes(ctx context.Context, template *model.RuleTemplate)
 // @Param rule_template_name path string true "rule template name"
 // @Param fuzzy_keyword_rule query string false "fuzzy rule,keyword for desc and annotation"
 // @Success 200 {object} v1.GetRuleTemplateResV1
+// @Param tags query string false "tags for rule"
 // @router /v1/rule_templates/{rule_template_name}/ [get]
 func GetRuleTemplate(c echo.Context) error {
 	s := model.GetStorage()
@@ -317,7 +322,7 @@ func GetRuleTemplate(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
-	template, exist, err := s.GetRuleTemplateDetailByNameAndProjectIds([]string{model.ProjectIdForGlobalRuleTemplate}, templateName, req.FuzzyKeywordRule)
+	template, exist, err := s.GetRuleTemplateDetailByNameAndProjectIds([]string{model.ProjectIdForGlobalRuleTemplate}, templateName, req.FuzzyKeywordRule, req.Tags)
 	if err != nil {
 		return c.JSON(200, controller.NewBaseReq(err))
 	}
@@ -462,6 +467,7 @@ type GetRulesReqV1 struct {
 	FilterGlobalRuleTemplateName string `json:"filter_global_rule_template_name" query:"filter_global_rule_template_name"`
 	FilterRuleNames              string `json:"filter_rule_names" query:"filter_rule_names"`
 	FuzzyKeywordRule             string `json:"fuzzy_keyword_rule" query:"fuzzy_keyword_rule"`
+	Tags                         string `json:"tags" query:"tags"`
 }
 
 type GetRulesResV1 struct {
@@ -470,16 +476,17 @@ type GetRulesResV1 struct {
 }
 
 type RuleResV1 struct {
-	Name            string           `json:"rule_name"`
-	Desc            string           `json:"desc"`
-	Annotation      string           `json:"annotation" example:"避免多次 table rebuild 带来的消耗、以及对线上业务的影响"`
-	Level           string           `json:"level" example:"error" enums:"normal,notice,warn,error"`
-	Typ             string           `json:"type" example:"全局配置" `
-	DBType          string           `json:"db_type" example:"mysql"`
-	Params          []RuleParamResV1 `json:"params,omitempty"`
-	IsCustomRule    bool             `json:"is_custom_rule"`
-	HasAuditPower   bool             `json:"has_audit_power"`
-	HasRewritePower bool             `json:"has_rewrite_power"`
+	Name            string              `json:"rule_name"`
+	Desc            string              `json:"desc"`
+	Annotation      string              `json:"annotation" example:"避免多次 table rebuild 带来的消耗、以及对线上业务的影响"`
+	Level           string              `json:"level" example:"error" enums:"normal,notice,warn,error"`
+	Typ             string              `json:"type" example:"全局配置" `
+	DBType          string              `json:"db_type" example:"mysql"`
+	Params          []RuleParamResV1    `json:"params,omitempty"`
+	IsCustomRule    bool                `json:"is_custom_rule"`
+	HasAuditPower   bool                `json:"has_audit_power"`
+	HasRewritePower bool                `json:"has_rewrite_power"`
+	Categories      map[string][]string `json:"categories"`
 }
 
 type RuleParamResV1 struct {
@@ -519,6 +526,7 @@ func convertRuleToRes(ctx context.Context, rule *model.Rule) RuleResV1 {
 		}
 		ruleRes.Params = paramsRes
 	}
+	ruleRes.Categories = associateCategories(rule.Categories)
 	return ruleRes
 }
 
@@ -534,7 +542,28 @@ func convertCustomRuleToRuleResV1(rule *model.CustomRule) RuleResV1 {
 		HasAuditPower:   true,
 		HasRewritePower: false,
 	}
+	ruleRes.Categories = associateCategories(rule.Categories)
 	return ruleRes
+}
+
+func associateCategories(categories []*model.AuditRuleCategory) map[string][]string {
+	categoryRes := make(map[string][]string)
+	if categories != nil && len(categories) > 0 {
+		for _, entity := range categories {
+			categoryRes[entity.Category] = append(categoryRes[entity.Category], entity.Tag)
+		}
+	}
+	return categoryRes
+}
+
+func associateBizCategories(lang language.Tag, categories []*model.AuditRuleCategory) map[string][]string {
+	categoryRes := make(map[string][]string)
+	if categories != nil && len(categories) > 0 {
+		for _, entity := range categories {
+			categoryRes[entity.Category] = append(categoryRes[entity.Category], plocale.Bundle.LocalizeMsgByLang(lang, ruleCategoryMapping[entity.Tag]))
+		}
+	}
+	return categoryRes
 }
 
 func convertRulesToRes(ctx context.Context, rules interface{}) []RuleResV1 {
@@ -561,6 +590,7 @@ func convertRulesToRes(ctx context.Context, rules interface{}) []RuleResV1 {
 // @Param fuzzy_keyword_rule query string false "fuzzy rule,keyword for desc and annotation"
 // @Param filter_global_rule_template_name query string false "filter global rule template name"
 // @Param filter_rule_names query string false "filter rule name list"
+// @Param tags query string false "filter tags"
 // @Success 200 {object} v1.GetRulesResV1
 // @router /v1/rules [get]
 func GetRules(c echo.Context) error {
@@ -578,6 +608,7 @@ func GetRules(c echo.Context) error {
 		"filter_db_type":                   req.FilterDBType,
 		"filter_rule_names":                req.FilterRuleNames,
 		"fuzzy_keyword_rule":               req.FuzzyKeywordRule,
+		"tags":                             req.Tags,
 	})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -587,6 +618,7 @@ func GetRules(c echo.Context) error {
 		"filter_db_type":                   req.FilterDBType,
 		"filter_rule_names":                req.FilterRuleNames,
 		"fuzzy_keyword_rule":               req.FuzzyKeywordRule,
+		"tags":                             req.Tags,
 	})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -599,6 +631,51 @@ func GetRules(c echo.Context) error {
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    ruleRes,
 	})
+}
+
+// GetCategoryStatistics
+// @Summary 获取规则分类统计信息
+// @Description get all rule category statistics
+// @Id getCategoryStatistics
+// @Tags rule_template
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetRuleCategoryStatisticResV1
+// @router /v1/rules/categoryStatistics [get]
+func GetCategoryStatistics(c echo.Context) error {
+	s := model.GetStorage()
+	auditRuleCategoryStatistics, err := s.GetAuditRuleCategoryStatistics()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	customRuleCategoryStatistics, err := s.GetCustomRuleCategoryStatistics()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	ruleCategoryStatistics := append(auditRuleCategoryStatistics, customRuleCategoryStatistics...)
+	categoryStatisticsResult := map[string][]*model.RuleCategoryStatistic{}
+	for _, statistic := range ruleCategoryStatistics {
+		statisticListInMap := categoryStatisticsResult[statistic.Category]
+		merged := false
+		for _, statisticInMap := range statisticListInMap {
+			// merge
+			if statistic.Category == statisticInMap.Category && statistic.Tag == statisticInMap.Tag {
+				statisticInMap.Count += statistic.Count
+				merged = true
+			}
+		}
+		if !merged {
+			categoryStatisticsResult[statistic.Category] = append(categoryStatisticsResult[statistic.Category], statistic)
+		}
+	}
+	return c.JSON(http.StatusOK, &GetRuleCategoryStatisticResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    categoryStatisticsResult,
+	})
+}
+
+type GetRuleCategoryStatisticResV1 struct {
+	controller.BaseRes
+	Data map[string][]*model.RuleCategoryStatistic `json:"data"`
 }
 
 type RuleTemplateTipReqV1 struct {
@@ -688,7 +765,7 @@ func CloneRuleTemplate(c echo.Context) error {
 	}
 
 	sourceTplName := c.Param("rule_template_name")
-	sourceTpl, exist, err := s.GetRuleTemplateDetailByNameAndProjectIds([]string{model.ProjectIdForGlobalRuleTemplate}, sourceTplName, "")
+	sourceTpl, exist, err := s.GetRuleTemplateDetailByNameAndProjectIds([]string{model.ProjectIdForGlobalRuleTemplate}, sourceTplName, "", "")
 	if err != nil {
 		return c.JSON(200, controller.NewBaseReq(err))
 	}
@@ -921,6 +998,7 @@ type ProjectRuleTemplateInstance struct {
 // @Param project_name path string true "project name"
 // @Param rule_template_name path string true "rule template name"
 // @Param fuzzy_keyword_rule query string false "fuzzy rule,keyword for desc and annotation"
+// @Param tags query string false "tags for rule"
 // @Success 200 {object} v1.GetProjectRuleTemplateResV1
 // @router /v1/projects/{project_name}/rule_templates/{rule_template_name}/ [get]
 func GetProjectRuleTemplate(c echo.Context) error {
@@ -935,7 +1013,7 @@ func GetProjectRuleTemplate(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
-	template, exist, err := s.GetRuleTemplateDetailByNameAndProjectIds([]string{projectUid}, templateName, req.FuzzyKeywordRule)
+	template, exist, err := s.GetRuleTemplateDetailByNameAndProjectIds([]string{projectUid}, templateName, req.FuzzyKeywordRule, req.Tags)
 	if err != nil {
 		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
 	}
@@ -1137,7 +1215,7 @@ func CloneProjectRuleTemplate(c echo.Context) error {
 	}
 
 	sourceTplName := c.Param("rule_template_name")
-	sourceTpl, exist, err := s.GetRuleTemplateDetailByNameAndProjectIds([]string{projectUid}, sourceTplName, "")
+	sourceTpl, exist, err := s.GetRuleTemplateDetailByNameAndProjectIds([]string{projectUid}, sourceTplName, "", "")
 	if err != nil {
 		return c.JSON(200, controller.NewBaseReq(err))
 	}
@@ -1291,12 +1369,14 @@ func checkRuleList(file *ParseProjectRuleTemplateFileResDataV1) (*RuleTemplateEx
 				Annotation: rule.Annotation,
 				Level:      rule.Level,
 				Typ:        rule.Typ,
+				Categories: rule.Categories,
 				DBType:     rule.DBType,
 			},
 		}
 
 		for _, param := range rule.Params {
 			ruleTemplateExport.RuleList[i].Params = append(ruleTemplateExport.RuleList[i].Params, RuleParamRes{
+				Key:   param.Key,
 				Value: param.Value,
 				Desc:  param.Desc,
 				Type:  param.Type,
@@ -1334,7 +1414,6 @@ func parseRuleTemplate(c echo.Context, fileType ExportType) (*ParseProjectRuleTe
 	if !exist {
 		return nil, errors.New(errors.DataNotExist, fmt.Errorf("the file has not been uploaded or the key bound to the file is not 'rule_template_file'"))
 	}
-
 	resp := &ParseProjectRuleTemplateFileResDataV1{}
 	switch fileType {
 	case CsvExportType:
@@ -1380,12 +1459,12 @@ func parseRuleTemplate(c echo.Context, fileType ExportType) (*ParseProjectRuleTe
 				Desc:       rule[1],
 				Annotation: rule[2],
 				Level:      rule[3],
-				Typ:        rule[4],
-				DBType:     rule[5],
+				Categories: parseRuleCategory(rule),
+				DBType:     rule[8],
 			}
 
 			var params []RuleParamResV1
-			err = json.Unmarshal([]byte(rule[6]), &params)
+			err = json.Unmarshal([]byte(rule[9]), &params)
 			if err != nil {
 				return nil, err
 			}
@@ -1424,15 +1503,85 @@ func parseRuleTemplate(c echo.Context, fileType ExportType) (*ParseProjectRuleTe
 
 		return resp, nil
 	case JsonExportType:
-		err = json.Unmarshal([]byte(file), &resp)
+		ruleTemplateExport := &RuleTemplateExport{}
+		err = json.Unmarshal([]byte(file), &ruleTemplateExport)
 		if err != nil {
 			return nil, fmt.Errorf("the file format is incorrect. Please check the uploaded file, error: %v", err)
 		}
-
+		resp.Name = ruleTemplateExport.Name
+		resp.Desc = ruleTemplateExport.Desc
+		resp.DBType = ruleTemplateExport.DBType
+		err = ruleTemplateExportToParseDataV1(ruleTemplateExport, resp)
+		if err != nil {
+			return nil, err
+		}
 		return resp, nil
 	default:
 		return nil, errors.New(errors.DataInvalid, fmt.Errorf("file type is invalid"))
 	}
+}
+
+func parseRuleCategory(csvRule []string) map[string][]string {
+	categories := make(map[string][]string)
+	if csvRule[4] != "" {
+		operandIds := getAuditRuleCategoryIds(strings.Split(csvRule[4], " "))
+		categories[plocale.RuleCategoryOperand.ID] = operandIds
+	}
+	if csvRule[5] != "" {
+		auditPurposeIds := getAuditRuleCategoryIds(strings.Split(csvRule[5], " "))
+		categories[plocale.RuleCategoryAuditPurpose.ID] = auditPurposeIds
+	}
+	if csvRule[6] != "" {
+		sqlIds := getAuditRuleCategoryIds(strings.Split(csvRule[6], " "))
+		categories[plocale.RuleCategorySQL.ID] = sqlIds
+	}
+	if csvRule[7] != "" {
+		auditAccuracyIds := getAuditRuleCategoryIds(strings.Split(csvRule[7], " "))
+		categories[plocale.RuleCategoryAuditAccuracy.ID] = auditAccuracyIds
+	}
+	return categories
+}
+
+func ruleTemplateExportToParseDataV1(ruleTemplateExport *RuleTemplateExport, parseResData *ParseProjectRuleTemplateFileResDataV1) error {
+	parseResData.Name = ruleTemplateExport.Name
+	parseResData.Desc = ruleTemplateExport.Desc
+	parseResData.DBType = ruleTemplateExport.DBType
+	for _, rule := range ruleTemplateExport.RuleList {
+		ruleRes := RuleResV1{}
+		ruleRes.Name = rule.Name
+		ruleRes.Desc = rule.Desc
+		ruleRes.Annotation = rule.Annotation
+		ruleRes.Level = rule.Level
+		ruleRes.DBType = rule.DBType
+
+		categories := make(map[string][]string)
+		for category, tags := range rule.Categories {
+			for _, tag := range tags {
+				categories[category] = append(categories[category], ruleCategoryReversedMapping[tag])
+			}
+		}
+		ruleRes.Categories = categories
+		params := make([]RuleParamResV1, 0)
+		for _, ruleParam := range rule.Params {
+			params = append(params, RuleParamResV1{
+				Key:   ruleParam.Key,
+				Value: ruleParam.Value,
+				Type:  ruleParam.Type,
+				Desc:  ruleParam.Desc,
+			})
+		}
+		ruleRes.Params = params
+		parseResData.RuleList = append(parseResData.RuleList, ruleRes)
+	}
+	return nil
+}
+
+func getAuditRuleCategoryIds(categories []string) []string {
+	categoryIds := make([]string, 0)
+	for _, category := range categories {
+		categoryIds = append(categoryIds, ruleCategoryReversedMapping[category])
+	}
+	return categoryIds
 }
 
 type GetRuleTemplateFileReqV1 struct {
@@ -1511,12 +1660,16 @@ func exportTemplateFile(c echo.Context, exportType ExportType, templateFile inte
 		var columnContentList [][]string
 
 		ctx := c.Request().Context()
+		// CSV文件列名
 		defaultColumnNameList := []string{
 			locale.Bundle.LocalizeMsgByCtx(ctx, locale.RuleTemplateRuleName),
 			locale.Bundle.LocalizeMsgByCtx(ctx, locale.RuleTemplateRuleDesc),
 			locale.Bundle.LocalizeMsgByCtx(ctx, locale.RuleTemplateRuleAnnotation),
 			locale.Bundle.LocalizeMsgByCtx(ctx, locale.RuleTemplateRuleLevel),
-			locale.Bundle.LocalizeMsgByCtx(ctx, locale.RuleTemplateRuleCategory),
+			locale.Bundle.LocalizeMsgByCtx(ctx, plocale.RuleCategoryOperand),
+			locale.Bundle.LocalizeMsgByCtx(ctx, plocale.RuleCategoryAuditPurpose),
+			locale.Bundle.LocalizeMsgByCtx(ctx, plocale.RuleCategorySQL),
+			locale.Bundle.LocalizeMsgByCtx(ctx, plocale.RuleCategoryAuditAccuracy),
 			locale.Bundle.LocalizeMsgByCtx(ctx, locale.RuleTemplateInstType),
 			locale.Bundle.LocalizeMsgByCtx(ctx, locale.RuleTemplateRuleParam),
 		}
@@ -1532,7 +1685,10 @@ func exportTemplateFile(c echo.Context, exportType ExportType, templateFile inte
 				ruleTemplateInfo.Desc,
 				ruleTemplateInfo.Annotation,
 				ruleTemplateInfo.Level,
-				ruleTemplateInfo.Typ,
+				strings.Join(ruleTemplateInfo.Categories[plocale.RuleCategoryOperand.ID], " "),
+				strings.Join(ruleTemplateInfo.Categories[plocale.RuleCategoryAuditPurpose.ID], " "),
+				strings.Join(ruleTemplateInfo.Categories[plocale.RuleCategorySQL.ID], " "),
+				strings.Join(ruleTemplateInfo.Categories[plocale.RuleCategoryAuditAccuracy.ID], " "),
 				ruleTemplateInfo.DBType,
 				string(paramsBytes),
 			}, nil
@@ -1669,6 +1825,7 @@ type RuleTemplateRuleInfo struct {
 	Annotation string
 	Level      string
 	Typ        string
+	Categories map[string][]string
 	DBType     string
 	Params     []RuleParamRes
 }
@@ -1684,6 +1841,7 @@ type RuleTemplateResErr struct {
 }
 
 type RuleParamRes struct {
+	Key   string `json:"key" form:"key"`
 	Value string `json:"value" form:"value"`
 	Desc  string `json:"desc" form:"desc"`
 	Type  string `json:"type" form:"type" enums:"string,int,bool"`
@@ -1692,7 +1850,7 @@ type RuleParamRes struct {
 func getRuleTemplateFile(ctx context.Context, projectID string, ruleTemplateName string) (*RuleTemplateExport, error) {
 	// 获取规则模板详情
 	s := model.GetStorage()
-	template, exist, err := s.GetRuleTemplateDetailByNameAndProjectIds([]string{projectID}, ruleTemplateName, "")
+	template, exist, err := s.GetRuleTemplateDetailByNameAndProjectIds([]string{projectID}, ruleTemplateName, "", "")
 	if err != nil {
 		return nil, err
 	}
@@ -1718,7 +1876,7 @@ func getRuleTemplateFile(ctx context.Context, projectID string, ruleTemplateName
 				Desc:       ruleInfo.Desc,
 				Annotation: ruleInfo.Annotation,
 				Level:      rule.RuleLevel,
-				Typ:        ruleInfo.Category,
+				Categories: associateBizCategories(lang, rule.Rule.Categories),
 				DBType:     rule.RuleDBType,
 				Params:     []RuleParamRes{},
 			},
@@ -1726,6 +1884,7 @@ func getRuleTemplateFile(ctx context.Context, projectID string, ruleTemplateName
 
 		for _, param := range rule.RuleParams {
 			r.Params = append(r.Params, RuleParamRes{
+				Key:   param.Key,
 				Value: param.Value,
 				Desc:  param.GetDesc(lang),
 				Type:  string(param.Type),
@@ -1738,14 +1897,79 @@ func getRuleTemplateFile(ctx context.Context, projectID string, ruleTemplateName
 	return resp, nil
 }
 
+var ruleCategoryMapping = map[string]*i18n.Message{
+	plocale.RuleCategoryOperand.ID:       plocale.RuleCategoryOperand,
+	plocale.RuleCategorySQL.ID:           plocale.RuleCategorySQL,
+	plocale.RuleCategoryAuditPurpose.ID:  plocale.RuleCategoryAuditPurpose,
+	plocale.RuleCategoryAuditAccuracy.ID: plocale.RuleCategoryAuditAccuracy,
+	plocale.RuleTagDatabase.ID:           plocale.RuleTagDatabase,
+	plocale.RuleTagTablespace.ID:         plocale.RuleTagTablespace,
+	plocale.RuleTagTable.ID:              plocale.RuleTagTable,
+	plocale.RuleTagColumn.ID:             plocale.RuleTagColumn,
+	plocale.RuleTagIndex.ID:              plocale.RuleTagIndex,
+	plocale.RuleTagView.ID:               plocale.RuleTagView,
+	plocale.RuleTagProcedure.ID:          plocale.RuleTagProcedure,
+	plocale.RuleTagFunction.ID:           plocale.RuleTagFunction,
+	plocale.RuleTagTrigger.ID:            plocale.RuleTagTrigger,
+	plocale.RuleTagEvent.ID:              plocale.RuleTagEvent,
+	plocale.RuleTagUser.ID:               plocale.RuleTagUser,
+	plocale.RuleTagDML.ID:                plocale.RuleTagDML,
+	plocale.RuleTagDDL.ID:                plocale.RuleTagDDL,
+	plocale.RuleTagDCL.ID:                plocale.RuleTagDCL,
+	plocale.RuleTagIntegrity.ID:          plocale.RuleTagIntegrity,
+	plocale.RuleTagQuery.ID:              plocale.RuleTagQuery,
+	plocale.RuleTagTransaction.ID:        plocale.RuleTagTransaction,
+	plocale.RuleTagPrivilege.ID:          plocale.RuleTagPrivilege,
+	plocale.RuleTagManagement.ID:         plocale.RuleTagManagement,
+	plocale.RuleTagPerformance.ID:        plocale.RuleTagPerformance,
+	plocale.RuleTagMaintenance.ID:        plocale.RuleTagMaintenance,
+	plocale.RuleTagSecurity.ID:           plocale.RuleTagSecurity,
+	plocale.RuleTagCorrection.ID:         plocale.RuleTagCorrection,
+	plocale.RuleTagOnline.ID:             plocale.RuleTagOnline,
+	plocale.RuleTagOffline.ID:            plocale.RuleTagOffline,
+}
+
+var ruleCategoryReversedMapping = map[string]string{
+	plocale.RuleCategoryOperand.Other:       plocale.RuleCategoryOperand.ID,
+	plocale.RuleCategorySQL.Other:           plocale.RuleCategorySQL.ID,
+	plocale.RuleCategoryAuditPurpose.Other:  plocale.RuleCategoryAuditPurpose.ID,
+	plocale.RuleCategoryAuditAccuracy.Other: plocale.RuleCategoryAuditAccuracy.ID,
+	plocale.RuleTagDatabase.Other:           plocale.RuleTagDatabase.ID,
+	plocale.RuleTagTablespace.Other:         plocale.RuleTagTablespace.ID,
+	plocale.RuleTagTable.Other:              plocale.RuleTagTable.ID,
+	plocale.RuleTagColumn.Other:             plocale.RuleTagColumn.ID,
+	plocale.RuleTagIndex.Other:              plocale.RuleTagIndex.ID,
+	plocale.RuleTagView.Other:               plocale.RuleTagView.ID,
+	plocale.RuleTagProcedure.Other:          plocale.RuleTagProcedure.ID,
+	plocale.RuleTagFunction.Other:           plocale.RuleTagFunction.ID,
+	plocale.RuleTagTrigger.Other:            plocale.RuleTagTrigger.ID,
+	plocale.RuleTagEvent.Other:              plocale.RuleTagEvent.ID,
+	plocale.RuleTagUser.Other:               plocale.RuleTagUser.ID,
+	plocale.RuleTagDML.Other:                plocale.RuleTagDML.ID,
+	plocale.RuleTagDDL.Other:                plocale.RuleTagDDL.ID,
+	plocale.RuleTagDCL.Other:                plocale.RuleTagDCL.ID,
+	plocale.RuleTagIntegrity.Other:          plocale.RuleTagIntegrity.ID,
+	plocale.RuleTagQuery.Other:              plocale.RuleTagQuery.ID,
+	plocale.RuleTagTransaction.Other:        plocale.RuleTagTransaction.ID,
+	plocale.RuleTagPrivilege.Other:          plocale.RuleTagPrivilege.ID,
+	plocale.RuleTagManagement.Other:         plocale.RuleTagManagement.ID,
+	plocale.RuleTagPerformance.Other:        plocale.RuleTagPerformance.ID,
+	plocale.RuleTagMaintenance.Other:        plocale.RuleTagMaintenance.ID,
+	plocale.RuleTagSecurity.Other:           plocale.RuleTagSecurity.ID,
+	plocale.RuleTagCorrection.Other:         plocale.RuleTagCorrection.ID,
+	plocale.RuleTagOnline.Other:             plocale.RuleTagOnline.ID,
+	plocale.RuleTagOffline.Other:            plocale.RuleTagOffline.ID,
+}
+
 type CustomRuleResV1 struct {
-	RuleId     string `json:"rule_id"`
-	Desc       string `json:"desc" example:"this is test rule"`
-	Annotation string `json:"annotation" example:"this is test rule"`
-	DBType     string `json:"db_type" example:"MySQL"`
-	Level      string `json:"level" example:"notice" enums:"normal,notice,warn,error"`
-	Type       string `json:"type" example:"DDL规则"`
-	RuleScript string `json:"rule_script,omitempty"`
+	RuleId     string              `json:"rule_id"`
+	Desc       string              `json:"desc" example:"this is test rule"`
+	Annotation string              `json:"annotation" example:"this is test rule"`
+	DBType     string              `json:"db_type" example:"MySQL"`
+	Level      string              `json:"level" example:"notice" enums:"normal,notice,warn,error"`
+	Type       string              `json:"type" example:"DDL规则"`
+	RuleScript string              `json:"rule_script,omitempty"`
+	Categories map[string][]string `json:"categories"`
 }
 
 type GetCustomRulesResV1 struct {
@@ -1784,12 +2008,13 @@ func DeleteCustomRule(c echo.Context) error {
 }
 
 type CreateCustomRuleReqV1 struct {
-	DBType     string `json:"db_type" form:"db_type" example:"MySQL" valid:"required"`
-	Desc       string `json:"desc" form:"desc" example:"this is test rule" valid:"required"`
-	Annotation string `json:"annotation" form:"annotation" example:"this is test rule"`
-	Level      string `json:"level" form:"level" example:"notice" valid:"required" enums:"normal,notice,warn,error"`
-	Type       string `json:"type" form:"type" example:"DDL规则" valid:"required"`
-	RuleScript string `json:"rule_script" form:"rule_script" valid:"required"`
+	DBType     string    `json:"db_type" form:"db_type" example:"MySQL" valid:"required"`
+	Desc       string    `json:"desc" form:"desc" example:"this is test rule" valid:"required"`
+	Annotation string    `json:"annotation" form:"annotation" example:"this is test rule"`
+	Level      string    `json:"level" form:"level" example:"notice" valid:"required" enums:"normal,notice,warn,error"`
+	Type       string    `json:"type" form:"type" example:"DDL规则"`
+	RuleScript string    `json:"rule_script" form:"rule_script" valid:"required"`
+	Tags       *[]string `json:"tags" form:"tags"`
 }
 
 // @Summary 添加自定义规则
@@ -1805,11 +2030,12 @@ func CreateCustomRule(c echo.Context) error {
 }
 
 type UpdateCustomRuleReqV1 struct {
-	Desc       *string `json:"desc" form:"desc" example:"this is test rule"`
-	Annotation *string `json:"annotation" form:"annotation" example:"this is test rule"`
-	Level      *string `json:"level" form:"level" example:"notice" enums:"normal,notice,warn,error"`
-	Type       *string `json:"type" form:"type" example:"DDL规则"`
-	RuleScript *string `json:"rule_script" form:"rule_script"`
+	Desc       *string   `json:"desc" form:"desc" example:"this is test rule"`
+	Annotation *string   `json:"annotation" form:"annotation" example:"this is test rule"`
+	Level      *string   `json:"level" form:"level" example:"notice" enums:"normal,notice,warn,error"`
+	Type       *string   `json:"type" form:"type" example:"DDL规则"`
+	RuleScript *string   `json:"rule_script" form:"rule_script"`
+	Tags       *[]string `json:"tags" form:"tags"`
 }
 
 // @Summary 更新自定义规则

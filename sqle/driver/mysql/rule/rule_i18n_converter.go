@@ -24,20 +24,20 @@ type SourceParam struct {
 }
 
 type SourceRule struct {
-	Name       string
-	Desc       *i18n.Message
-	Annotation *i18n.Message
-	Category   *i18n.Message
-	Level      driverV2.RuleLevel
-	Params     []*SourceParam
-	Knowledge  driverV2.RuleKnowledge
+	Name         string
+	Desc         *i18n.Message
+	Annotation   *i18n.Message
+	Category     *i18n.Message
+	Level        driverV2.RuleLevel
+	Params       []*SourceParam
+	Knowledge    driverV2.RuleKnowledge
+	AllowOffline bool
 }
 
 type SourceHandler struct {
 	Rule                 SourceRule
 	Message              *i18n.Message
 	Func                 RuleHandlerFunc
-	AllowOffline         bool
 	NotAllowOfflineStmts []ast.Node
 	// 开始事后审核时将会跳过这个值为ture的规则
 	OnlyAuditNotExecutedSQL bool
@@ -53,7 +53,6 @@ func generateI18nRuleHandlersFromSource(shs []*SourceHandler) []RuleHandler {
 			Rule:                            *ConvertSourceRule(&v.Rule),
 			Message:                         v.Message,
 			Func:                            v.Func,
-			AllowOffline:                    v.AllowOffline,
 			NotAllowOfflineStmts:            v.NotAllowOfflineStmts,
 			OnlyAuditNotExecutedSQL:         v.OnlyAuditNotExecutedSQL,
 			NotSupportExecutedSQLAuditStmts: v.NotSupportExecutedSQLAuditStmts,
@@ -66,8 +65,10 @@ func ConvertSourceRule(sr *SourceRule) *driverV2.Rule {
 	r := &driverV2.Rule{
 		Name:         sr.Name,
 		Level:        sr.Level,
+		Category:     sr.Category.ID,
 		Params:       make(params.Params, 0, len(sr.Params)),
 		I18nRuleInfo: genAllI18nRuleInfo(sr),
+		AllowOffline: sr.AllowOffline,
 	}
 	for _, v := range sr.Params {
 		r.Params = append(r.Params, &params.Param{

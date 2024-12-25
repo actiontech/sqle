@@ -18,6 +18,20 @@ definitions:
     additionalProperties:
       $ref: '#/definitions/model.AuditResultInfo'
     type: object
+  model.RuleCategoryStatistic:
+    properties:
+      category:
+        enum:
+        - audit_accuracy
+        - audit_purpose
+        - operand
+        - sql
+        type: string
+      count:
+        type: integer
+      tag:
+        type: string
+    type: object
   v1.AffectRows:
     properties:
       count:
@@ -843,6 +857,10 @@ definitions:
         type: string
       rule_script:
         type: string
+      tags:
+        items:
+          type: string
+        type: array
       type:
         example: DDL规则
         type: string
@@ -1022,6 +1040,12 @@ definitions:
       annotation:
         example: this is test rule
         type: string
+      categories:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
       db_type:
         example: MySQL
         type: string
@@ -2235,6 +2259,21 @@ definitions:
         items:
           $ref: '#/definitions/v1.RoleUserCount'
         type: array
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetRuleCategoryStatisticResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        additionalProperties:
+          items:
+            $ref: '#/definitions/model.RuleCategoryStatistic'
+          type: array
+        type: object
       message:
         example: ok
         type: string
@@ -3720,6 +3759,12 @@ definitions:
       annotation:
         example: 避免多次 table rebuild 带来的消耗、以及对线上业务的影响
         type: string
+      categories:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
       db_type:
         example: mysql
         type: string
@@ -4541,6 +4586,10 @@ definitions:
         type: string
       rule_script:
         type: string
+      tags:
+        items:
+          type: string
+        type: array
       type:
         example: DDL规则
         type: string
@@ -9007,6 +9056,10 @@ paths:
         in: query
         name: fuzzy_keyword_rule
         type: string
+      - description: tags for rule
+        in: query
+        name: tags
+        type: string
       responses:
         "200":
           description: OK
@@ -11637,6 +11690,10 @@ paths:
         in: query
         name: fuzzy_keyword_rule
         type: string
+      - description: tags for rule
+        in: query
+        name: tags
+        type: string
       responses:
         "200":
           description: OK
@@ -11783,6 +11840,10 @@ paths:
         in: query
         name: filter_rule_names
         type: string
+      - description: filter tags
+        in: query
+        name: tags
+        type: string
       responses:
         "200":
           description: OK
@@ -11791,6 +11852,20 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 规则列表
+      tags:
+      - rule_template
+  /v1/rules/categoryStatistics:
+    get:
+      description: get all rule category statistics
+      operationId: getCategoryStatistics
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetRuleCategoryStatisticResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取规则分类统计信息
       tags:
       - rule_template
   /v1/sql_analysis:

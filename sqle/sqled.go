@@ -103,6 +103,9 @@ func Run(options *config.SqleOptions) error {
 		if err != nil {
 			return fmt.Errorf("create workflow template failed: %v", err)
 		}
+		if err := s.CreateRuleCategoriesRelated(); err != nil {
+			return fmt.Errorf("create rule categories related failed while auto migrating table: %v", err)
+		}
 		rules := model.MergeOptimizationRules(driver.GetPluginManager().GetAllRules(), opt.OptimizationRuleMap)
 		if err := s.CreateRulesIfNotExist(rules); err != nil {
 			return fmt.Errorf("create rules failed while auto migrating table: %v", err)
