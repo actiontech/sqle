@@ -95,7 +95,10 @@ func getRewriteSQLData(c echo.Context) error {
 	var lastRewrittenSQL string
 	lang := locale.Bundle.GetLangTagFromCtx(c.Request().Context())
 	for _, suggestion := range rewrittenRes.Suggestions {
-		ruleName := sqlrewriting.ConvertRuleIDToRuleName(suggestion.RuleID)
+		ruleName, err := sqlrewriting.ConvertRuleIDToRuleName(taskDbType, suggestion.RuleID)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
 		r, exist, err := s.GetRule(ruleName, taskDbType)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, fmt.Errorf("get rule failed: %v", err))
