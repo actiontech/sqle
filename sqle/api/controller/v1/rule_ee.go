@@ -130,8 +130,31 @@ func createCustomRule(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
+	err = createCustomRuleCategoryRels(ruleId, req.Tags)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+}
+
+// createCustomRuleCategoryRels 创建自定义规则的分类关系
+func createCustomRuleCategoryRels(customRuleId string, tags *[]string) error {
+	if tags == nil {
+		return nil
+	}
+	s := model.GetStorage()
+	ruleCategories, err := s.GetAuditRuleCategoryByTagIn(*tags)
+	if err != nil {
+		return err
+	}
+	for _, category := range ruleCategories {
+		customerCategoryRel := model.CustomRuleCategoryRel{CategoryId: category.ID, CustomRuleId: customRuleId}
+		err = s.Save(customerCategoryRel)
+		if err != nil {
+			return err
+		}
+	}
+	return err
 }
 
 func updateCustomRule(c echo.Context) error {
@@ -190,7 +213,10 @@ func updateCustomRule(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
+	err = s.UpdateCustomRuleCategoriesByRuleId(ruleId, *req.Tags)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
@@ -213,6 +239,7 @@ func getCustomRule(c echo.Context) error {
 		Level:      rule.Level,
 		Type:       rule.Typ,
 		RuleScript: rule.RuleScript,
+		Categories: associateCategories(rule.Categories),
 	}
 	return c.JSON(http.StatusOK, &GetCustomRuleResV1{
 		BaseRes: controller.NewBaseReq(nil),
