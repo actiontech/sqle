@@ -231,7 +231,6 @@ type RuleHandler struct {
 	Rule                 driverV2.Rule
 	Message              *i18n.Message
 	Func                 RuleHandlerFunc
-	AllowOffline         bool
 	NotAllowOfflineStmts []ast.Node
 	// 开始事后审核时将会跳过这个值为ture的规则
 	OnlyAuditNotExecutedSQL bool
@@ -271,7 +270,7 @@ func addResult(result *driverV2.AuditResults, currentRule driverV2.Rule, ruleNam
 }
 
 func (rh *RuleHandler) IsAllowOfflineRule(node ast.Node) bool {
-	if !rh.AllowOffline {
+	if !rh.Rule.AllowOffline {
 		return false
 	}
 	for _, stmt := range rh.NotAllowOfflineStmts {
