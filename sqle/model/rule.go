@@ -36,6 +36,7 @@ func GenerateRuleByDriverRule(dr *driverV2.Rule, dbType string) *Rule {
 			I18nContent: make(i18nPkg.I18nStr, len(dr.I18nRuleInfo)),
 		},
 		I18nRuleInfo: make(driverV2.I18nRuleInfo, len(dr.I18nRuleInfo)),
+		AllowOffline: dr.AllowOffline,
 	}
 	for lang, v := range dr.I18nRuleInfo {
 		r.Knowledge.I18nContent[lang] = v.Knowledge.Content
@@ -92,6 +93,8 @@ type Rule struct {
 	HasAuditPower   bool                  `json:"has_audit_power" gorm:"type:bool" example:"true"`
 	HasRewritePower bool                  `json:"has_rewrite_power" gorm:"type:bool" example:"true"`
 	I18nRuleInfo    driverV2.I18nRuleInfo `json:"i18n_rule_info" gorm:"type:json"`
+	Categories      []*AuditRuleCategory  `gorm:"many2many:audit_rule_category_rels;joinForeignKey:RuleName,RuleDBType;joinReferences:CategoryId"`
+	AllowOffline    bool                  `json:"allow_offline" gorm:"-"`
 }
 
 func (r Rule) TableName() string {
@@ -210,7 +213,7 @@ func (s *Storage) GetRuleTemplatesByInstanceNameAndProjectId(name string, projec
 }
 
 func (s *Storage) GetRulesFromRuleTemplateByName(projectIds []string, name string) ([]*Rule, []*CustomRule, error) {
-	tpl, exist, err := s.GetRuleTemplateDetailByNameAndProjectIds(projectIds, name, "")
+	tpl, exist, err := s.GetRuleTemplateDetailByNameAndProjectIds(projectIds, name, "", "")
 	if !exist {
 		return nil, nil, errors.New(errors.DataNotExist, err)
 	}
@@ -245,7 +248,7 @@ func (s *Storage) GetAllRulesByInstance(instance *Instance) ([]*Rule, []*CustomR
 }
 
 func (s *Storage) GetOptimizationRulesFromRuleTemplateByName(projectIds []string, name string) ([]*Rule, error) {
-	tpl, exist, err := s.GetRuleTemplateDetailByNameAndProjectIds(projectIds, name, "")
+	tpl, exist, err := s.GetRuleTemplateDetailByNameAndProjectIds(projectIds, name, "", "")
 	if !exist {
 		return nil, errors.New(errors.DataNotExist, err)
 	}
@@ -302,7 +305,7 @@ func (s *Storage) IsRuleTemplateExistFromAnyProject(projectId ProjectUID, name s
 	return count > 0, errors.ConnectStorageErrWrapper(err)
 }
 
-func (s *Storage) GetRuleTemplateDetailByNameAndProjectIds(projectIds []string, name string, fuzzy_keyword_rule string) (*RuleTemplate, bool, error) {
+func (s *Storage) GetRuleTemplateDetailByNameAndProjectIds(projectIds []string, name string, fuzzy_keyword_rule string, tags string) (*RuleTemplate, bool, error) {
 	dbOrder := func(db *gorm.DB) *gorm.DB {
 		return db.Order("rule_template_rule.rule_name ASC")
 	}
@@ -314,14 +317,58 @@ func (s *Storage) GetRuleTemplateDetailByNameAndProjectIds(projectIds []string, 
 		return db.Where("`i18n_rule_info` like ?", fmt.Sprintf("%%%s%%", fuzzy_keyword_rule))
 	}
 	t := &RuleTemplate{Name: name}
-	err := s.db.Preload("RuleList", dbOrder).Preload("RuleList.Rule", fuzzy_condition).Preload("CustomRuleList.CustomRule", fuzzy_condition).
+	err := s.db.Preload("RuleList", dbOrder).Preload("RuleList.Rule", fuzzy_condition).Preload("RuleList.Rule.Categories").
+		Preload("CustomRuleList.CustomRule", fuzzy_condition).Preload("CustomRuleList.CustomRule.Categories").
 		Where(t).
 		Where("project_id IN (?)", projectIds).
 		First(t).Error
 	if err == gorm.ErrRecordNotFound {
 		return t, false, nil
 	}
+	t.RuleList = filterRulesByTag(t.RuleList, tags)
+	t.CustomRuleList = filterCustomRulesByTag(t.CustomRuleList, tags)
 	return t, true, errors.New(errors.ConnectStorageError, err)
+}
+
+func filterRulesByTag(ruleTemplateRules []RuleTemplateRule, tags string) []RuleTemplateRule {
+	if tags == "" {
+		return ruleTemplateRules
+	}
+	var filteredRuleResult []RuleTemplateRule
+	for _, ruleTemplateRule := range ruleTemplateRules {
+		if templateRuleByTagsCondition(ruleTemplateRule.Rule.Categories, tags) {
+			filteredRuleResult = append(filteredRuleResult, ruleTemplateRule)
+		}
+	}
+	return filteredRuleResult
+}
+
+func filterCustomRulesByTag(ruleTemplateRules []RuleTemplateCustomRule, tags string) []RuleTemplateCustomRule {
+	if tags == "" {
+		return ruleTemplateRules
+	}
+	var filteredRuleResult []RuleTemplateCustomRule
+	for _, ruleTemplateRule := range ruleTemplateRules {
+		if templateRuleByTagsCondition(ruleTemplateRule.CustomRule.Categories, tags) {
+			filteredRuleResult = append(filteredRuleResult, ruleTemplateRule)
+		}
+	}
+	return filteredRuleResult
+}
+
+func templateRuleByTagsCondition(ruleCategories []*AuditRuleCategory, tags string) bool {
+	tagSlice := strings.Split(tags, ",")
+	tagSliceLen := len(tagSlice)
+	tagMatchCount := 0
+	for _, tag := range tagSlice {
+		for _, ruleCategory := range ruleCategories {
+			if ruleCategory.Tag == tag {
+				tagMatchCount++
+				break
+			}
+		}
+	}
+	return tagSliceLen == tagMatchCount
 }
 
 func (s *Storage) UpdateRuleTemplateRules(tpl *RuleTemplate, rules ...RuleTemplateRule) error {
@@ -535,20 +582,21 @@ type CustomRule struct {
 	Model
 	RuleId string `json:"rule_id" gorm:"index:unique; not null; type:varchar(255)"`
 
-	Desc        string         `json:"desc" gorm:"not null; type:varchar(255)"`
-	Annotation  string         `json:"annotation" gorm:"type:varchar(1024)"`
-	DBType      string         `json:"db_type" gorm:"not null; default:\"mysql\"; type:varchar(255)"`
-	Level       string         `json:"level" example:"error" gorm:"type:varchar(255)"` // notice, warn, error
-	Typ         string         `json:"type" gorm:"column:type; not null; type:varchar(255)"`
-	RuleScript  string         `json:"rule_script" gorm:"type:text"`
-	ScriptType  string         `json:"script_type" gorm:"not null; default:\"regular\"; type:varchar(255)"`
-	KnowledgeId uint           `json:"knowledge_id"`
-	Knowledge   *RuleKnowledge `json:"knowledge" gorm:"foreignkey:KnowledgeId"`
+	Desc        string               `json:"desc" gorm:"not null; type:varchar(255)"`
+	Annotation  string               `json:"annotation" gorm:"type:varchar(1024)"`
+	DBType      string               `json:"db_type" gorm:"not null; default:\"mysql\"; type:varchar(255)"`
+	Level       string               `json:"level" example:"error" gorm:"type:varchar(255)"` // notice, warn, error
+	Typ         string               `json:"type" gorm:"column:type; not null; type:varchar(255)"`
+	RuleScript  string               `json:"rule_script" gorm:"type:text"`
+	ScriptType  string               `json:"script_type" gorm:"not null; default:\"regular\"; type:varchar(255)"`
+	KnowledgeId uint                 `json:"knowledge_id"`
+	Knowledge   *RuleKnowledge       `json:"knowledge" gorm:"foreignkey:KnowledgeId"`
+	Categories  []*AuditRuleCategory `json:"categories" gorm:"many2many:custom_rule_category_rels;foreignKey:RuleId;joinForeignKey:CustomRuleId;joinReferences:CategoryId"`
 }
 
 func (s *Storage) GetCustomRuleByRuleId(ruleId string) (*CustomRule, bool, error) {
 	rule := &CustomRule{}
-	err := s.db.Where("rule_id = ?", ruleId).First(rule).Error
+	err := s.db.Preload("Categories").Where("rule_id = ?", ruleId).First(rule).Error
 	if err == gorm.ErrRecordNotFound {
 		return rule, false, nil
 	}
@@ -571,7 +619,7 @@ func (s *Storage) GetCustomRulesByDBTypeAndFuzzyDesc(queryFields, filterDbType, 
 
 func (s *Storage) GetCustomRules(queryFields string) ([]*CustomRule, error) {
 	rules := []*CustomRule{}
-	err := s.db.Select(queryFields).Find(&rules).Error
+	err := s.db.Preload("Categories").Select(queryFields).Find(&rules).Error
 	return rules, errors.New(errors.ConnectStorageError, err)
 }
 
@@ -587,6 +635,25 @@ func (s *Storage) GetCustomRulesByDescAndDBType(filterDesc, filterDbType string)
 func (s *Storage) UpdateCustomRuleByRuleId(ruleId string, attrs interface{}) error {
 	err := s.db.Table("custom_rules").Where("rule_id = ?", ruleId).Updates(attrs).Error
 	return errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) UpdateCustomRuleCategoriesByRuleId(ruleId string, tags []string) error {
+	err := s.db.Where(&CustomRuleCategoryRel{CustomRuleId: ruleId}).Delete(&CustomRuleCategoryRel{}).Error
+	if err != nil {
+		return err
+	}
+	var auditRuleCategory []*AuditRuleCategory
+	err = s.db.Model(AuditRuleCategory{}).Where("tag in (?)", tags).Find(&auditRuleCategory).Error
+	if err != nil {
+		return err
+	}
+	for _, category := range auditRuleCategory {
+		err = s.db.Save(CustomRuleCategoryRel{CategoryId: category.ID, CustomRuleId: ruleId}).Error
+	}
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *Storage) GetCustomRuleByDBTypeAndScriptType(DBType, ScriptType string) ([]CustomRule, bool, error) {
