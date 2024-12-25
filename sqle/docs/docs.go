@@ -4356,6 +4356,12 @@ var doc = `{
                         "description": "fuzzy rule,keyword for desc and annotation",
                         "name": "fuzzy_keyword_rule",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "tags for rule",
+                        "name": "tags",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -8409,6 +8415,12 @@ var doc = `{
                         "description": "fuzzy rule,keyword for desc and annotation",
                         "name": "fuzzy_keyword_rule",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "tags for rule",
+                        "name": "tags",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -8614,6 +8626,12 @@ var doc = `{
                         "description": "filter rule name list",
                         "name": "filter_rule_names",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter tags",
+                        "name": "tags",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -8621,6 +8639,29 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetRulesResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/rules/categoryStatistics": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get all rule category statistics",
+                "tags": [
+                    "rule_template"
+                ],
+                "summary": "获取规则分类统计信息",
+                "operationId": "getCategoryStatistics",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetRuleCategoryStatisticResV1"
                         }
                     }
                 }
@@ -11303,6 +11344,26 @@ var doc = `{
                 "$ref": "#/definitions/model.AuditResultInfo"
             }
         },
+        "model.RuleCategoryStatistic": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string",
+                    "enum": [
+                        "audit_accuracy",
+                        "audit_purpose",
+                        "operand",
+                        "sql"
+                    ]
+                },
+                "count": {
+                    "type": "integer"
+                },
+                "tag": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.AffectRows": {
             "type": "object",
             "properties": {
@@ -12505,6 +12566,12 @@ var doc = `{
                 "rule_script": {
                     "type": "string"
                 },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "type": {
                     "type": "string",
                     "example": "DDL规则"
@@ -12770,6 +12837,15 @@ var doc = `{
                 "annotation": {
                     "type": "string",
                     "example": "this is test rule"
+                },
+                "categories": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
                 },
                 "db_type": {
                     "type": "string",
@@ -14532,6 +14608,28 @@ var doc = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/v1.RoleUserCount"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetRuleCategoryStatisticResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/definitions/model.RuleCategoryStatistic"
+                        }
                     }
                 },
                 "message": {
@@ -16693,6 +16791,15 @@ var doc = `{
                     "type": "string",
                     "example": "避免多次 table rebuild 带来的消耗、以及对线上业务的影响"
                 },
+                "categories": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
                 "db_type": {
                     "type": "string",
                     "example": "mysql"
@@ -17904,6 +18011,12 @@ var doc = `{
                 },
                 "rule_script": {
                     "type": "string"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "type": {
                     "type": "string",
