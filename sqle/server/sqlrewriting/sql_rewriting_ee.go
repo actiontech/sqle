@@ -242,7 +242,7 @@ func SQLRewriting(ctx context.Context, params *SQLRewritingParams) (*GetRewriteR
 	}
 
 	// 发送 HTTP POST 请求
-	var callRewriteSQLTimeout int64 = 300 // 设置重写请求的超时时间
+	var callRewriteSQLTimeout int64 = 600 // 设置重写请求的超时时间
 	if err := pkgHttp.POST(pkgHttp.SetTimeoutValueContext(ctx, callRewriteSQLTimeout), apiURL, nil, req, reply); err != nil {
 		return nil, fmt.Errorf("failed to call %v: %v", apiURL, err)
 	}
