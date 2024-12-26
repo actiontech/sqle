@@ -36,6 +36,8 @@ type Plugin struct {
 	// eg: 删除数据源前：
 	// 需要sqle服务中实现接口逻辑，判断该数据源上已经没有进行中的工单
 	OperateDataResourceHandleUrl string `json:"operate_data_resource_handle_url"`
+	GetDatabaseDriverOptionsUrl  string `json:"get_database_driver_options_url"`
+	GetDatabaseDriverLogosUrl    string `json:"get_database_driver_logos_url"`
 }
 
 // swagger:model

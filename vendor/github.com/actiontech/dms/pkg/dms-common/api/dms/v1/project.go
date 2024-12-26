@@ -28,6 +28,8 @@ type ListProjectReq struct {
 	// filter project by project priority
 	// in:query
 	FilterByProjectPriority ProjectPriority `query:"filter_by_project_priority" json:"filter_by_project_priority"`
+	// filter the Project By Project description
+	FilterByDesc string `query:"filter_by_desc" json:"filter_by_desc"`
 }
 
 // swagger:enum ProjectOrderByField
