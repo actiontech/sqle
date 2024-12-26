@@ -156,13 +156,6 @@ func SQLRewriting(ctx context.Context, params *SQLRewritingParams) (*GetRewriteR
 	if params.SQL == nil {
 		return nil, fmt.Errorf("sql is nil")
 	}
-	if params.TableStructures == nil {
-		return nil, fmt.Errorf("table structures is nil")
-	}
-	// TODO: 重写功能需要Explain信息，暂时不支持
-	// if params.Explain == nil {
-	//  return nil, fmt.Errorf("explain is nil")
-	// }
 
 	s := model.GetStorage()
 
