@@ -16,6 +16,7 @@ import (
 	"github.com/actiontech/sqle/sqle/config"
 	"github.com/actiontech/sqle/sqle/driver"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/ungerik/go-dry"
 	"golang.org/x/text/language"
@@ -27,7 +28,9 @@ func getUrl() string {
 
 // Suggestion 定义单个重写建议的结构
 type Suggestion struct {
-	// 重写建议的规则ID
+	// 重写建议的规则名称(现有规则的RuleName)
+	RuleName string `json:"rule_name"`
+	// 重写建议的规则ID(知识库新规则的ID)
 	RuleID string `json:"rule_id"`
 	// 重写建议的类型
 	Type string `json:"type"`
@@ -108,6 +111,9 @@ func getRuleIdConvert(dbType string) ([]ruleIdConvert, error) {
 }
 
 func ConvertRuleNameToRuleId(dbType string, ruleName string) (string, error) {
+	if ruleName == "" {
+		return "", fmt.Errorf("rule name is empty")
+	}
 	if noNeedConvert(dbType) {
 		return ruleName, nil
 	}
@@ -125,6 +131,9 @@ func ConvertRuleNameToRuleId(dbType string, ruleName string) (string, error) {
 }
 
 func ConvertRuleIDToRuleName(dbType string, ruleId string) (string, error) {
+	if ruleId == "" {
+		return "", fmt.Errorf("rule id is empty")
+	}
 	if noNeedConvert(dbType) {
 		return ruleId, nil
 	}
@@ -158,20 +167,25 @@ func SQLRewriting(ctx context.Context, params *SQLRewritingParams) (*GetRewriteR
 	}
 
 	s := model.GetStorage()
+	l := log.NewEntry().WithField("get_rewrite_sql", "server")
 
 	var rules []Rule
+	var ruleNamesCanNotRewrite []string
 	for _, ar := range params.SQL.AuditResults {
 		if ar.RuleName == "" {
 			continue
 		}
 		// 不对预检查规则进行重写
 		if dry.StringInSlice(ar.RuleName, rulePreCheck) {
+			ruleNamesCanNotRewrite = append(ruleNamesCanNotRewrite, ar.RuleName)
 			continue
 		}
 
 		ruleID, err := ConvertRuleNameToRuleId(params.DBType, ar.RuleName)
 		if err != nil {
-			return nil, err
+			l.Errorf("can't convert rule name(%v) to rule id: %v", ar.RuleName, err)
+			ruleNamesCanNotRewrite = append(ruleNamesCanNotRewrite, ar.RuleName)
+			continue
 		}
 
 		r, exist, err := s.GetRule(ar.RuleName, params.DBType)
@@ -233,6 +247,22 @@ func SQLRewriting(ctx context.Context, params *SQLRewritingParams) (*GetRewriteR
 		return nil, fmt.Errorf("failed to call %v: %v", apiURL, err)
 	}
 
+	// 填回现有的规则名称(重写功能使用了新的规则ID，不需要现有的规则名称，这里填充回现有的规则名称只是为了页面展示)
+	for i, suggestion := range reply.Suggestions {
+		ruleName, err := ConvertRuleIDToRuleName(params.DBType, suggestion.RuleID)
+		if err != nil {
+			return nil, fmt.Errorf("can't convert rule id(%v) to rule name: %v", suggestion.RuleID, err)
+		}
+		reply.Suggestions[i].RuleName = ruleName
+	}
+	// 对于无法重写的规则，需要将其加入到Suggestions中
+	for _, rn := range ruleNamesCanNotRewrite {
+		reply.Suggestions = append(reply.Suggestions, Suggestion{
+			RuleName:    rn,
+			Type:        "other",
+			Description: "需要人工处理",
+		})
+	}
 	return reply, nil
 
 }

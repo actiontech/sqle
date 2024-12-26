@@ -53,7 +53,7 @@ func getRewriteSQLData(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.NewDataNotExistErr("sql number not found"))
 	}
 
-	l := log.NewEntry().WithField("get_rewrite_sql", taskID)
+	l := log.NewEntry().WithField("get_rewrite_sql", "api")
 
 	sqlContent, err := fillsql.FillingSQLWithParamMarker(taskSql.Content, task)
 	if err != nil {
@@ -100,16 +100,12 @@ func getRewriteSQLData(c echo.Context) error {
 	var lastRewrittenSQL string
 	lang := locale.Bundle.GetLangTagFromCtx(c.Request().Context())
 	for _, suggestion := range rewrittenRes.Suggestions {
-		ruleName, err := sqlrewriting.ConvertRuleIDToRuleName(taskDbType, suggestion.RuleID)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-		r, exist, err := s.GetRule(ruleName, taskDbType)
+		r, exist, err := s.GetRule(suggestion.RuleName, taskDbType)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, fmt.Errorf("get rule failed: %v", err))
 		}
 		if !exist {
-			return controller.JSONBaseErrorReq(c, fmt.Errorf("rule not found: %s", ruleName))
+			return controller.JSONBaseErrorReq(c, fmt.Errorf("rule not found: %s", suggestion.RuleName))
 		}
 		if suggestion.RewrittenSql != "" {
 			lastRewrittenSQL = suggestion.RewrittenSql
