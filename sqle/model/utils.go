@@ -228,17 +228,7 @@ func (s *Storage) UpdateCustomRuleCategoryRels() error {
 		if existed {
 			return nil
 		}
-		newCategoryMap := categoryMapping[customRule.Typ]
-		var tags []string
-		if newCategoryMap == nil {
-			// 自定义规则可以自己定义规则分类，对于这种分类的统一映射
-			tags = []string{plocale.RuleTagDatabase.ID, plocale.RuleTagTablespace.ID, plocale.RuleTagTable.ID, plocale.RuleTagColumn.ID, plocale.RuleTagIndex.ID, plocale.RuleTagView.ID, plocale.RuleTagProcedure.ID, plocale.RuleTagFunction.ID, plocale.RuleTagTrigger.ID, plocale.RuleTagEvent.ID, plocale.RuleTagUser.ID}
-		} else {
-			// 这里的newCategoryMap只会有一次循环
-			for _, newTags := range newCategoryMap {
-				tags = newTags
-			}
-		}
+		tags := mappingToNewCategory(customRule.Desc, customRule.Typ)
 		// 获取分类表中的分类信息
 		auditRuleCategories, err := s.GetAuditRuleCategoryByTagIn(tags)
 		if err != nil {
@@ -566,12 +556,33 @@ func (s *Storage) CreateDefaultTemplateIfNotExist(projectId ProjectUID, rules ma
 	return nil
 }
 
+func mappingToNewCategory(ruleName string, oldCategory string) []string {
+	// 当旧规则是命名规范的映射关系
+	if oldCategory == plocale.RuleTypeNamingConvention.Other {
+		if strings.Contains(ruleName, "database") || strings.Contains(ruleName, "object") {
+			return []string{plocale.RuleTagDatabase.ID}
+		} else if strings.Contains(ruleName, "index") || strings.Contains(ruleName, "pk") {
+			return []string{plocale.RuleTagIndex.ID}
+		} else {
+			return []string{
+				plocale.RuleTagDatabase.ID, plocale.RuleTagTablespace.ID, plocale.RuleTagTable.ID, plocale.RuleTagColumn.ID, plocale.RuleTagIndex.ID, plocale.RuleTagView.ID, plocale.RuleTagProcedure.ID, plocale.RuleTagFunction.ID, plocale.RuleTagTrigger.ID, plocale.RuleTagEvent.ID, plocale.RuleTagUser.ID}
+		}
+	}
+	newCategoryMap := categoryMapping[oldCategory]
+	if newCategoryMap == nil {
+		return []string{
+			plocale.RuleTagDatabase.ID, plocale.RuleTagTablespace.ID, plocale.RuleTagTable.ID, plocale.RuleTagColumn.ID, plocale.RuleTagIndex.ID, plocale.RuleTagView.ID, plocale.RuleTagProcedure.ID, plocale.RuleTagFunction.ID, plocale.RuleTagTrigger.ID, plocale.RuleTagEvent.ID, plocale.RuleTagUser.ID}
+	}
+	tags := make([]string, 0)
+	for _, newTags := range newCategoryMap {
+		tags = append(tags, newTags...)
+	}
+	return tags
+}
+
 var categoryMapping = map[string]map[string][]string{
 	plocale.RuleTypeGlobalConfig.Other: {
-		plocale.RuleCategoryAuditPurpose.ID: {plocale.RuleTagMaintenance.ID},
-	},
-	plocale.RuleTypeNamingConvention.Other: {
-		plocale.RuleCategoryOperand.ID: {plocale.RuleTagDatabase.ID, plocale.RuleTagTablespace.ID, plocale.RuleTagTable.ID, plocale.RuleTagColumn.ID, plocale.RuleTagIndex.ID, plocale.RuleTagView.ID, plocale.RuleTagProcedure.ID, plocale.RuleTagFunction.ID, plocale.RuleTagTrigger.ID, plocale.RuleTagEvent.ID, plocale.RuleTagUser.ID},
+		plocale.RuleCategoryAuditPurpose.ID: {plocale.RuleTagPerformance.ID},
 	},
 	plocale.RuleTypeIndexingConvention.Other: {
 		plocale.RuleCategoryOperand.ID: {plocale.RuleTagIndex.ID},
@@ -589,7 +600,7 @@ var categoryMapping = map[string]map[string][]string{
 		plocale.RuleCategorySQL.ID: {plocale.RuleTagDML.ID},
 	},
 	plocale.RuleTypeUsageSuggestion.Other: {
-		plocale.RuleCategoryOperand.ID: {plocale.RuleTagDatabase.ID, plocale.RuleTagTablespace.ID, plocale.RuleTagTable.ID, plocale.RuleTagColumn.ID, plocale.RuleTagIndex.ID, plocale.RuleTagView.ID, plocale.RuleTagProcedure.ID, plocale.RuleTagFunction.ID, plocale.RuleTagTrigger.ID, plocale.RuleTagEvent.ID, plocale.RuleTagUser.ID},
+		plocale.RuleCategoryAuditPurpose.ID: {plocale.RuleTagMaintenance.ID},
 	},
 	plocale.RuleTypeExecutePlan.Other: {
 		plocale.RuleCategoryAuditPurpose.ID: {plocale.RuleTagPerformance.ID},
@@ -609,18 +620,17 @@ func (s *Storage) UpdateRuleCategoryRels(rule *Rule) error {
 	if existed {
 		return nil
 	}
-	for _, tags := range categoryMapping[oldCategory] {
-		// 获取分类表中的分类信息
-		auditRuleCategories, err := s.GetAuditRuleCategoryByTagIn(tags)
+	tags := mappingToNewCategory(rule.Name, oldCategory)
+	// 获取分类表中的分类信息
+	auditRuleCategories, err := s.GetAuditRuleCategoryByTagIn(tags)
+	if err != nil {
+		return err
+	}
+	for _, newCategory := range auditRuleCategories {
+		auditRuleCategoryRel := AuditRuleCategoryRel{CategoryId: newCategory.ID, RuleName: rule.Name, RuleDBType: rule.DBType}
+		err = s.db.Create(&auditRuleCategoryRel).Error
 		if err != nil {
 			return err
-		}
-		for _, newCategory := range auditRuleCategories {
-			auditRuleCategoryRel := AuditRuleCategoryRel{CategoryId: newCategory.ID, RuleName: rule.Name, RuleDBType: rule.DBType}
-			err = s.db.Create(&auditRuleCategoryRel).Error
-			if err != nil {
-				return err
-			}
 		}
 	}
 	auditAccuracyCategories, err := s.GetAuditRuleCategoryByCategory(plocale.RuleCategoryAuditAccuracy.ID)
