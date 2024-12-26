@@ -220,27 +220,26 @@ func (s *Storage) UpdateCustomRuleCategoryRels() error {
 			// 新的规则分类Typ字段为""说明已经有了新的分类关系，直接忽略
 			continue
 		}
-		_, existed, err := s.FirstCustomRuleCategoryRelByCustomRuleId(customRule.RuleId)
-		if err != nil {
-			return err
-		}
-		// 已存在规则关系直接忽略
-		if existed {
-			return nil
-		}
 		tags := mappingToNewCategory(customRule.Desc, customRule.Typ)
 		// 获取分类表中的分类信息
 		auditRuleCategories, err := s.GetAuditRuleCategoryByTagIn(tags)
 		if err != nil {
 			return err
 		}
-		for _, newCategory := range auditRuleCategories {
-			customerCategoryRel := CustomRuleCategoryRel{CategoryId: newCategory.ID, CustomRuleId: customRule.RuleId}
-			err = s.db.Create(&customerCategoryRel).Error
-			if err != nil {
-				return err
+		err = s.db.Transaction(func(tx *gorm.DB) error {
+			for _, newCategory := range auditRuleCategories {
+				customerCategoryRel := CustomRuleCategoryRel{CategoryId: newCategory.ID, CustomRuleId: customRule.RuleId}
+				err = s.db.Delete(&customerCategoryRel).Error
+				if err != nil {
+					return err
+				}
+				err = s.db.Create(&customerCategoryRel).Error
+				if err != nil {
+					return err
+				}
 			}
-		}
+			return nil
+		})
 	}
 	return nil
 }
@@ -612,42 +611,48 @@ var categoryMapping = map[string]map[string][]string{
 
 func (s *Storage) UpdateRuleCategoryRels(rule *Rule) error {
 	oldCategory := rule.I18nRuleInfo.GetRuleInfoByLangTag(language.Chinese).Category
-	_, existed, err := s.FirstAuditRuleCategoryRelByRule(rule.Name, rule.DBType)
-	if err != nil {
-		return err
-	}
-	// 某个规则存在分类不做处理
-	if existed {
-		return nil
-	}
 	tags := mappingToNewCategory(rule.Name, oldCategory)
 	// 获取分类表中的分类信息
 	auditRuleCategories, err := s.GetAuditRuleCategoryByTagIn(tags)
 	if err != nil {
 		return err
 	}
-	for _, newCategory := range auditRuleCategories {
-		auditRuleCategoryRel := AuditRuleCategoryRel{CategoryId: newCategory.ID, RuleName: rule.Name, RuleDBType: rule.DBType}
-		err = s.db.Create(&auditRuleCategoryRel).Error
-		if err != nil {
-			return err
+	err = s.db.Transaction(func(tx *gorm.DB) error {
+		for _, newCategory := range auditRuleCategories {
+			auditRuleCategoryRel := AuditRuleCategoryRel{CategoryId: newCategory.ID, RuleName: rule.Name, RuleDBType: rule.DBType}
+			err = tx.Delete(auditRuleCategoryRel).Error
+			if err != nil {
+				return err
+			}
+			err = tx.Create(&auditRuleCategoryRel).Error
+			if err != nil {
+				return err
+			}
 		}
-	}
+		return nil
+	})
 	auditAccuracyCategories, err := s.GetAuditRuleCategoryByCategory(plocale.RuleCategoryAuditAccuracy.ID)
 	if err != nil {
 		return err
 	}
-	// 根据离线/在线审核生成规则的分类关系
-	for _, auditAccuracyCategory := range auditAccuracyCategories {
-		if !rule.AllowOffline && auditAccuracyCategory.Tag == plocale.RuleTagOffline.ID {
-			continue
+	err = s.db.Transaction(func(tx *gorm.DB) error {
+		// 根据离线/在线审核生成规则的分类关系
+		for _, auditAccuracyCategory := range auditAccuracyCategories {
+			if !rule.AllowOffline && auditAccuracyCategory.Tag == plocale.RuleTagOffline.ID {
+				continue
+			}
+			auditRuleCategoryRel := AuditRuleCategoryRel{CategoryId: auditAccuracyCategory.ID, RuleName: rule.Name, RuleDBType: rule.DBType}
+			err = s.db.Delete(auditRuleCategoryRel).Error
+			if err != nil {
+				return err
+			}
+			err = s.db.Create(&auditRuleCategoryRel).Error
+			if err != nil {
+				return err
+			}
 		}
-		auditRuleCategoryRel := AuditRuleCategoryRel{CategoryId: auditAccuracyCategory.ID, RuleName: rule.Name, RuleDBType: rule.DBType}
-		err = s.db.Create(&auditRuleCategoryRel).Error
-		if err != nil {
-			return err
-		}
-	}
+		return nil
+	})
 	return err
 }
 
