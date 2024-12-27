@@ -309,9 +309,9 @@ func UpdateInstanceAuditPlan(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	inst := dms.GetInstancesByIdWithoutError(fmt.Sprintf("%d", dbAuditPlans.InstanceID))
-	for _, auditPlan := range req.AuditPlans {
-		if auditPlan.RuleTemplateName != "" {
-			exist, err := s.IsRuleTemplateExist(auditPlan.RuleTemplateName, []string{projectUid, model.ProjectIdForGlobalRuleTemplate})
+	for _, auditPlanReq := range req.AuditPlans {
+		if auditPlanReq.RuleTemplateName != "" {
+			exist, err := s.IsRuleTemplateExist(auditPlanReq.RuleTemplateName, []string{projectUid, model.ProjectIdForGlobalRuleTemplate})
 			if err != nil {
 				return controller.JSONBaseErrorReq(c, err)
 			}
@@ -320,34 +320,46 @@ func UpdateInstanceAuditPlan(c echo.Context) error {
 			}
 		}
 		// check rule template name
-		ruleTemplateName, err := autoSelectRuleTemplate(c.Request().Context(), auditPlan.RuleTemplateName, inst.Name, dbAuditPlans.DBType, projectUid)
+		ruleTemplateName, err := autoSelectRuleTemplate(c.Request().Context(), auditPlanReq.RuleTemplateName, inst.Name, dbAuditPlans.DBType, projectUid)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 
 		// check params
-		if auditPlan.Type == "" {
-			auditPlan.Type = auditplan.TypeDefault
+		if auditPlanReq.Type == "" {
+			auditPlanReq.Type = auditplan.TypeDefault
 		}
-		ps, err := checkAndGenerateAuditPlanParams(auditPlan.Type, dbAuditPlans.DBType, auditPlan.Params)
+
+		var ps params.Params
+		// update old audit plan params or generate new audit plan params
+		if auditPlan, ok := dbAuditPlansMap[auditPlanReq.Type]; !ok {
+			ps, err = checkAndGenerateAuditPlanParams(auditPlanReq.Type, inst.DbType, auditPlanReq.Params)
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
+			}
+		} else {
+			ps, err = UpdateAuditPlanParams(auditPlan.Params, auditPlanReq.Params)
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
+			}
+		}
+
+		hpc, err := checkAndGenerateHighPriorityParams(auditPlanReq.Type, inst.DbType, auditPlanReq.HighPriorityConditions)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
 		}
-		hpc, err := checkAndGenerateHighPriorityParams(auditPlan.Type, dbAuditPlans.DBType, auditPlan.HighPriorityConditions)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
-		}
+
 		res := &model.AuditPlanV2{
-			Type:                    auditPlan.Type,
+			Type:                    auditPlanReq.Type,
 			RuleTemplateName:        ruleTemplateName,
 			Params:                  ps,
 			HighPriorityParams:      hpc,
-			NeedMarkHighPrioritySQL: auditPlan.NeedMarkHighPrioritySQL,
+			NeedMarkHighPrioritySQL: auditPlanReq.NeedMarkHighPrioritySQL,
 			InstanceAuditPlanID:     dbAuditPlans.ID,
 		}
 
 		// if the data exists in the database, update the data; if it does not exist, insert the data.
-		if dbAuditPlan, ok := dbAuditPlansMap[auditPlan.Type]; ok {
+		if dbAuditPlan, ok := dbAuditPlansMap[auditPlanReq.Type]; ok {
 			dbAuditPlan.RuleTemplateName = res.RuleTemplateName
 			dbAuditPlan.Params = res.Params
 			dbAuditPlan.HighPriorityParams = res.HighPriorityParams
