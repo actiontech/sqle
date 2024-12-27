@@ -158,6 +158,26 @@ max_lag_millis=1500
 heartbeat_interval_millis=100
 EOF
 
+ARCH=$(uname -m)
+JDK_URL="https://repo.huaweicloud.com/java/jdk/8u151-b12/"
+case "$ARCH" in
+    x86_64)
+        JDK_PACKAGE="jdk-8u151-linux-x64.tar.gz"
+        ;;
+    aarch64 | armv8l)
+        JDK_PACKAGE="jdk-8u151-linux-arm64-vfp-hflt.tar.gz"
+        ;;
+    *)
+        JDK_PACKAGE="jdk-8u151-linux-arm64-vfp-hflt.tar.gz"
+        exit 1
+        ;;
+esac
+JDK_DOWNLOAD_URL="$JDK_URL/$JDK_PACKAGE"
+echo "Downloading JDK package: $JDK_DOWNLOAD_URL"
+wget -O "$JDK_DOWNLOAD_URL" "$RPM_INSTALL_PREFIX"
+mv $JDK_DOWNLOAD_URL/jdk1.8.0_151 $JDK_DOWNLOAD_URL/jdk
+
+
 #chown
 chown -R %{user_name}: $RPM_INSTALL_PREFIX
 
