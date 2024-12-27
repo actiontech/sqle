@@ -1173,7 +1173,7 @@ definitions:
           $ref: '#/definitions/v1.ObjectDiffResult'
         type: array
     type: object
-  v1.DatabaseDriverOptionsV1:
+  v1.DatabaseDriverLogosV1:
     properties:
       db_type:
         type: string
@@ -1181,6 +1181,11 @@ definitions:
         items:
           type: integer
         type: array
+    type: object
+  v1.DatabaseDriverOptionsV1:
+    properties:
+      db_type:
+        type: string
       params:
         items:
           $ref: '#/definitions/v1.InstanceAdditionalParamResV1'
@@ -1804,6 +1809,19 @@ definitions:
       comparison_db_object:
         $ref: '#/definitions/v1.DatabaseComparisonObject'
         type: object
+    type: object
+  v1.GetDatabaseDriverLogosResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.DatabaseDriverLogosV1'
+        type: array
+      message:
+        example: ok
+        type: string
     type: object
   v1.GetDatabaseDriverOptionsResV1:
     properties:
@@ -7057,6 +7075,26 @@ paths:
       summary: 获取全局工单统计数据
       tags:
       - workflow
+  /v1/database_driver_logos:
+    get:
+      description: get database driver logos
+      operationId: GetDatabaseDriverLogos
+      parameters:
+      - description: MySQL,Oracle
+        in: query
+        name: db_types
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetDatabaseDriverLogosResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取数据库插件的Logo图片
+      tags:
+      - instance
   /v1/database_driver_options:
     get:
       description: get database driver options
