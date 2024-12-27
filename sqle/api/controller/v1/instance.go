@@ -16,6 +16,7 @@ import (
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/server"
 	opt "github.com/actiontech/sqle/sqle/server/optimization/rule"
 	"github.com/actiontech/sqle/sqle/utils"
@@ -578,4 +579,57 @@ type GetTableMetadataResV1 struct {
 // @router /v1/projects/{project_name}/instances/{instance_name}/schemas/{schema_name}/tables/{table_name}/metadata [get]
 func GetTableMetadata(c echo.Context) error {
 	return getTableMetadata(c)
+}
+
+type GetDatabaseDriverOptionsResV1 struct {
+	controller.BaseRes
+	Metas []*DatabaseDriverOptionsV1 `json:"data"`
+}
+
+type DatabaseDriverOptionsV1 struct {
+	DBType string                          `json:"db_type"`
+	Params []*InstanceAdditionalParamResV1 `json:"params"`
+	Logo   []byte                          `json:"logo"`
+}
+
+// GetDatabaseDriverOptions get database driver options
+// @Summary 获取实例的额外属性列表
+// @Description get database driver options
+// @Id getDatabaseDriverOptions
+// @Tags instance
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetDatabaseDriverOptionsResV1
+// @router /v1/database_driver_options [get]
+func GetDatabaseDriverOptions(c echo.Context) error {
+	pluginMgr := driver.GetPluginManager()
+	additionalParams := pluginMgr.AllAdditionalParams()
+	allLogos := pluginMgr.AllLogo()
+	res := &GetDatabaseDriverOptionsResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Metas:   []*DatabaseDriverOptionsV1{},
+	}
+	for name, params := range additionalParams {
+
+		meta := &DatabaseDriverOptionsV1{
+			DBType: name,
+			Params: convertParamsToInstanceAdditionalParamRes(params),
+			Logo:   allLogos[name],
+		}
+
+		res.Metas = append(res.Metas, meta)
+	}
+	return c.JSON(http.StatusOK, res)
+}
+
+func convertParamsToInstanceAdditionalParamRes(params params.Params) []*InstanceAdditionalParamResV1 {
+	res := make([]*InstanceAdditionalParamResV1, len(params))
+	for i, param := range params {
+		res[i] = &InstanceAdditionalParamResV1{
+			Name:        param.Key,
+			Description: param.Desc,
+			Type:        string(param.Type),
+			Value:       param.Value,
+		}
+	}
+	return res
 }
