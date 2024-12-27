@@ -1271,6 +1271,29 @@ var doc = `{
                 }
             }
         },
+        "/v1/database_driver_options": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get database driver options",
+                "tags": [
+                    "instance"
+                ],
+                "summary": "获取实例的额外属性列表",
+                "operationId": "getDatabaseDriverOptions",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetDatabaseDriverOptionsResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/import_rule_template": {
             "get": {
                 "security": [
@@ -13033,6 +13056,26 @@ var doc = `{
                 }
             }
         },
+        "v1.DatabaseDriverOptionsV1": {
+            "type": "object",
+            "properties": {
+                "db_type": {
+                    "type": "string"
+                },
+                "logo": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "params": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.InstanceAdditionalParamResV1"
+                    }
+                }
+            }
+        },
         "v1.DatabaseObject": {
             "type": "object",
             "properties": {
@@ -13932,6 +13975,25 @@ var doc = `{
                 "comparison_db_object": {
                     "type": "object",
                     "$ref": "#/definitions/v1.DatabaseComparisonObject"
+                }
+            }
+        },
+        "v1.GetDatabaseDriverOptionsResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.DatabaseDriverOptionsV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },

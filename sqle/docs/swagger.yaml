@@ -1173,6 +1173,19 @@ definitions:
           $ref: '#/definitions/v1.ObjectDiffResult'
         type: array
     type: object
+  v1.DatabaseDriverOptionsV1:
+    properties:
+      db_type:
+        type: string
+      logo:
+        items:
+          type: integer
+        type: array
+      params:
+        items:
+          $ref: '#/definitions/v1.InstanceAdditionalParamResV1'
+        type: array
+    type: object
   v1.DatabaseObject:
     properties:
       object_name:
@@ -1791,6 +1804,19 @@ definitions:
       comparison_db_object:
         $ref: '#/definitions/v1.DatabaseComparisonObject'
         type: object
+    type: object
+  v1.GetDatabaseDriverOptionsResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.DatabaseDriverOptionsV1'
+        type: array
+      message:
+        example: ok
+        type: string
     type: object
   v1.GetDepBetweenStageInstanceResV1:
     properties:
@@ -7031,6 +7057,20 @@ paths:
       summary: 获取全局工单统计数据
       tags:
       - workflow
+  /v1/database_driver_options:
+    get:
+      description: get database driver options
+      operationId: getDatabaseDriverOptions
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetDatabaseDriverOptionsResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取实例的额外属性列表
+      tags:
+      - instance
   /v1/import_rule_template:
     get:
       description: get rule template file

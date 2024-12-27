@@ -47,7 +47,7 @@ github.com/StackExchange/wmi
 # github.com/acomagu/bufpipe v1.0.4
 ## explicit; go 1.12
 github.com/acomagu/bufpipe
-# github.com/actiontech/dms v0.0.0-20241205071755-3b81d30f71c3
+# github.com/actiontech/dms v0.0.0-20241223063204-661bd1bf229b
 ## explicit; go 1.19
 github.com/actiontech/dms/pkg/dms-common/api/accesstoken
 github.com/actiontech/dms/pkg/dms-common/api/base/v1
