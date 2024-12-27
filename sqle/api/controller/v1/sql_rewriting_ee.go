@@ -52,6 +52,9 @@ func getRewriteSQLData(c echo.Context) error {
 	if !exist {
 		return controller.JSONBaseErrorReq(c, errors.NewDataNotExistErr("sql number not found"))
 	}
+
+	l := log.NewEntry().WithField("get_rewrite_sql", "api")
+
 	sqlContent, err := fillsql.FillingSQLWithParamMarker(taskSql.Content, task)
 	if err != nil {
 		log.NewEntry().Errorf("fill param marker sql failed: %v", err)
@@ -62,10 +65,12 @@ func getRewriteSQLData(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if res.TableMetaResultErr != nil {
-		if res.TableMetaResultErr == driverV2.ErrSQLIsNotSupported {
-			res.TableMetaResult = &driver.GetTableMetaBySQLResult{}
-		}
-		return controller.JSONBaseErrorReq(c, fmt.Errorf("get table meta failed: %v", res.TableMetaResultErr))
+		l.Errorf("get table meta failed: %v", err)
+		res.TableMetaResult = &driver.GetTableMetaBySQLResult{}
+	}
+	if res.ExplainResultErr != nil {
+		l.Errorf("get explain failed: %v", err)
+		res.ExplainResult = &driverV2.ExplainResult{}
 	}
 	// TODO: 需要Explain和PerformanceStatistics
 	taskDbType, err := s.GetTaskDbTypeByID(taskID)
@@ -76,7 +81,7 @@ func getRewriteSQLData(c echo.Context) error {
 		DBType:              taskDbType,
 		SQL:                 taskSql,
 		TableStructures:     res.TableMetaResult.TableMetas,
-		Explain:             nil,
+		Explain:             res.ExplainResult,
 		EnableStructureType: enableStructure,
 	}
 	// 进行重写
@@ -95,16 +100,12 @@ func getRewriteSQLData(c echo.Context) error {
 	var lastRewrittenSQL string
 	lang := locale.Bundle.GetLangTagFromCtx(c.Request().Context())
 	for _, suggestion := range rewrittenRes.Suggestions {
-		ruleName, err := sqlrewriting.ConvertRuleIDToRuleName(taskDbType, suggestion.RuleID)
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
-		r, exist, err := s.GetRule(ruleName, taskDbType)
+		r, exist, err := s.GetRule(suggestion.RuleName, taskDbType)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, fmt.Errorf("get rule failed: %v", err))
 		}
 		if !exist {
-			return controller.JSONBaseErrorReq(c, fmt.Errorf("rule not found: %s", ruleName))
+			return controller.JSONBaseErrorReq(c, fmt.Errorf("rule not found: %s", suggestion.RuleName))
 		}
 		if suggestion.RewrittenSql != "" {
 			lastRewrittenSQL = suggestion.RewrittenSql
