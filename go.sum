@@ -48,6 +48,8 @@ github.com/acomagu/bufpipe v1.0.4 h1:e3H4WUzM3npvo5uv95QuJM3cQspFNtFBzvJ2oNjKIDQ
 github.com/acomagu/bufpipe v1.0.4/go.mod h1:mxdxdup/WdsKVreO5GpW4+M/1CE2sMG4jeGJ2sYmHc4=
 github.com/actiontech/dms v0.0.0-20241205071755-3b81d30f71c3 h1:96fKxlsA2ZOqRlfB1oseZsuu6HedEBf2yHRme+M4644=
 github.com/actiontech/dms v0.0.0-20241205071755-3b81d30f71c3/go.mod h1:Jm+tDoBYmX8R8zqgPJRq1NwZXdxO/F+HxVRJVF65WXA=
+github.com/actiontech/dms v0.0.0-20241223063204-661bd1bf229b h1:ROmTjEcA8/yVI2ohKfkuPyIz/MpJ39qpTg5pHfVdRGY=
+github.com/actiontech/dms v0.0.0-20241223063204-661bd1bf229b/go.mod h1:Jm+tDoBYmX8R8zqgPJRq1NwZXdxO/F+HxVRJVF65WXA=
 github.com/actiontech/java-sql-extractor v0.0.0-20231103015812-cdd5fc040f62 h1:JM7WnLzlvXOGE90KKd+aigi+qUDS+U5dLwQMNpTKZxE=
 github.com/actiontech/java-sql-extractor v0.0.0-20231103015812-cdd5fc040f62/go.mod h1:adDZHhAf2LRMx2h0JzofPXn12x2XlyQjVE116KXquwo=
 github.com/actiontech/mybatis-mapper-2-sql v0.5.1-0.20240806065717-29cde7000ef5 h1:vyQVrkYPzUV9d7gSvOWoezwWMTiC4jc3f3Hpianefq0=
