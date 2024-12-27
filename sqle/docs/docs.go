@@ -1271,6 +1271,38 @@ var doc = `{
                 }
             }
         },
+        "/v1/database_driver_logos": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get database driver logos",
+                "tags": [
+                    "instance"
+                ],
+                "summary": "获取数据库插件的Logo图片",
+                "operationId": "GetDatabaseDriverLogos",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "MySQL,Oracle",
+                        "name": "db_types",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetDatabaseDriverLogosResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/database_driver_options": {
             "get": {
                 "security": [
@@ -13056,7 +13088,7 @@ var doc = `{
                 }
             }
         },
-        "v1.DatabaseDriverOptionsV1": {
+        "v1.DatabaseDriverLogosV1": {
             "type": "object",
             "properties": {
                 "db_type": {
@@ -13067,6 +13099,14 @@ var doc = `{
                     "items": {
                         "type": "integer"
                     }
+                }
+            }
+        },
+        "v1.DatabaseDriverOptionsV1": {
+            "type": "object",
+            "properties": {
+                "db_type": {
+                    "type": "string"
                 },
                 "params": {
                     "type": "array",
@@ -13975,6 +14015,25 @@ var doc = `{
                 "comparison_db_object": {
                     "type": "object",
                     "$ref": "#/definitions/v1.DatabaseComparisonObject"
+                }
+            }
+        },
+        "v1.GetDatabaseDriverLogosResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.DatabaseDriverLogosV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
