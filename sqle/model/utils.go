@@ -556,13 +556,29 @@ func (s *Storage) CreateDefaultTemplateIfNotExist(projectId ProjectUID, rules ma
 	return nil
 }
 
-func mappingToNewCategory(ruleName string, oldCategory string) []string {
+func mappingToNewCategory(ruleDesc string, oldCategory string) []string {
 	// 当旧规则是命名规范的映射关系
 	if oldCategory == plocale.RuleTypeNamingConvention.Other {
-		if strings.Contains(ruleName, "database") || strings.Contains(ruleName, "object") {
+		if strings.Contains(ruleDesc, plocale.RuleTagDatabase.Other) || strings.Contains(ruleDesc, "对象") {
 			return []string{plocale.RuleTagDatabase.ID}
-		} else if strings.Contains(ruleName, "index") || strings.Contains(ruleName, "pk") {
+		} else if strings.Contains(ruleDesc, plocale.RuleTagIndex.Other) || strings.Contains(ruleDesc, "主键") {
 			return []string{plocale.RuleTagIndex.ID}
+		} else if strings.Contains(ruleDesc, plocale.RuleTagTable.Other) {
+			return []string{plocale.RuleTagTable.ID}
+		} else if strings.Contains(ruleDesc, plocale.RuleTagView.Other) {
+			return []string{plocale.RuleTagView.ID}
+		} else if strings.Contains(ruleDesc, plocale.RuleTagColumn.Other) {
+			return []string{plocale.RuleTagColumn.ID}
+		} else if strings.Contains(ruleDesc, plocale.RuleTagProcedure.Other) {
+			return []string{plocale.RuleTagProcedure.ID}
+		} else if strings.Contains(ruleDesc, plocale.RuleTagFunction.Other) {
+			return []string{plocale.RuleTagFunction.ID}
+		} else if strings.Contains(ruleDesc, plocale.RuleTagTrigger.Other) {
+			return []string{plocale.RuleTagTrigger.ID}
+		} else if strings.Contains(ruleDesc, plocale.RuleTagEvent.Other) {
+			return []string{plocale.RuleTagEvent.ID}
+		} else if strings.Contains(ruleDesc, plocale.RuleTagUser.Other) {
+			return []string{plocale.RuleTagUser.ID}
 		} else {
 			return []string{
 				plocale.RuleTagDatabase.ID, plocale.RuleTagTablespace.ID, plocale.RuleTagTable.ID, plocale.RuleTagColumn.ID, plocale.RuleTagIndex.ID, plocale.RuleTagView.ID, plocale.RuleTagProcedure.ID, plocale.RuleTagFunction.ID, plocale.RuleTagTrigger.ID, plocale.RuleTagEvent.ID, plocale.RuleTagUser.ID}
@@ -599,6 +615,9 @@ var categoryMapping = map[string]map[string][]string{
 	plocale.RuleTypeDMLConvention.Other: {
 		plocale.RuleCategorySQL.ID: {plocale.RuleTagDML.ID},
 	},
+	plocale.RuleTypeDQLConvention.Other: {
+		plocale.RuleCategorySQL.ID: {plocale.RuleTagDML.ID},
+	},
 	plocale.RuleTypeUsageSuggestion.Other: {
 		plocale.RuleCategoryAuditPurpose.ID: {plocale.RuleTagMaintenance.ID},
 	},
@@ -611,7 +630,9 @@ var categoryMapping = map[string]map[string][]string{
 }
 
 func (s *Storage) UpdateRuleCategoryRels(rule *Rule) error {
-	oldCategory := rule.I18nRuleInfo.GetRuleInfoByLangTag(language.Chinese).Category
+	ruleInfo := rule.I18nRuleInfo.GetRuleInfoByLangTag(language.Chinese)
+	oldCategory := ruleInfo.Category
+	ruleDesc := ruleInfo.Desc
 	_, existed, err := s.FirstAuditRuleCategoryRelByRule(rule.Name, rule.DBType)
 	if err != nil {
 		return err
@@ -620,7 +641,7 @@ func (s *Storage) UpdateRuleCategoryRels(rule *Rule) error {
 	if existed {
 		return nil
 	}
-	tags := mappingToNewCategory(rule.Name, oldCategory)
+	tags := mappingToNewCategory(ruleDesc, oldCategory)
 	// 获取分类表中的分类信息
 	auditRuleCategories, err := s.GetAuditRuleCategoryByTagIn(tags)
 	if err != nil {
