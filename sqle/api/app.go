@@ -175,6 +175,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1Router.POST("/data_resource/handle", v1.OperateDataResourceHandle, sqleMiddleware.OpGlobalAllowed())
 		v1Router.POST(fmt.Sprintf("%s/connection", dmsV1.InternalDBServiceRouterGroup), v1.CheckInstanceIsConnectable, sqleMiddleware.OpGlobalAllowed())
 		v1Router.GET("/database_driver_options", v1.GetDatabaseDriverOptions)
+		v1Router.GET("/database_driver_logos", v1.GetDatabaseDriverLogos)
 	}
 
 	// project admin and global manage router

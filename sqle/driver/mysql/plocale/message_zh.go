@@ -111,6 +111,7 @@ var (
 	RuleTypeIndexingConvention    = &i18n.Message{ID: "RuleTypeIndexingConvention", Other: "索引规范"}
 	RuleTypeDDLConvention         = &i18n.Message{ID: "RuleTypeDDLConvention", Other: "DDL规范"}
 	RuleTypeDMLConvention         = &i18n.Message{ID: "RuleTypeDMLConvention", Other: "DML规范"}
+	RuleTypeDQLConvention         = &i18n.Message{ID: "RuleTypeDQLConvention", Other: "DQL规范"}
 	RuleTypeUsageSuggestion       = &i18n.Message{ID: "RuleTypeUsageSuggestion", Other: "使用建议"}
 	RuleTypeIndexOptimization     = &i18n.Message{ID: "RuleTypeIndexOptimization", Other: "索引优化"}
 	RuleTypeIndexInvalidation     = &i18n.Message{ID: "RuleTypeIndexInvalidation", Other: "索引失效"}
