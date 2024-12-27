@@ -68,7 +68,7 @@ func getRewriteSQLData(c echo.Context) error {
 		l.Errorf("get table meta failed: %v", err)
 		res.TableMetaResult = &driver.GetTableMetaBySQLResult{}
 	}
-	if res.ExplainResult != nil {
+	if res.ExplainResultErr != nil {
 		l.Errorf("get explain failed: %v", err)
 		res.ExplainResult = &driverV2.ExplainResult{}
 	}
