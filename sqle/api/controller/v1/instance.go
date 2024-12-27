@@ -590,7 +590,6 @@ type GetDatabaseDriverOptionsResV1 struct {
 type DatabaseDriverOptionsV1 struct {
 	DBType string                          `json:"db_type"`
 	Params []*InstanceAdditionalParamResV1 `json:"params"`
-	Logo   []byte                          `json:"logo"`
 }
 
 // GetDatabaseDriverOptions get database driver options
@@ -604,7 +603,6 @@ type DatabaseDriverOptionsV1 struct {
 func GetDatabaseDriverOptions(c echo.Context) error {
 	pluginMgr := driver.GetPluginManager()
 	additionalParams := pluginMgr.AllAdditionalParams()
-	allLogos := pluginMgr.AllLogo()
 	res := &GetDatabaseDriverOptionsResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Metas:   []*DatabaseDriverOptionsV1{},
@@ -614,7 +612,6 @@ func GetDatabaseDriverOptions(c echo.Context) error {
 		meta := &DatabaseDriverOptionsV1{
 			DBType: name,
 			Params: convertParamsToInstanceAdditionalParamRes(params),
-			Logo:   allLogos[name],
 		}
 
 		res.Metas = append(res.Metas, meta)
