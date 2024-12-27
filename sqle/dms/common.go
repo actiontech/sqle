@@ -215,6 +215,7 @@ func RegisterAsDMSTarget(sqleConfig *config.SqleOptions) error {
 		Name:                         "sqle",
 		OperateDataResourceHandleUrl: fmt.Sprintf("http://%s:%d/%s/%s", sqleConfig.APIServiceOpts.Addr, sqleConfig.APIServiceOpts.Port, "v1", "data_resource/handle"),
 		GetDatabaseDriverOptionsUrl:  fmt.Sprintf("http://%s:%d/%s/%s", sqleConfig.APIServiceOpts.Addr, sqleConfig.APIServiceOpts.Port, "v1", "database_driver_options"),
+		GetDatabaseDriverLogosUrl:    fmt.Sprintf("http://%s:%d/%s/%s", sqleConfig.APIServiceOpts.Addr, sqleConfig.APIServiceOpts.Port, "v1", "database_driver_logos"),
 	}); err != nil {
 		return fmt.Errorf("failed to register dms plugin for operation data source handle")
 	}

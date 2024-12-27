@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	baseV1 "github.com/actiontech/dms/pkg/dms-common/api/base/v1"
 	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
@@ -589,7 +590,6 @@ type GetDatabaseDriverOptionsResV1 struct {
 type DatabaseDriverOptionsV1 struct {
 	DBType string                          `json:"db_type"`
 	Params []*InstanceAdditionalParamResV1 `json:"params"`
-	Logo   []byte                          `json:"logo"`
 }
 
 // GetDatabaseDriverOptions get database driver options
@@ -603,7 +603,6 @@ type DatabaseDriverOptionsV1 struct {
 func GetDatabaseDriverOptions(c echo.Context) error {
 	pluginMgr := driver.GetPluginManager()
 	additionalParams := pluginMgr.AllAdditionalParams()
-	allLogos := pluginMgr.AllLogo()
 	res := &GetDatabaseDriverOptionsResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Metas:   []*DatabaseDriverOptionsV1{},
@@ -613,7 +612,6 @@ func GetDatabaseDriverOptions(c echo.Context) error {
 		meta := &DatabaseDriverOptionsV1{
 			DBType: name,
 			Params: convertParamsToInstanceAdditionalParamRes(params),
-			Logo:   allLogos[name],
 		}
 
 		res.Metas = append(res.Metas, meta)
@@ -632,4 +630,48 @@ func convertParamsToInstanceAdditionalParamRes(params params.Params) []*Instance
 		}
 	}
 	return res
+}
+
+type DatabaseDriverLogosReqV1 struct {
+	FilterDBTypes string `json:"db_types" query:"db_types"`
+}
+
+type GetDatabaseDriverLogosResV1 struct {
+	controller.BaseRes
+	Logos []*DatabaseDriverLogosV1 `json:"data"`
+}
+
+type DatabaseDriverLogosV1 struct {
+	DBType string `json:"db_type"`
+	Logo   []byte `json:"logo"`
+}
+
+// GetDatabaseDriverLogos get database driver logos
+// @Summary 获取数据库插件的Logo图片
+// @Description get database driver logos
+// @Id GetDatabaseDriverLogos
+// @Tags instance
+// @Param db_types query string true "MySQL,Oracle"
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetDatabaseDriverLogosResV1
+// @router /v1/database_driver_logos [get]
+func GetDatabaseDriverLogos(c echo.Context) error {
+	req := new(DatabaseDriverLogosReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	dbTypes := strings.Split(req.FilterDBTypes, ",")
+	pluginMgr := driver.GetPluginManager()
+	allLogos := pluginMgr.AllLogo()
+	logos := make([]*DatabaseDriverLogosV1, len(dbTypes))
+	for i, dbType := range dbTypes {
+		logos[i] = &DatabaseDriverLogosV1{
+			DBType: dbType,
+			Logo:   allLogos[dbType],
+		}
+	}
+	return c.JSON(http.StatusOK, &GetDatabaseDriverLogosResV1{
+		Logos:   logos,
+		BaseRes: controller.NewBaseReq(nil),
+	})
 }
