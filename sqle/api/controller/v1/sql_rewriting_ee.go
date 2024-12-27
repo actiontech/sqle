@@ -65,14 +65,14 @@ func getRewriteSQLData(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if res.TableMetaResultErr != nil {
-		l.Errorf("get table meta failed: %v", err)
+		l.Errorf("get table meta failed: %v", res.TableMetaResultErr)
 		res.TableMetaResult = &driver.GetTableMetaBySQLResult{}
 	}
 	if res.ExplainResultErr != nil {
-		l.Errorf("get explain failed: %v", err)
+		l.Errorf("get explain failed: %v", res.ExplainResultErr)
 		res.ExplainResult = &driverV2.ExplainResult{}
 	}
-	// TODO: 需要Explain和PerformanceStatistics
+
 	taskDbType, err := s.GetTaskDbTypeByID(taskID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
