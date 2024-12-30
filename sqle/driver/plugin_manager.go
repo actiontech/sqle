@@ -212,7 +212,7 @@ func (pm *pluginManager) Start(pluginDir string, pluginConfigList []config.Plugi
 		}
 
 		if len(cmdArgs) == 0 && strings.HasSuffix(p.Name(), ".jar") {
-			javaPluginCmd := fmt.Sprintf("java -jar %s", cmdBase)
+			javaPluginCmd := fmt.Sprintf("$SQLE_JAVA_HOME/bin/java -jar %s", cmdBase)
 			cmdBase = "sh"
 			cmdArgs = append(cmdArgs, "-c", javaPluginCmd)
 		}

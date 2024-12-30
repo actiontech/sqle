@@ -146,6 +146,42 @@ max_lag_millis=1500
 heartbeat_interval_millis=100
 EOF
 
+ARCH=$(uname -m)
+JDK_URL="https://repo.huaweicloud.com/java/jdk/8u151-b12/"
+case "$ARCH" in
+    x86_64)
+        JDK_PACKAGE="jdk-8u151-linux-x64.tar.gz"
+        ;;
+    aarch64 | armv8l)
+        JDK_PACKAGE="jdk-8u151-linux-arm64-vfp-hflt.tar.gz"
+        ;;
+    *)
+        JDK_PACKAGE="jdk-8u151-linux-arm64-vfp-hflt.tar.gz"
+        exit 1
+        ;;
+esac
+
+JDK_DOWNLOAD_URL="$JDK_URL$JDK_PACKAGE"
+echo "Downloading JDK package: $JDK_DOWNLOAD_URL"
+wget -O "$RPM_INSTALL_PREFIX/$JDK_PACKAGE" "$JDK_DOWNLOAD_URL"
+tar -xzf $RPM_INSTALL_PREFIX/$JDK_PACKAGE -C $RPM_INSTALL_PREFIX
+rm -rf $RPM_INSTALL_PREFIX/$JDK_PACKAGE
+mv $RPM_INSTALL_PREFIX/jdk1.8.0_151 $RPM_INSTALL_PREFIX/jdk
+chmod 755 -R $RPM_INSTALL_PREFIX/jdk/bin
+# 检查 .bash_profile 文件是否存在
+if [ -f ~/.bash_profile ]; then
+    if grep -q "^export SQLE_JAVA_HOME=" ~/.bash_profile; then
+        # 如果 SQLE_JAVA_HOME 已经存在,则更新其值
+        sed -i "s|^export SQLE_JAVA_HOME=.*|export SQLE_JAVA_HOME=$RPM_INSTALL_PREFIX/jdk|" ~/.bash_profile
+    else
+        echo "export SQLE_JAVA_HOME=$RPM_INSTALL_PREFIX/jdk" >> ~/.bash_profile
+    fi
+else
+    echo "Error: bash_profile file not found."
+    exit 1
+fi
+source ~/.bash_profile
+
 #chown
 chown -R %{user_name}: $RPM_INSTALL_PREFIX
 
