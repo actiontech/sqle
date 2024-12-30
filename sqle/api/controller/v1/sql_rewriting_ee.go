@@ -80,12 +80,8 @@ func getRewriteSQLData(c echo.Context) error {
 		}
 	}
 
-	taskDbType, err := s.GetTaskDbTypeByID(taskID)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
 	params := &sqlrewriting.SQLRewritingParams{
-		DBType:              taskDbType,
+		DBType:              task.DBType,
 		SQL:                 taskSql,
 		TableStructures:     res.TableMetaResult.TableMetas,
 		Explain:             res.ExplainResult,
@@ -107,7 +103,7 @@ func getRewriteSQLData(c echo.Context) error {
 	var lastRewrittenSQL string
 	lang := locale.Bundle.GetLangTagFromCtx(c.Request().Context())
 	for _, suggestion := range rewrittenRes.Suggestions {
-		r, exist, err := s.GetRule(suggestion.RuleName, taskDbType)
+		r, exist, err := s.GetRule(suggestion.RuleName, task.DBType)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, fmt.Errorf("get rule failed: %v", err))
 		}
