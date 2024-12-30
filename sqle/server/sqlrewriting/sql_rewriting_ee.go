@@ -171,6 +171,11 @@ func SQLRewriting(ctx context.Context, params *SQLRewritingParams) (*GetRewriteR
 
 	var rules []Rule
 	var ruleNamesCanNotRewrite []string
+	// 记录 ruleID 到 ruleName 的映射关系，用于处理多个 ruleName 对应同一个 ruleID 的情况
+	ruleIDToNames := make(map[string][]string)
+	// 用于去重的 ruleID 集合
+	uniqueRuleIDs := make(map[string]struct{})
+
 	for _, ar := range params.SQL.AuditResults {
 		if ar.RuleName == "" {
 			continue
@@ -187,6 +192,15 @@ func SQLRewriting(ctx context.Context, params *SQLRewritingParams) (*GetRewriteR
 			ruleNamesCanNotRewrite = append(ruleNamesCanNotRewrite, ar.RuleName)
 			continue
 		}
+
+		// 记录 ruleID 到 ruleName 的映射
+		ruleIDToNames[ruleID] = append(ruleIDToNames[ruleID], ar.RuleName)
+
+		// 如果该 ruleID 已经存在，则跳过
+		if _, exists := uniqueRuleIDs[ruleID]; exists {
+			continue
+		}
+		uniqueRuleIDs[ruleID] = struct{}{}
 
 		r, exist, err := s.GetRule(ar.RuleName, params.DBType)
 		if err != nil {
@@ -247,14 +261,18 @@ func SQLRewriting(ctx context.Context, params *SQLRewritingParams) (*GetRewriteR
 		return nil, fmt.Errorf("failed to call %v: %v", apiURL, err)
 	}
 
-	// 填回现有的规则名称(重写功能使用了新的规则ID，不需要现有的规则名称，这里填充回现有的规则名称只是为了页面展示)
-	for i, suggestion := range reply.Suggestions {
-		ruleName, err := ConvertRuleIDToRuleName(params.DBType, suggestion.RuleID)
-		if err != nil {
-			return nil, fmt.Errorf("can't convert rule id(%v) to rule name: %v", suggestion.RuleID, err)
+	// 处理返回结果，将同一个 ruleID 对应的多个 ruleName 都添加到建议中(重写功能使用了新的规则ID，不需要现有的规则名称，这里填充回现有的规则名称只是为了页面展示)
+	var expandedSuggestions []Suggestion
+	for _, suggestion := range reply.Suggestions {
+		ruleNames := ruleIDToNames[suggestion.RuleID]
+		for _, ruleName := range ruleNames {
+			newSuggestion := suggestion
+			newSuggestion.RuleName = ruleName
+			expandedSuggestions = append(expandedSuggestions, newSuggestion)
 		}
-		reply.Suggestions[i].RuleName = ruleName
 	}
+	reply.Suggestions = expandedSuggestions
+
 	// 对于无法重写的规则，需要将其加入到Suggestions中
 	for _, rn := range ruleNamesCanNotRewrite {
 		reply.Suggestions = append(reply.Suggestions, Suggestion{
