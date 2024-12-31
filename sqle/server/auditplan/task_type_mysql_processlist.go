@@ -99,17 +99,33 @@ func (at *MySQLProcessListTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan
 	}
 	defer db.Db.Close()
 
-	res, err := db.Db.Query(at.processListSQL(ap))
+	// 查询 SHOW FULL PROCESSLIST
+	res, err := db.Db.Query("SHOW FULL PROCESSLIST")
 	if err != nil {
-		return nil, fmt.Errorf("show processlist failed, error: %v", err)
+		return nil, fmt.Errorf("SHOW FULL PROCESSLIST failed, error: %v", err)
 	}
 
-	if len(res) == 0 {
+	if len(res) <= 1 { // 仅有自己的连接
 		return nil, nil
 	}
 	cache := NewSQLV2Cache()
+	sqlMinSecond := ap.Params.GetParam(paramKeySQLMinSecond).Int()
 	for i := range res {
-		query := res[i]["info"].String
+		if sqlMinSecond > 0 {
+			queryTime, _ := strconv.Atoi(res[i]["Time"].String)
+			if sqlMinSecond > queryTime {
+				continue
+			}
+		}
+		if res[i]["Info"].String == "" ||
+			res[i]["Id"].String == db.Db.GetConnectionID() ||
+			res[i]["db"].String == "information_schema" ||
+			res[i]["db"].String == "performance_schema" ||
+			res[i]["db"].String == "mysql" ||
+			res[i]["db"].String == "sys" {
+			continue
+		}
+		query := res[i]["Info"].String
 		sqlV2 := &SQLV2{
 			Source:      ap.Type,
 			SourceId:    strconv.FormatUint(uint64(ap.InstanceAuditPlanId), 10),
