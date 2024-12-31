@@ -179,7 +179,6 @@ wget -O "$RPM_INSTALL_PREFIX/$JDK_PACKAGE" "$JDK_DOWNLOAD_URL"
 tar -xzf $RPM_INSTALL_PREFIX/$JDK_PACKAGE -C $RPM_INSTALL_PREFIX
 rm -rf $RPM_INSTALL_PREFIX/$JDK_PACKAGE
 mv $RPM_INSTALL_PREFIX/jdk1.8.0_151 $RPM_INSTALL_PREFIX/jdk
-chmod 755 -R $RPM_INSTALL_PREFIX/jdk/bin
 # 检查 .bash_profile 文件是否存在
 if [ -f ~/.bash_profile ]; then
     if grep -q "^export SQLE_JAVA_HOME=" ~/.bash_profile; then
@@ -200,6 +199,7 @@ chown -R %{user_name}: $RPM_INSTALL_PREFIX
 #chmod
 find $RPM_INSTALL_PREFIX -type d -exec chmod 0750 {} \;
 find $RPM_INSTALL_PREFIX -type f -exec chmod 0640 {} \;
+find $RPM_INSTALL_PREFIX/jdk/bin -type f -exec chmod 0755 {} \;
 chmod 0750 $RPM_INSTALL_PREFIX/bin/*
 find $RPM_INSTALL_PREFIX/plugins -type f -exec chmod 0750 {} \;
 chmod 0770 $RPM_INSTALL_PREFIX/etc
