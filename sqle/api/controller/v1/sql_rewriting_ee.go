@@ -57,28 +57,31 @@ func getRewriteSQLData(c echo.Context) error {
 
 	sqlContent, err := fillsql.FillingSQLWithParamMarker(taskSql.Content, task)
 	if err != nil {
-		log.NewEntry().Errorf("fill param marker sql failed: %v", err)
+		l.Errorf("fill param marker sql failed: %v", err)
 		sqlContent = taskSql.Content
 	}
-	res, err := GetSQLAnalysisResult(log.NewEntry(), task.Instance, task.Schema, sqlContent)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+
+	res := &AnalysisResult{
+		TableMetaResult: &driver.GetTableMetaBySQLResult{},
+		ExplainResult:   &driverV2.ExplainResult{},
 	}
-	if res.TableMetaResultErr != nil {
-		l.Errorf("get table meta failed: %v", err)
-		res.TableMetaResult = &driver.GetTableMetaBySQLResult{}
+	if task.Instance != nil {
+		res, err = GetSQLAnalysisResult(log.NewEntry(), task.Instance, task.Schema, sqlContent)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if res.TableMetaResultErr != nil {
+			l.Errorf("get table meta failed: %v", res.TableMetaResultErr)
+			res.TableMetaResult = &driver.GetTableMetaBySQLResult{}
+		}
+		if res.ExplainResultErr != nil {
+			l.Errorf("get explain failed: %v", res.ExplainResultErr)
+			res.ExplainResult = &driverV2.ExplainResult{}
+		}
 	}
-	if res.ExplainResultErr != nil {
-		l.Errorf("get explain failed: %v", err)
-		res.ExplainResult = &driverV2.ExplainResult{}
-	}
-	// TODO: 需要Explain和PerformanceStatistics
-	taskDbType, err := s.GetTaskDbTypeByID(taskID)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
+
 	params := &sqlrewriting.SQLRewritingParams{
-		DBType:              taskDbType,
+		DBType:              task.DBType,
 		SQL:                 taskSql,
 		TableStructures:     res.TableMetaResult.TableMetas,
 		Explain:             res.ExplainResult,
@@ -100,7 +103,7 @@ func getRewriteSQLData(c echo.Context) error {
 	var lastRewrittenSQL string
 	lang := locale.Bundle.GetLangTagFromCtx(c.Request().Context())
 	for _, suggestion := range rewrittenRes.Suggestions {
-		r, exist, err := s.GetRule(suggestion.RuleName, taskDbType)
+		r, exist, err := s.GetRule(suggestion.RuleName, task.DBType)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, fmt.Errorf("get rule failed: %v", err))
 		}
