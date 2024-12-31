@@ -54,24 +54,6 @@ func (at *MySQLProcessListTaskV2) Audit(sqls []*model.SQLManageRecord) (*AuditRe
 	return auditSQLs(sqls)
 }
 
-func (at *MySQLProcessListTaskV2) processListSQL(ap *AuditPlan) string {
-	sql := `
-SELECT DISTINCT db,time,info
-FROM information_schema.processlist
-WHERE ID != connection_id() AND info != '' AND db NOT IN ('information_schema','performance_schema','mysql','sys')
-%v
-`
-	whereSqlMinSecond := ""
-	{
-		sqlMinSecond := ap.Params.GetParam(paramKeySQLMinSecond).Int()
-		if sqlMinSecond > 0 {
-			whereSqlMinSecond = fmt.Sprintf("AND TIME > %d", sqlMinSecond)
-		}
-	}
-	sql = fmt.Sprintf(sql, whereSqlMinSecond)
-	return sql
-}
-
 func (at *MySQLProcessListTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) ([]*SQLV2, error) {
 	if ap.InstanceID == "" {
 		return nil, fmt.Errorf("instance is not configured")
