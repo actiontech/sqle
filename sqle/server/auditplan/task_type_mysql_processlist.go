@@ -2,16 +2,16 @@ package auditplan
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strconv"
 	"time"
-
-	"github.com/actiontech/sqle/sqle/errors"
 
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/params"
@@ -93,18 +93,7 @@ func (at *MySQLProcessListTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan
 	cache := NewSQLV2Cache()
 	sqlMinSecond := ap.Params.GetParam(paramKeySQLMinSecond).Int()
 	for i := range res {
-		if sqlMinSecond > 0 {
-			queryTime, _ := strconv.Atoi(res[i]["Time"].String)
-			if sqlMinSecond > queryTime {
-				continue
-			}
-		}
-		if res[i]["Info"].String == "" ||
-			res[i]["Id"].String == db.Db.GetConnectionID() ||
-			res[i]["db"].String == "information_schema" ||
-			res[i]["db"].String == "performance_schema" ||
-			res[i]["db"].String == "mysql" ||
-			res[i]["db"].String == "sys" {
+		if at.filterFullProcessList(res[i], sqlMinSecond, db.Db.GetConnectionID()) {
 			continue
 		}
 		query := res[i]["Info"].String
@@ -142,4 +131,22 @@ func (at *MySQLProcessListTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan
 		}
 	}
 	return cache.GetSQLs(), nil
+}
+
+func (at *MySQLProcessListTaskV2) filterFullProcessList(row map[string]sql.NullString, sqlMinSecond int, connID string) bool {
+	if sqlMinSecond > 0 {
+		queryTime, _ := strconv.Atoi(row["Time"].String)
+		if sqlMinSecond > queryTime {
+			return true
+		}
+	}
+	if row["Info"].String == "" ||
+		row["Id"].String == connID ||
+		row["db"].String == "information_schema" ||
+		row["db"].String == "performance_schema" ||
+		row["db"].String == "mysql" ||
+		row["db"].String == "sys" {
+		return true
+	}
+	return false
 }
