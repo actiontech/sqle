@@ -297,6 +297,19 @@ func checkAndGenerateAuditPlanParams(auditPlanType, instanceType string, paramsR
 	return meta.Params(), nil
 }
 
+func UpdateAuditPlanParams(auditParams params.Params, updateParamsReq []AuditPlanParamReqV1) (params.Params, error) {
+	// 如果params不为空，将paramsReq中的值替换掉params的值
+	for _, p := range updateParamsReq {
+		// set and valid param.
+		err := auditParams.SetParamValue(p.Key, p.Value)
+		if err != nil {
+			return nil, fmt.Errorf("set param error: %s", err)
+		}
+	}
+
+	return auditParams, nil
+}
+
 // @Summary 添加扫描任务
 // @Description create audit plan
 // @Id createAuditPlanV1

@@ -10,6 +10,7 @@ Source0: %{name}.tar.gz
 License: Commercial
 Group: Actiontech
 Prefix: /usr/local/sqle
+AutoReq: no
 
 %description
 Acitontech Sqle
@@ -39,6 +40,7 @@ rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT/usr/local/sqle/bin
 mkdir -p %{_builddir}/%{buildsubdir}/sqle/plugins
 mkdir -p $RPM_BUILD_ROOT/usr/local/sqle/scripts
+mkdir -p $RPM_BUILD_ROOT/usr/local/%{name}/jdk
 cp %{_builddir}/%{buildsubdir}/sqle/bin/sqled $RPM_BUILD_ROOT/usr/local/sqle/bin/sqled
 cp %{_builddir}/%{buildsubdir}/sqle/bin/scannerd $RPM_BUILD_ROOT/usr/local/sqle/bin/scannerd
 cp -R %{_builddir}/%{buildsubdir}/sqle/plugins $RPM_BUILD_ROOT/usr/local/sqle/plugins
@@ -46,6 +48,7 @@ cp %{_builddir}/%{buildsubdir}/sqle/scripts/sqled.systemd $RPM_BUILD_ROOT/usr/lo
 cp %{_builddir}/%{buildsubdir}/sqle/scripts/sqled.initd $RPM_BUILD_ROOT/usr/local/sqle/scripts/sqled.initd
 cp %{_builddir}/%{buildsubdir}/sqle/scripts/pt-online-schema-change.template $RPM_BUILD_ROOT/usr/local/sqle/scripts/pt-online-schema-change.template
 # cp -R %{_builddir}/%{buildsubdir}/sqle/ui $RPM_BUILD_ROOT/usr/local/sqle/ui
+cp -R %{_builddir}/%{buildsubdir}/%{name}/jdk/* $RPM_BUILD_ROOT/usr/local/%{name}/jdk
 
 ##########
 
@@ -146,12 +149,26 @@ max_lag_millis=1500
 heartbeat_interval_millis=100
 EOF
 
+# 检查 .bashrc 文件是否存在
+if [ -f ~/.bashrc ]; then
+    if grep -q "^export SQLE_JAVA_HOME=" ~/.bashrc; then
+        # 如果 SQLE_JAVA_HOME 已经存在,则更新其值
+        sed -i "s|^export SQLE_JAVA_HOME=.*|export SQLE_JAVA_HOME=$RPM_INSTALL_PREFIX/jdk|" ~/.bashrc
+    else
+        echo "export SQLE_JAVA_HOME=$RPM_INSTALL_PREFIX/jdk" >> ~/.bashrc
+    fi
+else
+    echo "warn: .bashrc file not found."
+fi
+source ~/.bashrc
+
 #chown
 chown -R %{user_name}: $RPM_INSTALL_PREFIX
 
 #chmod
 find $RPM_INSTALL_PREFIX -type d -exec chmod 0750 {} \;
 find $RPM_INSTALL_PREFIX -type f -exec chmod 0640 {} \;
+find $RPM_INSTALL_PREFIX/jdk/bin -type f -exec chmod 0755 {} \;
 chmod 0750 $RPM_INSTALL_PREFIX/bin/*
 find $RPM_INSTALL_PREFIX/plugins -type f -exec chmod 0750 {} \;
 chmod 0770 $RPM_INSTALL_PREFIX/etc
@@ -223,3 +240,4 @@ fi
 /usr/local/sqle/scripts/sqled.initd
 /usr/local/sqle/scripts/pt-online-schema-change.template
 # /usr/local/sqle/ui/*
+/usr/local/sqle/jdk/*
