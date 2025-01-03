@@ -177,13 +177,6 @@ check_env() {
                 return 1
             fi
         ;;
-        sqle-db2-plugin.jar | sqle-oracle-plugin.jar|sqle-dm-plugin.jar|sqle-ob-for-oracle-plugin.jar) # todo 确认达梦和oboracle是否需要java1.8还是其他版本也可以
-            if check_java8; then
-                return 0
-            else
-                return 1
-            fi
-        ;;
     esac
     return 0
 }
@@ -294,7 +287,7 @@ install_plugin() {
             if ! install_plugin_to_config "Oracle" "/logo/oracle.svg" "[\n        {\n          \"key\":\"service_name\",\n          \"value\":\"XE\",\n          \"desc\":\"service name\",\n          \"type\":\"string\"\n        }\n      ]" ;then
                 return 1
             fi
-            if ! install_plugin_to_plugin_config "sqle-oracle-plugin.jar" "java -jar $plugins_dir/sqle-oracle-plugin.jar" ;then
+            if ! install_plugin_to_plugin_config "sqle-oracle-plugin.jar" "$SQLE_JAVA_HOME/bin/java -jar $plugins_dir/sqle-oracle-plugin.jar" ;then
                 return 1
             fi
         ;;
@@ -302,7 +295,7 @@ install_plugin() {
             if ! install_plugin_to_config "DB2" "/logo/db2.jpeg" "[\n        {\n          \"key\":\"database_name\",\n          \"value\":\"\",\n          \"desc\":\"数据库名\",\n          \"type\":\"string\"\n        }\n      ]" ;then
                 return 1
             fi
-            if ! install_plugin_to_plugin_config "sqle-db2-plugin.jar" "java -jar $plugins_dir/sqle-db2-plugin.jar" ;then
+            if ! install_plugin_to_plugin_config "sqle-db2-plugin.jar" "$SQLE_JAVA_HOME/bin/java -jar $plugins_dir/sqle-db2-plugin.jar" ;then
                 return 1
             fi
         ;;
@@ -330,7 +323,7 @@ install_plugin() {
             if ! install_plugin_to_config "DM" "/logo/dameng_db.png" "" ;then
                 return 1
             fi
-            if ! install_plugin_to_plugin_config "sqle-dm-plugin.jar" "java -jar $plugins_dir/sqle-dm-plugin.jar" ;then
+            if ! install_plugin_to_plugin_config "sqle-dm-plugin.jar" "$SQLE_JAVA_HOME/bin/java -jar $plugins_dir/sqle-dm-plugin.jar" ;then
                 return 1
             fi
         ;;
@@ -338,7 +331,7 @@ install_plugin() {
             if ! install_plugin_to_config "OceanBase For Oracle" "/logo/ob_for_oracle.png" "[\n        {\n          \"key\":\"service_name\",\n          \"value\":\"SYS\",\n          \"desc\":\"service name\",\n          \"type\":\"string\"\n        }\n      ]" ;then
                 return 1
             fi
-            if ! install_plugin_to_plugin_config "sqle-ob-for-oracle-plugin.jar" "java -jar $plugins_dir/sqle-ob-for-oracle-plugin.jar" ;then
+            if ! install_plugin_to_plugin_config "sqle-ob-for-oracle-plugin.jar" "$SQLE_JAVA_HOME/bin/java -jar $plugins_dir/sqle-ob-for-oracle-plugin.jar" ;then
                 return 1
             fi
         ;;
