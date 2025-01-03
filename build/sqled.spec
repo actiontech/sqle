@@ -149,21 +149,6 @@ max_lag_millis=1500
 heartbeat_interval_millis=100
 EOF
 
-ARCH=$(uname -m)
-JDK_URL="https://repo.huaweicloud.com/java/jdk/8u151-b12/"
-case "$ARCH" in
-    x86_64)
-        JDK_PACKAGE="jdk-8u151-linux-x64.tar.gz"
-        ;;
-    aarch64 | armv8l)
-        JDK_PACKAGE="jdk-8u151-linux-arm64-vfp-hflt.tar.gz"
-        ;;
-    *)
-        JDK_PACKAGE="jdk-8u151-linux-arm64-vfp-hflt.tar.gz"
-        exit 1
-        ;;
-esac
-
 # 检查 .bash_profile 文件是否存在
 if [ -f ~/.bash_profile ]; then
     if grep -q "^export SQLE_JAVA_HOME=" ~/.bash_profile; then
