@@ -160,18 +160,18 @@ max_lag_millis=1500
 heartbeat_interval_millis=100
 EOF
 
-# 检查 .bash_profile 文件是否存在
-if [ -f ~/.bash_profile ]; then
-    if grep -q "^export SQLE_JAVA_HOME=" ~/.bash_profile; then
+# 检查 .bashrc 文件是否存在
+if [ -f ~/.bashrc ]; then
+    if grep -q "^export SQLE_JAVA_HOME=" ~/.bashrc; then
         # 如果 SQLE_JAVA_HOME 已经存在,则更新其值
-        sed -i "s|^export SQLE_JAVA_HOME=.*|export SQLE_JAVA_HOME=$RPM_INSTALL_PREFIX/jdk|" ~/.bash_profile
+        sed -i "s|^export SQLE_JAVA_HOME=.*|export SQLE_JAVA_HOME=$RPM_INSTALL_PREFIX/jdk|" ~/.bashrc
     else
-        echo "export SQLE_JAVA_HOME=$RPM_INSTALL_PREFIX/jdk" >> ~/.bash_profile
+        echo "export SQLE_JAVA_HOME=$RPM_INSTALL_PREFIX/jdk" >> ~/.bashrc
     fi
 else
-    echo "error: bash_profile file not found."
+    echo "warn: .bashrc file not found."
 fi
-source ~/.bash_profile
+source ~/.bashrc
 
 #chown
 chown -R %{user_name}: $RPM_INSTALL_PREFIX
