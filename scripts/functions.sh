@@ -177,13 +177,6 @@ check_env() {
                 return 1
             fi
         ;;
-        sqle-db2-plugin.jar | sqle-oracle-plugin.jar|sqle-dm-plugin.jar|sqle-ob-for-oracle-plugin.jar) # todo 确认达梦和oboracle是否需要java1.8还是其他版本也可以
-            if check_java8; then
-                return 0
-            else
-                return 1
-            fi
-        ;;
     esac
     return 0
 }

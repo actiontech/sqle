@@ -10,6 +10,7 @@ Source0: %{name}.tar.gz
 License: Commercial
 Group: Actiontech
 Prefix: /usr/local/%{name}
+AutoReq: no
 
 %description
 Acitontech Sqle
@@ -40,6 +41,7 @@ rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT/usr/local/%{name}/bin
 mkdir -p $RPM_BUILD_ROOT/usr/local/%{name}/etc
 mkdir -p %{_builddir}/%{buildsubdir}/%{name}/plugins
+mkdir -p $RPM_BUILD_ROOT/usr/local/%{name}/jdk
 if [ %{edition} == 'trial' ]; then
     cp %{_builddir}/%{buildsubdir}/dms/config_trial.yaml $RPM_BUILD_ROOT/usr/local/%{name}/etc/config.yaml
 else
@@ -54,7 +56,7 @@ cp -R %{_builddir}/%{buildsubdir}/%{name}/plugins $RPM_BUILD_ROOT/usr/local/%{na
 cp -R %{_builddir}/%{buildsubdir}/%{name}/scripts $RPM_BUILD_ROOT/usr/local/%{name}/scripts
 cp %{_builddir}/%{buildsubdir}/dms/build/service-file-template/dms.systemd $RPM_BUILD_ROOT/usr/local/%{name}/scripts/dms.systemd
 cp -R %{_builddir}/%{buildsubdir}/%{name}/static/* $RPM_BUILD_ROOT/usr/local/%{name}/static/
-
+cp -R %{_builddir}/%{buildsubdir}/%{name}/jdk/* $RPM_BUILD_ROOT/usr/local/%{name}/jdk/
 
 ##########
 
@@ -158,27 +160,6 @@ max_lag_millis=1500
 heartbeat_interval_millis=100
 EOF
 
-ARCH=$(uname -m)
-JDK_URL="https://repo.huaweicloud.com/java/jdk/8u151-b12/"
-case "$ARCH" in
-    x86_64)
-        JDK_PACKAGE="jdk-8u151-linux-x64.tar.gz"
-        ;;
-    aarch64 | armv8l)
-        JDK_PACKAGE="jdk-8u151-linux-arm64-vfp-hflt.tar.gz"
-        ;;
-    *)
-        JDK_PACKAGE="jdk-8u151-linux-arm64-vfp-hflt.tar.gz"
-        exit 1
-        ;;
-esac
-
-JDK_DOWNLOAD_URL="$JDK_URL$JDK_PACKAGE"
-echo "Downloading JDK package: $JDK_DOWNLOAD_URL"
-wget -O "$RPM_INSTALL_PREFIX/$JDK_PACKAGE" "$JDK_DOWNLOAD_URL"
-tar -xzf $RPM_INSTALL_PREFIX/$JDK_PACKAGE -C $RPM_INSTALL_PREFIX
-rm -rf $RPM_INSTALL_PREFIX/$JDK_PACKAGE
-mv $RPM_INSTALL_PREFIX/jdk1.8.0_151 $RPM_INSTALL_PREFIX/jdk
 # 检查 .bash_profile 文件是否存在
 if [ -f ~/.bash_profile ]; then
     if grep -q "^export SQLE_JAVA_HOME=" ~/.bash_profile; then
@@ -188,8 +169,7 @@ if [ -f ~/.bash_profile ]; then
         echo "export SQLE_JAVA_HOME=$RPM_INSTALL_PREFIX/jdk" >> ~/.bash_profile
     fi
 else
-    echo "Error: bash_profile file not found."
-    exit 1
+    echo "error: bash_profile file not found."
 fi
 source ~/.bash_profile
 
@@ -300,6 +280,7 @@ fi
 /usr/local/%{name}/scripts/*
 /usr/local/%{name}/static/* 
 /usr/local/%{name}/etc/config.yaml
+/usr/local/%{name}/jdk/*
 
 
 %config /usr/local/%{name}/etc/config.yaml

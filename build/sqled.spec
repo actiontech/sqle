@@ -10,6 +10,7 @@ Source0: %{name}.tar.gz
 License: Commercial
 Group: Actiontech
 Prefix: /usr/local/sqle
+AutoReq: no
 
 %description
 Acitontech Sqle
@@ -39,6 +40,7 @@ rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT/usr/local/sqle/bin
 mkdir -p %{_builddir}/%{buildsubdir}/sqle/plugins
 mkdir -p $RPM_BUILD_ROOT/usr/local/sqle/scripts
+mkdir -p $RPM_BUILD_ROOT/usr/local/%{name}/jdk
 cp %{_builddir}/%{buildsubdir}/sqle/bin/sqled $RPM_BUILD_ROOT/usr/local/sqle/bin/sqled
 cp %{_builddir}/%{buildsubdir}/sqle/bin/scannerd $RPM_BUILD_ROOT/usr/local/sqle/bin/scannerd
 cp -R %{_builddir}/%{buildsubdir}/sqle/plugins $RPM_BUILD_ROOT/usr/local/sqle/plugins
@@ -46,6 +48,7 @@ cp %{_builddir}/%{buildsubdir}/sqle/scripts/sqled.systemd $RPM_BUILD_ROOT/usr/lo
 cp %{_builddir}/%{buildsubdir}/sqle/scripts/sqled.initd $RPM_BUILD_ROOT/usr/local/sqle/scripts/sqled.initd
 cp %{_builddir}/%{buildsubdir}/sqle/scripts/pt-online-schema-change.template $RPM_BUILD_ROOT/usr/local/sqle/scripts/pt-online-schema-change.template
 # cp -R %{_builddir}/%{buildsubdir}/sqle/ui $RPM_BUILD_ROOT/usr/local/sqle/ui
+cp -R %{_builddir}/%{buildsubdir}/%{name}/jdk/* $RPM_BUILD_ROOT/usr/local/%{name}/jdk
 
 ##########
 
@@ -161,12 +164,6 @@ case "$ARCH" in
         ;;
 esac
 
-JDK_DOWNLOAD_URL="$JDK_URL$JDK_PACKAGE"
-echo "Downloading JDK package: $JDK_DOWNLOAD_URL"
-wget -O "$RPM_INSTALL_PREFIX/$JDK_PACKAGE" "$JDK_DOWNLOAD_URL"
-tar -xzf $RPM_INSTALL_PREFIX/$JDK_PACKAGE -C $RPM_INSTALL_PREFIX
-rm -rf $RPM_INSTALL_PREFIX/$JDK_PACKAGE
-mv $RPM_INSTALL_PREFIX/jdk1.8.0_151 $RPM_INSTALL_PREFIX/jdk
 # 检查 .bash_profile 文件是否存在
 if [ -f ~/.bash_profile ]; then
     if grep -q "^export SQLE_JAVA_HOME=" ~/.bash_profile; then
@@ -176,8 +173,7 @@ if [ -f ~/.bash_profile ]; then
         echo "export SQLE_JAVA_HOME=$RPM_INSTALL_PREFIX/jdk" >> ~/.bash_profile
     fi
 else
-    echo "Error: bash_profile file not found."
-    exit 1
+    echo "error: bash_profile file not found."
 fi
 source ~/.bash_profile
 
@@ -259,3 +255,4 @@ fi
 /usr/local/sqle/scripts/sqled.initd
 /usr/local/sqle/scripts/pt-online-schema-change.template
 # /usr/local/sqle/ui/*
+/usr/local/sqle/jdk/*
