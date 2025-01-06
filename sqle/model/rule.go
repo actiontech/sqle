@@ -472,8 +472,8 @@ func (s *Storage) GetRulesByNames(names []string) ([]*Rule, error) {
 	return rules, errors.New(errors.ConnectStorageError, err)
 }
 
-func (s *Storage) GetRulesByNamesAndDBType(names []string, dbType string) ([]Rule, error) {
-	rules := []Rule{}
+func (s *Storage) GetRulesByNamesAndDBType(names []string, dbType string) ([]*Rule, error) {
+	rules := []*Rule{}
 	err := s.db.Where("db_type = ?", dbType).Where("name in (?)", names).Find(&rules).Error
 	return rules, errors.New(errors.ConnectStorageError, err)
 }
@@ -487,7 +487,7 @@ func (s *Storage) GetAndCheckRuleExist(ruleNames []string, dbType string) (map[s
 	}
 	existRules := map[string]Rule{}
 	for _, rule := range rules {
-		existRules[rule.Name] = rule
+		existRules[rule.Name] = *rule
 	}
 	notExistRuleNames := make(map[string]struct{})
 	for _, ruleName := range ruleNames {
