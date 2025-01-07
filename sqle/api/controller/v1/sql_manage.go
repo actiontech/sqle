@@ -264,25 +264,9 @@ type SqlAnalysisChart struct {
 }
 
 type ChartPoint struct {
-	X    *string     `json:"x"`
-	Y    *float64    `json:"y"`
-	Info interface{} `json:"info"`
-}
-
-type ExecutePlan struct {
-	Id           *int    `json:"id"`
-	SelectId     *int    `json:"select_id"`
-	Table        *string `json:"table"`
-	Partitions   *string `json:"partitions"`
-	Type         *string `json:"type"`
-	PossibleKeys *string `json:"possible_keys"`
-	Key          *string `json:"key"`
-	KeyLen       *string `json:"key_len"`
-	Ref          *string `json:"ref"`
-	Rows         *int    `json:"rows"`
-	Filtered     *int    `json:"filtered"`
-	SelectType   *string `json:"select_type"`
-	Extra        *string `json:"extra"`
+	X    *string           `json:"x"`
+	Y    *float64          `json:"y"`
+	Info map[string]string `json:"info"`
 }
 
 type GetSqlManageSqlAnalysisResp struct {
