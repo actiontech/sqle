@@ -10,6 +10,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
+
 	// "github.com/actiontech/sqle/sqle/driver/mysql/session"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/model"
@@ -84,6 +85,26 @@ func AuditSQLByDBType(l *logrus.Entry, sql string, dbType string, projectId stri
 	defer plugin.Close(context.TODO())
 
 	return AuditSQLByDriver(projectId, l, sql, plugin, customRules)
+}
+
+func AuditSQLByRuleNames(l *logrus.Entry, sql string, dbType string, instance *model.Instance, schemaName string, ruleNames []string) (*model.Task, error) {
+	st := model.GetStorage()
+	rules, err := st.GetRulesByNamesAndDBType(ruleNames, dbType)
+	if err != nil {
+		return nil, err
+	}
+	plugin, err := newDriverManagerWithAudit(l, instance, schemaName, dbType, rules)
+	if err != nil {
+		return nil, err
+	}
+	defer plugin.Close(context.TODO())
+
+	task, err := AuditSQLByDriver(instance.ProjectId, l, sql, plugin, nil)
+	task.DBType = dbType
+	task.Instance = instance
+	task.InstanceId = instance.ID
+	task.Schema = schemaName
+	return task, err
 }
 
 func AuditSQLByDriver(projectId string, l *logrus.Entry, sql string, p driver.Plugin, customRules []*model.CustomRule) (*model.Task, error) {
