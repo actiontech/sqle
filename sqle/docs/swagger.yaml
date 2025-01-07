@@ -660,6 +660,17 @@ definitions:
         - instance
         type: string
     type: object
+  v1.ChartPoint:
+    properties:
+      info:
+        additionalProperties:
+          type: string
+        type: object
+      x:
+        type: string
+      "y":
+        type: number
+    type: object
   v1.CheckLicenseResV1:
     properties:
       code:
@@ -4057,6 +4068,13 @@ definitions:
         $ref: '#/definitions/v1.TableMetas'
         type: object
     type: object
+  v1.SqlAnalysisChart:
+    properties:
+      points:
+        items:
+          $ref: '#/definitions/v1.ChartPoint'
+        type: array
+    type: object
   v1.SqlAnalysisResDataV1:
     properties:
       sql_explain:
@@ -4168,6 +4186,18 @@ definitions:
         - ignored
         - manual_audited
         - sent
+        type: string
+    type: object
+  v1.SqlManageAnalysisChartResp:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.SqlAnalysisChart'
+        type: object
+      message:
+        example: ok
         type: string
     type: object
   v1.SqlManageCodingReq:
@@ -9654,6 +9684,41 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取SQL管控SQL分析
+      tags:
+      - SqlManage
+  /v1/projects/{project_name}/sql_manages/{sql_manage_id}/sql_analysis_chart:
+    get:
+      description: get sql manage analysis
+      operationId: GetSqlManageSqlAnalysisChartV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: sql manage id
+        in: path
+        name: sql_manage_id
+        required: true
+        type: string
+      - description: duration
+        in: query
+        name: duration
+        required: true
+        type: string
+      - description: metric_name
+        in: query
+        name: metric_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.SqlManageAnalysisChartResp'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取SQL管控SQL执行计划Cost趋势图表
       tags:
       - SqlManage
   /v1/projects/{project_name}/sql_manages/batch:
