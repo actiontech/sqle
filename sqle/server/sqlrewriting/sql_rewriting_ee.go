@@ -13,11 +13,15 @@ import (
 	"time"
 
 	pkgHttp "github.com/actiontech/dms/pkg/dms-common/pkg/http"
+	"github.com/actiontech/sqle/sqle/common"
 	"github.com/actiontech/sqle/sqle/config"
 	"github.com/actiontech/sqle/sqle/driver"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/server"
+	"github.com/actiontech/sqle/sqle/server/fillsql"
+	"github.com/sirupsen/logrus"
 	"github.com/ungerik/go-dry"
 	"golang.org/x/text/language"
 )
@@ -58,6 +62,8 @@ type GetRewriteResponse struct {
 	BusinessDescAfterOptimize string `json:"business_desc_after_optimize"`
 	// 重写后的SQL执行逻辑描述
 	LogicDescAfterOptimize string `json:"logic_desc_after_optimize"`
+	// 当开启EnableProgressiveRewrite时，表示所有规则重写是否完成
+	IsRewriteDone bool `json:"is_rewrite_done"`
 }
 
 type Rule struct {
@@ -71,12 +77,13 @@ type Rule struct {
 
 // 调用外部进程完成重写的请求结构
 type CallRewriteSQLRequest struct {
-	DBType              string `json:"db_type"`
-	Rules               []Rule `json:"rules"`
-	SQL                 string `json:"sql"`
-	TableStructures     string `json:"table_structures"`
-	Explain             string `json:"explain"`
-	EnableStructureType bool   `json:"enable_structure_type"`
+	DBType                   string `json:"db_type"`
+	Rules                    []Rule `json:"rules"`
+	SQL                      string `json:"sql"`
+	TableStructures          string `json:"table_structures"`
+	Explain                  string `json:"explain"`
+	EnableStructureType      bool   `json:"enable_structure_type"`      // 是否启用涉及数据库结构化的重写
+	EnableProgressiveRewrite bool   `json:"enable_progressive_rewrite"` // 是否启用渐进式重写模式：每次只重写一条规则，重写后重新审核，继续处理剩余触发的规则
 }
 
 // TODO: 更多预检查规则补充
@@ -151,14 +158,116 @@ func ConvertRuleIDToRuleName(dbType string, ruleId string) (string, error) {
 }
 
 type SQLRewritingParams struct {
-	DBType              string                  // 数据库类型
+	Task                *model.Task             // 任务信息
 	SQL                 *model.ExecuteSQL       // 需要重写的SQL
 	TableStructures     []*driver.TableMeta     // 表结构
 	Explain             *driverV2.ExplainResult // SQL 执行计划
 	EnableStructureType bool                    // 是否启用涉及数据库结构化的重写
 }
 
-func SQLRewriting(ctx context.Context, params *SQLRewritingParams) (*GetRewriteResponse, error) {
+// ProgressiveRewriteSQL 启用渐进式重写模式：每次只重写一条规则，重写后重新审核，继续处理剩余触发的规则
+func ProgressiveRewriteSQL(ctx context.Context, params *SQLRewritingParams) (*GetRewriteResponse, error) {
+	l := log.NewEntry().WithField("get_rewrite_sql", "server")
+
+	// 初始化返回结果
+	ret := &GetRewriteResponse{}
+
+	// 执行首次重写
+	rewriteResult, err := performSQLRewriting(l, ctx, params, true /*开启渐进式重写*/)
+	if err != nil {
+		return nil, err
+	}
+
+	// 设置基础信息
+	ret.BusinessDesc = rewriteResult.BusinessDesc
+	ret.LogicDesc = rewriteResult.LogicDesc
+	ret.LogicDescAfterOptimize = rewriteResult.LogicDescAfterOptimize
+	ret.BusinessDescAfterOptimize = rewriteResult.BusinessDescAfterOptimize
+	ret.BusinessNonEquivalent = rewriteResult.BusinessNonEquivalent
+
+	// 如果已完成重写，直接返回结果
+	if rewriteResult.IsRewriteDone {
+		ret.Suggestions = rewriteResult.Suggestions
+		return ret, nil
+	}
+
+	// 迭代重写直到完成
+	for !rewriteResult.IsRewriteDone {
+
+		// 没有重写完成，需要再次审核重写后的SQL，确认重写后的SQL是否触发了剩余的规则
+		ruleNameNotRewritten := make([]string, 0)
+		var sqlRewritten string
+		var suggestionType string
+		for _, s := range rewriteResult.Suggestions {
+			if s.RewrittenSql != "" {
+				sqlRewritten = s.RewrittenSql
+				suggestionType = s.Type
+				ret.Suggestions = append(ret.Suggestions, s) // 保存已经重写的规则建议
+			}
+			if s.RewrittenSql == "" {
+				ruleNameNotRewritten = append(ruleNameNotRewritten, s.RuleName) // 获取未重写的规则
+			}
+		}
+
+		if sqlRewritten == "" {
+			return nil, fmt.Errorf("rewritten sql is empty")
+		}
+
+		// 重新审核重写后的SQL
+		l.Infof("audit rewritten sql: %v", sqlRewritten)
+		task, err := server.AuditSQLByRuleNames(l, sqlRewritten, params.Task.DBType, params.Task.Instance, params.Task.Schema, ruleNameNotRewritten)
+		if err != nil {
+			l.Errorf("audit sqls failed: %v", err)
+			return nil, fmt.Errorf("audit rewritten sql(%v) failed: %v", sqlRewritten, err)
+		}
+		if len(task.ExecuteSQLs) == 0 {
+			return nil, fmt.Errorf("task.ExecuteSQLs is empty")
+		}
+		executeSQL := task.ExecuteSQLs[0]
+
+		// 获取重写后的SQL不再触发的规则
+		l.Infof("audit results: %v", executeSQL.AuditResults.String(ctx))
+		ruleNamesResolved := findResolvedRules(ruleNameNotRewritten, executeSQL.AuditResults)
+		l.Infof("rule name not rewritten: %v; rule name resolved: %v", ruleNameNotRewritten, ruleNamesResolved)
+
+		for _, ruleName := range ruleNamesResolved {
+			ret.Suggestions = append(ret.Suggestions, Suggestion{
+				RuleName:     ruleName,
+				RewrittenSql: sqlRewritten,
+				Type:         suggestionType,
+				Description:  "上一条规则重写后的SQL不再触发此规则",
+			})
+		}
+
+		// 再次获取重写后的SQL的执行计划
+		explainResult := &driverV2.ExplainResult{}
+		if res, err := ExplainTaskSQL(l, task); err != nil {
+			l.Warnf("get explain failed: %v", err)
+		} else {
+			explainResult = res
+		}
+
+		p := &SQLRewritingParams{
+			Task:                task,
+			SQL:                 executeSQL,
+			TableStructures:     params.TableStructures,
+			Explain:             explainResult,
+			EnableStructureType: params.EnableStructureType,
+		}
+		// 执行下一轮重写
+		rewriteResult, err = performSQLRewriting(l, ctx, p, true /*开启渐进式重写*/)
+		if err != nil {
+			return nil, err
+		}
+		ret.BusinessDescAfterOptimize = rewriteResult.BusinessDescAfterOptimize
+		ret.BusinessNonEquivalent = rewriteResult.BusinessNonEquivalent
+	}
+	ret.Suggestions = append(ret.Suggestions, rewriteResult.Suggestions...) // 添加最后一轮重写的建议(包括可能的一些无法重写的规则)
+	return ret, nil
+}
+
+// performSQLRewriting 处理 SQL 重写的核心逻辑
+func performSQLRewriting(l *logrus.Entry, ctx context.Context, params *SQLRewritingParams, enableProgressiveRewrite bool) (*GetRewriteResponse, error) {
 	if params == nil {
 		return nil, fmt.Errorf("params is nil")
 	}
@@ -166,8 +275,8 @@ func SQLRewriting(ctx context.Context, params *SQLRewritingParams) (*GetRewriteR
 		return nil, fmt.Errorf("sql is nil")
 	}
 
+	dbType := params.Task.DBType
 	s := model.GetStorage()
-	l := log.NewEntry().WithField("get_rewrite_sql", "server")
 
 	var rules []Rule
 	var ruleNamesCanNotRewrite []string
@@ -175,6 +284,8 @@ func SQLRewriting(ctx context.Context, params *SQLRewritingParams) (*GetRewriteR
 	ruleIDToNames := make(map[string][]string)
 	// 用于去重的 ruleID 集合
 	uniqueRuleIDs := make(map[string]struct{})
+	// 定义返回结果
+	reply := &GetRewriteResponse{}
 
 	for _, ar := range params.SQL.AuditResults {
 		if ar.RuleName == "" {
@@ -186,7 +297,7 @@ func SQLRewriting(ctx context.Context, params *SQLRewritingParams) (*GetRewriteR
 			continue
 		}
 
-		ruleID, err := ConvertRuleNameToRuleId(params.DBType, ar.RuleName)
+		ruleID, err := ConvertRuleNameToRuleId(dbType, ar.RuleName)
 		if err != nil {
 			l.Errorf("can't convert rule name(%v) to rule id: %v", ar.RuleName, err)
 			ruleNamesCanNotRewrite = append(ruleNamesCanNotRewrite, ar.RuleName)
@@ -202,7 +313,7 @@ func SQLRewriting(ctx context.Context, params *SQLRewritingParams) (*GetRewriteR
 		}
 		uniqueRuleIDs[ruleID] = struct{}{}
 
-		r, exist, err := s.GetRule(ar.RuleName, params.DBType)
+		r, exist, err := s.GetRule(ar.RuleName, dbType)
 		if err != nil {
 			return nil, fmt.Errorf("get rule failed: %v", err)
 		}
@@ -222,56 +333,64 @@ func SQLRewriting(ctx context.Context, params *SQLRewritingParams) (*GetRewriteR
 
 	}
 
-	// 定义要发送的参数
-	req := &CallRewriteSQLRequest{
-		DBType:              params.DBType,
-		Rules:               rules,
-		SQL:                 params.SQL.Content,
-		EnableStructureType: params.EnableStructureType,
-	}
-
-	if s, err := json.Marshal(params.Explain); err != nil {
-		return nil, fmt.Errorf("marshal explain failed: %v", err)
+	if len(rules) == 0 {
+		// 没有规则需要重写
+		l.Infof("no rules need to rewrite")
+		reply.IsRewriteDone = true
 	} else {
-		req.Explain = string(s)
-	}
-
-	for _, table := range params.TableStructures {
-		s, err := json.Marshal(table)
-		if err != nil {
-			return nil, fmt.Errorf("marshal table structure failed: %v", err)
+		// 定义要发送的参数
+		req := &CallRewriteSQLRequest{
+			DBType:              dbType,
+			Rules:               rules,
+			SQL:                 params.SQL.Content,
+			EnableStructureType: params.EnableStructureType,
 		}
-		req.TableStructures += string(s) + "\n\n"
-	}
 
-	reply := &GetRewriteResponse{}
-
-	// 定义 API 端点
-	apiURL := getUrl()
-
-	// 先测试API端点的连通性
-	connectivityTimeout := 5 * time.Second // 设置连通性测试的超时时间
-	if err := checkAPIConnectivity(apiURL, connectivityTimeout); err != nil {
-		return nil, fmt.Errorf("请检查合规重写配置及联通性: API connectivity check failed: %v.", err)
-	}
-
-	// 发送 HTTP POST 请求
-	var callRewriteSQLTimeout int64 = 600 // 设置重写请求的超时时间
-	if err := pkgHttp.POST(pkgHttp.SetTimeoutValueContext(ctx, callRewriteSQLTimeout), apiURL, nil, req, reply); err != nil {
-		return nil, fmt.Errorf("failed to call %v: %v", apiURL, err)
-	}
-
-	// 处理返回结果，将同一个 ruleID 对应的多个 ruleName 都添加到建议中(重写功能使用了新的规则ID，不需要现有的规则名称，这里填充回现有的规则名称只是为了页面展示)
-	var expandedSuggestions []Suggestion
-	for _, suggestion := range reply.Suggestions {
-		ruleNames := ruleIDToNames[suggestion.RuleID]
-		for _, ruleName := range ruleNames {
-			newSuggestion := suggestion
-			newSuggestion.RuleName = ruleName
-			expandedSuggestions = append(expandedSuggestions, newSuggestion)
+		if enableProgressiveRewrite {
+			req.EnableProgressiveRewrite = true
 		}
+
+		if s, err := json.Marshal(params.Explain); err != nil {
+			return nil, fmt.Errorf("marshal explain failed: %v", err)
+		} else {
+			req.Explain = string(s)
+		}
+
+		for _, table := range params.TableStructures {
+			s, err := json.Marshal(table)
+			if err != nil {
+				return nil, fmt.Errorf("marshal table structure failed: %v", err)
+			}
+			req.TableStructures += string(s) + "\n\n"
+		}
+
+		// 定义 API 端点
+		apiURL := getUrl()
+
+		// 先测试API端点的连通性
+		connectivityTimeout := 5 * time.Second // 设置连通性测试的超时时间
+		if err := checkAPIConnectivity(apiURL, connectivityTimeout); err != nil {
+			return nil, fmt.Errorf("请检查合规重写配置及联通性: API connectivity check failed: %v.", err)
+		}
+
+		// 发送 HTTP POST 请求
+		var callRewriteSQLTimeout int64 = 600 // 设置重写请求的超时时间
+		if err := pkgHttp.POST(pkgHttp.SetTimeoutValueContext(ctx, callRewriteSQLTimeout), apiURL, nil, req, reply); err != nil {
+			return nil, fmt.Errorf("failed to call %v: %v", apiURL, err)
+		}
+
+		// 处理返回结果，将同一个 ruleID 对应的多个 ruleName 都添加到建议中(重写功能使用了新的规则ID，不需要现有的规则名称，这里填充回现有的规则名称只是为了页面展示)
+		var expandedSuggestions []Suggestion
+		for _, suggestion := range reply.Suggestions {
+			ruleNames := ruleIDToNames[suggestion.RuleID]
+			for _, ruleName := range ruleNames {
+				newSuggestion := suggestion
+				newSuggestion.RuleName = ruleName
+				expandedSuggestions = append(expandedSuggestions, newSuggestion)
+			}
+		}
+		reply.Suggestions = expandedSuggestions
 	}
-	reply.Suggestions = expandedSuggestions
 
 	// 对于无法重写的规则，需要将其加入到Suggestions中
 	for _, rn := range ruleNamesCanNotRewrite {
@@ -303,4 +422,62 @@ func checkAPIConnectivity(apiURL string, timeout time.Duration) error {
 	}
 	defer conn.Close()
 	return nil
+}
+
+func ExplainTaskSQL(l *logrus.Entry, task *model.Task) (res *driverV2.ExplainResult, err error) {
+	if task.Instance == nil {
+		return nil, fmt.Errorf("task.Instance is nil")
+	}
+
+	if len(task.ExecuteSQLs) == 0 {
+		return nil, fmt.Errorf("task.ExecuteSQLs is empty")
+	}
+	taskSql := task.ExecuteSQLs[0]
+	instance := task.Instance
+	sqlContent, err := fillsql.FillingSQLWithParamMarker(taskSql.Content, task)
+	if err != nil {
+		l.Errorf("fill param marker sql failed: %v", err)
+		sqlContent = taskSql.Content
+	}
+
+	dsn, err := common.NewDSN(instance, task.Schema)
+	if err != nil {
+		return nil, err
+	}
+
+	plugin, err := driver.GetPluginManager().
+		OpenPlugin(l, instance.DbType, &driverV2.Config{DSN: dsn})
+	if err != nil {
+		return nil, err
+	}
+	defer plugin.Close(context.TODO())
+
+	if !driver.GetPluginManager().
+		IsOptionalModuleEnabled(instance.DbType, driverV2.OptionalModuleExplain) {
+		return nil, driver.NewErrPluginAPINotImplement(driverV2.OptionalModuleExplain)
+	}
+
+	return plugin.Explain(context.TODO(), &driverV2.ExplainConf{Sql: sqlContent})
+}
+
+// findResolvedRules 找出重写后不再触发的规则名称
+// params: originalRules 原始触发的规则名称列表
+// params: newAuditResults 重写后的SQL审核结果
+// return 已解决（不再触发）的规则名称列表
+func findResolvedRules(originalRules []string, newAuditResults model.AuditResults) []string {
+	// 使用 map 存储当前仍触发的规则，便于快速查找
+	stillTriggered := make(map[string]bool)
+	for _, result := range newAuditResults {
+		stillTriggered[result.RuleName] = true
+	}
+
+	// 找出原始规则中不再出现在新审核结果中的规则名称
+	resolved := make([]string, 0, len(originalRules))
+	for _, ruleName := range originalRules {
+		if !stillTriggered[ruleName] {
+			resolved = append(resolved, ruleName)
+		}
+	}
+
+	return resolved
 }
