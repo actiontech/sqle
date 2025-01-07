@@ -12395,7 +12395,10 @@ var doc = `{
             "type": "object",
             "properties": {
                 "info": {
-                    "type": "object"
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
                 },
                 "x": {
                     "type": "string"

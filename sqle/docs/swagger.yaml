@@ -663,6 +663,8 @@ definitions:
   v1.ChartPoint:
     properties:
       info:
+        additionalProperties:
+          type: string
         type: object
       x:
         type: string
