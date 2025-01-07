@@ -12395,13 +12395,13 @@ var doc = `{
             "type": "object",
             "properties": {
                 "info": {
-                    "type": "any"
+                    "type": "object"
                 },
                 "x": {
                     "type": "string"
                 },
                 "y": {
-                    "type": "string"
+                    "type": "number"
                 }
             }
         },

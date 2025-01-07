@@ -264,9 +264,9 @@ type SqlAnalysisChart struct {
 }
 
 type ChartPoint struct {
-	X    *string `json:"x"`
-	Y    *string `json:"y"`
-	Info any     `json:"info"`
+	X    *string     `json:"x"`
+	Y    *float64    `json:"y"`
+	Info interface{} `json:"info"`
 }
 
 type ExecutePlan struct {
