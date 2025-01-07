@@ -611,9 +611,9 @@ var (
 	DMLCheckSelectRowsAnnotation                                 = &i18n.Message{ID: "DMLCheckSelectRowsAnnotation", Other: "筛选条件必须带上主键或索引可提高查询性能和减少全表扫描的成本。"}
 	DMLCheckSelectRowsMessage                                    = &i18n.Message{ID: "DMLCheckSelectRowsMessage", Other: "查询数据量超过阈值，筛选条件必须带上主键或者索引"}
 	DMLCheckSelectRowsParams1                                    = &i18n.Message{ID: "DMLCheckSelectRowsParams1", Other: "查询数据量（万）"}
-	DMLCheckScanRowsDesc                                         = &i18n.Message{ID: "DMLCheckScanRowsDesc", Other: "扫描行数超过阈值，筛选条件必须带上主键或者索引"}
+	DMLCheckScanRowsDesc                                         = &i18n.Message{ID: "DMLCheckScanRowsDesc", Other: "扫描行数超过阈值，请检查索引配置"}
 	DMLCheckScanRowsAnnotation                                   = &i18n.Message{ID: "DMLCheckScanRowsAnnotation", Other: "筛选条件必须带上主键或索引可降低数据库查询的时间复杂度，提高查询效率。"}
-	DMLCheckScanRowsMessage                                      = &i18n.Message{ID: "DMLCheckScanRowsMessage", Other: "扫描行数超过阈值，筛选条件必须带上主键或者索引"}
+	DMLCheckScanRowsMessage                                      = &i18n.Message{ID: "DMLCheckScanRowsMessage", Other: "扫描行数超过阈值，请检查索引配置"}
 	DMLCheckScanRowsParams1                                      = &i18n.Message{ID: "DMLCheckScanRowsParams1", Other: "扫描行数量（万）"}
 	DMLMustUseLeftMostPrefixDesc                                 = &i18n.Message{ID: "DMLMustUseLeftMostPrefixDesc", Other: "使用联合索引时，必须使用联合索引的首字段"}
 	DMLMustUseLeftMostPrefixAnnotation                           = &i18n.Message{ID: "DMLMustUseLeftMostPrefixAnnotation", Other: "使用联合索引时，不包含首字段会导致联合索引失效"}
