@@ -385,6 +385,10 @@ func getSqlManageSqlAnalysisV1(c echo.Context) error {
 	})
 }
 
+func getSqlManageSqlAnalysisChartV1(c echo.Context) error {
+	return errors.NewNotImplementedError("get sql manage sql analysis chart")
+}
+
 func getAuditPlanUnsolvedSQLCount(auditPlanId uint) (int64, error) {
 	s := model.GetStorage()
 	count, err := s.GetAuditPlanUnsolvedSQLCount(auditPlanId,
