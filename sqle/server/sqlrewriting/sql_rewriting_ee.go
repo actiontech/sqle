@@ -169,7 +169,7 @@ type SQLRewritingParams struct {
 // ProgressiveRewriteSQL 启用渐进式重写模式：每次只重写一条规则，重写后重新审核，继续处理剩余触发的规则
 func ProgressiveRewriteSQL(ctx context.Context, params *SQLRewritingParams) (*GetRewriteResponse, error) {
 	l := log.NewEntry().WithField("get_rewrite_sql", "server")
-	st := model.GetStorage()
+	storage := model.GetStorage()
 	lang := locale.Bundle.GetLangTagFromCtx(ctx)
 
 	// 初始化返回结果
@@ -202,24 +202,24 @@ func ProgressiveRewriteSQL(ctx context.Context, params *SQLRewritingParams) (*Ge
 		var sqlRewritten string
 		var suggestionType string
 		var ruleNameRewritten string
-		for _, s := range rewriteResult.Suggestions {
-			if s.RewrittenSql != "" {
-				sqlRewritten = s.RewrittenSql
-				suggestionType = s.Type
-				r, exist, err := st.GetRule(s.RuleName, params.Task.DBType)
+		for _, suggestion := range rewriteResult.Suggestions {
+			if suggestion.RewrittenSql != "" {
+				sqlRewritten = suggestion.RewrittenSql
+				suggestionType = suggestion.Type
+				rule, exist, err := storage.GetRule(suggestion.RuleName, params.Task.DBType)
 				if err != nil {
 					l.Errorf("get rule failed: %v", err)
-					return nil, fmt.Errorf("get rule(%v) failed: %v", s.RuleName, err)
+					return nil, fmt.Errorf("get rule(%v) failed: %v", suggestion.RuleName, err)
 				}
 				if !exist {
-					l.Errorf("rewritten rule not found: %s", s.RuleName)
-					return nil, fmt.Errorf("rule not found: %s", s.RuleName)
+					l.Errorf("rewritten rule not found: %s", suggestion.RuleName)
+					return nil, fmt.Errorf("rule not found: %s", suggestion.RuleName)
 				}
-				ruleNameRewritten = r.I18nRuleInfo.GetRuleInfoByLangTag(lang).Desc
-				ret.Suggestions = append(ret.Suggestions, s) // 保存已经重写的规则建议
+				ruleNameRewritten = rule.I18nRuleInfo.GetRuleInfoByLangTag(lang).Desc
+				ret.Suggestions = append(ret.Suggestions, suggestion) // 保存已经重写的规则建议
 			}
-			if s.RewrittenSql == "" {
-				ruleNameNotRewritten = append(ruleNameNotRewritten, s.RuleName) // 获取未重写的规则
+			if suggestion.RewrittenSql == "" {
+				ruleNameNotRewritten = append(ruleNameNotRewritten, suggestion.RuleName) // 获取未重写的规则
 			}
 		}
 
@@ -261,7 +261,7 @@ func ProgressiveRewriteSQL(ctx context.Context, params *SQLRewritingParams) (*Ge
 			explainResult = res
 		}
 
-		p := &SQLRewritingParams{
+		params := &SQLRewritingParams{
 			Task:                task,
 			SQL:                 executeSQL,
 			TableStructures:     params.TableStructures,
@@ -269,7 +269,7 @@ func ProgressiveRewriteSQL(ctx context.Context, params *SQLRewritingParams) (*Ge
 			EnableStructureType: params.EnableStructureType,
 		}
 		// 执行下一轮重写
-		rewriteResult, err = performSQLRewriting(l, ctx, p, true /*开启渐进式重写*/)
+		rewriteResult, err = performSQLRewriting(l, ctx, params, true /*开启渐进式重写*/)
 		if err != nil {
 			return nil, err
 		}
