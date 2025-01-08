@@ -81,14 +81,14 @@ func getRewriteSQLData(c echo.Context) error {
 	}
 
 	params := &sqlrewriting.SQLRewritingParams{
-		DBType:              task.DBType,
+		Task:                task,
 		SQL:                 taskSql,
 		TableStructures:     res.TableMetaResult.TableMetas,
 		Explain:             res.ExplainResult,
 		EnableStructureType: enableStructure,
 	}
 	// 进行重写
-	rewrittenRes, err := sqlrewriting.SQLRewriting(c.Request().Context(), params)
+	rewrittenRes, err := sqlrewriting.ProgressiveRewriteSQL(c.Request().Context(), params)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
