@@ -500,6 +500,78 @@ func (s *Storage) PushSQLToManagerSQLQueue(sqls []*SQLManageQueue) error {
 	return s.db.Create(sqls).Error
 }
 
+type SqlManageMetricRecord struct {
+	Model
+	SQLID                             string                              `gorm:"type:varchar(255);not null;index:idx_sql_id"`
+	ExecutionCount                    int                                 `gorm:"not null;default:1;comment:该时间范围内的执行次数"`
+	RecordBeginAt                     time.Time                           `gorm:"not null;index:idx_time_range,priority:1;comment:统计该度量值的起始时间"`
+	RecordEndAt                       time.Time                           `gorm:"not null;index:idx_time_range,priority:2;comment:统计该度量值的终止时间"`
+	MetricValues                      []*SqlManageMetricValue             `gorm:"foreignKey:SqlManageMetricRecordID;references:ID"`
+	SqlManageMetricExecutePlanRecords []*SqlManageMetricExecutePlanRecord `gorm:"foreignKey:SqlManageMetricRecordID"`
+}
+
+func (SqlManageMetricRecord) TableName() string {
+	return "sql_manage_metric_records"
+}
+
+type SqlManageMetricValue struct {
+	SqlManageMetricRecordID uint    `gorm:"not null;index:idx_metric_record_id"`
+	MetricName              string  `gorm:"not null;index:idx_metric_name;comment:统计信息类型的名称"`
+	MetricValue             float64 `gorm:"type:decimal(20,4);not null;default:0.0000;comment:存储数值数据，可以是 INT, FLOAT, TIME 等"`
+}
+
+func (SqlManageMetricValue) TableName() string {
+	return "sql_manage_metric_values"
+}
+
+type SqlManageMetricExecutePlanRecord struct {
+	Model
+	SqlManageMetricRecordID uint   `gorm:"not null"`
+	SelectId                int    `gorm:"not null"`
+	SelectType              string `gorm:"type:varchar(50);not null"`
+	Table                   string `gorm:"type:varchar(255);not null"`
+	Partitions              string `gorm:"type:varchar(255)"`
+	Type                    string `gorm:"type:varchar(255);not null"`
+	PossibleKeys            string `gorm:"type:varchar(255)"`
+	Key                     string `gorm:"type:varchar(255)"`
+	KeyLen                  int
+	Ref                     string `gorm:"type:varchar(50)"`
+	Rows                    int    `gorm:"type:int"`
+	Filtered                int    `gorm:"type:int"`
+	Extra                   string `gorm:"type:varchar(255)"`
+}
+
+func (SqlManageMetricExecutePlanRecord) TableName() string {
+	return "sql_manage_metric_execute_plan_records"
+}
+
+func (s *Storage) GetSqlManageMetricRecordsByTime(sqlId string, metricName string, timeBegin, timeEnd time.Time) ([]SqlManageMetricRecord, error) {
+	var records []SqlManageMetricRecord
+	err := s.db.Preload("MetricValues", func(db *gorm.DB) *gorm.DB {
+		return db.Where("metric_name = ?", metricName)
+	}).
+		Preload("SqlManageMetricExecutePlanRecords").
+		Where("sql_id = ? AND record_begin_at >= ? AND record_end_at <= ?", sqlId, timeBegin, timeEnd).Find(&records).Error
+	if err != nil {
+		return nil, err
+	}
+	return records, nil
+}
+
+func (s *Storage) GetMaxValueSqlManageMetricRecordByTime(sqlId string, metricName string, timeBegin, timeEnd time.Time) (*SqlManageMetricRecord, bool, error) {
+	var record SqlManageMetricRecord
+	err := s.db.Model(&SqlManageMetricRecord{}).
+		Preload("MetricValues").Preload("SqlManageMetricExecutePlanRecords").
+		Joins("left join sql_manage_metric_values ON sql_manage_metric_records.id = sql_manage_metric_values.sql_manage_metric_record_id").
+		Where("sql_manage_metric_records.sql_id = ? AND sql_manage_metric_records.record_begin_at >= ? AND sql_manage_metric_records.record_end_at <= ? AND sql_manage_metric_values.metric_name = ?", sqlId, timeBegin, timeEnd, metricName).
+		Order("sql_manage_metric_values.metric_value DESC").
+		First(&record).Error
+	if err == gorm.ErrRecordNotFound {
+		return &record, false, nil
+	}
+	return &record, true, errors.New(errors.ConnectStorageError, err)
+}
+
 func (s *Storage) PullSQLFromManagerSQLQueue() ([]*SQLManageQueue, error) {
 	sqls := []*SQLManageQueue{}
 	err := s.db.Limit(1000).Find(&sqls).Error
