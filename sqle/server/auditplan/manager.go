@@ -63,6 +63,7 @@ func ConvertModelToAuditPlanV2(a *model.AuditPlanDetail) *AuditPlan {
 		RuleTemplateName:    a.RuleTemplateName,
 		Params:              a.Params,
 		InstanceAuditPlanId: a.InstanceAuditPlanID,
+		Instance:            a.Instance,
 	}
 }
 
