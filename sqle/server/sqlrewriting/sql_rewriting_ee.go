@@ -80,7 +80,8 @@ type Rule struct {
 type CallRewriteSQLRequest struct {
 	DBType                   string `json:"db_type"`
 	Rules                    []Rule `json:"rules"`
-	SQL                      string `json:"sql"`
+	OriginalSql              string `json:"original_sql"`
+	ProgressiveRewrittenSQL  string `json:"progressive_rewritten_sql"`
 	TableStructures          string `json:"table_structures"`
 	Explain                  string `json:"explain"`
 	EnableStructureType      bool   `json:"enable_structure_type"`      // 是否启用涉及数据库结构化的重写
@@ -171,12 +172,13 @@ func ProgressiveRewriteSQL(ctx context.Context, params *SQLRewritingParams) (*Ge
 	l := log.NewEntry().WithField("get_rewrite_sql", "server")
 	storage := model.GetStorage()
 	lang := locale.Bundle.GetLangTagFromCtx(ctx)
+	originalSQL := params.SQL.Content
 
 	// 初始化返回结果
 	ret := &GetRewriteResponse{}
 
 	// 执行首次重写
-	rewriteResult, err := performSQLRewriting(l, ctx, params, true /*开启渐进式重写*/)
+	rewriteResult, err := performSQLRewriting(l, ctx, params, originalSQL, true /*开启渐进式重写*/)
 	if err != nil {
 		return nil, err
 	}
@@ -269,7 +271,7 @@ func ProgressiveRewriteSQL(ctx context.Context, params *SQLRewritingParams) (*Ge
 			EnableStructureType: params.EnableStructureType,
 		}
 		// 执行下一轮重写
-		rewriteResult, err = performSQLRewriting(l, ctx, params, true /*开启渐进式重写*/)
+		rewriteResult, err = performSQLRewriting(l, ctx, params, originalSQL, true /*开启渐进式重写*/)
 		if err != nil {
 			return nil, err
 		}
@@ -281,7 +283,7 @@ func ProgressiveRewriteSQL(ctx context.Context, params *SQLRewritingParams) (*Ge
 }
 
 // performSQLRewriting 处理 SQL 重写的核心逻辑
-func performSQLRewriting(l *logrus.Entry, ctx context.Context, params *SQLRewritingParams, enableProgressiveRewrite bool) (*GetRewriteResponse, error) {
+func performSQLRewriting(l *logrus.Entry, ctx context.Context, params *SQLRewritingParams, originalSQL string, enableProgressiveRewrite bool) (*GetRewriteResponse, error) {
 	if params == nil {
 		return nil, fmt.Errorf("params is nil")
 	}
@@ -354,10 +356,11 @@ func performSQLRewriting(l *logrus.Entry, ctx context.Context, params *SQLRewrit
 	} else {
 		// 定义要发送的参数
 		req := &CallRewriteSQLRequest{
-			DBType:              dbType,
-			Rules:               rules,
-			SQL:                 params.SQL.Content,
-			EnableStructureType: params.EnableStructureType,
+			DBType:                  dbType,
+			Rules:                   rules,
+			OriginalSql:             originalSQL,
+			ProgressiveRewrittenSQL: params.SQL.Content,
+			EnableStructureType:     params.EnableStructureType,
 		}
 
 		if enableProgressiveRewrite {
