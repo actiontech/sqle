@@ -6480,7 +6480,7 @@ func TestDMLCheckScanRows(t *testing.T) {
 	inspect3 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_2 where v1 = 'a'")).
 		WillReturnRows(sqlmock.NewRows([]string{"rows", "type"}).AddRow("100000000000", "const"))
-	runSingleRuleInspectCase(rule, t, "", inspect3, "select * from exist_tb_2 where v1 = 'a'", newTestResult())
+	runSingleRuleInspectCase(rule, t, "", inspect3, "select * from exist_tb_2 where v1 = 'a'", newTestResult().addResult(rulepkg.DMLCheckScanRows))
 
 	inspect4 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_2 where v1 in (select v2 from exist_tb_1)")).
@@ -6505,7 +6505,7 @@ func TestDMLCheckScanRows(t *testing.T) {
 	inspect8 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("update exist_tb_2 set v1=1 where v2=1")).
 		WillReturnRows(sqlmock.NewRows([]string{"rows", "type"}).AddRow("100000000", "range"))
-	runSingleRuleInspectCase(rule, t, "", inspect8, "update exist_tb_2 set v1=1 where v2=1", newTestResult())
+	runSingleRuleInspectCase(rule, t, "", inspect8, "update exist_tb_2 set v1=1 where v2=1", newTestResult().addResult(rulepkg.DMLCheckScanRows))
 
 	inspect9 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("update exist_tb_2 set v1=1 where v2=1")).
@@ -6520,7 +6520,7 @@ func TestDMLCheckScanRows(t *testing.T) {
 	inspect11 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("delete from exist_tb_2 where v1=1")).
 		WillReturnRows(sqlmock.NewRows([]string{"rows", "type"}).AddRow("100000000", "range"))
-	runSingleRuleInspectCase(rule, t, "", inspect11, "delete from exist_tb_2 where v1=1", newTestResult())
+	runSingleRuleInspectCase(rule, t, "", inspect11, "delete from exist_tb_2 where v1=1", newTestResult().addResult(rulepkg.DMLCheckScanRows))
 }
 
 // TODO

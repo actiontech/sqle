@@ -5198,10 +5198,8 @@ func checkScanRows(input *RuleHandlerInput) error {
 	}
 	for _, record := range epRecords {
 		if record.Rows > int64(max)*int64(TenThousand) {
-			if record.Type == executor.ExplainRecordAccessTypeIndex || record.Type == executor.ExplainRecordAccessTypeAll {
 				addResult(input.Res, input.Rule, input.Rule.Name)
 				break
-			}
 		}
 	}
 	return nil

@@ -1981,7 +1981,7 @@ var RuleHandlers = []RuleHandler{
 	{
 		Rule: driverV2.Rule{
 			Name:       DMLCheckScanRows,
-			Desc:       "扫描行数超过阈值，筛选条件必须带上主键或者索引",
+			Desc:       "扫描行数超过阈值，请检查索引配置",
 			Annotation: "筛选条件必须带上主键或索引可降低数据库查询的时间复杂度，提高查询效率。",
 			Level:      driverV2.RuleLevelError,
 			Category:   RuleTypeDMLConvention,
@@ -1995,7 +1995,7 @@ var RuleHandlers = []RuleHandler{
 			},
 		},
 		AllowOffline: false,
-		Message:      "扫描行数超过阈值，筛选条件必须带上主键或者索引",
+		Message:      "扫描行数超过阈值，请检查索引配置",
 		Func:         checkScanRows,
 	},
 	{
