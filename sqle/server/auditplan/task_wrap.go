@@ -536,7 +536,9 @@ func createSqlManageMetricRecord(sqlManageQueue *model.SQLManageQueue, instance 
 	if err != nil {
 		return err
 	}
+
 	plugin, err := driver.GetPluginManager().OpenPlugin(log.NewEntry(), instance.DbType, &driverV2.Config{DSN: dsn})
+	defer plugin.Close(context.TODO())
 	if err != nil {
 		return err
 	}
