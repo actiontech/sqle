@@ -36,6 +36,7 @@ const MetricNameLastQueryAt = "last_query_at"
 const MetricNameIoWaitTimeAvg = "io_wait_time_avg"
 const MetricNameDiskReadAvg = "disk_read_avg"
 const MetricNameBufferReadAvg = "buffer_read_avg"
+const MetricNameExplainCost = "explain_cost"
 
 var ALLMetric = map[string]MetricType{
 	MetricNameCounter:                   MetricTypeInt,    // MySQL slow log

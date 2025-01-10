@@ -328,6 +328,43 @@ type ExplainConf struct {
 	Sql string
 }
 
+// ExplainJSONResult QueryBlock CostInfo ExplainTable CostInfoTable Explain JSON FORMAT的结果集
+type ExplainJSONResult struct {
+	QueryBlock QueryBlock `json:"query_block"`
+}
+
+type QueryBlock struct {
+	SelectID int          `json:"select_id"`
+	CostInfo CostInfo     `json:"cost_info"`
+	Table    ExplainTable `json:"table"`
+}
+
+type CostInfo struct {
+	QueryCost string `json:"query_cost"`
+}
+
+type ExplainTable struct {
+	TableName           string   `json:"table_name"`
+	AccessType          string   `json:"access_type"`
+	PossibleKeys        []string `json:"possible_keys"`
+	Key                 string   `json:"key"`
+	UsedKeyParts        []string `json:"used_key_parts"`
+	KeyLength           string   `json:"key_length"`
+	Ref                 []string `json:"ref"`
+	RowsExaminedPerScan int      `json:"rows_examined_per_scan"`
+	RowsProducedPerJoin int      `json:"rows_produced_per_join"`
+	Filtered            string   `json:"filtered"`
+	CostInfo            CostInfo `json:"cost_info"`
+	UsedColumns         []string `json:"used_columns"`
+}
+
+type CostInfoTable struct {
+	ReadCost        string `json:"read_cost"`
+	EvalCost        string `json:"eval_cost"`
+	PrefixCost      string `json:"prefix_cost"`
+	DataReadPerJoin string `json:"data_read_per_join"`
+}
+
 type ExplainClassicResult struct {
 	TabularData
 }

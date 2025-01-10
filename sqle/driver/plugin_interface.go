@@ -28,6 +28,7 @@ type Plugin interface {
 	Tx(ctx context.Context, queries ...string) ([]driver.Result, error)
 	Query(ctx context.Context, sql string, conf *driverV2.QueryConf) (*driverV2.QueryResult, error)
 	Explain(ctx context.Context, conf *driverV2.ExplainConf) (*driverV2.ExplainResult, error)
+	ExplainJSONFormat(ctx context.Context, conf *driverV2.ExplainConf) (*driverV2.ExplainJSONResult, error)
 
 	// KillProcess uses a new connection to send the "Kill process_id" command to terminate the thread that is currently running.
 	KillProcess(ctx context.Context) (err error)

@@ -3,8 +3,13 @@ package auditplan
 import (
 	"context"
 	e "errors"
+	"github.com/actiontech/sqle/sqle/common"
+	"github.com/actiontech/sqle/sqle/driver"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"net"
 	"regexp"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -180,7 +185,7 @@ func (at *TaskWrapper) FullSyncSQLs(sqls []*SQL) error {
 		sqlList = append(sqlList, ConvertSQLV2ToMangerSQLQueue(sql))
 	}
 
-	err := at.pushSQLToManagerSQLQueue(sqlList)
+	err := at.pushSQLToManagerSQLQueue(sqlList, at.ap)
 	if err != nil {
 		at.logger.Errorf("push sql to manager sql queue failed, error : %v", err)
 	}
@@ -241,7 +246,7 @@ func (at *TaskWrapper) extractSQL() {
 		sqlQueues = append(sqlQueues, ConvertSQLV2ToMangerSQLQueue(sql))
 	}
 
-	err = at.pushSQLToManagerSQLQueue(sqlQueues)
+	err = at.pushSQLToManagerSQLQueue(sqlQueues, at.ap)
 	if err != nil {
 		at.logger.Errorf("push sql to manager sql queue failed, error : %v", err)
 	}
@@ -267,7 +272,7 @@ func (at *TaskWrapper) loop(cancel chan struct{}, interval time.Duration) {
 	}
 }
 
-func (at *TaskWrapper) pushSQLToManagerSQLQueue(sqlList []*model.SQLManageQueue) error {
+func (at *TaskWrapper) pushSQLToManagerSQLQueue(sqlList []*model.SQLManageQueue, ap *AuditPlan) error {
 	if len(sqlList) == 0 {
 		return nil
 	}
@@ -283,6 +288,12 @@ func (at *TaskWrapper) pushSQLToManagerSQLQueue(sqlList []*model.SQLManageQueue)
 		return err
 	}
 
+	for _, sqlQueue := range SqlQueueList {
+		err = createSqlManageMetricRecord(sqlQueue, ap.Instance)
+		if err != nil {
+			log.Logger().Errorf("createSqlManageMetricRecord: %v", err)
+		}
+	}
 	err = at.persist.PushSQLToManagerSQLQueue(SqlQueueList)
 	if err != nil {
 		return err
@@ -509,4 +520,93 @@ func (f BlackFilter) HasEndpointInBlackList(checkIps []string) (uint, bool) {
 	}
 
 	return 0, false
+}
+
+// createSqlManageMetricRecord 针对SELECT语句的SQL下发执行计划，并且生成对应的实体类
+func createSqlManageMetricRecord(sqlManageQueue *model.SQLManageQueue, instance *model.Instance) error {
+	// 建表语句直接忽略 mysql_schema_meta
+	if sqlManageQueue.Source == TypeMySQLSchemaMeta {
+		return nil
+	}
+	// 不是SELECT语句直接忽略
+	if !strings.HasPrefix(strings.ToUpper(strings.ToUpper(sqlManageQueue.SqlText)), "SELECT") {
+		return nil
+	}
+	dsn, err := common.NewDSN(instance, sqlManageQueue.SchemaName)
+	if err != nil {
+		return err
+	}
+	plugin, err := driver.GetPluginManager().OpenPlugin(log.NewEntry(), instance.DbType, &driverV2.Config{DSN: dsn})
+	if err != nil {
+		return err
+	}
+	// EXPLAIN
+	explainResult, err := plugin.Explain(context.TODO(), &driverV2.ExplainConf{Sql: sqlManageQueue.SqlText})
+	if err != nil {
+		return err
+	}
+	// EXPLAIN FORMAT
+	explainJSONResult, err := plugin.ExplainJSONFormat(context.TODO(), &driverV2.ExplainConf{Sql: sqlManageQueue.SqlText})
+	if err != nil {
+		return err
+	}
+	cost, err := strconv.ParseFloat(explainJSONResult.QueryBlock.CostInfo.QueryCost, 64)
+	if err != nil {
+		log.Logger().Errorf("createSqlManageMetricRecord: parse explain cost to float64 failed %v", err)
+		return err
+	}
+	storage := model.GetStorage()
+	nowTime := time.Now()
+	sqlManageMetricRecord := &model.SqlManageMetricRecord{
+		SQLID:          sqlManageQueue.SQLID,
+		ExecutionCount: 1,
+		RecordBeginAt:  nowTime,
+		RecordEndAt:    nowTime,
+	}
+	if err = storage.Create(sqlManageMetricRecord); err != nil {
+		log.Logger().Errorf("createSqlManageMetricRecord: create SqlManageMetricRecord error sqlId: %v", sqlManageQueue.SQLID)
+		return err
+	}
+	sqlManageMetricValue := &model.SqlManageMetricValue{
+		SqlManageMetricRecordID: sqlManageMetricRecord.ID,
+		MetricName:              MetricNameExplainCost,
+		MetricValue:             cost,
+	}
+	if err = storage.Create(sqlManageMetricValue); err != nil {
+		log.Logger().Errorf("createSqlManageMetricRecord: create sqlManageMetricValue error sqlId: %v", sqlManageQueue.SQLID)
+		return err
+	}
+	sqlManageMetricExecutePlanRecords := buildSqlManageMetricExecutePlanRecord(explainResult.ClassicResult.Rows, sqlManageMetricRecord.ID)
+	if err = storage.Create(sqlManageMetricExecutePlanRecords); err != nil {
+		log.Logger().Errorf("createSqlManageMetricRecord: create sqlManageMetricExecutePlanRecord error sqlId: %v", sqlManageQueue.SQLID)
+		return err
+	}
+	return nil
+}
+
+// buildSqlManageMetricExecutePlanRecord 构建执行计划记录-批量
+func buildSqlManageMetricExecutePlanRecord(explainResultRows [][]string, sqlManageMetricRecordID uint) []model.SqlManageMetricExecutePlanRecord {
+	sqlManageMetricExecutePlanRecords := make([]model.SqlManageMetricExecutePlanRecord, 0)
+	for _, row := range explainResultRows {
+		selectId, _ := strconv.Atoi(row[0])
+		keyLength, _ := strconv.Atoi(row[7])
+		rows, _ := strconv.Atoi(row[9])
+		filtered, _ := strconv.Atoi(row[10])
+		sqlManageMetricExecutePlanRecords = append(sqlManageMetricExecutePlanRecords, model.SqlManageMetricExecutePlanRecord{
+			SqlManageMetricRecordID: sqlManageMetricRecordID,
+			SelectId:                selectId,
+			SelectType:              row[1],
+			Table:                   row[2],
+			Partitions:              row[3],
+			Type:                    row[4],
+			PossibleKeys:            row[5],
+			Key:                     row[6],
+			KeyLen:                  keyLength,
+			Ref:                     row[8],
+			Rows:                    rows,
+			Filtered:                filtered,
+			Extra:                   row[11],
+		})
+	}
+	return sqlManageMetricExecutePlanRecords
 }
