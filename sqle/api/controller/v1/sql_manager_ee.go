@@ -386,7 +386,149 @@ func getSqlManageSqlAnalysisV1(c echo.Context) error {
 }
 
 func getSqlManageSqlAnalysisChartV1(c echo.Context) error {
-	return errors.NewNotImplementedError("get sql manage sql analysis chart")
+	request := new(SqlManageAnalysisChartReq)
+	if err := controller.BindAndValidateReq(c, request); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	sqlManageId := c.Param("sql_manage_id")
+	if request.MetricName == nil {
+		*request.MetricName = auditplan.MetricNameExplainCost
+	}
+	if *request.MetricName != auditplan.MetricNameExplainCost {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("unsupported request metric name"))
+	}
+	layout := "2006-01-02T15:04:05+08:00"
+	endTime := time.Now()
+	startTime := time.Now().Add(-time.Hour * 24)
+	if request.StartTime != nil {
+		var err error
+		startTime, err = time.Parse(layout, *request.StartTime)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+	if request.EndTime != nil {
+		var err error
+		endTime, err = time.Parse(layout, *request.EndTime)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+	chartPoints, err := getSqlAnalysisChart(sqlManageId, *request.MetricName, startTime, endTime)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return c.JSON(http.StatusOK, &SqlManageAnalysisChartResp{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: &SqlAnalysisChart{
+			Points: &chartPoints,
+		},
+	})
+}
+
+func getSqlAnalysisChart(sqlManageId string, metricName string, startTime time.Time, endTime time.Time) ([]ChartPoint, error) {
+	duration := endTime.Sub(startTime)
+	storage := model.GetStorage()
+	sqlManageRecord, exist, err := storage.GetOriginManageSqlByID(sqlManageId)
+	if err != nil {
+		return nil, err
+	}
+	if !exist {
+		return nil, fmt.Errorf("sql manage id %v not exist", sqlManageId)
+	}
+	durationHours := duration.Hours()
+	// duration <=24小时 不聚合
+	// duration <=7天 每个点取4小时内的最大值
+	// duration <=30天 每个点取24小时内的最大值
+	if durationHours <= 24 {
+		chartPoints, err := timeSliceQuerySqlManageMetricChartPoints(sqlManageRecord.SQLID, metricName, nil, startTime, endTime)
+		if err != nil {
+			return nil, err
+		}
+		return chartPoints, nil
+	} else if durationHours <= 7*24 {
+		duration4Hour := 4 * time.Hour
+		chartPoints, err := timeSliceQuerySqlManageMetricChartPoints(sqlManageRecord.SQLID, metricName, &duration4Hour, startTime, endTime)
+		if err != nil {
+			return nil, err
+		}
+		return chartPoints, nil
+	} else if durationHours <= 30*24 {
+		duration24Hour := 24 * time.Hour
+		chartPoints, err := timeSliceQuerySqlManageMetricChartPoints(sqlManageRecord.SQLID, metricName, &duration24Hour, startTime, endTime)
+		if err != nil {
+			return nil, err
+		}
+		return chartPoints, nil
+	} else {
+		chartPoints := make([]ChartPoint, 0)
+		return chartPoints, fmt.Errorf("time range over limit")
+	}
+}
+
+// 根据时间分片查询
+func timeSliceQuerySqlManageMetricChartPoints(sqlId string, metricName string, sliceUnit *time.Duration, startTime time.Time, endTime time.Time) ([]ChartPoint, error) {
+	storage := model.GetStorage()
+	chartPoints := make([]ChartPoint, 0)
+	if sliceUnit == nil {
+		// 不切片
+		sqlManageMetricRecords, err := storage.GetSqlManageMetricRecordsByTime(sqlId, metricName, startTime, endTime)
+		if err != nil {
+			return nil, err
+		}
+		for _, record := range sqlManageMetricRecords {
+			chartPoints = append(chartPoints, record2ChartPoint(record, record.RecordBeginAt))
+		}
+		return chartPoints, nil
+	}
+	start := startTime
+	end := startTime
+	overEndTime := false
+	for {
+		end = start.Add(*sliceUnit)
+		if end.After(endTime) {
+			end = endTime
+			overEndTime = true
+		}
+		sqlManageMetricRecord, exist, err := storage.GetMaxValueSqlManageMetricRecordByTime(sqlId, metricName, start, end)
+		if err != nil {
+			return nil, err
+		}
+		if exist {
+			chartPoints = append(chartPoints, record2ChartPoint(*sqlManageMetricRecord, start))
+		}
+		if overEndTime {
+			break
+		}
+		start = end
+	}
+	return chartPoints, nil
+}
+
+func record2ChartPoint(sqlManageMetricRecord model.SqlManageMetricRecord, createdAt time.Time) ChartPoint {
+	createdAtString := createdAt.Format(time.RFC3339)
+	infos := make([]map[string]string, 0)
+	for _, executePlanRecord := range sqlManageMetricRecord.SqlManageMetricExecutePlanRecords {
+		infos = append(infos, map[string]string{
+			"record_id":     strconv.Itoa(int(sqlManageMetricRecord.ID)),
+			"id":            strconv.Itoa(executePlanRecord.SelectId),
+			"table":         executePlanRecord.Table,
+			"partitions":    executePlanRecord.Partitions,
+			"type":          executePlanRecord.Type,
+			"possible_keys": executePlanRecord.PossibleKeys,
+			"key":           executePlanRecord.Key,
+			"key_len":       strconv.Itoa(executePlanRecord.KeyLen),
+			"ref":           executePlanRecord.Ref,
+			"rows":          strconv.Itoa(executePlanRecord.Rows),
+			"filtered":      strconv.Itoa(executePlanRecord.Filtered),
+			"select_type":   executePlanRecord.SelectType,
+		})
+	}
+	return ChartPoint{
+		X:     &createdAtString,
+		Y:     &sqlManageMetricRecord.MetricValues[0].MetricValue,
+		Infos: infos,
+	}
 }
 
 func getAuditPlanUnsolvedSQLCount(auditPlanId uint) (int64, error) {
