@@ -282,6 +282,10 @@ func (p *PluginImplV1) Explain(ctx context.Context, conf *driverV2.ExplainConf) 
 
 }
 
+func (p *PluginImplV1) ExplainJSONFormat(ctx context.Context, conf *driverV2.ExplainConf) (*driverV2.ExplainJSONResult, error) {
+	return nil, errors.NewNotImplementedError("ExplainJSONFormat not support yet")
+}
+
 func (p *PluginImplV1) Schemas(ctx context.Context) ([]string, error) {
 	client, err := p.DriverManager.GetAuditDriver()
 	if err != nil {
