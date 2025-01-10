@@ -235,7 +235,6 @@ func (mgr *Manager) sync() error {
 	if err != nil {
 		return err
 	}
-
 	for _, v := range aps {
 		ap := v
 		err := mgr.syncTask(ap.ID)
@@ -270,6 +269,14 @@ func (mgr *Manager) syncTask(auditPlanId uint) error {
 	if !exist {
 		return mgr.deleteAuditPlan(auditPlanId)
 	} else {
+		instance, exists, err := dms.GetInstancesById(context.Background(), ap.InstanceID)
+		if err != nil {
+			mgr.logger.Warningln(fmt.Sprintf("syncTask: failed to find instance by id: %v error: %v", ap.InstanceID, err))
+		}
+		if !exists {
+			mgr.logger.Warningln(fmt.Sprintf("syncTask:instance not existed by id: %v", ap.InstanceID))
+		}
+		ap.Instance = instance
 		return mgr.startAuditPlan(ConvertModelToAuditPlanV2(ap))
 	}
 }
