@@ -510,6 +510,10 @@ func (s *PluginImplV2) Explain(ctx context.Context, conf *driverV2.ExplainConf) 
 	}, nil
 }
 
+func (p *PluginImplV2) ExplainJSONFormat(ctx context.Context, conf *driverV2.ExplainConf) (*driverV2.ExplainJSONResult, error) {
+	return nil, errors.New("ExplainJSONFormat not support yet")
+}
+
 // metadata
 
 func (s *PluginImplV2) Schemas(ctx context.Context) ([]string, error) {

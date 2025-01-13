@@ -525,6 +525,19 @@ func (c *Executor) Explain(query string) (columns []string, rows [][]sql.NullStr
 	return columns, rows, nil
 }
 
+func (c *Executor) ExplainJSONFormat(query string) (columns []string, rows [][]sql.NullString, err error) {
+	columns, rows, err = c.Db.QueryWithContext(context.TODO(), fmt.Sprintf("EXPLAIN FORMAT=JSON %s", query))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if len(rows) == 0 {
+		return nil, nil, fmt.Errorf("no explain record for sql %v", query)
+	}
+
+	return columns, rows, nil
+}
+
 func (c *Executor) GetExplainRecord(query string) ([]*ExplainRecord, error) {
 	columns, rows, err := c.Explain(query)
 	if err != nil {
