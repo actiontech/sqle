@@ -264,9 +264,9 @@ type SqlAnalysisChart struct {
 }
 
 type ChartPoint struct {
-	X    *string           `json:"x"`
-	Y    *float64          `json:"y"`
-	Info map[string]string `json:"info"`
+	X     *string             `json:"x"`
+	Y     *float64            `json:"y"`
+	Infos []map[string]string `json:"info"`
 }
 
 type GetSqlManageSqlAnalysisResp struct {
