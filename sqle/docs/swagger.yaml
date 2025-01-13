@@ -9701,9 +9701,14 @@ paths:
         name: sql_manage_id
         required: true
         type: string
-      - description: duration
+      - description: start time
         in: query
-        name: duration
+        name: start_time
+        required: true
+        type: string
+      - description: end time
+        in: query
+        name: end_time
         required: true
         type: string
       - description: metric_name
