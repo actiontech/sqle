@@ -300,7 +300,8 @@ func GetSqlManageSqlAnalysisV1(c echo.Context) error {
 }
 
 type SqlManageAnalysisChartReq struct {
-	Duration   *string `query:"duration" json:"duration"`
+	StartTime  *string `query:"start_time" json:"start_time"`
+	EndTime    *string `query:"end_time" json:"end_time"`
 	MetricName *string `query:"metric_name" json:"metric_name"`
 }
 
@@ -316,7 +317,8 @@ type SqlManageAnalysisChartResp struct {
 // @Tags SqlManage
 // @Param project_name path string true "project name"
 // @Param sql_manage_id path string true "sql manage id"
-// @Param duration query string true "duration"
+// @Param start_time query string true "start time"
+// @Param end_time query string true "end time"
 // @Param metric_name query string true "metric_name"
 // @Security ApiKeyAuth
 // @Success 200 {object} SqlManageAnalysisChartResp
