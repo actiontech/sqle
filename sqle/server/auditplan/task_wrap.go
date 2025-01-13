@@ -9,7 +9,6 @@ import (
 	"net"
 	"regexp"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -528,19 +527,23 @@ func createSqlManageMetricRecord(sqlManageQueue *model.SQLManageQueue, instance 
 	if sqlManageQueue.Source == TypeMySQLSchemaMeta {
 		return nil
 	}
-	// 不是SELECT语句直接忽略
-	if !strings.HasPrefix(strings.ToUpper(strings.ToUpper(sqlManageQueue.SqlText)), "SELECT") {
-		return nil
-	}
 	dsn, err := common.NewDSN(instance, sqlManageQueue.SchemaName)
 	if err != nil {
 		return err
 	}
 
 	plugin, err := driver.GetPluginManager().OpenPlugin(log.NewEntry(), instance.DbType, &driverV2.Config{DSN: dsn})
-	defer plugin.Close(context.TODO())
 	if err != nil {
 		return err
+	}
+	defer plugin.Close(context.TODO())
+	sqlNodes, err := plugin.Parse(context.TODO(), sqlManageQueue.SqlText)
+	if err != nil {
+		return err
+	}
+	// 不是SELECT语句直接忽略
+	if sqlNodes[0].Type != driverV2.SQLTypeDQL {
+		return nil
 	}
 	// EXPLAIN
 	explainResult, err := plugin.Explain(context.TODO(), &driverV2.ExplainConf{Sql: sqlManageQueue.SqlText})
