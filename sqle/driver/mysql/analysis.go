@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -384,4 +385,32 @@ func (i *MysqlDriverImpl) Explain(ctx context.Context, conf *driverV2.ExplainCon
 	return &driverV2.ExplainResult{
 		ClassicResult: res,
 	}, nil
+}
+
+func (i *MysqlDriverImpl) ExplainJSONFormat(ctx context.Context, conf *driverV2.ExplainConf) (*driverV2.ExplainJSONResult, error) {
+	// check sql
+	// only support dml
+	if isDML, err := i.isDML(conf.Sql); err != nil {
+		return nil, err
+	} else if !isDML {
+		return nil, driverV2.ErrSQLIsNotSupported
+	}
+	conn, err := i.getDbConn()
+	if err != nil {
+		return nil, err
+	}
+	_, explainRows, err := conn.ExplainJSONFormat(conf.Sql)
+	if err != nil {
+		return nil, err
+	}
+	explainJSON := ""
+	for index, row := range explainRows {
+		explainJSON = row[index].String
+	}
+	var explainJSONResult driverV2.ExplainJSONResult
+	err = json.Unmarshal([]byte(explainJSON), &explainJSONResult)
+	if err != nil {
+		return nil, err
+	}
+	return &explainJSONResult, nil
 }
