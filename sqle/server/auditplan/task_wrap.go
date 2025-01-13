@@ -593,7 +593,7 @@ func buildSqlManageMetricExecutePlanRecord(explainResultRows [][]string, sqlMana
 		selectId, _ := strconv.Atoi(row[0])
 		keyLength, _ := strconv.Atoi(row[7])
 		rows, _ := strconv.Atoi(row[9])
-		filtered, _ := strconv.Atoi(row[10])
+		filtered, _ := strconv.ParseFloat(row[10], 64)
 		sqlManageMetricExecutePlanRecords = append(sqlManageMetricExecutePlanRecords, model.SqlManageMetricExecutePlanRecord{
 			SqlManageMetricRecordID: sqlManageMetricRecordID,
 			SelectId:                selectId,

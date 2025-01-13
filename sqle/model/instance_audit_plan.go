@@ -535,10 +535,10 @@ type SqlManageMetricExecutePlanRecord struct {
 	PossibleKeys            string `gorm:"type:varchar(255)"`
 	Key                     string `gorm:"type:varchar(255)"`
 	KeyLen                  int
-	Ref                     string `gorm:"type:varchar(50)"`
-	Rows                    int    `gorm:"type:int"`
-	Filtered                int    `gorm:"type:int"`
-	Extra                   string `gorm:"type:varchar(255)"`
+	Ref                     string  `gorm:"type:varchar(50)"`
+	Rows                    int     `gorm:"type:int"`
+	Filtered                float64 `gorm:"type:decimal(20,4)"`
+	Extra                   string  `gorm:"type:varchar(255)"`
 }
 
 func (SqlManageMetricExecutePlanRecord) TableName() string {
