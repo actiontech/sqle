@@ -12402,9 +12402,12 @@ var doc = `{
             "type": "object",
             "properties": {
                 "info": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
                     }
                 },
                 "x": {
