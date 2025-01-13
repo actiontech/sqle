@@ -6,6 +6,7 @@ import (
 	"github.com/actiontech/sqle/sqle/common"
 	"github.com/actiontech/sqle/sqle/driver"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/pkg/errors"
 	"net"
 	"regexp"
 	"strconv"
@@ -540,6 +541,9 @@ func createSqlManageMetricRecord(sqlManageQueue *model.SQLManageQueue, instance 
 	sqlNodes, err := plugin.Parse(context.TODO(), sqlManageQueue.SqlText)
 	if err != nil {
 		return err
+	}
+	if len(sqlNodes) == 0 {
+		return errors.Errorf("invalid sql: %v", sqlManageQueue.SqlText)
 	}
 	// 不是SELECT语句直接忽略
 	if sqlNodes[0].Type != driverV2.SQLTypeDQL {
