@@ -397,19 +397,18 @@ func getSqlManageSqlAnalysisChartV1(c echo.Context) error {
 	if *request.MetricName != auditplan.MetricNameExplainCost {
 		return controller.JSONBaseErrorReq(c, fmt.Errorf("unsupported request metric name"))
 	}
-	layout := "2006-01-02T15:04:05+08:00"
 	endTime := time.Now()
 	startTime := time.Now().Add(-time.Hour * 24)
 	if request.StartTime != nil {
 		var err error
-		startTime, err = time.Parse(layout, *request.StartTime)
+		startTime, err = time.Parse(time.RFC3339, *request.StartTime)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
 	if request.EndTime != nil {
 		var err error
-		endTime, err = time.Parse(layout, *request.EndTime)
+		endTime, err = time.Parse(time.RFC3339, *request.EndTime)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -520,8 +519,9 @@ func record2ChartPoint(sqlManageMetricRecord model.SqlManageMetricRecord, create
 			"key_len":       strconv.Itoa(executePlanRecord.KeyLen),
 			"ref":           executePlanRecord.Ref,
 			"rows":          strconv.Itoa(executePlanRecord.Rows),
-			"filtered":      strconv.Itoa(executePlanRecord.Filtered),
+			"filtered":      fmt.Sprintf("%f", executePlanRecord.Filtered),
 			"select_type":   executePlanRecord.SelectType,
+			"Extra":         executePlanRecord.Extra,
 		})
 	}
 	return ChartPoint{
