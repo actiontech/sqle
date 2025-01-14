@@ -5523,8 +5523,15 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "duration",
-                        "name": "duration",
+                        "description": "start time",
+                        "name": "start_time",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "end time",
+                        "name": "end_time",
                         "in": "query",
                         "required": true
                     },
@@ -12395,9 +12402,12 @@ var doc = `{
             "type": "object",
             "properties": {
                 "info": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
                     }
                 },
                 "x": {
