@@ -28,7 +28,6 @@ type DB struct {
 }
 
 func NewDB(dsn *DSN) (*DB, error) {
-	// go_ora.BuildUrl()
 	if dsn.ServiceName == "" {
 		dsn.ServiceName = "xe"
 	}
