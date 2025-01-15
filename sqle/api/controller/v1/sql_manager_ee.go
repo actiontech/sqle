@@ -9,6 +9,7 @@ import (
 	"encoding/csv"
 	e "errors"
 	"fmt"
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 	"mime"
 	"net/http"
 	"strconv"
@@ -417,10 +418,14 @@ func getSqlManageSqlAnalysisChartV1(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	xInfo := locale.Bundle.LocalizeMsgByCtx(c.Request().Context(), plocale.AnalysisChartXTime)
+	yInfo := locale.Bundle.LocalizeMsgByCtx(c.Request().Context(), plocale.AnalysisChartYCost)
 	return c.JSON(http.StatusOK, &SqlManageAnalysisChartResp{
 		BaseRes: controller.NewBaseReq(nil),
 		Data: &SqlAnalysisChart{
 			Points: &chartPoints,
+			XInfo:  &xInfo,
+			YInfo:  &yInfo,
 		},
 	})
 }
@@ -519,10 +524,18 @@ func record2ChartPoint(sqlManageMetricRecord model.SqlManageMetricRecord, create
 			"key_len":       strconv.Itoa(executePlanRecord.KeyLen),
 			"ref":           executePlanRecord.Ref,
 			"rows":          strconv.Itoa(executePlanRecord.Rows),
-			"filtered":      fmt.Sprintf("%f", executePlanRecord.Filtered),
+			"filtered":      fmt.Sprintf("%.2f", executePlanRecord.Filtered),
 			"select_type":   executePlanRecord.SelectType,
 			"Extra":         executePlanRecord.Extra,
 		})
+	}
+	if len(sqlManageMetricRecord.MetricValues) == 0 {
+		defaultValue := 0.00
+		return ChartPoint{
+			X:     &createdAtString,
+			Y:     &defaultValue,
+			Infos: infos,
+		}
 	}
 	return ChartPoint{
 		X:     &createdAtString,
