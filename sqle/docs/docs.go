@@ -17376,6 +17376,12 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v1.ChartPoint"
                     }
+                },
+                "x_info": {
+                    "type": "string"
+                },
+                "y_info": {
+                    "type": "string"
                 }
             }
         },

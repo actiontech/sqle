@@ -526,15 +526,15 @@ func (SqlManageMetricValue) TableName() string {
 
 type SqlManageMetricExecutePlanRecord struct {
 	Model
-	SqlManageMetricRecordID uint   `gorm:"not null"`
-	SelectId                int    `gorm:"not null"`
-	SelectType              string `gorm:"type:varchar(50);not null"`
-	Table                   string `gorm:"type:varchar(255);not null"`
-	Partitions              string `gorm:"type:varchar(255)"`
-	Type                    string `gorm:"type:varchar(255);not null"`
-	PossibleKeys            string `gorm:"type:varchar(255)"`
-	Key                     string `gorm:"type:varchar(255)"`
-	KeyLen                  int
+	SqlManageMetricRecordID uint    `gorm:"not null"`
+	SelectId                int     `gorm:"not null"`
+	SelectType              string  `gorm:"type:varchar(50);not null"`
+	Table                   string  `gorm:"type:varchar(255);not null"`
+	Partitions              string  `gorm:"type:varchar(255)"`
+	Type                    string  `gorm:"type:varchar(255);not null"`
+	PossibleKeys            string  `gorm:"type:varchar(255)"`
+	Key                     string  `gorm:"type:varchar(255)"`
+	KeyLen                  int     `gorm:"type:int"`
 	Ref                     string  `gorm:"type:varchar(50)"`
 	Rows                    int     `gorm:"type:int"`
 	Filtered                float64 `gorm:"type:decimal(20,4)"`

@@ -4076,6 +4076,10 @@ definitions:
         items:
           $ref: '#/definitions/v1.ChartPoint'
         type: array
+      x_info:
+        type: string
+      y_info:
+        type: string
     type: object
   v1.SqlAnalysisResDataV1:
     properties:

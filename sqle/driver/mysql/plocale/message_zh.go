@@ -43,6 +43,8 @@ var (
 	AnalysisDescCardinality      = &i18n.Message{ID: "AnalysisDescCardinality", Other: "基数"}
 	AnalysisDescIndexType        = &i18n.Message{ID: "AnalysisDescIndexType", Other: "索引类型"}
 	AnalysisDescComment          = &i18n.Message{ID: "AnalysisDescComment", Other: "备注"}
+	AnalysisChartXTime           = &i18n.Message{ID: "AnalysisChartXTime", Other: "时间"}
+	AnalysisChartYCost           = &i18n.Message{ID: "AnalysisChartYTime", Other: "花费"}
 )
 
 // audit
