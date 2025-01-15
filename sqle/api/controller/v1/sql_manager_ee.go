@@ -506,7 +506,7 @@ func timeSliceQuerySqlManageMetricChartPoints(sqlId string, metricName string, s
 
 func record2ChartPoint(sqlManageMetricRecord model.SqlManageMetricRecord, createdAt time.Time) ChartPoint {
 	createdAtString := createdAt.Format(time.RFC3339)
-	infos := make([]map[string]string, len(sqlManageMetricRecord.SqlManageMetricExecutePlanRecords))
+	infos := make([]map[string]string, 0, len(sqlManageMetricRecord.SqlManageMetricExecutePlanRecords))
 	for _, executePlanRecord := range sqlManageMetricRecord.SqlManageMetricExecutePlanRecords {
 		infos = append(infos, map[string]string{
 			"record_id":     strconv.Itoa(int(sqlManageMetricRecord.ID)),
