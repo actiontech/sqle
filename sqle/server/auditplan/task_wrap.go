@@ -289,9 +289,9 @@ func (at *TaskWrapper) pushSQLToManagerSQLQueue(sqlList []*model.SQLManageQueue,
 	}
 
 	for _, sqlQueue := range SqlQueueList {
-		err = createSqlManageMetricRecord(sqlQueue, ap.Instance)
+		err = createSqlManageCostMetricRecord(sqlQueue, ap.Instance)
 		if err != nil {
-			log.Logger().Errorf("createSqlManageMetricRecord: %v", err)
+			log.Logger().Errorf("createSqlManageCostMetricRecord: %v", err)
 		}
 	}
 	err = at.persist.PushSQLToManagerSQLQueue(SqlQueueList)
@@ -522,8 +522,8 @@ func (f BlackFilter) HasEndpointInBlackList(checkIps []string) (uint, bool) {
 	return 0, false
 }
 
-// createSqlManageMetricRecord 针对SELECT语句的SQL下发执行计划，并且生成对应的实体类
-func createSqlManageMetricRecord(sqlManageQueue *model.SQLManageQueue, instance *model.Instance) error {
+// createSqlManageCostMetricRecord 针对SELECT语句的SQL下发执行计划，并且生成对应的实体类
+func createSqlManageCostMetricRecord(sqlManageQueue *model.SQLManageQueue, instance *model.Instance) error {
 	// 建表语句直接忽略 mysql_schema_meta
 	if sqlManageQueue.Source == TypeMySQLSchemaMeta {
 		return nil
@@ -561,7 +561,7 @@ func createSqlManageMetricRecord(sqlManageQueue *model.SQLManageQueue, instance 
 	}
 	cost, err := strconv.ParseFloat(explainJSONResult.QueryBlock.CostInfo.QueryCost, 64)
 	if err != nil {
-		log.Logger().Errorf("createSqlManageMetricRecord: parse explain cost to float64 failed %v", err)
+		log.Logger().Errorf("createSqlManageCostMetricRecord: parse explain cost to float64 failed %v", err)
 		return err
 	}
 	storage := model.GetStorage()
@@ -573,7 +573,7 @@ func createSqlManageMetricRecord(sqlManageQueue *model.SQLManageQueue, instance 
 		RecordEndAt:    nowTime,
 	}
 	if err = storage.Create(sqlManageMetricRecord); err != nil {
-		log.Logger().Errorf("createSqlManageMetricRecord: create SqlManageMetricRecord error sqlId: %v", sqlManageQueue.SQLID)
+		log.Logger().Errorf("createSqlManageCostMetricRecord: create SqlManageMetricRecord error sqlId: %v", sqlManageQueue.SQLID)
 		return err
 	}
 	sqlManageMetricValue := &model.SqlManageMetricValue{
@@ -582,12 +582,12 @@ func createSqlManageMetricRecord(sqlManageQueue *model.SQLManageQueue, instance 
 		MetricValue:             cost,
 	}
 	if err = storage.Create(sqlManageMetricValue); err != nil {
-		log.Logger().Errorf("createSqlManageMetricRecord: create sqlManageMetricValue error sqlId: %v", sqlManageQueue.SQLID)
+		log.Logger().Errorf("createSqlManageCostMetricRecord: create sqlManageMetricValue error sqlId: %v", sqlManageQueue.SQLID)
 		return err
 	}
 	sqlManageMetricExecutePlanRecords := buildSqlManageMetricExecutePlanRecord(explainResult.ClassicResult.Rows, sqlManageMetricRecord.ID)
 	if err = storage.Create(sqlManageMetricExecutePlanRecords); err != nil {
-		log.Logger().Errorf("createSqlManageMetricRecord: create sqlManageMetricExecutePlanRecord error sqlId: %v", sqlManageQueue.SQLID)
+		log.Logger().Errorf("createSqlManageCostMetricRecord: create sqlManageMetricExecutePlanRecord error sqlId: %v", sqlManageQueue.SQLID)
 		return err
 	}
 	return nil
