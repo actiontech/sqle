@@ -1,16 +1,16 @@
 package log
 
 import (
-	"fmt"
 	"context"
+	"fmt"
 	"github.com/sirupsen/logrus"
 	rotate "gopkg.in/natefinch/lumberjack.v2"
+	gormLog "gorm.io/gorm/logger"
 	"io"
 	"math/rand"
 	"os"
 	"strings"
 	"time"
-	gormLog "gorm.io/gorm/logger"
 )
 
 var std *logrus.Logger
@@ -29,7 +29,10 @@ func init() {
 	std = logrus.New()
 }
 
-func InitLogger(filePath string, maxSize, maxBackupNum int) {
+func InitLogger(filePath string, maxSize, maxBackupNum int, debugLog bool) {
+	if debugLog {
+		std.SetLevel(logrus.DebugLevel)
+	}
 	std.SetOutput(NewRotateFile(filePath, "/sqled.log", maxSize /*MB*/, maxBackupNum))
 }
 
@@ -55,7 +58,6 @@ func genRandomThreadId() string {
 	a := rand.Intn(l * l * l)
 	return fmt.Sprintf("%c%c%c", seq[a%l], seq[(a/l)%l], seq[(a/l/l)%l])
 }
-
 
 type gormLogWrapper struct {
 	logger   *logrus.Entry
