@@ -5183,6 +5183,38 @@ var doc = `{
                 }
             }
         },
+        "/v1/projects/{project_name}/sql_manages/abnormal_audit_plan_instance": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get the instance of audit plan execution abnormal",
+                "tags": [
+                    "SqlManage"
+                ],
+                "summary": "获取执行异常的扫描任务实例",
+                "operationId": "getAbnormalInstanceAuditPlansV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAbnormalAuditPlanInstancesResp"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{project_name}/sql_manages/batch": {
             "patch": {
                 "security": [
@@ -11479,6 +11511,18 @@ var doc = `{
                 }
             }
         },
+        "v1.AbnormalAuditPlanInstance": {
+            "type": "object",
+            "properties": {
+                "instance_audit_plan_id": {
+                    "type": "integer"
+                },
+                "instance_name": {
+                    "type": "string",
+                    "example": "MySQL"
+                }
+            }
+        },
         "v1.AffectRows": {
             "type": "object",
             "properties": {
@@ -11873,11 +11917,25 @@ var doc = `{
         "v1.AuditPlanTypeResBase": {
             "type": "object",
             "properties": {
+                "active_status": {
+                    "type": "string",
+                    "enum": [
+                        "normal",
+                        "disabled"
+                    ]
+                },
                 "audit_plan_id": {
                     "type": "integer"
                 },
                 "desc": {
                     "type": "string"
+                },
+                "last_collection_status": {
+                    "type": "string",
+                    "enum": [
+                        "normal",
+                        "abnormal"
+                    ]
                 },
                 "token": {
                     "type": "string"
@@ -13571,6 +13629,25 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v1.DatabaseSchemaObject"
                     }
+                }
+            }
+        },
+        "v1.GetAbnormalAuditPlanInstancesResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.AbnormalAuditPlanInstance"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
@@ -15876,6 +15953,13 @@ var doc = `{
                 },
                 "id": {
                     "type": "integer"
+                },
+                "last_collection_status": {
+                    "type": "string",
+                    "enum": [
+                        "normal",
+                        "abnormal"
+                    ]
                 },
                 "last_collection_time": {
                     "type": "string"
@@ -19916,6 +20000,9 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v2.AuditPlanSQLReqV2"
                     }
+                },
+                "error_message": {
+                    "type": "string"
                 }
             }
         },
@@ -20472,6 +20559,9 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v2.AuditPlanSQLReqV2"
                     }
+                },
+                "error_message": {
+                    "type": "string"
                 }
             }
         },

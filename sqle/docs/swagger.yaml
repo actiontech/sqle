@@ -32,6 +32,14 @@ definitions:
       tag:
         type: string
     type: object
+  v1.AbnormalAuditPlanInstance:
+    properties:
+      instance_audit_plan_id:
+        type: integer
+      instance_name:
+        example: MySQL
+        type: string
+    type: object
   v1.AffectRows:
     properties:
       count:
@@ -302,9 +310,19 @@ definitions:
     type: object
   v1.AuditPlanTypeResBase:
     properties:
+      active_status:
+        enum:
+        - normal
+        - disabled
+        type: string
       audit_plan_id:
         type: integer
       desc:
+        type: string
+      last_collection_status:
+        enum:
+        - normal
+        - abnormal
         type: string
       token:
         type: string
@@ -1461,6 +1479,19 @@ definitions:
         items:
           $ref: '#/definitions/v1.DatabaseSchemaObject'
         type: array
+    type: object
+  v1.GetAbnormalAuditPlanInstancesResp:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.AbnormalAuditPlanInstance'
+        type: array
+      message:
+        example: ok
+        type: string
     type: object
   v1.GetAuditPlanAnalysisDataResV1:
     properties:
@@ -3058,6 +3089,11 @@ definitions:
         type: string
       id:
         type: integer
+      last_collection_status:
+        enum:
+        - normal
+        - abnormal
+        type: string
       last_collection_time:
         type: string
       total_sql_nums:
@@ -5815,6 +5851,8 @@ definitions:
         items:
           $ref: '#/definitions/v2.AuditPlanSQLReqV2'
         type: array
+      error_message:
+        type: string
     type: object
   v2.GetAuditFileExecStatisticRes:
     properties:
@@ -6196,6 +6234,8 @@ definitions:
         items:
           $ref: '#/definitions/v2.AuditPlanSQLReqV2'
         type: array
+      error_message:
+        type: string
     type: object
   v2.WorkflowRecordResV2:
     properties:
@@ -9730,6 +9770,26 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取SQL管控SQL执行计划Cost趋势图表
+      tags:
+      - SqlManage
+  /v1/projects/{project_name}/sql_manages/abnormal_audit_plan_instance:
+    get:
+      description: get the instance of audit plan execution abnormal
+      operationId: getAbnormalInstanceAuditPlansV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetAbnormalAuditPlanInstancesResp'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取执行异常的扫描任务实例
       tags:
       - SqlManage
   /v1/projects/{project_name}/sql_manages/batch:

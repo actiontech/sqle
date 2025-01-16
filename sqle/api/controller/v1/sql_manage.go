@@ -539,7 +539,7 @@ type AbnormalAuditPlanInstance struct {
 }
 
 // GetAbnormalInstanceAuditPlans get the instance of audit plan execution abnormal
-// @Summary 获取执行的扫描任务实例
+// @Summary 获取执行异常的扫描任务实例
 // @Description get the instance of audit plan execution abnormal
 // @Id getAbnormalInstanceAuditPlansV1
 // @Tags SqlManage
