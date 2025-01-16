@@ -647,6 +647,15 @@ func (s *Storage) GetAuditPlansByProjectId(projectID string) ([]*InstanceAuditPl
 	return instanceAuditPlan, err
 }
 
+func (s *Storage) GetInstanceAuditPlansByLastCollectionStatus(projectID, status string) ([]*InstanceAuditPlan, error) {
+	instanceAuditPlan := []*InstanceAuditPlan{}
+	err := s.db.Model(InstanceAuditPlan{}).
+		Joins("JOIN audit_plans_v2 ap ON instance_audit_plans.id = ap.instance_audit_plan_id").
+		Joins("JOIN audit_plan_task_infos apti ON ap.id = apti.audit_plan_id").
+		Where("instance_audit_plans.project_id = ? AND apti.last_collection_status = ?", projectID, status).Find(&instanceAuditPlan).Error
+	return instanceAuditPlan, err
+}
+
 // 获取需要审核的sql，
 // 当更新时间大于最后审核时间或最后审核时间为空时需要重新审核（采集或重新采集到的sql）
 // 需要注意：当前仅在采集和审核时会更sql_manage_records中扫描任务相关的sql，所以使用了updated_at > last_audit_time条件。
