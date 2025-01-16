@@ -529,7 +529,7 @@ func GetTaskSQLs(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	err = CheckCurrentUserCanViewTaskDMS(c, task)
+	err = CheckCurrentUserCanViewTask(c, task)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -791,15 +791,6 @@ func CheckCurrentUserCanViewTask(c echo.Context, task *model.Task) (err error) {
 
 func CheckCurrentUserCanOpTask(c echo.Context, task *model.Task) (err error) {
 	return checkCurrentUserCanOpTask(c, task, []dmsV1.OpPermissionType{dmsV1.OpPermissionTypeViewOthersWorkflow})
-}
-
-// TODO 使用DMS的权限校验
-func CheckCurrentUserCanViewTaskDMS(c echo.Context, task *model.Task) error {
-	_, err := controller.GetCurrentUser(c, dms.GetUser)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 type SQLExplain struct {
