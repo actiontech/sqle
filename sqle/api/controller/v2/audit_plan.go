@@ -447,7 +447,8 @@ func PartialSyncAuditPlanSQLs(c echo.Context) error {
 }
 
 type FullSyncAuditPlanSQLsReqV2 struct {
-	SQLs []*AuditPlanSQLReqV2 `json:"audit_plan_sql_list" form:"audit_plan_sql_list" valid:"dive"`
+	SQLs         []*AuditPlanSQLReqV2 `json:"audit_plan_sql_list" form:"audit_plan_sql_list" valid:"dive"`
+	ErrorMessage string               `json:"error_message"`
 }
 
 // @Summary 全量同步SQL到扫描任务
