@@ -337,7 +337,7 @@ import "github.com/actiontech/sqle/sqle/errors"
 //  LEFT JOIN workflow_step_user AS op_wst_re_user ON op_ws.id = op_wst_re_user.workflow_step_id
 // */
 
-func (s *Storage) UserCanAccessWorkflow(userId string, workflow *Workflow) (bool, error) {
+func (s *Storage) UserCanAccessWorkflow(userId string, workflowId string) (bool, error) {
 	query := `SELECT count(w.id) FROM workflows AS w
 JOIN workflow_records AS wr ON w.workflow_record_id = wr.id AND w.workflow_id = ?
 LEFT JOIN workflow_steps AS cur_ws ON wr.current_workflow_step_id = cur_ws.id
@@ -348,7 +348,7 @@ where w.deleted_at IS NULL
 AND (w.create_user_id = ? OR cur_ws.assignees REGEXP ? OR op_ws.assignees REGEXP ?)
 `
 	var count int64
-	err := s.db.Raw(query, workflow.WorkflowId, userId, userId, userId).Count(&count).Error
+	err := s.db.Raw(query, workflowId, userId, userId, userId).Count(&count).Error
 	if err != nil {
 		return false, errors.New(errors.ConnectStorageError, err)
 	}

@@ -1062,9 +1062,9 @@ func (s *Storage) GetWorkflowRecordCountByTaskIds(ids []uint) (int64, error) {
 	return count, nil
 }
 
-func (s *Storage) GetWorkflowByTaskId(id uint) (*Workflow, bool, error) {
+func (s *Storage) GetWorkflowIdByTaskId(id uint) (string, bool, error) {
 	workflow := &Workflow{}
-	err := s.db.Model(&Workflow{}).Select("workflows.id").
+	err := s.db.Model(&Workflow{}).Select("workflows.workflow_id").
 		Joins("LEFT JOIN workflow_records AS wr ON "+
 			"workflows.workflow_record_id = wr.id").
 		Joins("LEFT JOIN workflow_record_history ON "+
@@ -1078,12 +1078,12 @@ func (s *Storage) GetWorkflowByTaskId(id uint) (*Workflow, bool, error) {
 		Where("wir.task_id = ? OR h_wir.task_id = ? AND workflows.id IS NOT NULL", id, id).
 		Limit(1).Group("workflows.id").First(workflow).Error
 	if err == gorm.ErrRecordNotFound {
-		return nil, false, nil
+		return "", false, nil
 	}
 	if err != nil {
-		return nil, false, errors.New(errors.ConnectStorageError, err)
+		return "", false, errors.New(errors.ConnectStorageError, err)
 	}
-	return workflow, true, nil
+	return workflow.WorkflowId, true, nil
 }
 
 func (s *Storage) GetLastWorkflow() (*Workflow, bool, error) {
