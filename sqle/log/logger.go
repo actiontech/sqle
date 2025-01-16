@@ -78,11 +78,11 @@ func (h *gormLogWrapper) LogMode(level gormLog.LogLevel) gormLog.Interface {
 }
 
 func (h *gormLogWrapper) Trace(ctx context.Context, begin time.Time, fc func() (sql string, rowsAffected int64), err error) {
-	if h.logLevel <= gormLog.Silent {
+	if h.logLevel != gormLog.Info {
 		return
 	}
 	sql, rowsAffected := fc()
-	h.logger.Trace(fmt.Sprintf("trace: sql: %v; rowsAffected: %v; err: %v", sql, rowsAffected, err))
+	h.logger.Debugf(fmt.Sprintf("trace: sql: %v; rowsAffected: %v; err: %v", sql, rowsAffected, err))
 }
 
 func (h *gormLogWrapper) Error(ctx context.Context, format string, a ...interface{}) {
