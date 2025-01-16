@@ -158,3 +158,7 @@ func NewNotSupportGetSqlFileOrderMethodErr() error {
 func NewNotSupportBackupErr() error {
 	return New(EnterpriseEditionFeatures, fmt.Errorf("backup and recovery is enterprise version function"))
 }
+
+func NewAuditPlanExecuteExtractErr(err error, instanceID string, auditPlan string) error {
+	return New(DataInvalid, fmt.Errorf("execute extract sql failed, instance[%s], audit plan[%s], err: %v", instanceID, auditPlan, err))
+}

@@ -496,7 +496,8 @@ func FullSyncAuditPlanSQLs(c echo.Context) error {
 }
 
 type UploadInstanceAuditPlanSQLsReqV2 struct {
-	SQLs []*AuditPlanSQLReqV2 `json:"audit_plan_sql_list" form:"audit_plan_sql_list" valid:"dive"`
+	ErrorMessage string               `json:"error_message"`
+	SQLs         []*AuditPlanSQLReqV2 `json:"audit_plan_sql_list" form:"audit_plan_sql_list" valid:"dive"`
 }
 
 // UploadIntanceAuditPlanSQLs
@@ -511,6 +512,7 @@ type UploadInstanceAuditPlanSQLsReqV2 struct {
 // @Success 200 {object} controller.BaseRes
 // @router /v2/projects/{project_name}/audit_plans/{audit_plan_id}/sqls/upload [post]
 func UploadInstanceAuditPlanSQLs(c echo.Context) error {
+	var err error
 	req := new(UploadInstanceAuditPlanSQLsReqV2)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
@@ -531,6 +533,22 @@ func UploadInstanceAuditPlanSQLs(c echo.Context) error {
 	}
 
 	l := log.NewEntry()
+	defer func() {
+		status := model.LastCollectionNormal
+		if err != nil {
+			l.Error(errors.NewAuditPlanExecuteExtractErr(err, ap.InstanceID, ap.Type))
+			status = model.LastCollectionAbnormal
+		}
+		updateErr := s.UpdateAuditPlanInfoByAPID(ap.ID, map[string]interface{}{"last_collection_status": status})
+		if updateErr != nil {
+			l.Errorf("update audit plan task info collection status status failed, error : %v", updateErr)
+		}
+	}()
+	// 当scannerd执行出现错误时，将任务状态改为异常并日志打印错误信息
+	if req.ErrorMessage != "" && len(req.SQLs) == 0 {
+		err = fmt.Errorf("error message received: %s", req.ErrorMessage)
+		return controller.JSONBaseErrorReq(c, err)
+	}
 	instance, exist, err := dms.GetInstancesById(c.Request().Context(), ap.InstanceID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -553,5 +571,9 @@ func UploadInstanceAuditPlanSQLs(c echo.Context) error {
 	if err != nil {
 		l.Errorf("update audit plan last collection time failed, error : %v", err)
 	}
-	return controller.JSONBaseErrorReq(c, auditplan.UploadSQLsV2(l, auditplan.ConvertModelToAuditPlanV2(ap), sqls))
+	err = auditplan.UploadSQLsV2(l, auditplan.ConvertModelToAuditPlanV2(ap), sqls)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, errors.NewAuditPlanExecuteExtractErr(err, ap.InstanceID, ap.Type))
+	}
+	return controller.JSONBaseErrorReq(c, nil)
 }
