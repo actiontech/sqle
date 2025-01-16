@@ -27,7 +27,7 @@ func CheckCurrentUserCanOperateWorkflow(c echo.Context, projectUid string, workf
 	}
 
 	s := model.GetStorage()
-	access, err := s.UserCanAccessWorkflow(userId, workflow)
+	access, err := s.UserCanAccessWorkflow(userId, workflow.WorkflowId)
 	if err != nil {
 		return err
 	}
@@ -57,7 +57,7 @@ func CheckCurrentUserCanViewWorkflow(c echo.Context, projectUid string, workflow
 	}
 
 	s := model.GetStorage()
-	access, err := s.UserCanAccessWorkflow(userId, workflow)
+	access, err := s.UserCanAccessWorkflow(userId, workflow.WorkflowId)
 	if err != nil {
 		return err
 	}
@@ -88,7 +88,7 @@ func CheckCurrentUserCanOperateTasks(c echo.Context, projectUid string, workflow
 
 	s := model.GetStorage()
 
-	access, err := s.UserCanAccessWorkflow(userId, workflow)
+	access, err := s.UserCanAccessWorkflow(userId, workflow.WorkflowId)
 	if err != nil {
 		return err
 	}
@@ -139,14 +139,15 @@ func checkCurrentUserCanViewTask(c echo.Context, task *model.Task, ops []dmsV1.O
 	}
 
 	s := model.GetStorage()
-	workflow, exist, err := s.GetWorkflowByTaskId(task.ID)
+	workflowId, exist, err := s.GetWorkflowIdByTaskId(task.ID)
 	if err != nil {
 		return err
 	}
 	if !exist {
 		return errors.NewTaskNoExistOrNoAccessErr()
 	}
-	access, err := s.UserCanAccessWorkflow(userId, workflow)
+
+	access, err := s.UserCanAccessWorkflow(userId, workflowId)
 	if err != nil {
 		return err
 	}
@@ -179,14 +180,15 @@ func checkCurrentUserCanOpTask(c echo.Context, task *model.Task, ops []dmsV1.OpP
 	}
 
 	s := model.GetStorage()
-	workflow, exist, err := s.GetWorkflowByTaskId(task.ID)
+	workflowId, exist, err := s.GetWorkflowIdByTaskId(task.ID)
 	if err != nil {
 		return err
 	}
 	if !exist {
 		return errors.NewTaskNoExistOrNoAccessErr()
 	}
-	access, err := s.UserCanAccessWorkflow(userId, workflow)
+
+	access, err := s.UserCanAccessWorkflow(userId, workflowId)
 	if err != nil {
 		return err
 	}

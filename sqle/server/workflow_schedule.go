@@ -354,7 +354,7 @@ func CheckCurrentUserCanOperateWorkflowByUser(user *model.User, projectUid strin
 		return nil
 	}
 
-	access, err := s.UserCanAccessWorkflow(user.GetIDStr(), workflow)
+	access, err := s.UserCanAccessWorkflow(user.GetIDStr(), workflow.WorkflowId)
 	if err != nil {
 		return err
 	}
