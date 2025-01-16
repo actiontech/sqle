@@ -3,18 +3,19 @@ package auditplan
 import (
 	"context"
 	e "errors"
-	"github.com/actiontech/sqle/sqle/common"
-	"github.com/actiontech/sqle/sqle/driver"
-	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
-	"github.com/pkg/errors"
 	"net"
 	"regexp"
 	"strconv"
 	"sync"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/common"
+	"github.com/actiontech/sqle/sqle/driver"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/pkg/errors"
+
 	"github.com/actiontech/sqle/sqle/dms"
-	"github.com/actiontech/sqle/sqle/errors"
+	sqleErr "github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
@@ -230,7 +231,7 @@ func (at *TaskWrapper) extractSQL() {
 	defer func() {
 		status := model.LastCollectionNormal
 		if err != nil {
-			at.logger.Error(errors.NewAuditPlanExecuteExtractErr(err, at.ap.InstanceID, at.ap.Type))
+			at.logger.Error(sqleErr.NewAuditPlanExecuteExtractErr(err, at.ap.InstanceID, at.ap.Type))
 			status = model.LastCollectionAbnormal
 		}
 		updateErr := at.persist.UpdateAuditPlanInfoByAPID(at.ap.ID, map[string]interface{}{"last_collection_status": status})
