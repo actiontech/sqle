@@ -5414,6 +5414,9 @@ func TestDDLRecommendTableColumnCharsetSame(t *testing.T) {
 	runSingleRuleInspectCase(
 		rulepkg.RuleHandlerMap[rulepkg.DDLRecommendTableColumnCharsetSame].Rule, t, "success", inspect1, "CREATE TABLE `t4` ( `col` char(10) COLLATE gbk_chinese_ci DEFAULT NULL) CHARACTER SET gbk COLLATE gbk_chinese_ci", newTestResult())
 
+	// 修改列, 未声明字符集
+	runSingleRuleInspectCase(
+		rulepkg.RuleHandlerMap[rulepkg.DDLRecommendTableColumnCharsetSame].Rule, t, "success", inspect1, `ALTER TABLE exist_tb_1 ALTER v1 SET DEFAULT NULL;`, newTestResult())
 	// 触发规则
 	// 创建表未声明字符集和排序 列字符集与默认字符集不一致
 	runSingleRuleInspectCase(
