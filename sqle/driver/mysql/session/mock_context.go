@@ -12,7 +12,7 @@ func NewMockContext(e *executor.Executor) *Context {
 		e:             e,
 		currentSchema: "exist_db",
 		schemaHasLoad: true,
-		executionPlan: map[string][]*executor.ExplainRecord{},
+		executionPlan: map[string]*executor.ExplainWithWarningsResult{},
 		sysVars: map[string]string{
 			"lower_case_table_names": "0",
 		},
@@ -123,7 +123,7 @@ func NewMockContextForTestLowerCaseTableNameOpen(e *executor.Executor) *Context 
 		e:             e,
 		currentSchema: "exist_db",
 		schemaHasLoad: true,
-		executionPlan: map[string][]*executor.ExplainRecord{},
+		executionPlan: map[string]*executor.ExplainWithWarningsResult{},
 		sysVars: map[string]string{
 			"lower_case_table_names": "1",
 		},
@@ -152,7 +152,7 @@ func NewMockContextForTestLowerCaseTableNameClose(e *executor.Executor) *Context
 		e:             e,
 		currentSchema: "exist_db",
 		schemaHasLoad: true,
-		executionPlan: map[string][]*executor.ExplainRecord{},
+		executionPlan: map[string]*executor.ExplainWithWarningsResult{},
 		sysVars: map[string]string{
 			"lower_case_table_names": "0",
 		},
@@ -188,6 +188,117 @@ func NewMockContextForTestLowerCaseTableNameClose(e *executor.Executor) *Context
 						isLoad:        true,
 						Size:          1,
 						OriginalTable: getTestCreateTableStmt2(),
+					},
+				},
+			},
+		},
+		historySqlInfo: &HistorySQLInfo{},
+	}
+}
+
+func NewMockContextForTestTableSize(e *executor.Executor, tableSize map[string] /*table name*/ int /*table size MB*/) *Context {
+	return &Context{
+		e:             e,
+		currentSchema: "exist_db",
+		schemaHasLoad: true,
+		executionPlan: map[string]*executor.ExplainWithWarningsResult{},
+		sysVars: map[string]string{
+			"lower_case_table_names": "0",
+		},
+		schemas: map[string]*SchemaInfo{
+			"exist_db": {
+				DefaultEngine:    "InnoDB",
+				engineLoad:       true,
+				DefaultCharacter: "utf8mb4",
+				characterLoad:    true,
+				Tables: map[string]*TableInfo{
+					"exist_tb_1": {
+						sizeLoad:      true,
+						isLoad:        true,
+						Size:          float64(tableSize["exist_tb_1"]),
+						OriginalTable: getTestCreateTableStmt1(),
+					},
+					"exist_tb_2": {
+						sizeLoad:      true,
+						isLoad:        true,
+						Size:          float64(tableSize["exist_tb_2"]),
+						OriginalTable: getTestCreateTableStmt2(),
+					},
+					"exist_tb_3": {
+						sizeLoad:      true,
+						isLoad:        true,
+						Size:          float64(tableSize["exist_tb_3"]),
+						OriginalTable: getTestCreateTableStmt3(),
+					},
+					"exist_tb_4": {
+						sizeLoad:      true,
+						isLoad:        true,
+						Size:          float64(tableSize["exist_tb_4"]),
+						OriginalTable: getTestCreateTableStmt4(),
+					},
+
+					// used for test case problem
+					"EXIST_TB_5": {
+						sizeLoad:      true,
+						isLoad:        true,
+						Size:          float64(tableSize["exist_tb_5"]),
+						OriginalTable: getTestCreateTableStmt5(),
+					},
+					"exist_tb_6": {
+						sizeLoad:      true,
+						isLoad:        true,
+						Size:          float64(tableSize["exist_tb_6"]),
+						OriginalTable: getTestCreateTableStmt6(),
+					},
+					"exist_tb_7": {
+						sizeLoad:      true,
+						isLoad:        true,
+						Size:          float64(tableSize["exist_tb_7"]),
+						OriginalTable: getTestCreateTableStmt7(),
+					},
+					"exist_tb_8": {
+						sizeLoad:      true,
+						isLoad:        true,
+						Size:          float64(tableSize["exist_tb_8"]),
+						OriginalTable: getTestCreateTableStmt8(),
+					},
+					"exist_tb_9": {
+						sizeLoad:      true,
+						isLoad:        true,
+						Size:          float64(tableSize["exist_tb_9"]),
+						OriginalTable: getTestCreateTableStmt9(),
+					},
+					"exist_tb_10": {
+						sizeLoad:      true,
+						isLoad:        true,
+						Size:          float64(tableSize["exist_tb_10"]),
+						OriginalTable: getTestCreateTableStmt10(),
+					},
+					"exist_tb_11": {
+						sizeLoad:      true,
+						isLoad:        true,
+						Size:          float64(tableSize["exist_tb_11"]),
+						OriginalTable: getTestCreateTableStmt11(),
+					},
+					"exist_tb_12": {
+						sizeLoad:      true,
+						isLoad:        true,
+						Size:          float64(tableSize["exist_tb_12"]),
+						OriginalTable: getTestCreateTableStmt12(),
+					},
+				},
+			},
+			"myisam_utf8_db": {
+				DefaultEngine:    "MyISAM",
+				engineLoad:       true,
+				DefaultCharacter: "utf8",
+				characterLoad:    true,
+				Tables: map[string]*TableInfo{
+					"exist_tb_1": {
+						sizeLoad:      true,
+						isLoad:        true,
+						Size:          1,
+						OriginalTable: getTestCreateTableStmt1(),
 					},
 				},
 			},
@@ -237,7 +348,7 @@ CONSTRAINT pk_test_1 FOREIGN KEY (user_id) REFERENCES exist_db.exist_tb_1 (id) O
 func getTestCreateTableStmt3() *ast.CreateTableStmt {
 	baseCreateQuery := `
 CREATE TABLE exist_db.exist_tb_3 (
-id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+id bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT "unit test",
 v1 varchar(255) NOT NULL COMMENT "unit test",
 v2 varchar(255) COMMENT "unit test",
 v3 int COMMENT "unit test"
@@ -424,16 +535,61 @@ KEY idx_3 (create_time,upgrade_time)
 
 func getTestCreateTableStmt12() *ast.CreateTableStmt {
 	baseCreateQuery := `
-		CREATE TABLE exist_db.exist_tb_12 (
-			id INT NOT NULL AUTO_INCREMENT,
-			v1 VARCHAR(255) NOT NULL,
-			UNIQUE KEY unique_id (id)
-		);
-	`
+CREATE TABLE exist_db.exist_tb_12 (
+id bigint(10) unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 blob,
+v2 int,
+v3 varchar(1000),
+PRIMARY KEY (id) USING BTREE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT="unit test";
+`
 	node, err := util.ParseOneSql(baseCreateQuery)
 	if err != nil {
 		panic(err)
 	}
 	stmt, _ := node.(*ast.CreateTableStmt)
 	return stmt
+}
+
+type AIMockContext struct {
+	createContextSqls []string
+	tableSize         map[string] /*table name*/ float64 /*table size GB*/
+}
+
+// NewAIMockContext initializes an AIMockContext.
+func NewAIMockContext() *AIMockContext {
+	return &AIMockContext{
+		createContextSqls: []string{},
+		tableSize:         make(map[string]float64),
+	}
+}
+
+func (c *AIMockContext) WithSQL(sql string) *AIMockContext {
+	c.createContextSqls = append(c.createContextSqls, sql)
+	return c
+}
+
+func (c *AIMockContext) WithTableSize(tableName string, sizeGB float64) *AIMockContext {
+	c.tableSize[tableName] = sizeGB
+	return c
+}
+
+func InitializeMockContext(e *executor.Executor, context *AIMockContext) (*Context, error) {
+	ctx := NewMockContext(e)
+	if context == nil {
+		return ctx, nil
+	}
+	for _, sql := range context.createContextSqls {
+		nodes, err := util.ParseSql(sql)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range nodes {
+			ctx.UpdateContext(n)
+		}
+	}
+	for tableName, sizeGB := range context.tableSize {
+		ctx.SetTableSize(ctx.currentSchema, tableName, sizeGB*1024 /*size MB*/)
+	}
+	return ctx, nil
 }

@@ -95,8 +95,8 @@ func NewMockInspect(e *executor.Executor) *MysqlDriverImpl {
 		},
 		Ctx: session.NewMockContext(e),
 		cnf: &Config{
-			DDLOSCMinSize:      16,
-			DDLGhostMinSize:    16,
+			DDLOSCMinSize:      -1,
+			DDLGhostMinSize:    -1,
 			DMLRollbackMaxRows: 1000,
 		},
 		dbConn: e,
@@ -129,6 +129,44 @@ func NewMockInspectWithIsExecutedSQL(e *executor.Executor) *MysqlDriverImpl {
 func runSingleRuleInspectCase(rule driverV2.Rule, t *testing.T, desc string, i *MysqlDriverImpl, sql string, results ...*testResult) {
 	i.rules = []*driverV2.Rule{&rule}
 	inspectCase(t, desc, i, sql, results...)
+}
+
+type AIMockSQLExpectation struct {
+	Query string
+	Rows  *sqlmock.Rows
+}
+
+// 为AI生成规则新建模拟执行器
+func AIMockExecutor(expectations []*AIMockSQLExpectation) (*executor.Executor, error) {
+	e, handler, err := executor.NewMockExecutor()
+	if err != nil {
+		return nil, err
+	}
+	handler.MatchExpectationsInOrder(false)
+
+	for _, exp := range expectations {
+		handler.ExpectQuery(regexp.QuoteMeta(exp.Query)).
+			WillReturnRows(exp.Rows)
+	}
+
+	return e, nil
+}
+
+func runAIRuleCase(rule driverV2.Rule, t *testing.T, desc, sql string, mockContext *session.AIMockContext, mockSQLExpectation []*AIMockSQLExpectation, result ...*testResult) {
+	e, err := AIMockExecutor(mockSQLExpectation)
+	if err != nil {
+		t.Errorf("%s test failed, mock executor error: %v\n", desc, err)
+		return
+	}
+	ctx, err := session.InitializeMockContext(e, mockContext)
+	if err != nil {
+		t.Errorf("%s test failed, mock context error: %v\n", desc, err)
+		return
+	}
+	inspect := NewMockInspect(e)
+	inspect.Ctx = ctx
+	inspect.rules = []*driverV2.Rule{&rule}
+	inspectAICase(t, desc, inspect, sql, result...)
 }
 
 func runDefaultRulesInspectCase(t *testing.T, desc string, i *MysqlDriverImpl, sql string, results ...*testResult) {
@@ -203,7 +241,7 @@ func inspectCase(t *testing.T, desc string, i *MysqlDriverImpl, sql string, resu
 	}
 	actualResults, err := i.Audit(context.TODO(), sqls)
 	if err != nil {
-		t.Error()
+		t.Errorf("%s", err)
 		return
 	}
 	if len(stmts) != len(actualResults) {
@@ -222,6 +260,57 @@ func inspectCase(t *testing.T, desc string, i *MysqlDriverImpl, sql string, resu
 				desc, stmt.Text(), results[idx].level(), results[idx].message(), actualResults[idx].Level(), actualResults[idx].Message())
 		} else {
 			//t.Logf("\n\ncase:%s\nactual level: %s\nactual result:\n%s\n\n", desc, actualResults[idx].Level(), actualResults[idx].Message())
+		}
+	}
+}
+
+func inspectAICase(t *testing.T, desc string, i *MysqlDriverImpl, sql string, results ...*testResult) {
+	stmts, err := util.ParseSql(sql)
+	if err != nil {
+		t.Errorf("%s test failed, error: %v\n", desc, err)
+		return
+	}
+
+	if len(stmts) != len(results) {
+		t.Errorf("%s test failed, error: result is unknow\n", desc)
+		return
+	}
+	sqls := make([]string, 0, len(stmts))
+	for _, stmt := range stmts {
+		sqls = append(sqls, stmt.Text())
+	}
+	actualResults, err := i.Audit(context.TODO(), sqls)
+	if err != nil {
+		t.Errorf("%s", err)
+		return
+	}
+	if len(stmts) != len(actualResults) {
+		t.Errorf("%s test failed, error: actual result is unknow\n", desc)
+		return
+	}
+
+	for idx, stmt := range stmts {
+		actual := actualResults[idx]
+		expect := results[idx]
+		failed := false
+		// 因为AI生成规则代码时，生成的审核结果的文字内容是规则的message加一些可能的额外文字信息，如额外的列名rulepkg.AddResult(input.Res, input.Rule, SQLE00170, columnName)
+		// 所以这里仅检查规则审核结果的条数和每条的level是否一致(已经能够检查规则是否被正确触发)，不检查文字内容
+		if len(actual.Results) != len(expect.Results.Results) {
+			failed = true
+		} else {
+			for i := range actual.Results {
+				if actual.Results[i].Level != expect.Results.Results[i].Level {
+					failed = true
+					break
+				}
+			}
+		}
+
+		if failed {
+			t.Errorf("%s test failed, \n\nsql:\n %s\n\nexpect level: %s\nexpect result:\n%s\n\nactual level: %s\nactual result:\n%s\n",
+				desc, stmt.Text(), expect.level(), expect.message(), actual.Level(), actual.Message())
+		} else {
+			t.Logf("\n\ncase:%s\nactual level: %s\nactual result:\n%s\n\n", desc, actual.Level(), actual.Message())
 		}
 	}
 }
