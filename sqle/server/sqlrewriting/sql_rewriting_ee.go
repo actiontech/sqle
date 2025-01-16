@@ -178,7 +178,7 @@ func ProgressiveRewriteSQL(ctx context.Context, params *SQLRewritingParams) (*Ge
 	ret := &GetRewriteResponse{}
 
 	// 执行首次重写
-	rewriteResult, err := performSQLRewriting(l, ctx, params, originalSQL, true /*开启渐进式重写*/)
+	skip, rewriteResult, err := performSQLRewriting(l, ctx, params, originalSQL, true /*开启渐进式重写*/)
 	if err != nil {
 		return nil, err
 	}
@@ -191,7 +191,7 @@ func ProgressiveRewriteSQL(ctx context.Context, params *SQLRewritingParams) (*Ge
 	ret.BusinessNonEquivalent = rewriteResult.BusinessNonEquivalent
 
 	// 如果已完成重写，直接返回结果
-	if rewriteResult.IsRewriteDone {
+	if rewriteResult.IsRewriteDone || skip {
 		ret.Suggestions = rewriteResult.Suggestions
 		return ret, nil
 	}
@@ -271,24 +271,27 @@ func ProgressiveRewriteSQL(ctx context.Context, params *SQLRewritingParams) (*Ge
 			EnableStructureType: params.EnableStructureType,
 		}
 		// 执行下一轮重写
-		rewriteResult, err = performSQLRewriting(l, ctx, params, originalSQL, true /*开启渐进式重写*/)
+		skip, rewriteResult, err = performSQLRewriting(l, ctx, params, originalSQL, true /*开启渐进式重写*/)
 		if err != nil {
 			return nil, err
 		}
+		if !skip {
 		ret.BusinessDescAfterOptimize = rewriteResult.BusinessDescAfterOptimize
 		ret.BusinessNonEquivalent = rewriteResult.BusinessNonEquivalent
+		}
+
 	}
 	ret.Suggestions = append(ret.Suggestions, rewriteResult.Suggestions...) // 添加最后一轮重写的建议(包括可能的一些无法重写的规则)
 	return ret, nil
 }
 
 // performSQLRewriting 处理 SQL 重写的核心逻辑
-func performSQLRewriting(l *logrus.Entry, ctx context.Context, params *SQLRewritingParams, originalSQL string, enableProgressiveRewrite bool) (*GetRewriteResponse, error) {
+func performSQLRewriting(l *logrus.Entry, ctx context.Context, params *SQLRewritingParams, originalSQL string, enableProgressiveRewrite bool) (skip bool /*是否跳过了调用模型重写*/, ret *GetRewriteResponse, err error) {
 	if params == nil {
-		return nil, fmt.Errorf("params is nil")
+		return false, nil, fmt.Errorf("params is nil")
 	}
 	if params.SQL == nil {
-		return nil, fmt.Errorf("sql is nil")
+		return false, nil, fmt.Errorf("sql is nil")
 	}
 
 	dbType := params.Task.DBType
@@ -331,10 +334,10 @@ func performSQLRewriting(l *logrus.Entry, ctx context.Context, params *SQLRewrit
 
 		r, exist, err := s.GetRule(ar.RuleName, dbType)
 		if err != nil {
-			return nil, fmt.Errorf("get rule failed: %v", err)
+			return false, nil, fmt.Errorf("get rule failed: %v", err)
 		}
 		if !exist {
-			return nil, fmt.Errorf("rule not found: %s", ar.RuleName)
+			return false, nil, fmt.Errorf("rule not found: %s", ar.RuleName)
 		}
 		ruleParams := map[string]string{}
 		for _, p := range r.Params {
@@ -353,6 +356,7 @@ func performSQLRewriting(l *logrus.Entry, ctx context.Context, params *SQLRewrit
 		// 没有规则需要重写
 		l.Infof("no rules need to rewrite")
 		reply.IsRewriteDone = true
+		skip = true
 	} else {
 		// 定义要发送的参数
 		req := &CallRewriteSQLRequest{
@@ -368,7 +372,7 @@ func performSQLRewriting(l *logrus.Entry, ctx context.Context, params *SQLRewrit
 		}
 
 		if s, err := json.Marshal(params.Explain); err != nil {
-			return nil, fmt.Errorf("marshal explain failed: %v", err)
+			return false, nil, fmt.Errorf("marshal explain failed: %v", err)
 		} else {
 			req.Explain = string(s)
 		}
@@ -376,7 +380,7 @@ func performSQLRewriting(l *logrus.Entry, ctx context.Context, params *SQLRewrit
 		for _, table := range params.TableStructures {
 			s, err := json.Marshal(table)
 			if err != nil {
-				return nil, fmt.Errorf("marshal table structure failed: %v", err)
+				return false, nil, fmt.Errorf("marshal table structure failed: %v", err)
 			}
 			req.TableStructures += string(s) + "\n\n"
 		}
@@ -387,13 +391,13 @@ func performSQLRewriting(l *logrus.Entry, ctx context.Context, params *SQLRewrit
 		// 先测试API端点的连通性
 		connectivityTimeout := 5 * time.Second // 设置连通性测试的超时时间
 		if err := checkAPIConnectivity(apiURL, connectivityTimeout); err != nil {
-			return nil, fmt.Errorf("请检查合规重写配置及联通性: API connectivity check failed: %v.", err)
+			return false, nil, fmt.Errorf("请检查合规重写配置及联通性: API connectivity check failed: %v.", err)
 		}
 
 		// 发送 HTTP POST 请求
 		var callRewriteSQLTimeout int64 = 600 // 设置重写请求的超时时间
 		if err := pkgHttp.POST(pkgHttp.SetTimeoutValueContext(ctx, callRewriteSQLTimeout), apiURL, nil, req, reply); err != nil {
-			return nil, fmt.Errorf("failed to call %v: %v", apiURL, err)
+			return false, nil, fmt.Errorf("failed to call %v: %v", apiURL, err)
 		}
 
 		// 处理返回结果，将同一个 ruleID 对应的多个 ruleName 都添加到建议中(重写功能使用了新的规则ID，不需要现有的规则名称，这里填充回现有的规则名称只是为了页面展示)
@@ -417,7 +421,7 @@ func performSQLRewriting(l *logrus.Entry, ctx context.Context, params *SQLRewrit
 			Description: "需要人工处理",
 		})
 	}
-	return reply, nil
+	return skip, reply, nil
 
 }
 
