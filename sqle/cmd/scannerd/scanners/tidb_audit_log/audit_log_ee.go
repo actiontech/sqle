@@ -142,7 +142,7 @@ func (sq *AuditLog) SQLs() <-chan scanners.SQL {
 	return sq.sqlCh
 }
 
-func (sq *AuditLog) Upload(ctx context.Context, sqls []scanners.SQL) error {
+func (sq *AuditLog) Upload(ctx context.Context, sqls []scanners.SQL, errorMessage string) error {
 	sqlsReq := []*scanner.AuditPlanSQLReq{}
 	now := time.Now()
 
@@ -163,6 +163,6 @@ func (sq *AuditLog) Upload(ctx context.Context, sqls []scanners.SQL) error {
 			counter[sql.Fingerprint] = len(sqlsReq) - 1
 		}
 	}
-	return sq.c.UploadReq(scanner.UploadSQL, sq.auditPlanID, sqlsReq)
+	return sq.c.UploadReq(scanner.UploadSQL, sq.auditPlanID, errorMessage, sqlsReq)
 
 }

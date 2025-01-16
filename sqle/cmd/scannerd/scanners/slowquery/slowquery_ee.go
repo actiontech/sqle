@@ -185,7 +185,7 @@ func (s sqlIdentity) jsonString() string {
 	return string(keyByte)
 }
 
-func (sq *SlowQuery) Upload(ctx context.Context, sqls []scanners.SQL) error {
+func (sq *SlowQuery) Upload(ctx context.Context, sqls []scanners.SQL, errorMessage string) error {
 	var sqlListReq []*scanner.AuditPlanSQLReq
 	now := time.Now()
 	auditPlanSqlMap := make(map[string]*scanner.AuditPlanSQLReq, 0)
@@ -255,5 +255,5 @@ func (sq *SlowQuery) Upload(ctx context.Context, sqls []scanners.SQL) error {
 		}
 	}
 
-	return sq.c.UploadReq(scanner.UploadSQL, sq.auditPlanID, sqlListReq)
+	return sq.c.UploadReq(scanner.UploadSQL, sq.auditPlanID, errorMessage, sqlListReq)
 }
