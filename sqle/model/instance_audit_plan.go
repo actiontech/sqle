@@ -24,9 +24,16 @@ type InstanceAuditPlan struct {
 	AuditPlans []*AuditPlanV2
 }
 
+// 扫描任务状态
 const (
 	ActiveStatusNormal   = "normal"
 	ActiveStatusDisabled = "disabled"
+)
+
+// 上一次采集执行状态
+const (
+	LastCollectionNormal   = "normal"
+	LastCollectionAbnormal = "abnormal"
 )
 
 // TODO 推送配置
@@ -135,8 +142,9 @@ type AuditPlanV2 struct {
 
 type AuditPlanTaskInfo struct {
 	Model
-	AuditPlanID        uint       `json:"audit_plan_id" gorm:"not null"`
-	LastCollectionTime *time.Time `json:"last_collection_time" gorm:"type:datetime(3)"`
+	AuditPlanID          uint       `json:"audit_plan_id" gorm:"not null"`
+	LastCollectionTime   *time.Time `json:"last_collection_time" gorm:"type:datetime(3)"`
+	LastCollectionStatus string     `json:"last_collection_status" gorm:"type:varchar(25)"`
 }
 
 func (a AuditPlanV2) TableName() string {
@@ -310,7 +318,7 @@ func (s *Storage) GetSQLManageRecordProcess(sqlManageRecordID uint) (*SQLManageR
 func (s *Storage) GetAuditPlanByID(auditPlanID int) (*AuditPlanV2, bool, error) {
 	auditPlan := &AuditPlanV2{}
 	err := s.db.Model(AuditPlanV2{}).
-		Where("audit_plans_v2.id = ?", auditPlanID).
+		Where("audit_plans_v2.id = ?", auditPlanID).Preload("AuditPlanTaskInfo").
 		First(auditPlan).Error
 	if err == gorm.ErrRecordNotFound {
 		return auditPlan, false, nil
@@ -626,6 +634,11 @@ func (s *Storage) UpdateAuditPlanLastCollectionTime(auditPlanID uint, collection
 		return err
 	}
 	return nil
+}
+
+func (s *Storage) UpdateAuditPlanInfoByAPID(id uint, attrs map[string]interface{}) error {
+	err := s.db.Model(AuditPlanTaskInfo{}).Where("audit_plan_id = ?", id).Updates(attrs).Error
+	return errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetAuditPlansByProjectId(projectID string) ([]*InstanceAuditPlan, error) {
