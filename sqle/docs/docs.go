@@ -5493,6 +5493,66 @@ var doc = `{
                 }
             }
         },
+        "/v1/projects/{project_name}/sql_manages/{sql_manage_id}/sql_analysis_chart": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get sql manage analysis",
+                "tags": [
+                    "SqlManage"
+                ],
+                "summary": "获取SQL管控SQL执行计划Cost趋势图表",
+                "operationId": "GetSqlManageSqlAnalysisChartV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "sql manage id",
+                        "name": "sql_manage_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "start time",
+                        "name": "start_time",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "end time",
+                        "name": "end_time",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "metric_name",
+                        "name": "metric_name",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.SqlManageAnalysisChartResp"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{project_name}/sql_optimization_records": {
             "get": {
                 "security": [
@@ -12338,6 +12398,26 @@ var doc = `{
                 }
             }
         },
+        "v1.ChartPoint": {
+            "type": "object",
+            "properties": {
+                "info": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "x": {
+                    "type": "string"
+                },
+                "y": {
+                    "type": "number"
+                }
+            }
+        },
         "v1.CheckLicenseResV1": {
             "type": "object",
             "properties": {
@@ -17288,6 +17368,23 @@ var doc = `{
                 }
             }
         },
+        "v1.SqlAnalysisChart": {
+            "type": "object",
+            "properties": {
+                "points": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ChartPoint"
+                    }
+                },
+                "x_info": {
+                    "type": "string"
+                },
+                "y_info": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.SqlAnalysisResDataV1": {
             "type": "object",
             "properties": {
@@ -17454,6 +17551,23 @@ var doc = `{
                         "manual_audited",
                         "sent"
                     ]
+                }
+            }
+        },
+        "v1.SqlManageAnalysisChartResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.SqlAnalysisChart"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },

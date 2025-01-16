@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-
 	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/locale"
@@ -260,6 +259,18 @@ type SqlAnalysis struct {
 	PerformanceStatistics *PerformanceStatistics `json:"performance_statistics"`
 }
 
+type SqlAnalysisChart struct {
+	Points *[]ChartPoint `json:"points"`
+	XInfo  *string       `json:"x_info"`
+	YInfo  *string       `json:"y_info"`
+}
+
+type ChartPoint struct {
+	X     *string             `json:"x"`
+	Y     *float64            `json:"y"`
+	Infos []map[string]string `json:"info"`
+}
+
 type GetSqlManageSqlAnalysisResp struct {
 	controller.BaseRes
 	// V1版本不能引用V2版本的结构体,所以只能复制一份
@@ -288,6 +299,34 @@ type CodingResp struct {
 // @Router /v1/projects/{project_name}/sql_manages/{sql_manage_id}/sql_analysis [get]
 func GetSqlManageSqlAnalysisV1(c echo.Context) error {
 	return getSqlManageSqlAnalysisV1(c)
+}
+
+type SqlManageAnalysisChartReq struct {
+	StartTime  *string `query:"start_time" json:"start_time"`
+	EndTime    *string `query:"end_time" json:"end_time"`
+	MetricName *string `query:"metric_name" json:"metric_name"`
+}
+
+type SqlManageAnalysisChartResp struct {
+	controller.BaseRes
+	Data *SqlAnalysisChart `json:"data"`
+}
+
+// GetSqlManageSqlAnalysisChartV1
+// @Summary 获取SQL管控SQL执行计划Cost趋势图表
+// @Description get sql manage analysis
+// @Id GetSqlManageSqlAnalysisChartV1
+// @Tags SqlManage
+// @Param project_name path string true "project name"
+// @Param sql_manage_id path string true "sql manage id"
+// @Param start_time query string true "start time"
+// @Param end_time query string true "end time"
+// @Param metric_name query string true "metric_name"
+// @Security ApiKeyAuth
+// @Success 200 {object} SqlManageAnalysisChartResp
+// @Router /v1/projects/{project_name}/sql_manages/{sql_manage_id}/sql_analysis_chart [get]
+func GetSqlManageSqlAnalysisChartV1(c echo.Context) error {
+	return getSqlManageSqlAnalysisChartV1(c)
 }
 
 // SendSqlManage

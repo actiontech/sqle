@@ -122,6 +122,10 @@ func (d *mockDriver) GetDatabaseDiffModifySQL(ctx context.Context, calibratedDSN
 	return nil, nil
 }
 
+func (d *mockDriver) ExplainJSONFormat(ctx context.Context, conf *driverV2.ExplainConf) (*driverV2.ExplainJSONResult, error) {
+	return nil, nil
+}
+
 func TestAction_validation(t *testing.T) {
 	actions := map[int]*action{
 		ActionTypeAudit:    {typ: ActionTypeAudit},
