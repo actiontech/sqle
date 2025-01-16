@@ -27,5 +27,5 @@ type Scanner interface {
 	SQLs() <-chan SQL
 
 	// Upload upload sqls to underlying client.
-	Upload(ctx context.Context, sqls []SQL) error
+	Upload(ctx context.Context, sqls []SQL, errorMessage string) error
 }

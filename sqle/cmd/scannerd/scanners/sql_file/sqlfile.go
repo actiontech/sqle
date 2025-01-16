@@ -58,6 +58,6 @@ func (sf *SQLFile) SQLs() <-chan scanners.SQL {
 	return nil
 }
 
-func (sf *SQLFile) Upload(ctx context.Context, sqls []scanners.SQL) error {
+func (sf *SQLFile) Upload(ctx context.Context, sqls []scanners.SQL, errorMessage string) error {
 	return nil
 }
