@@ -12,6 +12,7 @@ import (
 	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/pingcap/parser/ast"
+	"github.com/pingcap/parser/model"
 	"github.com/pkg/errors"
 )
 
@@ -81,7 +82,7 @@ type Context struct {
 	schemaHasLoad bool
 
 	// executionPlan store batch SQLs' execution plan during one inspect context.
-	executionPlan map[string][]*executor.ExplainRecord
+	executionPlan map[string]*executor.ExplainWithWarningsResult
 
 	// sysVars keep some MySQL global system variables during one inspect context.
 	sysVars map[string]string
@@ -100,7 +101,7 @@ func (o contextOption) apply(c *Context) {
 func NewContext(parent *Context, opts ...contextOption) *Context {
 	ctx := &Context{
 		schemas:        map[string]*SchemaInfo{},
-		executionPlan:  map[string][]*executor.ExplainRecord{},
+		executionPlan:  map[string]*executor.ExplainWithWarningsResult{},
 		sysVars:        map[string]string{},
 		historySqlInfo: &HistorySQLInfo{},
 	}
@@ -861,7 +862,80 @@ func (c *Context) getSelectivityByColumn(columns []column) (map[string] /*index 
 	return columnSelectivityMap, nil
 }
 
-func (c *Context) GetSelectivityOfColumns(stmt *ast.TableName, indexColumns []string) (map[string] /*column name*/ float64, error) {
+/*
+示例：
+
+	mysql> [TDSQL透传语句] 包含透传语句时会多出info列
+	+---------+---------+--------------------+
+	| name    | age     | info               |
+	+---------+---------+--------------------+
+	| 50.0000 | 75.0000 | set_1700620716_1   |
+	+---------+---------+--------------------+
+*/
+// getSelectivityByColumnV2 相比 getSelectivityByColumn，使用了新的公式计算列的区分度
+func (c *Context) getSelectivityByColumnV2(columns []column) (map[string] /*column name*/ float64, error) {
+	if len(columns) == 0 {
+		return make(map[string]float64), nil
+	}
+	if c.e == nil {
+		return nil, nil
+	}
+
+	columnSelectivityMap := make(map[string]float64, len(columns))
+	var totalCount float64
+
+	// Execute totalCountQuery
+	totalCountQuery := fmt.Sprintf("SELECT COUNT(*) AS total FROM `%s`.`%s` LIMIT 50000", columns[0].SchemaName, columns[0].TableName)
+	results, err := c.e.Db.Query(totalCountQuery)
+	if err != nil {
+		return nil, fmt.Errorf("error executing total count query: %v", err)
+	}
+
+	if len(results) != 1 {
+		return nil, fmt.Errorf("unexpected results when query total count")
+	}
+
+	if results[0]["total"].String == "" {
+		return nil, fmt.Errorf("total count is empty")
+	}
+	totalCount, err = strconv.ParseFloat(results[0]["total"].String, 64)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing total count: %v", err)
+	}
+
+	for _, column := range columns {
+		maxCountQuery := fmt.Sprintf("SELECT COUNT(*) AS record_count FROM (SELECT `%s` FROM `%s`.`%s` LIMIT 50000) AS limited GROUP BY `%s` ORDER BY record_count DESC LIMIT 1", column.ColumnName, column.SchemaName, column.TableName, column.ColumnName)
+
+		var maxCount float64
+		var selectivityValue float64
+
+		// Execute maxCountQuery
+		results, err := c.e.Db.Query(maxCountQuery)
+		if err != nil {
+			return nil, fmt.Errorf("error executing max count query: %v", err)
+		}
+
+		if len(results) != 1 {
+			return nil, fmt.Errorf("unexpected results when query max count")
+		}
+
+		if results[0]["record_count"].String == "" {
+			selectivityValue = -1
+		} else {
+			maxCount, err = strconv.ParseFloat(results[0]["record_count"].String, 64)
+			if err != nil {
+				return nil, fmt.Errorf("error parsing max count: %v", err)
+			}
+			selectivityValue = (1 - maxCount/totalCount)
+		}
+
+		columnSelectivityMap[column.ColumnName] = selectivityValue
+	}
+
+	return columnSelectivityMap, nil
+}
+
+func (c *Context) getSelectivityOfColumnsInner(stmt *ast.TableName, indexColumns []string, getSelectivityByColumn func(columns []column) (map[string]float64, error)) (map[string] /*column name*/ float64, error) {
 	if stmt == nil || len(indexColumns) == 0 {
 		return nil, nil
 	}
@@ -884,7 +958,7 @@ func (c *Context) GetSelectivityOfColumns(stmt *ast.TableName, indexColumns []st
 			})
 		}
 	}
-	columnSelectivity, err := c.getSelectivityByColumn(columns)
+	columnSelectivity, err := getSelectivityByColumn(columns)
 	if err != nil {
 		return nil, fmt.Errorf("get selectivity by column error: %v", err)
 	}
@@ -895,6 +969,13 @@ func (c *Context) GetSelectivityOfColumns(stmt *ast.TableName, indexColumns []st
 		columnSelectivity[indexName] = selectivity
 	}
 	return columnSelectivity, nil
+}
+
+func (c *Context) GetSelectivityOfColumns(stmt *ast.TableName, indexColumns []string) (map[string] /*column name*/ float64, error) {
+	return c.getSelectivityOfColumnsInner(stmt, indexColumns, c.getSelectivityByColumn)
+}
+func (c *Context) GetSelectivityOfColumnsV2(stmt *ast.TableName, indexColumns []string) (map[string] /*column name*/ float64, error) {
+	return c.getSelectivityOfColumnsInner(stmt, indexColumns, c.getSelectivityByColumnV2)
 }
 
 // GetSchemaCharacter get schema default character.
@@ -994,24 +1075,48 @@ func (c *Context) GetTableSize(stmt *ast.TableName) (float64, error) {
 	return info.Size, nil
 }
 
+func (c *Context) SetTableSize(schemaName, tableName string, sizeMB float64) error {
+	tn := &ast.TableName{Schema: model.NewCIStr(schemaName), Name: model.NewCIStr(tableName)}
+
+	info, exist := c.GetTableInfo(tn)
+	if !exist {
+		return fmt.Errorf("table %s.%s not exist", schemaName, tableName)
+	}
+	info.Size = sizeMB
+	info.sizeLoad = true
+	return nil
+}
+
 // GetExecutionPlan get execution plan of SQL.
 func (c *Context) GetExecutionPlan(sql string) ([]*executor.ExplainRecord, error) {
+	key := fmt.Sprintf("%s.%s", c.currentSchema, sql)
+	if ep, ok := c.executionPlan[key]; ok {
+		return ep.Plan, nil
+	}
+
+	r, err := c.fetchExecutionPlanWithWarnings(sql)
+	if err != nil {
+		return nil, err
+	}
+
+	c.executionPlan[key] = r
+	return r.Plan, nil
+}
+
+// GetExecutionPlanWithWarnings get execution plan and warnings of SQL.
+func (c *Context) GetExecutionPlanWithWarnings(sql string) (*executor.ExplainWithWarningsResult, error) {
 	key := fmt.Sprintf("%s.%s", c.currentSchema, sql)
 	if ep, ok := c.executionPlan[key]; ok {
 		return ep, nil
 	}
 
-	if c.e == nil {
-		return nil, nil
-	}
-
-	records, err := c.e.GetExplainRecord(sql)
+	r, err := c.fetchExecutionPlanWithWarnings(sql)
 	if err != nil {
 		return nil, err
 	}
 
-	c.executionPlan[key] = records
-	return records, nil
+	c.executionPlan[key] = r
+	return r, nil
 }
 
 // GetTableRowCount get table row count by show table status.
@@ -1142,4 +1247,26 @@ func (c *Context) GetTableNameCreateTableStmtMap(joinStmt *ast.Join) map[string]
 		}
 	}
 	return tableNameCreateTableStmtMap
+}
+
+// fetchExecutionPlanWithWarnings fetch execution plan and warnings of SQL.
+func (c *Context) fetchExecutionPlanWithWarnings(sql string) (*executor.ExplainWithWarningsResult, error) {
+	if c.e == nil {
+		return nil, fmt.Errorf("executor is not initialized")
+	}
+
+	explainRecords, err := c.e.GetExplainRecord(sql)
+	if err != nil {
+		return nil, err
+	}
+
+	WarningsRecords, err := c.e.ShowWarningsRecord()
+	if err != nil {
+		return nil, err
+	}
+
+	return &executor.ExplainWithWarningsResult{
+		Plan:     explainRecords,
+		Warnings: WarningsRecords,
+	}, nil
 }

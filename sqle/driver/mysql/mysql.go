@@ -13,6 +13,7 @@ import (
 	"github.com/actiontech/sqle/sqle/driver/mysql/onlineddl"
 	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
+	_ "github.com/actiontech/sqle/sqle/driver/mysql/rule/ai"
 	"github.com/actiontech/sqle/sqle/driver/mysql/session"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
@@ -123,6 +124,14 @@ func (inspect *MysqlDriverImpl) applyConfig(cfg *driverV2.Config) {
 			inspect.cnf.isExecutedSQL = true
 		}
 	}
+}
+
+func (i *MysqlDriverImpl) SetRules(rules []*driverV2.Rule) {
+	i.rules = rules
+}
+
+func (i *MysqlDriverImpl) SetExecutor(dbConn *executor.Executor) {
+	i.dbConn = dbConn
 }
 
 func (i *MysqlDriverImpl) IsOfflineAudit() bool {
@@ -618,6 +627,7 @@ func (p *PluginProcessor) GetDriverMetas() (*driverV2.DriverMetas, error) {
 			driverV2.OptionalModuleKillProcess,
 			driverV2.OptionalExecBatch,
 			driverV2.OptionalModuleI18n,
+			driverV2.OptionalModuleProvision,
 		},
 	}
 	addOptionModules(metas)

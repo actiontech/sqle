@@ -1,0 +1,941 @@
+package util
+
+import (
+	"bytes"
+	"errors"
+	"fmt"
+	"math"
+	"strings"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
+	"github.com/actiontech/sqle/sqle/driver/mysql/session"
+	"github.com/actiontech/sqle/sqle/log"
+	"github.com/pingcap/parser/ast"
+	"github.com/pingcap/parser/model"
+	"github.com/pingcap/parser/mysql"
+	"github.com/pingcap/parser/opcode"
+	"github.com/pingcap/tidb/sessionctx/stmtctx"
+	"github.com/pingcap/tidb/types"
+	driver "github.com/pingcap/tidb/types/parser_driver"
+	parser "github.com/pingcap/tidb/types/parser_driver"
+)
+
+// a helper function to compares two ValueExpr s for equality
+func EqualValueExpr(value1 *parser.ValueExpr, value2 *parser.ValueExpr) (bool, error) {
+	sc := &stmtctx.StatementContext{}
+	result, err := value1.CompareDatum(sc, &value2.Datum)
+	if err != nil {
+		return false, err
+	}
+	if result == 0 {
+		return true, nil
+	}
+	return false, nil
+}
+
+// a helper function to join column names
+func JoinColumnNames(columns []*ast.ColumnDef) string {
+	names := make([]string, len(columns))
+	for i := range columns {
+		names[i] = columns[i].Name.OrigColName()
+	}
+	return strings.Join(names, ",")
+}
+
+// a helper function to checks if the given string is present in the list, ignoring case differences. It returns true if the string is found, and false otherwise.
+func IsStrInSlice(str string, list []string) bool {
+	str = strings.ToLower(str)
+	for _, v := range list {
+		if strings.ToLower(v) == str {
+			return true
+		}
+	}
+	return false
+}
+
+// a helper function to check if there are duplicate elements in the list
+func HasDuplicateInStrings(list []string) bool {
+	seen := make(map[string]struct{})
+	for _, element := range list {
+		if _, exists := seen[element]; exists {
+			return true
+		}
+		seen[element] = struct{}{}
+	}
+	return false
+}
+
+// a helper function to check if there are duplicates in two lists
+func HasDuplicateIn2Strings(list1, list2 []string) bool {
+	seen := make(map[string]struct{})
+	for _, element := range list1 {
+		seen[element] = struct{}{}
+	}
+	for _, element := range list2 {
+		if _, exists := seen[element]; exists {
+			return true
+		}
+	}
+	return false
+}
+
+// a helper function to get MySQL alter-table commands by command types
+func GetAlterTableCommandsByTypes(alterTableStmt *ast.AlterTableStmt, ts ...ast.AlterTableType) []*ast.AlterTableSpec {
+	s := []*ast.AlterTableSpec{}
+
+	if alterTableStmt == nil || alterTableStmt.Specs == nil {
+		return nil
+	}
+
+	for _, spec := range alterTableStmt.Specs {
+		for _, tp := range ts {
+			if spec.Tp == tp {
+				s = append(s, spec)
+			}
+		}
+	}
+	return s
+}
+
+// a helper function to get the MySQL table option whose type is the _targetOption_ (Engine/Auto Increment/...)
+func GetTableOption(options []*ast.TableOption, targetOption ast.TableOptionType) *ast.TableOption {
+	for _, option := range options {
+		if option.Tp == targetOption {
+			return option
+		}
+	}
+	return nil
+}
+
+// a helper function to get the MySQL database option whose type is the _targetOption_ (Charset/Collate/...)
+func GetDatabaseOption(options []*ast.DatabaseOption, targetOption ast.DatabaseOptionType) *ast.DatabaseOption {
+	for _, option := range options {
+		if option.Tp == targetOption {
+			return option
+		}
+	}
+	return nil
+}
+
+// a helper function to get the MySQL column option whose type is the _targetOption_ (NOT NULL/DEFAULT/...)
+func GetColumnOption(columnDef *ast.ColumnDef, targetOption ast.ColumnOptionType) *ast.ColumnOption {
+	for _, option := range columnDef.Options {
+		if option.Tp == targetOption {
+			return option
+		}
+	}
+	return nil
+}
+
+// a helper function to check if MySQL column has the target option (MySQL's column option, such as NOT NULL, AUTO_INCREMENT...)
+func IsColumnHasOption(columnDef *ast.ColumnDef, targetOption ast.ColumnOptionType) bool {
+	for _, option := range columnDef.Options {
+		if option.Tp == targetOption {
+			return true
+		}
+	}
+	return false
+}
+
+// a helper function to get the MySQL table constraint whose type is the _targetConstraint_ (PRIMARY/FOREIGN/...)
+func GetTableConstraint(constraints []*ast.Constraint, targetConstraint ast.ConstraintType) *ast.Constraint {
+	for _, constraint := range constraints {
+		if constraint.Tp == targetConstraint {
+			return constraint
+		}
+	}
+	return nil
+}
+
+// a helper function to get the MySQL table constraints whose type is the _targetConstraint_ (PRIMARY/FOREIGN/...)
+func GetTableConstraints(constraints []*ast.Constraint, targetConstraint ...ast.ConstraintType) []*ast.Constraint {
+	c := []*ast.Constraint{}
+	for _, constraint := range constraints {
+		for _, target := range targetConstraint {
+			if constraint.Tp == target {
+				c = append(c, constraint)
+			}
+		}
+	}
+	return c
+}
+
+// a helper function to get the MySQL index constraint types
+func GetIndexConstraintTypes() []ast.ConstraintType {
+	return []ast.ConstraintType{
+		ast.ConstraintIndex,
+		ast.ConstraintUniqIndex,
+		ast.ConstraintKey,
+		ast.ConstraintUniq,
+		ast.ConstraintUniqKey,
+		ast.ConstraintPrimaryKey,
+		ast.ConstraintFulltext,
+		ast.ConstraintSpatial,
+	}
+}
+
+// a helper function to check if MySQL column has specified character set
+func IsColumnHasSpecifiedCharset(columnDef *ast.ColumnDef) bool {
+	return columnDef.Tp.Charset != ""
+}
+
+// a helper function to get MySQL column width
+func GetColumnWidth(columnDef *ast.ColumnDef) int {
+	return columnDef.Tp.Flen
+}
+
+// a helper function to check if alter table is target type
+func IsAlterTableCommand(spec *ast.AlterTableSpec, expectedType ast.AlterTableType) bool {
+	return spec.Tp == expectedType
+}
+
+// a helper function to check if the alter table is altering table option _expectOption_ in MySQL
+func IsAlterTableCommandAlterOption(spec *ast.AlterTableSpec, expectOption ast.TableOptionType) bool {
+	if spec.Tp != ast.AlterTableOption {
+		return false
+	}
+	for _, option := range spec.Options {
+		if option.Tp == expectOption {
+			return true
+		}
+	}
+	return false
+}
+
+// a helper function to check if the column type is in the given data types
+func IsColumnTypeEqual(columnDef *ast.ColumnDef, targetType ...byte) bool {
+	if columnDef == nil {
+		return false
+	}
+	for _, dbType := range targetType {
+		if columnDef.Tp.Tp == dbType {
+			return true
+		}
+	}
+	return false
+}
+
+// a helper function to get the MySQL Blob column types
+func GetBlobDbTypes() []byte {
+	return []byte{
+		mysql.TypeBlob,
+		mysql.TypeTinyBlob,
+		mysql.TypeMediumBlob,
+		mysql.TypeLongBlob,
+	}
+}
+
+// a helper function to check if the column has auto increment constraint in MySQL
+func IsColumnAutoIncrement(columnDef *ast.ColumnDef) bool {
+	return IsColumnHasOption(columnDef, ast.ColumnOptionAutoIncrement)
+}
+
+// a helper function to check if the column is a primary key constraint in MySQL
+func IsColumnPrimaryKey(columnDef *ast.ColumnDef) bool {
+	return IsColumnHasOption(columnDef, ast.ColumnOptionPrimaryKey)
+}
+
+// a helper function to get the column name in MySQL
+func GetColumnName(columnDefNode *ast.ColumnDef) string {
+	return columnDefNode.Name.Name.O
+}
+
+// a helper function to check if the column has Null option in MySQL
+func IsOptionValIsNull(opt *ast.ColumnOption) bool {
+	return opt.Expr.GetType().Tp == mysql.TypeNull
+}
+
+// a helper function to check if the option is target function in MySQL
+func IsOptionFuncCall(option *ast.ColumnOption, expectedFuncCall string) bool {
+	funcCallExpr, ok := option.Expr.(*ast.FuncCallExpr)
+	if !ok {
+		return false
+	}
+	return strings.EqualFold(funcCallExpr.FnName.L, expectedFuncCall)
+}
+
+// a helper function to get ValueExpr string
+func GetValueExprStr(expr ast.ExprNode) string {
+	if stmt, ok := expr.(*parser.ValueExpr); ok {
+		return stmt.GetDatumString()
+	}
+	return ""
+}
+
+// a helper function to get the offset value of the limit in Select
+func GetLimitOffsetValue(stmt *ast.SelectStmt) int64 {
+	if stmt.Limit != nil && stmt.Limit.Offset != nil {
+		offsetVal, ok := stmt.Limit.Offset.(*parser.ValueExpr)
+		if !ok {
+			return -2
+		}
+		return offsetVal.Datum.GetInt64()
+	}
+	return -1
+}
+
+// a helper function to get the offset value of the limit in the Union query
+func GetLimitOffsetValueByUnionStmt(stmt *ast.UnionStmt) int64 {
+	if stmt.Limit != nil && stmt.Limit.Offset != nil {
+		offsetVal, ok := stmt.Limit.Offset.(*parser.ValueExpr)
+		if !ok {
+			return -2
+		}
+		return offsetVal.Datum.GetInt64()
+	}
+	return -1
+}
+
+// a helper function to get index column name
+func GetIndexColName(index *ast.IndexPartSpecification) string {
+	return index.Column.Name.String()
+}
+
+// a helper function to get create table stmt by query
+func GetCreateTableStmt(context *session.Context, table *ast.TableName) (*ast.CreateTableStmt, error) {
+	stmt, exist, err := context.GetCreateTableStmt(table)
+	if err != nil {
+		return nil, err
+	}
+	if !exist {
+		return nil, fmt.Errorf("failed to get create table stmt, table (%s) is not exist", table.Name.String())
+	}
+
+	return stmt, nil
+
+}
+
+// a helper function to get schema name from AST or current schema.
+func GetSchemaName(context *session.Context, schemaName string) string {
+	if schemaName == "" {
+		return context.CurrentSchema()
+	}
+
+	return schemaName
+}
+
+// a helper function to indexes info for the given table
+func GetTableIndexes(context *session.Context, tableName, schemaName string) (indexColumnNames map[string] /*index name*/ []string /*column names*/, err error) {
+	// 获取获取表的信息
+	createTableStmt, err := GetCreateTableStmt(context, &ast.TableName{Name: model.NewCIStr(tableName), Schema: model.NewCIStr(schemaName)})
+	if err != nil {
+		return nil, err
+	}
+
+	indexColumnNames = make(map[string][]string)
+	// check primary key in column definition
+	for _, col := range createTableStmt.Cols {
+		if IsColumnPrimaryKey(col) {
+			indexColumnNames["PRIMARY"] = append(indexColumnNames["PRIMARY"], col.Name.String())
+		}
+	}
+
+	// check primary key in table constraint
+	constraints := GetTableConstraints(createTableStmt.Constraints, GetIndexConstraintTypes()...)
+	for _, constraint := range constraints {
+		for _, colName := range constraint.Keys {
+			indexColumnNames[constraint.Name] = append(indexColumnNames[constraint.Name], colName.Column.Name.String())
+		}
+	}
+
+	return indexColumnNames, nil
+}
+
+// a helper function to get index expression for the given table
+func GetIndexExpressionsForTables(ctx *session.Context, tables []*ast.TableName) ([]string, error) {
+	existIndexExpr := []string{}
+	for _, table := range tables {
+		indexesInfo, err := getTableIndexes(ctx, table.Name.String(), table.Schema.String())
+		if err != nil {
+			return nil, err
+		}
+		for _, indexInfo := range indexesInfo {
+			existIndexExpr = append(existIndexExpr, indexInfo.Expression)
+		}
+	}
+
+	return existIndexExpr, nil
+}
+
+// a helper function to extract all select stmt from a given AST Node
+func GetSelectStmt(stmt ast.Node) []*ast.SelectStmt {
+	if stmt == nil {
+		return nil
+	}
+	selectStmtExtractor := selectStmtExtractor{}
+	stmt.Accept(&selectStmtExtractor)
+	return selectStmtExtractor.SelectStmts
+}
+
+// a helper function to extract all table name from a given AST Node
+func GetTableNames(stmt ast.Node) []*ast.TableName {
+	if stmt == nil {
+		return nil
+	}
+	e := tableNameExtractor{}
+	stmt.Accept(&e)
+	return e.tableNames
+}
+
+// a helper function to extract all subquery from a given AST Node
+func GetSubquery(stmt ast.Node) []*ast.SubqueryExpr {
+	if stmt == nil {
+		return nil
+	}
+	e := SubqueryExprExtractor{}
+	stmt.Accept(&e)
+	return e.expr
+}
+
+// a helper function to get the default table from a given select statement
+func GetDefaultTable(stmt *ast.SelectStmt) *ast.TableName {
+	if stmt == nil {
+		return nil
+	}
+	if stmt.From == nil {
+		return nil
+	}
+	if stmt.From.TableRefs == nil {
+		return nil
+	}
+	if t, ok := stmt.From.TableRefs.Left.(*ast.TableSource); ok && t != nil {
+		if name, ok := t.Source.(*ast.TableName); ok && name != nil {
+			return name
+		}
+	}
+	return nil
+}
+
+// a helper function to get first join node from dml
+func GetFirstJoinNodeFromStmt(node ast.Node) *ast.Join {
+	switch stmt := node.(type) {
+	case *ast.SelectStmt:
+		if stmt.From == nil {
+			return nil
+		}
+		return stmt.From.TableRefs
+	case *ast.UpdateStmt:
+		if stmt.TableRefs == nil {
+			return nil
+		}
+		return stmt.TableRefs.TableRefs
+	case *ast.DeleteStmt:
+		if stmt.TableRefs == nil {
+			return nil
+		}
+		return stmt.TableRefs.TableRefs
+	default:
+		return nil
+	}
+}
+
+// a helper function to get all join nodes from a given AST Node
+func GetAllJoinsFromNode(node ast.Node) []*ast.Join {
+	JoinExtractor := JoinExtractor{}
+	node.Accept(&JoinExtractor)
+	return JoinExtractor.joins
+}
+
+// a helper function to get the table source from join node
+func GetTableSourcesFromJoin(join *ast.Join) []*ast.TableSource {
+	sources := []*ast.TableSource{}
+	if join == nil {
+		return sources
+	}
+	if n := join.Left; n != nil {
+		switch t := n.(type) {
+		case *ast.TableSource:
+			sources = append(sources, t)
+		case *ast.Join:
+			sources = append(sources, GetTableSourcesFromJoin(t)...)
+		}
+	}
+	if n := join.Right; n != nil {
+		switch t := n.(type) {
+		case *ast.TableSource:
+			sources = append(sources, t)
+		case *ast.Join:
+			sources = append(sources, GetTableSourcesFromJoin(t)...)
+		}
+	}
+	return sources
+}
+
+// a helper function to get the table alias info from join node
+func GetTableAliasInfoFromJoin(join *ast.Join) []*TableAliasInfo {
+	tableAlias := make([]*TableAliasInfo, 0)
+	tableSources := GetTableSourcesFromJoin(join)
+	for _, tableSource := range tableSources {
+		if tableName, ok := tableSource.Source.(*ast.TableName); ok {
+			tableAlias = append(tableAlias, &TableAliasInfo{
+				TableAliasName: tableSource.AsName.String(),
+				TableName:      tableName.Name.O,
+				SchemaName:     tableName.Schema.O,
+			})
+		}
+	}
+	return tableAlias
+}
+
+// a helper function to extract all function name from a given Node of a SQL statement
+func GetFuncName(node ast.Node) (funcNames []string) {
+	extractor := funcExtractor{}
+	node.Accept(&extractor)
+
+	for _, f := range extractor.funcs {
+		funcNames = append(funcNames, f.FuncName)
+	}
+
+	return funcNames
+}
+
+// a helper function to extract function expressions from a given node of a SQL statement
+func GetFuncExpr(node ast.Node) (funcExprs []string) {
+	extractor := funcExtractor{}
+	node.Accept(&extractor)
+
+	for _, f := range extractor.funcs {
+		funcExprs = append(funcExprs, f.Expr)
+	}
+
+	return funcExprs
+}
+
+// a helper function to extract all function info(funcName、funcExpr、funcColumnNames) from a given Node of a SQL statement
+func GetAllFunc(node ast.Node) []*FuncInfo {
+	extractor := funcExtractor{}
+	node.Accept(&extractor)
+
+	return extractor.funcs
+}
+
+// a helper function to extract math op expressions from a given expr node of a SQL statement
+func GetMathOpExpr(expr ast.ExprNode) []string {
+	extractor := mathOpExtractor{}
+	expr.Accept(&extractor)
+
+	return extractor.expr
+}
+
+// a helper function to get the column expr from a given expr node of a SQL statement
+func GetColumnNameInExpr(expr ast.ExprNode) []*ast.ColumnNameExpr {
+	if expr == nil {
+		return nil
+	}
+	extractor := columnNameExprExtractor{}
+	expr.Accept(&extractor)
+	return extractor.columnExpr
+}
+
+// a helper function to converts an AST (Abstract Syntax Tree) expression node into its string representation.
+func ExprFormat(node ast.ExprNode) string {
+	switch node.(type) {
+	case *ast.DefaultExpr:
+		return "DEFAULT"
+	default:
+		writer := bytes.NewBufferString("")
+		node.Format(writer)
+		return writer.String()
+	}
+}
+
+// a helper function to calculate index discrimination in MySQL
+func CalculateIndexDiscrimination(context *session.Context, table *ast.TableName, colNames []string) (map[string]float64, error) {
+	return context.GetSelectivityOfColumnsV2(table, colNames)
+}
+
+// a helper function to get the execution plan of a SQL statement in MySQL
+func GetExecutionPlan(context *session.Context, sql string) (*executor.ExplainWithWarningsResult, error) {
+	return context.GetExecutionPlanWithWarnings(sql)
+}
+
+// a helper function to get the execution tree plan of a SQL statement in MySQL
+func GetExecutionTreePlan(context *session.Context, sql string) (string, error) {
+	return context.GetExecutor().ExplainTree(sql)
+}
+
+// a helper function to get the number of rows in a table in MySQL
+func GetTableRowCount(context *session.Context, table *ast.TableName) (int, error) {
+	return context.GetTableRowCount(table)
+}
+
+// a helper function to get the MySQL table size of a table
+func GetTableSizeMB(context *session.Context, tableName string) (int64, error) {
+	size, err := context.GetTableSize(&ast.TableName{Name: model.NewCIStr(tableName)})
+	if err != nil {
+		return 0, err
+	}
+	return int64(math.Floor(size)), nil
+}
+
+// a helper function to get if the table is a temporary table in MySQL
+func IsTemporaryTable(context *session.Context, tableName *ast.TableName) (bool, error) {
+	t, exist := context.GetTableInfo(tableName)
+	if !exist {
+		return false, fmt.Errorf("table %s not exist", tableName.Name.String())
+	}
+	return t.OriginalTable.IsTemporary, nil
+}
+
+// a helper function to check if the where clause is a constant true（eg: where 1=1/(True or 2=1)/(True and id=id)/(col not false)/(col is not null)/(1 in (1,2,3))
+func IsExprConstTrue(context *session.Context, where ast.ExprNode, aliasInfo []*TableAliasInfo) bool {
+	switch x := where.(type) {
+	case *ast.ParenthesesExpr: // 含有括号()
+		return IsExprConstTrue(context, x.Expr, aliasInfo)
+	case *ast.FuncCallExpr:
+		return false
+	case *ast.ExistsSubqueryExpr:
+		if !x.Not { // 处理 exists
+			if len(GetTableNames(x)) == 0 { // 不存在表时，则为恒真
+				return true
+			}
+		}
+		return false
+	case *ast.ColumnNameExpr:
+		return false
+	case *ast.BinaryOperationExpr:
+		if x.Op == opcode.LogicOr { // 处理or场景
+			left := IsExprConstTrue(context, x.L, aliasInfo)
+			right := false
+			if !left {
+				right = IsExprConstTrue(context, x.R, aliasInfo)
+			}
+			return (left || right)
+		} else if x.Op == opcode.LogicAnd {
+			left := IsExprConstTrue(context, x.L, aliasInfo)
+			right := IsExprConstTrue(context, x.R, aliasInfo)
+			return (left && right)
+		} else {
+			if IsMathComputation(x) { // 需要数学计算
+				return false
+			}
+			compareResult, err := getBinaryExprCompareResult(x)
+			if err == nil && compareResult {
+				return true
+			}
+			// colname == colname
+			col1, ok := x.R.(*ast.ColumnNameExpr)
+			if !ok {
+				return false
+			}
+			col2, ok := x.L.(*ast.ColumnNameExpr)
+			if !ok {
+				return false
+			}
+			if col1.Name.String() == col2.Name.String() {
+				return true
+			}
+		}
+	case *ast.IsNullExpr:
+		if x.Not { // 需要[在线]获取列是否有 not null约束
+			if aliasInfo == nil || len(aliasInfo) == 0 {
+				return false
+			}
+			table, col := extractFieldsFromExpr(x.Expr, aliasInfo)
+			if table != nil && col != "" {
+				yes, err := checkIsNotNull(context, table, col)
+				if err != nil {
+					return false
+				}
+				return yes
+			}
+		}
+		return false
+	case *ast.PatternInExpr:
+		if left_value, ok := x.Expr.(*parser.ValueExpr); ok { // 当左边为确定值
+			// 1 in (1,2,3)
+			if x.Sel == nil {
+				for _, expr := range x.List {
+					if value, okk := expr.(*parser.ValueExpr); okk {
+						result, err := EqualValueExpr(left_value, value)
+						if err != nil {
+							log.NewEntry().Errorf("EqualValueExpr failed, error: %v", err)
+							return opcode.IsFalsity.IsKeyword()
+						}
+						if result {
+							return true
+						}
+					}
+				}
+			} else {
+				// 1 in (select 1 from dual union select 2 from dual)
+				if len(GetTableNames(x)) == 0 { // 不存在表时
+					sList := GetSelectStmt(x)
+					for _, ss := range sList {
+						if ss.From == nil {
+							if field_value, okk := (ss.Fields.Fields[0]).Expr.(*parser.ValueExpr); okk {
+								result, err := EqualValueExpr(left_value, field_value)
+								if err != nil {
+									log.NewEntry().Errorf("EqualValueExpr failed, error: %v", err)
+									return false
+								}
+								if result {
+									return true
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	case *parser.ValueExpr: // 处理FALSE/TRUE
+		switch x.Kind() {
+		case types.KindInt64:
+			if x.Type.Flag&mysql.IsBooleanFlag != 0 {
+				if x.GetInt64() > 0 {
+					return true
+				} else {
+					return false
+				}
+			}
+		}
+	case *ast.UnaryOperationExpr:
+		if x.Op == opcode.Not && !IsExprConstTrue(context, x.V, aliasInfo) { // not false
+			return true
+		}
+	}
+	return false
+}
+
+// a helper function to assemble table, and column according to TableAliasInfo
+func extractFieldsFromExpr(expr ast.ExprNode, aliasMap []*TableAliasInfo) (*ast.TableName, string) {
+	if expr == nil {
+		return nil, ""
+	}
+	fields := GetColumnNameInExpr(expr)
+	for _, field := range fields {
+		tableName := field.Name.Table.String()
+		schemaName := field.Name.Schema.String()
+		if tableName != "" {
+			// 如果字段有表前缀，通过别名映射获取真实表名
+			for _, alias := range aliasMap {
+				if alias.TableAliasName == tableName {
+					tableName = alias.TableName
+					schemaName = alias.SchemaName
+					break
+				}
+			}
+		} else {
+			// 如果字段没有表前缀，尝试将其映射到第一个表
+			for _, alias := range aliasMap {
+				tableName = alias.TableName
+				schemaName = alias.SchemaName
+				break
+			}
+		}
+		if tableName == "" {
+			return nil, ""
+		}
+		return &ast.TableName{Name: model.NewCIStr(tableName), Schema: model.NewCIStr(schemaName)}, field.Name.Name.String()
+	}
+	return nil, ""
+}
+
+// a helper function to check if the column has a not null constraint
+func checkIsNotNull(context *session.Context, table *ast.TableName, col string) (bool, error) {
+	createTableStmt, err := GetCreateTableStmt(context, table)
+	if err != nil {
+		log.NewEntry().Errorf("GetCreateTableStmt failed, error: %v", err)
+		return false, err
+	}
+	for _, columnDef := range createTableStmt.Cols {
+		if strings.EqualFold(columnDef.Name.OrigColName(), col) && IsColumnHasOption(columnDef, ast.ColumnOptionNotNull) {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// a helper function to check whether data needs to be math computation
+func IsMathComputation(stmt *ast.BinaryOperationExpr) bool {
+	return stmt.Op == opcode.Plus || stmt.Op == opcode.Minus || stmt.Op == opcode.Mul || stmt.Op == opcode.Div || stmt.Op == opcode.IntDiv || stmt.Op == opcode.Mod
+}
+
+// a helper function to get the where clause from a DML statement
+func GetWhereExprFromDMLStmt(node ast.Node) (whereList []ast.ExprNode) {
+	switch stmt := node.(type) {
+	case *ast.SelectStmt, *ast.UnionStmt, *ast.InsertStmt, *ast.DeleteStmt, *ast.UpdateStmt:
+		for _, selectStmt := range GetSelectStmt(stmt) {
+			// "select..."
+			if selectStmt.Where != nil {
+				whereList = append(whereList, selectStmt.Where)
+			}
+		}
+	}
+
+	switch stmt := node.(type) {
+	case *ast.DeleteStmt:
+		// "delete..."
+		if stmt.Where != nil {
+			whereList = append(whereList, stmt.Where)
+		}
+	case *ast.UpdateStmt:
+		// "update..."
+		if stmt.Where != nil {
+			whereList = append(whereList, stmt.Where)
+		}
+	}
+	return whereList
+}
+
+// a helper function to scan the where clause of a SQL statement and apply the given function to each expression node
+func ScanWhereStmt(fn func(expr ast.ExprNode) (skip bool), exprs ...ast.ExprNode) {
+	for _, expr := range exprs {
+		if expr == nil {
+			continue
+		}
+		// skip all children node
+		if fn(expr) {
+			continue
+		}
+		switch x := expr.(type) {
+		case *ast.ColumnNameExpr:
+		case *ast.SubqueryExpr:
+		case *ast.BinaryOperationExpr:
+			ScanWhereStmt(fn, x.L, x.R)
+		case *ast.UnaryOperationExpr:
+			ScanWhereStmt(fn, x.V)
+			// boolean_primary is true|false
+		case *ast.IsTruthExpr:
+			ScanWhereStmt(fn, x.Expr)
+			// boolean_primary is (not) null
+		case *ast.IsNullExpr:
+			ScanWhereStmt(fn, x.Expr)
+			// boolean_primary comparison_operator {ALL | ANY} (subquery)
+		case *ast.CompareSubqueryExpr:
+			ScanWhereStmt(fn, x.L, x.R)
+		case *ast.ExistsSubqueryExpr:
+			ScanWhereStmt(fn, x.Sel)
+			// boolean_primary IN (expr,...)
+		case *ast.PatternInExpr:
+			es := []ast.ExprNode{}
+			es = append(es, x.Expr)
+			es = append(es, x.Sel)
+			es = append(es, x.List...)
+			ScanWhereStmt(fn, es...)
+			// boolean_primary Between expr and expr
+		case *ast.BetweenExpr:
+			ScanWhereStmt(fn, x.Expr, x.Left, x.Right)
+			// boolean_primary (not) like expr
+		case *ast.PatternLikeExpr:
+			ScanWhereStmt(fn, x.Expr, x.Pattern)
+			// boolean_primary (not) regexp expr
+		case *ast.PatternRegexpExpr:
+			ScanWhereStmt(fn, x.Expr, x.Pattern)
+		case *ast.RowExpr:
+			ScanWhereStmt(fn, x.Values...)
+		case *ast.ParenthesesExpr:
+			ScanWhereStmt(fn, x.Expr)
+		}
+	}
+}
+
+// a helper function to return the maximum character length of a specified column in a specified table.
+func GetCurrentMaxColumnWidth(ctx *session.Context, table *ast.TableName, columnName string) (int, error) {
+	return ctx.GetExecutor().ShowCurrentMaxColumnWidth(table.Name.O, columnName)
+}
+
+// a helper function to check if all values in a column are NULL in MySQL
+func IsColumnAllNull(ctx *session.Context, tableName string, columnName string) (bool, error) {
+	// Construct the SQL query to check for all NULL values in the specified column
+	checkSQL := fmt.Sprintf("SELECT (SELECT COUNT(*) FROM %s) - (SELECT COUNT(*) FROM %s WHERE %s IS NOT NULL) RESULT;", tableName, tableName, columnName)
+	// Execute the query and retrieve the result
+	result, err := ctx.GetExecutor().Db.Query(checkSQL)
+	if err != nil {
+		return false, fmt.Errorf("failed to execute IsColumnAllNull query: %v", err)
+	}
+
+	// Check if the result indicates that all values are NULL
+	if len(result) != 1 {
+		return false, fmt.Errorf("unexpected result length: %v", len(result))
+	}
+
+	return result[0]["RESULT"].String == "0", nil
+}
+
+// end helper function file. this line which used for ai scanner should be at the end of the file, please do not delete it
+
+// If there are no quotation marks (', ", `) at the beginning and end of the string, the string will be wrapped with "`"
+// Need to be wary of the presence of "`" in the string
+// do nothing if s is an empty string
+func supplementalQuotationMarks(s string) string {
+	if s == "" {
+		return ""
+	}
+	end := len(s) - 1
+	if s[0] != s[end] {
+		return fmt.Sprintf("`%s`", s)
+	}
+	if string(s[0]) != "'" && s[0] != '"' && s[0] != '`' {
+		return fmt.Sprintf("`%s`", s)
+	}
+	return s
+}
+
+// compare binary.L to binary.R
+func getBinaryExprCompareResult(binary *ast.BinaryOperationExpr) (bool, error) {
+	col1, ok := binary.L.(*driver.ValueExpr)
+	if !ok {
+		return false, errors.New("binary.L is not driver.ValueExpr")
+	}
+	col2, ok := binary.R.(*driver.ValueExpr)
+	if !ok {
+		return false, errors.New("binary.R is not driver.ValueExpr")
+	}
+	// 暂时只判断相同类型数据的比值，不考虑隐式转换
+	if col1.Datum.Kind() != col2.Datum.Kind() {
+		return false, nil
+	}
+	sc := &stmtctx.StatementContext{}
+
+	// col1 < col2; return -1
+	// col1 == col2; return 0
+	// col1 > col2; return 1
+	result, err := col1.CompareDatum(sc, &col2.Datum)
+	if err != nil {
+		return false, err
+	}
+	switch binary.Op {
+	case opcode.GE:
+		if result == 1 || result == 0 {
+			return true, nil
+		}
+	case opcode.GT:
+		if result == 1 {
+			return true, nil
+		}
+	case opcode.LE:
+		if result == 0 || result == -1 {
+			return true, nil
+		}
+	case opcode.LT:
+		if result == -1 {
+			return true, nil
+		}
+	case opcode.EQ:
+		if result == 0 {
+			return true, nil
+		}
+	case opcode.NE:
+		if result != 0 {
+			return true, nil
+		}
+	case opcode.LogicAnd:
+		if result == 0 {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+type TableAliasInfo struct {
+	TableName      string
+	SchemaName     string
+	TableAliasName string
+}
+
+func getTableIndexes(context *session.Context, tableName, schemaName string) ([]*executor.TableIndexesInfo, error) {
+	schemaName = GetSchemaName(context, schemaName)
+	return context.GetExecutor().GetTableIndexesInfo(supplementalQuotationMarks(schemaName), supplementalQuotationMarks(tableName))
+}

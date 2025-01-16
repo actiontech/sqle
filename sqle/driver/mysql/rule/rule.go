@@ -269,6 +269,21 @@ func addResult(result *driverV2.AuditResults, currentRule driverV2.Rule, ruleNam
 	result.Add(level, ruleName, plocale.Bundle.LocalizeAll(message), args...)
 }
 
+// In order to reuse some code, some rules use the same rule handler.
+// Then following code is the side effect of the purpose.
+//
+// It's not a good idea to use the same rule handler for different rules.
+// FIXME: once we map one rule to one rule handler, we should remove the side effect.
+func AddResult(result *driverV2.AuditResults, currentRule driverV2.Rule, ruleName string, args ...interface{}) {
+	// if rule is not current rule, ignore save the message.
+	if ruleName != currentRule.Name {
+		return
+	}
+	level := currentRule.Level
+	message := RuleHandlerMap[ruleName].Message
+	result.Add(level, ruleName, plocale.Bundle.LocalizeAll(message), args...)
+}
+
 func (rh *RuleHandler) IsAllowOfflineRule(node ast.Node) bool {
 	if !rh.Rule.AllowOffline {
 		return false
