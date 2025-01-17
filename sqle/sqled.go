@@ -31,7 +31,7 @@ var sqleSwaggerYaml []byte
 func Run(options *config.SqleOptions) error {
 	// init logger
 	sqleCnf := options.Service
-	log.InitLogger(sqleCnf.LogPath, sqleCnf.LogMaxSizeMB, sqleCnf.LogMaxBackupNumber)
+	log.InitLogger(sqleCnf.LogPath, sqleCnf.LogMaxSizeMB, sqleCnf.LogMaxBackupNumber, sqleCnf.DebugLog)
 	defer log.ExitLogger()
 
 	log.Logger().Infoln("starting sqled server")

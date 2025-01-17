@@ -3910,6 +3910,9 @@ func recommendTableColumnCharsetSame(input *RuleHandlerInput) error {
 		for _, spec := range stmt.Specs {
 			// 修改的列
 			for _, col := range spec.NewColumns {
+				if col.Tp == nil {
+					continue
+				}
 				if col.Tp.Charset != "" {
 					columnWithCharset = append(columnWithCharset, col)
 				}
@@ -3989,20 +3992,34 @@ func recommendTableColumnCharsetSame(input *RuleHandlerInput) error {
 func getColumnWithCharset(stmt *ast.CreateTableStmt, input *RuleHandlerInput) []*ast.ColumnDef {
 	var columnWithCharset []*ast.ColumnDef
 	for _, col := range stmt.Cols {
+		// 如果 col.Tp 不为 nil，先处理 Charset 和 Collate
+		if col.Tp != nil {
+			// 如果 col.Tp.Charset 非空，直接加入
+			if col.Tp.Charset != "" {
+				columnWithCharset = append(columnWithCharset, col)
+			} else if col.Tp.Collate != "" {
+				// 如果 col.Tp.Collate 非空，设置 Charset
+				col.Tp.Charset, _ = input.Ctx.GetSchemaCharacterByCollation(col.Tp.Collate)
+				columnWithCharset = append(columnWithCharset, col)
+			}
+		}
 
-		if col.Tp.Charset != "" {
-			columnWithCharset = append(columnWithCharset, col)
-		} else if col.Tp.Collate != "" {
-			col.Tp.Charset, _ = input.Ctx.GetSchemaCharacterByCollation(col.Tp.Collate)
-			columnWithCharset = append(columnWithCharset, col)
-		} else if len(col.Options) > 0 {
-			for _, option := range col.Options {
-				if option.Tp == ast.ColumnOptionCollate {
-					col.Tp.Charset, _ = input.Ctx.GetSchemaCharacterByCollation(option.StrValue)
-					columnWithCharset = append(columnWithCharset, col)
+		// 如果 col.Tp 为 nil，或者 col.Tp 的 Charset 和 Collate 都为空，检查 Options
+		if col.Tp == nil || (col.Tp.Charset == "" && col.Tp.Collate == "") {
+			if len(col.Options) > 0 {
+				for _, option := range col.Options {
+					if option.Tp == ast.ColumnOptionCollate {
+						if col.Tp == nil {
+							col.Tp = &types.FieldType{}
+						}
+						col.Tp.Charset, _ = input.Ctx.GetSchemaCharacterByCollation(option.StrValue)
+						columnWithCharset = append(columnWithCharset, col)
+						break // 一旦找到对应的 Collate 选项，就跳出循环
+					}
 				}
 			}
 		}
+
 	}
 	return columnWithCharset
 }
@@ -5203,8 +5220,8 @@ func checkScanRows(input *RuleHandlerInput) error {
 	}
 	for _, record := range epRecords {
 		if record.Rows > int64(max)*int64(TenThousand) {
-				addResult(input.Res, input.Rule, input.Rule.Name)
-				break
+			addResult(input.Res, input.Rule, input.Rule.Name)
+			break
 		}
 	}
 	return nil
