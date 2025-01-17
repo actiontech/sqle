@@ -205,6 +205,9 @@ func NewAuditResults() *AuditResults {
 func (rs *AuditResults) Level() RuleLevel {
 	level := RuleLevelNull
 	for _, curr := range rs.Results {
+		if curr.ExecutionFailed {
+			continue
+		}
 		if ruleLevelMap[curr.Level] > ruleLevelMap[level] {
 			level = curr.Level
 		}
