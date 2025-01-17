@@ -431,10 +431,12 @@ func UpdateInstanceAuditPlanStatus(c echo.Context) error {
 }
 
 type AuditPlanTypeResBase struct {
-	AuditPlanId       uint   `json:"audit_plan_id"`
-	AuditPlanType     string `json:"type"`
-	AuditPlanTypeDesc string `json:"desc"`
-	Token             string `json:"token"`
+	AuditPlanId          uint   `json:"audit_plan_id"`
+	AuditPlanType        string `json:"type"`
+	AuditPlanTypeDesc    string `json:"desc"`
+	Token                string `json:"token"`
+	ActiveStatus         string `json:"active_status" enums:"normal,disabled"`
+	LastCollectionStatus string `json:"last_collection_status" enums:"normal,abnormal"`
 }
 
 type GetInstanceAuditPlansReqV1 struct {
@@ -580,10 +582,12 @@ func ConvertAuditPlanTypeToResByID(ctx context.Context, id string, token string)
 	for _, meta := range auditplan.Metas {
 		if meta.Type == auditPlan.Type {
 			return AuditPlanTypeResBase{
-				AuditPlanType:     auditPlan.Type,
-				AuditPlanTypeDesc: locale.Bundle.LocalizeMsgByCtx(ctx, meta.Desc),
-				AuditPlanId:       auditPlan.ID,
-				Token:             token,
+				AuditPlanType:        auditPlan.Type,
+				AuditPlanTypeDesc:    locale.Bundle.LocalizeMsgByCtx(ctx, meta.Desc),
+				AuditPlanId:          auditPlan.ID,
+				Token:                token,
+				ActiveStatus:         auditPlan.ActiveStatus,
+				LastCollectionStatus: auditPlan.AuditPlanTaskInfo.LastCollectionStatus,
 			}, nil
 		}
 	}
@@ -747,16 +751,17 @@ type AuditPlanRuleTemplate struct {
 }
 
 type InstanceAuditPlanInfo struct {
-	ID                 uint                   `json:"id"`
-	Type               AuditPlanTypeResBase   `json:"audit_plan_type"`
-	DBType             string                 `json:"audit_plan_db_type" example:"mysql"`
-	InstanceName       string                 `json:"audit_plan_instance_name" example:"test_mysql"`
-	ExecCmd            string                 `json:"exec_cmd" example:"./scanner xxx"`
-	RuleTemplate       *AuditPlanRuleTemplate `json:"audit_plan_rule_template,omitempty" `
-	TotalSQLNums       int64                  `json:"total_sql_nums"`
-	UnsolvedSQLNums    int64                  `json:"unsolved_sql_nums"`
-	LastCollectionTime *time.Time             `json:"last_collection_time"`
-	ActiveStatus       string                 `json:"active_status" enums:"normal,disabled"`
+	ID                   uint                   `json:"id"`
+	Type                 AuditPlanTypeResBase   `json:"audit_plan_type"`
+	DBType               string                 `json:"audit_plan_db_type" example:"mysql"`
+	InstanceName         string                 `json:"audit_plan_instance_name" example:"test_mysql"`
+	ExecCmd              string                 `json:"exec_cmd" example:"./scanner xxx"`
+	RuleTemplate         *AuditPlanRuleTemplate `json:"audit_plan_rule_template,omitempty" `
+	TotalSQLNums         int64                  `json:"total_sql_nums"`
+	UnsolvedSQLNums      int64                  `json:"unsolved_sql_nums"`
+	LastCollectionTime   *time.Time             `json:"last_collection_time"`
+	ActiveStatus         string                 `json:"active_status" enums:"normal,disabled"`
+	LastCollectionStatus string                 `json:"last_collection_status" enums:"normal,abnormal"`
 }
 
 // @Summary 获取实例扫描任务概览
@@ -811,15 +816,16 @@ func GetInstanceAuditPlanOverview(c echo.Context) error {
 
 		typeBase := ConvertAuditPlanTypeToRes(c.Request().Context(), v.ID, v.Type)
 		resAuditPlan := InstanceAuditPlanInfo{
-			ID:              v.ID,
-			Type:            typeBase,
-			DBType:          detail.DBType,
-			InstanceName:    inst.Name,
-			ExecCmd:         execCmd,
-			RuleTemplate:    ruleTemplate,
-			TotalSQLNums:    totalSQLNums,
-			UnsolvedSQLNums: unsolvedSQLNums,
-			ActiveStatus:    v.ActiveStatus,
+			ID:                   v.ID,
+			Type:                 typeBase,
+			DBType:               detail.DBType,
+			InstanceName:         inst.Name,
+			ExecCmd:              execCmd,
+			RuleTemplate:         ruleTemplate,
+			TotalSQLNums:         totalSQLNums,
+			UnsolvedSQLNums:      unsolvedSQLNums,
+			ActiveStatus:         v.ActiveStatus,
+			LastCollectionStatus: v.AuditPlanTaskInfo.LastCollectionStatus,
 		}
 		if v.AuditPlanTaskInfo != nil {
 			resAuditPlan.LastCollectionTime = v.AuditPlanTaskInfo.LastCollectionTime
@@ -975,6 +981,14 @@ func UpdateAuditPlanStatus(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.NewAuditPlanNotExistErr())
 	}
 	auditPlan.ActiveStatus = req.Active
+	// 重启扫描任务时，重置最后采集状态
+	if req.Active == model.ActiveStatusNormal {
+		auditPlan.AuditPlanTaskInfo.LastCollectionStatus = ""
+		err = s.Save(auditPlan.AuditPlanTaskInfo)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
 	err = s.Save(auditPlan)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)

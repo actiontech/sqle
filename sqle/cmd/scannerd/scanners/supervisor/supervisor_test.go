@@ -61,7 +61,7 @@ func (mc *mockScanner) SQLs() <-chan scanners.SQL {
 	return sqlCh
 }
 
-func (mc *mockScanner) Upload(ctx context.Context, sqls []scanners.SQL) error {
+func (mc *mockScanner) Upload(ctx context.Context, sqls []scanners.SQL, errorMessage string) error {
 	mc.uploadSQLCnt += len(sqls)
 	return nil
 }

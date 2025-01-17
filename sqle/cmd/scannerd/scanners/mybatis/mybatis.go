@@ -58,6 +58,6 @@ func (mb *MyBatis) SQLs() <-chan scanners.SQL {
 	return nil
 }
 
-func (mb *MyBatis) Upload(ctx context.Context, sqls []scanners.SQL) error {
+func (mb *MyBatis) Upload(ctx context.Context, sqls []scanners.SQL, errorMessage string) error {
 	return nil
 }

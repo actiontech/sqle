@@ -38,6 +38,6 @@ func (sq *SlowQuery) SQLs() <-chan scanners.SQL {
 	return nil
 }
 
-func (sq *SlowQuery) Upload(ctx context.Context, sqls []scanners.SQL) error {
+func (sq *SlowQuery) Upload(ctx context.Context, sqls []scanners.SQL, errorMessage string) error {
 	return errSlowQueryNotImplemented
 }

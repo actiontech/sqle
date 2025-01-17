@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+
 	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/locale"
@@ -525,4 +526,27 @@ type GetGlobalSqlManageStatisticsResp struct {
 // @Router /v1/dashboard/sql_manages/statistics  [get]
 func GetGlobalSqlManageStatistics(c echo.Context) error {
 	return getGlobalSqlManageStatistics(c)
+}
+
+type GetAbnormalAuditPlanInstancesResp struct {
+	controller.BaseRes
+	Data []*AbnormalAuditPlanInstance `json:"data"`
+}
+
+type AbnormalAuditPlanInstance struct {
+	InstanceName        string `json:"instance_name" example:"MySQL"`
+	InstanceAuditPlanID uint   `json:"instance_audit_plan_id"`
+}
+
+// GetAbnormalInstanceAuditPlans get the instance of audit plan execution abnormal
+// @Summary 获取执行异常的扫描任务实例
+// @Description get the instance of audit plan execution abnormal
+// @Id getAbnormalInstanceAuditPlansV1
+// @Tags SqlManage
+// @Param project_name path string true "project name"
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetAbnormalAuditPlanInstancesResp
+// @Router /v1/projects/{project_name}/sql_manages/abnormal_audit_plan_instance [get]
+func GetAbnormalInstanceAuditPlans(c echo.Context) error {
+	return getAbnormalInstanceAuditPlans(c)
 }
