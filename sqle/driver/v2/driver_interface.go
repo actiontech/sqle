@@ -186,11 +186,13 @@ type AuditResults struct {
 type AuditResult struct {
 	Level               RuleLevel
 	RuleName            string
+	ExecutionFailed     bool
 	I18nAuditResultInfo map[language.Tag]AuditResultInfo
 }
 
 type AuditResultInfo struct {
-	Message string
+	Message   string
+	ErrorInfo string
 }
 
 func NewAuditResults() *AuditResults {
@@ -203,6 +205,9 @@ func NewAuditResults() *AuditResults {
 func (rs *AuditResults) Level() RuleLevel {
 	level := RuleLevelNull
 	for _, curr := range rs.Results {
+		if curr.ExecutionFailed {
+			continue
+		}
 		if ruleLevelMap[curr.Level] > ruleLevelMap[level] {
 			level = curr.Level
 		}
@@ -235,6 +240,10 @@ func (rs *AuditResults) Message() string {
 }
 
 func (rs *AuditResults) Add(level RuleLevel, ruleName string, i18nMsgPattern i18nPkg.I18nStr, args ...interface{}) {
+	rs.AddResultWithError(level, ruleName, "", false, i18nMsgPattern, args...)
+}
+
+func (rs *AuditResults) AddResultWithError(level RuleLevel, ruleName, errorMsg string, executionFailed bool, i18nMsgPattern i18nPkg.I18nStr, args ...interface{}) {
 	if level == "" || len(i18nMsgPattern) == 0 {
 		return
 	}
@@ -251,7 +260,8 @@ func (rs *AuditResults) Add(level RuleLevel, ruleName string, i18nMsgPattern i18
 						msg = fmt.Sprintf(msg, args...)
 					}
 					v.I18nAuditResultInfo[langTag] = AuditResultInfo{
-						Message: msg,
+						Message:   msg,
+						ErrorInfo: errorMsg,
 					}
 				}
 				return
@@ -262,6 +272,7 @@ func (rs *AuditResults) Add(level RuleLevel, ruleName string, i18nMsgPattern i18
 	ar := &AuditResult{
 		Level:               level,
 		RuleName:            ruleName,
+		ExecutionFailed:     executionFailed,
 		I18nAuditResultInfo: make(map[language.Tag]AuditResultInfo, len(i18nMsgPattern)),
 	}
 	for langTag, msg := range i18nMsgPattern {
@@ -269,7 +280,8 @@ func (rs *AuditResults) Add(level RuleLevel, ruleName string, i18nMsgPattern i18
 			msg = fmt.Sprintf(msg, args...)
 		}
 		ari := AuditResultInfo{
-			Message: msg,
+			Message:   msg,
+			ErrorInfo: errorMsg,
 		}
 		ar.I18nAuditResultInfo[langTag] = ari
 	}

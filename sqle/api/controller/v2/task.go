@@ -57,6 +57,8 @@ type AssociatedRollbackWorkflow struct {
 
 type AuditResult struct {
 	Level               string                    `json:"level" example:"warn"`
+	ExecutionFailed     bool                      `json:"execution_failed" example:"false"`
+	ErrorInfo           string                    `json:"error_info"`
 	Message             string                    `json:"message" example:"避免使用不必要的内置函数md5()"`
 	RuleName            string                    `json:"rule_name"`
 	DbType              string                    `json:"db_type"`
@@ -161,6 +163,8 @@ func GetTaskSQLs(c echo.Context) error {
 			ar := taskSQL.AuditResults[i]
 			taskSQLRes.AuditResult = append(taskSQLRes.AuditResult, &AuditResult{
 				Level:               ar.Level,
+				ExecutionFailed:     ar.ExecutionFailed,
+				ErrorInfo:           ar.GetAuditErrorMsgByLangTag(locale.Bundle.GetLangTagFromCtx(c.Request().Context())),
 				Message:             ar.GetAuditMsgByLangTag(locale.Bundle.GetLangTagFromCtx(c.Request().Context())),
 				RuleName:            ar.RuleName,
 				DbType:              task.DBType,
