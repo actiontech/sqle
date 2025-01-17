@@ -228,17 +228,8 @@ func (at *TaskWrapper) stopCollect() error {
 
 func (at *TaskWrapper) extractSQL() {
 	var err error
-	defer func() {
-		status := model.LastCollectionNormal
-		if err != nil {
-			at.logger.Error(sqleErr.NewAuditPlanExecuteExtractErr(err, at.ap.InstanceID, at.ap.Type))
-			status = model.LastCollectionAbnormal
-		}
-		updateErr := at.persist.UpdateAuditPlanInfoByAPID(at.ap.ID, map[string]interface{}{"last_collection_status": status})
-		if updateErr != nil {
-			at.logger.Errorf("update audit plan task info collection status status failed, error : %v", updateErr)
-		}
-	}()
+	defer ProcessAuditPlanStatusAndLogError(at.logger, at.ap.ID, at.ap.InstanceID, at.ap.Type, &err)
+
 	collectionTime := time.Now()
 	sqls, err := at.collect.ExtractSQL(at.logger, at.ap, at.persist)
 	if err != nil {
@@ -263,6 +254,19 @@ func (at *TaskWrapper) extractSQL() {
 	err = at.pushSQLToManagerSQLQueue(sqlQueues, at.ap)
 	if err != nil {
 		at.logger.Errorf("push sql to manager sql queue failed, error : %v", err)
+	}
+}
+
+func ProcessAuditPlanStatusAndLogError(l *logrus.Entry, auditPlanId uint, instanceID, auditPlnType string, err *error) {
+	s := model.GetStorage()
+	status := model.LastCollectionNormal
+	if err != nil {
+		l.Error(sqleErr.NewAuditPlanExecuteExtractErr(*err, instanceID, auditPlnType))
+		status = model.LastCollectionAbnormal
+	}
+	updateErr := s.UpdateAuditPlanInfoByAPID(auditPlanId, map[string]interface{}{"last_collection_status": status})
+	if updateErr != nil {
+		l.Errorf("update audit plan task info collection status status failed, error : %v", updateErr)
 	}
 }
 
