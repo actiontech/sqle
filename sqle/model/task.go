@@ -169,6 +169,7 @@ func (s *BaseSQL) GetExecStatusDesc(ctx context.Context) string {
 type AuditResult struct {
 	Level               string              `json:"level"`
 	RuleName            string              `json:"rule_name"`
+	ExecutionFailed     bool                `json:"execution_failed"`
 	I18nAuditResultInfo I18nAuditResultInfo `json:"i18n_audit_result_info"`
 }
 
@@ -176,8 +177,13 @@ func (ar *AuditResult) GetAuditMsgByLangTag(lang language.Tag) string {
 	return ar.I18nAuditResultInfo.GetAuditResultInfoByLangTag(lang).Message
 }
 
+func (ar *AuditResult) GetAuditErrorMsgByLangTag(lang language.Tag) string {
+	return ar.I18nAuditResultInfo.GetAuditResultInfoByLangTag(lang).ErrorInfo
+}
+
 type AuditResultInfo struct {
-	Message string
+	Message   string
+	ErrorInfo string
 }
 
 type I18nAuditResultInfo map[language.Tag]AuditResultInfo
@@ -233,16 +239,20 @@ type AuditResults []AuditResult
 
 func (a *AuditResults) GetAuditJsonStrByLangTag(lang language.Tag) string {
 	type AuditResultRes struct {
-		Level    string `json:"level"`
-		Message  string `json:"message"`
-		RuleName string `json:"rule_name"`
+		Level           string `json:"level"`
+		Message         string `json:"message"`
+		RuleName        string `json:"rule_name"`
+		ErrorInfo       string `json:"error_info"`
+		ExecutionFailed bool   `json:"execution_failed"`
 	}
 	results := make([]AuditResultRes, len(*a))
 	for k, v := range *a {
 		results[k] = AuditResultRes{
-			Level:    v.Level,
-			Message:  v.GetAuditMsgByLangTag(lang),
-			RuleName: v.RuleName,
+			Level:           v.Level,
+			Message:         v.GetAuditMsgByLangTag(lang),
+			ErrorInfo:       v.GetAuditErrorMsgByLangTag(lang),
+			RuleName:        v.RuleName,
+			ExecutionFailed: v.ExecutionFailed,
 		}
 	}
 	data, _ := json.Marshal(results)
@@ -291,11 +301,13 @@ func ConvertAuditResultFromDriverToModel(dar *driverV2.AuditResult) *AuditResult
 	newAr := &AuditResult{
 		Level:               string(dar.Level),
 		RuleName:            dar.RuleName,
+		ExecutionFailed:     dar.ExecutionFailed,
 		I18nAuditResultInfo: make(map[language.Tag]AuditResultInfo, len(dar.I18nAuditResultInfo)),
 	}
 	for langTag, info := range dar.I18nAuditResultInfo {
 		newAr.I18nAuditResultInfo[langTag] = AuditResultInfo{
-			Message: info.Message,
+			Message:   info.Message,
+			ErrorInfo: info.ErrorInfo,
 		}
 	}
 	return newAr
@@ -305,11 +317,13 @@ func ConvertAuditResultFromModelToDriver(mar *AuditResult) *driverV2.AuditResult
 	newAr := &driverV2.AuditResult{
 		Level:               driverV2.RuleLevel(mar.Level),
 		RuleName:            mar.RuleName,
+		ExecutionFailed:     mar.ExecutionFailed,
 		I18nAuditResultInfo: make(map[language.Tag]driverV2.AuditResultInfo, len(mar.I18nAuditResultInfo)),
 	}
 	for langTag, info := range mar.I18nAuditResultInfo {
 		newAr.I18nAuditResultInfo[langTag] = driverV2.AuditResultInfo{
-			Message: info.Message,
+			Message:   info.Message,
+			ErrorInfo: info.ErrorInfo,
 		}
 	}
 	return newAr

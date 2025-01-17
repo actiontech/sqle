@@ -186,11 +186,13 @@ type AuditResults struct {
 type AuditResult struct {
 	Level               RuleLevel
 	RuleName            string
+	ExecutionFailed     bool
 	I18nAuditResultInfo map[language.Tag]AuditResultInfo
 }
 
 type AuditResultInfo struct {
-	Message string
+	Message   string
+	ErrorInfo string
 }
 
 func NewAuditResults() *AuditResults {
@@ -270,6 +272,51 @@ func (rs *AuditResults) Add(level RuleLevel, ruleName string, i18nMsgPattern i18
 		}
 		ari := AuditResultInfo{
 			Message: msg,
+		}
+		ar.I18nAuditResultInfo[langTag] = ari
+	}
+	rs.Results = append(rs.Results, ar)
+}
+
+func (rs *AuditResults) AddResultWithError(level RuleLevel, ruleName, errorMsg string, i18nMsgPattern i18nPkg.I18nStr, args ...interface{}) {
+	if level == "" || len(i18nMsgPattern) == 0 {
+		return
+	}
+
+	defer rs.SortByLevel()
+
+	if ruleName != "" {
+		for _, v := range rs.Results {
+			// 审核结果规则存在则更新
+			if v.RuleName == ruleName {
+				v.Level = level
+				for langTag, msg := range i18nMsgPattern {
+					if len(args) > 0 {
+						msg = fmt.Sprintf(msg, args...)
+					}
+					v.I18nAuditResultInfo[langTag] = AuditResultInfo{
+						Message:   msg,
+						ErrorInfo: errorMsg,
+					}
+				}
+				return
+			}
+		}
+	}
+
+	ar := &AuditResult{
+		Level:               level,
+		RuleName:            ruleName,
+		ExecutionFailed:     true,
+		I18nAuditResultInfo: make(map[language.Tag]AuditResultInfo, len(i18nMsgPattern)),
+	}
+	for langTag, msg := range i18nMsgPattern {
+		if len(args) > 0 {
+			msg = fmt.Sprintf(msg, args...)
+		}
+		ari := AuditResultInfo{
+			Message:   msg,
+			ErrorInfo: errorMsg,
 		}
 		ar.I18nAuditResultInfo[langTag] = ari
 	}
