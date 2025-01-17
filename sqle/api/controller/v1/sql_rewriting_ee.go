@@ -124,6 +124,10 @@ func getRewriteSQLData(c echo.Context) error {
 		})
 	}
 	ret.RewrittenSQL = lastRewrittenSQL
+	// 当没有重写SQL时，不展示重写后的SQL总结
+	if lastRewrittenSQL == "" {
+		ret.RewrittenSQLBusinessDesc = ""
+	}
 	return c.JSON(http.StatusOK, &RewriteSQLRes{
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    ret,
