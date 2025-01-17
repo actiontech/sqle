@@ -239,11 +239,17 @@ func ProgressiveRewriteSQL(ctx context.Context, params *SQLRewritingParams) (*Ge
 		if len(task.ExecuteSQLs) == 0 {
 			return nil, fmt.Errorf("task.ExecuteSQLs is empty")
 		}
-		executeSQL := task.ExecuteSQLs[0]
+		// 收集所有SQL的审核结果
+		var allAuditResults []model.AuditResults
+		var lastExecuteSQL *model.ExecuteSQL
+		for _, executeSQL := range task.ExecuteSQLs {
+			l.Infof("audit results: %v", executeSQL.AuditResults.String(ctx))
+			allAuditResults = append(allAuditResults, executeSQL.AuditResults)
+			lastExecuteSQL = executeSQL
+		}
 
 		// 获取重写后的SQL不再触发的规则
-		l.Infof("audit results: %v", executeSQL.AuditResults.String(ctx))
-		ruleNamesResolved := findResolvedRules(ruleNameNotRewritten, executeSQL.AuditResults)
+		ruleNamesResolved := findResolvedRules(ruleNameNotRewritten, allAuditResults)
 		l.Infof("rule name not rewritten: %v; rule name resolved: %v", ruleNameNotRewritten, ruleNamesResolved)
 
 		for _, ruleName := range ruleNamesResolved {
@@ -265,7 +271,7 @@ func ProgressiveRewriteSQL(ctx context.Context, params *SQLRewritingParams) (*Ge
 
 		params := &SQLRewritingParams{
 			Task:                task,
-			SQL:                 executeSQL,
+			SQL:                 lastExecuteSQL,
 			TableStructures:     params.TableStructures,
 			Explain:             explainResult,
 			EnableStructureType: params.EnableStructureType,
@@ -483,13 +489,17 @@ func ExplainTaskSQL(l *logrus.Entry, task *model.Task) (res *driverV2.ExplainRes
 
 // findResolvedRules 找出重写后不再触发的规则名称
 // params: originalRules 原始触发的规则名称列表
-// params: newAuditResults 重写后的SQL审核结果
+// params: newAuditResults 重写后的多个SQL审核结果
 // return 已解决（不再触发）的规则名称列表
-func findResolvedRules(originalRules []string, newAuditResults model.AuditResults) []string {
+func findResolvedRules(originalRules []string, newAuditResults []model.AuditResults) []string {
 	// 使用 map 存储当前仍触发的规则，便于快速查找
 	stillTriggered := make(map[string]bool)
-	for _, result := range newAuditResults {
+
+	// 遍历所有审核结果,收集所有仍触发的规则
+	for _, results := range newAuditResults {
+		for _, result := range results {
 		stillTriggered[result.RuleName] = true
+		}
 	}
 
 	// 找出原始规则中不再出现在新审核结果中的规则名称
