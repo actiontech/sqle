@@ -57,7 +57,7 @@ func CheckCurrentUserCanViewWorkflow(c echo.Context, projectUid string, workflow
 	}
 
 	s := model.GetStorage()
-	access, err := s.UserCanAccessWorkflow(userId, workflow.WorkflowId)
+	access, err := s.UserCanViewWorkflow(userId, workflow.WorkflowId)
 	if err != nil {
 		return err
 	}
