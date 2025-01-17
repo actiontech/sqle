@@ -11480,6 +11480,9 @@ var doc = `{
         "model.AuditResultInfo": {
             "type": "object",
             "properties": {
+                "errorInfo": {
+                    "type": "string"
+                },
                 "message": {
                     "type": "string"
                 }
@@ -11996,6 +11999,12 @@ var doc = `{
         "v1.AuditResult": {
             "type": "object",
             "properties": {
+                "error_info": {
+                    "type": "string"
+                },
+                "execution_failed": {
+                    "type": "boolean"
+                },
                 "level": {
                     "type": "string",
                     "example": "warn"
@@ -19662,6 +19671,13 @@ var doc = `{
             "properties": {
                 "db_type": {
                     "type": "string"
+                },
+                "error_info": {
+                    "type": "string"
+                },
+                "execution_failed": {
+                    "type": "boolean",
+                    "example": false
                 },
                 "i18n_audit_result_info": {
                     "type": "object",
