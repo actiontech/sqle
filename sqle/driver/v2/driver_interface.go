@@ -240,7 +240,7 @@ func (rs *AuditResults) Message() string {
 }
 
 func (rs *AuditResults) Add(level RuleLevel, ruleName string, i18nMsgPattern i18nPkg.I18nStr, args ...interface{}) {
-	rs.AddResultWithError(level, ruleName, "", false, i18nMsgPattern, args)
+	rs.AddResultWithError(level, ruleName, "", false, i18nMsgPattern, args...)
 }
 
 func (rs *AuditResults) AddResultWithError(level RuleLevel, ruleName, errorMsg string, executionFailed bool, i18nMsgPattern i18nPkg.I18nStr, args ...interface{}) {
