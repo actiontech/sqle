@@ -162,7 +162,7 @@ func (s sqlIdentity) jsonString() string {
 	return string(keyByte)
 }
 
-func (t *AuditLog) Upload(ctx context.Context, sqls []scanners.SQL) error {
+func (t *AuditLog) Upload(ctx context.Context, sqls []scanners.SQL, errorMessage string) error {
 	var sqlListReq []*scanner.AuditPlanSQLReq
 	now := time.Now()
 	auditPlanSqlMap := make(map[string]*scanner.AuditPlanSQLReq, 0)
@@ -220,5 +220,5 @@ func (t *AuditLog) Upload(ctx context.Context, sqls []scanners.SQL) error {
 		}
 	}
 
-	return t.c.UploadReq(scanner.UploadSQL, t.auditPlanID, sqlListReq)
+	return t.c.UploadReq(scanner.UploadSQL, t.auditPlanID, errorMessage, sqlListReq)
 }

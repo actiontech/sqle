@@ -9,12 +9,13 @@ import (
 	"encoding/csv"
 	e "errors"
 	"fmt"
-	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 	"mime"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 
 	"github.com/actiontech/sqle/sqle/pkg/im/coding"
 	"golang.org/x/text/language"
@@ -917,4 +918,35 @@ func buildCodingSQLManageReq(lang language.Tag, projectName string, sqlManageCod
 		Description: description,
 	}
 	return codingRequest
+}
+
+func getAbnormalInstanceAuditPlans(c echo.Context) error {
+	projectName := c.Param("project_name")
+	projectUID, err := dms.GetPorjectUIDByName(c.Request().Context(), projectName, true)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	s := model.GetStorage()
+	instAuditPlans, err := s.GetInstanceAuditPlansByLastCollectionStatus(projectUID, model.LastCollectionAbnormal)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	abnormalAPInst := make([]*AbnormalAuditPlanInstance, len(instAuditPlans))
+	for i, instAuditPlan := range instAuditPlans {
+		inst, exist, err := dms.GetInstanceInProjectById(c.Request().Context(), projectUID, instAuditPlan.InstanceID)
+		if !exist {
+			return controller.JSONBaseErrorReq(c, ErrInstanceNotExist)
+		} else if err != nil {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
+		}
+		abnormalAPInst[i] = &AbnormalAuditPlanInstance{
+			InstanceName:        inst.Name,
+			InstanceAuditPlanID: instAuditPlan.ID,
+		}
+	}
+
+	return c.JSON(http.StatusOK, &GetAbnormalAuditPlanInstancesResp{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    abnormalAPInst,
+	})
 }
