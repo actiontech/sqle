@@ -81,7 +81,6 @@ w.deleted_at IS NULL
 {{- if .check_user_can_access }}
 AND (
 w.create_user_id = :current_user_id 
-OR all_ws.assignees REGEXP  :current_user_id
 OR curr_ws.assignees REGEXP :current_user_id
 OR all_ws.operation_user_id = :current_user_id
 OR IF(wr.status = 'wait_for_execution'
