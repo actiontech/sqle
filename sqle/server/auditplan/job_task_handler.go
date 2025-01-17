@@ -1,6 +1,7 @@
 package auditplan
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"time"
 
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
+	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/sirupsen/logrus"
@@ -141,7 +143,7 @@ func SetSQLPriority(sqlList []*model.SQLManageRecord) ([]*model.SQLManageRecord,
 			}
 			auditPlanMap[sourceId] = auditPlan
 		}
-		priority, _, err := GetSingleSQLPriorityWithReasons(auditPlan, sql_)
+		priority, _, err := GetSingleSQLPriorityWithReasons(context.TODO(), auditPlan, sql_)
 		if err != nil {
 			return nil, err
 		}
@@ -156,7 +158,7 @@ func SetSQLPriority(sqlList []*model.SQLManageRecord) ([]*model.SQLManageRecord,
 }
 
 // 获取SQL的优先级以及优先级触发的原因，只有高优先级或者无优先级，若是高优先级，则返回model.PriorityHigh=high,如果无优先级则返回空字符串
-func GetSingleSQLPriorityWithReasons(auditPlan *model.AuditPlanV2, sql *model.SQLManageRecord) (priority string, reasons []string, err error) {
+func GetSingleSQLPriorityWithReasons(ctx context.Context, auditPlan *model.AuditPlanV2, sql *model.SQLManageRecord) (priority string, reasons []string, err error) {
 	if auditPlan == nil || sql == nil {
 		return "", reasons, nil
 	}
@@ -166,12 +168,14 @@ func GetSingleSQLPriorityWithReasons(auditPlan *model.AuditPlanV2, sql *model.SQ
 	}
 	toAuditLevel := func(valueToBeCompared string) string {
 		switch valueToBeCompared {
+		case "0":
+			return locale.Bundle.LocalizeMsgByCtx(ctx, locale.RuleLevelNormal)
 		case "1":
-			return "提示"
+			return locale.Bundle.LocalizeMsgByCtx(ctx, locale.RuleLevelNotice)
 		case "2":
-			return "警告"
+			return locale.Bundle.LocalizeMsgByCtx(ctx, locale.RuleLevelWarn)
 		case "3":
-			return "错误"
+			return locale.Bundle.LocalizeMsgByCtx(ctx, locale.RuleLevelError)
 		default:
 			return valueToBeCompared
 		}
@@ -189,6 +193,8 @@ func GetSingleSQLPriorityWithReasons(auditPlan *model.AuditPlanV2, sql *model.SQ
 				valueToBeCompared = "2"
 			case string(driverV2.RuleLevelError):
 				valueToBeCompared = "3"
+			case string(driverV2.RuleLevelNormal):
+				valueToBeCompared = "0"
 			default:
 				valueToBeCompared = "0"
 			}
@@ -203,10 +209,17 @@ func GetSingleSQLPriorityWithReasons(auditPlan *model.AuditPlanV2, sql *model.SQ
 		// 检查是否为高优先级条件
 		if high, err := highPriorityConditions.CompareParamValue(highPriorityCondition.Key, valueToBeCompared); err == nil && high {
 			// 添加匹配的条件作为原因
+			comparedValue := highPriorityCondition.Param.Value
 			if highPriorityCondition.Key == OperationParamAuditLevel {
 				valueToBeCompared = toAuditLevel(valueToBeCompared)
+				comparedValue = toAuditLevel(comparedValue)
 			}
-			reasons = append(reasons, fmt.Sprintf("【%v %v %v，为：%s】", highPriorityCondition.Desc, highPriorityCondition.Operator.Value, highPriorityCondition.Param.Value, valueToBeCompared))
+			reasons = append(reasons, fmt.Sprintf("【%v %v %v，%s %s】",
+				highPriorityCondition.I18nDesc.GetStrInLang(locale.Bundle.GetLangTagFromCtx(ctx)),
+				highPriorityCondition.Operator.Value,
+				comparedValue,
+				locale.Bundle.LocalizeMsgByCtx(ctx, locale.WordIs), valueToBeCompared),
+			)
 		}
 	}
 	if len(reasons) > 0 {

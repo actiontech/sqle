@@ -31,6 +31,15 @@ var (
 	RuleTemplateRuleErr        = &i18n.Message{ID: "RuleTemplateRuleErr", Other: "问题"}
 )
 
+// rule
+var (
+	RuleLevelError  = &i18n.Message{ID: "RuleLevelError", Other: "错误"}
+	RuleLevelWarn   = &i18n.Message{ID: "RuleLevelWarn", Other: "警告"}
+	RuleLevelNotice = &i18n.Message{ID: "RuleLevelNotice", Other: "提示"}
+	RuleLevelNormal = &i18n.Message{ID: "RuleLevelNormal", Other: "常规"}
+	WordIs          = &i18n.Message{ID: "WordIs", Other: "为"}
+)
+
 // task
 var (
 	TaskStatusExecuting        = &i18n.Message{ID: "TaskStatusExecuting", Other: "正在上线"}
