@@ -10,10 +10,10 @@ LEFT JOIN workflow_step_templates AS cur_wst ON cur_ws.workflow_step_template_id
 LEFT JOIN workflow_steps AS op_ws ON w.id = op_ws.workflow_id AND op_ws.state != "initialized"
 LEFT JOIN workflow_step_templates AS op_wst ON op_ws.workflow_step_template_id = op_wst.id
 where w.deleted_at IS NULL
-AND (w.create_user_id = ? OR cur_ws.assignees REGEXP ? OR op_ws.assignees REGEXP ?)
+AND (w.create_user_id = ? OR cur_ws.assignees REGEXP ?)
 `
 	var count int64
-	err := s.db.Raw(query, workflowId, userId, userId, userId).Count(&count).Error
+	err := s.db.Raw(query, workflowId, userId, userId).Count(&count).Error
 	if err != nil {
 		return false, errors.New(errors.ConnectStorageError, err)
 	}
@@ -28,10 +28,10 @@ LEFT JOIN workflow_step_templates AS cur_wst ON cur_ws.workflow_step_template_id
 LEFT JOIN workflow_steps AS op_ws ON w.workflow_id = op_ws.workflow_id AND op_ws.state != "initialized"
 LEFT JOIN workflow_step_templates AS op_wst ON op_ws.workflow_step_template_id = op_wst.id
 where w.deleted_at IS NULL
-AND (w.create_user_id = ? OR cur_ws.assignees REGEXP ? OR op_ws.assignees REGEXP ? OR op_ws.operation_user_id = ?)
+AND (w.create_user_id = ? OR cur_ws.assignees REGEXP ? OR op_ws.operation_user_id = ?)
 `
 	var count int64
-	err := s.db.Raw(query, workflowId, userId, userId, userId, userId).Count(&count).Error
+	err := s.db.Raw(query, workflowId, userId, userId, userId).Count(&count).Error
 	if err != nil {
 		return false, errors.New(errors.ConnectStorageError, err)
 	}
