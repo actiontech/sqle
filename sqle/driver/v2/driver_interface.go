@@ -237,48 +237,10 @@ func (rs *AuditResults) Message() string {
 }
 
 func (rs *AuditResults) Add(level RuleLevel, ruleName string, i18nMsgPattern i18nPkg.I18nStr, args ...interface{}) {
-	if level == "" || len(i18nMsgPattern) == 0 {
-		return
-	}
-
-	defer rs.SortByLevel()
-
-	if ruleName != "" {
-		for _, v := range rs.Results {
-			// 审核结果规则存在则更新
-			if v.RuleName == ruleName {
-				v.Level = level
-				for langTag, msg := range i18nMsgPattern {
-					if len(args) > 0 {
-						msg = fmt.Sprintf(msg, args...)
-					}
-					v.I18nAuditResultInfo[langTag] = AuditResultInfo{
-						Message: msg,
-					}
-				}
-				return
-			}
-		}
-	}
-
-	ar := &AuditResult{
-		Level:               level,
-		RuleName:            ruleName,
-		I18nAuditResultInfo: make(map[language.Tag]AuditResultInfo, len(i18nMsgPattern)),
-	}
-	for langTag, msg := range i18nMsgPattern {
-		if len(args) > 0 {
-			msg = fmt.Sprintf(msg, args...)
-		}
-		ari := AuditResultInfo{
-			Message: msg,
-		}
-		ar.I18nAuditResultInfo[langTag] = ari
-	}
-	rs.Results = append(rs.Results, ar)
+	rs.AddResultWithError(level, ruleName, "", false, i18nMsgPattern, args)
 }
 
-func (rs *AuditResults) AddResultWithError(level RuleLevel, ruleName, errorMsg string, i18nMsgPattern i18nPkg.I18nStr, args ...interface{}) {
+func (rs *AuditResults) AddResultWithError(level RuleLevel, ruleName, errorMsg string, executionFailed bool, i18nMsgPattern i18nPkg.I18nStr, args ...interface{}) {
 	if level == "" || len(i18nMsgPattern) == 0 {
 		return
 	}
@@ -307,7 +269,7 @@ func (rs *AuditResults) AddResultWithError(level RuleLevel, ruleName, errorMsg s
 	ar := &AuditResult{
 		Level:               level,
 		RuleName:            ruleName,
-		ExecutionFailed:     true,
+		ExecutionFailed:     executionFailed,
 		I18nAuditResultInfo: make(map[language.Tag]AuditResultInfo, len(i18nMsgPattern)),
 	}
 	for langTag, msg := range i18nMsgPattern {

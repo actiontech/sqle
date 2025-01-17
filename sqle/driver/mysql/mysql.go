@@ -390,7 +390,7 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 		}
 
 		if err := handler.Func(input); err != nil {
-			i.result.AddResultWithError(rule.Level, rule.Name, err.Error(), plocale.Bundle.LocalizeAll(rulepkg.RuleHandlerMap[rule.Name].Message))
+			i.result.AddResultWithError(rule.Level, rule.Name, err.Error(), true, plocale.Bundle.LocalizeAll(rulepkg.RuleHandlerMap[rule.Name].Message))
 			i.Logger().Errorf("rule_desc_name=%v rule_desc=%v err:%v", rule.Name, rule.I18nRuleInfo[i18nPkg.DefaultLang].Desc, err.Error())
 		}
 	}
