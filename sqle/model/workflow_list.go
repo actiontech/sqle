@@ -72,7 +72,7 @@ LEFT JOIN workflow_version_stages AS stages ON stages.workflow_id = w.workflow_i
 LEFT JOIN sql_versions AS versions ON stages.sql_version_id = versions.id AND versions.deleted_at IS NULL
 
 {{- if .check_user_can_access }}
-LEFT JOIN workflow_steps AS all_ws ON w.id = all_ws.workflow_id AND all_ws.state !='initialized'
+LEFT JOIN workflow_steps AS all_ws ON w.workflow_id = all_ws.workflow_id AND all_ws.state !='initialized'
 LEFT JOIN workflow_step_templates AS all_wst ON all_ws.workflow_step_template_id = all_wst.id
 {{- end }}
 WHERE
@@ -81,8 +81,8 @@ w.deleted_at IS NULL
 {{- if .check_user_can_access }}
 AND (
 w.create_user_id = :current_user_id 
-OR all_ws.assignees REGEXP  :current_user_id
 OR curr_ws.assignees REGEXP :current_user_id
+OR all_ws.operation_user_id = :current_user_id
 OR IF(wr.status = 'wait_for_execution'
 				, wir.execution_assignees REGEXP :current_user_id
 				, '')

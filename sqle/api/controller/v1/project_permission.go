@@ -57,7 +57,7 @@ func CheckCurrentUserCanViewWorkflow(c echo.Context, projectUid string, workflow
 	}
 
 	s := model.GetStorage()
-	access, err := s.UserCanAccessWorkflow(userId, workflow.WorkflowId)
+	access, err := s.UserCanViewWorkflow(userId, workflow.WorkflowId)
 	if err != nil {
 		return err
 	}
@@ -147,7 +147,7 @@ func checkCurrentUserCanViewTask(c echo.Context, task *model.Task, ops []dmsV1.O
 		return errors.NewTaskNoExistOrNoAccessErr()
 	}
 
-	access, err := s.UserCanAccessWorkflow(userId, workflowId)
+	access, err := s.UserCanViewWorkflow(userId, workflowId)
 	if err != nil {
 		return err
 	}

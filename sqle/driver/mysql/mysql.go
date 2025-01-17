@@ -99,8 +99,8 @@ func (inspect *MysqlDriverImpl) applyConfig(cfg *driverV2.Config) {
 	inspect.isOfflineAudit = cfg.DSN == nil
 
 	inspect.cnf = &Config{
-		DDLOSCMinSize:      -1,
-		DDLGhostMinSize:    -1,
+		DDLOSCMinSize:   -1,
+		DDLGhostMinSize: -1,
 	}
 	for _, rule := range cfg.Rules {
 		if rule.Name == rulepkg.ConfigDDLOSCMinSize {
@@ -390,12 +390,8 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 		}
 
 		if err := handler.Func(input); err != nil {
-			// todo #1630 临时跳过解析建表语句失败导致的规则
-			if session.IsParseShowCreateTableContentErr(err) {
-				i.Logger().Errorf("skip rule, rule_desc_name=%v rule_desc=%v err:%v", rule.Name, rule.I18nRuleInfo[i18nPkg.DefaultLang].Desc, err.Error())
-				continue
-			}
-			return nil, err
+			i.result.AddResultWithError(rule.Level, rule.Name, err.Error(), true, plocale.Bundle.LocalizeAll(rulepkg.RuleHandlerMap[rule.Name].Message))
+			i.Logger().Errorf("rule_desc_name=%v rule_desc=%v err:%v", rule.Name, rule.I18nRuleInfo[i18nPkg.DefaultLang].Desc, err.Error())
 		}
 	}
 
