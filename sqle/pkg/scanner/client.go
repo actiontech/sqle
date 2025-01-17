@@ -95,12 +95,13 @@ func (sc *Client) WithProject(project string) *Client {
 	return &sc2
 }
 
-func (sc *Client) UploadReq(uri string, auditPlanID string, sqlList []*AuditPlanSQLReq) error {
+func (sc *Client) UploadReq(uri, auditPlanID, errorMessage string, sqlList []*AuditPlanSQLReq) error {
 	bodyBuf := &bytes.Buffer{}
 	encoder := json.NewEncoder(bodyBuf)
 	encoder.SetEscapeHTML(false)
 	err := encoder.Encode(&FullSyncAuditPlanSQLsReq{
-		SQLs: sqlList,
+		SQLs:         sqlList,
+		ErrorMessage: errorMessage,
 	})
 	if err != nil {
 		return err

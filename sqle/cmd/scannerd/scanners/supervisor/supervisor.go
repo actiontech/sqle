@@ -29,6 +29,10 @@ func Start(ctx context.Context, scanner scanners.Scanner, leastPushSecond, pushB
 	for {
 		select {
 		case err := <-runErrCh:
+			UploadErr := scanner.Upload(context.TODO(), batch, err.Error())
+			if UploadErr != nil {
+				return errors.Wrap(UploadErr, "failed to upload sql")
+			}
 			return err
 
 		case <-ctx.Done():
@@ -38,7 +42,7 @@ func Start(ctx context.Context, scanner scanners.Scanner, leastPushSecond, pushB
 		case sql, ok := <-sqlCh:
 			if !ok {
 				if len(batch) != 0 {
-					err := scanner.Upload(context.TODO(), batch)
+					err := scanner.Upload(context.TODO(), batch, "")
 					if err != nil {
 						return errors.Wrap(err, "failed to upload sql")
 					}
@@ -57,7 +61,7 @@ func Start(ctx context.Context, scanner scanners.Scanner, leastPushSecond, pushB
 			}
 		}
 		logrus.StandardLogger().Infof("start uploading %d sql\n", len(batch))
-		err := scanner.Upload(context.TODO(), batch)
+		err := scanner.Upload(context.TODO(), batch, "")
 		if err != nil {
 			return errors.Wrap(err, "failed to upload sql")
 		}
