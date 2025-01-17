@@ -798,7 +798,7 @@ func toGlobalSqlManage(ctx context.Context, modelGlobalSqlManages []*model.Globa
 			if err != nil {
 				reasons = append(reasons, fmt.Sprintf("未找到该SQL的智能扫描任务，source id：%v", mg.SourceIDs[0]))
 			}
-			_, reasons, err = auditplan.GetSingleSQLPriorityWithReasons(ap, &model.SQLManageRecord{Info: mg.Info, AuditLevel: mg.AuditLevel.String})
+			_, reasons, err = auditplan.GetSingleSQLPriorityWithReasons(ctx, ap, &model.SQLManageRecord{Info: mg.Info, AuditLevel: mg.AuditLevel.String})
 			if err != nil {
 				reasons = append(reasons, fmt.Sprintf("获取该SQL高优先级的原因失败，err：%v", err.Error()))
 			}
