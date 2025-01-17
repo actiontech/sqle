@@ -534,17 +534,7 @@ func UploadInstanceAuditPlanSQLs(c echo.Context) error {
 	}
 
 	l := log.NewEntry()
-	defer func() {
-		status := model.LastCollectionNormal
-		if err != nil {
-			l.Error(errors.NewAuditPlanExecuteExtractErr(err, ap.InstanceID, ap.Type))
-			status = model.LastCollectionAbnormal
-		}
-		updateErr := s.UpdateAuditPlanInfoByAPID(ap.ID, map[string]interface{}{"last_collection_status": status})
-		if updateErr != nil {
-			l.Errorf("update audit plan task info collection status status failed, error : %v", updateErr)
-		}
-	}()
+	defer auditplan.ProcessAuditPlanStatusAndLogError(l, ap.ID, ap.InstanceID, ap.Type, &err)
 	// 当scannerd执行出现错误时，将任务状态改为异常并日志打印错误信息
 	if req.ErrorMessage != "" && len(req.SQLs) == 0 {
 		err = fmt.Errorf("error message received: %s", req.ErrorMessage)
