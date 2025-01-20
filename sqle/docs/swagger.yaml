@@ -4011,6 +4011,8 @@ definitions:
         $ref: '#/definitions/v1.ExplainClassicResult'
         description: explain result in table format
         type: object
+      cost:
+        type: string
       message:
         type: string
       sql:

@@ -352,6 +352,7 @@ func convertSQLAnalysisResultToRes(ctx context.Context, res *AnalysisResult, raw
 	// explain
 	{
 		data.SQLExplain = &SQLExplain{SQL: rawSQL}
+		data.SQLExplain.Cost = *res.Cost
 		if res.ExplainResultErr != nil {
 			data.SQLExplain.Message = res.ExplainResultErr.Error()
 		} else {
