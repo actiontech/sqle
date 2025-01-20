@@ -89,6 +89,8 @@ type SQLAuditResult struct {
 	Message             string                    `json:"message" example:"避免使用不必要的内置函数md5()"`
 	RuleName            string                    `json:"rule_name"`
 	DbType              string                    `json:"db_type"`
+	ExecutionFailed     bool                      `json:"execution_failed" example:"false"`
+	ErrorInfo           string                    `json:"error_info"`
 	I18nAuditResultInfo model.I18nAuditResultInfo `json:"i18n_audit_result_info"`
 }
 
