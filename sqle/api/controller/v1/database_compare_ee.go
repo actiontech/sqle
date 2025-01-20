@@ -205,6 +205,8 @@ func convertTaskAuditResults(c context.Context, taskAuditResults model.AuditResu
 		auditResults[i] = &SQLAuditResult{
 			Level:               auditResult.Level,
 			Message:             auditResult.GetAuditMsgByLangTag(locale.Bundle.GetLangTagFromCtx(c)),
+			ErrorInfo:           auditResult.GetAuditErrorMsgByLangTag(locale.Bundle.GetLangTagFromCtx(c)),
+			ExecutionFailed:     auditResult.ExecutionFailed,
 			RuleName:            auditResult.RuleName,
 			DbType:              dbType,
 			I18nAuditResultInfo: auditResult.I18nAuditResultInfo,
