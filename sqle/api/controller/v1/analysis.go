@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"github.com/pkg/errors"
 
 	"github.com/actiontech/sqle/sqle/common"
 	"github.com/actiontech/sqle/sqle/driver"
@@ -11,6 +12,7 @@ import (
 )
 
 type AnalysisResult struct {
+	Cost             *string
 	ExplainResult    *driverV2.ExplainResult
 	ExplainResultErr error
 
@@ -35,11 +37,33 @@ func GetSQLAnalysisResult(l *logrus.Entry, instance *model.Instance, schema, sql
 	defer plugin.Close(context.TODO())
 
 	res = &AnalysisResult{}
+
+	res.Cost, err = GetQueryCost(plugin, sql)
 	res.ExplainResult, res.ExplainResultErr = Explain(instance.DbType, plugin, sql)
 	res.TableMetaResult, res.TableMetaResultErr = GetTableMetas(instance.DbType, plugin, sql)
 	res.AffectRowsResult, res.AffectRowsResultErr = GetRowsAffected(instance.DbType, plugin, sql)
 
 	return res, nil
+}
+
+func GetQueryCost(plugin driver.Plugin, sql string) (cost *string, err error) {
+	explainJSONResult, err := plugin.ExplainJSONFormat(context.TODO(), &driverV2.ExplainConf{Sql: sql})
+	if err != nil {
+		return nil, err
+	}
+	sqlNodes, err := plugin.Parse(context.TODO(), sql)
+	if err != nil {
+		return nil, err
+	}
+	if len(sqlNodes) == 0 {
+		return nil, errors.Errorf("failed to get query cost invalid sql: %v", sql)
+	}
+	// 不是SELECT语句直接忽略
+	if sqlNodes[0].Type != driverV2.SQLTypeDQL {
+		return nil, errors.Errorf("failed to get query cost because it is not DQL: %v", sql)
+	}
+	cost = &explainJSONResult.QueryBlock.CostInfo.QueryCost
+	return cost, nil
 }
 
 func Explain(dbType string, plugin driver.Plugin, sql string) (res *driverV2.ExplainResult, err error) {
