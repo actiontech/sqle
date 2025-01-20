@@ -4,6 +4,8 @@ import (
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/pingcap/parser/ast"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -11,20 +13,21 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
-			Name:       SQLE00123,
-			Desc:       "禁止使用TRUNCATE操作",
-			Annotation: "TRUNCATE是DDL，执行后数据默认隐式提交，无法回滚，在没有备份的场景下，谨慎使用TRUNCATE",
-			Level:      driverV2.RuleLevelNotice,
-			Category:   rulepkg.RuleTypeIndexInvalidation,
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
+			Name:         SQLE00123,
+			Desc:         plocale.Rule00123Desc,
+			Annotation:   plocale.Rule00123Annotation,
+			Category:     plocale.RuleTypeIndexInvalidation,
+			Level:        driverV2.RuleLevelNotice,
+			Params:       []*rulepkg.SourceParam{},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: true,
 		},
-		Message: "禁止使用TRUNCATE操作.",
-		AllowOffline: true,
+		Message: plocale.Rule00123Message,
 		Func:    RuleSQLE00123,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

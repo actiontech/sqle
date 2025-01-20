@@ -7,8 +7,9 @@ import (
 	util "github.com/actiontech/sqle/sqle/driver/mysql/rule/ai/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/log"
-	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -16,21 +17,21 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
-			Name:       SQLE00057,
-			Desc:       "必须使用INNODB数据库引擎",
-			Annotation: "INNODB 支持事务，支持行级锁，更好的恢复性，高并发下性能更好。",
-			Level:      driverV2.RuleLevelWarn,
-			Category:   rulepkg.RuleTypeDMLConvention,
-			Params:     params.Params{},
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
+			Name:         SQLE00057,
+			Desc:         plocale.Rule00057Desc,
+			Annotation:   plocale.Rule00057Annotation,
+			Category:     plocale.RuleTypeDMLConvention,
+			Level:        driverV2.RuleLevelWarn,
+			Params:       []*rulepkg.SourceParam{},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: false,
 		},
-		Message:      "必须使用INNODB数据库引擎",
-		AllowOffline: false,
-		Func:         RuleSQLE00057,
+		Message: plocale.Rule00057Message,
+		Func:    RuleSQLE00057,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

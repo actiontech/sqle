@@ -5,9 +5,10 @@ import (
 
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
-	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
 	parserdriver "github.com/pingcap/tidb/types/parser_driver"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -15,21 +16,21 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
-			Name:       SQLE00161,
-			Desc:       "建议序列或自增字段的步长为1",
-			Annotation: "序列或自增字段的步长为1时，有助于保证主键和其他自增字段的连续性，避免不必要的数据间隔和数字资源的浪费。不仅简化了数据库的管理和维护，而且也提高了系统的可预测性和稳定性。特别是在处理大量数据插入或高并发场景时，连续的主键值还能减少潜在的冲突和错误。",
-			Level:      driverV2.RuleLevelWarn,
-			Category:   rulepkg.RuleTypeDMLConvention,
-			Params:     params.Params{},
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
+			Name:         SQLE00161,
+			Desc:         plocale.Rule00161Desc,
+			Annotation:   plocale.Rule00161Annotation,
+			Category:     plocale.RuleTypeDMLConvention,
+			Level:        driverV2.RuleLevelWarn,
+			Params:       []*rulepkg.SourceParam{},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: true,
 		},
-		Message:      "建议序列或自增字段的步长为1",
-		AllowOffline: true,
-		Func:         RuleSQLE00161,
+		Message: plocale.Rule00161Message,
+		Func:    RuleSQLE00161,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

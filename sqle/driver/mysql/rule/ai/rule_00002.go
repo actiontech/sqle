@@ -6,6 +6,8 @@ import (
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
 	parserdriver "github.com/pingcap/tidb/types/parser_driver"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -13,28 +15,27 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
 			Name:       SQLE00002,
-			Desc:       "SQL绑定的变量个数不建议超过阈值",
-			Annotation: "过度使用绑定变量会增加查询的复杂度，从而降低查询性能。同时还会增加维护成本。SQLE设置MySQL绑定变量个数最大阈值：100",
+			Desc:       plocale.Rule00002Desc,
+			Annotation: plocale.Rule00002Annotation,
+			Category:   plocale.RuleTypeDMLConvention,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   rulepkg.RuleTypeDMLConvention,
-			Params: params.Params{
-				&params.Param{
-					Key:   rulepkg.DefaultSingleParamKeyName,
-					Value: "100",
-					Desc:  "绑定变量阈值",
-					Type:  params.ParamTypeString,
-				},
-			},
+			Params: []*rulepkg.SourceParam{{
+				Key:   rulepkg.DefaultSingleParamKeyName,
+				Value: "100",
+				Desc:  plocale.Rule00002Params1,
+				Type:  params.ParamTypeString,
+				Enums: nil,
+			}},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: true,
 		},
-		Message:      "SQL绑定的变量个数不建议超过阈值",
-		AllowOffline: true,
-		Func:         RuleSQLE00002,
+		Message: plocale.Rule00002Message,
+		Func:    RuleSQLE00002,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

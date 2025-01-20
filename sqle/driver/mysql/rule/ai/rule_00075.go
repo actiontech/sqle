@@ -5,6 +5,8 @@ import (
 	util "github.com/actiontech/sqle/sqle/driver/mysql/rule/ai/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/pingcap/parser/ast"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -12,20 +14,21 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
-			Name:       SQLE00075,
-			Desc:       "建议列与表使用同一个字符集",
-			Annotation: "统一字符集可以避免由于字符集转换产生的乱码，不同的字符集进行比较前需要进行转换会造成索引失效",
-			Level:      driverV2.RuleLevelWarn,
-			Category:   rulepkg.RuleTypeDDLConvention,
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
+			Name:         SQLE00075,
+			Desc:         plocale.Rule00075Desc,
+			Annotation:   plocale.Rule00075Annotation,
+			Category:     plocale.RuleTypeDDLConvention,
+			Level:        driverV2.RuleLevelWarn,
+			Params:       []*rulepkg.SourceParam{},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: false,
 		},
-		Message: "建议列与表使用同一个字符集. 不符合规则的字段: %v",
-		AllowOffline: false,
+		Message: plocale.Rule00075Message,
 		Func:    RuleSQLE00075,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

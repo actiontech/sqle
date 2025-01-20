@@ -8,8 +8,9 @@ import (
 
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
-	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -17,21 +18,21 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
-			Name:       SQLE00048,
-			Desc:       "数据库对象命名只能使用英文、下划线或数字，首字母必须是英文",
-			Annotation: "遵循良好的命名约定和避免特殊字符的使用，可以提高代码的可读性、可维护性，并减少潜在的兼容性和语法问题。",
-			Level:      driverV2.RuleLevelWarn,
-			Category:   rulepkg.RuleTypeNamingConvention,
-			Params:     params.Params{},
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
+			Name:         SQLE00048,
+			Desc:         plocale.Rule00048Desc,
+			Annotation:   plocale.Rule00048Annotation,
+			Category:     plocale.RuleTypeNamingConvention,
+			Level:        driverV2.RuleLevelWarn,
+			Params:       []*rulepkg.SourceParam{},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: true,
 		},
-		Message:      "数据库对象命名只能使用英文、下划线或数字，首字母必须是英文",
-		AllowOffline: true,
-		Func:         RuleSQLE00048,
+		Message: plocale.Rule00048Message,
+		Func:    RuleSQLE00048,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

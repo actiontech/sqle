@@ -4,9 +4,10 @@ import (
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	util "github.com/actiontech/sqle/sqle/driver/mysql/rule/ai/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
-	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/mysql"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -14,21 +15,21 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
-			Name:       SQLE00068,
-			Desc:       "禁止使用TIMESTAMP字段",
-			Annotation: "TIMESTAMP类型字段受制于2038年问题，其时间范围仅限于1970-01-01 00:00:01 UTC至2038-01-19 03:14:07 UTC。超过这个时间范围，TIMESTAMP将无法存储更晚的时间点，导致应用报错。此外，TIMESTAMP字段在存储时会根据数据库服务器的时区进行转换，这可能导致跨时区应用中的时间不一致问题。",
-			Level:      driverV2.RuleLevelWarn,
-			Category:   rulepkg.RuleTypeDMLConvention,
-			Params:     params.Params{},
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
+			Name:         SQLE00068,
+			Desc:         plocale.Rule00068Desc,
+			Annotation:   plocale.Rule00068Annotation,
+			Category:     plocale.RuleTypeDMLConvention,
+			Level:        driverV2.RuleLevelWarn,
+			Params:       []*rulepkg.SourceParam{},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: true,
 		},
-		Message:      "禁止使用TIMESTAMP字段",
-		AllowOffline: true,
-		Func:         RuleSQLE00068,
+		Message: plocale.Rule00068Message,
+		Func:    RuleSQLE00068,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

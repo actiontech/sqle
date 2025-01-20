@@ -3,8 +3,9 @@ package ai
 import (
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
-	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -12,21 +13,21 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
-			Name:       SQLE00092,
-			Desc:       "建议DELETE/UPDATE语句使用LIMIT子句控制影响行数",
-			Annotation: "在进行DELETE和UPDATE操作时，通过添加LIMIT子句可以明确限制操作影响的数据行数。这样做有助于减少由于执行错误而导致的数据损失风险，并可以有效地控制长事务的执行时间，降低对数据库性能的影响。",
-			Level:      driverV2.RuleLevelWarn,
-			Category:   rulepkg.RuleTypeDMLConvention,
-			Params:     params.Params{},
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
+			Name:         SQLE00092,
+			Desc:         plocale.Rule00092Desc,
+			Annotation:   plocale.Rule00092Annotation,
+			Category:     plocale.RuleTypeDMLConvention,
+			Level:        driverV2.RuleLevelWarn,
+			Params:       []*rulepkg.SourceParam{},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: true,
 		},
-		Message:      "建议DELETE/UPDATE语句使用LIMIT子句控制影响行数",
-		AllowOffline: true,
-		Func:         RuleSQLE00092,
+		Message: plocale.Rule00092Message,
+		Func:    RuleSQLE00092,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

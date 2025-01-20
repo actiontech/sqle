@@ -5,8 +5,9 @@ import (
 
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
-	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -14,21 +15,21 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
-			Name:       SQLE00066,
-			Desc:       "禁止除索引外的DROP 操作",
-			Annotation: "DROP 操作是数据定义语言（DDL）的一部分，一旦执行，将导致无法恢复的数据或结构丢失。在不恰当的情况下执行DROP操作可能导致数据丢失、系统功能缺失甚至业务中断。",
-			Level:      driverV2.RuleLevelError,
-			Category:   rulepkg.RuleTypeDDLConvention,
-			Params:     params.Params{},
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
+			Name:         SQLE00066,
+			Desc:         plocale.Rule00066Desc,
+			Annotation:   plocale.Rule00066Annotation,
+			Category:     plocale.RuleTypeDDLConvention,
+			Level:        driverV2.RuleLevelError,
+			Params:       []*rulepkg.SourceParam{},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: true,
 		},
-		Message:      "禁止除索引外的DROP 操作",
-		AllowOffline: true,
-		Func:         RuleSQLE00066,
+		Message: plocale.Rule00066Message,
+		Func:    RuleSQLE00066,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

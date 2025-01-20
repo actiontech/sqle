@@ -9,6 +9,8 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -16,28 +18,27 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
 			Name:       SQLE00180,
-			Desc:       "避免执行计划中 filter 次数过多",
-			Annotation: "执行计划中的filter 步骤表示查询在检索数据之后需要进行额外的行过滤。过滤通常发生在已经通过索引或其他方法获取的行集上。如果这个步骤处理的行数很多，那么它可能会成为查询性能的瓶颈。",
+			Desc:       plocale.Rule00180Desc,
+			Annotation: plocale.Rule00180Annotation,
+			Category:   plocale.RuleTypeDMLConvention,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   rulepkg.RuleTypeDMLConvention,
-			Params: params.Params{
-				&params.Param{
-					Key:   rulepkg.DefaultSingleParamKeyName,
-					Value: "2",
-					Desc:  "filter 个数阈值",
-					Type:  params.ParamTypeInt,
-				},
-			},
+			Params: []*rulepkg.SourceParam{{
+				Key:   rulepkg.DefaultSingleParamKeyName,
+				Value: "2",
+				Desc:  plocale.Rule00180Params1,
+				Type:  params.ParamTypeInt,
+				Enums: nil,
+			}},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: false,
 		},
-		Message:      "避免执行计划中 filter 次数过多",
-		AllowOffline: false,
-		Func:         RuleSQLE00180,
+		Message: plocale.Rule00180Message,
+		Func:    RuleSQLE00180,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

@@ -6,6 +6,8 @@ import (
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/mysql"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -13,28 +15,27 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
 			Name:       SQLE00174,
-			Desc:       "禁止GRANT 授予过高权限",
-			Annotation: "授予过高权限，可能会带来严重的安全风险。",
+			Desc:       plocale.Rule00174Desc,
+			Annotation: plocale.Rule00174Annotation,
+			Category:   plocale.RuleTypeDMLConvention,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   rulepkg.RuleTypeDMLConvention,
-			Params: params.Params{
-				&params.Param{
-					Key:   rulepkg.DefaultSingleParamKeyName,
-					Value: "ALL,SUPER,WITH GRANT OPTION",
-					Desc:  "高权限范围",
-					Type:  params.ParamTypeString,
-				},
-			},
+			Params: []*rulepkg.SourceParam{{
+				Key:   rulepkg.DefaultSingleParamKeyName,
+				Value: "ALL,SUPER,WITH GRANT OPTION",
+				Desc:  plocale.Rule00174Params1,
+				Type:  params.ParamTypeString,
+				Enums: nil,
+			}},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: true,
 		},
-		Message:      "禁止GRANT 授予过高权限",
-		AllowOffline: true,
-		Func:         RuleSQLE00174,
+		Message: plocale.Rule00174Message,
+		Func:    RuleSQLE00174,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

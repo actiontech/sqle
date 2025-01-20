@@ -9,6 +9,8 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -16,28 +18,27 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
 			Name:       SQLE00108,
-			Desc:       "避免子查询嵌套层数过多",
-			Annotation: "子查询嵌套层数超过阈值，有些情况下，子查询并不能使用到索引。同时对于返回结果集比较大的子查询，会产生大量的临时表，消耗过多的CPU和IO资源，产生大量的慢查询",
+			Desc:       plocale.Rule00108Desc,
+			Annotation: plocale.Rule00108Annotation,
+			Category:   plocale.RuleTypeDMLConvention,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   rulepkg.RuleTypeDMLConvention,
-			Params: params.Params{
-				&params.Param{
-					Key:   rulepkg.DefaultSingleParamKeyName,
-					Value: "5",
-					Desc:  "子查询嵌套层数",
-					Type:  params.ParamTypeString,
-				},
-			},
+			Params: []*rulepkg.SourceParam{{
+				Key:   rulepkg.DefaultSingleParamKeyName,
+				Value: "5",
+				Desc:  plocale.Rule00108Params1,
+				Type:  params.ParamTypeString,
+				Enums: nil,
+			}},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: true,
 		},
-		Message:      "避免子查询嵌套层数过多",
-		AllowOffline: true,
-		Func:         RuleSQLE00108,
+		Message: plocale.Rule00108Message,
+		Func:    RuleSQLE00108,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

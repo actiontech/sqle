@@ -6,9 +6,10 @@ import (
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	util "github.com/actiontech/sqle/sqle/driver/mysql/rule/ai/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
-	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
 	parserdriver "github.com/pingcap/tidb/types/parser_driver"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -16,21 +17,21 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
-			Name:       SQLE00004,
-			Desc:       "建议表的自增字段起始值为0",
-			Annotation: "创建表时AUTO_INCREMENT设置为0则自增从1开始，可以避免数据空洞。例如在导出表结构DDL时，表结构内AUTO_INCREMENT通常为当前的自增值，如果建表时没有把AUTO_INCREMENT设置为0，那么通过该DDL进行建表操作会导致自增值从一个无意义数字开始。",
-			Level:      driverV2.RuleLevelWarn,
-			Category:   rulepkg.RuleTypeDMLConvention,
-			Params:     params.Params{},
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
+			Name:         SQLE00004,
+			Desc:         plocale.Rule00004Desc,
+			Annotation:   plocale.Rule00004Annotation,
+			Category:     plocale.RuleTypeDMLConvention,
+			Level:        driverV2.RuleLevelWarn,
+			Params:       []*rulepkg.SourceParam{},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: true,
 		},
-		Message:      "建议表的自增字段起始值为0",
-		AllowOffline: true,
-		Func:         RuleSQLE00004,
+		Message: plocale.Rule00004Message,
+		Func:    RuleSQLE00004,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

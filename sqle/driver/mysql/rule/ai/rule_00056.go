@@ -9,6 +9,8 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -16,28 +18,27 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
 			Name:       SQLE00056,
-			Desc:       "表建议使用指定的字符集",
-			Annotation: "数据库内使用非标准的字符集，可能导致字符无法编码或者编码不全引起的乱码，最终出现应用写入数据失败或者查询结果显示乱码，影响数据库服务可用性。",
+			Desc:       plocale.Rule00056Desc,
+			Annotation: plocale.Rule00056Annotation,
+			Category:   plocale.RuleTypeDDLConvention,
 			Level:      driverV2.RuleLevelError,
-			Category:   rulepkg.RuleTypeDDLConvention,
-			Params: params.Params{
-				&params.Param{
-					Key:   rulepkg.DefaultSingleParamKeyName,
-					Value: "UTF8MB4",
-					Desc:  "标准字符集",
-					Type:  params.ParamTypeString,
-				},
-			},
+			Params: []*rulepkg.SourceParam{{
+				Key:   rulepkg.DefaultSingleParamKeyName,
+				Value: "UTF8MB4",
+				Desc:  plocale.Rule00056Params1,
+				Type:  params.ParamTypeString,
+				Enums: nil,
+			}},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: true,
 		},
-		Message:      "表建议使用指定的字符集: %v",
-		AllowOffline: true,
-		Func:         RuleSQLE00056,
+		Message: plocale.Rule00056Message,
+		Func:    RuleSQLE00056,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

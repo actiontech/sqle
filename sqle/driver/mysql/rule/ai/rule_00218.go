@@ -6,6 +6,8 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/pingcap/parser/ast"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -13,20 +15,21 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
-			Name:       SQLE00218,
-			Desc:       "联合索引最左侧的字段必须出现在查询条件内",
-			Annotation: "当查询条件包含联合索引的最左侧字段时，查询语句才能更好的利用索引的特性：有序性、过滤性等",
-			Level:      driverV2.RuleLevelWarn,
-			Category:   rulepkg.RuleTypeIndexInvalidation,
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
+			Name:         SQLE00218,
+			Desc:         plocale.Rule00218Desc,
+			Annotation:   plocale.Rule00218Annotation,
+			Category:     plocale.RuleTypeIndexInvalidation,
+			Level:        driverV2.RuleLevelWarn,
+			Params:       []*rulepkg.SourceParam{},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: false,
 		},
-		Message:      "联合索引最左侧的字段必须出现在查询条件内. 不符合规范的字段: %v",
-		AllowOffline: false,
-		Func:         RuleSQLE00218,
+		Message: plocale.Rule00218Message,
+		Func:    RuleSQLE00218,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

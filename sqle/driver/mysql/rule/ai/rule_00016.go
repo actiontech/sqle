@@ -4,9 +4,10 @@ import (
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	util "github.com/actiontech/sqle/sqle/driver/mysql/rule/ai/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
-	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/mysql"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -14,21 +15,21 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
-			Name:       SQLE00016,
-			Desc:       "存储大数据类型（如长文本、图片等）的字段只能设置为NULL",
-			Annotation: "在MySQL中，存储大数据类型的内容常用BLOB和TEXT、GEOMETRY以及JSON类型，但它们无法指定默认值；写入数据时，如未对该字段指定值会导致写入失败。",
-			Level:      driverV2.RuleLevelError,
-			Category:   rulepkg.RuleTypeDMLConvention,
-			Params:     params.Params{},
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
+			Name:         SQLE00016,
+			Desc:         plocale.Rule00016Desc,
+			Annotation:   plocale.Rule00016Annotation,
+			Category:     plocale.RuleTypeDMLConvention,
+			Level:        driverV2.RuleLevelError,
+			Params:       []*rulepkg.SourceParam{},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: true,
 		},
-		Message:      "存储大数据类型（如长文本、图片等）的字段只能设置为NULL",
-		AllowOffline: true,
-		Func:         RuleSQLE00016,
+		Message: plocale.Rule00016Message,
+		Func:    RuleSQLE00016,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

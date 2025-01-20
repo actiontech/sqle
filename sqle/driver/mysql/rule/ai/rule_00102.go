@@ -4,8 +4,9 @@ import (
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	"github.com/actiontech/sqle/sqle/driver/mysql/rule/ai/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
-	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -13,21 +14,21 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
-			Name:       SQLE00102,
-			Desc:       "禁止UPDATE/DELETE语句使用ORDER BY操作 ",
-			Annotation: "使用ORDER BY子句的UPDATE或DELETE语句会导致不必要的性能开销，影响数据库响应时间，并可能导致锁竞争，从而影响到系统的整体性能和稳定性。",
-			Level:      driverV2.RuleLevelError,
-			Category:   rulepkg.RuleTypeDMLConvention,
-			Params:     params.Params{},
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
+			Name:         SQLE00102,
+			Desc:         plocale.Rule00102Desc,
+			Annotation:   plocale.Rule00102Annotation,
+			Category:     plocale.RuleTypeDMLConvention,
+			Level:        driverV2.RuleLevelError,
+			Params:       []*rulepkg.SourceParam{},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: true,
 		},
-		Message:      "禁止UPDATE/DELETE语句使用ORDER BY操作 ",
-		AllowOffline: true,
-		Func:         RuleSQLE00102,
+		Message: plocale.Rule00102Message,
+		Func:    RuleSQLE00102,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

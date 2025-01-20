@@ -10,6 +10,8 @@ import (
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -17,28 +19,27 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
 			Name:       SQLE00041,
-			Desc:       "唯一索引必须使用固定前缀",
-			Annotation: "通过配置该规则可以规范指定业务的唯一索引命名规则，具体命名规范可以自定义设置。",
+			Desc:       plocale.Rule00041Desc,
+			Annotation: plocale.Rule00041Annotation,
+			Category:   plocale.RuleTypeDMLConvention,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   rulepkg.RuleTypeDMLConvention,
-			Params: params.Params{
-				&params.Param{
-					Key:   rulepkg.DefaultSingleParamKeyName,
-					Value: "uniq_",
-					Desc:  "固定前缀",
-					Type:  params.ParamTypeString,
-				},
-			},
+			Params: []*rulepkg.SourceParam{{
+				Key:   rulepkg.DefaultSingleParamKeyName,
+				Value: "uniq_",
+				Desc:  plocale.Rule00041Params1,
+				Type:  params.ParamTypeString,
+				Enums: nil,
+			}},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: false,
 		},
-		Message:      "唯一索引必须使用固定前缀",
-		AllowOffline: false,
-		Func:         RuleSQLE00041,
+		Message: plocale.Rule00041Message,
+		Func:    RuleSQLE00041,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

@@ -8,6 +8,8 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -15,29 +17,27 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
 			Name:       SQLE00023,
-			Desc:       "主键包含的列数不建议超过阈值",
-			Annotation: "主建中的列过多，会导致二级索引占用更多的空间，同时增加索引维护的开销；具体规则阈值可根据业务需求调整，默认值：2",
+			Desc:       plocale.Rule00023Desc,
+			Annotation: plocale.Rule00023Annotation,
+			Category:   plocale.RuleTypeDDLConvention,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   rulepkg.RuleTypeDDLConvention,
-			Params: params.Params{
-				&params.Param{
-					Key:   rulepkg.DefaultSingleParamKeyName,
-					Value: "2",
-					Desc:  "最大列数",
-					Type:  params.ParamTypeInt,
-				},
-			},
+			Params: []*rulepkg.SourceParam{{
+				Key:   rulepkg.DefaultSingleParamKeyName,
+				Value: "2",
+				Desc:  plocale.Rule00023Params1,
+				Type:  params.ParamTypeInt,
+				Enums: nil,
+			}},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: true,
 		},
-
-		Message: "主键包含的列数不建议超过阈值. 阈值: %v",
-		AllowOffline: true,
+		Message: plocale.Rule00023Message,
 		Func:    RuleSQLE00023,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

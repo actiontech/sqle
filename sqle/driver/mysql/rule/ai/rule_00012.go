@@ -4,9 +4,10 @@ import (
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	util "github.com/actiontech/sqle/sqle/driver/mysql/rule/ai/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
-	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/mysql"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -14,21 +15,21 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
-			Name:       SQLE00012,
-			Desc:       "建议使用BIGINT类型表示小数",
-			Annotation: "在MySQL中，对于金额等需要高精度计算的小数，建议使用BIGINT类型表示，以避免浮点数精度问题。例如，可以用分来表示金额，1元在数据库中用整型表示为100。",
-			Level:      driverV2.RuleLevelNotice,
-			Category:   rulepkg.RuleTypeDMLConvention,
-			Params:     params.Params{},
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
+			Name:         SQLE00012,
+			Desc:         plocale.Rule00012Desc,
+			Annotation:   plocale.Rule00012Annotation,
+			Category:     plocale.RuleTypeDMLConvention,
+			Level:        driverV2.RuleLevelNotice,
+			Params:       []*rulepkg.SourceParam{},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: true,
 		},
-		Message:      "建议使用BIGINT类型表示小数",
-		AllowOffline: true,
-		Func:         RuleSQLE00012,
+		Message: plocale.Rule00012Message,
+		Func:    RuleSQLE00012,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

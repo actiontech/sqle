@@ -6,6 +6,8 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/opcode"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -13,20 +15,21 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
-			Name:       SQLE00115,
-			Desc:       "避免使用标量子查询",
-			Annotation: "当查询条件包含联合索引的最左侧字段时，查询语句才能更好的利用索引的特性：有序性、过滤性等",
-			Level:      driverV2.RuleLevelWarn,
-			Category:   rulepkg.RuleTypeDMLConvention,
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
+			Name:         SQLE00115,
+			Desc:         plocale.Rule00115Desc,
+			Annotation:   plocale.Rule00115Annotation,
+			Category:     plocale.RuleTypeDMLConvention,
+			Level:        driverV2.RuleLevelWarn,
+			Params:       []*rulepkg.SourceParam{},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: true,
 		},
-		Message: "避免使用标量子查询",
-		AllowOffline: true,
+		Message: plocale.Rule00115Message,
 		Func:    RuleSQLE00115,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

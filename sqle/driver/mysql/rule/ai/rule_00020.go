@@ -10,6 +10,8 @@ import (
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -17,28 +19,27 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
 			Name:       SQLE00020,
-			Desc:       "避免表中包含有太多的列",
-			Annotation: "数据库表中字段过多会导致数据操作效率降低、数据完整性检查成本增加，以及索引维护与更新效率之间的权衡成本。对于追求事务响应和处理速度的OLTP系统，应尽量避免宽表设计，采用规范化数据模型以提升性能。",
+			Desc:       plocale.Rule00020Desc,
+			Annotation: plocale.Rule00020Annotation,
+			Category:   plocale.RuleTypeDMLConvention,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   rulepkg.RuleTypeDMLConvention,
-			Params: params.Params{
-				&params.Param{
-					Key:   rulepkg.DefaultSingleParamKeyName,
-					Value: "40",
-					Desc:  "表内列数上限",
-					Type:  params.ParamTypeString,
-				},
-			},
+			Params: []*rulepkg.SourceParam{{
+				Key:   rulepkg.DefaultSingleParamKeyName,
+				Value: "40",
+				Desc:  plocale.Rule00020Params1,
+				Type:  params.ParamTypeString,
+				Enums: nil,
+			}},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: false,
 		},
-		Message:      "避免表中包含有太多的列",
-		AllowOffline: false,
-		Func:         RuleSQLE00020,
+		Message: plocale.Rule00020Message,
+		Func:    RuleSQLE00020,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

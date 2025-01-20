@@ -7,6 +7,8 @@ import (
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/mysql"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -14,28 +16,27 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
 			Name:       SQLE00064,
-			Desc:       "不建议索引字段是VARCHAR类型时其长度大于阈值",
-			Annotation: "建立索引时没有限制索引的大小，索引长度会根据该字段实际存储的值来计算，VARCHAR 定义的长度越长，导致业务写入的内容越多，则建立的索引其存储大小将会越大，默认值：767",
+			Desc:       plocale.Rule00064Desc,
+			Annotation: plocale.Rule00064Annotation,
+			Category:   plocale.RuleTypeDDLConvention,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   rulepkg.RuleTypeDDLConvention,
-			Params: params.Params{
-				&params.Param{
-					Key:   rulepkg.DefaultSingleParamKeyName,
-					Value: "767",
-					Desc:  "VARCHAR最大长度",
-					Type:  params.ParamTypeInt,
-				},
-			},
+			Params: []*rulepkg.SourceParam{{
+				Key:   rulepkg.DefaultSingleParamKeyName,
+				Value: "767",
+				Desc:  plocale.Rule00064Params1,
+				Type:  params.ParamTypeInt,
+				Enums: nil,
+			}},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: false,
 		},
-		Message: "不建议索引字段是VARCHAR类型时其长度大于阈值. 不符合规则的字段: %v",
-		AllowOffline: false,
+		Message: plocale.Rule00064Message,
 		Func:    RuleSQLE00064,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

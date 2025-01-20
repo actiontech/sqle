@@ -5,6 +5,8 @@ import (
 	util "github.com/actiontech/sqle/sqle/driver/mysql/rule/ai/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/pingcap/parser/ast"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -12,20 +14,21 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
-			Name:       SQLE00121,
-			Desc:       "建议在限定记录数的查询语句中使用ORDER BY",
-			Annotation: "在限定记录的查询语句中，如果没有ORDER BY子句，每次查询的结果可能会受数据更新影响而出现非确定性的结，最终与业务需求不符",
-			Level:      driverV2.RuleLevelNotice,
-			Category:   rulepkg.RuleTypeDMLConvention,
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
+			Name:         SQLE00121,
+			Desc:         plocale.Rule00121Desc,
+			Annotation:   plocale.Rule00121Annotation,
+			Category:     plocale.RuleTypeDMLConvention,
+			Level:        driverV2.RuleLevelNotice,
+			Params:       []*rulepkg.SourceParam{},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: true,
 		},
-		Message: "建议在限定记录数的查询语句中使用ORDER BY.",
-		AllowOffline: true,
+		Message: plocale.Rule00121Message,
 		Func:    RuleSQLE00121,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

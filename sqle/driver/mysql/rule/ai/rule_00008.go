@@ -4,8 +4,9 @@ import (
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	util "github.com/actiontech/sqle/sqle/driver/mysql/rule/ai/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
-	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -13,21 +14,21 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
-			Name:       SQLE00008,
-			Desc:       "表里必须存在主键",
-			Annotation: "表必须存在主键。如果表没有明确指定主键，可能会导致一些问题，如数据一致性难以保证、查询性能下降、数据完整性问题、数据管理和维护困难以及数据库优化受限等。",
-			Level:      driverV2.RuleLevelError,
-			Category:   rulepkg.RuleTypeDMLConvention,
-			Params:     params.Params{},
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
+			Name:         SQLE00008,
+			Desc:         plocale.Rule00008Desc,
+			Annotation:   plocale.Rule00008Annotation,
+			Category:     plocale.RuleTypeDMLConvention,
+			Level:        driverV2.RuleLevelError,
+			Params:       []*rulepkg.SourceParam{},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: true,
 		},
-		Message:      "表里必须存在主键",
-		AllowOffline: true,
-		Func:         RuleSQLE00008,
+		Message: plocale.Rule00008Message,
+		Func:    RuleSQLE00008,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

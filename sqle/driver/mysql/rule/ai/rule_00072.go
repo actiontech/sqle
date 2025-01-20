@@ -5,6 +5,8 @@ import (
 	util "github.com/actiontech/sqle/sqle/driver/mysql/rule/ai/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/pingcap/parser/ast"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -12,20 +14,21 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
-			Name:       SQLE00072,
-			Desc:       "禁止进行删除外键的操作",
-			Annotation: "删除已有约束会影响已有业务逻辑；开启该规则，SQLE将提醒删除外键为高危操作",
-			Level:      driverV2.RuleLevelError,
-			Category:   rulepkg.RuleTypeDDLConvention,
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
+			Name:         SQLE00072,
+			Desc:         plocale.Rule00072Desc,
+			Annotation:   plocale.Rule00072Annotation,
+			Category:     plocale.RuleTypeDDLConvention,
+			Level:        driverV2.RuleLevelError,
+			Params:       []*rulepkg.SourceParam{},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: true,
 		},
-		Message: "禁止进行删除外键的操作",
-		AllowOffline: true,
+		Message: plocale.Rule00072Message,
 		Func:    RuleSQLE00072,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

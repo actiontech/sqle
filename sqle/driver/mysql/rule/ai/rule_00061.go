@@ -3,8 +3,9 @@ package ai
 import (
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
-	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -12,21 +13,21 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
-			Name:       SQLE00061,
-			Desc:       "建议新建表句子中包含表存在判断操作",
-			Annotation: "新建表如果已经存在，不加 IF NOT EXISTS 会报错。新建表只在表不存在的前提下进行，避免SQL 实际执行报错。",
-			Level:      driverV2.RuleLevelError,
-			Category:   rulepkg.RuleTypeUsageSuggestion,
-			Params:     params.Params{},
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
+			Name:         SQLE00061,
+			Desc:         plocale.Rule00061Desc,
+			Annotation:   plocale.Rule00061Annotation,
+			Category:     plocale.RuleTypeUsageSuggestion,
+			Level:        driverV2.RuleLevelError,
+			Params:       []*rulepkg.SourceParam{},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: true,
 		},
-		Message:      "建议新建表句子中包含表存在判断操作",
-		AllowOffline: true,
-		Func:         RuleSQLE00061,
+		Message: plocale.Rule00061Message,
+		Func:    RuleSQLE00061,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

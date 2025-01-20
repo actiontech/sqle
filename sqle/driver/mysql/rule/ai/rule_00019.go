@@ -4,9 +4,10 @@ import (
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	util "github.com/actiontech/sqle/sqle/driver/mysql/rule/ai/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
-	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/mysql"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -14,21 +15,21 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
-			Name:       SQLE00019,
-			Desc:       "不建议使用复合类型（SET和ENUM类型）数据",
-			Annotation: "SET类型，ENUM类型不是SQL标准，移植性较差；后期如修改或增加枚举值需重建整张表，代价较大；且无法通过字面值进行排序；在插入数据时，必须带上引号，否则将写入枚举值的顺序值，造成不可预期的问题",
-			Level:      driverV2.RuleLevelNotice,
-			Category:   rulepkg.RuleTypeDMLConvention,
-			Params:     params.Params{},
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
+			Name:         SQLE00019,
+			Desc:         plocale.Rule00019Desc,
+			Annotation:   plocale.Rule00019Annotation,
+			Category:     plocale.RuleTypeDMLConvention,
+			Level:        driverV2.RuleLevelNotice,
+			Params:       []*rulepkg.SourceParam{},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: true,
 		},
-		Message:      "不建议使用复合类型（SET和ENUM类型）数据",
-		AllowOffline: true,
-		Func:         RuleSQLE00019,
+		Message: plocale.Rule00019Message,
+		Func:    RuleSQLE00019,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

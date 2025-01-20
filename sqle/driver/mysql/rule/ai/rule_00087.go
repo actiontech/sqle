@@ -11,6 +11,8 @@ import (
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -18,28 +20,27 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
 			Name:       SQLE00087,
-			Desc:       "避免WHERE条件内IN语句中的参数值个数过多",
-			Annotation: "当IN值过多时，有可能会出现无法使用索引，导致查询走全表扫描、性能变差、资源消耗过多等问题。",
+			Desc:       plocale.Rule00087Desc,
+			Annotation: plocale.Rule00087Annotation,
+			Category:   plocale.RuleTypeDMLConvention,
 			Level:      driverV2.RuleLevelError,
-			Category:   rulepkg.RuleTypeDMLConvention,
-			Params: params.Params{
-				&params.Param{
-					Key:   rulepkg.DefaultSingleParamKeyName,
-					Value: "500",
-					Desc:  "IN的参数值个数",
-					Type:  params.ParamTypeString,
-				},
-			},
+			Params: []*rulepkg.SourceParam{{
+				Key:   rulepkg.DefaultSingleParamKeyName,
+				Value: "500",
+				Desc:  plocale.Rule00087Params1,
+				Type:  params.ParamTypeString,
+				Enums: nil,
+			}},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: false,
 		},
-		Message:      "避免WHERE条件内IN语句中的参数值个数过多",
-		AllowOffline: false,
-		Func:         RuleSQLE00087,
+		Message: plocale.Rule00087Message,
+		Func:    RuleSQLE00087,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

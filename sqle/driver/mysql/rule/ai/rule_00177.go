@@ -8,6 +8,8 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -15,28 +17,27 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
 			Name:       SQLE00177,
-			Desc:       "建议Order By字段个数不超过指定阈值",
-			Annotation: "使用过多的Order By字段会增加排序操作的复杂性，并可能导致性能下降。排序时，MySQL需要对结果集中的每一行进行多字段比较，这可能会耗费更多的CPU和内存资源。如果排序数据集大小超过了可用内存，则可能会导致创建临时表并在磁盘上进行排序，从而增加I/O开销。",
+			Desc:       plocale.Rule00177Desc,
+			Annotation: plocale.Rule00177Annotation,
+			Category:   plocale.RuleTypeDMLConvention,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   rulepkg.RuleTypeDMLConvention,
-			Params: params.Params{
-				&params.Param{
-					Key:   rulepkg.DefaultSingleParamKeyName,
-					Value: "3",
-					Desc:  "order by字段个数最大值",
-					Type:  params.ParamTypeInt,
-				},
-			},
+			Params: []*rulepkg.SourceParam{{
+				Key:   rulepkg.DefaultSingleParamKeyName,
+				Value: "3",
+				Desc:  plocale.Rule00177Params1,
+				Type:  params.ParamTypeInt,
+				Enums: nil,
+			}},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: true,
 		},
-		Message: "建议Order By字段个数不超过指定阈值. 阈值: %v",
-		AllowOffline: true,
+		Message: plocale.Rule00177Message,
 		Func:    RuleSQLE00177,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

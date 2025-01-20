@@ -7,6 +7,8 @@ import (
 	util "github.com/actiontech/sqle/sqle/driver/mysql/rule/ai/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/pingcap/parser/ast"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -14,20 +16,21 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
-			Name:       SQLE00010,
-			Desc:       "禁止进行删除主键的操作",
-			Annotation: "在MySQL中删除已有主键代价高昂，极易引起业务阻塞、故障；开启该规则，SQLE将提醒删除主键为高危操作",
-			Level:      driverV2.RuleLevelError,
-			Category:   rulepkg.RuleTypeDDLConvention,
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
+			Name:         SQLE00010,
+			Desc:         plocale.Rule00010Desc,
+			Annotation:   plocale.Rule00010Annotation,
+			Category:     plocale.RuleTypeDDLConvention,
+			Level:        driverV2.RuleLevelError,
+			Params:       []*rulepkg.SourceParam{},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: true,
 		},
-		Message: "禁止进行删除主键的操作",
-		AllowOffline: true,
+		Message: plocale.Rule00010Message,
 		Func:    RuleSQLE00010,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

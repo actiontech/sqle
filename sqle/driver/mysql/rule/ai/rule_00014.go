@@ -5,8 +5,9 @@ import (
 
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
-	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -14,21 +15,21 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
-			Name:       SQLE00014,
-			Desc:       "不建议使用自定义函数",
-			Annotation: "自定义函数和存储过程维护较困难，且依赖性高，可能导致SQL无法跨库使用。此外，它们在使用时存在一些限制，如无法使用事务相关语句、无法直接产生输出的语句，以及无法在函数体内使用USE语句指定数据库。",
-			Level:      driverV2.RuleLevelNotice,
-			Category:   rulepkg.RuleTypeDMLConvention,
-			Params:     params.Params{},
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
+			Name:         SQLE00014,
+			Desc:         plocale.Rule00014Desc,
+			Annotation:   plocale.Rule00014Annotation,
+			Category:     plocale.RuleTypeDMLConvention,
+			Level:        driverV2.RuleLevelNotice,
+			Params:       []*rulepkg.SourceParam{},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: true,
 		},
-		Message:      "不建议使用自定义函数",
-		AllowOffline: true,
-		Func:         RuleSQLE00014,
+		Message: plocale.Rule00014Message,
+		Func:    RuleSQLE00014,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

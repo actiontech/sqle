@@ -10,6 +10,8 @@ import (
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/mysql"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -17,28 +19,27 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
 			Name:       SQLE00219,
-			Desc:       "建表DDL必须包括创建时间字段，并应确保该字段能记录表记录的创建时间。",
-			Annotation: "使用创建时间字段，有利于问题查找跟踪和检索数据，同时避免后期对数据生命周期管理不便 ，可保证时间的准确性",
+			Desc:       plocale.Rule00219Desc,
+			Annotation: plocale.Rule00219Annotation,
+			Category:   plocale.RuleTypeDMLConvention,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   rulepkg.RuleTypeDMLConvention,
-			Params: params.Params{
-				&params.Param{
-					Key:   rulepkg.DefaultSingleParamKeyName,
-					Value: "create_time",
-					Desc:  "创建时间字段名",
-					Type:  params.ParamTypeString,
-				},
-			},
+			Params: []*rulepkg.SourceParam{{
+				Key:   rulepkg.DefaultSingleParamKeyName,
+				Value: "create_time",
+				Desc:  plocale.Rule00219Params1,
+				Type:  params.ParamTypeString,
+				Enums: nil,
+			}},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: true,
 		},
-		Message:      "建表DDL必须包括创建时间字段，并应确保该字段能记录表记录的创建时间。",
-		AllowOffline: true,
-		Func:         RuleSQLE00219,
+		Message: plocale.Rule00219Message,
+		Func:    RuleSQLE00219,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

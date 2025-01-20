@@ -10,6 +10,8 @@ import (
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/model"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -17,28 +19,27 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
 			Name:       SQLE00039,
-			Desc:       "建议使用数据区分度高的索引字段",
-			Annotation: "为了提高查询效率，建议在执行SQL时优先使用区分度高的索引字段。区分度高的索引可以更快地定位数据，减少不必要的数据扫描，从而加速查询响应时间。规则检查将会计算候选索引字段的区分度，如果索引的区分度低于设定的阈值，则建议调整索引策略，默认值：0.7",
+			Desc:       plocale.Rule00039Desc,
+			Annotation: plocale.Rule00039Annotation,
+			Category:   plocale.RuleTypeIndexOptimization,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   rulepkg.RuleTypeIndexOptimization,
-			Params: params.Params{
-				&params.Param{
-					Key:   rulepkg.DefaultSingleParamKeyName,
-					Value: "0.7",
-					Desc:  "selectivity",
-					Type:  params.ParamTypeInt,
-				},
-			},
+			Params: []*rulepkg.SourceParam{{
+				Key:   rulepkg.DefaultSingleParamKeyName,
+				Value: "0.7",
+				Desc:  plocale.Rule00039Params1,
+				Type:  params.ParamTypeFloat64,
+				Enums: nil,
+			}},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: false,
 		},
-		Message: "索引列 %v 未超过区分度阈值 %v, 不建议选为索引",
-		AllowOffline: false,
+		Message: plocale.Rule00039Message,
 		Func:    RuleSQLE00039,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

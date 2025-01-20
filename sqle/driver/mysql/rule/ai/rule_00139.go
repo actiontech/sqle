@@ -11,6 +11,8 @@ import (
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -18,28 +20,27 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
 			Name:       SQLE00139,
-			Desc:       "不建议使用全表扫描",
-			Annotation: "全表扫描是数据库执行查询时读取表中每一行来查找匹配记录的过程。对于大型表来说，出现全表扫描的SQL会导致显著的性能下降和资源消耗，影响业务稳定运行。",
+			Desc:       plocale.Rule00139Desc,
+			Annotation: plocale.Rule00139Annotation,
+			Category:   plocale.RuleTypeDMLConvention,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   rulepkg.RuleTypeDMLConvention,
-			Params: params.Params{
-				&params.Param{
-					Key:   rulepkg.DefaultSingleParamKeyName,
-					Value: "5",
-					Desc:  "表大小(GB)",
-					Type:  params.ParamTypeInt,
-				},
-			},
+			Params: []*rulepkg.SourceParam{{
+				Key:   rulepkg.DefaultSingleParamKeyName,
+				Value: "5",
+				Desc:  plocale.Rule00139Params1,
+				Type:  params.ParamTypeInt,
+				Enums: nil,
+			}},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: false,
 		},
-		Message: "不建议使用全表扫描. 表大小阈值: %v GB",
-		AllowOffline: false,
+		Message: plocale.Rule00139Message,
 		Func:    RuleSQLE00139,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

@@ -7,6 +7,8 @@ import (
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/opcode"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -14,20 +16,21 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
-			Name:       SQLE00113,
-			Desc:       "不建议对条件字段使用负向查询",
-			Annotation: "SQL查询条件中存在NOT IN、NOT LIKE、NOT EXISTS、不等于等负向查询条件，将导致全表扫描，出现慢SQL",
-			Level:      driverV2.RuleLevelNotice,
-			Category:   rulepkg.RuleTypeIndexInvalidation,
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
+			Name:         SQLE00113,
+			Desc:         plocale.Rule00113Desc,
+			Annotation:   plocale.Rule00113Annotation,
+			Category:     plocale.RuleTypeIndexInvalidation,
+			Level:        driverV2.RuleLevelNotice,
+			Params:       []*rulepkg.SourceParam{},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: true,
 		},
-		Message: "不建议对条件字段使用负向查询",
-		AllowOffline: true,
+		Message: plocale.Rule00113Message,
 		Func:    RuleSQLE00113,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

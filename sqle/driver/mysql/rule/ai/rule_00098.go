@@ -9,6 +9,8 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -16,28 +18,27 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
 			Name:       SQLE00098,
-			Desc:       "避免在单个SQL语句中对同一张表进行多次连接或查询",
-			Annotation: "在设计SQL语句时，应避免对同一张表进行多次连接或查询。这种做法可能导致查询性能显著下降，因为它会增加数据库的I/O操作，CPU处理以及内存使用，从而影响整体查询效率",
+			Desc:       plocale.Rule00098Desc,
+			Annotation: plocale.Rule00098Annotation,
+			Category:   plocale.RuleTypeDMLConvention,
 			Level:      driverV2.RuleLevelError,
-			Category:   rulepkg.RuleTypeDMLConvention,
-			Params: params.Params{
-				&params.Param{
-					Key:   rulepkg.DefaultSingleParamKeyName,
-					Value: "3",
-					Desc:  "max_table_join_count",
-					Type:  params.ParamTypeInt,
-				},
-			},
+			Params: []*rulepkg.SourceParam{{
+				Key:   rulepkg.DefaultSingleParamKeyName,
+				Value: "3",
+				Desc:  plocale.Rule00098Params1,
+				Type:  params.ParamTypeInt,
+				Enums: nil,
+			}},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: true,
 		},
-		Message:      "避免在单个SQL语句中对同一张表进行多次连接或查询. 违反规则的表名: %s",
-		AllowOffline: true,
-		Func:         RuleSQLE00098,
+		Message: plocale.Rule00098Message,
+		Func:    RuleSQLE00098,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

@@ -4,9 +4,10 @@ import (
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	util "github.com/actiontech/sqle/sqle/driver/mysql/rule/ai/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
-	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/mysql"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -14,21 +15,21 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
-			Name:       SQLE00054,
-			Desc:       "建议主键字段使用BIGINT时采用无符号的BIGINT",
-			Annotation: "在设计主键时若选择BIGINT时，使用无符号类型，相对于有符号类型，可以使数据库的索引性能更加优化，因为它减少了负值处理的开销，并能在某些情况下提高查询速度。特别是在系统设计初期可能无法完全预见到未来数据量的情况下，无符号数值类型（BIGINT UNSIGNED）可以有效避免因数据增长导致的溢出问题。",
-			Level:      driverV2.RuleLevelError,
-			Category:   rulepkg.RuleTypeDMLConvention,
-			Params:     params.Params{},
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
+			Name:         SQLE00054,
+			Desc:         plocale.Rule00054Desc,
+			Annotation:   plocale.Rule00054Annotation,
+			Category:     plocale.RuleTypeDMLConvention,
+			Level:        driverV2.RuleLevelError,
+			Params:       []*rulepkg.SourceParam{},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: true,
 		},
-		Message:      "建议主键字段使用BIGINT时采用无符号的BIGINT",
-		AllowOffline: true,
-		Func:         RuleSQLE00054,
+		Message: plocale.Rule00054Message,
+		Func:    RuleSQLE00054,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

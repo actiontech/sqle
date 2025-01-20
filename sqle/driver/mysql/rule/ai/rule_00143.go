@@ -6,6 +6,8 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/opcode"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -13,20 +15,21 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
-			Name:       SQLE00143,
-			Desc:       "多表关联时，不建议在WHERE条件中对不同表的字段使用OR条件",
-			Annotation: "多表关联时，在WHERE条件中对不同表的字段使用OR条件可能会导致SQL无法使用正确的索引",
-			Level:      driverV2.RuleLevelWarn,
-			Category:   rulepkg.RuleTypeIndexInvalidation,
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
+			Name:         SQLE00143,
+			Desc:         plocale.Rule00143Desc,
+			Annotation:   plocale.Rule00143Annotation,
+			Category:     plocale.RuleTypeIndexInvalidation,
+			Level:        driverV2.RuleLevelWarn,
+			Params:       []*rulepkg.SourceParam{},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: false,
 		},
-		Message: "多表关联时，不建议在WHERE条件中对不同表的字段使用OR条件.",
-		AllowOffline: false,
+		Message: plocale.Rule00143Message,
 		Func:    RuleSQLE00143,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

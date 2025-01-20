@@ -5,9 +5,10 @@ import (
 	util "github.com/actiontech/sqle/sqle/driver/mysql/rule/ai/util"
 	"github.com/actiontech/sqle/sqle/driver/mysql/session"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
-	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/opcode"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -15,21 +16,21 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
-			Name:       SQLE00091,
-			Desc:       "建议表连接时有连接条件",
-			Annotation: "为了确保连接操作的正确性和可靠性，应该始终指定连接条件，定义正确的关联关系。缺少连接条件，可能导致连接操作失败，最终数据库会使用笛卡尔积的方式进行处理，产生不正确的连接结果，并导致性能问题，消耗大量的CPU和内存资源。",
-			Level:      driverV2.RuleLevelError,
-			Category:   rulepkg.RuleTypeDMLConvention,
-			Params:     params.Params{},
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
+			Name:         SQLE00091,
+			Desc:         plocale.Rule00091Desc,
+			Annotation:   plocale.Rule00091Annotation,
+			Category:     plocale.RuleTypeDMLConvention,
+			Level:        driverV2.RuleLevelError,
+			Params:       []*rulepkg.SourceParam{},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: true,
 		},
-		Message:      "建议表连接时有连接条件",
-		AllowOffline: true,
-		Func:         RuleSQLE00091,
+		Message: plocale.Rule00091Message,
+		Func:    RuleSQLE00091,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

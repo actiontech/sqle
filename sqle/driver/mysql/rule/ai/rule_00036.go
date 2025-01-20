@@ -5,6 +5,8 @@ import (
 	util "github.com/actiontech/sqle/sqle/driver/mysql/rule/ai/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/pingcap/parser/ast"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -12,20 +14,21 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
-			Name:       SQLE00036,
-			Desc:       "禁止将BLOB类型的列加入索引",
-			Annotation: "BLOB类型属于大字段类型，作为索引会占用很大的存储空间",
-			Level:      driverV2.RuleLevelError,
-			Category:   rulepkg.RuleTypeIndexingConvention,
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
+			Name:         SQLE00036,
+			Desc:         plocale.Rule00036Desc,
+			Annotation:   plocale.Rule00036Annotation,
+			Category:     plocale.RuleTypeIndexingConvention,
+			Level:        driverV2.RuleLevelError,
+			Params:       []*rulepkg.SourceParam{},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: true,
 		},
-		Message: "BLOB类型属于大字段类型，作为索引会占用很大的存储空间",
-		AllowOffline: true,
+		Message: plocale.Rule00036Message,
 		Func:    RuleSQLE00036,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*
