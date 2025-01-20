@@ -10,6 +10,8 @@ import (
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -17,28 +19,27 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
 			Name:       SQLE00063,
-			Desc:       "唯一索引名必须遵循指定格式",
-			Annotation: "通过配置该规则可以规范指定业务的唯一索引命名规则，如索引字段存在多个，则可以拼接字段名，不要超过索引名长度即可。",
+			Desc:       plocale.Rule00063Desc,
+			Annotation: plocale.Rule00063Annotation,
+			Category:   plocale.RuleTypeDMLConvention,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   rulepkg.RuleTypeDMLConvention,
-			Params: params.Params{
-				&params.Param{
-					Key:   rulepkg.DefaultSingleParamKeyName,
-					Value: "固定字符+索引类型+表名+字段名，如IDX_UK_TABLENAME_COLNAME",
-					Desc:  "索引命名格式",
-					Type:  params.ParamTypeString,
-				},
-			},
+			Params: []*rulepkg.SourceParam{{
+				Key:   rulepkg.DefaultSingleParamKeyName,
+				Value: "固定字符+索引类型+表名+字段名，如IDX_UK_TABLENAME_COLNAME",
+				Desc:  plocale.Rule00063Params1,
+				Type:  params.ParamTypeString,
+				Enums: nil,
+			}},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: false,
 		},
-		Message:      "唯一索引名必须遵循指定格式",
-		AllowOffline: false,
-		Func:         RuleSQLE00063,
+		Message: plocale.Rule00063Message,
+		Func:    RuleSQLE00063,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

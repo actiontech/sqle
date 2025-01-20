@@ -9,6 +9,8 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -16,28 +18,27 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
 			Name:       SQLE00045,
-			Desc:       "避免在分页查询中使用过大偏移量",
-			Annotation: "在数据库中，分页查询通常使用 LIMIT 和 OFFSET 语句进行。当数据量较大时，使用大的偏移量（OFFSET）进行分页查询可能会导致性能下降，因为数据库需要跳过大量的行来获得所需的结果集。",
+			Desc:       plocale.Rule00045Desc,
+			Annotation: plocale.Rule00045Annotation,
+			Category:   plocale.RuleTypeDMLConvention,
 			Level:      driverV2.RuleLevelNotice,
-			Category:   rulepkg.RuleTypeDMLConvention,
-			Params: params.Params{
-				&params.Param{
-					Key:   rulepkg.DefaultSingleParamKeyName,
-					Value: "10000",
-					Desc:  "最大偏移量",
-					Type:  params.ParamTypeString,
-				},
-			},
+			Params: []*rulepkg.SourceParam{{
+				Key:   rulepkg.DefaultSingleParamKeyName,
+				Value: "10000",
+				Desc:  plocale.Rule00045Params1,
+				Type:  params.ParamTypeString,
+				Enums: nil,
+			}},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: true,
 		},
-		Message:      "避免在分页查询中使用过大偏移量, 最大偏移量:%v",
-		AllowOffline: true,
-		Func:         RuleSQLE00045,
+		Message: plocale.Rule00045Message,
+		Func:    RuleSQLE00045,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

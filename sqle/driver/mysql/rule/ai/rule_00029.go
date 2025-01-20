@@ -5,8 +5,9 @@ import (
 
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
-	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -14,21 +15,21 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
-			Name:       SQLE00029,
-			Desc:       "禁止使用存储过程",
-			Annotation: "存储过程在一定程度上能使程序难以调试和拓展，各种数据库端的存储过程语法相差很大，给将来的数据移植带来很大的困难，且会极大的出现BUG的几率",
-			Level:      driverV2.RuleLevelError,
-			Category:   rulepkg.RuleTypeUsageSuggestion,
-			Params:     params.Params{},
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
+			Name:         SQLE00029,
+			Desc:         plocale.Rule00029Desc,
+			Annotation:   plocale.Rule00029Annotation,
+			Category:     plocale.RuleTypeUsageSuggestion,
+			Level:        driverV2.RuleLevelError,
+			Params:       []*rulepkg.SourceParam{},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: true,
 		},
-		Message:      "禁止使用存储过程",
-		AllowOffline: true,
-		Func:         RuleSQLE00029,
+		Message: plocale.Rule00029Message,
+		Func:    RuleSQLE00029,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

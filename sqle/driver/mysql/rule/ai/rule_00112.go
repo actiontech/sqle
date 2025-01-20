@@ -8,13 +8,14 @@ import (
 	util "github.com/actiontech/sqle/sqle/driver/mysql/rule/ai/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/log"
-	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/opcode"
 	"github.com/pingcap/tidb/types"
 	parserdriver "github.com/pingcap/tidb/types/parser_driver"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -22,21 +23,21 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
-			Name:       SQLE00112,
-			Desc:       "禁止WHERE子句中条件字段与值的数据类型不一致",
-			Annotation: "WHERE子句中条件字段与值数据类型不一致会引发隐式数据类型转换，导致优化器选择错误的执行计划，在高并发、大数据量的情况下，不走索引会使得数据库的查询性能严重下降",
-			Level:      driverV2.RuleLevelNotice,
-			Category:   rulepkg.RuleTypeDMLConvention,
-			Params:     params.Params{},
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
+			Name:         SQLE00112,
+			Desc:         plocale.Rule00112Desc,
+			Annotation:   plocale.Rule00112Annotation,
+			Category:     plocale.RuleTypeDMLConvention,
+			Level:        driverV2.RuleLevelNotice,
+			Params:       []*rulepkg.SourceParam{},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: false,
 		},
-		Message:      "禁止WHERE子句中条件字段与值的数据类型不一致",
-		AllowOffline: false,
-		Func:         RuleSQLE00112,
+		Message: plocale.Rule00112Message,
+		Func:    RuleSQLE00112,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*
@@ -175,12 +176,12 @@ func RuleSQLE00112(input *rulepkg.RuleHandlerInput) error {
 			onExprs := []ast.ExprNode{}
 			usingExprs := [][]*ast.ColumnName{}
 			for _, join := range util.GetAllJoinsFromNode(selectStmt) {
-					if join != nil && join.On != nil {
-						onExprs = append(onExprs, join.On.Expr)
-					}
-					if join != nil && join.Using != nil {
-						usingExprs = append(usingExprs, join.Using)
-					}
+				if join != nil && join.On != nil {
+					onExprs = append(onExprs, join.On.Expr)
+				}
+				if join != nil && join.Using != nil {
+					usingExprs = append(usingExprs, join.Using)
+				}
 			}
 
 			// Combine WHERE and ON expressions

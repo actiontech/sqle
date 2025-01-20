@@ -10,6 +10,8 @@ import (
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -17,28 +19,27 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
 			Name:       SQLE00059,
-			Desc:       "禁止修改大表字段类型",
-			Annotation: "对于大型数据表，修改字段类型的DDL操作将导致显著的性能下降和可用性影响。此类操作通常需要复制整个表来更改数据类型，期间表将无法进行写操作，并且可能导致长时间的锁等待，对线上业务造成过长时间的影响。",
+			Desc:       plocale.Rule00059Desc,
+			Annotation: plocale.Rule00059Annotation,
+			Category:   plocale.RuleTypeDDLConvention,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   rulepkg.RuleTypeDDLConvention,
-			Params: params.Params{
-				&params.Param{
-					Key:   rulepkg.DefaultSingleParamKeyName,
-					Value: "5",
-					Desc:  "表大小(GB)",
-					Type:  params.ParamTypeInt,
-				},
-			},
+			Params: []*rulepkg.SourceParam{{
+				Key:   rulepkg.DefaultSingleParamKeyName,
+				Value: "5",
+				Desc:  plocale.Rule00059Params1,
+				Type:  params.ParamTypeInt,
+				Enums: nil,
+			}},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: false,
 		},
-		Message:      "禁止修改大表字段类型，表大小阈值: %v GB",
-		AllowOffline: false,
-		Func:         RuleSQLE00059,
+		Message: plocale.Rule00059Message,
+		Func:    RuleSQLE00059,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

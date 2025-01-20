@@ -3,10 +3,11 @@ package ai
 import (
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
-	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
 	parserdriver "github.com/pingcap/tidb/types/parser_driver"
 	dry "github.com/ungerik/go-dry"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -14,21 +15,21 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
-			Name:       SQLE00062,
-			Desc:       "建议事务隔离级别设置成RC",
-			Annotation: "RC 虽然没有解决幻读的问题，但是没有间隙锁，从而每次在做更新操作时影响的行数比默认RR要小很多；默认的RR隔离级别虽然解决了幻读问题，但是增加了间隙锁，导致加锁的范围扩大，性能比RC要低，增加死锁的概率；在大多数情况下，出现幻读的几率较小，所以建议使用RC。",
-			Level:      driverV2.RuleLevelNotice,
-			Category:   rulepkg.RuleTypeDMLConvention,
-			Params:     params.Params{},
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
+			Name:         SQLE00062,
+			Desc:         plocale.Rule00062Desc,
+			Annotation:   plocale.Rule00062Annotation,
+			Category:     plocale.RuleTypeDMLConvention,
+			Level:        driverV2.RuleLevelNotice,
+			Params:       []*rulepkg.SourceParam{},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: true,
 		},
-		Message:      "建议事务隔离级别设置成RC",
-		AllowOffline: true,
-		Func:         RuleSQLE00062,
+		Message: plocale.Rule00062Message,
+		Func:    RuleSQLE00062,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

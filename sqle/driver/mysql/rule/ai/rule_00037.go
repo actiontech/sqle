@@ -9,6 +9,8 @@ import (
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -16,28 +18,27 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
 			Name:       SQLE00037,
-			Desc:       "避免一张表内二级索引的个数过多",
-			Annotation: "在表上建立的每个索引都会增加存储开销，索引对于插入、删除、更新操作也会增加维护索引处理上的开销（TPS），且太多与不充分、不正确的索引对性能都毫无益处。",
+			Desc:       plocale.Rule00037Desc,
+			Annotation: plocale.Rule00037Annotation,
+			Category:   plocale.RuleTypeDMLConvention,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   rulepkg.RuleTypeDMLConvention,
-			Params: params.Params{
-				&params.Param{
-					Key:   rulepkg.DefaultSingleParamKeyName,
-					Value: "5",
-					Desc:  "二级索引个数",
-					Type:  params.ParamTypeString,
-				},
-			},
+			Params: []*rulepkg.SourceParam{{
+				Key:   rulepkg.DefaultSingleParamKeyName,
+				Value: "5",
+				Desc:  plocale.Rule00037Params1,
+				Type:  params.ParamTypeString,
+				Enums: nil,
+			}},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: false,
 		},
-		Message:      "避免一张表内二级索引的个数过多",
-		AllowOffline: false,
-		Func:         RuleSQLE00037,
+		Message: plocale.Rule00037Message,
+		Func:    RuleSQLE00037,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

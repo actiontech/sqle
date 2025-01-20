@@ -11,6 +11,8 @@ import (
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/mysql"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -18,28 +20,27 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
 			Name:       SQLE00097,
-			Desc:       "禁止对长字段排序",
-			Annotation: "在MySQL数据库中，对长字段（如VARCHAR(2000)、TEXT、BLOB等）进行排序操作（包括但不限于ORDER BY、DISTINCT、GROUP BY、UNION等）是不推荐的实践。这类操作会导致排序缓冲区（sort_buffer_size）溢出，引发性能下降和资源浪费。此外，由于长字段排序可能导致临时表（使用Temptable引擎）溢出到磁盘，这不仅会严重影响查询性能，还可能导致系统稳定性和响应能力的降低。",
+			Desc:       plocale.Rule00097Desc,
+			Annotation: plocale.Rule00097Annotation,
+			Category:   plocale.RuleTypeDMLConvention,
 			Level:      driverV2.RuleLevelError,
-			Category:   rulepkg.RuleTypeDMLConvention,
-			Params: params.Params{
-				&params.Param{
-					Key:   rulepkg.DefaultSingleParamKeyName,
-					Value: "100",
-					Desc:  "排序字段的最大长度",
-					Type:  params.ParamTypeString,
-				},
-			},
+			Params: []*rulepkg.SourceParam{{
+				Key:   rulepkg.DefaultSingleParamKeyName,
+				Value: "100",
+				Desc:  plocale.Rule00097Params1,
+				Type:  params.ParamTypeString,
+				Enums: nil,
+			}},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: false,
 		},
-		Message:      "禁止对长字段排序",
-		AllowOffline: false,
-		Func:         RuleSQLE00097,
+		Message: plocale.Rule00097Message,
+		Func:    RuleSQLE00097,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

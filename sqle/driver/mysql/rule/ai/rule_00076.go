@@ -10,6 +10,8 @@ import (
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -17,28 +19,27 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
 			Name:       SQLE00076,
-			Desc:       "UPDATE/DELETE操作影响行数不建议超过阈值",
-			Annotation: "在数据库中，进行修改或删除等数据变更操作时，一次性操作的数据量过大，会消耗大量的系统资源，产生长事务，会导致查询性能下降，影响其他事务或查询的执行。",
+			Desc:       plocale.Rule00076Desc,
+			Annotation: plocale.Rule00076Annotation,
+			Category:   plocale.RuleTypeDMLConvention,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   rulepkg.RuleTypeDMLConvention,
-			Params: params.Params{
-				&params.Param{
-					Key:   rulepkg.DefaultSingleParamKeyName,
-					Value: "10000",
-					Desc:  "影响行数上限",
-					Type:  params.ParamTypeString,
-				},
-			},
+			Params: []*rulepkg.SourceParam{{
+				Key:   rulepkg.DefaultSingleParamKeyName,
+				Value: "10000",
+				Desc:  plocale.Rule00076Params1,
+				Type:  params.ParamTypeString,
+				Enums: nil,
+			}},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: false,
 		},
-		Message:      "UPDATE/DELETE操作影响行数不建议超过阈值",
-		AllowOffline: false,
-		Func:         RuleSQLE00076,
+		Message: plocale.Rule00076Message,
+		Func:    RuleSQLE00076,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

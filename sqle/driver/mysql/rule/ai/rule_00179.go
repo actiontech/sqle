@@ -8,6 +8,8 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/pingcap/parser/ast"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -15,20 +17,21 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
-			Name:       SQLE00179,
-			Desc:       "避免隐式数据类型转换的SQL查询",
-			Annotation: "确保WHERE子句中用于索引列的条件字段与索引列的数据类型一致。不一致的数据类型会导致执行计划存在隐式类型转换操作。这种转换不仅增加CPU负担，还可能使得原本高效的索引无法使用，导致查询性能显著下降。",
-			Level:      driverV2.RuleLevelWarn,
-			Category:   rulepkg.RuleTypeDMLConvention,
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
+			Name:         SQLE00179,
+			Desc:         plocale.Rule00179Desc,
+			Annotation:   plocale.Rule00179Annotation,
+			Category:     plocale.RuleTypeDMLConvention,
+			Level:        driverV2.RuleLevelWarn,
+			Params:       []*rulepkg.SourceParam{},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: false,
 		},
-		Message: "避免隐式数据类型转换的SQL查询",
-		AllowOffline: false,
+		Message: plocale.Rule00179Message,
 		Func:    RuleSQLE00179,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

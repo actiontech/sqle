@@ -5,6 +5,8 @@ import (
 	util "github.com/actiontech/sqle/sqle/driver/mysql/rule/ai/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/pingcap/parser/ast"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -12,20 +14,21 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
-			Name:       SQLE00131,
-			Desc:       "避免使用 ORDER BY RAND() 进行随机排序",
-			Annotation: "使用 ORDER BY RAND() 会导致 MySQL 生成临时表并进行完整的表扫描和排序，这在处理大数据量时会显著增加查询时间和服务器负载。建议采用更高效的随机数据检索方法，如利用主键或其他索引实现快速随机访问。",
-			Level:      driverV2.RuleLevelWarn,
-			Category:   rulepkg.RuleTypeDMLConvention,
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
+			Name:         SQLE00131,
+			Desc:         plocale.Rule00131Desc,
+			Annotation:   plocale.Rule00131Annotation,
+			Category:     plocale.RuleTypeDMLConvention,
+			Level:        driverV2.RuleLevelWarn,
+			Params:       []*rulepkg.SourceParam{},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: true,
 		},
-		Message: "避免使用 ORDER BY RAND() 进行随机排序",
-		AllowOffline: true,
+		Message: plocale.Rule00131Message,
 		Func:    RuleSQLE00131,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

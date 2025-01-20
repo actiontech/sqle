@@ -7,6 +7,8 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/pingcap/parser/ast"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -14,20 +16,21 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
-			Name:       SQLE00175,
-			Desc:       "避免不必要的索引扫描合并",
-			Annotation: "索引合并说明一个查询同时使用了多个索引，增加了更多IO操作，特别是在数据量大的情况下执行效率比复合索引明显更多。此外，索引合并操作可能消耗更多CPU和内存资源，以及较长的查询响应时间。",
-			Level:      driverV2.RuleLevelWarn,
-			Category:   rulepkg.RuleTypeDMLConvention,
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
+			Name:         SQLE00175,
+			Desc:         plocale.Rule00175Desc,
+			Annotation:   plocale.Rule00175Annotation,
+			Category:     plocale.RuleTypeDMLConvention,
+			Level:        driverV2.RuleLevelWarn,
+			Params:       []*rulepkg.SourceParam{},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: false,
 		},
-		Message: "避免不必要的索引扫描合并",
-		AllowOffline: false,
+		Message: plocale.Rule00175Message,
 		Func:    RuleSQLE00175,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

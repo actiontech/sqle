@@ -5,6 +5,8 @@ import (
 	util "github.com/actiontech/sqle/sqle/driver/mysql/rule/ai/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/pingcap/parser/ast"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -12,20 +14,21 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
-			Name:       SQLE00055,
-			Desc:       "不建议创建冗余索引",
-			Annotation: "MySQL需要单独维护重复的索引，冗余索引增加维护成本，影响更新性能",
-			Level:      driverV2.RuleLevelError,
-			Category:   rulepkg.RuleTypeIndexOptimization,
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
+			Name:         SQLE00055,
+			Desc:         plocale.Rule00055Desc,
+			Annotation:   plocale.Rule00055Annotation,
+			Category:     plocale.RuleTypeIndexOptimization,
+			Level:        driverV2.RuleLevelError,
+			Params:       []*rulepkg.SourceParam{},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: false,
 		},
-		Message: "已存在索引 %v , 索引 %v 为冗余索引",
-		AllowOffline: false,
+		Message: plocale.Rule00055Message,
 		Func:    RuleSQLE00055,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*

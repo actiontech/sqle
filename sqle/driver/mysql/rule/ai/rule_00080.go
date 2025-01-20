@@ -10,6 +10,8 @@ import (
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/pingcap/parser/ast"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 )
 
 const (
@@ -17,28 +19,27 @@ const (
 )
 
 func init() {
-	rh := rulepkg.RuleHandler{
-		Rule: driverV2.Rule{
+	rh := rulepkg.SourceHandler{
+		Rule: rulepkg.SourceRule{
 			Name:       SQLE00080,
-			Desc:       "建议单条SQL写入数据的行数不超过阈值",
-			Annotation: "为了避免单个SQL语句在批量写入时对数据库性能造成过大压力，限制每条SQL语句一次性插入的数据行数不得超过指定行。这有助于提高事务的可管理性，减少锁冲突，优化日志处理，以及提升错误恢复速度。",
+			Desc:       plocale.Rule00080Desc,
+			Annotation: plocale.Rule00080Annotation,
+			Category:   plocale.RuleTypeDMLConvention,
 			Level:      driverV2.RuleLevelWarn,
-			Category:   rulepkg.RuleTypeDMLConvention,
-			Params: params.Params{
-				&params.Param{
-					Key:   rulepkg.DefaultSingleParamKeyName,
-					Value: "100",
-					Desc:  "单条SQL写入行数上限",
-					Type:  params.ParamTypeString,
-				},
-			},
+			Params: []*rulepkg.SourceParam{{
+				Key:   rulepkg.DefaultSingleParamKeyName,
+				Value: "100",
+				Desc:  plocale.Rule00080Params1,
+				Type:  params.ParamTypeString,
+				Enums: nil,
+			}},
+			Knowledge:    driverV2.RuleKnowledge{},
+			AllowOffline: false,
 		},
-		Message:      "建议单条SQL写入数据的行数不超过阈值",
-		AllowOffline: false,
-		Func:         RuleSQLE00080,
+		Message: plocale.Rule00080Message,
+		Func:    RuleSQLE00080,
 	}
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, rh)
-	rulepkg.RuleHandlerMap[rh.Rule.Name] = rh
+	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }
 
 /*
