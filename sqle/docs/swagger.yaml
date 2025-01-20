@@ -3993,6 +3993,11 @@ definitions:
     properties:
       db_type:
         type: string
+      error_info:
+        type: string
+      execution_failed:
+        example: false
+        type: boolean
       i18n_audit_result_info:
         $ref: '#/definitions/model.I18nAuditResultInfo'
         type: object
