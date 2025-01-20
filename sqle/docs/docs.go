@@ -17287,6 +17287,13 @@ var doc = `{
                 "db_type": {
                     "type": "string"
                 },
+                "error_info": {
+                    "type": "string"
+                },
+                "execution_failed": {
+                    "type": "boolean",
+                    "example": false
+                },
                 "i18n_audit_result_info": {
                     "type": "object",
                     "$ref": "#/definitions/model.I18nAuditResultInfo"
