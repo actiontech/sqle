@@ -794,9 +794,9 @@ func CheckCurrentUserCanOpTask(c echo.Context, task *model.Task) (err error) {
 }
 
 type SQLExplain struct {
-	SQL     string `json:"sql"`
-	Cost    string `json:"cost"`
-	Message string `json:"message"`
+	SQL     string  `json:"sql"`
+	Cost    float64 `json:"cost"`
+	Message string  `json:"message"`
 	// explain result in table format
 	ClassicResult ExplainClassicResult `json:"classic_result"`
 }

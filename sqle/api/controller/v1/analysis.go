@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"github.com/pkg/errors"
+	"strconv"
 
 	"github.com/actiontech/sqle/sqle/common"
 	"github.com/actiontech/sqle/sqle/driver"
@@ -12,7 +13,7 @@ import (
 )
 
 type AnalysisResult struct {
-	Cost             *string
+	Cost             *float64
 	ExplainResult    *driverV2.ExplainResult
 	ExplainResultErr error
 
@@ -46,7 +47,7 @@ func GetSQLAnalysisResult(l *logrus.Entry, instance *model.Instance, schema, sql
 	return res, nil
 }
 
-func GetQueryCost(plugin driver.Plugin, sql string) (cost *string, err error) {
+func GetQueryCost(plugin driver.Plugin, sql string) (cost *float64, err error) {
 	explainJSONResult, err := plugin.ExplainJSONFormat(context.TODO(), &driverV2.ExplainConf{Sql: sql})
 	if err != nil {
 		return nil, err
@@ -62,8 +63,11 @@ func GetQueryCost(plugin driver.Plugin, sql string) (cost *string, err error) {
 	if sqlNodes[0].Type != driverV2.SQLTypeDQL {
 		return nil, errors.Errorf("failed to get query cost because it is not DQL: %v", sql)
 	}
-	cost = &explainJSONResult.QueryBlock.CostInfo.QueryCost
-	return cost, nil
+	costFloat, err := strconv.ParseFloat(explainJSONResult.QueryBlock.CostInfo.QueryCost, 64)
+	if err != nil {
+		return nil, err
+	}
+	return &costFloat, nil
 }
 
 func Explain(dbType string, plugin driver.Plugin, sql string) (res *driverV2.ExplainResult, err error) {
