@@ -29,9 +29,11 @@ func Start(ctx context.Context, scanner scanners.Scanner, leastPushSecond, pushB
 	for {
 		select {
 		case err := <-runErrCh:
-			UploadErr := scanner.Upload(context.TODO(), batch, err.Error())
-			if UploadErr != nil {
-				return errors.Wrap(UploadErr, "failed to upload sql")
+			if err != nil {
+				UploadErr := scanner.Upload(context.TODO(), batch, err.Error())
+				if UploadErr != nil {
+					return errors.Wrap(UploadErr, "failed to upload sql")
+				}
 			}
 			return err
 
