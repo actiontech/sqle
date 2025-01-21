@@ -2,7 +2,6 @@ package rule
 
 import (
 	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
-	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -23,6 +22,7 @@ type SourceParam struct {
 	Enums []SourceEnum     `json:"enums"`
 }
 
+// SourceRule 用于初始化时定义国际化的规则
 type SourceRule struct {
 	Name         string
 	Desc         *i18n.Message
@@ -45,12 +45,12 @@ type SourceHandler struct {
 	NotSupportExecutedSQLAuditStmts []ast.Node
 }
 
-// 通过 source* 生成多语言版本的 RuleHandler
-func generateI18nRuleHandlersFromSource(shs []*SourceHandler) []RuleHandler {
+// GenerateI18nRuleHandlers 根据规则初始化时定义的 SourceHandler 生成支持多语言的 RuleHandler
+func GenerateI18nRuleHandlers(bundle *i18nPkg.Bundle, shs []*SourceHandler) []RuleHandler {
 	rhs := make([]RuleHandler, len(shs))
 	for k, v := range shs {
 		rhs[k] = RuleHandler{
-			Rule:                            *ConvertSourceRule(&v.Rule),
+			Rule:                            *ConvertSourceRule(bundle, &v.Rule),
 			Message:                         v.Message,
 			Func:                            v.Func,
 			NotAllowOfflineStmts:            v.NotAllowOfflineStmts,
@@ -61,21 +61,22 @@ func generateI18nRuleHandlersFromSource(shs []*SourceHandler) []RuleHandler {
 	return rhs
 }
 
-func ConvertSourceRule(sr *SourceRule) *driverV2.Rule {
+// ConvertSourceRule 将规则初始化时定义的 SourceRule 转换成 driverV2.Rule
+func ConvertSourceRule(bundle *i18nPkg.Bundle, sr *SourceRule) *driverV2.Rule {
 	r := &driverV2.Rule{
 		Name:         sr.Name,
 		Level:        sr.Level,
 		Category:     sr.Category.ID,
 		Params:       make(params.Params, 0, len(sr.Params)),
-		I18nRuleInfo: genAllI18nRuleInfo(sr),
+		I18nRuleInfo: genAllI18nRuleInfo(bundle, sr),
 		AllowOffline: sr.AllowOffline,
 	}
 	for _, v := range sr.Params {
 		r.Params = append(r.Params, &params.Param{
 			Key:      v.Key,
 			Value:    v.Value,
-			Desc:     plocale.Bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, v.Desc),
-			I18nDesc: plocale.Bundle.LocalizeAll(v.Desc),
+			Desc:     bundle.LocalizeMsgByLang(i18nPkg.DefaultLang, v.Desc),
+			I18nDesc: bundle.LocalizeAll(v.Desc),
 			Type:     v.Type,
 			Enums:    nil, // all nil now
 		})
@@ -84,13 +85,13 @@ func ConvertSourceRule(sr *SourceRule) *driverV2.Rule {
 	return r
 }
 
-func genAllI18nRuleInfo(sr *SourceRule) map[language.Tag]*driverV2.RuleInfo {
-	result := make(map[language.Tag]*driverV2.RuleInfo, len(plocale.Bundle.LanguageTags()))
-	for _, langTag := range plocale.Bundle.LanguageTags() {
+func genAllI18nRuleInfo(bundle *i18nPkg.Bundle, sr *SourceRule) map[language.Tag]*driverV2.RuleInfo {
+	result := make(map[language.Tag]*driverV2.RuleInfo, len(bundle.LanguageTags()))
+	for _, langTag := range bundle.LanguageTags() {
 		newInfo := &driverV2.RuleInfo{
-			Desc:       plocale.Bundle.LocalizeMsgByLang(langTag, sr.Desc),
-			Annotation: plocale.Bundle.LocalizeMsgByLang(langTag, sr.Annotation),
-			Category:   plocale.Bundle.LocalizeMsgByLang(langTag, sr.Category),
+			Desc:       bundle.LocalizeMsgByLang(langTag, sr.Desc),
+			Annotation: bundle.LocalizeMsgByLang(langTag, sr.Annotation),
+			Category:   bundle.LocalizeMsgByLang(langTag, sr.Category),
 			Knowledge:  driverV2.RuleKnowledge{Content: sr.Knowledge.Content}, //todo i18n Knowledge
 		}
 

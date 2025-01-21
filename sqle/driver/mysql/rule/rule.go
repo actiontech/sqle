@@ -239,7 +239,7 @@ type RuleHandler struct {
 }
 
 func init() {
-	RuleHandlers = generateI18nRuleHandlersFromSource(sourceRuleHandlers)
+	RuleHandlers = GenerateI18nRuleHandlers(plocale.Bundle, sourceRuleHandlers)
 	defaultRulesKnowledge, err := getDefaultRulesKnowledge()
 	if err != nil {
 		panic(fmt.Errorf("get default rules knowledge failed: %v", err))
