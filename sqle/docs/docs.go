@@ -8783,6 +8783,12 @@ var doc = `{
                     },
                     {
                         "type": "string",
+                        "description": "filter rule version",
+                        "name": "filter_rule_version",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "description": "filter tags",
                         "name": "tags",
                         "in": "query"
@@ -12860,6 +12866,9 @@ var doc = `{
                 },
                 "rule_template_name": {
                     "type": "string"
+                },
+                "rule_version": {
+                    "type": "string"
                 }
             }
         },
@@ -12930,6 +12939,9 @@ var doc = `{
                     }
                 },
                 "rule_template_name": {
+                    "type": "string"
+                },
+                "rule_version": {
                     "type": "string"
                 }
             }
@@ -16651,6 +16663,9 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v1.RuleResV1"
                     }
+                },
+                "rule_version": {
+                    "type": "string"
                 }
             }
         },
@@ -17060,6 +17075,9 @@ var doc = `{
                 },
                 "rule_template_name": {
                     "type": "string"
+                },
+                "rule_version": {
+                    "type": "string"
                 }
             }
         },
@@ -17170,6 +17188,9 @@ var doc = `{
                 },
                 "rule_template_name": {
                     "type": "string"
+                },
+                "rule_version": {
+                    "type": "string"
                 }
             }
         },
@@ -17183,6 +17204,9 @@ var doc = `{
                     "type": "string"
                 },
                 "rule_template_name": {
+                    "type": "string"
+                },
+                "rule_version": {
                     "type": "string"
                 }
             }
@@ -17200,6 +17224,9 @@ var doc = `{
                     "type": "string"
                 },
                 "rule_template_name": {
+                    "type": "string"
+                },
+                "rule_version": {
                     "type": "string"
                 }
             }

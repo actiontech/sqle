@@ -22,6 +22,7 @@ type RuleTemplate struct {
 	Name           string                   `json:"name" gorm:"type:varchar(255)"`
 	Desc           string                   `json:"desc" gorm:"type:varchar(255)"`
 	DBType         string                   `json:"db_type" gorm:"type:varchar(255)"`
+	RuleVersion    string                   `json:"rule_version" gorm:"type:varchar(255);not null;default:''"`
 	RuleList       []RuleTemplateRule       `json:"rule_list" gorm:"foreignkey:rule_template_id;association_foreignkey:id"`
 	CustomRuleList []RuleTemplateCustomRule `json:"custom_rule_list" gorm:"foreignkey:rule_template_id;association_foreignkey:id"`
 }
@@ -429,7 +430,7 @@ func (s *Storage) GetRuleTemplateById(id uint64) (*RuleTemplate, error) {
 func (s *Storage) GetRuleTemplateTips(projectId, dbType string) ([]*RuleTemplate, error) {
 	ruleTemplates := []*RuleTemplate{}
 
-	db := s.db.Select("id,name, db_type").Where("project_id = ?", projectId)
+	db := s.db.Where("project_id = ?", projectId)
 	if dbType != "" {
 		db = db.Where("db_type = ?", dbType)
 	}
