@@ -953,6 +953,8 @@ definitions:
         type: array
       rule_template_name:
         type: string
+      rule_version:
+        type: string
     type: object
   v1.CreateRollbackWorkflowReq:
     properties:
@@ -999,6 +1001,8 @@ definitions:
           $ref: '#/definitions/v1.RuleReqV1'
         type: array
       rule_template_name:
+        type: string
+      rule_version:
         type: string
     type: object
   v1.CreateSQLAuditRecordResV1:
@@ -3551,6 +3555,8 @@ definitions:
         items:
           $ref: '#/definitions/v1.RuleResV1'
         type: array
+      rule_version:
+        type: string
     type: object
   v1.ParseProjectRuleTemplateFileResV1:
     properties:
@@ -3837,6 +3843,8 @@ definitions:
         type: array
       rule_template_name:
         type: string
+      rule_version:
+        type: string
     type: object
   v1.RuleReqV1:
     properties:
@@ -3912,6 +3920,8 @@ definitions:
         type: array
       rule_template_name:
         type: string
+      rule_version:
+        type: string
     type: object
   v1.RuleTemplateResV1:
     properties:
@@ -3920,6 +3930,8 @@ definitions:
       desc:
         type: string
       rule_template_name:
+        type: string
+      rule_version:
         type: string
     type: object
   v1.RuleTemplateTipResV1:
@@ -3931,6 +3943,8 @@ definitions:
       rule_template_id:
         type: string
       rule_template_name:
+        type: string
+      rule_version:
         type: string
     type: object
   v1.RuleTips:
@@ -12078,6 +12092,10 @@ paths:
       - description: filter rule name list
         in: query
         name: filter_rule_names
+        type: string
+      - description: filter rule version
+        in: query
+        name: filter_rule_version
         type: string
       - description: filter tags
         in: query

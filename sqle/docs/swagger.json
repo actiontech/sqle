@@ -8767,6 +8767,12 @@
                     },
                     {
                         "type": "string",
+                        "description": "filter rule version",
+                        "name": "filter_rule_version",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "description": "filter tags",
                         "name": "tags",
                         "in": "query"
@@ -12844,6 +12850,9 @@
                 },
                 "rule_template_name": {
                     "type": "string"
+                },
+                "rule_version": {
+                    "type": "string"
                 }
             }
         },
@@ -12914,6 +12923,9 @@
                     }
                 },
                 "rule_template_name": {
+                    "type": "string"
+                },
+                "rule_version": {
                     "type": "string"
                 }
             }
@@ -16635,6 +16647,9 @@
                     "items": {
                         "$ref": "#/definitions/v1.RuleResV1"
                     }
+                },
+                "rule_version": {
+                    "type": "string"
                 }
             }
         },
@@ -17044,6 +17059,9 @@
                 },
                 "rule_template_name": {
                     "type": "string"
+                },
+                "rule_version": {
+                    "type": "string"
                 }
             }
         },
@@ -17154,6 +17172,9 @@
                 },
                 "rule_template_name": {
                     "type": "string"
+                },
+                "rule_version": {
+                    "type": "string"
                 }
             }
         },
@@ -17167,6 +17188,9 @@
                     "type": "string"
                 },
                 "rule_template_name": {
+                    "type": "string"
+                },
+                "rule_version": {
                     "type": "string"
                 }
             }
@@ -17184,6 +17208,9 @@
                     "type": "string"
                 },
                 "rule_template_name": {
+                    "type": "string"
+                },
+                "rule_version": {
                     "type": "string"
                 }
             }
