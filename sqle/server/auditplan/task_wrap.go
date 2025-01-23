@@ -573,12 +573,7 @@ func createSqlManageCostMetricRecord(sqlManageQueue *model.SQLManageQueue, insta
 	if err != nil {
 		return err
 	}
-	// EXPLAIN FORMAT
-	explainJSONResult, err := plugin.ExplainJSONFormat(context.TODO(), &driverV2.ExplainConf{Sql: sqlManageQueue.SqlText})
-	if err != nil {
-		return err
-	}
-	cost, err := strconv.ParseFloat(explainJSONResult.QueryBlock.CostInfo.QueryCost, 64)
+	cost, err := GetQueryCost(plugin, sqlManageQueue.SqlText)
 	if err != nil {
 		log.Logger().Errorf("createSqlManageCostMetricRecord: parse explain cost to float64 failed %v", err)
 		return err
@@ -637,4 +632,36 @@ func buildSqlManageMetricExecutePlanRecord(explainResultRows [][]string, sqlMana
 		})
 	}
 	return sqlManageMetricExecutePlanRecords
+}
+
+func GetQueryCost(plugin driver.Plugin, sql string) (cost float64, err error) {
+	explainJSONResult, err := plugin.ExplainJSONFormat(context.TODO(), &driverV2.ExplainConf{Sql: sql})
+	if err != nil {
+		return 0, err
+	}
+	sqlNodes, err := plugin.Parse(context.TODO(), sql)
+	if err != nil {
+		return 0, err
+	}
+	if len(sqlNodes) == 0 {
+		return 0, errors.Errorf("failed to get query cost invalid sql: %v", sql)
+	}
+	// 不是SELECT语句直接忽略
+	if sqlNodes[0].Type != driverV2.SQLTypeDQL {
+		return 0, errors.Errorf("failed to get query cost because it is not DQL: %v", sql)
+	}
+	costFloat, err := strconv.ParseFloat(explainJSONResult.QueryBlock.CostInfo.QueryCost, 64)
+	if err != nil {
+		return 0, err
+	}
+	return costFloat, nil
+}
+
+func Explain(dbType string, plugin driver.Plugin, sql string) (res *driverV2.ExplainResult, err error) {
+	if !driver.GetPluginManager().
+		IsOptionalModuleEnabled(dbType, driverV2.OptionalModuleExplain) {
+		return nil, driver.NewErrPluginAPINotImplement(driverV2.OptionalModuleExplain)
+	}
+
+	return plugin.Explain(context.TODO(), &driverV2.ExplainConf{Sql: sql})
 }
