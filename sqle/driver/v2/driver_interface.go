@@ -148,9 +148,11 @@ type AuditResults struct {
 }
 
 type AuditResult struct {
-	Level    RuleLevel
-	Message  string
-	RuleName string
+	Level           RuleLevel
+	Message         string
+	RuleName        string
+	ExecutionFailed bool
+	ErrorInfo       string
 }
 
 func NewAuditResults() *AuditResults {
@@ -195,6 +197,10 @@ func (rs *AuditResults) Message() string {
 }
 
 func (rs *AuditResults) Add(level RuleLevel, ruleName string, messagePattern string, args ...interface{}) {
+	rs.AddResultWithError(level, ruleName, "", false, messagePattern, args...)
+}
+
+func (rs *AuditResults) AddResultWithError(level RuleLevel, ruleName, errorMsg string, executionFailed bool, messagePattern string, args ...interface{}) {
 	if level == "" || messagePattern == "" {
 		return
 	}
@@ -203,9 +209,11 @@ func (rs *AuditResults) Add(level RuleLevel, ruleName string, messagePattern str
 		message = fmt.Sprintf(message, args...)
 	}
 	rs.Results = append(rs.Results, &AuditResult{
-		Level:    level,
-		Message:  message,
-		RuleName: ruleName,
+		Level:           level,
+		Message:         message,
+		RuleName:        ruleName,
+		ExecutionFailed: executionFailed,
+		ErrorInfo:       errorMsg,
 	})
 	rs.SortByLevel()
 }

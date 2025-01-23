@@ -147,6 +147,8 @@ message AuditResult {
   string message = 1;
   string level = 2;
   string rule_name = 3;
+  bool  execution_failed = 4;
+  string  error_info = 5;
 }
 
 message AuditResults {

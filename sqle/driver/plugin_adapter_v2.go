@@ -242,9 +242,11 @@ func (s *PluginImplV2) Audit(ctx context.Context, sqls []string) ([]*driverV2.Au
 		ret := &driverV2.AuditResults{}
 		for _, result := range results.Results {
 			ret.Results = append(ret.Results, &driverV2.AuditResult{
-				Level:    driverV2.RuleLevel(result.Level),
-				Message:  result.Message,
-				RuleName: result.RuleName,
+				Level:           driverV2.RuleLevel(result.Level),
+				Message:         result.Message,
+				RuleName:        result.RuleName,
+				ExecutionFailed: result.ExecutionFailed,
+				ErrorInfo:       result.ErrorInfo,
 			})
 		}
 		rets = append(rets, ret)
