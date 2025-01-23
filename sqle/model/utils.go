@@ -521,6 +521,26 @@ func (s *Storage) CreateDefaultWorkflowTemplateIfNotExist() error {
 	return nil
 }
 func (s *Storage) CreateDefaultTemplateIfNotExist(projectId ProjectUID, rules map[string][]*driverV2.Rule) error {
+	const newRuleTmpSuffix = driverV2.DriverTypeMySQL + "(V2Rules)"
+	for dbType, dbRules := range rules {
+		if dbType != driverV2.DriverTypeMySQL {
+			continue
+		}
+		var ruleListOld, ruleListNew []*driverV2.Rule
+		for _, rule := range dbRules {
+			if strings.HasPrefix(rule.Name, "SQLE") {
+				// new rule
+				ruleListNew = append(ruleListNew, rule)
+			} else {
+				ruleListOld = append(ruleListOld, rule)
+			}
+		}
+		if len(ruleListNew) > 0 {
+			rules[driverV2.DriverTypeMySQL] = ruleListOld
+			rules[newRuleTmpSuffix] = ruleListNew
+		}
+	}
+
 	for dbType, r := range rules {
 		templateName := s.GetDefaultRuleTemplateName(dbType)
 		exist, err := s.IsRuleTemplateExistFromAnyProject(projectId, templateName)
@@ -535,6 +555,9 @@ func (s *Storage) CreateDefaultTemplateIfNotExist(projectId ProjectUID, rules ma
 			ProjectId: projectId,
 			Name:      templateName,
 			DBType:    dbType,
+		}
+		if dbType == newRuleTmpSuffix {
+			t.DBType, t.RuleVersion = driverV2.DriverTypeMySQL, "v2"
 		}
 		if err := s.Save(t); err != nil {
 			return err
@@ -551,7 +574,7 @@ func (s *Storage) CreateDefaultTemplateIfNotExist(projectId ProjectUID, rules ma
 				RuleName:       modelRule.Name,
 				RuleLevel:      modelRule.Level,
 				RuleParams:     modelRule.Params,
-				RuleDBType:     dbType,
+				RuleDBType:     t.DBType,
 			})
 		}
 		if err := s.UpdateRuleTemplateRules(t, ruleList...); err != nil {
