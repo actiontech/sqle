@@ -186,8 +186,8 @@ func (s *Storage) GetLatestStartTimeAuditPlanSQLV2(sourceId uint) (string, error
 type SQLManageRecord struct {
 	Model
 
-	Source         string         `json:"source" gorm:"type:varchar(255)"`
-	SourceId       string         `json:"source_id" gorm:"type:varchar(255)"`
+	Source         string         `json:"source" gorm:"type:varchar(255);index:idx_source_id_source"`
+	SourceId       string         `json:"source_id" gorm:"type:varchar(255);index:idx_source_id_source"`
 	ProjectId      string         `json:"project_id" gorm:"type:varchar(255)"`
 	InstanceID     string         `json:"instance_id" gorm:"type:varchar(255)"`
 	SchemaName     string         `json:"schema_name" gorm:"type:varchar(255)"`
