@@ -5554,6 +5554,13 @@ var doc = `{
                         "required": true
                     },
                     {
+                        "type": "boolean",
+                        "description": "latest_point_enabled",
+                        "name": "latest_point_enabled",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
                         "type": "string",
                         "description": "start time",
                         "name": "start_time",
@@ -17313,7 +17320,7 @@ var doc = `{
                     "$ref": "#/definitions/v1.ExplainClassicResult"
                 },
                 "cost": {
-                    "type": "string"
+                    "type": "number"
                 },
                 "message": {
                     "type": "string"
