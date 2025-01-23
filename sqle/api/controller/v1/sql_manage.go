@@ -305,9 +305,10 @@ func GetSqlManageSqlAnalysisV1(c echo.Context) error {
 }
 
 type SqlManageAnalysisChartReq struct {
-	StartTime  *string `query:"start_time" json:"start_time"`
-	EndTime    *string `query:"end_time" json:"end_time"`
-	MetricName *string `query:"metric_name" json:"metric_name"`
+	LatestPointEnabled bool    `query:"latest_point_enabled" json:"latest_point_enabled"`
+	StartTime          *string `query:"start_time" json:"start_time"`
+	EndTime            *string `query:"end_time" json:"end_time"`
+	MetricName         *string `query:"metric_name" json:"metric_name"`
 }
 
 type SqlManageAnalysisChartResp struct {
@@ -322,6 +323,7 @@ type SqlManageAnalysisChartResp struct {
 // @Tags SqlManage
 // @Param project_name path string true "project name"
 // @Param sql_manage_id path string true "sql manage id"
+// @Param latest_point_enabled query bool true "latest_point_enabled"
 // @Param start_time query string true "start time"
 // @Param end_time query string true "end time"
 // @Param metric_name query string true "metric_name"
@@ -352,6 +354,7 @@ func convertSQLAnalysisResultToRes(ctx context.Context, res *AnalysisResult, raw
 	// explain
 	{
 		data.SQLExplain = &SQLExplain{SQL: rawSQL}
+		data.SQLExplain.Cost = *res.Cost
 		if res.ExplainResultErr != nil {
 			data.SQLExplain.Message = res.ExplainResultErr.Error()
 		} else {
