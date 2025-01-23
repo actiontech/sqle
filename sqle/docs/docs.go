@@ -20432,6 +20432,9 @@ var doc = `{
                     "type": "object",
                     "$ref": "#/definitions/v1.ExplainClassicResult"
                 },
+                "cost": {
+                    "type": "number"
+                },
                 "err_message": {
                     "type": "string"
                 },
