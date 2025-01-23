@@ -228,8 +228,9 @@ func (at *TaskWrapper) stopCollect() error {
 
 func (at *TaskWrapper) extractSQL() {
 	var err error
-	defer ProcessAuditPlanStatusAndLogError(at.logger, at.ap.ID, at.ap.InstanceID, at.ap.Type, &err)
-
+	defer func() {
+		ProcessAuditPlanStatusAndLogError(at.logger, at.ap.ID, at.ap.InstanceID, at.ap.Type, err)
+	}()
 	collectionTime := time.Now()
 	sqls, err := at.collect.ExtractSQL(at.logger, at.ap, at.persist)
 	if err != nil {
@@ -257,11 +258,11 @@ func (at *TaskWrapper) extractSQL() {
 	}
 }
 
-func ProcessAuditPlanStatusAndLogError(l *logrus.Entry, auditPlanId uint, instanceID, auditPlnType string, err *error) {
+func ProcessAuditPlanStatusAndLogError(l *logrus.Entry, auditPlanId uint, instanceID, auditPlnType string, err error) {
 	s := model.GetStorage()
 	status := model.LastCollectionNormal
 	if err != nil {
-		l.Error(sqleErr.NewAuditPlanExecuteExtractErr(*err, instanceID, auditPlnType))
+		l.Error(sqleErr.NewAuditPlanExecuteExtractErr(err, instanceID, auditPlnType))
 		status = model.LastCollectionAbnormal
 	}
 	updateErr := s.UpdateAuditPlanInfoByAPID(auditPlanId, map[string]interface{}{"last_collection_status": status})

@@ -650,9 +650,10 @@ func (s *Storage) GetAuditPlansByProjectId(projectID string) ([]*InstanceAuditPl
 func (s *Storage) GetInstanceAuditPlansByLastCollectionStatus(projectID, status string) ([]*InstanceAuditPlan, error) {
 	instanceAuditPlan := []*InstanceAuditPlan{}
 	err := s.db.Model(InstanceAuditPlan{}).
+		Distinct("instance_audit_plans.instance_id").
 		Joins("JOIN audit_plans_v2 ap ON instance_audit_plans.id = ap.instance_audit_plan_id").
 		Joins("JOIN audit_plan_task_infos apti ON ap.id = apti.audit_plan_id").
-		Where("instance_audit_plans.project_id = ? AND apti.last_collection_status = ?", projectID, status).Find(&instanceAuditPlan).Error
+		Where("instance_audit_plans.project_id = ? AND apti.last_collection_status = ? AND ap.active_status = ?", projectID, status, ActiveStatusNormal).Find(&instanceAuditPlan).Error
 	return instanceAuditPlan, err
 }
 

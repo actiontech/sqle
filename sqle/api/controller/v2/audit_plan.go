@@ -534,7 +534,9 @@ func UploadInstanceAuditPlanSQLs(c echo.Context) error {
 	}
 
 	l := log.NewEntry()
-	defer auditplan.ProcessAuditPlanStatusAndLogError(l, ap.ID, ap.InstanceID, ap.Type, &err)
+	defer func() {
+		auditplan.ProcessAuditPlanStatusAndLogError(l, ap.ID, ap.InstanceID, ap.Type, err)
+	}()
 	// 当scannerd执行出现错误时，将任务状态改为异常并日志打印错误信息
 	if req.ErrorMessage != "" && len(req.SQLs) == 0 {
 		err = fmt.Errorf("error message received: %s", req.ErrorMessage)
