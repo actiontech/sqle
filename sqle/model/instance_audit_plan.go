@@ -647,7 +647,7 @@ func (s *Storage) GetAuditPlansByProjectId(projectID string) ([]*InstanceAuditPl
 	return instanceAuditPlan, err
 }
 
-func (s *Storage) GetInstanceAuditPlansByLastCollectionStatus(projectID, status string) ([]*InstanceAuditPlan, error) {
+func (s *Storage) GetNormalAuditPlanInstancesByLastCollectionStatus(projectID, status string) ([]*InstanceAuditPlan, error) {
 	instanceAuditPlan := []*InstanceAuditPlan{}
 	err := s.db.Model(InstanceAuditPlan{}).
 		Distinct("instance_audit_plans.instance_id").
