@@ -6144,6 +6144,8 @@ definitions:
       classic_result:
         $ref: '#/definitions/v1.ExplainClassicResult'
         type: object
+      cost:
+        type: number
       err_message:
         type: string
       sql:
