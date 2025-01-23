@@ -927,7 +927,7 @@ func getAbnormalInstanceAuditPlans(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	s := model.GetStorage()
-	instAuditPlans, err := s.GetInstanceAuditPlansByLastCollectionStatus(projectUID, model.LastCollectionAbnormal)
+	instAuditPlans, err := s.GetNormalAuditPlanInstancesByLastCollectionStatus(projectUID, model.LastCollectionAbnormal)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
