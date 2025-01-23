@@ -612,6 +612,7 @@ func (p *PluginProcessor) GetDriverMetas() (*driverV2.DriverMetas, error) {
 	for i := range rulepkg.RuleHandlers {
 		allRules[i] = &rulepkg.RuleHandlers[i].Rule
 	}
+
 	metas := &driverV2.DriverMetas{
 		PluginName:               driverV2.DriverTypeMySQL,
 		DatabaseDefaultPort:      3306,
