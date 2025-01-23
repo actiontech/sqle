@@ -4012,7 +4012,7 @@ definitions:
         description: explain result in table format
         type: object
       cost:
-        type: string
+        type: number
       message:
         type: string
       sql:
@@ -9760,6 +9760,11 @@ paths:
         name: sql_manage_id
         required: true
         type: string
+      - description: latest_point_enabled
+        in: query
+        name: latest_point_enabled
+        required: true
+        type: boolean
       - description: start time
         in: query
         name: start_time
