@@ -189,6 +189,7 @@ type AffectRows struct {
 
 type SQLExplain struct {
 	SQL           string                   `json:"sql"`
+	Cost          float64                  `json:"cost"`
 	ErrMessage    string                   `json:"err_message"`
 	ClassicResult *v1.ExplainClassicResult `json:"classic_result"`
 }
