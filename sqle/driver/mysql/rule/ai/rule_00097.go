@@ -108,7 +108,7 @@ func RuleSQLE00097(input *rulepkg.RuleHandlerInput) error {
 	checkViolate := func(table *ast.TableName, col string) (bool, error) {
 		createTableStmt, err := getCreateTableStmt(table)
 		if err != nil {
-			return false, fmt.Errorf("Failed to get CREATE TABLE statement for table %s: %v", table, err)
+			return false, fmt.Errorf("Failed to get CREATE TABLE statement for table %s: %v", table.Name.String(), err)
 		}
 		columnDef := getColumnDef(createTableStmt, col)
 

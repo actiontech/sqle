@@ -164,7 +164,7 @@ func RuleSQLE00110(input *rulepkg.RuleHandlerInput) error {
 		indexes, err := util.GetTableIndexes(input.Ctx, table.Name.String(), table.Schema.String())
 		if err != nil {
 			// 记录错误日志并继续检查下一个表
-			log.NewEntry().Errorf("获取表 %s 的索引失败: %v", table, err)
+			log.NewEntry().Errorf("获取表 %s 的索引失败: %v", table.Name.String(), err)
 			continue
 		}
 

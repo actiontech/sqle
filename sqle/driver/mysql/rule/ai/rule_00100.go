@@ -95,7 +95,10 @@ func RuleSQLE00100(input *rulepkg.RuleHandlerInput) error {
 		case *ast.SelectStmt, *ast.UnionStmt:
 			// 当sql是insert ... select语句中的SelectStmt/UnionStmt的Text() 为'', 因此这里改用Restore方式获取sqlText
 			sqlBuilder := new(strings.Builder)
-			node.Restore(format.NewRestoreCtx((format.RestoreStringSingleQuotes), sqlBuilder))
+			err := node.Restore(format.NewRestoreCtx((format.RestoreStringSingleQuotes), sqlBuilder))
+			if err != nil {
+				return false, err
+			}
 			sqlText := sqlBuilder.String()
 			executionPlan, err := util.GetExecutionPlan(input.Ctx, sqlText)
 			if err != nil {
