@@ -196,6 +196,9 @@ func (s *Storage) GetAuditStatisticByTaskId(data map[string]interface{}) (
 	data["key_warn"] = "{\"level\": \"warn\"}"
 	data["key_normal"] = "{\"level\": \"normal\"}"
 	data["key_notice"] = "{\"level\": \"notice\"}"
+	// 执行报错的规规则计入warn中
+	data["execution_failed_true"] = "{\"execution_failed\": true}"
+	data["execution_failed_false"] = "{\"execution_failed\": false}"
 	err = s.getListResult(auditFileStatisticQueryBodyTpl, auditFileStatisticQueryTpl, data, &result)
 	if err != nil {
 		return result, 0, err
@@ -216,10 +219,10 @@ var auditFileStatisticQueryTpl string = `
 		SUM(CASE WHEN e_sql.exec_status = 'manually_executed' THEN 1 ELSE 0 END) AS manually_executed_count,
 		SUM(CASE WHEN e_sql.exec_status = 'terminate_succeeded' THEN 1 ELSE 0 END) AS terminate_succeeded_count,
 		SUM(CASE WHEN e_sql.exec_status = 'terminate_failed' THEN 1 ELSE 0 END) AS terminate_failed_count,
-		SUM(JSON_CONTAINS(e_sql.audit_results, :key_error)) AS error_count,
-		SUM(JSON_CONTAINS(e_sql.audit_results, :key_warn)) AS warning_count,
-		SUM(JSON_CONTAINS(e_sql.audit_results, :key_notice)) AS notice_count,
-		SUM(JSON_CONTAINS(e_sql.audit_results, :key_normal)) AS normal_count
+		SUM(JSON_CONTAINS(e_sql.audit_results, :key_error) AND JSON_CONTAINS(e_sql.audit_results, :execution_failed_false)) AS error_count,
+		SUM(JSON_CONTAINS(e_sql.audit_results, :key_warn) OR JSON_CONTAINS(e_sql.audit_results, :execution_failed_true)) AS warning_count,
+		SUM(JSON_CONTAINS(e_sql.audit_results, :key_notice) AND JSON_CONTAINS(e_sql.audit_results, :execution_failed_false)) AS notice_count,
+		SUM(JSON_CONTAINS(e_sql.audit_results, :key_normal) AND JSON_CONTAINS(e_sql.audit_results, :execution_failed_false)) AS normal_count
 	{{- template "body" . -}}
 	{{- if .limit }}
 		LIMIT :limit OFFSET :offset	
