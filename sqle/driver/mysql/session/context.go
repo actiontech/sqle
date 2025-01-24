@@ -1094,6 +1094,10 @@ func (c *Context) GetExecutionPlan(sql string) ([]*executor.ExplainRecord, error
 		return ep.Plan, nil
 	}
 
+	if c.e == nil {
+		return nil, nil
+	}
+
 	r, err := c.fetchExecutionPlanWithWarnings(sql)
 	if err != nil {
 		return nil, err

@@ -207,7 +207,7 @@ func TestWhereStmtNotAlwaysTrue(t *testing.T) {
 		t.Run(tt.input, func(t *testing.T) {
 			stmt, err := parser.New().ParseOneStmt(tt.input, "", "")
 			assert.NoError(t, err)
-			got := WhereStmtNotAlwaysTrue(stmt.(*ast.SelectStmt).Where)
+			got := !WhereStmtNotAlwaysTrue(stmt.(*ast.SelectStmt).Where)
 			assert.Equal(t, tt.want, got)
 		})
 	}
