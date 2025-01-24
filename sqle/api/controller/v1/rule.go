@@ -1523,24 +1523,27 @@ func parseRuleTemplate(c echo.Context, fileType ExportType) (*ParseProjectRuleTe
 }
 
 func parseRuleCategory(csvRule []string) map[string][]string {
+	canGetIndexValue := func(index int) bool {
+		return len(csvRule) > 0 && len(csvRule)-1 > index && csvRule[index] != ""
+	}
 	categories := make(map[string][]string)
-	if csvRule[4] != "" {
+	if canGetIndexValue(4) {
 		operandIds := getAuditRuleCategoryIds(strings.Split(csvRule[4], " "))
 		categories[plocale.RuleCategoryOperand.ID] = operandIds
 	}
-	if csvRule[5] != "" {
+	if canGetIndexValue(5) {
 		auditPurposeIds := getAuditRuleCategoryIds(strings.Split(csvRule[5], " "))
 		categories[plocale.RuleCategoryAuditPurpose.ID] = auditPurposeIds
 	}
-	if csvRule[6] != "" {
+	if canGetIndexValue(6) {
 		sqlIds := getAuditRuleCategoryIds(strings.Split(csvRule[6], " "))
 		categories[plocale.RuleCategorySQL.ID] = sqlIds
 	}
-	if csvRule[7] != "" {
+	if canGetIndexValue(7) {
 		auditAccuracyIds := getAuditRuleCategoryIds(strings.Split(csvRule[7], " "))
 		categories[plocale.RuleCategoryAuditAccuracy.ID] = auditAccuracyIds
 	}
-	if csvRule[8] != "" {
+	if canGetIndexValue(8) {
 		audit_performance_level_ids := getAuditRuleCategoryIds(strings.Split(csvRule[8], " "))
 		categories[plocale.RuleCategoryAuditPerformanceCost.ID] = audit_performance_level_ids
 	}
