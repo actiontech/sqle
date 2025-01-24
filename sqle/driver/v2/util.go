@@ -121,12 +121,13 @@ func ConvertI18nAuditResultFromProtoToDriver(par *protoV2.AuditResult, isI18n bo
 	ar := &AuditResult{
 		RuleName:            par.RuleName,
 		Level:               RuleLevel(par.Level),
+		ExecutionFailed:     par.ExecutionFailed,
 		I18nAuditResultInfo: make(map[language.Tag]AuditResultInfo, len(par.I18NAuditResultInfo)),
 	}
 	if !isI18n {
 		// 对非多语言的插件支持
 		ar.I18nAuditResultInfo = map[language.Tag]AuditResultInfo{
-			i18nPkg.DefaultLang: {Message: par.Message},
+			i18nPkg.DefaultLang: {Message: par.Message, ErrorInfo: par.ErrorInfo},
 		}
 	} else {
 		if _, exist := par.I18NAuditResultInfo[i18nPkg.DefaultLang.String()]; !exist {
@@ -140,7 +141,8 @@ func ConvertI18nAuditResultFromProtoToDriver(par *protoV2.AuditResult, isI18n bo
 			return nil, fmt.Errorf("fail to parse I18NAuditResultInfo tag [%s], error: %v", langTag, err)
 		}
 		ar.I18nAuditResultInfo[tag] = AuditResultInfo{
-			Message: ruleInfo.Message,
+			Message:   ruleInfo.Message,
+			ErrorInfo: ruleInfo.ErrorInfo,
 		}
 	}
 	return ar, nil
@@ -151,11 +153,13 @@ func ConvertI18nAuditResultFromDriverToProto(ar *AuditResult) *protoV2.AuditResu
 		Message:             ar.I18nAuditResultInfo[i18nPkg.DefaultLang].Message,
 		RuleName:            ar.RuleName,
 		Level:               string(ar.Level),
+		ExecutionFailed:     ar.ExecutionFailed,
 		I18NAuditResultInfo: make(map[string]*protoV2.I18NAuditResultInfo, len(ar.I18nAuditResultInfo)),
 	}
 	for langTag, ruleInfo := range ar.I18nAuditResultInfo {
 		par.I18NAuditResultInfo[langTag.String()] = &protoV2.I18NAuditResultInfo{
-			Message: ruleInfo.Message,
+			Message:   ruleInfo.Message,
+			ErrorInfo: ruleInfo.ErrorInfo,
 		}
 	}
 	return par

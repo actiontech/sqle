@@ -6,14 +6,16 @@ import (
 	sqlDriver "database/sql/driver"
 	"encoding/json"
 	"fmt"
-	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
-	"golang.org/x/text/language"
 	"reflect"
 	"strconv"
 	"strings"
 	"sync"
 	"text/template"
 	"time"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
+	"github.com/actiontech/sqle/sqle/driver/mysql/rule"
+	"golang.org/x/text/language"
 
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
@@ -87,7 +89,7 @@ type Model struct {
 	ID        uint           `json:"id" gorm:"primary_key" example:"1"`
 	CreatedAt time.Time      `json:"created_at" gorm:"default:current_timestamp(3)" example:"2018-10-21T16:40:23+08:00"`
 	UpdatedAt time.Time      `json:"updated_at" gorm:"default:current_timestamp(3) on update current_timestamp(3)" example:"2018-10-21T16:40:23+08:00"`
-	DeletedAt gorm.DeletedAt `json:"-" sql:"index"`
+	DeletedAt gorm.DeletedAt `json:"-" sql:"index" gorm:"index"`
 }
 
 func (m Model) GetIDStr() string {
@@ -263,10 +265,11 @@ func (s *Storage) CreateRuleCategories() error {
 		return errors.New(errors.ConnectStorageError, err)
 	}
 	categoryTagMap := map[string][]string{
-		plocale.RuleCategoryOperand.ID:       {plocale.RuleTagDatabase.ID, plocale.RuleTagTablespace.ID, plocale.RuleTagTable.ID, plocale.RuleTagColumn.ID, plocale.RuleTagIndex.ID, plocale.RuleTagView.ID, plocale.RuleTagProcedure.ID, plocale.RuleTagFunction.ID, plocale.RuleTagTrigger.ID, plocale.RuleTagEvent.ID, plocale.RuleTagUser.ID},
-		plocale.RuleCategorySQL.ID:           {plocale.RuleTagDML.ID, plocale.RuleTagDDL.ID, plocale.RuleTagDCL.ID, plocale.RuleTagIntegrity.ID, plocale.RuleTagQuery.ID, plocale.RuleTagTransaction.ID, plocale.RuleTagPrivilege.ID, plocale.RuleTagManagement.ID},
-		plocale.RuleCategoryAuditPurpose.ID:  {plocale.RuleTagPerformance.ID, plocale.RuleTagMaintenance.ID, plocale.RuleTagSecurity.ID, plocale.RuleTagCorrection.ID},
-		plocale.RuleCategoryAuditAccuracy.ID: {plocale.RuleTagOnline.ID, plocale.RuleTagOffline.ID},
+		plocale.RuleCategoryOperand.ID:              {plocale.RuleTagDatabase.ID, plocale.RuleTagTablespace.ID, plocale.RuleTagTable.ID, plocale.RuleTagColumn.ID, plocale.RuleTagIndex.ID, plocale.RuleTagView.ID, plocale.RuleTagProcedure.ID, plocale.RuleTagFunction.ID, plocale.RuleTagTrigger.ID, plocale.RuleTagEvent.ID, plocale.RuleTagUser.ID},
+		plocale.RuleCategorySQL.ID:                  {plocale.RuleTagDML.ID, plocale.RuleTagDDL.ID, plocale.RuleTagDCL.ID, plocale.RuleTagIntegrity.ID, plocale.RuleTagQuery.ID, plocale.RuleTagTransaction.ID, plocale.RuleTagPrivilege.ID, plocale.RuleTagManagement.ID},
+		plocale.RuleCategoryAuditPurpose.ID:         {plocale.RuleTagPerformance.ID, plocale.RuleTagMaintenance.ID, plocale.RuleTagSecurity.ID, plocale.RuleTagCorrection.ID},
+		plocale.RuleCategoryAuditAccuracy.ID:        {plocale.RuleTagOnline.ID, plocale.RuleTagOffline.ID},
+		plocale.RuleCategoryAuditPerformanceCost.ID: {plocale.RuleTagPerformanceCostHigh.ID},
 	}
 	for category, tags := range categoryTagMap {
 		for _, tag := range tags {
@@ -672,7 +675,34 @@ func (s *Storage) UpdateRuleCategoryRels(rule *Rule) error {
 			return err
 		}
 	}
+
+	auditPerformanceLevelCategories, err := s.GetAuditRuleCategoryByCategory(plocale.RuleCategoryAuditPerformanceCost.ID)
+	if err != nil {
+		return err
+	}
+	auditPerformanceLevelCategoriesMapTagToId := make(map[string]uint)
+	for i := range auditPerformanceLevelCategories {
+		auditPerformanceLevelCategoriesMapTagToId[auditPerformanceLevelCategories[i].Tag] = auditPerformanceLevelCategories[i].ID
+	}
+
+	// 根据特定规则名添加高消耗分类
+	if performanceCostId, ok := ruleNameToPerformanceCostId[rule.Name]; ok {
+		auditRuleCategoryRel := AuditRuleCategoryRel{CategoryId: auditPerformanceLevelCategoriesMapTagToId[performanceCostId], RuleName: rule.Name, RuleDBType: rule.DBType}
+		err = s.db.Create(&auditRuleCategoryRel).Error
+		if err != nil {
+			return err
+		}
+	}
+
 	return err
+}
+
+var ruleNameToPerformanceCostId = map[string] /*ruleId*/ string /*auditPerformanceLevelCategorieID*/ {
+	rule.DMLCheckSelectRows:                plocale.RuleTagPerformanceCostHigh.ID,
+	rule.DMLCheckAffectedRows:              plocale.RuleTagPerformanceCostHigh.ID,
+	rule.ConfigOptimizeIndexEnabled:        plocale.RuleTagPerformanceCostHigh.ID,
+	rule.DDLCheckIndexOption:               plocale.RuleTagPerformanceCostHigh.ID,
+	rule.DDLCheckCompositeIndexDistinction: plocale.RuleTagPerformanceCostHigh.ID,
 }
 
 func (s *Storage) GetDefaultRuleTemplateName(dbType string) string {
