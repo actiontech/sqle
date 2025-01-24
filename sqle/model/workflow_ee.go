@@ -60,3 +60,32 @@ ORDER BY workflows.created_at DESC
 LIMIT 100
 {{ end }}
 `
+
+// 工单中所有实例类型的数量
+type WorkflowInstanceTypeCount struct {
+	InstanceType string `gorm:"column:instance_type"`
+	Count        int    `gorm:"column:count"`
+}
+
+// 获取工单中所有实例类型的数量
+func (s *Storage) GetWorkflowInstanceTypeCounts() ([]*WorkflowInstanceTypeCount, error) {
+	var results []*WorkflowInstanceTypeCount
+
+	err := s.db.Raw(`
+		SELECT 
+			tasks.db_type AS instance_type,
+			COUNT(*) AS count
+		FROM workflows
+		LEFT JOIN workflow_instance_records 
+			ON workflows.workflow_record_id = workflow_instance_records.workflow_record_id
+		LEFT JOIN tasks 
+			ON workflow_instance_records.task_id = tasks.id
+		GROUP BY tasks.db_type
+	`).Scan(&results).Error
+
+	if err != nil {
+		return nil, fmt.Errorf("get workflow instance type counts failed: %w", err)
+	}
+
+	return results, nil
+}

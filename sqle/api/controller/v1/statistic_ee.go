@@ -368,28 +368,22 @@ func (d *dbErr) getWorkFlowStatusCount(status string) (count int64) {
 
 func getWorkflowPercentCountedByInstanceTypeV1(c echo.Context) error {
 	s := model.GetStorage()
-	workflows, total, err := s.GetWorkflowsByReq(map[string]interface{}{})
+	workflowInstanceTypeCounts, err := s.GetWorkflowInstanceTypeCounts()
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, fmt.Errorf("get workflows failed: %v", err))
 	}
-
-	instanceTypesMap := make(map[string]int, 0)
-
-	for _, workflow := range workflows {
-		for _, instanceType := range workflow.TaskInstanceType {
-			instanceTypesMap[instanceType]++
-		}
+	
+	var total int
+	for _, w := range workflowInstanceTypeCounts {
+		total += w.Count
 	}
-
-	percents := make([]WorkflowPercentCountedByInstanceType, len(instanceTypesMap))
-	i := 0
-	for instType, count := range instanceTypesMap {
-		percents[i] = WorkflowPercentCountedByInstanceType{
-			InstanceType: instType,
-			Percent:      float64(count) / float64(total) * 100,
-			Count:        uint(count),
-		}
-		i++
+	percents := make([]WorkflowPercentCountedByInstanceType, 0, len(workflowInstanceTypeCounts))
+	for _, w := range workflowInstanceTypeCounts {
+		percents = append(percents, WorkflowPercentCountedByInstanceType{
+			InstanceType: w.InstanceType,
+			Percent:      float64(w.Count) / float64(total) * 100,
+			Count:        uint(w.Count),
+		})
 	}
 
 	return c.JSON(http.StatusOK, &GetWorkflowPercentCountedByInstanceTypeResV1{
