@@ -1461,11 +1461,11 @@ func parseRuleTemplate(c echo.Context, fileType ExportType) (*ParseProjectRuleTe
 				Annotation: rule[2],
 				Level:      rule[3],
 				Categories: parseRuleCategory(rule),
-				DBType:     rule[8],
+				DBType:     rule[9],
 			}
 
 			var params []RuleParamResV1
-			err = json.Unmarshal([]byte(rule[9]), &params)
+			err = json.Unmarshal([]byte(rule[10]), &params)
 			if err != nil {
 				return nil, err
 			}
