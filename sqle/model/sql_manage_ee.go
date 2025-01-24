@@ -943,13 +943,14 @@ func (s *Storage) GetSqlManagerListByIDs(ids []*uint64) ([]*SQLManageRecordProce
 	return sqlManagerList, nil
 }
 
+// 获取审核计划未解决的SQL数量
 func (s *Storage) GetAuditPlanUnsolvedSQLCount(id uint, status []string) (int64, error) {
 	query := `SELECT
 					count(smr.id)
 				FROM
 					sql_manage_records AS smr
 				LEFT JOIN sql_manage_record_processes AS sm ON sm.sql_manage_record_id = smr.id
-				LEFT JOIN audit_plans_v2 AS ap ON ap.instance_audit_plan_id = smr.source_id AND ap.type = smr.source 
+				LEFT JOIN audit_plans_v2 AS ap ON CONCAT(ap.instance_audit_plan_id, '') = smr.source_id AND ap.type = smr.source 
 				WHERE
 					ap.id = ?
 					AND smr.deleted_at IS NULL
