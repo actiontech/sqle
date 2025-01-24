@@ -1455,6 +1455,10 @@ func parseRuleTemplate(c echo.Context, fileType ExportType) (*ParseProjectRuleTe
 				continue
 			}
 
+			if len(rule) < 11 {
+				continue
+			}
+
 			ruleResp = RuleResV1{
 				Name:       rule[0],
 				Desc:       rule[1],
