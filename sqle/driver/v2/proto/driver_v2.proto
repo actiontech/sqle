@@ -196,13 +196,16 @@ message AuditRequest {
 
 message I18nAuditResultInfo {
   string message = 1;
+  string error_info = 2;
 }
 
 message AuditResult {
   string message = 1; // 不支持国际化时，sqle从此取值
   string level = 2;
   string rule_name = 3;
-  map<string, I18nAuditResultInfo> i18nAuditResultInfo = 4; // 支持国际化时，sqle从此取值，必须包含默认语言
+	bool  execution_failed = 4;
+  string  error_info = 5;
+  map<string, I18nAuditResultInfo> i18nAuditResultInfo = 6; // 支持国际化时，sqle从此取值，必须包含默认语言
 }
 
 message AuditResults {
