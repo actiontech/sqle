@@ -19,12 +19,13 @@ import (
 func convertCustomRuleToRes(rule *model.CustomRule) CustomRuleResV1 {
 	ruleRes := CustomRuleResV1{
 		RuleId:     rule.RuleId,
-		DBType:     rule.DBType,
 		Desc:       rule.Desc,
 		Annotation: rule.Annotation,
+		DBType:     rule.DBType,
 		Level:      rule.Level,
 		Type:       rule.Typ,
 		RuleScript: rule.RuleScript,
+		Categories: associateCategories(rule.Categories),
 	}
 	return ruleRes
 }
