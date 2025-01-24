@@ -283,7 +283,11 @@ func (s *Storage) GetManagerSqlMetricTipsByAuditPlan(auditPlanId uint, metricNam
 	return metricValueTips, errors.New(errors.ConnectStorageError, err)
 }
 
-
+/*
+TODO 优先级:高 目的: 优化该方法的SQL性能
+ 1. 该方法的SQL性能差，本地数据量约三四千条，SQL的响应时间为(2.56 sec)
+ 2. 该方法主要性能下降在rules(type ALL filtered 10.00)表和smr表(type ALL filtered 1.11)
+*/
 func (s *Storage) GetManagerSqlRuleTipsByAuditPlan(auditPlanId uint) ([]*SqlManageRuleTips, error) {
 	sqlManageRuleTips := make([]*SqlManageRuleTips, 0)
 	err := s.db.Table("sql_manage_records smr").
@@ -441,7 +445,11 @@ func (s *Storage) DeleteInstanceAuditPlan(instanceAuditPlanId string) error {
 	})
 }
 
-
+/*
+TODO 优先级:中 目的: 优化该方法的SQL性能
+ 1. 该SQL存在隐式转换(ap.instance_audit_plan_id=sql_manage_queues.source_id)导致性能下降，且执行计划存在大表(sql_manage_records)的全表扫描，
+ 2. 由于操作是删除操作，使用频率较低，优化优先级降低
+*/
 func (s *Storage) DeleteAuditPlan(auditPlanID int) error {
 	return s.Tx(func(txDB *gorm.DB) error {
 		// 删除队列表中数据
@@ -673,7 +681,11 @@ func (s *Storage) GetInstanceAuditPlansByLastCollectionStatus(projectID, status 
 	return instanceAuditPlan, err
 }
 
-
+/*
+TODO 优先级:低 目的: 优化该方法的SQL性能
+	1. 该SQL存在隐式转换(sql_manage_records.source_id = apv.instance_audit_plan_id)导致索引过滤率下降
+	2. 由于数据量不是很大，优化优先级降低
+*/
 // 获取需要审核的sql，
 // 当更新时间大于最后审核时间或最后审核时间为空时需要重新审核（采集或重新采集到的sql）
 // 需要注意：当前仅在采集和审核时会更sql_manage_records中扫描任务相关的sql，所以使用了updated_at > last_audit_time条件。
