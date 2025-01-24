@@ -9,6 +9,9 @@ import (
 	"encoding/csv"
 	e "errors"
 	"fmt"
+	"github.com/actiontech/sqle/sqle/common"
+	"github.com/actiontech/sqle/sqle/driver"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"mime"
 	"net/http"
 	"strconv"
@@ -16,9 +19,6 @@ import (
 	"time"
 
 	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
-
-	"github.com/actiontech/sqle/sqle/pkg/im/coding"
-	"golang.org/x/text/language"
 
 	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"github.com/actiontech/dms/pkg/dms-common/dmsobject"
@@ -28,9 +28,12 @@ import (
 	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/pkg/im/coding"
 	"github.com/actiontech/sqle/sqle/server/auditplan"
+	auditPlan "github.com/actiontech/sqle/sqle/server/auditplan"
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/labstack/echo/v4"
+	"golang.org/x/text/language"
 )
 
 func getSqlManageList(c echo.Context) error {
@@ -415,7 +418,7 @@ func getSqlManageSqlAnalysisChartV1(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
-	chartPoints, err := getSqlAnalysisChart(sqlManageId, *request.MetricName, startTime, endTime)
+	chartPoints, err := getSqlAnalysisChart(sqlManageId, *request.MetricName, request.LatestPointEnabled, startTime, endTime)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -431,7 +434,7 @@ func getSqlManageSqlAnalysisChartV1(c echo.Context) error {
 	})
 }
 
-func getSqlAnalysisChart(sqlManageId string, metricName string, startTime time.Time, endTime time.Time) ([]ChartPoint, error) {
+func getSqlAnalysisChart(sqlManageId string, metricName string, latestPointEnabled bool, startTime time.Time, endTime time.Time) ([]ChartPoint, error) {
 	duration := endTime.Sub(startTime)
 	storage := model.GetStorage()
 	sqlManageRecord, exist, err := storage.GetOriginManageSqlByID(sqlManageId)
@@ -449,6 +452,13 @@ func getSqlAnalysisChart(sqlManageId string, metricName string, startTime time.T
 		chartPoints, err := timeSliceQuerySqlManageMetricChartPoints(sqlManageRecord.SQLID, metricName, nil, startTime, endTime)
 		if err != nil {
 			return nil, err
+		}
+		if latestPointEnabled {
+			chartPoint, err := queryExplainChartPoint(*sqlManageRecord, sqlManageRecord.SchemaName, sqlManageRecord.SqlText)
+			if err != nil {
+				return nil, err
+			}
+			chartPoints = append(chartPoints, *chartPoint)
 		}
 		return chartPoints, nil
 	} else if durationHours <= 7*24 {
@@ -543,6 +553,62 @@ func record2ChartPoint(sqlManageMetricRecord model.SqlManageMetricRecord, create
 		Y:     &sqlManageMetricRecord.MetricValues[0].MetricValue,
 		Infos: infos,
 	}
+}
+
+func queryExplainChartPoint(sqlManageRecord model.SQLManageRecord, schema, sql string) (chartPoint *ChartPoint, err error) {
+	instance, exist, err := dms.GetInstancesById(context.TODO(), sqlManageRecord.InstanceID)
+	if err != nil {
+		return nil, err
+	}
+	if !exist {
+		return nil, errors.NewDataNotExistErr(fmt.Sprintf("sql manage id %v instance not exist", sqlManageRecord.ID))
+	}
+	dsn, err := common.NewDSN(instance, schema)
+	if err != nil {
+		return nil, err
+	}
+	entry := log.NewEntry().WithField("sql_manage_analysis", sqlManageRecord.ID)
+	plugin, err := driver.GetPluginManager().
+		OpenPlugin(entry, instance.DbType, &driverV2.Config{DSN: dsn})
+	if err != nil {
+		return nil, err
+	}
+	defer plugin.Close(context.TODO())
+
+	cost, err := auditPlan.GetQueryCost(plugin, sql)
+	explainResult, err := Explain(instance.DbType, plugin, sql)
+	if err != nil {
+		return nil, err
+	}
+	explainRows := explainResult.ClassicResult.TabularData.Rows
+	explainColumns := explainResult.ClassicResult.Columns
+	infos := make([]map[string]string, 0, len(explainRows))
+	for _, row := range explainRows {
+		if len(row) < 12 {
+			return nil, fmt.Errorf("explain result rows error")
+		}
+		infos = append(infos, map[string]string{
+			"record_id":             strconv.Itoa(int(sqlManageRecord.ID)),
+			explainColumns[0].Name:  row[0],
+			explainColumns[1].Name:  row[1],
+			explainColumns[2].Name:  row[2],
+			explainColumns[3].Name:  row[3],
+			explainColumns[4].Name:  row[4],
+			explainColumns[5].Name:  row[5],
+			explainColumns[6].Name:  row[6],
+			explainColumns[7].Name:  row[7],
+			explainColumns[8].Name:  row[8],
+			explainColumns[9].Name:  row[9],
+			explainColumns[10].Name: row[10],
+			explainColumns[11].Name: row[11],
+		})
+	}
+	nowTime := time.Now().Format(time.RFC3339)
+	return &ChartPoint{
+		X:     &nowTime,
+		Y:     &cost,
+		Infos: infos,
+	}, nil
 }
 
 func getAuditPlanUnsolvedSQLCount(auditPlanId uint) (int64, error) {
