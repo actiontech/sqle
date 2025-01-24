@@ -19,7 +19,7 @@ func TestPTOSC(t *testing.T) {
 		plocale.Bundle.LocalizeMsgByLang(language.Chinese, plocale.PTOSCAvoidNoDefaultValueOnNotNullColumn))
 
 	runOSCCase(t, "not pk and unique key",
-		"alter table exist_tb_3 add column v3 varchar(255);",
+		"alter table exist_tb_13 add column v4 varchar(255);",
 		plocale.Bundle.LocalizeMsgByLang(language.Chinese, plocale.PTOSCNoUniqueIndexOrPrimaryKey))
 
 	runOSCCase(t, "rename table",

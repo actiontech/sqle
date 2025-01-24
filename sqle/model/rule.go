@@ -22,6 +22,7 @@ type RuleTemplate struct {
 	Name           string                   `json:"name" gorm:"type:varchar(255)"`
 	Desc           string                   `json:"desc" gorm:"type:varchar(255)"`
 	DBType         string                   `json:"db_type" gorm:"type:varchar(255)"`
+	RuleVersion    string                   `json:"rule_version" gorm:"type:varchar(255);not null;default:''"`
 	RuleList       []RuleTemplateRule       `json:"rule_list" gorm:"foreignkey:rule_template_id;association_foreignkey:id"`
 	CustomRuleList []RuleTemplateCustomRule `json:"custom_rule_list" gorm:"foreignkey:rule_template_id;association_foreignkey:id"`
 }
@@ -309,16 +310,17 @@ func (s *Storage) GetRuleTemplateDetailByNameAndProjectIds(projectIds []string, 
 	dbOrder := func(db *gorm.DB) *gorm.DB {
 		return db.Order("rule_template_rule.rule_name ASC")
 	}
-	fuzzy_condition := func(db *gorm.DB) *gorm.DB {
-		if fuzzy_keyword_rule == "" {
-			return db
+	fuzzyCondition := func(field, keyword string) func(*gorm.DB) *gorm.DB {
+		if field == "" || keyword == "" {
+			return func(db *gorm.DB) *gorm.DB { return db }
 		}
-		// todo i18n use json syntax to query?
-		return db.Where("`i18n_rule_info` like ?", fmt.Sprintf("%%%s%%", fuzzy_keyword_rule))
+		return func(db *gorm.DB) *gorm.DB {
+			return db.Where(fmt.Sprintf("`%s` like ?", field), fmt.Sprintf("%%%s%%", keyword))
+		}
 	}
 	t := &RuleTemplate{Name: name}
-	err := s.db.Preload("RuleList", dbOrder).Preload("RuleList.Rule", fuzzy_condition).Preload("RuleList.Rule.Categories").
-		Preload("CustomRuleList.CustomRule", fuzzy_condition).Preload("CustomRuleList.CustomRule.Categories").
+	err := s.db.Preload("RuleList", dbOrder).Preload("RuleList.Rule", fuzzyCondition("i18n_rule_info", fuzzy_keyword_rule)).Preload("RuleList.Rule.Categories").
+		Preload("CustomRuleList.CustomRule", fuzzyCondition("desc", fuzzy_keyword_rule)).Preload("CustomRuleList.CustomRule.Categories").
 		Where(t).
 		Where("project_id IN (?)", projectIds).
 		First(t).Error
@@ -429,7 +431,7 @@ func (s *Storage) GetRuleTemplateById(id uint64) (*RuleTemplate, error) {
 func (s *Storage) GetRuleTemplateTips(projectId, dbType string) ([]*RuleTemplate, error) {
 	ruleTemplates := []*RuleTemplate{}
 
-	db := s.db.Select("id,name, db_type").Where("project_id = ?", projectId)
+	db := s.db.Where("project_id = ?", projectId)
 	if dbType != "" {
 		db = db.Where("db_type = ?", dbType)
 	}

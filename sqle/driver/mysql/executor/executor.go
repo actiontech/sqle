@@ -484,6 +484,30 @@ func (c *Executor) ShowCreateView(tableName string) (string, error) {
 	}
 }
 
+func (c *Executor) ShowCurrentMaxColumnWidth(tableName, columnName string) (int, error) {
+	query := fmt.Sprintf(`SELECT MAX(CHAR_LENGTH(%s)) "max_length" FROM %s`, columnName, tableName)
+	result, err := c.Db.Query(query)
+	if err != nil {
+		return 0, err
+	}
+	if len(result) != 1 {
+		err := fmt.Errorf("show max column width error, result is %v", result)
+		c.Db.Logger().Error(err)
+		return 0, errors.New(errors.ConnectRemoteDatabaseError, err)
+	}
+	if value, ok := result[0]["max_length"]; ok {
+		return strconv.Atoi(value.String)
+	}
+	err = fmt.Errorf("show max column width error, column \"MAX(CHAR_LENGTH(`%s`))\" not found", columnName)
+	c.Db.Logger().Error(err)
+	return 0, errors.New(errors.ConnectRemoteDatabaseError, err)
+}
+
+type ExplainWithWarningsResult struct {
+	Plan     []*ExplainRecord
+	Warnings []*WarningsRecord
+}
+
 type ExplainRecord struct {
 	Id           string `json:"id"`
 	SelectType   string `json:"select_type"`
@@ -506,8 +530,9 @@ const (
 	ExplainRecordExtraUsingIndexForSkipScan = "Using index for skip scan"
 	ExplainRecordExtraUsingWhere            = "Using where"
 
-	ExplainRecordAccessTypeAll   = "ALL"
-	ExplainRecordAccessTypeIndex = "index"
+	ExplainRecordAccessTypeAll        = "ALL"
+	ExplainRecordAccessTypeIndex      = "index"
+	ExplainRecordAccessTypeIndexMerge = "index_merge"
 
 	ExplainRecordPrimaryKey = "PRIMARY"
 )
@@ -536,6 +561,59 @@ func (c *Executor) ExplainJSONFormat(query string) (columns []string, rows [][]s
 	}
 
 	return columns, rows, nil
+}
+
+func (c *Executor) ExplainTree(query string) (out string, err error) {
+	_, rows, err := c.Db.QueryWithContext(context.TODO(), fmt.Sprintf("EXPLAIN FORMAT=TREE %s", query))
+	if err != nil {
+		return "", err
+	}
+
+	if len(rows) == 0 {
+		return "", fmt.Errorf("no explain tree record for sql %v", query)
+	}
+	if len(rows[0]) == 0 {
+		return "", fmt.Errorf("no explain tree record for sql %v", query)
+	}
+	out = rows[0][0].String
+
+	return out, nil
+}
+
+type WarningsRecord struct {
+	Level   string `json:"level"`
+	Code    string `json:"code"`
+	Message string `json:"message"`
+}
+
+func (c *Executor) ShowWarningsRecord() ([]*WarningsRecord, error) {
+	columns, rows, err := c.Db.QueryWithContext(context.TODO(), "SHOW WARNINGS")
+	if err != nil {
+		return nil, err
+	}
+
+	if len(rows) == 0 {
+		return nil, nil
+	}
+
+	records := make([]map[string]sql.NullString, len(rows))
+	for j, row := range rows {
+		value := make(map[string]sql.NullString)
+		for i, s := range row {
+			value[columns[i]] = s
+		}
+		records[j] = value
+	}
+
+	ret := make([]*WarningsRecord, len(rows))
+	for i, record := range records {
+		ret[i] = &WarningsRecord{
+			Level:   record["Level"].String,
+			Code:    record["Code"].String,
+			Message: record["Message"].String,
+		}
+	}
+	return ret, nil
 }
 
 func (c *Executor) GetExplainRecord(query string) ([]*ExplainRecord, error) {
@@ -703,6 +781,7 @@ type TableIndexesInfo struct {
 	Null        string
 	IndexType   string
 	Comment     string
+	Expression  string
 }
 
 // When using keywords as view names, you need to pay attention to wrapping them in quotation marks
@@ -723,6 +802,7 @@ func (c *Executor) GetTableIndexesInfo(schema, tableName string) ([]*TableIndexe
 			Null:        record["Null"].String,
 			IndexType:   record["Index_type"].String,
 			Comment:     record["Comment"].String,
+			Expression:  record["Expression"].String,
 		}
 	}
 	return ret, nil

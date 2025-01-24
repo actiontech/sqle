@@ -3,17 +3,21 @@ package model
 import (
 	"fmt"
 	"strings"
+
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 )
 
 type RuleTemplateDetail struct {
-	Name   string `json:"name"`
-	Desc   string `json:"desc"`
-	DBType string `json:"db_type"`
+	Name        string `json:"name"`
+	Desc        string `json:"desc"`
+	DBType      string `json:"db_type"`
+	RuleVersion string `json:"rule_version"`
+
 	// InstanceIds   RowList `json:"instance_ids"`
 	// InstanceNames RowList `json:"instance_names"`
 }
 
-var ruleTemplatesQueryTpl = `SELECT rule_templates.name, rule_templates.desc, rule_templates.db_type
+var ruleTemplatesQueryTpl = `SELECT rule_templates.name, rule_templates.desc, rule_templates.db_type, rule_templates.rule_version
 {{- template "body" . }}
 
 {{- if .limit }}
@@ -61,6 +65,13 @@ func (s *Storage) GetRulesByReq(data map[string]interface{}) (
 	if data["filter_rule_names"] != "" {
 		if namesStr, yes := data["filter_rule_names"].(string); yes {
 			db = db.Where("rules.name in (?)", strings.Split(namesStr, ","))
+		}
+	}
+	if data["filter_db_type"] == driverV2.DriverTypeMySQL {
+		if data["filter_rule_version"] == "v2" {
+			db.Where("rules.name like 'SQLE%'") //新规则的特征
+		} else if data["filter_rule_names"] == "" && data["filter_global_rule_template_name"] == "" {
+			db.Where("rules.name not like 'SQLE%'")
 		}
 	}
 	if data["fuzzy_keyword_rule"] != "" {
