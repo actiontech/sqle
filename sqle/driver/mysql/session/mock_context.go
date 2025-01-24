@@ -97,6 +97,12 @@ func NewMockContext(e *executor.Executor) *Context {
 						Size:          1,
 						OriginalTable: getTestCreateTableStmt12(),
 					},
+					"exist_tb_13": {
+						sizeLoad:      true,
+						isLoad:        true,
+						Size:          1,
+						OriginalTable: getTestCreateTableStmt13(),
+					},
 				},
 			},
 			"myisam_utf8_db": {
@@ -285,6 +291,12 @@ func NewMockContextForTestTableSize(e *executor.Executor, tableSize map[string] 
 						isLoad:        true,
 						Size:          float64(tableSize["exist_tb_12"]),
 						OriginalTable: getTestCreateTableStmt12(),
+					},
+					"exist_tb_13": {
+						sizeLoad:      true,
+						isLoad:        true,
+						Size:          float64(tableSize["exist_tb_13"]),
+						OriginalTable: getTestCreateTableStmt13(),
 					},
 				},
 			},
@@ -541,6 +553,21 @@ v1 blob,
 v2 int,
 v3 varchar(1000),
 PRIMARY KEY (id) USING BTREE
+)ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT="unit test";
+`
+	node, err := util.ParseOneSql(baseCreateQuery)
+	if err != nil {
+		panic(err)
+	}
+	stmt, _ := node.(*ast.CreateTableStmt)
+	return stmt
+}
+func getTestCreateTableStmt13() *ast.CreateTableStmt {
+	baseCreateQuery := `
+CREATE TABLE exist_db.exist_tb_13 (
+id bigint(10) unsigned NOT NULL AUTO_INCREMENT COMMENT "unit test",
+v1 blob,
+v2 int
 )ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT="unit test";
 `
 	node, err := util.ParseOneSql(baseCreateQuery)

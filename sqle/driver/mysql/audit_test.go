@@ -4333,11 +4333,11 @@ func TestCheckIndexOption(t *testing.T) {
 	assert.NoError(t, err)
 
 	inspect1 := NewMockInspect(e)
-	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( `v1` ) ) / COUNT( * ) * 100 AS 'v1' FROM (SELECT `v1` FROM `exist_db`.`exist_tb_3` LIMIT 50000) t;")).
+	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( `v1` ) ) / COUNT( * ) * 100 AS 'v1' FROM (SELECT `v1` FROM `exist_db`.`exist_tb_2` LIMIT 50000) t;")).
 		WillReturnRows(
 			sqlmock.NewRows([]string{"v1"}).AddRow("100.0000"),
 		)
-	runSingleRuleInspectCase(rule, t, "", inspect1, "alter table exist_tb_3 add primary key (v1);", newTestResult())
+	runSingleRuleInspectCase(rule, t, "", inspect1, "alter table exist_tb_2 add primary key (v1);", newTestResult())
 
 	inspect2 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT( DISTINCT ( `v1` ) ) / COUNT( * ) * 100 AS 'v1' FROM (SELECT `v1` FROM `exist_db`.`exist_tb_3` LIMIT 50000) t;")).
@@ -4378,26 +4378,32 @@ func Test_CheckExplain_ShouldError(t *testing.T) {
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_1")).
 		WillReturnRows(sqlmock.NewRows([]string{"type", "rows"}).
 			AddRow("ALL", "10001"))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainAccessTypeAll].Rule, t, "", inspect1, "select * from exist_tb_1", newTestResult().addResult(rulepkg.DMLCheckExplainAccessTypeAll, 10001))
 
 	inspect2 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_1")).
 		WillReturnRows(sqlmock.NewRows([]string{"type", "rows", "Extra"}).
 			AddRow("ALL", "10", executor.ExplainRecordExtraUsingTemporary))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainExtraUsingTemporary].Rule, t, "", inspect2, "select * from exist_tb_1", newTestResult().addResult(rulepkg.DMLCheckExplainExtraUsingTemporary))
 
 	inspect3 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_1")).
 		WillReturnRows(sqlmock.NewRows([]string{"type", "rows", "Extra"}).
 			AddRow("ALL", "10", executor.ExplainRecordExtraUsingFilesort))
-
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainExtraUsingFilesort].Rule, t, "", inspect3, "select * from exist_tb_1", newTestResult().addResult(rulepkg.DMLCheckExplainExtraUsingFilesort))
 
 	inspect4 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_1")).
 		WillReturnRows(sqlmock.NewRows([]string{"type", "rows", "Extra"}).
 			AddRow("ALL", "100001", strings.Join([]string{executor.ExplainRecordExtraUsingFilesort, executor.ExplainRecordExtraUsingTemporary}, ";")))
-
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	ruleDMLCheckExplainExtraUsingFilesort := rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainExtraUsingFilesort].Rule
 	ruleDMLCheckExplainExtraUsingTemporary := rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainExtraUsingTemporary].Rule
 	ruleDMLCheckExplainAccessTypeAll := rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainAccessTypeAll].Rule
@@ -4414,15 +4420,18 @@ func Test_CheckExplain_ShouldError(t *testing.T) {
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_1")).
 		WillReturnRows(sqlmock.NewRows([]string{"type", "rows"}).
 			AddRow("ALL", "100001"))
-
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_1 where id = 1;")).
 		WillReturnRows(sqlmock.NewRows([]string{"Extra"}).
 			AddRow(executor.ExplainRecordExtraUsingFilesort))
-
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_1 where id = 2;")).
 		WillReturnRows(sqlmock.NewRows([]string{"Extra"}).
 			AddRow(executor.ExplainRecordExtraUsingTemporary))
-
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	inspect5.rules = []*driverV2.Rule{
 		&ruleDMLCheckExplainExtraUsingFilesort,
 		&ruleDMLCheckExplainExtraUsingTemporary,
@@ -4434,18 +4443,24 @@ func Test_CheckExplain_ShouldError(t *testing.T) {
 	inspect6 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_2")).
 		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow(executor.ExplainRecordAccessTypeIndex))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainFullIndexScan].Rule,
 		t, "", inspect6, "select * from exist_tb_2", newTestResult().addResult(rulepkg.DMLCheckExplainFullIndexScan))
 
 	inspect7 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_2")).
 		WillReturnRows(sqlmock.NewRows([]string{"Extra"}).AddRow(executor.ExplainRecordExtraUsingIndexForSkipScan))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainExtraUsingIndexForSkipScan].Rule,
 		t, "", inspect7, "select * from exist_tb_2", newTestResult().addResult(rulepkg.DMLCheckExplainExtraUsingIndexForSkipScan))
 
 	inspect8 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_2 where v1='a'")).
 		WillReturnRows(sqlmock.NewRows([]string{"key", "Extra"}).AddRow("", "Using where"))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DMLCheckExplainUsingIndex].Rule,
 		t, "", inspect8, "select * from exist_tb_2 where v1='a'", newTestResult().addResult(rulepkg.DMLCheckExplainUsingIndex))
 
@@ -6334,6 +6349,8 @@ func TestDMLCheckIndexSelectivity(t *testing.T) {
 	inspect1 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_6")).
 		WillReturnRows(sqlmock.NewRows([]string{"key", "table"}).AddRow("v1", "exist_tb_6"))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	handler.ExpectQuery(regexp.QuoteMeta(`SELECT (s.CARDINALITY / t.TABLE_ROWS) * 100 AS INDEX_SELECTIVITY,s.INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.INDEX_NAME) IN (('exist_db', 'exist_tb_6', 'v1'));`)).
 		WillReturnRows(
 			sqlmock.NewRows([]string{"INDEX_SELECTIVITY", "INDEX_NAME"}).AddRow("50.0000", "v1"),
@@ -6343,6 +6360,8 @@ func TestDMLCheckIndexSelectivity(t *testing.T) {
 	inspect2 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_6 where id in (select id from exist_tb_6 where v1='10')")).
 		WillReturnRows(sqlmock.NewRows([]string{"key", "table"}).AddRow("v1", "exist_tb_6").AddRow("primary", "exist_tb_6"))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	handler.ExpectQuery(regexp.QuoteMeta(`SELECT (s.CARDINALITY / t.TABLE_ROWS) * 100 AS INDEX_SELECTIVITY,s.INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.INDEX_NAME) IN (('exist_db', 'exist_tb_6', 'v1'));`)).
 		WillReturnRows(sqlmock.NewRows([]string{"INDEX_SELECTIVITY", "INDEX_NAME"}).
 			AddRow("50.0000", "v1"))
@@ -6351,6 +6370,8 @@ func TestDMLCheckIndexSelectivity(t *testing.T) {
 	inspect3 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_6")).
 		WillReturnRows(sqlmock.NewRows([]string{"key", "table"}).AddRow("v1", "exist_tb_6"))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	handler.ExpectQuery(regexp.QuoteMeta(`SELECT (s.CARDINALITY / t.TABLE_ROWS) * 100 AS INDEX_SELECTIVITY,s.INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.INDEX_NAME) IN (('exist_db', 'exist_tb_6', 'v1'));`)).
 		WillReturnRows(sqlmock.NewRows([]string{"INDEX_SELECTIVITY", "INDEX_NAME"}).
 			AddRow("80.0000", "v1"))
@@ -6359,6 +6380,8 @@ func TestDMLCheckIndexSelectivity(t *testing.T) {
 	inspect4 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_6 where id in (select id from exist_tb_6 where v1='10')")).
 		WillReturnRows(sqlmock.NewRows([]string{"key", "table"}).AddRow("v1", "exist_tb_6"))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	handler.ExpectQuery(regexp.QuoteMeta(`SELECT (s.CARDINALITY / t.TABLE_ROWS) * 100 AS INDEX_SELECTIVITY,s.INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS s JOIN INFORMATION_SCHEMA.TABLES t ON s.TABLE_SCHEMA = t.TABLE_SCHEMA AND s.TABLE_NAME = t.TABLE_NAME WHERE (s.TABLE_SCHEMA , s.TABLE_NAME , s.INDEX_NAME) IN (('exist_db', 'exist_tb_6', 'v1'));`)).
 		WillReturnRows(sqlmock.NewRows([]string{"INDEX_SELECTIVITY", "INDEX_NAME"}).
 			AddRow("80.0000", "v1"))
@@ -6475,15 +6498,21 @@ func TestDMLCheckSelectRows(t *testing.T) {
 	inspect1 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_2 where v1 = 'a'")).
 		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow("range"))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	runSingleRuleInspectCase(rule, t, "", inspect1, "select * from exist_tb_2 where v1 = 'a'", newTestResult())
 
 	inspect2 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_1")).
 		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow(executor.ExplainRecordAccessTypeIndex))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	// 添加 EXPLAIN 结果
 	handler.ExpectQuery(regexp.QuoteMeta("EXPLAIN SELECT COUNT(1) FROM `exist_tb_1`")).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "select_type", "table", "partitions", "type", "possible_keys", "key", "key_len", "ref", "rows", "filtered", "Extra"}).
 			AddRow(1, "SIMPLE", "exist_tb_1", nil, "index", "idx_v1", "idx_v1", 5, nil, 1000, 100.00, "Using index"))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(1) FROM `exist_tb_1`")).
 		WillReturnRows(sqlmock.NewRows([]string{"COUNT(1)"}).AddRow("100"))
 	runSingleRuleInspectCase(rule, t, "", inspect2, "select * from exist_tb_1", newTestResult())
@@ -6491,24 +6520,34 @@ func TestDMLCheckSelectRows(t *testing.T) {
 	inspect3 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_1 where id=1")).
 		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow(executor.ExplainRecordAccessTypeAll))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	// 添加 EXPLAIN 结果
 	handler.ExpectQuery(regexp.QuoteMeta("EXPLAIN SELECT COUNT(1) FROM `exist_tb_1` WHERE `id`=1")).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "select_type", "table", "partitions", "type", "possible_keys", "key", "key_len", "ref", "rows", "filtered", "Extra"}).
 			AddRow(1, "SIMPLE", "exist_tb_1", nil, "ALL", nil, nil, nil, nil, 1000, 100.00, "Using where"))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	runSingleRuleInspectCase(rule, t, "", inspect3, "select * from exist_tb_1 where id=1", newTestResult())
 
 	inspect4 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_1 where id in (select id from exist_tb_2)")).
 		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow("ref").AddRow("ref"))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	runSingleRuleInspectCase(rule, t, "", inspect4, "select * from exist_tb_1 where id in (select id from exist_tb_2)", newTestResult())
 
 	inspect5 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_3 where v2='b'")).
 		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow(executor.ExplainRecordAccessTypeIndex))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	// 添加 EXPLAIN 结果
 	handler.ExpectQuery(regexp.QuoteMeta("EXPLAIN SELECT COUNT(1) FROM `exist_tb_3` WHERE `v2`='b'")).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "select_type", "table", "partitions", "type", "possible_keys", "key", "key_len", "ref", "rows", "filtered", "Extra"}).
 			AddRow(1, "SIMPLE", "exist_tb_3", nil, "index", "idx_v2", "idx_v2", 5, nil, 1000, 100.00, "Using where"))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(1) FROM `exist_tb_3` WHERE `v2`='b'")).
 		WillReturnRows(sqlmock.NewRows([]string{"COUNT(1)"}).AddRow("100000000"))
 	runSingleRuleInspectCase(rule, t, "", inspect5, "select * from exist_tb_3 where v2='b'", newTestResult().addResult(rulepkg.DMLCheckSelectRows))
@@ -6516,11 +6555,15 @@ func TestDMLCheckSelectRows(t *testing.T) {
 	inspect6 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_2 where user_id in (select v3 from exist_tb_3)")).
 		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow(executor.ExplainRecordAccessTypeIndex).AddRow("range"))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	// 添加 EXPLAIN 结果
 	handler.ExpectQuery(regexp.QuoteMeta("EXPLAIN SELECT COUNT(1) FROM `exist_tb_2` WHERE `user_id` IN (SELECT `v3` FROM `exist_tb_3`)")).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "select_type", "table", "partitions", "type", "possible_keys", "key", "key_len", "ref", "rows", "filtered", "Extra"}).
 			AddRow(1, "SIMPLE", "exist_tb_2", nil, "index", "idx_user_id", "idx_user_id", 5, nil, 1000, 100.00, "Using where").
 			AddRow(2, "SIMPLE", "exist_tb_3", nil, "range", nil, nil, nil, nil, 1000, 100.00, "Using where"))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	handler.ExpectQuery(regexp.QuoteMeta("SELECT COUNT(1) FROM `exist_tb_2` WHERE `user_id` IN (SELECT `v3` FROM `exist_tb_3`)")).
 		WillReturnRows(sqlmock.NewRows([]string{"COUNT(1)"}).AddRow("100000000"))
 	runSingleRuleInspectCase(rule, t, "", inspect6, "select * from exist_tb_2 where user_id in (select v3 from exist_tb_3)", newTestResult().addResult(rulepkg.DMLCheckSelectRows))
@@ -6528,11 +6571,15 @@ func TestDMLCheckSelectRows(t *testing.T) {
 	inspect7 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select id, v1 as id from exist_tb_2 limit 10, 10")).
 		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow(executor.ExplainRecordAccessTypeIndex).AddRow("range"))
-		// 添加 EXPLAIN 结果
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
+	// 添加 EXPLAIN 结果
 	handler.ExpectQuery(regexp.QuoteMeta("EXPLAIN select count(*) from (SELECT 1 FROM `exist_tb_2` LIMIT 10,10) as t")).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "select_type", "table", "partitions", "type", "possible_keys", "key", "key_len", "ref", "rows", "filtered", "Extra"}).
 			AddRow(1, "SIMPLE", "exist_tb_2", nil, "index", "idx_v1", "idx_v1", 5, nil, 1000, 100.00, "Using where").
 			AddRow(2, "SIMPLE", "exist_tb_2", nil, "range", nil, nil, nil, nil, 1000, 100.00, "Using where"))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	handler.ExpectQuery(regexp.QuoteMeta("select count(*) from (SELECT 1 FROM `exist_tb_2` LIMIT 10,10) as t")).
 		WillReturnRows(sqlmock.NewRows([]string{"count(*)"}).AddRow("100000000"))
 	runSingleRuleInspectCase(rule, t, "", inspect7, "select id, v1 as id from exist_tb_2 limit 10, 10", newTestResult().addResult(rulepkg.DMLCheckSelectRows))
@@ -6540,11 +6587,15 @@ func TestDMLCheckSelectRows(t *testing.T) {
 	inspect8 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select id, v1 as id from exist_tb_2 group by id, v1")).
 		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow(executor.ExplainRecordAccessTypeIndex).AddRow("range"))
-		// 添加 EXPLAIN 结果
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
+	// 添加 EXPLAIN 结果
 	handler.ExpectQuery(regexp.QuoteMeta("EXPLAIN select count(*) from (SELECT 1 FROM `exist_tb_2` GROUP BY `id`,`v1`) as t")).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "select_type", "table", "partitions", "type", "possible_keys", "key", "key_len", "ref", "rows", "filtered", "Extra"}).
 			AddRow(1, "SIMPLE", "exist_tb_2", nil, "index", "idx_v1", "idx_v1", 5, nil, 1000, 100.00, "Using where").
 			AddRow(2, "SIMPLE", "exist_tb_2", nil, "range", nil, nil, nil, nil, 1000, 100.00, "Using where"))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	handler.ExpectQuery(regexp.QuoteMeta("select count(*) from (SELECT 1 FROM `exist_tb_2` GROUP BY `id`,`v1`) as t")).
 		WillReturnRows(sqlmock.NewRows([]string{"count(*)"}).AddRow("100000000"))
 	runSingleRuleInspectCase(rule, t, "", inspect8, "select id, v1 as id from exist_tb_2 group by id, v1", newTestResult().addResult(rulepkg.DMLCheckSelectRows))
@@ -6552,11 +6603,15 @@ func TestDMLCheckSelectRows(t *testing.T) {
 	inspect9 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select id, v1 as id from exist_tb_2 limit 10, 10")).
 		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow(executor.ExplainRecordAccessTypeIndex).AddRow("range"))
-		// 添加 EXPLAIN 结果
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
+	// 添加 EXPLAIN 结果
 	handler.ExpectQuery(regexp.QuoteMeta("EXPLAIN select count(*) from (SELECT 1 FROM `exist_tb_2` LIMIT 10,10) as t")).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "select_type", "table", "partitions", "type", "possible_keys", "key", "key_len", "ref", "rows", "filtered", "Extra"}).
 			AddRow(1, "SIMPLE", "exist_tb_2", nil, "index", "idx_v1", "idx_v1", 5, nil, 1000, 100.00, "Using where").
 			AddRow(2, "SIMPLE", "exist_tb_2", nil, "range", nil, nil, nil, nil, 1000, 100.00, "Using where"))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	handler.ExpectQuery(regexp.QuoteMeta("select count(*) from (SELECT 1 FROM `exist_tb_2` LIMIT 10,10) as t")).
 		WillReturnRows(sqlmock.NewRows([]string{"count(*)"}).AddRow("10"))
 	runSingleRuleInspectCase(rule, t, "", inspect9, "select id, v1 as id from exist_tb_2 limit 10, 10", newTestResult())
@@ -6564,11 +6619,15 @@ func TestDMLCheckSelectRows(t *testing.T) {
 	inspect10 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select id, v1 as id from exist_tb_2 group by id, v1")).
 		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow(executor.ExplainRecordAccessTypeIndex).AddRow("range"))
-		// 添加 EXPLAIN 结果
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
+	// 添加 EXPLAIN 结果
 	handler.ExpectQuery(regexp.QuoteMeta("EXPLAIN select count(*) from (SELECT 1 FROM `exist_tb_2` GROUP BY `id`,`v1`) as t")).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "select_type", "table", "partitions", "type", "possible_keys", "key", "key_len", "ref", "rows", "filtered", "Extra"}).
 			AddRow(1, "SIMPLE", "exist_tb_2", nil, "index", "idx_v1", "idx_v1", 5, nil, 1000, 100.00, "Using where").
 			AddRow(2, "SIMPLE", "exist_tb_2", nil, "range", nil, nil, nil, nil, 1000, 100.00, "Using where"))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	handler.ExpectQuery(regexp.QuoteMeta("select count(*) from (SELECT 1 FROM `exist_tb_2` GROUP BY `id`,`v1`) as t")).
 		WillReturnRows(sqlmock.NewRows([]string{"count(*)"}).AddRow("10"))
 	runSingleRuleInspectCase(rule, t, "", inspect10, "select id, v1 as id from exist_tb_2 group by id, v1", newTestResult())
@@ -6576,11 +6635,15 @@ func TestDMLCheckSelectRows(t *testing.T) {
 	inspect11 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select max(v1) from exist_tb_2 group by id")).
 		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow(executor.ExplainRecordAccessTypeIndex).AddRow("range"))
-		// 添加 EXPLAIN 结果
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
+	// 添加 EXPLAIN 结果
 	handler.ExpectQuery(regexp.QuoteMeta("EXPLAIN select count(*) from (SELECT 1 FROM `exist_tb_2` GROUP BY `id`) as t")).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "select_type", "table", "partitions", "type", "possible_keys", "key", "key_len", "ref", "rows", "filtered", "Extra"}).
 			AddRow(1, "SIMPLE", "exist_tb_2", nil, "index", "idx_id", "idx_id", 5, nil, 1000, 100.00, "Using where").
 			AddRow(2, "SIMPLE", "exist_tb_2", nil, "range", nil, nil, nil, nil, 1000, 100.00, "Using where"))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	handler.ExpectQuery(regexp.QuoteMeta("select count(*) from (SELECT 1 FROM `exist_tb_2` GROUP BY `id`) as t")).
 		WillReturnRows(sqlmock.NewRows([]string{"count(*)"}).AddRow("10"))
 	runSingleRuleInspectCase(rule, t, "", inspect11, "select max(v1) from exist_tb_2 group by id", newTestResult())
@@ -6588,11 +6651,15 @@ func TestDMLCheckSelectRows(t *testing.T) {
 	inspect12 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select max(v1) from exist_tb_2 group by id")).
 		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow(executor.ExplainRecordAccessTypeIndex).AddRow("range"))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 		// 添加 EXPLAIN 结果
 	handler.ExpectQuery(regexp.QuoteMeta("EXPLAIN select count(*) from (SELECT 1 FROM `exist_tb_2` GROUP BY `id`) as t")).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "select_type", "table", "partitions", "type", "possible_keys", "key", "key_len", "ref", "rows", "filtered", "Extra"}).
 			AddRow(1, "SIMPLE", "exist_tb_2", nil, "index", "idx_id", "idx_id", 5, nil, 1000, 100.00, "Using where").
 			AddRow(2, "SIMPLE", "exist_tb_2", nil, "range", nil, nil, nil, nil, 1000, 100.00, "Using where"))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	handler.ExpectQuery(regexp.QuoteMeta("select count(*) from (SELECT 1 FROM `exist_tb_2` GROUP BY `id`) as t")).
 		WillReturnRows(sqlmock.NewRows([]string{"count(*)"}).AddRow("10000000"))
 	runSingleRuleInspectCase(rule, t, "", inspect12, "select max(v1) from exist_tb_2 group by id", newTestResult().addResult(rulepkg.DMLCheckSelectRows))
@@ -6600,11 +6667,15 @@ func TestDMLCheckSelectRows(t *testing.T) {
 	inspect13 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select max(v1) as id, id from exist_tb_2 group by id")).
 		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow(executor.ExplainRecordAccessTypeIndex).AddRow("range"))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	// 添加 EXPLAIN 结果
 	handler.ExpectQuery(regexp.QuoteMeta("EXPLAIN select count(*) from (SELECT 1 FROM `exist_tb_2` GROUP BY `id`) as t")).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "select_type", "table", "partitions", "type", "possible_keys", "key", "key_len", "ref", "rows", "filtered", "Extra"}).
 			AddRow(1, "SIMPLE", "exist_tb_2", nil, "index", "idx_id", "idx_id", 5, nil, 1000, 100.00, "Using where").
 			AddRow(2, "SIMPLE", "exist_tb_2", nil, "range", nil, nil, nil, nil, 1000, 100.00, "Using where"))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	handler.ExpectQuery(regexp.QuoteMeta("select count(*) from (SELECT 1 FROM `exist_tb_2` GROUP BY `id`) as t")).
 		WillReturnRows(sqlmock.NewRows([]string{"count(*)"}).AddRow("10"))
 	runSingleRuleInspectCase(rule, t, "", inspect13, "select max(v1) as id, id from exist_tb_2 group by id", newTestResult())
@@ -6612,14 +6683,19 @@ func TestDMLCheckSelectRows(t *testing.T) {
 	inspect14 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select max(v1) as id, id from exist_tb_2 group by id")).
 		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow(executor.ExplainRecordAccessTypeIndex).AddRow("range"))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	// 添加 EXPLAIN 结果
 	handler.ExpectQuery(regexp.QuoteMeta("EXPLAIN select count(*) from (SELECT 1 FROM `exist_tb_2` GROUP BY `id`) as t")).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "select_type", "table", "partitions", "type", "possible_keys", "key", "key_len", "ref", "rows", "filtered", "Extra"}).
 			AddRow(1, "SIMPLE", "exist_tb_2", nil, "index", "idx_id", "idx_id", 5, nil, 1000, 100.00, "Using where").
 			AddRow(2, "SIMPLE", "exist_tb_2", nil, "range", nil, nil, nil, nil, 1000, 100.00, "Using where"))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	handler.ExpectQuery(regexp.QuoteMeta("select count(*) from (SELECT 1 FROM `exist_tb_2` GROUP BY `id`) as t")).
 		WillReturnRows(sqlmock.NewRows([]string{"count(*)"}).AddRow("10000000"))
 	runSingleRuleInspectCase(rule, t, "", inspect14, "select max(v1) as id, id from exist_tb_2 group by id", newTestResult().addResult(rulepkg.DMLCheckSelectRows))
+
 }
 
 func TestDMLCheckScanRows(t *testing.T) {
@@ -6630,56 +6706,78 @@ func TestDMLCheckScanRows(t *testing.T) {
 	inspect1 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_2 where v1 = 'a'")).
 		WillReturnRows(sqlmock.NewRows([]string{"rows", "type"}).AddRow("100000000000", executor.ExplainRecordAccessTypeIndex))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	runSingleRuleInspectCase(rule, t, "", inspect1, "select * from exist_tb_2 where v1 = 'a'", newTestResult().addResult(rulepkg.DMLCheckScanRows))
 
 	inspect2 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_2 where v1 = 'a'")).
 		WillReturnRows(sqlmock.NewRows([]string{"rows", "type"}).AddRow("1000", executor.ExplainRecordAccessTypeIndex))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	runSingleRuleInspectCase(rule, t, "", inspect2, "select * from exist_tb_2 where v1 = 'a'", newTestResult())
 
 	inspect3 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_2 where v1 = 'a'")).
 		WillReturnRows(sqlmock.NewRows([]string{"rows", "type"}).AddRow("100000000000", "const"))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	runSingleRuleInspectCase(rule, t, "", inspect3, "select * from exist_tb_2 where v1 = 'a'", newTestResult().addResult(rulepkg.DMLCheckScanRows))
 
 	inspect4 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_2 where v1 in (select v2 from exist_tb_1)")).
 		WillReturnRows(sqlmock.NewRows([]string{"rows", "type"}).AddRow("100", executor.ExplainRecordAccessTypeAll).AddRow("1000", executor.ExplainRecordAccessTypeAll))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	runSingleRuleInspectCase(rule, t, "", inspect4, "select * from exist_tb_2 where v1 in (select v2 from exist_tb_1)", newTestResult())
 
 	inspect5 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_2 where v1 in (select v2 from exist_tb_1)")).
 		WillReturnRows(sqlmock.NewRows([]string{"rows", "type"}).AddRow("100", executor.ExplainRecordAccessTypeAll).AddRow("100000000", executor.ExplainRecordAccessTypeAll))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	runSingleRuleInspectCase(rule, t, "", inspect5, "select * from exist_tb_2 where v1 in (select v2 from exist_tb_1)", newTestResult().addResult(rulepkg.DMLCheckScanRows))
 
 	inspect6 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("update exist_tb_2 set v1=1")).
 		WillReturnRows(sqlmock.NewRows([]string{"rows", "type"}).AddRow("100000000", executor.ExplainRecordAccessTypeIndex))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	runSingleRuleInspectCase(rule, t, "", inspect6, "update exist_tb_2 set v1=1", newTestResult().addResult(rulepkg.DMLCheckScanRows))
 
 	inspect7 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("update exist_tb_2 set v1=1")).
 		WillReturnRows(sqlmock.NewRows([]string{"rows", "type"}).AddRow("100", executor.ExplainRecordAccessTypeIndex))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	runSingleRuleInspectCase(rule, t, "", inspect7, "update exist_tb_2 set v1=1", newTestResult())
 
 	inspect8 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("update exist_tb_2 set v1=1 where v2=1")).
 		WillReturnRows(sqlmock.NewRows([]string{"rows", "type"}).AddRow("100000000", "range"))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	runSingleRuleInspectCase(rule, t, "", inspect8, "update exist_tb_2 set v1=1 where v2=1", newTestResult().addResult(rulepkg.DMLCheckScanRows))
 
 	inspect9 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("update exist_tb_2 set v1=1 where v2=1")).
 		WillReturnRows(sqlmock.NewRows([]string{"rows", "type"}).AddRow("100000000", executor.ExplainRecordAccessTypeIndex))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	runSingleRuleInspectCase(rule, t, "", inspect9, "update exist_tb_2 set v1=1 where v2=1", newTestResult().addResult(rulepkg.DMLCheckScanRows))
 
 	inspect10 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("delete from exist_tb_2 where v1=1")).
 		WillReturnRows(sqlmock.NewRows([]string{"rows", "type"}).AddRow("100000000", executor.ExplainRecordAccessTypeAll))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	runSingleRuleInspectCase(rule, t, "", inspect10, "delete from exist_tb_2 where v1=1", newTestResult().addResult(rulepkg.DMLCheckScanRows))
 
 	inspect11 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("delete from exist_tb_2 where v1=1")).
 		WillReturnRows(sqlmock.NewRows([]string{"rows", "type"}).AddRow("100000000", "range"))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	runSingleRuleInspectCase(rule, t, "", inspect11, "delete from exist_tb_2 where v1=1", newTestResult().addResult(rulepkg.DMLCheckScanRows))
 }
 
@@ -7631,62 +7729,86 @@ func Test_CheckSQLExplainLowestLevel(t *testing.T) {
 
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_1")).
 		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow("ALL"))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 
 	runSingleRuleInspectCase(rule, t, "", inspect1, "select * from exist_tb_1", newTestResult().addResult(rulepkg.DMLSQLExplainLowestLevel, param))
 
 	inspect2 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select id from exist_tb_1")).
 		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow("INDEX"))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	runSingleRuleInspectCase(rule, t, "", inspect2, "select id from exist_tb_1", newTestResult().addResult(rulepkg.DMLSQLExplainLowestLevel, param))
 
 	inspect3 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_1 where id > 1")).
 		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow("range"))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	runSingleRuleInspectCase(rule, t, "", inspect3, "select * from exist_tb_1 where id > 1", newTestResult())
 
 	inspect4 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_1 where id = 1")).
 		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow("const"))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	runSingleRuleInspectCase(rule, t, "", inspect4, "select * from exist_tb_1 where id = 1", newTestResult())
 
 	inspect5 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select 1")).
 		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow("null"))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	runSingleRuleInspectCase(rule, t, "", inspect5, "select 1", newTestResult())
 
 	inspect6 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("select * from exist_tb_1 where id >= 1")).
 		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow("eq_ref"))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	runSingleRuleInspectCase(rule, t, "", inspect6, "select * from exist_tb_1 where id >= 1", newTestResult())
 
 	inspect7 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("update exist_tb_1 set v1 = 'a'")).
 		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow("ALL"))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	runSingleRuleInspectCase(rule, t, "", inspect7, "update exist_tb_1 set v1 = 'a'", newTestResult().addResult(rulepkg.DMLSQLExplainLowestLevel, param))
 
 	inspect8 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("update exist_tb_1 set v1 = 'a' where id = 1")).
 		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow("const"))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	runSingleRuleInspectCase(rule, t, "", inspect8, "update exist_tb_1 set v1 = 'a' where id = 1", newTestResult())
 
 	inspect9 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("update exist_tb_1 set v1 = 'a' where id > 1")).
 		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow("ref"))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	runSingleRuleInspectCase(rule, t, "", inspect9, "update exist_tb_1 set v1 = 'a' where id > 1", newTestResult())
 
 	inspect10 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("delete from exist_tb_1")).
 		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow("ALL"))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	runSingleRuleInspectCase(rule, t, "", inspect10, "delete from exist_tb_1", newTestResult().addResult(rulepkg.DMLSQLExplainLowestLevel, param))
 
 	inspect11 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("delete from exist_tb_1 where id > 10")).
 		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow("ref"))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	runSingleRuleInspectCase(rule, t, "", inspect11, "delete from exist_tb_1 where id > 10", newTestResult())
 
 	inspect12 := NewMockInspect(e)
 	handler.ExpectQuery(regexp.QuoteMeta("delete from exist_tb_1 where id = 10")).
 		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow("const"))
+	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
+		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
 	runSingleRuleInspectCase(rule, t, "", inspect12, "delete from exist_tb_1 where id = 10", newTestResult())
 
 	inspect13 := NewMockInspect(e)
@@ -7898,7 +8020,7 @@ func TestNotAllowInsertAutoincrement(t *testing.T) {
 		`INSERT exist_tb_1 SET id=1,v1="sqle"`,
 		// 没有主键的自增
 		`INSERT INTO exist_tb_12(id,v1) VALUES(1,"sqle")`,
-		`INSERT INTO exist_tb_12 VALUES(1,"sqle")`,
+		`INSERT INTO exist_tb_12 VALUES(1,"sqle","1","sqle")`,
 		`INSERT INTO exist_tb_12(id) SELECT id FROM exist_tb_2 WHERE id=1`,
 		`UPDATE exist_tb_12 SET id=1 WHERE id=2`,
 		`INSERT exist_tb_12 SET id=1`,
