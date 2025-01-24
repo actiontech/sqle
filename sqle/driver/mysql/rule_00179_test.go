@@ -33,7 +33,7 @@ func NewMySQLInspectOnRuleSQLE00179(t *testing.T, sql string, withWarning bool) 
 
 func TestRuleSQLE00179(t *testing.T) {
 	ruleName := ai.SQLE00179
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	// SELECT statements testing
 	runSingleRuleInspectCase(rule, t, "select..., no problem", NewMySQLInspectOnRuleSQLE00179(t, "SELECT * FROM exist_db.exist_tb_1 where v1 = concat(now(),'')", false), `

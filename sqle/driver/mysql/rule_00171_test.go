@@ -10,7 +10,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00171(t *testing.T) {
 	ruleName := ai.SQLE00171
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	ruleParams := []interface{}{"CREATE_TIME"}
 

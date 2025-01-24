@@ -10,7 +10,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00025(t *testing.T) {
 	ruleName := ai.SQLE00025
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	//create table, timestamp column with DEFAULT value
 	runSingleRuleInspectCase(rule, t, "create table, no timestamp column", DefaultMysqlInspect(), `

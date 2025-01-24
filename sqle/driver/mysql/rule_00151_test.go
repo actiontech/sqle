@@ -10,7 +10,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00151(t *testing.T) {
 	ruleName := ai.SQLE00151
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	//create table, without tablespace
 	runSingleRuleInspectCase(rule, t, "create table, without tablespace", DefaultMysqlInspect(), `

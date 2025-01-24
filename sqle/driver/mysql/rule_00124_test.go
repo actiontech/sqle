@@ -10,7 +10,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00124(t *testing.T) {
 	ruleName := ai.SQLE00124
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	// DELETE... without WHERE
 	runSingleRuleInspectCase(rule, t, "delete without where", DefaultMysqlInspect(), `

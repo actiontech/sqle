@@ -11,7 +11,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00018(t *testing.T) {
 	ruleName := ai.SQLE00018
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: CREATE TABLE with CHAR column length exactly 20",
 		"CREATE TABLE employees (name CHAR(20), id INT);",

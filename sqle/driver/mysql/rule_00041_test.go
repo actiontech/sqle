@@ -11,7 +11,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00041(t *testing.T) {
 	ruleName := ai.SQLE00041
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	// case 7: CREATE TABLE with UNIQUE KEY with correct prefix (从xml中补充)
 	runAIRuleCase(rule, t, "case 7_1: CREATE TABLE with UNIQUE KEY with correct prefix (从xml中补充)",

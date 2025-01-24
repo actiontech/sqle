@@ -11,7 +11,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00063(t *testing.T) {
 	ruleName := ai.SQLE00063
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	// case 1: CREATE语句中唯一索引名不符合格式
 	runAIRuleCase(rule, t, "case 1: CREATE语句中唯一索引名不符合格式",

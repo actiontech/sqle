@@ -12,7 +12,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00084(t *testing.T) {
 	ruleName := ai.SQLE00084
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: CREATE TEMPORARY TABLE 使用临时表",
 		"CREATE TEMPORARY TABLE temp_table (id INT);",

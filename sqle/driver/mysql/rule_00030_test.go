@@ -11,7 +11,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00030(t *testing.T) {
 	ruleName := ai.SQLE00030
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	for _, sql := range []string{
 		`CREATE TRIGGER my_trigger BEFORE INSERT ON exist_db.exist_tb_1 FOR EACH ROW SET NEW.name = UPPER(NEW.name);`,

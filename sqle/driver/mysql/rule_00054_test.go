@@ -11,7 +11,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00054(t *testing.T) {
 	ruleName := ai.SQLE00054
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	// CREATE语句
 	runAIRuleCase(rule, t, "case 1: CREATE TABLE with BIGINT UNSIGNED as primary key",

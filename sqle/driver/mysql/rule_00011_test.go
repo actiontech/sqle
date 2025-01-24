@@ -11,7 +11,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00011(t *testing.T) {
 	ruleName := ai.SQLE00011
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	// case 1: 单个ALTER TABLE语句，针对customers表
 	runAIRuleCase(rule, t, "case 1: 单个ALTER TABLE语句，针对customers表",

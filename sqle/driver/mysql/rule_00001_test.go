@@ -11,7 +11,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00001(t *testing.T) {
 	ruleName := ai.SQLE00001
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	// SELECT statements
 	runAIRuleCase(rule, t, "case 1: SELECT statement without WHERE clause",

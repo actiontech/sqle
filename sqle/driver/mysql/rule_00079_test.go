@@ -12,7 +12,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00079(t *testing.T) {
 	ruleName := ai.SQLE00079
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: SELECT 语句中表别名与表名相同", "SELECT t1.column1 FROM table1 AS table1;",
 		session.NewAIMockContext().WithSQL("CREATE TABLE table1 (column1 INT);"),

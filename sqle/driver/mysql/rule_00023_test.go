@@ -10,7 +10,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00023(t *testing.T) {
 	ruleName := ai.SQLE00023
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 	ruleParams := []interface{}{2}
 	//create table, no primary key
 	runSingleRuleInspectCase(rule, t, "create table, no primary key", DefaultMysqlInspect(), `

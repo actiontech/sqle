@@ -11,7 +11,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00112(t *testing.T) {
 	ruleName := ai.SQLE00112
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	// SELECT语句测试用例
 	runAIRuleCase(rule, t, "case 1: SELECT语句中WHERE子句比较Table1.column1 (INT)与Table1.column2 (INT)，预期通过",

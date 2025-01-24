@@ -11,7 +11,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00091(t *testing.T) {
 	ruleName := ai.SQLE00091
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 0: SELECT语句中显式JOIN 包含unsing连接条件",
 		"SELECT * FROM table1 JOIN table2 using(id);",

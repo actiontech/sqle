@@ -12,7 +12,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00082(t *testing.T) {
 	ruleName := ai.SQLE00082
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	// case 1: SELECT 语句使用 ORDER BY 可能触发 filesort
 	runAIRuleCase(rule, t, "case 1: SELECT 语句使用 ORDER BY 可能触发 filesort",

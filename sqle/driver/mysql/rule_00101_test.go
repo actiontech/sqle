@@ -10,7 +10,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00101(t *testing.T) {
 	ruleName := ai.SQLE00101
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	// select...
 	runSingleRuleInspectCase(rule, t, "select... without ORDER BY", DefaultMysqlInspect(), `

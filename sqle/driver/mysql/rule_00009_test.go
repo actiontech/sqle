@@ -12,7 +12,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00009(t *testing.T) {
 	ruleName := ai.SQLE00009
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: DELETE 语句的 WHERE 子句中对字段应用函数但没有函数索引",
 		"DELETE FROM employees WHERE substr(name,2,8) = 'JOHN';",

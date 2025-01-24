@@ -12,7 +12,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQL00049(t *testing.T) {
 	ruleName := ai.SQLE00049
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	// ===== CREATE
 	// CREATE USER

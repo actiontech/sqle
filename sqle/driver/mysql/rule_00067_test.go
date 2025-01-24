@@ -11,7 +11,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00067(t *testing.T) {
 	ruleName := ai.SQLE00067
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: CREATE TABLE with foreign key constraints",
 		"CREATE TABLE orders (order_id INT, customer_id INT, PRIMARY KEY(order_id), FOREIGN KEY (customer_id) REFERENCES customers(customer_id));",

@@ -11,7 +11,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00037(t *testing.T) {
 	ruleName := ai.SQLE00037
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: 创建一个没有二级索引的表",
 		"CREATE TABLE user_data (id INT PRIMARY KEY, name VARCHAR(100));",

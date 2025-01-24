@@ -11,7 +11,7 @@ import (
 
 func TestRuleSQLE00121(t *testing.T) {
 	ruleName := ai.SQLE00121
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	// Test: SELECT without ORDER BY and without LIMIT
 	runSingleRuleInspectCase(rule, t, "select... without order by, without limit", DefaultMysqlInspect(), `

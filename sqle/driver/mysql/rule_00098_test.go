@@ -11,7 +11,7 @@ import (
 
 func TestRuleSQLE00098(t *testing.T) {
 	ruleName := ai.SQLE00098
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	//select, no join
 	runSingleRuleInspectCase(rule, t, "select, no join", DefaultMysqlInspect(), `

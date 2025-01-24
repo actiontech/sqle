@@ -12,7 +12,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00039(t *testing.T) {
 	ruleName := ai.SQLE00039
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: CREATE INDEX on table_users.username with discrimination above threshold",
 		"CREATE INDEX idx_username ON table_users(username);",

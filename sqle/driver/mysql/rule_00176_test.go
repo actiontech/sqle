@@ -11,7 +11,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00176(t *testing.T) {
 	ruleName := ai.SQLE00176
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: DELETE 语句包含 hint 指令 /*+ ... */",
 		"DELETE /*+ MAX_EXECUTION_TIME(1000) */ FROM test_table WHERE id = 1;",

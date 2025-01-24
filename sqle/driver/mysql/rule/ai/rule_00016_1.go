@@ -26,7 +26,7 @@ func init() {
 			AllowOffline: false,
 		},
 		Message: plocale.Rule00016_1Message,
-		Func:    RuleSQLE00016,
+		Func:    RuleSQLE00016_1,
 	}
 	sourceRuleHandlers = append(sourceRuleHandlers, &rh)
 }

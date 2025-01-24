@@ -42,10 +42,16 @@ func (t *testResult) add(level driverV2.RuleLevel, ruleName string, message stri
 }
 
 func (t *testResult) addResult(ruleName string, args ...interface{}) *testResult {
-	handler, ok := rulepkg.RuleHandlerMap[ruleName]
+	aiRuleHandleMap := rulepkg.AIRuleHandlerMap
+	ruleHandleMap := rulepkg.RuleHandlerMap
+	handler, ok := aiRuleHandleMap[ruleName]
 	if !ok {
-		panic("should not enter here, it means that the uint test result is not expect")
+		handler, ok = ruleHandleMap[ruleName]
+		if !ok {
+			panic("should not enter here, it means that the uint test result is not expect")
+		}
 	}
+
 	level := handler.Rule.Level
 	var m string
 	if handler.Message != nil {
@@ -6653,7 +6659,7 @@ func TestDMLCheckSelectRows(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{"type"}).AddRow(executor.ExplainRecordAccessTypeIndex).AddRow("range"))
 	handler.ExpectQuery(regexp.QuoteMeta(showWarnings)).
 		WillReturnRows(sqlmock.NewRows([]string{"Level", "Code", "Message"}))
-		// 添加 EXPLAIN 结果
+	// 添加 EXPLAIN 结果
 	handler.ExpectQuery(regexp.QuoteMeta("EXPLAIN select count(*) from (SELECT 1 FROM `exist_tb_2` GROUP BY `id`) as t")).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "select_type", "table", "partitions", "type", "possible_keys", "key", "key_len", "ref", "rows", "filtered", "Extra"}).
 			AddRow(1, "SIMPLE", "exist_tb_2", nil, "index", "idx_id", "idx_id", 5, nil, 1000, 100.00, "Using where").

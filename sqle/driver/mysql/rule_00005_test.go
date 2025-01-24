@@ -11,7 +11,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00005(t *testing.T) {
 	ruleName := ai.SQLE00005
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	// Test case 1: CREATE TABLE 时创建包含6个字段的复合索引
 	runAIRuleCase(rule, t, "case 1: CREATE TABLE 时创建包含6个字段的复合索引",

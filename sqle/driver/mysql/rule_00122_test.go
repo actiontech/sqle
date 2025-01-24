@@ -12,7 +12,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00122(t *testing.T) {
 	ruleName := ai.SQLE00122
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: SELECT SUM on a column where all values are NULL", "SELECT SUM(age) FROM customers;",
 		session.NewAIMockContext().WithSQL("CREATE TABLE customers (id INT, age INT); INSERT INTO customers (id, age) VALUES (1, NULL), (2, NULL);"),

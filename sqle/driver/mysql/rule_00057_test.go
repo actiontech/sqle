@@ -12,7 +12,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00057(t *testing.T) {
 	ruleName := ai.SQLE00057
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 0: CREATE TABLE 未指定 ENGINE，默认存储引擎为 MyISAM",
 		"CREATE TABLE db1.user_data (id INT PRIMARY KEY, name VARCHAR(100));",

@@ -11,7 +11,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00052(t *testing.T) {
 	ruleName := ai.SQLE00052
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	// Case 1: CREATE TABLE 主键未使用 AUTO_INCREMENT
 	runAIRuleCase(rule, t, "case 1: CREATE TABLE 主键未使用 AUTO_INCREMENT",

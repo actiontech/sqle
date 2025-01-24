@@ -11,7 +11,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00118(t *testing.T) {
 	ruleName := ai.SQLE00118
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	// case 1: DROP TABLE 语句用于删除表
 	runAIRuleCase(rule, t, "case 1: DROP TABLE 语句用于删除表", "DROP TABLE test_table;",

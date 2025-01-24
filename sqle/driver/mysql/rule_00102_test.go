@@ -11,7 +11,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00102(t *testing.T) {
 	ruleName := ai.SQLE00102
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	// DELETE语句测试用例
 	runAIRuleCase(rule, t, "case 1: DELETE语句包含ORDER BY子句",

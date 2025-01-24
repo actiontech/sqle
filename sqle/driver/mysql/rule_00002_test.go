@@ -11,7 +11,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00002(t *testing.T) {
 	ruleName := ai.SQLE00002
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	// Case 1: DELETE statement with 100 placeholders in WHERE clause
 	runAIRuleCase(rule, t, "case 1: DELETE statement with 100 placeholders in WHERE clause",

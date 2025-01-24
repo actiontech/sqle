@@ -12,7 +12,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00100(t *testing.T) {
 	ruleName := ai.SQLE00100
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: 简单SELECT语句，返回行数小于1000", "SELECT * FROM my_table;",
 		session.NewAIMockContext().WithSQL("CREATE TABLE my_table (id INT, name VARCHAR(50)); INSERT INTO my_table VALUES (1, 'Alice'), (2, 'Bob');"),

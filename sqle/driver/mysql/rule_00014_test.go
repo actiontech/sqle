@@ -11,7 +11,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00014(t *testing.T) {
 	ruleName := ai.SQLE00014
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: 使用 CREATE FUNCTION 定义自定义函数",
 		"CREATE FUNCTION my_func (a INT) RETURNS INT DETERMINISTIC RETURN a + 1;",

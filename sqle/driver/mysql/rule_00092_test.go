@@ -11,7 +11,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQL00092(t *testing.T) {
 	ruleName := ai.SQLE00092
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	// DELETE语句未使用LIMIT子句
 	runAIRuleCase(rule, t, "case 1: DELETE语句未使用LIMIT子句", "DELETE FROM users WHERE age > 30;",

@@ -11,7 +11,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00019(t *testing.T) {
 	ruleName := ai.SQLE00019
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: CREATE TABLE 使用 ENUM 类型字段",
 		"CREATE TABLE sample_table (id INT, status ENUM('active', 'inactive'));",

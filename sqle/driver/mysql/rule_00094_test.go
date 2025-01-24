@@ -12,7 +12,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQL00094(t *testing.T) {
 	ruleName := ai.SQLE00094
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: DELETE 语句中使用 GROUP_CONCAT 函数", "DELETE FROM test_table WHERE id IN (SELECT GROUP_CONCAT(id) FROM another_table);",
 		session.NewAIMockContext().WithSQL("CREATE TABLE test_table (id INT, data VARCHAR(255)); CREATE TABLE another_table (id INT, name VARCHAR(255));"),

@@ -11,7 +11,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00089(t *testing.T) {
 	ruleName := ai.SQLE00089
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: 使用 INSERT INTO 语句插入单个值，不违反规则",
 		"INSERT INTO employees (id, name) VALUES (1, 'Alice');",

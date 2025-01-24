@@ -10,7 +10,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00036(t *testing.T) {
 	ruleName := ai.SQLE00036
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	//create table, without blob column in index
 	runSingleRuleInspectCase(rule, t, "create table, without blob column in index", DefaultMysqlInspect(), `

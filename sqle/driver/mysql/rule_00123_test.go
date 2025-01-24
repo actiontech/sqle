@@ -11,7 +11,7 @@ import (
 
 func TestRuleSQLE00123(t *testing.T) {
 	ruleName := ai.SQLE00123
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	//for truncate, with problem
 	runSingleRuleInspectCase(rule, t, "for truncate, no problem", DefaultMysqlInspect(), `

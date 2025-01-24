@@ -11,7 +11,7 @@ import (
 
 func TestRuleSQLE00115(t *testing.T) {
 	ruleName := ai.SQLE00115
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	//select...
 	runSingleRuleInspectCase(rule, t, "select..., no subquery", DefaultMysqlInspect(), `

@@ -10,7 +10,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00032(t *testing.T) {
 	ruleName := ai.SQLE00032
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runSingleRuleInspectCase(rule, t, "Create database name without the '_DB' fixed suffix", DefaultMysqlInspect(), `
     CREATE DATABASE no_exist;

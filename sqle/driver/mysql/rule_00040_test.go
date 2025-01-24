@@ -11,7 +11,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00040(t *testing.T) {
 	ruleName := ai.SQLE00040
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: CREATE INDEX 没有使用固定前缀", "CREATE INDEX my_index ON test_table (column1);",
 		session.NewAIMockContext().WithSQL("CREATE TABLE test_table (column1 INT);"),

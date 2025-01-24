@@ -11,7 +11,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQL00088(t *testing.T) {
 	ruleName := ai.SQLE00088
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: INSERT语句未指定列名", "INSERT INTO test_table VALUES (1, 'example');",
 		session.NewAIMockContext().WithSQL("CREATE TABLE test_table (id INT, name VARCHAR(50));"),

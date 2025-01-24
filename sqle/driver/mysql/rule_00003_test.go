@@ -11,7 +11,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00003(t *testing.T) {
 	ruleName := ai.SQLE00003
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: CREATE TABLE with indexed field emp_id having NOT NULL and DEFAULT",
 		"CREATE TABLE employees (emp_id INT NOT NULL DEFAULT 0, name VARCHAR(50), department_id INT, INDEX (emp_id));",

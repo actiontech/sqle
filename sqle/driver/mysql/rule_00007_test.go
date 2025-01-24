@@ -10,7 +10,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00007(t *testing.T) {
 	ruleName := ai.SQLE00007
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: CREATE TABLE with no auto_increment columns",
 		"CREATE TABLE employees (id INT, name VARCHAR(100));",
