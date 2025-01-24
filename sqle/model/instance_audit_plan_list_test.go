@@ -37,7 +37,7 @@ IF(audit_plan_sqls.audit_results IS NULL,'being_audited','') AS audit_status,
 audit_plan_sqls.priority
 
 FROM sql_manage_records AS audit_plan_sqls
-JOIN audit_plans_v2 ON audit_plans_v2.instance_audit_plan_id = audit_plan_sqls.source_id AND audit_plans_v2.type = audit_plan_sqls.source
+JOIN audit_plans_v2 ON CONCAT(audit_plans_v2.instance_audit_plan_id, '') = audit_plan_sqls.source_id AND audit_plans_v2.type = audit_plan_sqls.source
 JOIN instance_audit_plans ON instance_audit_plans.id = audit_plans_v2.instance_audit_plan_id
 
 WHERE audit_plan_sqls.deleted_at IS NULL
@@ -65,7 +65,7 @@ IF(audit_plan_sqls.audit_results IS NULL,'being_audited','') AS audit_status,
 audit_plan_sqls.priority
 
 FROM sql_manage_records AS audit_plan_sqls
-JOIN audit_plans_v2 ON audit_plans_v2.instance_audit_plan_id = audit_plan_sqls.source_id AND audit_plans_v2.type = audit_plan_sqls.source
+JOIN audit_plans_v2 ON CONCAT(audit_plans_v2.instance_audit_plan_id, '') = audit_plan_sqls.source_id AND audit_plans_v2.type = audit_plan_sqls.source
 JOIN instance_audit_plans ON instance_audit_plans.id = audit_plans_v2.instance_audit_plan_id
 
 WHERE audit_plan_sqls.deleted_at IS NULL
@@ -94,7 +94,7 @@ IF(audit_plan_sqls.audit_results IS NULL,'being_audited','') AS audit_status,
 audit_plan_sqls.priority
 
 FROM sql_manage_records AS audit_plan_sqls
-JOIN audit_plans_v2 ON audit_plans_v2.instance_audit_plan_id = audit_plan_sqls.source_id AND audit_plans_v2.type = audit_plan_sqls.source
+JOIN audit_plans_v2 ON CONCAT(audit_plans_v2.instance_audit_plan_id, '') = audit_plan_sqls.source_id AND audit_plans_v2.type = audit_plan_sqls.source
 JOIN instance_audit_plans ON instance_audit_plans.id = audit_plans_v2.instance_audit_plan_id
 
 WHERE audit_plan_sqls.deleted_at IS NULL
@@ -123,7 +123,7 @@ IF(audit_plan_sqls.audit_results IS NULL,'being_audited','') AS audit_status,
 audit_plan_sqls.priority
 
 FROM sql_manage_records AS audit_plan_sqls
-JOIN audit_plans_v2 ON audit_plans_v2.instance_audit_plan_id = audit_plan_sqls.source_id AND audit_plans_v2.type = audit_plan_sqls.source
+JOIN audit_plans_v2 ON CONCAT(audit_plans_v2.instance_audit_plan_id, '') = audit_plan_sqls.source_id AND audit_plans_v2.type = audit_plan_sqls.source
 JOIN instance_audit_plans ON instance_audit_plans.id = audit_plans_v2.instance_audit_plan_id
 
 WHERE audit_plan_sqls.deleted_at IS NULL
@@ -153,7 +153,7 @@ IF(audit_plan_sqls.audit_results IS NULL,'being_audited','') AS audit_status,
 audit_plan_sqls.priority
 
 FROM sql_manage_records AS audit_plan_sqls
-JOIN audit_plans_v2 ON audit_plans_v2.instance_audit_plan_id = audit_plan_sqls.source_id AND audit_plans_v2.type = audit_plan_sqls.source
+JOIN audit_plans_v2 ON CONCAT(audit_plans_v2.instance_audit_plan_id, '') = audit_plan_sqls.source_id AND audit_plans_v2.type = audit_plan_sqls.source
 JOIN instance_audit_plans ON instance_audit_plans.id = audit_plans_v2.instance_audit_plan_id
 
 WHERE audit_plan_sqls.deleted_at IS NULL
@@ -182,7 +182,7 @@ IF(audit_plan_sqls.audit_results IS NULL,'being_audited','') AS audit_status,
 audit_plan_sqls.priority
 
 FROM sql_manage_records AS audit_plan_sqls
-JOIN audit_plans_v2 ON audit_plans_v2.instance_audit_plan_id = audit_plan_sqls.source_id AND audit_plans_v2.type = audit_plan_sqls.source
+JOIN audit_plans_v2 ON CONCAT(audit_plans_v2.instance_audit_plan_id, '') = audit_plan_sqls.source_id AND audit_plans_v2.type = audit_plan_sqls.source
 JOIN instance_audit_plans ON instance_audit_plans.id = audit_plans_v2.instance_audit_plan_id
 
 WHERE audit_plan_sqls.deleted_at IS NULL
