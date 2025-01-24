@@ -186,8 +186,8 @@ func (s *Storage) GetLatestStartTimeAuditPlanSQLV2(sourceId uint) (string, error
 type SQLManageRecord struct {
 	Model
 
-	Source         string         `json:"source" gorm:"type:varchar(255)"`
-	SourceId       string         `json:"source_id" gorm:"type:varchar(255)"`
+	Source         string         `json:"source" gorm:"type:varchar(255);index:idx_source_id_source"`
+	SourceId       string         `json:"source_id" gorm:"type:varchar(255);index:idx_source_id_source"`
 	ProjectId      string         `json:"project_id" gorm:"type:varchar(255)"`
 	InstanceID     string         `json:"instance_id" gorm:"type:varchar(255)"`
 	SchemaName     string         `json:"schema_name" gorm:"type:varchar(255)"`
@@ -243,34 +243,51 @@ func (s *Storage) GetManageSQLById(id string) (*SQLManageRecord, bool, error) {
 	return sql, true, nil
 }
 
-func (s *Storage) GetManagerSQLListByAuditPlanId(apId uint) ([]*SQLManageRecord, error) {
+// 获取指定扫描任务下的所有SQL
+func (s *Storage) GetManagerSQLListByAuditPlanId(auditPlanID uint) ([]*SQLManageRecord, error) {
 	sqls := []*SQLManageRecord{}
-	err := s.db.Joins("JOIN audit_plans_v2 ON sql_manage_records.source_id = audit_plans_v2.instance_audit_plan_id AND sql_manage_records.source = audit_plans_v2.type").
-		Where("audit_plans_v2.id = ?", apId).
+	err := s.db.Joins(`
+		JOIN audit_plans_v2 ON sql_manage_records.source_id = CONCAT(audit_plans_v2.instance_audit_plan_id, '')
+		AND sql_manage_records.source = audit_plans_v2.type`).
+		Where("audit_plans_v2.id = ?", auditPlanID).
 		Find(&sqls).Error
-	return sqls, err
+	if err != nil {
+		return nil, err
+	}
+	return sqls, nil
 }
 
+// 获取指定扫描任务下的所有Schema
 func (s *Storage) GetManagerSqlSchemaNameByAuditPlan(auditPlanId uint) ([]string, error) {
 	var metricValueTips []string
 	err := s.db.Table("sql_manage_records").
 		Select("DISTINCT sql_manage_records.schema_name as schema_name").
-		Joins("JOIN audit_plans_v2 ON sql_manage_records.source = audit_plans_v2.type AND sql_manage_records.source_id = audit_plans_v2.instance_audit_plan_id").
+		Joins(`
+		JOIN audit_plans_v2 ON sql_manage_records.source = audit_plans_v2.type 
+		AND sql_manage_records.source_id = CONCAT(audit_plans_v2.instance_audit_plan_id, '')`).
 		Where("audit_plans_v2.id = ?", auditPlanId).
 		Scan(&metricValueTips).Error
 	return metricValueTips, errors.New(errors.ConnectStorageError, err)
 }
 
+// 获取指定扫描任务下的所有SQL的指定指标
 func (s *Storage) GetManagerSqlMetricTipsByAuditPlan(auditPlanId uint, metricName string) ([]string, error) {
 	var metricValueTips []string
 	err := s.db.Table("sql_manage_records").
 		Select(fmt.Sprintf("DISTINCT sql_manage_records.info->>'$.%s' as metric_value", metricName)).
-		Joins("JOIN audit_plans_v2 ON sql_manage_records.source = audit_plans_v2.type AND sql_manage_records.source_id = audit_plans_v2.instance_audit_plan_id").
-		Where("audit_plans_v2.id = ? AND NOT ISNULL(sql_manage_records.info->>'$.db_user')", auditPlanId).
+		Joins(`
+			JOIN audit_plans_v2 ON sql_manage_records.source = audit_plans_v2.type 
+			AND sql_manage_records.source_id = CONCAT(audit_plans_v2.instance_audit_plan_id, '')`).
+		Where("audit_plans_v2.id = ? AND sql_manage_records.info->>'$.db_user' IS NOT NULL", auditPlanId).
 		Scan(&metricValueTips).Error
 	return metricValueTips, errors.New(errors.ConnectStorageError, err)
 }
 
+/*
+TODO 优先级:高 目的: 优化该方法的SQL性能
+ 1. 该方法的SQL性能差，本地数据量约三四千条，SQL的响应时间为(2.56 sec)
+ 2. 该方法主要性能下降在rules(type ALL filtered 10.00)表和smr表(type ALL filtered 1.11)
+*/
 func (s *Storage) GetManagerSqlRuleTipsByAuditPlan(auditPlanId uint) ([]*SqlManageRuleTips, error) {
 	sqlManageRuleTips := make([]*SqlManageRuleTips, 0)
 	err := s.db.Table("sql_manage_records smr").
@@ -347,10 +364,13 @@ func (s *Storage) GetInstanceAuditPlanDetail(instanceAuditPlanID string) (*Insta
 	return instanceAuditPlan, true, errors.New(errors.ConnectStorageError, err)
 }
 
+// 获取指定扫描任务下的所有SQL的数量
 func (s *Storage) GetAuditPlanTotalSQL(auditPlanID uint) (int64, error) {
 	var count int64
 	err := s.db.Model(&SQLManageRecord{}).
-		Joins("JOIN audit_plans_v2 ON sql_manage_records.source_id = audit_plans_v2.instance_audit_plan_id AND sql_manage_records.source = audit_plans_v2.type").
+		Joins(`
+			JOIN audit_plans_v2 ON sql_manage_records.source_id = CONCAT(audit_plans_v2.instance_audit_plan_id, '')
+			AND sql_manage_records.source = audit_plans_v2.type`).
 		Where("audit_plans_v2.id = ?", auditPlanID).
 		Count(&count).Error
 	return count, errors.ConnectStorageErrWrapper(err)
@@ -425,6 +445,11 @@ func (s *Storage) DeleteInstanceAuditPlan(instanceAuditPlanId string) error {
 	})
 }
 
+/*
+TODO 优先级:中 目的: 优化该方法的SQL性能
+ 1. 该SQL存在隐式转换(ap.instance_audit_plan_id=sql_manage_queues.source_id)导致性能下降，且执行计划存在大表(sql_manage_records)的全表扫描，
+ 2. 由于操作是删除操作，使用频率较低，优化优先级降低
+*/
 func (s *Storage) DeleteAuditPlan(auditPlanID int) error {
 	return s.Tx(func(txDB *gorm.DB) error {
 		// 删除队列表中数据
@@ -657,6 +682,11 @@ func (s *Storage) GetNormalAuditPlanInstancesByLastCollectionStatus(projectID, s
 	return instanceAuditPlan, err
 }
 
+/*
+TODO 优先级:低 目的: 优化该方法的SQL性能
+	1. 该SQL存在隐式转换(sql_manage_records.source_id = apv.instance_audit_plan_id)导致索引过滤率下降
+	2. 由于数据量不是很大，优化优先级降低
+*/
 // 获取需要审核的sql，
 // 当更新时间大于最后审核时间或最后审核时间为空时需要重新审核（采集或重新采集到的sql）
 // 需要注意：当前仅在采集和审核时会更sql_manage_records中扫描任务相关的sql，所以使用了updated_at > last_audit_time条件。
