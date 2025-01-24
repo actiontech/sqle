@@ -128,7 +128,11 @@ WHERE sm.deleted_at IS NULL  AND sm.project_id = ?
 
 	return sqlManageRuleTips, nil
 }
-
+/* 
+TODO 优先级：高 目的：优化SQL性能
+	1. 优化该SQL的性能，目前该SQL的性能较差，所有表都要做全表扫描。本地测试环境下，主表数据量几千条，查询耗时(4.79 sec) 接口响应时长4.99s
+	2. 该功能在SQL管理页面的使用频率较高，该SQL的性能影响较大。故优化优先级设置为高。
+ */
 func (s *Storage) GetSqlManagerRuleTips(projectID string) ([]*SqlManageRuleTips, error) {
 	sqlManageRuleTips := make([]*SqlManageRuleTips, 0)
 	err := s.db.Table("sql_manage_records oms").
@@ -943,13 +947,14 @@ func (s *Storage) GetSqlManagerListByIDs(ids []*uint64) ([]*SQLManageRecordProce
 	return sqlManagerList, nil
 }
 
+// 获取审核计划未解决的SQL数量
 func (s *Storage) GetAuditPlanUnsolvedSQLCount(id uint, status []string) (int64, error) {
 	query := `SELECT
 					count(smr.id)
 				FROM
 					sql_manage_records AS smr
 				LEFT JOIN sql_manage_record_processes AS sm ON sm.sql_manage_record_id = smr.id
-				LEFT JOIN audit_plans_v2 AS ap ON ap.instance_audit_plan_id = smr.source_id AND ap.type = smr.source 
+				LEFT JOIN audit_plans_v2 AS ap ON CONCAT(ap.instance_audit_plan_id, '') = smr.source_id AND ap.type = smr.source 
 				WHERE
 					ap.id = ?
 					AND smr.deleted_at IS NULL

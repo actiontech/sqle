@@ -74,6 +74,13 @@ func (s Storage) deleteAuditPlansInProject(txDB *gorm.DB, projectID ProjectUID) 
 	return nil
 }
 
+/* 
+TODO 优先级：中 目的：优化SQL性能
+	1. 该SQL的存在隐式转换导致性能下降。
+	2. SQL执行计划中，全表扫描的表有两个(audit_plans_v2和audit_plan_task_infos)。由于这两个表都是小表，所以性能影响不大。
+	3. 该SQL存在隐式转换(iap.id = sql_manage_queues.source_id)，导致无法有效利用索引。
+	2. 由于出现问题的部分涉及的数据规模相对小，因此优化优先级设置为中。
+*/
 func (s *Storage) deleteInstanceAuditPlan(txDB *gorm.DB, instanceAuditPlanId uint) error {
 	// 删除队列表中数据
 	err := txDB.Exec(`DELETE FROM sql_manage_queues USING sql_manage_queues
