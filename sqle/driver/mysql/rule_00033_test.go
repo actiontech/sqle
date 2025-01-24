@@ -10,7 +10,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00033(t *testing.T) {
 	ruleName := ai.SQLE00033
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 	ruleParams := []interface{}{"UPDATE_TIME"}
 
 	//create table, without update_time column

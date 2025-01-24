@@ -28,7 +28,7 @@ func NewMySQLInspectOnRuleSQLE00111(t *testing.T) *MysqlDriverImpl {
 
 func TestRuleSQLE00111(t *testing.T) {
 	ruleName := ai.SQLE00111
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 	i := NewMySQLInspectOnRuleSQLE00111(t)
 
 	// without function call or math operation in where clause

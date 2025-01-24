@@ -11,7 +11,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00016(t *testing.T) {
 	ruleName := ai.SQLE00016
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: CREATE TABLE包含BLOB类型字段并设置为NOT NULL，违反规则SQLE00016",
 		"CREATE TABLE sample_create_table (id INT, data BLOB NOT NULL);",

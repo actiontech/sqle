@@ -12,7 +12,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQL00078(t *testing.T) {
 	ruleName := ai.SQLE00078
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: SELECT语句包含聚合函数COUNT", "SELECT COUNT(*) FROM employees;",
 		session.NewAIMockContext().WithSQL("CREATE TABLE employees (id INT, name VARCHAR(50));"),

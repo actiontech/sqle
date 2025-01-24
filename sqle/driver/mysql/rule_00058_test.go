@@ -11,7 +11,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00058(t *testing.T) {
 	ruleName := ai.SQLE00058
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: CREATE TABLE 使用 PARTITION BY RANGE 定义分区",
 		"CREATE TABLE partitioned_table (id INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (10), PARTITION p1 VALUES LESS THAN (20));",

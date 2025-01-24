@@ -10,7 +10,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00035(t *testing.T) {
 	ruleName := ai.SQLE00035
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	//without full-width Chinese quotation marks
 	runSingleRuleInspectCase(rule, t, "without full-width Chinese quotation marks", DefaultMysqlInspect(), `

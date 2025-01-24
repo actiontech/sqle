@@ -12,7 +12,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00180(t *testing.T) {
 	ruleName := ai.SQLE00180
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: SELECT without WHERE clause", "SELECT * FROM table1;",
 		session.NewAIMockContext().WithSQL("CREATE TABLE table1 (id INT, column1 VARCHAR(100), column2 VARCHAR(100), column3 VARCHAR(100));"),

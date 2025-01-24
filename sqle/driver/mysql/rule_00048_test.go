@@ -12,7 +12,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQL00048(t *testing.T) {
 	ruleName := ai.SQLE00048
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 	// ===== CREATE
 	// CREATE USER
 	runSingleRuleInspectCase(rule, t, "CREATE USER", DefaultMysqlInspect(), `

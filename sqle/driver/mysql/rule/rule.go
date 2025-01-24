@@ -239,7 +239,7 @@ type RuleHandler struct {
 }
 
 func init() {
-	RuleHandlers = GenerateI18nRuleHandlers(plocale.Bundle, sourceRuleHandlers)
+	RuleHandlers = append(RuleHandlers, GenerateI18nRuleHandlers(plocale.Bundle, sourceRuleHandlers)...)
 	defaultRulesKnowledge, err := getDefaultRulesKnowledge()
 	if err != nil {
 		panic(fmt.Errorf("get default rules knowledge failed: %v", err))
@@ -280,7 +280,7 @@ func AddResult(result *driverV2.AuditResults, currentRule driverV2.Rule, ruleNam
 		return
 	}
 	level := currentRule.Level
-	message := RuleHandlerMap[ruleName].Message
+	message := GetAllRule()[ruleName].Message
 	result.Add(level, ruleName, plocale.Bundle.LocalizeAll(message), args...)
 }
 
@@ -306,9 +306,22 @@ func (rh *RuleHandler) IsDisableExecutedSQLRule(node ast.Node) bool {
 }
 
 var (
-	RuleHandlers   []RuleHandler
-	RuleHandlerMap = map[string]RuleHandler{}
+	RuleHandlers     []RuleHandler
+	RuleHandlerMap   = map[string]RuleHandler{}
+	AIRuleHandlers   []RuleHandler
+	AIRuleHandlerMap = map[string]RuleHandler{}
 )
+
+func GetAllRule() map[string]RuleHandler {
+	allRuleHandlerMap := make(map[string]RuleHandler, len(AIRuleHandlerMap)+len(RuleHandlerMap))
+	for ruleName, aiHandler := range AIRuleHandlerMap {
+		RuleHandlerMap[ruleName] = aiHandler
+	}
+	for ruleName, ruleHandler := range RuleHandlerMap {
+		allRuleHandlerMap[ruleName] = ruleHandler
+	}
+	return allRuleHandlerMap
+}
 
 const DefaultSingleParamKeyName = "first_key" // For most of the rules, it is just has one param, this is first params.
 

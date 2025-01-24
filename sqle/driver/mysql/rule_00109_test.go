@@ -11,7 +11,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00109(t *testing.T) {
 	ruleName := ai.SQLE00109
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: DELETE语句中的子查询使用LIMIT",
 		"DELETE FROM orders WHERE id IN (SELECT id FROM orders_archive LIMIT 10);",

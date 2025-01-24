@@ -10,7 +10,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00028(t *testing.T) {
 	ruleName := ai.SQLE00028
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	//create table, all column has DEFAULT value
 	runSingleRuleInspectCase(rule, t, "create table, auto increment column has no DEFAULT value", DefaultMysqlInspect(), `

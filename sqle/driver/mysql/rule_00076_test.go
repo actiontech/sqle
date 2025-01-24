@@ -12,7 +12,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00076(t *testing.T) {
 	ruleName := ai.SQLE00076
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: UPDATE语句影响行数超过阈值且没有WHERE子句",
 		"UPDATE employees SET salary = salary * 1.1;",

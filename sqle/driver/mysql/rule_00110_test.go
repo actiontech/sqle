@@ -11,7 +11,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00110(t *testing.T) {
 	ruleName := ai.SQLE00110
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: DELETE statement with indexed field in WHERE clause",
 		"DELETE FROM employee WHERE emp_id = 123;",

@@ -10,7 +10,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00045(t *testing.T) {
 	ruleName := ai.SQLE00045
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	// Case 1: SELECT ..., LIMIT offset exceeds 10000
 	runSingleRuleInspectCase(rule, t, "Case 1: SELECT ..., LIMIT offset exceeds 10000", DefaultMysqlInspect(), `

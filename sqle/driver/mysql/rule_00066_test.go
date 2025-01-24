@@ -12,7 +12,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQL00066(t *testing.T) {
 	ruleName := ai.SQLE00066
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: ALTER TABLE drop COLUMN", "ALTER TABLE test_table DROP COLUMN test_column;",
 		session.NewAIMockContext().WithSQL("CREATE TABLE test_table (id INT, test_column INT);"),

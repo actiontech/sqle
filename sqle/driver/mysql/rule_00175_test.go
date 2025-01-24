@@ -28,7 +28,7 @@ func NewMySQLInspectOnRuleSQLE00175(t *testing.T, sql string, planType string) *
 
 func TestRuleSQLE00175(t *testing.T) {
 	ruleName := ai.SQLE00175
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	//select...
 	runSingleRuleInspectCase(rule, t, "select..., no problem", NewMySQLInspectOnRuleSQLE00175(t, "SELECT * FROM exist_db.exist_tb_1", "index"), `

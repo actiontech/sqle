@@ -10,7 +10,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00010(t *testing.T) {
 	ruleName := ai.SQLE00010
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	//alter table, drop normal index
 	runSingleRuleInspectCase(rule, t, "alter table, drop normal index", DefaultMysqlInspect(), `

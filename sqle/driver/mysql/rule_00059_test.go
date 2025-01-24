@@ -27,7 +27,7 @@ func NewMySQLInspectOnRuleSQLE00059(t *testing.T, tableSize int /*table size MB*
 
 func TestRuleSQLE00059(t *testing.T) {
 	ruleName := ai.SQLE00059
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 	ruleParams := []interface{}{"5"}
 
 	// Alter table, no modify/change column

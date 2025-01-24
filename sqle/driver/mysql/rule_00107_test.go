@@ -12,7 +12,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00107(t *testing.T) {
 	ruleName := ai.SQLE00107
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: SELECT语句长度小于1024，符合规则",
 		"SELECT id, name FROM users WHERE status = 'active';",

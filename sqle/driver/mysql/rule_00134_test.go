@@ -11,7 +11,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00134(t *testing.T) {
 	ruleName := ai.SQLE00134
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: UPDATE 语句修改单一主键字段，违反规则",
 		"UPDATE users SET id = 10 WHERE name = 'Alice';",

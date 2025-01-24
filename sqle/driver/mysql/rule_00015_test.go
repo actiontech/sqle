@@ -12,7 +12,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00015(t *testing.T) {
 	ruleName := ai.SQLE00015
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: CREATE TABLE 未指定表级 COLLATION，列未指定 COLLATION",
 		"CREATE TABLE employees (id INT, name VARCHAR(100), description TEXT);",

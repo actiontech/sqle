@@ -12,7 +12,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00170(t *testing.T) {
 	ruleName := ai.SQLE00170
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	// case 1
 	runAIRuleCase(rule, t, "case 1: 使用 ALTER TABLE ... MODIFY ... 语句缩短 VARCHAR 字段长度，且当前数据长度超过新长度",

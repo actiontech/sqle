@@ -11,7 +11,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00174(t *testing.T) {
 	ruleName := ai.SQLE00174
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: GRANT ALL 权限", "GRANT ALL ON database.* TO 'user'@'localhost';",
 		nil, /*mock context*/

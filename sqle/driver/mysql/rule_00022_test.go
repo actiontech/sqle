@@ -10,7 +10,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00022(t *testing.T) {
 	ruleName := ai.SQLE00022
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 	ruleParams := []interface{}{40}
 
 	//create table, no problem

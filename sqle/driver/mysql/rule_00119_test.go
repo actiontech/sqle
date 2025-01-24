@@ -11,7 +11,7 @@ import (
 
 func TestRuleSQLE00119(t *testing.T) {
 	ruleName := ai.SQLE00119
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	//select...
 	runSingleRuleInspectCase(rule, t, "select... no group by, no order by", DefaultMysqlInspect(), `

@@ -11,7 +11,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00090(t *testing.T) {
 	ruleName := ai.SQLE00090
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: SELECT 语句使用 UNION 而非 UNION ALL",
 		"SELECT * FROM table1 UNION SELECT * FROM table2;",

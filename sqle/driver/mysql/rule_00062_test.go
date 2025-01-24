@@ -10,7 +10,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQL00062(t *testing.T) {
 	ruleName := ai.SQLE00062
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: SET TRANSACTION ISOLATION LEVEL set to READ UNCOMMITTED",
 		"SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;",

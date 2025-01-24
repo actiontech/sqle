@@ -10,7 +10,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00031(t *testing.T) {
 	ruleName := ai.SQLE00031
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	for _, sql := range []string{
 		`CREATE VIEW test_view AS SELECT * FROM exist_db.exist_tb_1;`,

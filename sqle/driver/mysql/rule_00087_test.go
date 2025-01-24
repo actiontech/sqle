@@ -23,7 +23,7 @@ func generateLongInClauseFor00087(count int) string {
 
 func TestRuleSQLE00087(t *testing.T) {
 	ruleName := ai.SQLE00087
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: SELECT语句中WHERE条件的IN列表超过500个元素",
 		fmt.Sprintf("SELECT * FROM users WHERE id IN (%s);", generateLongInClauseFor00087(501)),

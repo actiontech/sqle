@@ -10,7 +10,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00099(t *testing.T) {
 	ruleName := ai.SQLE00099
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	//select...
 	runSingleRuleInspectCase(rule, t, "select...without FOR UPDATE", DefaultMysqlInspect(), `

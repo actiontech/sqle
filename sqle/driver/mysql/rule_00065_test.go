@@ -16,7 +16,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQL00065(t *testing.T) {
 	ruleName := ai.SQLE00065
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: ALTER TABLE MODIFY column and specify FIRST",
 		"ALTER TABLE test_table MODIFY COLUMN col1 INT FIRST;",

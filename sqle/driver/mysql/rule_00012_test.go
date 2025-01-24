@@ -10,7 +10,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00012(t *testing.T) {
 	ruleName := ai.SQLE00012
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	//create table, with BIGINT
 	runSingleRuleInspectCase(rule, t, "create table, with BIGINT", DefaultMysqlInspect(),

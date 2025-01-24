@@ -10,7 +10,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00026(t *testing.T) {
 	ruleName := ai.SQLE00026
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	// case 1: CREATE TABLE 中 INT 类型字段指定了长度且不包含 zerofill
 	runSingleRuleInspectCase(rule, t, "CREATE TABLE with INT field with specified length but without zerofill", DefaultMysqlInspect(), `

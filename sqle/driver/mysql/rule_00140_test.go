@@ -11,7 +11,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00140(t *testing.T) {
 	ruleName := ai.SQLE00140
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: CREATE TABLE 时指定库名",
 		"CREATE TABLE testdb.test_table (id INT);",

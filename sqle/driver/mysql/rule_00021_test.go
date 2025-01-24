@@ -11,7 +11,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00021(t *testing.T) {
 	ruleName := ai.SQLE00021
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	// CREATE语句测试用例
 	runAIRuleCase(rule, t, "case 1: 创建表employees，所有字段包含NOT NULL约束",

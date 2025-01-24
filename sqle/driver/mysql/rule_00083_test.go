@@ -12,7 +12,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00083(t *testing.T) {
 	ruleName := ai.SQLE00083
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: SELECT语句不包含GROUP BY或DISTINCT，且涉及一张表，违反索引跳跃扫描规则",
 		"SELECT col1 FROM test_table WHERE col2 = 1;",

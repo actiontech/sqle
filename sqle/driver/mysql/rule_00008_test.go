@@ -12,7 +12,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00008(t *testing.T) {
 	ruleName := ai.SQLE00008
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	// case 1: CREATE TABLE 定义包含列级别的主键
 	runAIRuleCase(rule, t, "case 1: CREATE TABLE 定义包含列级别的主键",

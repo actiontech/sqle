@@ -10,7 +10,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQL00060(t *testing.T) {
 	ruleName := ai.SQLE00060
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: CREATE TABLE without COMMENT", "CREATE TABLE exist_db.no_exist_tb_1 (id INT);",
 		nil, nil, newTestResult().addResult(ruleName))

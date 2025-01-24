@@ -10,7 +10,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00075(t *testing.T) {
 	ruleName := ai.SQLE00075
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	//create table, no charset, no collate
 	runSingleRuleInspectCase(rule, t, "create table, no charset, no collate", DefaultMysqlInspect(), `

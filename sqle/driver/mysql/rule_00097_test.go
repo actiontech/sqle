@@ -12,7 +12,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00097(t *testing.T) {
 	ruleName := ai.SQLE00097
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: SELECT语句中ORDER BY使用VARCHAR字段长度超过100",
 		"SELECT name FROM users ORDER BY name;",

@@ -9,5 +9,8 @@ var sourceRuleHandlers []*rulepkg.SourceHandler
 
 func init() {
 	aiRuleHandlers := rulepkg.GenerateI18nRuleHandlers(plocale.Bundle, sourceRuleHandlers)
-	rulepkg.RuleHandlers = append(rulepkg.RuleHandlers, aiRuleHandlers...)
+	rulepkg.AIRuleHandlers = append(rulepkg.AIRuleHandlers, aiRuleHandlers...)
+	for _, handler := range aiRuleHandlers {
+		rulepkg.AIRuleHandlerMap[handler.Rule.Name] = handler
+	}
 }

@@ -11,7 +11,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQL00086(t *testing.T) {
 	ruleName := ai.SQLE00086
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: SELECT 语句中存在后缀匹配模糊检索", "SELECT * FROM users WHERE username LIKE '%ab';",
 		session.NewAIMockContext().WithSQL("CREATE TABLE users (id INT PRIMARY KEY, username VARCHAR(50))"),

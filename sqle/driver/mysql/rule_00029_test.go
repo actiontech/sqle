@@ -11,7 +11,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00029(t *testing.T) {
 	ruleName := ai.SQLE00029
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	for _, sql := range []string{
 		`CREATE PROCEDURE my_procedure() BEGIN SELECT * FROM exist_db.exist_tb_1 ; END;`,

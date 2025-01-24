@@ -10,7 +10,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00072(t *testing.T) {
 	ruleName := ai.SQLE00072
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	//alter table, not drop foreign key
 	runSingleRuleInspectCase(rule, t, "alter table, not drop foreign key", DefaultMysqlInspect(), `
@@ -22,4 +22,5 @@ func TestRuleSQLE00072(t *testing.T) {
     ALTER TABLE exist_db.exist_tb_1 DROP FOREIGN KEY v1;
     `, newTestResult().addResult(ruleName))
 }
+
 // ==== Rule test code end ====

@@ -12,7 +12,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQL00095(t *testing.T) {
 	ruleName := ai.SQLE00095
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: DELETE 语句中使用 != 操作符", "DELETE FROM employees WHERE salary != 5000;",
 		session.NewAIMockContext().WithSQL("CREATE TABLE employees (id INT, name VARCHAR(50), salary INT); INSERT INTO employees VALUES (1, 'John Doe', 4000); INSERT INTO employees VALUES (2, 'Jane Doe', 6000);"),

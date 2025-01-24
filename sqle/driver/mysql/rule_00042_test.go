@@ -11,7 +11,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQL00042(t *testing.T) {
 	ruleName := ai.SQLE00042
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: CREATE TEMPORARY TABLE without prefix", "CREATE TEMPORARY TABLE test_table (id INT);",
 		nil, /*mock context*/

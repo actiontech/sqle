@@ -11,7 +11,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00218(t *testing.T) {
 	ruleName := ai.SQLE00218
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: SELECT语句中的WHERE条件包含联合索引的最左字段user_id，应通过",
 		"SELECT * FROM user_table WHERE user_id = 123;",

@@ -11,7 +11,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00051(t *testing.T) {
 	ruleName := ai.SQLE00051
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	//ALTER TABLE customers ADD COLUMN id2 INT AUTO_INCREMENT PRIMARY KEY; -- 添加列，同时追加 AUTO_INCREMENT、PRIMARY KEY
 	runAIRuleCase(rule, t, "case 0: ALTER TABLE add PRIMARY KEY without AUTO_INCREMENT to existing column",

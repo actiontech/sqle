@@ -35,7 +35,7 @@ func NewMySQLInspectOnRuleSQLE00139(t *testing.T, sql string, planTypes, tableNa
 
 func TestRuleSQLE00139(t *testing.T) {
 	ruleName := ai.SQLE00139
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 	ruleParams := []interface{}{5}
 
 	//select, no problem

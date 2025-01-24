@@ -10,7 +10,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00071(t *testing.T) {
 	ruleName := ai.SQLE00071
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	//alter table add column, no problem
 	runSingleRuleInspectCase(rule, t, "alter table add column, no problem", DefaultMysqlInspect(), `

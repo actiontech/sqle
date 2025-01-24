@@ -11,7 +11,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00108(t *testing.T) {
 	ruleName := ai.SQLE00108
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	runAIRuleCase(rule, t, "case 1: DELETE语句where中包含6层嵌套子查询",
 		"DELETE FROM exist_db.exist_tb_1 WHERE id IN (SELECT id FROM exist_db.exist_tb_1 WHERE id IN (SELECT id FROM exist_db.exist_tb_1 WHERE id IN (SELECT id FROM exist_db.exist_tb_1 WHERE id IN (SELECT id FROM exist_db.exist_tb_1 WHERE id IN (SELECT id0 FROM exist_db.exist_tb_1 WHERE id IN (SELECT id0 FROM exist_db.exist_tb_1 WHERE id1 = 'value'))))))",

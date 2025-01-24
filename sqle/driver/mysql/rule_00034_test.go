@@ -10,7 +10,7 @@ import (
 // ==== Rule test code start ====
 func TestRuleSQLE00034(t *testing.T) {
 	ruleName := ai.SQLE00034
-	rule := rulepkg.RuleHandlerMap[ruleName].Rule
+	rule := rulepkg.AIRuleHandlerMap[ruleName].Rule
 
 	// Case 1: CREATE TABLE with NOT NULL constraint but no DEFAULT clause
 	runSingleRuleInspectCase(rule, t, "Case 1", DefaultMysqlInspect(), `
