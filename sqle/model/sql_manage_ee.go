@@ -128,7 +128,11 @@ WHERE sm.deleted_at IS NULL  AND sm.project_id = ?
 
 	return sqlManageRuleTips, nil
 }
-
+/* 
+TODO 优先级：高 目的：优化SQL性能
+	1. 优化该SQL的性能，目前该SQL的性能较差，所有表都要做全表扫描。本地测试环境下，主表数据量几千条，查询耗时(4.79 sec) 接口响应时长4.99s
+	2. 该功能在SQL管理页面的使用频率较高，该SQL的性能影响较大。故优化优先级设置为高。
+ */
 func (s *Storage) GetSqlManagerRuleTips(projectID string) ([]*SqlManageRuleTips, error) {
 	sqlManageRuleTips := make([]*SqlManageRuleTips, 0)
 	err := s.db.Table("sql_manage_records oms").
