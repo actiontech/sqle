@@ -30,10 +30,11 @@ import (
 var ErrRuleTemplateNotExist = errors.New(errors.DataNotExist, fmt.Errorf("rule template not exist"))
 
 type CreateRuleTemplateReqV1 struct {
-	Name     string      `json:"rule_template_name" valid:"required,name"`
-	Desc     string      `json:"desc"`
-	DBType   string      `json:"db_type" valid:"required"`
-	RuleList []RuleReqV1 `json:"rule_list" form:"rule_list" valid:"required,dive,required"`
+	Name        string      `json:"rule_template_name" valid:"required,name"`
+	Desc        string      `json:"desc"`
+	DBType      string      `json:"db_type" valid:"required"`
+	RuleVersion string      `json:"rule_version"`
+	RuleList    []RuleReqV1 `json:"rule_list" form:"rule_list" valid:"required,dive,required"`
 }
 
 type RuleReqV1 struct {
@@ -176,10 +177,11 @@ func CreateRuleTemplate(c echo.Context) error {
 	}
 
 	ruleTemplate := &model.RuleTemplate{
-		ProjectId: model.ProjectIdForGlobalRuleTemplate,
-		Name:      req.Name,
-		Desc:      req.Desc,
-		DBType:    req.DBType,
+		ProjectId:   model.ProjectIdForGlobalRuleTemplate,
+		Name:        req.Name,
+		Desc:        req.Desc,
+		DBType:      req.DBType,
+		RuleVersion: req.RuleVersion,
 	}
 	templateRules := []model.RuleTemplateRule{}
 	templateCustomRules := []model.RuleTemplateCustomRule{}
@@ -277,10 +279,11 @@ type GetRuleTemplateResV1 struct {
 }
 
 type RuleTemplateDetailResV1 struct {
-	Name     string      `json:"rule_template_name"`
-	Desc     string      `json:"desc"`
-	DBType   string      `json:"db_type"`
-	RuleList []RuleResV1 `json:"rule_list,omitempty"`
+	Name        string      `json:"rule_template_name"`
+	Desc        string      `json:"desc"`
+	DBType      string      `json:"db_type"`
+	RuleVersion string      `json:"rule_version"`
+	RuleList    []RuleResV1 `json:"rule_list,omitempty"`
 }
 
 func convertRuleTemplateToRes(ctx context.Context, template *model.RuleTemplate) *RuleTemplateDetailResV1 {
@@ -298,10 +301,11 @@ func convertRuleTemplateToRes(ctx context.Context, template *model.RuleTemplate)
 		ruleList = append(ruleList, convertCustomRuleToRuleResV1(r.GetRule()))
 	}
 	return &RuleTemplateDetailResV1{
-		Name:     template.Name,
-		Desc:     template.Desc,
-		DBType:   template.DBType,
-		RuleList: ruleList,
+		Name:        template.Name,
+		Desc:        template.Desc,
+		DBType:      template.DBType,
+		RuleVersion: template.RuleVersion,
+		RuleList:    ruleList,
 	}
 }
 
@@ -402,9 +406,10 @@ type GetRuleTemplatesResV1 struct {
 }
 
 type RuleTemplateResV1 struct {
-	Name   string `json:"rule_template_name"`
-	Desc   string `json:"desc"`
-	DBType string `json:"db_type"`
+	Name        string `json:"rule_template_name"`
+	Desc        string `json:"desc"`
+	DBType      string `json:"db_type"`
+	RuleVersion string `json:"rule_version"`
 }
 
 // @Summary 全局规则模板列表
@@ -454,9 +459,10 @@ func convertDefaultRuleTemplatesToRes(ctx context.Context, ruleTemplates []*mode
 	ruleTemplatesReq := make([]RuleTemplateResV1, 0, len(ruleTemplates))
 	for _, ruleTemplate := range ruleTemplates {
 		ruleTemplateReq := RuleTemplateResV1{
-			Name:   ruleTemplate.Name,
-			Desc:   locale.Bundle.LocalizeMsgByCtx(ctx, locale.DefaultRuleTemplatesDesc),
-			DBType: ruleTemplate.DBType,
+			Name:        ruleTemplate.Name,
+			Desc:        locale.Bundle.LocalizeMsgByCtx(ctx, locale.DefaultRuleTemplatesDesc),
+			DBType:      ruleTemplate.DBType,
+			RuleVersion: ruleTemplate.RuleVersion,
 		}
 		ruleTemplatesReq = append(ruleTemplatesReq, ruleTemplateReq)
 	}
@@ -467,6 +473,7 @@ type GetRulesReqV1 struct {
 	FilterDBType                 string `json:"filter_db_type" query:"filter_db_type"`
 	FilterGlobalRuleTemplateName string `json:"filter_global_rule_template_name" query:"filter_global_rule_template_name"`
 	FilterRuleNames              string `json:"filter_rule_names" query:"filter_rule_names"`
+	FilterRuleVersion            string `json:"filter_rule_version" query:"filter_rule_version"`
 	FuzzyKeywordRule             string `json:"fuzzy_keyword_rule" query:"fuzzy_keyword_rule"`
 	Tags                         string `json:"tags" query:"tags"`
 }
@@ -591,6 +598,7 @@ func convertRulesToRes(ctx context.Context, rules interface{}) []RuleResV1 {
 // @Param fuzzy_keyword_rule query string false "fuzzy rule,keyword for desc and annotation"
 // @Param filter_global_rule_template_name query string false "filter global rule template name"
 // @Param filter_rule_names query string false "filter rule name list"
+// @Param filter_rule_version query string false "filter rule version"
 // @Param tags query string false "filter tags"
 // @Success 200 {object} v1.GetRulesResV1
 // @router /v1/rules [get]
@@ -608,6 +616,7 @@ func GetRules(c echo.Context) error {
 		"filter_global_rule_template_name": req.FilterGlobalRuleTemplateName,
 		"filter_db_type":                   req.FilterDBType,
 		"filter_rule_names":                req.FilterRuleNames,
+		"filter_rule_version":              req.FilterRuleVersion,
 		"fuzzy_keyword_rule":               req.FuzzyKeywordRule,
 		"tags":                             req.Tags,
 	})
@@ -687,6 +696,7 @@ type RuleTemplateTipResV1 struct {
 	ID                    string `json:"rule_template_id"`
 	Name                  string `json:"rule_template_name"`
 	DBType                string `json:"db_type"`
+	RuleVersion           string `json:"rule_version"`
 	IsDefaultRuleTemplate bool   `json:"is_default_rule_template"`
 }
 
@@ -726,6 +736,7 @@ func getRuleTemplateTips(c echo.Context, projectId string, filterDBType string) 
 			ID:                    roleTemplate.GetIDStr(),
 			Name:                  roleTemplate.Name,
 			DBType:                roleTemplate.DBType,
+			RuleVersion:           roleTemplate.RuleVersion,
 			IsDefaultRuleTemplate: isDefaultRuleTemplate,
 		}
 		ruleTemplateTipsRes = append(ruleTemplateTipsRes, ruleTemplateTipRes)
@@ -776,10 +787,11 @@ func CloneRuleTemplate(c echo.Context) error {
 	}
 
 	ruleTemplate := &model.RuleTemplate{
-		ProjectId: model.ProjectIdForGlobalRuleTemplate,
-		Name:      req.Name,
-		Desc:      req.Desc,
-		DBType:    sourceTpl.DBType,
+		ProjectId:   model.ProjectIdForGlobalRuleTemplate,
+		Name:        req.Name,
+		Desc:        req.Desc,
+		DBType:      sourceTpl.DBType,
+		RuleVersion: sourceTpl.RuleVersion,
 	}
 	err = s.Save(ruleTemplate)
 	if err != nil {
@@ -814,10 +826,11 @@ func CheckRuleTemplateCanBeBindEachInstance(s *model.Storage, tplName string, in
 }
 
 type CreateProjectRuleTemplateReqV1 struct {
-	Name     string      `json:"rule_template_name" valid:"required,name"`
-	Desc     string      `json:"desc"`
-	DBType   string      `json:"db_type" valid:"required"`
-	RuleList []RuleReqV1 `json:"rule_list" form:"rule_list" valid:"required,dive,required"`
+	Name        string      `json:"rule_template_name" valid:"required,name"`
+	Desc        string      `json:"desc"`
+	DBType      string      `json:"db_type" valid:"required"`
+	RuleVersion string      `json:"rule_version"`
+	RuleList    []RuleReqV1 `json:"rule_list" form:"rule_list" valid:"required,dive,required"`
 }
 
 // CreateProjectRuleTemplate
@@ -851,10 +864,11 @@ func CreateProjectRuleTemplate(c echo.Context) error {
 	}
 
 	ruleTemplate := &model.RuleTemplate{
-		ProjectId: model.ProjectUID(projectUid),
-		Name:      req.Name,
-		Desc:      req.Desc,
-		DBType:    req.DBType,
+		ProjectId:   model.ProjectUID(projectUid),
+		Name:        req.Name,
+		Desc:        req.Desc,
+		DBType:      req.DBType,
+		RuleVersion: req.RuleVersion,
 	}
 	templateRules := []model.RuleTemplateRule{}
 	templateCustomRules := []model.RuleTemplateCustomRule{}
@@ -980,10 +994,11 @@ type GetProjectRuleTemplateResV1 struct {
 }
 
 type RuleProjectTemplateDetailResV1 struct {
-	Name     string      `json:"rule_template_name"`
-	Desc     string      `json:"desc"`
-	DBType   string      `json:"db_type"`
-	RuleList []RuleResV1 `json:"rule_list,omitempty"`
+	Name        string      `json:"rule_template_name"`
+	Desc        string      `json:"desc"`
+	DBType      string      `json:"db_type"`
+	RuleVersion string      `json:"rule_version"`
+	RuleList    []RuleResV1 `json:"rule_list,omitempty"`
 }
 
 type ProjectRuleTemplateInstance struct {
@@ -1044,10 +1059,11 @@ func convertProjectRuleTemplateToRes(ctx context.Context, template *model.RuleTe
 		ruleList = append(ruleList, convertCustomRuleToRuleResV1(r.GetRule()))
 	}
 	return &RuleProjectTemplateDetailResV1{
-		Name:     template.Name,
-		Desc:     template.Desc,
-		DBType:   template.DBType,
-		RuleList: ruleList,
+		Name:        template.Name,
+		Desc:        template.Desc,
+		DBType:      template.DBType,
+		RuleVersion: template.RuleVersion,
+		RuleList:    ruleList,
 	}
 }
 
@@ -1244,10 +1260,11 @@ func CloneProjectRuleTemplate(c echo.Context) error {
 	// }
 
 	ruleTemplate := &model.RuleTemplate{
-		ProjectId: model.ProjectUID(projectUid),
-		Name:      req.Name,
-		Desc:      req.Desc,
-		DBType:    sourceTpl.DBType,
+		ProjectId:   model.ProjectUID(projectUid),
+		Name:        req.Name,
+		Desc:        req.Desc,
+		DBType:      sourceTpl.DBType,
+		RuleVersion: sourceTpl.RuleVersion,
 	}
 	err = s.Save(ruleTemplate)
 	if err != nil {
@@ -1298,10 +1315,11 @@ type ParseProjectRuleTemplateFileResV1 struct {
 }
 
 type ParseProjectRuleTemplateFileResDataV1 struct {
-	Name     string      `json:"name"`
-	Desc     string      `json:"desc"`
-	DBType   string      `json:"db_type"`
-	RuleList []RuleResV1 `json:"rule_list"`
+	Name        string      `json:"name"`
+	Desc        string      `json:"desc"`
+	DBType      string      `json:"db_type"`
+	RuleVersion string      `json:"rule_version"`
+	RuleList    []RuleResV1 `json:"rule_list"`
 }
 
 // ParseProjectRuleTemplateFile parse rule template
@@ -1345,8 +1363,19 @@ var ErrRule = e.New("rule has error")
 
 func checkRuleList(file *ParseProjectRuleTemplateFileResDataV1) (*RuleTemplateExportErr, error) {
 	ruleNameList := make([]string, 0, len(file.RuleList))
+	var hasNewRule, hasOldRule bool
 	for _, rule := range file.RuleList {
 		ruleNameList = append(ruleNameList, rule.Name)
+		if file.DBType == driverV2.DriverTypeMySQL {
+			hasNewRule = hasNewRule || strings.HasPrefix(rule.Name, "SQLE")
+			hasOldRule = hasOldRule || !strings.HasPrefix(rule.Name, "SQLE")
+			if hasOldRule && hasNewRule {
+				return nil, fmt.Errorf("cannot import rule template that contains both old and new rules")
+			}
+			if hasNewRule {
+				file.RuleVersion = "v2"
+			}
+		}
 	}
 
 	s := model.GetStorage()

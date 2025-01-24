@@ -8,6 +8,7 @@ import (
 	"github.com/pingcap/parser"
 	"github.com/pingcap/parser/format"
 
+	"github.com/pingcap/parser/ast"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -187,6 +188,27 @@ func TestFuncCallVisitor(t *testing.T) {
 			stmt.Accept(visitor)
 
 			assert.Equal(t, tt.conditionCount, len(visitor.FuncCallList))
+		})
+	}
+}
+
+func TestWhereStmtNotAlwaysTrue(t *testing.T) {
+	tests := []struct {
+		input string
+		want  bool
+	}{
+		{"SELECT * FROM t1 WHERE t1.id1 = t3.id3 OR t2.id2 = t1.id1", false},
+		{"SELECT * FROM t1 WHERE 1 = 1", true},
+		{"SELECT * FROM t1 WHERE t1.id1 = t1.id1", true},
+		{"SELECT * FROM t1 WHERE t1.id1 = t1.id1 OR false", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			stmt, err := parser.New().ParseOneStmt(tt.input, "", "")
+			assert.NoError(t, err)
+			got := !WhereStmtNotAlwaysTrue(stmt.(*ast.SelectStmt).Where)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

@@ -23,6 +23,7 @@ var explainColumns []string = []string{"type", "table"}
 const explainTypeAll string = "ALL"
 const drivingTable string = "exist_tb_1"
 const explainFormat string = "EXPLAIN %s"
+const showWarnings = "SHOW WARNINGS"
 
 func mockPrefixIndexOptimizeResult(caseName string, c optimizerTestContent, t *testing.T) []*OptimizeResult {
 	return mockOptimizeResultWithAdvisor(c.sql, c.maxColumn, c.queryResults, caseName, t, newPrefixIndexAdvisor)
@@ -147,6 +148,9 @@ func TestPrefixIndexOptimize(t *testing.T) {
 			{
 				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT * FROM exist_tb_1 WHERE v1 LIKE "%_set"`)),
 				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, drivingTable),
+			}, {
+				query:  regexp.QuoteMeta(showWarnings),
+				result: sqlmock.NewRows([]string{"Level", "Code", "Message"}),
 			},
 		},
 		expectResults: []*OptimizeResult{
@@ -160,6 +164,9 @@ func TestPrefixIndexOptimize(t *testing.T) {
 			{
 				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT * FROM exist_tb_1 WHERE v1 LIKE upper("_set")`)),
 				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, drivingTable),
+			}, {
+				query:  regexp.QuoteMeta(showWarnings),
+				result: sqlmock.NewRows([]string{"Level", "Code", "Message"}),
 			},
 		},
 		expectResults: []*OptimizeResult{
@@ -173,6 +180,9 @@ func TestPrefixIndexOptimize(t *testing.T) {
 			{
 				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT * FROM exist_tb_1 WHERE v1 = '_set'`)),
 				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, drivingTable),
+			}, {
+				query:  regexp.QuoteMeta(showWarnings),
+				result: sqlmock.NewRows([]string{"Level", "Code", "Message"}),
 			},
 		},
 		maxColumn: 1,
@@ -183,6 +193,9 @@ func TestPrefixIndexOptimize(t *testing.T) {
 			{
 				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT * FROM exist_tb_1`)),
 				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, drivingTable),
+			}, {
+				query:  regexp.QuoteMeta(showWarnings),
+				result: sqlmock.NewRows([]string{"Level", "Code", "Message"}),
 			},
 		},
 		maxColumn: 1,
@@ -193,6 +206,9 @@ func TestPrefixIndexOptimize(t *testing.T) {
 			{
 				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT * FROM exist_tb_1 WHERE v1 LIKE upper("_set_")`)),
 				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, drivingTable),
+			}, {
+				query:  regexp.QuoteMeta(showWarnings),
+				result: sqlmock.NewRows([]string{"Level", "Code", "Message"}),
 			},
 		},
 		maxColumn: 1,
@@ -208,6 +224,9 @@ func TestFunctionIndexOptimize(t *testing.T) {
 			{
 				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT v1 FROM exist_tb_1 WHERE LOWER(v1) = "s"`)),
 				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, drivingTable),
+			}, {
+				query:  regexp.QuoteMeta(showWarnings),
+				result: sqlmock.NewRows([]string{"Level", "Code", "Message"}),
 			}, {
 				query:  regexp.QuoteMeta("SHOW GLOBAL VARIABLES LIKE 'version'"),
 				result: sqlmock.NewRows([]string{"Value"}).AddRow("8.0.13"),
@@ -225,6 +244,9 @@ func TestFunctionIndexOptimize(t *testing.T) {
 				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT v1 FROM exist_tb_1 WHERE LOWER(v1) = "s"`)),
 				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, drivingTable),
 			}, {
+				query:  regexp.QuoteMeta(showWarnings),
+				result: sqlmock.NewRows([]string{"Level", "Code", "Message"}),
+			}, {
 				query:  regexp.QuoteMeta("SHOW GLOBAL VARIABLES LIKE 'version'"),
 				result: sqlmock.NewRows([]string{"Value"}).AddRow("5.7.1"),
 			},
@@ -241,6 +263,9 @@ func TestFunctionIndexOptimize(t *testing.T) {
 				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT v1 FROM exist_tb_1 WHERE LOWER(v1) = "s"`)),
 				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, drivingTable),
 			}, {
+				query:  regexp.QuoteMeta(showWarnings),
+				result: sqlmock.NewRows([]string{"Level", "Code", "Message"}),
+			}, {
 				query:  regexp.QuoteMeta("SHOW GLOBAL VARIABLES LIKE 'version'"),
 				result: sqlmock.NewRows([]string{"Value"}).AddRow("5.2.1"),
 			},
@@ -254,6 +279,9 @@ func TestFunctionIndexOptimize(t *testing.T) {
 				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT v1 FROM exist_tb_1 WHERE v1 = "s"`)),
 				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, drivingTable),
 			}, {
+				query:  regexp.QuoteMeta(showWarnings),
+				result: sqlmock.NewRows([]string{"Level", "Code", "Message"}),
+			}, {
 				query:  regexp.QuoteMeta("SHOW GLOBAL VARIABLES LIKE 'version'"),
 				result: sqlmock.NewRows([]string{"Value"}).AddRow("5.2.1"),
 			},
@@ -266,6 +294,9 @@ func TestFunctionIndexOptimize(t *testing.T) {
 			{
 				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT v1 FROM exist_tb_1 WHERE LOWER(v1) = "s"`)),
 				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, drivingTable),
+			}, {
+				query:  regexp.QuoteMeta(showWarnings),
+				result: sqlmock.NewRows([]string{"Level", "Code", "Message"}),
 			}, {
 				query:  regexp.QuoteMeta("SHOW GLOBAL VARIABLES LIKE 'version'"),
 				result: sqlmock.NewRows([]string{"Value"}).AddRow("?,?,?"),
@@ -282,6 +313,9 @@ func TestFunctionIndexOptimize(t *testing.T) {
 			{
 				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT v1 FROM exist_tb_1`)),
 				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, drivingTable),
+			}, {
+				query:  regexp.QuoteMeta(showWarnings),
+				result: sqlmock.NewRows([]string{"Level", "Code", "Message"}),
 			},
 		},
 		maxColumn: 4,
@@ -297,6 +331,9 @@ func TestThreeStarOptimize(t *testing.T) {
 			{
 				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT v1,v2 FROM exist_tb_3 WHERE v1 = "s" ORDER BY v3`)),
 				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, "exist_tb_3"),
+			}, {
+				query:  regexp.QuoteMeta(showWarnings),
+				result: sqlmock.NewRows([]string{"Level", "Code", "Message"}),
 			}, {
 				query:  regexp.QuoteMeta(`SELECT COUNT`), // 组成请求的来源包含map，会导致query的形式随机
 				result: sqlmock.NewRows([]string{"id", "v1", "v2", "v3"}).AddRow(100, 70.12, 80.98, 34.2),
@@ -314,6 +351,9 @@ func TestThreeStarOptimize(t *testing.T) {
 				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT id,v1,v2,v3 FROM exist_tb_3 WHERE v1 = "s" ORDER BY v3`)),
 				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, "exist_tb_3"),
 			}, {
+				query:  regexp.QuoteMeta(showWarnings),
+				result: sqlmock.NewRows([]string{"Level", "Code", "Message"}),
+			}, {
 				query:  regexp.QuoteMeta(`SELECT COUNT`),
 				result: sqlmock.NewRows([]string{"v1", "v3", "id", "v2"}).AddRow(100.00, 23.56, 70.12, 80.98),
 			},
@@ -329,6 +369,9 @@ func TestThreeStarOptimize(t *testing.T) {
 			{
 				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT id,v1,v2,v3 FROM exist_tb_3 WHERE v1 = "s" ORDER BY v3`)),
 				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, "exist_tb_3"),
+			}, {
+				query:  regexp.QuoteMeta(showWarnings),
+				result: sqlmock.NewRows([]string{"Level", "Code", "Message"}),
 			}, {
 				query:  regexp.QuoteMeta(`SELECT COUNT`),
 				result: sqlmock.NewRows([]string{"id", "v1", "v2", "v3"}).AddRow(100.00, 23.56, 70.12, 80.98),
@@ -346,6 +389,9 @@ func TestThreeStarOptimize(t *testing.T) {
 				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT id,v1,v2,v3 FROM exist_tb_3 WHERE v1 = "s" AND v2 = "s" AND id = 20 ORDER BY v3`)),
 				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, "exist_tb_3"),
 			}, {
+				query:  regexp.QuoteMeta(showWarnings),
+				result: sqlmock.NewRows([]string{"Level", "Code", "Message"}),
+			}, {
 				query:  regexp.QuoteMeta(`SELECT COUNT`),
 				result: sqlmock.NewRows([]string{"id", "v1", "v2", "v3"}).AddRow(100.00, 23.56, 70.12, 80.98),
 			},
@@ -361,6 +407,9 @@ func TestThreeStarOptimize(t *testing.T) {
 			{
 				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT id,v1,v2,v3 FROM exist_tb_3 WHERE v1 = "s" AND v2 = "s" AND id = 20 ORDER BY v2`)),
 				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, "exist_tb_3"),
+			}, {
+				query:  regexp.QuoteMeta(showWarnings),
+				result: sqlmock.NewRows([]string{"Level", "Code", "Message"}),
 			}, {
 				query:  regexp.QuoteMeta(`SELECT COUNT`),
 				result: sqlmock.NewRows([]string{"id", "v1", "v2", "v3"}).AddRow(100.00, 23.56, 70.12, 80.98),
@@ -378,6 +427,9 @@ func TestThreeStarOptimize(t *testing.T) {
 				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT id,v1,v2,v3 FROM exist_tb_3 WHERE v1 = "s" AND v2 = "s" AND id <= 20 ORDER BY v3`)),
 				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, "exist_tb_3"),
 			}, {
+				query:  regexp.QuoteMeta(showWarnings),
+				result: sqlmock.NewRows([]string{"Level", "Code", "Message"}),
+			}, {
 				query:  regexp.QuoteMeta(`SELECT COUNT`),
 				result: sqlmock.NewRows([]string{"id", "v1", "v2", "v3"}).AddRow(100.00, 23.56, 70.12, 80.98),
 			},
@@ -394,6 +446,9 @@ func TestThreeStarOptimize(t *testing.T) {
 				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT id,v1,v2,v3 FROM exist_tb_3 WHERE v1 = "s" AND v3 = "6" AND v2 = "s" OR id = 3 ORDER BY v3`)),
 				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, "exist_tb_3"),
 			}, {
+				query:  regexp.QuoteMeta(showWarnings),
+				result: sqlmock.NewRows([]string{"Level", "Code", "Message"}),
+			}, {
 				query:  regexp.QuoteMeta(`SELECT COUNT`),
 				result: sqlmock.NewRows([]string{"id", "v1", "v2", "v3"}).AddRow(100.00, 23.56, 70.12, 80.98),
 			},
@@ -406,6 +461,9 @@ func TestThreeStarOptimize(t *testing.T) {
 			{
 				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT id,v1,v2,v3 FROM exist_tb_3 WHERE v1 = "s" AND v3 = "6" AND v2 = "s" OR id = 3 ORDER BY v3`)),
 				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, "exist_tb_3"),
+			}, {
+				query:  regexp.QuoteMeta(showWarnings),
+				result: sqlmock.NewRows([]string{"Level", "Code", "Message"}),
 			}, {
 				query:  regexp.QuoteMeta(`SELECT COUNT`),
 				result: sqlmock.NewRows([]string{"id", "v1", "v2", "v3"}).AddRow(100.00, 23.56, 70.12, 80.98),
@@ -423,6 +481,9 @@ func TestThreeStarOptimize(t *testing.T) {
 				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT * FROM exist_tb_3 WHERE v1 = "s" AND v3 = "6" AND v2 = "s" OR id = 3 ORDER BY v3`)),
 				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, "exist_tb_3"),
 			}, {
+				query:  regexp.QuoteMeta(showWarnings),
+				result: sqlmock.NewRows([]string{"Level", "Code", "Message"}),
+			}, {
 				query:  regexp.QuoteMeta(`SELECT COUNT`),
 				result: sqlmock.NewRows([]string{"id", "v1", "v2", "v3"}).AddRow(100.00, 23.56, 70.12, 80.98),
 			},
@@ -438,6 +499,9 @@ func TestThreeStarOptimize(t *testing.T) {
 			{
 				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT id,v1,v2,v3 FROM exist_tb_10 WHERE (v1 in (1,2,3,4,5,6))`)),
 				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, "exist_tb_10"),
+			}, {
+				query:  regexp.QuoteMeta(showWarnings),
+				result: sqlmock.NewRows([]string{"Level", "Code", "Message"}),
 			}, {
 				query:  regexp.QuoteMeta(`SELECT COUNT`),
 				result: sqlmock.NewRows([]string{"id", "v1", "v2", "v3", "v4", "v5"}).AddRow(100.00, 23.56, 70.12, 80.98, 23.4, 21.2),
@@ -455,6 +519,9 @@ func TestThreeStarOptimize(t *testing.T) {
 				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT id,v1,v2 FROM exist_tb_10 WHERE v3 = "text" AND v1 in (1,2,3,4,5,6)`)),
 				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, "exist_tb_10"),
 			}, {
+				query:  regexp.QuoteMeta(showWarnings),
+				result: sqlmock.NewRows([]string{"Level", "Code", "Message"}),
+			}, {
 				query:  regexp.QuoteMeta(`SELECT COUNT`),
 				result: sqlmock.NewRows([]string{"id", "v1", "v2", "v3", "v4", "v5"}).AddRow(100.00, 23.56, 70.12, 80.98, 23.4, 21.2),
 			},
@@ -470,6 +537,9 @@ func TestThreeStarOptimize(t *testing.T) {
 			{
 				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT id,v1,v2 FROM exist_tb_10 WHERE v5 = 1 AND v1 in (1,2,3,4,5,6)`)),
 				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, "exist_tb_10"),
+			}, {
+				query:  regexp.QuoteMeta(showWarnings),
+				result: sqlmock.NewRows([]string{"Level", "Code", "Message"}),
 			}, {
 				query:  regexp.QuoteMeta(`SELECT COUNT`),
 				result: sqlmock.NewRows([]string{"id", "v1", "v2", "v3", "v4", "v5"}).AddRow(100.00, 23.56, 70.12, 2, 23.4, 2),
@@ -487,6 +557,9 @@ func TestThreeStarOptimize(t *testing.T) {
 				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT t10.id,t10.v1,t10.v2,t3.v3 FROM exist_tb_10 t10 LEFT JOIN exist_tb_3 t3 ON t10.id = t3.id WHERE t10.v5 = t3.v3 AND t10.v1 in (1,2,3,4,5,6)`)),
 				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, "exist_tb_10"),
 			}, {
+				query:  regexp.QuoteMeta(showWarnings),
+				result: sqlmock.NewRows([]string{"Level", "Code", "Message"}),
+			}, {
 				query:  regexp.QuoteMeta(`SELECT COUNT`),
 				result: sqlmock.NewRows([]string{"id", "v1", "v2", "v3", "v4", "v5"}).AddRow(100.00, 23.56, 70.12, 2, 23.4, 30.1),
 			},
@@ -503,6 +576,9 @@ func TestThreeStarOptimize(t *testing.T) {
 				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT v1 FROM exist_tb_1 where v2 IN (SELECT v2 FROM exist_tb_10 WHERE id > 10);`)),
 				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, "exist_tb_10"),
 			}, {
+				query:  regexp.QuoteMeta(showWarnings),
+				result: sqlmock.NewRows([]string{"Level", "Code", "Message"}),
+			}, {
 				query:  regexp.QuoteMeta(`SELECT COUNT`),
 				result: sqlmock.NewRows([]string{"id", "v1", "v2", "v3", "v4", "v5"}).AddRow(100.00, 23.56, 70.12, 2, 23.4, 30.1),
 			},
@@ -515,6 +591,9 @@ func TestThreeStarOptimize(t *testing.T) {
 			{
 				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT v5,t1.* FROM exist_tb_1 t1 LEFT JOIN exist_tb_10 t10 on t1.id = t10.id;`)),
 				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, "exist_tb_10"),
+			}, {
+				query:  regexp.QuoteMeta(showWarnings),
+				result: sqlmock.NewRows([]string{"Level", "Code", "Message"}),
 			}, {
 				query:  regexp.QuoteMeta(`SELECT COUNT`),
 				result: sqlmock.NewRows([]string{"id", "v1", "v2", "v3", "v4", "v5"}).AddRow(100.00, 23.56, 70.12, 2, 23.4, 30.1),
@@ -531,6 +610,9 @@ func TestThreeStarOptimize(t *testing.T) {
 			{
 				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT v5,t11.* FROM exist_tb_1 t1 LEFT JOIN exist_tb_11 t11 on t1.id = t11.id;`)),
 				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, "exist_tb_11"),
+			}, {
+				query:  regexp.QuoteMeta(showWarnings),
+				result: sqlmock.NewRows([]string{"Level", "Code", "Message"}),
 			}, {
 				query:  regexp.QuoteMeta(`SELECT COUNT`),
 				result: sqlmock.NewRows([]string{"id", "create_time", "upgrade_time", "year_time", "data_time", "data_time2"}).AddRow(100.00, 78.56, 72.12, 12.0, 67.9, 45.1),
@@ -552,6 +634,9 @@ func TestExtremalOptimize(t *testing.T) {
 			{
 				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT MIN(v3),MAX(v2) FROM exist_tb_1 WHERE v1 = "s" GROUP BY v2`)),
 				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, drivingTable),
+			}, {
+				query:  regexp.QuoteMeta(showWarnings),
+				result: sqlmock.NewRows([]string{"Level", "Code", "Message"}),
 			},
 		},
 		expectResults: []*OptimizeResult{
@@ -566,6 +651,9 @@ func TestExtremalOptimize(t *testing.T) {
 			{
 				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT v1,MIN(v2) FROM exist_tb_1 WHERE v1 = "s" GROUP BY v1`)),
 				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, drivingTable),
+			}, {
+				query:  regexp.QuoteMeta(showWarnings),
+				result: sqlmock.NewRows([]string{"Level", "Code", "Message"}),
 			},
 		},
 		expectResults: []*OptimizeResult{
@@ -579,6 +667,9 @@ func TestExtremalOptimize(t *testing.T) {
 			{
 				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT MAX(v1),MIN(v2) FROM exist_tb_1 WHERE v1 = "s" GROUP BY v1`)),
 				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, drivingTable),
+			}, {
+				query:  regexp.QuoteMeta(showWarnings),
+				result: sqlmock.NewRows([]string{"Level", "Code", "Message"}),
 			},
 		},
 		expectResults: []*OptimizeResult{
@@ -592,6 +683,9 @@ func TestExtremalOptimize(t *testing.T) {
 			{
 				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT v1,v2 FROM exist_tb_1 WHERE v1 = "s" GROUP BY v1`)),
 				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, drivingTable),
+			}, {
+				query:  regexp.QuoteMeta(showWarnings),
+				result: sqlmock.NewRows([]string{"Level", "Code", "Message"}),
 			},
 		},
 		maxColumn: 4,
@@ -602,6 +696,9 @@ func TestExtremalOptimize(t *testing.T) {
 			{
 				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT MAX(v1) FROM exist_tb_1 WHERE v1 = "s" GROUP BY v1`)),
 				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, drivingTable),
+			}, {
+				query:  regexp.QuoteMeta(showWarnings),
+				result: sqlmock.NewRows([]string{"Level", "Code", "Message"}),
 			},
 		},
 		maxColumn: 1,
@@ -617,6 +714,9 @@ func TestJoinOptimize(t *testing.T) {
 			{
 				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT t1.v1, t1.v2 FROM exist_tb_1 t1 JOIN exist_tb_2 t2 ON t1.v1 = t2.v1 WHERE t1.v1 = "s"`)),
 				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, "t1").AddRow(explainTypeAll, "t2"),
+			}, {
+				query:  regexp.QuoteMeta(showWarnings),
+				result: sqlmock.NewRows([]string{"Level", "Code", "Message"}),
 			},
 		},
 		maxColumn: 1,
@@ -630,6 +730,9 @@ func TestJoinOptimize(t *testing.T) {
 			{
 				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT t1.v1, t1.v2 FROM exist_tb_1 t1 JOIN exist_tb_2 t2 USING(v1) WHERE t1.v1 = "s"`)),
 				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, "t1").AddRow(explainTypeAll, "t2"),
+			}, {
+				query:  regexp.QuoteMeta(showWarnings),
+				result: sqlmock.NewRows([]string{"Level", "Code", "Message"}),
 			},
 		},
 		maxColumn: 1,
@@ -643,6 +746,9 @@ func TestJoinOptimize(t *testing.T) {
 			{
 				query:  regexp.QuoteMeta(fmt.Sprintf(explainFormat, `SELECT t1.v1, t1.v2 FROM exist_tb_1 t1 JOIN exist_tb_2 t2 WHERE t1.v1 = "s"`)),
 				result: sqlmock.NewRows(explainColumns).AddRow(explainTypeAll, "t1").AddRow(explainTypeAll, "t2"),
+			}, {
+				query:  regexp.QuoteMeta(showWarnings),
+				result: sqlmock.NewRows([]string{"Level", "Code", "Message"}),
 			},
 		},
 		maxColumn: 1,
