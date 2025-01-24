@@ -589,7 +589,10 @@ func InitializeMockContext(e *executor.Executor, context *AIMockContext) (*Conte
 		}
 	}
 	for tableName, sizeGB := range context.tableSize {
-		ctx.SetTableSize(ctx.currentSchema, tableName, sizeGB*1024 /*size MB*/)
+		err := ctx.SetTableSize(ctx.currentSchema, tableName, sizeGB*1024 /*size MB*/)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return ctx, nil
 }
