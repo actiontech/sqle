@@ -7,13 +7,14 @@ import (
 	"encoding/json"
 	e "errors"
 	"fmt"
-	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
-	"github.com/nicksnyder/go-i18n/v2/i18n"
-	"golang.org/x/text/language"
 	"io"
 	"mime"
 	"net/http"
 	"strings"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
+	"golang.org/x/text/language"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/dms"
@@ -1539,6 +1540,10 @@ func parseRuleCategory(csvRule []string) map[string][]string {
 		auditAccuracyIds := getAuditRuleCategoryIds(strings.Split(csvRule[7], " "))
 		categories[plocale.RuleCategoryAuditAccuracy.ID] = auditAccuracyIds
 	}
+	if csvRule[8] != "" {
+		audit_performance_level_ids := getAuditRuleCategoryIds(strings.Split(csvRule[8], " "))
+		categories[plocale.RuleCategoryAuditPerformanceLevel.ID] = audit_performance_level_ids
+	}
 	return categories
 }
 
@@ -1670,6 +1675,7 @@ func exportTemplateFile(c echo.Context, exportType ExportType, templateFile inte
 			locale.Bundle.LocalizeMsgByCtx(ctx, plocale.RuleCategoryAuditPurpose),
 			locale.Bundle.LocalizeMsgByCtx(ctx, plocale.RuleCategorySQL),
 			locale.Bundle.LocalizeMsgByCtx(ctx, plocale.RuleCategoryAuditAccuracy),
+			locale.Bundle.LocalizeMsgByCtx(ctx, plocale.RuleCategoryAuditPerformanceLevel),
 			locale.Bundle.LocalizeMsgByCtx(ctx, locale.RuleTemplateInstType),
 			locale.Bundle.LocalizeMsgByCtx(ctx, locale.RuleTemplateRuleParam),
 		}
@@ -1689,6 +1695,7 @@ func exportTemplateFile(c echo.Context, exportType ExportType, templateFile inte
 				strings.Join(ruleTemplateInfo.Categories[plocale.RuleCategoryAuditPurpose.ID], " "),
 				strings.Join(ruleTemplateInfo.Categories[plocale.RuleCategorySQL.ID], " "),
 				strings.Join(ruleTemplateInfo.Categories[plocale.RuleCategoryAuditAccuracy.ID], " "),
+				strings.Join(ruleTemplateInfo.Categories[plocale.RuleCategoryAuditPerformanceLevel.ID], " "),
 				ruleTemplateInfo.DBType,
 				string(paramsBytes),
 			}, nil
@@ -1898,67 +1905,71 @@ func getRuleTemplateFile(ctx context.Context, projectID string, ruleTemplateName
 }
 
 var ruleCategoryMapping = map[string]*i18n.Message{
-	plocale.RuleCategoryOperand.ID:       plocale.RuleCategoryOperand,
-	plocale.RuleCategorySQL.ID:           plocale.RuleCategorySQL,
-	plocale.RuleCategoryAuditPurpose.ID:  plocale.RuleCategoryAuditPurpose,
-	plocale.RuleCategoryAuditAccuracy.ID: plocale.RuleCategoryAuditAccuracy,
-	plocale.RuleTagDatabase.ID:           plocale.RuleTagDatabase,
-	plocale.RuleTagTablespace.ID:         plocale.RuleTagTablespace,
-	plocale.RuleTagTable.ID:              plocale.RuleTagTable,
-	plocale.RuleTagColumn.ID:             plocale.RuleTagColumn,
-	plocale.RuleTagIndex.ID:              plocale.RuleTagIndex,
-	plocale.RuleTagView.ID:               plocale.RuleTagView,
-	plocale.RuleTagProcedure.ID:          plocale.RuleTagProcedure,
-	plocale.RuleTagFunction.ID:           plocale.RuleTagFunction,
-	plocale.RuleTagTrigger.ID:            plocale.RuleTagTrigger,
-	plocale.RuleTagEvent.ID:              plocale.RuleTagEvent,
-	plocale.RuleTagUser.ID:               plocale.RuleTagUser,
-	plocale.RuleTagDML.ID:                plocale.RuleTagDML,
-	plocale.RuleTagDDL.ID:                plocale.RuleTagDDL,
-	plocale.RuleTagDCL.ID:                plocale.RuleTagDCL,
-	plocale.RuleTagIntegrity.ID:          plocale.RuleTagIntegrity,
-	plocale.RuleTagQuery.ID:              plocale.RuleTagQuery,
-	plocale.RuleTagTransaction.ID:        plocale.RuleTagTransaction,
-	plocale.RuleTagPrivilege.ID:          plocale.RuleTagPrivilege,
-	plocale.RuleTagManagement.ID:         plocale.RuleTagManagement,
-	plocale.RuleTagPerformance.ID:        plocale.RuleTagPerformance,
-	plocale.RuleTagMaintenance.ID:        plocale.RuleTagMaintenance,
-	plocale.RuleTagSecurity.ID:           plocale.RuleTagSecurity,
-	plocale.RuleTagCorrection.ID:         plocale.RuleTagCorrection,
-	plocale.RuleTagOnline.ID:             plocale.RuleTagOnline,
-	plocale.RuleTagOffline.ID:            plocale.RuleTagOffline,
+	plocale.RuleCategoryOperand.ID:               plocale.RuleCategoryOperand,
+	plocale.RuleCategorySQL.ID:                   plocale.RuleCategorySQL,
+	plocale.RuleCategoryAuditPurpose.ID:          plocale.RuleCategoryAuditPurpose,
+	plocale.RuleCategoryAuditAccuracy.ID:         plocale.RuleCategoryAuditAccuracy,
+	plocale.RuleCategoryAuditPerformanceLevel.ID: plocale.RuleCategoryAuditPerformanceLevel,
+	plocale.RuleTagDatabase.ID:                   plocale.RuleTagDatabase,
+	plocale.RuleTagTablespace.ID:                 plocale.RuleTagTablespace,
+	plocale.RuleTagTable.ID:                      plocale.RuleTagTable,
+	plocale.RuleTagColumn.ID:                     plocale.RuleTagColumn,
+	plocale.RuleTagIndex.ID:                      plocale.RuleTagIndex,
+	plocale.RuleTagView.ID:                       plocale.RuleTagView,
+	plocale.RuleTagProcedure.ID:                  plocale.RuleTagProcedure,
+	plocale.RuleTagFunction.ID:                   plocale.RuleTagFunction,
+	plocale.RuleTagTrigger.ID:                    plocale.RuleTagTrigger,
+	plocale.RuleTagEvent.ID:                      plocale.RuleTagEvent,
+	plocale.RuleTagUser.ID:                       plocale.RuleTagUser,
+	plocale.RuleTagDML.ID:                        plocale.RuleTagDML,
+	plocale.RuleTagDDL.ID:                        plocale.RuleTagDDL,
+	plocale.RuleTagDCL.ID:                        plocale.RuleTagDCL,
+	plocale.RuleTagIntegrity.ID:                  plocale.RuleTagIntegrity,
+	plocale.RuleTagQuery.ID:                      plocale.RuleTagQuery,
+	plocale.RuleTagTransaction.ID:                plocale.RuleTagTransaction,
+	plocale.RuleTagPrivilege.ID:                  plocale.RuleTagPrivilege,
+	plocale.RuleTagManagement.ID:                 plocale.RuleTagManagement,
+	plocale.RuleTagPerformance.ID:                plocale.RuleTagPerformance,
+	plocale.RuleTagMaintenance.ID:                plocale.RuleTagMaintenance,
+	plocale.RuleTagSecurity.ID:                   plocale.RuleTagSecurity,
+	plocale.RuleTagCorrection.ID:                 plocale.RuleTagCorrection,
+	plocale.RuleTagOnline.ID:                     plocale.RuleTagOnline,
+	plocale.RuleTagOffline.ID:                    plocale.RuleTagOffline,
+	plocale.RuleTagPerformanceHigh.ID:            plocale.RuleTagPerformanceHigh,
 }
 
 var ruleCategoryReversedMapping = map[string]string{
-	plocale.RuleCategoryOperand.Other:       plocale.RuleCategoryOperand.ID,
-	plocale.RuleCategorySQL.Other:           plocale.RuleCategorySQL.ID,
-	plocale.RuleCategoryAuditPurpose.Other:  plocale.RuleCategoryAuditPurpose.ID,
-	plocale.RuleCategoryAuditAccuracy.Other: plocale.RuleCategoryAuditAccuracy.ID,
-	plocale.RuleTagDatabase.Other:           plocale.RuleTagDatabase.ID,
-	plocale.RuleTagTablespace.Other:         plocale.RuleTagTablespace.ID,
-	plocale.RuleTagTable.Other:              plocale.RuleTagTable.ID,
-	plocale.RuleTagColumn.Other:             plocale.RuleTagColumn.ID,
-	plocale.RuleTagIndex.Other:              plocale.RuleTagIndex.ID,
-	plocale.RuleTagView.Other:               plocale.RuleTagView.ID,
-	plocale.RuleTagProcedure.Other:          plocale.RuleTagProcedure.ID,
-	plocale.RuleTagFunction.Other:           plocale.RuleTagFunction.ID,
-	plocale.RuleTagTrigger.Other:            plocale.RuleTagTrigger.ID,
-	plocale.RuleTagEvent.Other:              plocale.RuleTagEvent.ID,
-	plocale.RuleTagUser.Other:               plocale.RuleTagUser.ID,
-	plocale.RuleTagDML.Other:                plocale.RuleTagDML.ID,
-	plocale.RuleTagDDL.Other:                plocale.RuleTagDDL.ID,
-	plocale.RuleTagDCL.Other:                plocale.RuleTagDCL.ID,
-	plocale.RuleTagIntegrity.Other:          plocale.RuleTagIntegrity.ID,
-	plocale.RuleTagQuery.Other:              plocale.RuleTagQuery.ID,
-	plocale.RuleTagTransaction.Other:        plocale.RuleTagTransaction.ID,
-	plocale.RuleTagPrivilege.Other:          plocale.RuleTagPrivilege.ID,
-	plocale.RuleTagManagement.Other:         plocale.RuleTagManagement.ID,
-	plocale.RuleTagPerformance.Other:        plocale.RuleTagPerformance.ID,
-	plocale.RuleTagMaintenance.Other:        plocale.RuleTagMaintenance.ID,
-	plocale.RuleTagSecurity.Other:           plocale.RuleTagSecurity.ID,
-	plocale.RuleTagCorrection.Other:         plocale.RuleTagCorrection.ID,
-	plocale.RuleTagOnline.Other:             plocale.RuleTagOnline.ID,
-	plocale.RuleTagOffline.Other:            plocale.RuleTagOffline.ID,
+	plocale.RuleCategoryOperand.Other:               plocale.RuleCategoryOperand.ID,
+	plocale.RuleCategorySQL.Other:                   plocale.RuleCategorySQL.ID,
+	plocale.RuleCategoryAuditPurpose.Other:          plocale.RuleCategoryAuditPurpose.ID,
+	plocale.RuleCategoryAuditAccuracy.Other:         plocale.RuleCategoryAuditAccuracy.ID,
+	plocale.RuleCategoryAuditPerformanceLevel.Other: plocale.RuleCategoryAuditPerformanceLevel.ID,
+	plocale.RuleTagDatabase.Other:                   plocale.RuleTagDatabase.ID,
+	plocale.RuleTagTablespace.Other:                 plocale.RuleTagTablespace.ID,
+	plocale.RuleTagTable.Other:                      plocale.RuleTagTable.ID,
+	plocale.RuleTagColumn.Other:                     plocale.RuleTagColumn.ID,
+	plocale.RuleTagIndex.Other:                      plocale.RuleTagIndex.ID,
+	plocale.RuleTagView.Other:                       plocale.RuleTagView.ID,
+	plocale.RuleTagProcedure.Other:                  plocale.RuleTagProcedure.ID,
+	plocale.RuleTagFunction.Other:                   plocale.RuleTagFunction.ID,
+	plocale.RuleTagTrigger.Other:                    plocale.RuleTagTrigger.ID,
+	plocale.RuleTagEvent.Other:                      plocale.RuleTagEvent.ID,
+	plocale.RuleTagUser.Other:                       plocale.RuleTagUser.ID,
+	plocale.RuleTagDML.Other:                        plocale.RuleTagDML.ID,
+	plocale.RuleTagDDL.Other:                        plocale.RuleTagDDL.ID,
+	plocale.RuleTagDCL.Other:                        plocale.RuleTagDCL.ID,
+	plocale.RuleTagIntegrity.Other:                  plocale.RuleTagIntegrity.ID,
+	plocale.RuleTagQuery.Other:                      plocale.RuleTagQuery.ID,
+	plocale.RuleTagTransaction.Other:                plocale.RuleTagTransaction.ID,
+	plocale.RuleTagPrivilege.Other:                  plocale.RuleTagPrivilege.ID,
+	plocale.RuleTagManagement.Other:                 plocale.RuleTagManagement.ID,
+	plocale.RuleTagPerformance.Other:                plocale.RuleTagPerformance.ID,
+	plocale.RuleTagMaintenance.Other:                plocale.RuleTagMaintenance.ID,
+	plocale.RuleTagSecurity.Other:                   plocale.RuleTagSecurity.ID,
+	plocale.RuleTagCorrection.Other:                 plocale.RuleTagCorrection.ID,
+	plocale.RuleTagOnline.Other:                     plocale.RuleTagOnline.ID,
+	plocale.RuleTagOffline.Other:                    plocale.RuleTagOffline.ID,
+	plocale.RuleTagPerformanceHigh.Other:            plocale.RuleTagPerformanceHigh.ID,
 }
 
 type CustomRuleResV1 struct {

@@ -6,14 +6,15 @@ import (
 	sqlDriver "database/sql/driver"
 	"encoding/json"
 	"fmt"
-	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
-	"golang.org/x/text/language"
 	"reflect"
 	"strconv"
 	"strings"
 	"sync"
 	"text/template"
 	"time"
+
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
+	"golang.org/x/text/language"
 
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
@@ -263,10 +264,11 @@ func (s *Storage) CreateRuleCategories() error {
 		return errors.New(errors.ConnectStorageError, err)
 	}
 	categoryTagMap := map[string][]string{
-		plocale.RuleCategoryOperand.ID:       {plocale.RuleTagDatabase.ID, plocale.RuleTagTablespace.ID, plocale.RuleTagTable.ID, plocale.RuleTagColumn.ID, plocale.RuleTagIndex.ID, plocale.RuleTagView.ID, plocale.RuleTagProcedure.ID, plocale.RuleTagFunction.ID, plocale.RuleTagTrigger.ID, plocale.RuleTagEvent.ID, plocale.RuleTagUser.ID},
-		plocale.RuleCategorySQL.ID:           {plocale.RuleTagDML.ID, plocale.RuleTagDDL.ID, plocale.RuleTagDCL.ID, plocale.RuleTagIntegrity.ID, plocale.RuleTagQuery.ID, plocale.RuleTagTransaction.ID, plocale.RuleTagPrivilege.ID, plocale.RuleTagManagement.ID},
-		plocale.RuleCategoryAuditPurpose.ID:  {plocale.RuleTagPerformance.ID, plocale.RuleTagMaintenance.ID, plocale.RuleTagSecurity.ID, plocale.RuleTagCorrection.ID},
-		plocale.RuleCategoryAuditAccuracy.ID: {plocale.RuleTagOnline.ID, plocale.RuleTagOffline.ID},
+		plocale.RuleCategoryOperand.ID:               {plocale.RuleTagDatabase.ID, plocale.RuleTagTablespace.ID, plocale.RuleTagTable.ID, plocale.RuleTagColumn.ID, plocale.RuleTagIndex.ID, plocale.RuleTagView.ID, plocale.RuleTagProcedure.ID, plocale.RuleTagFunction.ID, plocale.RuleTagTrigger.ID, plocale.RuleTagEvent.ID, plocale.RuleTagUser.ID},
+		plocale.RuleCategorySQL.ID:                   {plocale.RuleTagDML.ID, plocale.RuleTagDDL.ID, plocale.RuleTagDCL.ID, plocale.RuleTagIntegrity.ID, plocale.RuleTagQuery.ID, plocale.RuleTagTransaction.ID, plocale.RuleTagPrivilege.ID, plocale.RuleTagManagement.ID},
+		plocale.RuleCategoryAuditPurpose.ID:          {plocale.RuleTagPerformance.ID, plocale.RuleTagMaintenance.ID, plocale.RuleTagSecurity.ID, plocale.RuleTagCorrection.ID},
+		plocale.RuleCategoryAuditAccuracy.ID:         {plocale.RuleTagOnline.ID, plocale.RuleTagOffline.ID},
+		plocale.RuleCategoryAuditPerformanceLevel.ID: {plocale.RuleTagPerformanceHigh.ID},
 	}
 	for category, tags := range categoryTagMap {
 		for _, tag := range tags {
