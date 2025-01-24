@@ -243,33 +243,46 @@ func (s *Storage) GetManageSQLById(id string) (*SQLManageRecord, bool, error) {
 	return sql, true, nil
 }
 
-func (s *Storage) GetManagerSQLListByAuditPlanId(apId uint) ([]*SQLManageRecord, error) {
+// 获取指定扫描任务下的所有SQL
+func (s *Storage) GetManagerSQLListByAuditPlanId(auditPlanID uint) ([]*SQLManageRecord, error) {
 	sqls := []*SQLManageRecord{}
-	err := s.db.Joins("JOIN audit_plans_v2 ON sql_manage_records.source_id = audit_plans_v2.instance_audit_plan_id AND sql_manage_records.source = audit_plans_v2.type").
-		Where("audit_plans_v2.id = ?", apId).
+	err := s.db.Joins(`
+		JOIN audit_plans_v2 ON sql_manage_records.source_id = CONCAT(audit_plans_v2.instance_audit_plan_id, '')
+		AND sql_manage_records.source = audit_plans_v2.type`).
+		Where("audit_plans_v2.id = ?", auditPlanID).
 		Find(&sqls).Error
-	return sqls, err
+	if err != nil {
+		return nil, err
+	}
+	return sqls, nil
 }
 
+// 获取指定扫描任务下的所有Schema
 func (s *Storage) GetManagerSqlSchemaNameByAuditPlan(auditPlanId uint) ([]string, error) {
 	var metricValueTips []string
 	err := s.db.Table("sql_manage_records").
 		Select("DISTINCT sql_manage_records.schema_name as schema_name").
-		Joins("JOIN audit_plans_v2 ON sql_manage_records.source = audit_plans_v2.type AND sql_manage_records.source_id = audit_plans_v2.instance_audit_plan_id").
+		Joins(`
+		JOIN audit_plans_v2 ON sql_manage_records.source = audit_plans_v2.type 
+		AND sql_manage_records.source_id = CONCAT(audit_plans_v2.instance_audit_plan_id, '')`).
 		Where("audit_plans_v2.id = ?", auditPlanId).
 		Scan(&metricValueTips).Error
 	return metricValueTips, errors.New(errors.ConnectStorageError, err)
 }
 
+// 获取指定扫描任务下的所有SQL的指定指标
 func (s *Storage) GetManagerSqlMetricTipsByAuditPlan(auditPlanId uint, metricName string) ([]string, error) {
 	var metricValueTips []string
 	err := s.db.Table("sql_manage_records").
 		Select(fmt.Sprintf("DISTINCT sql_manage_records.info->>'$.%s' as metric_value", metricName)).
-		Joins("JOIN audit_plans_v2 ON sql_manage_records.source = audit_plans_v2.type AND sql_manage_records.source_id = audit_plans_v2.instance_audit_plan_id").
-		Where("audit_plans_v2.id = ? AND NOT ISNULL(sql_manage_records.info->>'$.db_user')", auditPlanId).
+		Joins(`
+			JOIN audit_plans_v2 ON sql_manage_records.source = audit_plans_v2.type 
+			AND sql_manage_records.source_id = CONCAT(audit_plans_v2.instance_audit_plan_id, '')`).
+		Where("audit_plans_v2.id = ? AND sql_manage_records.info->>'$.db_user' IS NOT NULL", auditPlanId).
 		Scan(&metricValueTips).Error
 	return metricValueTips, errors.New(errors.ConnectStorageError, err)
 }
+
 
 func (s *Storage) GetManagerSqlRuleTipsByAuditPlan(auditPlanId uint) ([]*SqlManageRuleTips, error) {
 	sqlManageRuleTips := make([]*SqlManageRuleTips, 0)
@@ -347,10 +360,13 @@ func (s *Storage) GetInstanceAuditPlanDetail(instanceAuditPlanID string) (*Insta
 	return instanceAuditPlan, true, errors.New(errors.ConnectStorageError, err)
 }
 
+// 获取指定扫描任务下的所有SQL的数量
 func (s *Storage) GetAuditPlanTotalSQL(auditPlanID uint) (int64, error) {
 	var count int64
 	err := s.db.Model(&SQLManageRecord{}).
-		Joins("JOIN audit_plans_v2 ON sql_manage_records.source_id = audit_plans_v2.instance_audit_plan_id AND sql_manage_records.source = audit_plans_v2.type").
+		Joins(`
+			JOIN audit_plans_v2 ON sql_manage_records.source_id = CONCAT(audit_plans_v2.instance_audit_plan_id, '')
+			AND sql_manage_records.source = audit_plans_v2.type`).
 		Where("audit_plans_v2.id = ?", auditPlanID).
 		Count(&count).Error
 	return count, errors.ConnectStorageErrWrapper(err)
@@ -424,6 +440,7 @@ func (s *Storage) DeleteInstanceAuditPlan(instanceAuditPlanId string) error {
 		return nil
 	})
 }
+
 
 func (s *Storage) DeleteAuditPlan(auditPlanID int) error {
 	return s.Tx(func(txDB *gorm.DB) error {
@@ -655,6 +672,7 @@ func (s *Storage) GetInstanceAuditPlansByLastCollectionStatus(projectID, status 
 		Where("instance_audit_plans.project_id = ? AND apti.last_collection_status = ?", projectID, status).Find(&instanceAuditPlan).Error
 	return instanceAuditPlan, err
 }
+
 
 // 获取需要审核的sql，
 // 当更新时间大于最后审核时间或最后审核时间为空时需要重新审核（采集或重新采集到的sql）
