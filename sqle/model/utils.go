@@ -697,12 +697,26 @@ func (s *Storage) UpdateRuleCategoryRels(rule *Rule) error {
 	return err
 }
 
+// TODO : 避免直接用规则名称映射
 var ruleNameToPerformanceCostId = map[string] /*ruleId*/ string /*auditPerformanceLevelCategorieID*/ {
+	// old rule: MySQL
 	rule.DMLCheckSelectRows:                plocale.RuleTagPerformanceCostHigh.ID,
 	rule.DMLCheckAffectedRows:              plocale.RuleTagPerformanceCostHigh.ID,
 	rule.ConfigOptimizeIndexEnabled:        plocale.RuleTagPerformanceCostHigh.ID,
 	rule.DDLCheckIndexOption:               plocale.RuleTagPerformanceCostHigh.ID,
 	rule.DDLCheckCompositeIndexDistinction: plocale.RuleTagPerformanceCostHigh.ID,
+
+	// new rule: Oracle
+	"Oracle_011": plocale.RuleTagPerformanceCostHigh.ID,
+	"Oracle_012": plocale.RuleTagPerformanceCostHigh.ID,
+	"Oracle_017": plocale.RuleTagPerformanceCostHigh.ID,
+	"Oracle_019": plocale.RuleTagPerformanceCostHigh.ID,
+	"Oracle_044": plocale.RuleTagPerformanceCostHigh.ID,
+	"Oracle_046": plocale.RuleTagPerformanceCostHigh.ID,
+	"Oracle_050": plocale.RuleTagPerformanceCostHigh.ID,
+	"Oracle_077": plocale.RuleTagPerformanceCostHigh.ID,
+	"Oracle_078": plocale.RuleTagPerformanceCostHigh.ID,
+	"Oracle_080": plocale.RuleTagPerformanceCostHigh.ID,
 }
 
 func (s *Storage) GetDefaultRuleTemplateName(dbType string) string {
