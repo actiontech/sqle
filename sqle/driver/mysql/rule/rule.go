@@ -4621,7 +4621,7 @@ func checkAffectedRows(input *RuleHandlerInput) error {
 	}
 
 	affectCount, err := util.GetAffectedRowNum(
-		context.TODO(), input.Node.Text(), input.Ctx.GetExecutor())
+		context.TODO(), input.Node.Text(), input.Ctx.GetExecutor(), input.Ctx.GetExecutionPlan)
 	if err != nil {
 		log.NewEntry().Errorf("rule: %v; SQL: %v; get affected row number failed: %v", input.Rule.Name, input.Node.Text(), err)
 		return nil
@@ -5193,7 +5193,7 @@ func checkSelectRows(input *RuleHandlerInput) error {
 	if !notUseIndex {
 		return nil
 	}
-	affectCount, err := util.GetAffectedRowNum(context.TODO(), input.Node.Text(), input.Ctx.GetExecutor())
+	affectCount, err := util.GetAffectedRowNum(context.TODO(), input.Node.Text(), input.Ctx.GetExecutor(), input.Ctx.GetExecutionPlan)
 	if err != nil {
 		return err
 	}
