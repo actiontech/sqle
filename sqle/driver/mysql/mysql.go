@@ -491,7 +491,7 @@ func (i *MysqlDriverImpl) EstimateSQLAffectRows(ctx context.Context, sql string)
 		return nil, err
 	}
 
-	num, err := util.GetAffectedRowNum(ctx, sql, conn)
+	num, err := util.GetAffectedRowNum(ctx, sql, conn, i.Ctx.GetExecutionPlan)
 	if err != nil && errors.Is(err, util.ErrUnsupportedSqlType) {
 		return &driverV2.EstimatedAffectRows{ErrMessage: err.Error()}, nil
 	}
