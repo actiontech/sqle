@@ -224,7 +224,7 @@ help:
 	$(warning Supported Variables And Values:)
 	$(warning ---------------------------------------------------------------------------------)
 	$(foreach v, $(.VARIABLES), $(if $(filter file,$(origin $(v))), $(info $(v)=$($(v)))))
-# 需要下载modvendor，下载命令:go get -u github.com/goware/modvendor
+# 需要下载modvendor，下载命令:go install github.com/goware/modvendor@latest
 go_mod_vendor:
 	go mod vendor
 	modvendor -copy="**/*.c **/*.h" -v	
