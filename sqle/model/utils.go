@@ -265,11 +265,11 @@ func (s *Storage) CreateRuleCategories() error {
 		return errors.New(errors.ConnectStorageError, err)
 	}
 	categoryTagMap := map[string][]string{
-		plocale.RuleCategoryOperand.ID:              {plocale.RuleTagDatabase.ID, plocale.RuleTagTablespace.ID, plocale.RuleTagTable.ID, plocale.RuleTagColumn.ID, plocale.RuleTagIndex.ID, plocale.RuleTagView.ID, plocale.RuleTagProcedure.ID, plocale.RuleTagFunction.ID, plocale.RuleTagTrigger.ID, plocale.RuleTagEvent.ID, plocale.RuleTagUser.ID},
-		plocale.RuleCategorySQL.ID:                  {plocale.RuleTagDML.ID, plocale.RuleTagDDL.ID, plocale.RuleTagDCL.ID, plocale.RuleTagIntegrity.ID, plocale.RuleTagQuery.ID, plocale.RuleTagTransaction.ID, plocale.RuleTagPrivilege.ID, plocale.RuleTagManagement.ID},
+		plocale.RuleCategoryOperand.ID:              {plocale.RuleTagDatabase.ID, plocale.RuleTagTablespace.ID, plocale.RuleTagTable.ID, plocale.RuleTagColumn.ID, plocale.RuleTagIndex.ID, plocale.RuleTagView.ID, plocale.RuleTagProcedure.ID, plocale.RuleTagFunction.ID, plocale.RuleTagTrigger.ID, plocale.RuleTagEvent.ID, plocale.RuleTagUser.ID, plocale.RuleTagSequence.ID, plocale.RuleTagBusiness.ID},
+		plocale.RuleCategorySQL.ID:                  {plocale.RuleTagDML.ID, plocale.RuleTagDDL.ID, plocale.RuleTagDCL.ID, plocale.RuleTagIntegrity.ID, plocale.RuleTagComplete.ID, plocale.RuleTagQuery.ID, plocale.RuleTagJoin.ID, plocale.RuleTagTransaction.ID, plocale.RuleTagPrivilege.ID, plocale.RuleTagManagement.ID, plocale.RuleTagSQLTablespace.ID, plocale.RuleTagSQLFunction.ID, plocale.RuleTagSQLProcedure.ID, plocale.RuleTagSQLTrigger.ID, plocale.RuleTagSQLView.ID},
 		plocale.RuleCategoryAuditPurpose.ID:         {plocale.RuleTagPerformance.ID, plocale.RuleTagMaintenance.ID, plocale.RuleTagSecurity.ID, plocale.RuleTagCorrection.ID},
 		plocale.RuleCategoryAuditAccuracy.ID:        {plocale.RuleTagOnline.ID, plocale.RuleTagOffline.ID},
-		plocale.RuleCategoryAuditPerformanceCost.ID: {plocale.RuleTagPerformanceCostHigh.ID},
+		plocale.RuleCategoryAuditPerformanceCost.ID: {plocale.RuleTagPerformanceCostHigh.ID, plocale.RuleTagPerformanceCostMedium.ID, plocale.RuleTagPerformanceCostLow.ID},
 	}
 	for category, tags := range categoryTagMap {
 		for _, tag := range tags {
