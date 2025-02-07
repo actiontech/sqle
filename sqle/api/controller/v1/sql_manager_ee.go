@@ -454,7 +454,7 @@ func getSqlAnalysisChart(sqlManageId string, metricName string, latestPointEnabl
 			return nil, err
 		}
 		if latestPointEnabled {
-			chartPoint, err := queryExplainChartPoint(*sqlManageRecord, sqlManageRecord.SchemaName, sqlManageRecord.SqlText)
+			chartPoint, err := queryExplainChartPoint(*sqlManageRecord, sqlManageRecord.SchemaName, sqlManageRecord.SqlText, endTime)
 			if err != nil {
 				return nil, err
 			}
@@ -555,7 +555,7 @@ func record2ChartPoint(sqlManageMetricRecord model.SqlManageMetricRecord, create
 	}
 }
 
-func queryExplainChartPoint(sqlManageRecord model.SQLManageRecord, schema, sql string) (chartPoint *ChartPoint, err error) {
+func queryExplainChartPoint(sqlManageRecord model.SQLManageRecord, schema, sql string, endTime time.Time) (chartPoint *ChartPoint, err error) {
 	instance, exist, err := dms.GetInstancesById(context.TODO(), sqlManageRecord.InstanceID)
 	if err != nil {
 		return nil, err
@@ -603,7 +603,7 @@ func queryExplainChartPoint(sqlManageRecord model.SQLManageRecord, schema, sql s
 			explainColumns[11].Name: row[11],
 		})
 	}
-	nowTime := time.Now().Format(time.RFC3339)
+	nowTime := endTime.Format(time.RFC3339)
 	return &ChartPoint{
 		X:     &nowTime,
 		Y:     &cost,
