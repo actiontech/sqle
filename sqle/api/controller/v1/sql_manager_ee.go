@@ -445,39 +445,19 @@ func getSqlAnalysisChart(sqlManageId string, metricName string, latestPointEnabl
 		return nil, fmt.Errorf("sql manage id %v not exist", sqlManageId)
 	}
 	durationHours := duration.Hours()
-	// duration <=24小时 不聚合
-	// duration <=7天 每个点取4小时内的最大值
-	// duration <=30天 每个点取24小时内的最大值
-	if durationHours <= 24 {
-		chartPoints, err := timeSliceQuerySqlManageMetricChartPoints(sqlManageRecord.SQLID, metricName, nil, startTime, endTime)
+	chartPoints, err := timeSliceQuerySqlManageMetricChartPoints(sqlManageRecord.SQLID, metricName, nil, startTime, endTime)
+	if err != nil {
+		return nil, err
+	}
+	if durationHours <= 24 && latestPointEnabled {
+		chartPoint, err := queryExplainChartPoint(*sqlManageRecord, sqlManageRecord.SchemaName, sqlManageRecord.SqlText, endTime)
 		if err != nil {
 			return nil, err
 		}
-		if latestPointEnabled {
-			chartPoint, err := queryExplainChartPoint(*sqlManageRecord, sqlManageRecord.SchemaName, sqlManageRecord.SqlText, endTime)
-			if err != nil {
-				return nil, err
-			}
-			chartPoints = append(chartPoints, *chartPoint)
-		}
-		return chartPoints, nil
-	} else if durationHours <= 7*24 {
-		duration4Hour := 4 * time.Hour
-		chartPoints, err := timeSliceQuerySqlManageMetricChartPoints(sqlManageRecord.SQLID, metricName, &duration4Hour, startTime, endTime)
-		if err != nil {
-			return nil, err
-		}
-		return chartPoints, nil
-	} else if durationHours <= 30*24 {
-		duration24Hour := 24 * time.Hour
-		chartPoints, err := timeSliceQuerySqlManageMetricChartPoints(sqlManageRecord.SQLID, metricName, &duration24Hour, startTime, endTime)
-		if err != nil {
-			return nil, err
-		}
+		chartPoints = append(chartPoints, *chartPoint)
 		return chartPoints, nil
 	} else {
-		chartPoints := make([]ChartPoint, 0)
-		return chartPoints, fmt.Errorf("time range over limit")
+		return chartPoints, nil
 	}
 }
 
