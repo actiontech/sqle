@@ -25,7 +25,14 @@ func init() {
 			Desc:       plocale.Rule00219Desc,
 			Annotation: plocale.Rule00219Annotation,
 			Category:   plocale.RuleTypeDMLConvention,
-			Level:      driverV2.RuleLevelWarn,
+			CategoryTags: map[string][]string{
+				plocale.RuleCategoryOperand.ID:              {plocale.RuleTagTable.ID},
+				plocale.RuleCategorySQL.ID:                  {plocale.RuleTagDDL.ID},
+				plocale.RuleCategoryAuditPurpose.ID:         {plocale.RuleTagPerformance.ID},
+				plocale.RuleCategoryAuditAccuracy.ID:        {plocale.RuleTagOffline.ID},
+				plocale.RuleCategoryAuditPerformanceCost.ID: {},
+			},
+			Level: driverV2.RuleLevelWarn,
 			Params: []*rulepkg.SourceParam{{
 				Key:   rulepkg.DefaultSingleParamKeyName,
 				Value: "create_time",

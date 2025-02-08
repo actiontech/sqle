@@ -19,10 +19,17 @@ const (
 func init() {
 	rh := rulepkg.SourceHandler{
 		Rule: rulepkg.SourceRule{
-			Name:         SQLE00051,
-			Desc:         plocale.Rule00051Desc,
-			Annotation:   plocale.Rule00051Annotation,
-			Category:     plocale.RuleTypeDMLConvention,
+			Name:       SQLE00051,
+			Desc:       plocale.Rule00051Desc,
+			Annotation: plocale.Rule00051Annotation,
+			Category:   plocale.RuleTypeDMLConvention,
+			CategoryTags: map[string][]string{
+				plocale.RuleCategoryOperand.ID:              {plocale.RuleTagTable.ID},
+				plocale.RuleCategorySQL.ID:                  {plocale.RuleTagIntegrity.ID},
+				plocale.RuleCategoryAuditPurpose.ID:         {plocale.RuleTagMaintenance.ID},
+				plocale.RuleCategoryAuditAccuracy.ID:        {plocale.RuleTagOffline.ID, plocale.RuleTagOnline.ID},
+				plocale.RuleCategoryAuditPerformanceCost.ID: {},
+			},
 			Level:        driverV2.RuleLevelWarn,
 			Params:       []*rulepkg.SourceParam{},
 			Knowledge:    driverV2.RuleKnowledge{},
