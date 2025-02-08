@@ -2067,6 +2067,36 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetKnowledgeBaseListRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.KnowledgeBase'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_nums:
+        type: integer
+    type: object
+  v1.GetKnowledgeBaseTagListRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.Tag'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_nums:
+        type: integer
+    type: object
   v1.GetLicenseResV1:
     properties:
       code:
@@ -3240,6 +3270,26 @@ definitions:
         items:
           $ref: '#/definitions/v1.InstanceTypePercent'
         type: array
+    type: object
+  v1.KnowledgeBase:
+    properties:
+      content:
+        description: 内容
+        type: string
+      description:
+        description: 描述
+        type: string
+      id:
+        description: 知识库ID
+        type: integer
+      tags:
+        description: 标签
+        items:
+          $ref: '#/definitions/v1.Tag'
+        type: array
+      title:
+        description: 标题
+        type: string
     type: object
   v1.LicenseItem:
     properties:
@@ -4462,6 +4512,15 @@ definitions:
         items:
           $ref: '#/definitions/v1.TableMeta'
         type: array
+    type: object
+  v1.Tag:
+    properties:
+      id:
+        description: 标签ID
+        type: integer
+      name:
+        description: 标签名称
+        type: string
     type: object
   v1.TargetReleaseInstance:
     properties:
@@ -7247,6 +7306,45 @@ paths:
       summary: 获取规则模板文件
       tags:
       - rule_template
+  /v1/knowledge_bases:
+    get:
+      description: get knowledge base list
+      operationId: getKnowledgeBaseList
+      parameters:
+      - description: keywords
+        in: query
+        name: keywords
+        type: string
+      - description: tags
+        in: query
+        items:
+          type: string
+        name: tags
+        type: array
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetKnowledgeBaseListRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取知识库列表
+      tags:
+      - knowledge_base
+  /v1/knowledge_bases/tags:
+    get:
+      description: get tag list of knowledge base
+      operationId: getKnowledgeBaseTagList
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetKnowledgeBaseTagListRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取知识库标签列表
+      tags:
+      - knowledge_base
   /v1/operation_records:
     get:
       description: Get operation record list
