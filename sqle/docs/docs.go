@@ -1369,6 +1369,69 @@ var doc = `{
                 }
             }
         },
+        "/v1/knowledge_bases": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get knowledge base list",
+                "tags": [
+                    "knowledge_base"
+                ],
+                "summary": "获取知识库列表",
+                "operationId": "getKnowledgeBaseList",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "keywords",
+                        "name": "keywords",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "tags",
+                        "name": "tags",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetKnowledgeBaseListRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/knowledge_bases/tags": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get tag list of knowledge base",
+                "tags": [
+                    "knowledge_base"
+                ],
+                "summary": "获取知识库标签列表",
+                "operationId": "getKnowledgeBaseTagList",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetKnowledgeBaseTagListRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/operation_records": {
             "get": {
                 "security": [
@@ -14496,6 +14559,50 @@ var doc = `{
                 }
             }
         },
+        "v1.GetKnowledgeBaseListRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.KnowledgeBase"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.GetKnowledgeBaseTagListRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.Tag"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
+                }
+            }
+        },
         "v1.GetLicenseResV1": {
             "type": "object",
             "properties": {
@@ -16194,6 +16301,34 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v1.InstanceTypePercent"
                     }
+                }
+            }
+        },
+        "v1.KnowledgeBase": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "description": "内容",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "描述",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "知识库ID",
+                    "type": "integer"
+                },
+                "tags": {
+                    "description": "标签",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.Tag"
+                    }
+                },
+                "title": {
+                    "description": "标题",
+                    "type": "string"
                 }
             }
         },
@@ -17994,6 +18129,19 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v1.TableMeta"
                     }
+                }
+            }
+        },
+        "v1.Tag": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "description": "标签ID",
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "标签名称",
+                    "type": "string"
                 }
             }
         },

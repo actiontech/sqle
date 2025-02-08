@@ -445,6 +445,10 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1Router.GET("/rule_knowledge/db_types/:db_type/custom_rules/:rule_name/", v1.GetCustomRuleKnowledge)
 		v1Router.GET("/workflows/statistic_of_instances", v1.GetWorkflowStatisticOfInstances)
 
+		// 知识库 Knowledge Base
+		v1Router.GET("/knowledge_bases", v1.GetKnowledgeBaseList)
+		v1Router.GET("/knowledge_bases/tags", v1.GetKnowledgeBaseTagList)
+
 		//rule
 		v1Router.GET("/rules", v1.GetRules)
 		v1Router.GET("/custom_rules", v1.GetCustomRules)
