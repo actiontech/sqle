@@ -110,10 +110,14 @@ func getRuleIdConvert(dbType string) ([]ruleIdConvert, error) {
 	switch strings.ToLower(dbType) {
 	case "mysql":
 		return MySQLRuleIdConvert, nil
+	case "oceanbase for mysql":
+		return OBMySQLRuleIdConvert, nil
 	case "postgresql":
 		return PostgreSQLRuleIdConvert, nil
 	case "oracle":
 		return OracleRuleIdConvert, nil
+	case "oceanbase for oracle":
+		return OBOracleRuleIdConvert, nil
 	default:
 		return nil, fmt.Errorf("unsupported db type: %s", dbType)
 	}
@@ -282,8 +286,8 @@ func ProgressiveRewriteSQL(ctx context.Context, params *SQLRewritingParams) (*Ge
 			return nil, err
 		}
 		if !skip {
-		ret.BusinessDescAfterOptimize = rewriteResult.BusinessDescAfterOptimize
-		ret.BusinessNonEquivalent = rewriteResult.BusinessNonEquivalent
+			ret.BusinessDescAfterOptimize = rewriteResult.BusinessDescAfterOptimize
+			ret.BusinessNonEquivalent = rewriteResult.BusinessNonEquivalent
 		}
 
 	}
@@ -498,7 +502,7 @@ func findResolvedRules(originalRules []string, newAuditResults []model.AuditResu
 	// 遍历所有审核结果,收集所有仍触发的规则
 	for _, results := range newAuditResults {
 		for _, result := range results {
-		stillTriggered[result.RuleName] = true
+			stillTriggered[result.RuleName] = true
 		}
 	}
 
