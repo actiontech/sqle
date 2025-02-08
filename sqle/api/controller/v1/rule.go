@@ -12,18 +12,14 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
-	"github.com/nicksnyder/go-i18n/v2/i18n"
-	"golang.org/x/text/language"
-
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/dms"
+	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/model"
-
 	"github.com/labstack/echo/v4"
 )
 
@@ -559,16 +555,6 @@ func associateCategories(categories []*model.AuditRuleCategory) map[string][]str
 	if categories != nil && len(categories) > 0 {
 		for _, entity := range categories {
 			categoryRes[entity.Category] = append(categoryRes[entity.Category], entity.Tag)
-		}
-	}
-	return categoryRes
-}
-
-func associateBizCategories(lang language.Tag, categories []*model.AuditRuleCategory) map[string][]string {
-	categoryRes := make(map[string][]string)
-	if categories != nil && len(categories) > 0 {
-		for _, entity := range categories {
-			categoryRes[entity.Category] = append(categoryRes[entity.Category], plocale.Bundle.LocalizeMsgByLang(lang, ruleCategoryMapping[entity.Tag]))
 		}
 	}
 	return categoryRes
@@ -1594,14 +1580,7 @@ func ruleTemplateExportToParseDataV1(ruleTemplateExport *RuleTemplateExport, par
 		ruleRes.Annotation = rule.Annotation
 		ruleRes.Level = rule.Level
 		ruleRes.DBType = rule.DBType
-
-		categories := make(map[string][]string)
-		for category, tags := range rule.Categories {
-			for _, tag := range tags {
-				categories[category] = append(categories[category], ruleCategoryReversedMapping[tag])
-			}
-		}
-		ruleRes.Categories = categories
+		ruleRes.Categories = rule.Categories
 		params := make([]RuleParamResV1, 0)
 		for _, ruleParam := range rule.Params {
 			params = append(params, RuleParamResV1{
@@ -1618,11 +1597,7 @@ func ruleTemplateExportToParseDataV1(ruleTemplateExport *RuleTemplateExport, par
 }
 
 func getAuditRuleCategoryIds(categories []string) []string {
-	categoryIds := make([]string, 0)
-	for _, category := range categories {
-		categoryIds = append(categoryIds, ruleCategoryReversedMapping[category])
-	}
-	return categoryIds
+	return categories
 }
 
 type GetRuleTemplateFileReqV1 struct {
@@ -1919,7 +1894,7 @@ func getRuleTemplateFile(ctx context.Context, projectID string, ruleTemplateName
 				Desc:       ruleInfo.Desc,
 				Annotation: ruleInfo.Annotation,
 				Level:      rule.RuleLevel,
-				Categories: associateBizCategories(lang, rule.Rule.Categories),
+				Categories: associateCategories(rule.Rule.Categories),
 				DBType:     rule.RuleDBType,
 				Params:     []RuleParamRes{},
 			},
@@ -1938,74 +1913,6 @@ func getRuleTemplateFile(ctx context.Context, projectID string, ruleTemplateName
 	}
 
 	return resp, nil
-}
-
-var ruleCategoryMapping = map[string]*i18n.Message{
-	plocale.RuleCategoryOperand.ID:              plocale.RuleCategoryOperand,
-	plocale.RuleCategorySQL.ID:                  plocale.RuleCategorySQL,
-	plocale.RuleCategoryAuditPurpose.ID:         plocale.RuleCategoryAuditPurpose,
-	plocale.RuleCategoryAuditAccuracy.ID:        plocale.RuleCategoryAuditAccuracy,
-	plocale.RuleCategoryAuditPerformanceCost.ID: plocale.RuleCategoryAuditPerformanceCost,
-	plocale.RuleTagDatabase.ID:                  plocale.RuleTagDatabase,
-	plocale.RuleTagTablespace.ID:                plocale.RuleTagTablespace,
-	plocale.RuleTagTable.ID:                     plocale.RuleTagTable,
-	plocale.RuleTagColumn.ID:                    plocale.RuleTagColumn,
-	plocale.RuleTagIndex.ID:                     plocale.RuleTagIndex,
-	plocale.RuleTagView.ID:                      plocale.RuleTagView,
-	plocale.RuleTagProcedure.ID:                 plocale.RuleTagProcedure,
-	plocale.RuleTagFunction.ID:                  plocale.RuleTagFunction,
-	plocale.RuleTagTrigger.ID:                   plocale.RuleTagTrigger,
-	plocale.RuleTagEvent.ID:                     plocale.RuleTagEvent,
-	plocale.RuleTagUser.ID:                      plocale.RuleTagUser,
-	plocale.RuleTagDML.ID:                       plocale.RuleTagDML,
-	plocale.RuleTagDDL.ID:                       plocale.RuleTagDDL,
-	plocale.RuleTagDCL.ID:                       plocale.RuleTagDCL,
-	plocale.RuleTagIntegrity.ID:                 plocale.RuleTagIntegrity,
-	plocale.RuleTagQuery.ID:                     plocale.RuleTagQuery,
-	plocale.RuleTagTransaction.ID:               plocale.RuleTagTransaction,
-	plocale.RuleTagPrivilege.ID:                 plocale.RuleTagPrivilege,
-	plocale.RuleTagManagement.ID:                plocale.RuleTagManagement,
-	plocale.RuleTagPerformance.ID:               plocale.RuleTagPerformance,
-	plocale.RuleTagMaintenance.ID:               plocale.RuleTagMaintenance,
-	plocale.RuleTagSecurity.ID:                  plocale.RuleTagSecurity,
-	plocale.RuleTagCorrection.ID:                plocale.RuleTagCorrection,
-	plocale.RuleTagOnline.ID:                    plocale.RuleTagOnline,
-	plocale.RuleTagOffline.ID:                   plocale.RuleTagOffline,
-	plocale.RuleTagPerformanceCostHigh.ID:       plocale.RuleTagPerformanceCostHigh,
-}
-
-var ruleCategoryReversedMapping = map[string]string{
-	plocale.RuleCategoryOperand.Other:              plocale.RuleCategoryOperand.ID,
-	plocale.RuleCategorySQL.Other:                  plocale.RuleCategorySQL.ID,
-	plocale.RuleCategoryAuditPurpose.Other:         plocale.RuleCategoryAuditPurpose.ID,
-	plocale.RuleCategoryAuditAccuracy.Other:        plocale.RuleCategoryAuditAccuracy.ID,
-	plocale.RuleCategoryAuditPerformanceCost.Other: plocale.RuleCategoryAuditPerformanceCost.ID,
-	plocale.RuleTagDatabase.Other:                  plocale.RuleTagDatabase.ID,
-	plocale.RuleTagTablespace.Other:                plocale.RuleTagTablespace.ID,
-	plocale.RuleTagTable.Other:                     plocale.RuleTagTable.ID,
-	plocale.RuleTagColumn.Other:                    plocale.RuleTagColumn.ID,
-	plocale.RuleTagIndex.Other:                     plocale.RuleTagIndex.ID,
-	plocale.RuleTagView.Other:                      plocale.RuleTagView.ID,
-	plocale.RuleTagProcedure.Other:                 plocale.RuleTagProcedure.ID,
-	plocale.RuleTagFunction.Other:                  plocale.RuleTagFunction.ID,
-	plocale.RuleTagTrigger.Other:                   plocale.RuleTagTrigger.ID,
-	plocale.RuleTagEvent.Other:                     plocale.RuleTagEvent.ID,
-	plocale.RuleTagUser.Other:                      plocale.RuleTagUser.ID,
-	plocale.RuleTagDML.Other:                       plocale.RuleTagDML.ID,
-	plocale.RuleTagDDL.Other:                       plocale.RuleTagDDL.ID,
-	plocale.RuleTagDCL.Other:                       plocale.RuleTagDCL.ID,
-	plocale.RuleTagIntegrity.Other:                 plocale.RuleTagIntegrity.ID,
-	plocale.RuleTagQuery.Other:                     plocale.RuleTagQuery.ID,
-	plocale.RuleTagTransaction.Other:               plocale.RuleTagTransaction.ID,
-	plocale.RuleTagPrivilege.Other:                 plocale.RuleTagPrivilege.ID,
-	plocale.RuleTagManagement.Other:                plocale.RuleTagManagement.ID,
-	plocale.RuleTagPerformance.Other:               plocale.RuleTagPerformance.ID,
-	plocale.RuleTagMaintenance.Other:               plocale.RuleTagMaintenance.ID,
-	plocale.RuleTagSecurity.Other:                  plocale.RuleTagSecurity.ID,
-	plocale.RuleTagCorrection.Other:                plocale.RuleTagCorrection.ID,
-	plocale.RuleTagOnline.Other:                    plocale.RuleTagOnline.ID,
-	plocale.RuleTagOffline.Other:                   plocale.RuleTagOffline.ID,
-	plocale.RuleTagPerformanceCostHigh.Other:       plocale.RuleTagPerformanceCostHigh.ID,
 }
 
 type CustomRuleResV1 struct {
