@@ -435,7 +435,6 @@ func getSqlManageSqlAnalysisChartV1(c echo.Context) error {
 }
 
 func getSqlAnalysisChart(sqlManageId string, metricName string, latestPointEnabled bool, startTime time.Time, endTime time.Time) ([]ChartPoint, error) {
-	duration := endTime.Sub(startTime)
 	storage := model.GetStorage()
 	sqlManageRecord, exist, err := storage.GetOriginManageSqlByID(sqlManageId)
 	if err != nil {
@@ -444,21 +443,19 @@ func getSqlAnalysisChart(sqlManageId string, metricName string, latestPointEnabl
 	if !exist {
 		return nil, fmt.Errorf("sql manage id %v not exist", sqlManageId)
 	}
-	durationHours := duration.Hours()
 	chartPoints, err := timeSliceQuerySqlManageMetricChartPoints(sqlManageRecord.SQLID, metricName, nil, startTime, endTime)
 	if err != nil {
 		return nil, err
 	}
-	if durationHours <= 24 && latestPointEnabled {
+	if latestPointEnabled {
 		chartPoint, err := queryExplainChartPoint(*sqlManageRecord, sqlManageRecord.SchemaName, sqlManageRecord.SqlText, endTime)
 		if err != nil {
 			return nil, err
 		}
 		chartPoints = append(chartPoints, *chartPoint)
 		return chartPoints, nil
-	} else {
-		return chartPoints, nil
 	}
+	return chartPoints, nil
 }
 
 // 根据时间分片查询
