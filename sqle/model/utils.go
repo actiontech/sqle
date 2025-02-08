@@ -195,6 +195,10 @@ func (s *Storage) AutoMigrate() error {
 	if err != nil {
 		return errors.New(errors.ConnectStorageError, err)
 	}
+	err = s.addFullTextIndexForKnowledge()
+	if err != nil {
+		return errors.New(errors.ConnectStorageError, err)
+	}
 	if !s.db.Migrator().HasIndex(&SqlManage{}, "idx_project_id_status_deleted_at") {
 		err = s.db.Exec("CREATE INDEX idx_project_id_status_deleted_at ON sql_manages (project_id, status, deleted_at)").Error
 		if err != nil {
