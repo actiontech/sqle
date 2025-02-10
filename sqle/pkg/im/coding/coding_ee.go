@@ -24,11 +24,12 @@ func NewCodingClient(url string, token string) *CodingClient {
 }
 
 type CreateIssueRequestBody struct {
-	Name        string `json:"Name"`
-	Priority    string `json:"Priority"`
-	ProjectName string `json:"ProjectName"`
-	Type        string `json:"Type"`
-	Description string `json:"Description"`
+	Name         string  `json:"Name"`
+	Priority     string  `json:"Priority"`
+	ProjectName  string  `json:"ProjectName"`
+	Type         string  `json:"Type"`
+	Description  string  `json:"Description"`
+	WorkingHours float32 `json:"WorkingHours"`
 }
 
 // CreateIssue https://coding.net/help/openapi#/operations/CreateIssue

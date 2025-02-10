@@ -977,11 +977,12 @@ func buildCodingSQLManageReq(lang language.Tag, projectName string, sqlManageCod
 	}
 	description := fmt.Sprintf("- 数据源:%s\n- 数据库:%s\n- SQL:```%s```\n- 审核结果:%s", instanceName, sqlManageRecord.SchemaName, sqlManageRecord.SqlText, auditResult)
 	codingRequest := coding.CreateIssueRequestBody{
-		Name:        issueName,
-		Priority:    priority,
-		ProjectName: codingProjectName,
-		Type:        string(codingIssueType),
-		Description: description,
+		Name:         issueName,
+		Priority:     priority,
+		ProjectName:  codingProjectName,
+		Type:         string(codingIssueType),
+		Description:  description,
+		WorkingHours: 24,
 	}
 	return codingRequest
 }
