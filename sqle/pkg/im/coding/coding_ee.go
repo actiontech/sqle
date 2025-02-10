@@ -14,6 +14,8 @@ import (
 	"time"
 )
 
+const DefaultWorkingHours = 8
+
 type CodingClient struct {
 	url   string
 	token string
@@ -29,6 +31,8 @@ type CreateIssueRequestBody struct {
 	ProjectName string `json:"ProjectName"`
 	Type        string `json:"Type"`
 	Description string `json:"Description"`
+	// coding必填项，默认8小时
+	WorkingHours float32 `json:"WorkingHours"`
 }
 
 // CreateIssue https://coding.net/help/openapi#/operations/CreateIssue

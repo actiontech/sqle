@@ -460,7 +460,7 @@ func testCodingAuditConfigV1(c echo.Context) error {
 	}
 	issueName := fmt.Sprintf("SQLE_TEST_%s", time.Now().Format("20060102150405"))
 	description := locale.Bundle.LocalizeMsgByCtx(c.Request().Context(), locale.ConfigCoding)
-	_, err = coding.NewCodingClient(codingCfg.AppKey, codingCfg.AppSecret).CreateIssue(coding.CreateIssueRequestBody{Name: issueName, Priority: CodingPriorityLow.Weight(), ProjectName: req.CodingProjectName, Type: string(CodingTypeMission), Description: description})
+	_, err = coding.NewCodingClient(codingCfg.AppKey, codingCfg.AppSecret).CreateIssue(coding.CreateIssueRequestBody{Name: issueName, Priority: CodingPriorityLow.Weight(), ProjectName: req.CodingProjectName, Type: string(CodingTypeMission), Description: description, WorkingHours: coding.DefaultWorkingHours})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
