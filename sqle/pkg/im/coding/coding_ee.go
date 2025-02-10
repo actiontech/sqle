@@ -14,6 +14,8 @@ import (
 	"time"
 )
 
+const DefaultWorkingHours = 8
+
 type CodingClient struct {
 	url   string
 	token string

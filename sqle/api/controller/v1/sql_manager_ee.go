@@ -982,7 +982,7 @@ func buildCodingSQLManageReq(lang language.Tag, projectName string, sqlManageCod
 		ProjectName:  codingProjectName,
 		Type:         string(codingIssueType),
 		Description:  description,
-		WorkingHours: 8,
+		WorkingHours: coding.DefaultWorkingHours,
 	}
 	return codingRequest
 }
