@@ -11,6 +11,7 @@ import (
 	"github.com/actiontech/dms/pkg/dms-common/pkg/http"
 	"github.com/actiontech/sqle/sqle/api"
 	"github.com/actiontech/sqle/sqle/dms"
+	knowledge_base "github.com/actiontech/sqle/sqle/server/knowledge_base"
 	optimizationRule "github.com/actiontech/sqle/sqle/server/optimization/rule"
 
 	// "github.com/actiontech/sqle/sqle/api/cloudbeaver_wrapper/service"
@@ -117,7 +118,9 @@ func Run(options *config.SqleOptions) error {
 		if err := s.CreateDefaultTemplateIfNotExist(model.ProjectIdForGlobalRuleTemplate, driver.GetPluginManager().GetAllRules()); err != nil {
 			return fmt.Errorf("create default template failed while auto migrating table: %v", err)
 		}
-
+		if err := knowledge_base.MigrateKnowledgeFromRules(rules); err != nil {
+			return fmt.Errorf("MigrateKnowledgeFromRules failed : %v", err)
+		}
 	}
 	{
 		if err := s.CreateDefaultReportPushConfigIfNotExist(model.DefaultProjectUid); err != nil {
