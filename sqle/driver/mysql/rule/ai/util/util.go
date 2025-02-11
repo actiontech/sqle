@@ -541,7 +541,12 @@ func ExprFormat(node ast.ExprNode) string {
 
 // a helper function to calculate index discrimination in MySQL
 func CalculateIndexDiscrimination(context *session.Context, table *ast.TableName, colNames []string) (map[string]float64, error) {
-	return context.GetSelectivityOfColumnsV2(table, colNames)
+	return context.GetSelectivityOfColumns(table, colNames)
+}
+
+// a helper function to calculate index skewness in MySQL
+func CalculateIndexSkewness(context *session.Context, table *ast.TableName, colNames []string) (map[string]float64, error) {
+	return context.GetSkewnessOfColumns(table, colNames)
 }
 
 // a helper function to get the execution plan of a SQL statement in MySQL

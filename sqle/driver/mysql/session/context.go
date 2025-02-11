@@ -811,6 +811,7 @@ type column struct {
 	| 50.0000 | 75.0000 | set_1700620716_1   |
 	+---------+---------+--------------------+
 */
+// getSelectivityByColumn Selectivity(区分度) = 字段中不同值的记录数 / 采样的总记录数
 func (c *Context) getSelectivityByColumn(columns []column) (map[string] /*index name*/ float64, error) {
 	if len(columns) == 0 {
 		return make(map[string]float64, 0), nil
@@ -872,8 +873,8 @@ func (c *Context) getSelectivityByColumn(columns []column) (map[string] /*index 
 	| 50.0000 | 75.0000 | set_1700620716_1   |
 	+---------+---------+--------------------+
 */
-// getSelectivityByColumnV2 相比 getSelectivityByColumn，使用了新的公式计算列的区分度
-func (c *Context) getSelectivityByColumnV2(columns []column) (map[string] /*column name*/ float64, error) {
+// getSkewnessByColumn Skewness(倾斜度) = 最频繁的值的记录数 / 采样的总记录数
+func (c *Context) getSkewnessByColumn(columns []column) (map[string] /*column name*/ float64, error) {
 	if len(columns) == 0 {
 		return make(map[string]float64), nil
 	}
@@ -907,7 +908,7 @@ func (c *Context) getSelectivityByColumnV2(columns []column) (map[string] /*colu
 		maxCountQuery := fmt.Sprintf("SELECT COUNT(*) AS record_count FROM (SELECT `%s` FROM `%s`.`%s` LIMIT 50000) AS limited GROUP BY `%s` ORDER BY record_count DESC LIMIT 1", column.ColumnName, column.SchemaName, column.TableName, column.ColumnName)
 
 		var maxCount float64
-		var selectivityValue float64
+		var skewnessValue float64
 
 		// Execute maxCountQuery
 		results, err := c.e.Db.Query(maxCountQuery)
@@ -920,22 +921,22 @@ func (c *Context) getSelectivityByColumnV2(columns []column) (map[string] /*colu
 		}
 
 		if results[0]["record_count"].String == "" {
-			selectivityValue = -1
+			skewnessValue = -1
 		} else {
 			maxCount, err = strconv.ParseFloat(results[0]["record_count"].String, 64)
 			if err != nil {
 				return nil, fmt.Errorf("error parsing max count: %v", err)
 			}
-			selectivityValue = (1 - maxCount/totalCount)
+			skewnessValue = maxCount / totalCount
 		}
 
-		columnSelectivityMap[column.ColumnName] = selectivityValue
+		columnSelectivityMap[column.ColumnName] = skewnessValue
 	}
 
 	return columnSelectivityMap, nil
 }
 
-func (c *Context) getSelectivityOfColumnsInner(stmt *ast.TableName, indexColumns []string, getSelectivityByColumn func(columns []column) (map[string]float64, error)) (map[string] /*column name*/ float64, error) {
+func (c *Context) getNumericalValueOfColumnsInner(stmt *ast.TableName, indexColumns []string, getSelectivityByColumn func(columns []column) (map[string]float64, error)) (map[string] /*column name*/ float64, error) {
 	if stmt == nil || len(indexColumns) == 0 {
 		return nil, nil
 	}
@@ -972,10 +973,10 @@ func (c *Context) getSelectivityOfColumnsInner(stmt *ast.TableName, indexColumns
 }
 
 func (c *Context) GetSelectivityOfColumns(stmt *ast.TableName, indexColumns []string) (map[string] /*column name*/ float64, error) {
-	return c.getSelectivityOfColumnsInner(stmt, indexColumns, c.getSelectivityByColumn)
+	return c.getNumericalValueOfColumnsInner(stmt, indexColumns, c.getSelectivityByColumn)
 }
-func (c *Context) GetSelectivityOfColumnsV2(stmt *ast.TableName, indexColumns []string) (map[string] /*column name*/ float64, error) {
-	return c.getSelectivityOfColumnsInner(stmt, indexColumns, c.getSelectivityByColumnV2)
+func (c *Context) GetSkewnessOfColumns(stmt *ast.TableName, indexColumns []string) (map[string] /*column name*/ float64, error) {
+	return c.getNumericalValueOfColumnsInner(stmt, indexColumns, c.getSkewnessByColumn)
 }
 
 // GetSchemaCharacter get schema default character.
