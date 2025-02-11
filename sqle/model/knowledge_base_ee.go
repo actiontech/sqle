@@ -184,13 +184,13 @@ func (s *Storage) SearchKnowledge(keyword string, tags []string, limit, offset i
 	}
 
 	// 分页查询
-	err := searchClause.Limit(limit).Offset(offset).Find(&results).Error
+	err := searchClause.Group("knowledge.id").Limit(limit).Offset(offset).Find(&results).Error
 	if err != nil {
 		return nil, 0, err
 	}
 	// 统计查询结果总数
 	var count int64
-	err = countClause.Count(&count).Error
+	err = countClause.Group("knowledge.id").Count(&count).Error
 	if err != nil {
 		return nil, 0, err
 	}
