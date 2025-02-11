@@ -27,8 +27,9 @@ type KnowledgeBase struct {
 }
 
 type Tag struct {
-	ID   uint   `json:"id"`   // 标签ID
-	Name string `json:"name"` // 标签名称
+	ID      uint   `json:"id"`                 // 标签ID
+	Name    string `json:"name"`               // 标签名称
+	SubTags []*Tag `json:"sub_tags,omitempty"` // 子标签
 }
 
 // GetKnowledgeBaseList
