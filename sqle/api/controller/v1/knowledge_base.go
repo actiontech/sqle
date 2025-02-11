@@ -6,10 +6,10 @@ import (
 )
 
 type GetKnowledgeBaseListReq struct {
-	KeyWords string   `json:"keywords" query:"keywords" example:"keywords"` // 搜索内容
-	Tags     []string `json:"tags" query:"tags" example:"tag1"`             // 搜索标签
-	Limit    uint32   `json:"limit" query:"limit" example:"10" validate:"required"`
-	Offset   uint32   `json:"offset" query:"offset" example:"0"`
+	KeyWords  string   `json:"keywords" query:"keywords" example:"keywords"`   // 搜索内容
+	Tags      []string `json:"tags" query:"tags" example:"tag1"`               // 搜索标签
+	PageIndex uint32   `json:"page_index" query:"page_index" valid:"required"` // 页码
+	PageSize  uint32   `json:"page_size" query:"page_size" valid:"required"`   // 每页条数
 }
 
 type GetKnowledgeBaseListRes struct {
