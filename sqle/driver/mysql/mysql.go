@@ -335,17 +335,6 @@ func (i *MysqlDriverImpl) Audit(ctx context.Context, sqls []string) ([]*driverV2
 	return results, nil
 }
 
-func GetAllRule() map[string]rulepkg.RuleHandler {
-	allRuleHandlerMap := make(map[string]rulepkg.RuleHandler, len(rulepkg.AIRuleHandlerMap)+len(rulepkg.RuleHandlerMap))
-	for ruleName, aiHandler := range rulepkg.AIRuleHandlerMap {
-		allRuleHandlerMap[ruleName] = aiHandler
-	}
-	for ruleName, ruleHandler := range rulepkg.RuleHandlerMap {
-		allRuleHandlerMap[ruleName] = ruleHandler
-	}
-	return allRuleHandlerMap
-}
-
 func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.AuditResults, error) {
 	i.result = driverV2.NewAuditResults()
 
@@ -386,7 +375,7 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 			ghostRule = rule
 		}
 
-		handler, ok := GetAllRule()[rule.Name]
+		handler, ok := rulepkg.GetRuleHandlerFromAllRules(rule.Name)
 		if !ok || handler.Func == nil {
 			continue
 		}
@@ -410,7 +399,7 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 		}
 
 		if err := handler.Func(input); err != nil {
-			i.result.AddResultWithError(rule.Level, rule.Name, err.Error(), true, plocale.Bundle.LocalizeAll(rulepkg.RuleHandlerMap[rule.Name].Message))
+			i.result.AddResultWithError(rule.Level, rule.Name, err.Error(), true, plocale.Bundle.LocalizeAll(handler.Message))
 			i.Logger().Errorf("rule_desc_name=%v rule_desc=%v err:%v", rule.Name, rule.I18nRuleInfo[i18nPkg.DefaultLang].Desc, err.Error())
 		}
 	}
@@ -619,19 +608,12 @@ func (p *PluginProcessor) GetDriverMetas() (*driverV2.DriverMetas, error) {
 	if err := LoadPtTemplateFromFile("./scripts/pt-online-schema-change.template"); err != nil {
 		panic(err)
 	}
-	allRules := make([]*driverV2.Rule, 0, len(rulepkg.RuleHandlers)+len(rulepkg.AIRuleHandlers))
-	for i := range rulepkg.RuleHandlers {
-		allRules = append(allRules, &rulepkg.RuleHandlers[i].Rule)
-	}
-	for i := range rulepkg.AIRuleHandlers {
-		allRules = append(allRules, &rulepkg.AIRuleHandlers[i].Rule)
-	}
 
 	metas := &driverV2.DriverMetas{
 		PluginName:               driverV2.DriverTypeMySQL,
 		DatabaseDefaultPort:      3306,
 		Logo:                     logo,
-		Rules:                    allRules,
+		Rules:                    rulepkg.AllRules,
 		DatabaseAdditionalParams: params.Params{},
 		EnabledOptionalModule: []driverV2.OptionalModule{
 			driverV2.OptionalModuleQuery,
