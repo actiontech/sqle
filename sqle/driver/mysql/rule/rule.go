@@ -239,7 +239,7 @@ type RuleHandler struct {
 }
 
 func init() {
-	RuleHandlers = append(RuleHandlers, GenerateI18nRuleHandlers(plocale.Bundle, sourceRuleHandlers)...)
+	RuleHandlers = GenerateI18nRuleHandlers(plocale.Bundle, sourceRuleHandlers)
 	defaultRulesKnowledge, err := getDefaultRulesKnowledge()
 	if err != nil {
 		panic(fmt.Errorf("get default rules knowledge failed: %v", err))
@@ -251,6 +251,7 @@ func init() {
 			RuleHandlers[i] = rh
 		}
 		RuleHandlerMap[rh.Rule.Name] = rh
+		AllRules = append(AllRules, &RuleHandlers[i].Rule)
 	}
 }
 
@@ -280,8 +281,11 @@ func AddResult(result *driverV2.AuditResults, currentRule driverV2.Rule, ruleNam
 		return
 	}
 	level := currentRule.Level
-	message := GetAllRule()[ruleName].Message
-	result.Add(level, ruleName, plocale.Bundle.LocalizeAll(message), args...)
+	ruleHandler, exist := GetRuleHandlerFromAllRules(ruleName)
+	if !exist {
+		return
+	}
+	result.Add(level, ruleName, plocale.Bundle.LocalizeAll(ruleHandler.Message), args...)
 }
 
 func (rh *RuleHandler) IsAllowOfflineRule(node ast.Node) bool {
@@ -310,17 +314,17 @@ var (
 	RuleHandlerMap   = map[string]RuleHandler{}
 	AIRuleHandlers   []RuleHandler
 	AIRuleHandlerMap = map[string]RuleHandler{}
+	AllRules         []*driverV2.Rule
 )
 
-func GetAllRule() map[string]RuleHandler {
-	allRuleHandlerMap := make(map[string]RuleHandler, len(AIRuleHandlerMap)+len(RuleHandlerMap))
-	for ruleName, aiHandler := range AIRuleHandlerMap {
-		RuleHandlerMap[ruleName] = aiHandler
+func GetRuleHandlerFromAllRules(ruleName string) (rh *RuleHandler, exist bool) {
+	if r, ok := RuleHandlerMap[ruleName]; ok {
+		return &r, true
 	}
-	for ruleName, ruleHandler := range RuleHandlerMap {
-		allRuleHandlerMap[ruleName] = ruleHandler
+	if r, ok := AIRuleHandlerMap[ruleName]; ok {
+		return &r, true
 	}
-	return allRuleHandlerMap
+	return nil, false
 }
 
 const DefaultSingleParamKeyName = "first_key" // For most of the rules, it is just has one param, this is first params.
