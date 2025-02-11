@@ -54,6 +54,17 @@ func (s *Storage) GetSubTags(tagId uint) ([]*Tag, error) {
 	return tags, nil
 }
 
+
+// 根据Tag IDs 获取标签与标签的关联
+func (s *Storage) GetTagRelationsByTagIds(tagIds []uint) ([]TagTagRelation, error) {
+	var relations []TagTagRelation
+	err := s.db.Model(&TagTagRelation{}).Where("sub_tag_id IN ?", tagIds).Find(&relations).Error
+	if err != nil {
+		return nil, err
+	}
+	return relations, nil
+}
+
 // 为知识库添加标签
 func (s *Storage) CreateKnowledgeTagRelation(knowledgeId uint, tagId uint) error {
 	if knowledgeId == 0 || tagId == 0 {
@@ -85,6 +96,16 @@ func (s *Storage) GetTagByName(name TypeTag) (*Tag, error) {
 	var tag Tag
 	err := s.db.Where("name = ?", name).First(&tag).Error
 	if err != nil {
+		return nil, err
+	}
+	return &tag, nil
+}
+
+// 根据标签ID获取标签
+func (s *Storage) GetTagById(id uint) (*Tag, error) {
+	var tag Tag
+	err := s.db.Where("id =?", id).First(&tag).Error
+	if err!= nil {
 		return nil, err
 	}
 	return &tag, nil

@@ -187,3 +187,63 @@ func getKnowledgeDefaultTag(ctx context.Context, dbType string, ruleType model.T
 	}
 	return []*model.Tag{langTag, dbTag, knowledgePredefineTag}, nil
 }
+
+// 搜索知识列表
+func SearchKnowledgeList(keyword string, tags []string, limit, offset int) ([]model.Knowledge, int64, error) {
+	s := model.GetStorage()
+	knowledge, count, err := s.SearchKnowledge(keyword, tags, limit, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+	// 获取所有tag id的Map最终转化为列表
+	tagIDs := make([]uint, 0)
+	tagIDMap := make(map[uint] /* tag id */ struct{} /* empty */)
+	for _, item := range knowledge {
+		for _, tag := range item.Tags {
+			tagIDMap[tag.ID] = struct{}{}
+		}
+	}
+	for tagID := range tagIDMap {
+		tagIDs = append(tagIDs, tagID)
+	}
+
+	// 获取所有tag作为子标签的关联
+	tagTagRelations, err := s.GetTagRelationsByTagIds(tagIDs)
+	if err != nil {
+		return nil, 0, err
+	}
+	// 获取所有父级标签的Map
+	fatherTagCache := make(map[uint] /* father tag id */ *model.Tag /* father tag */)
+	for _, tagTagRelation := range tagTagRelations {
+		if _, exist := fatherTagCache[tagTagRelation.TagID]; !exist {
+			fatherTagCache[tagTagRelation.TagID], err = s.GetTagById(tagTagRelation.TagID)
+		}
+	}
+	// 获取所有子集标签到父级标签的Map
+	subTagFatherTagCache := make(map[uint] /* sub tag id */ *model.Tag /* father tag */)
+	for _, tagTagRelation := range tagTagRelations {
+		subTagFatherTagCache[tagTagRelation.SubTagID] = fatherTagCache[tagTagRelation.TagID]
+	}
+
+	// 遍历知识列表，获取标签的父级标签，并根据父级标签/子级标签两层嵌套覆盖知识列表的标签
+	for idx, item := range knowledge {
+		knowledge[idx].Tags = nil
+		// 用于覆盖知识列表标签的新标签Map
+		fatherTagMap := make(map[*model.Tag] /* father tag */ []*model.Tag /* sub tag */)
+		for _, tag := range item.Tags {
+			if fatherTag, exist := subTagFatherTagCache[tag.ID]; exist {
+				fatherTagMap[fatherTag] = append(fatherTagMap[fatherTag], tag)
+			} else {
+				knowledge[idx].Tags = append(knowledge[idx].Tags, tag)
+				continue
+			}
+		}
+		// 覆盖知识列表标签
+		for fatherTag, subTags := range fatherTagMap {
+			newTag := fatherTag
+			newTag.SubTag = subTags
+			knowledge[idx].Tags = append(knowledge[idx].Tags, newTag)
+		}
+	}
+	return knowledge, count, nil
+}

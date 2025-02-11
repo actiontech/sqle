@@ -20,8 +20,7 @@ func getKnowledgeBaseList(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
-	s := model.GetStorage()
-	knowledgeList, count, err := s.SearchKnowledge(req.KeyWords, req.Tags, int(limit), int(offset))
+	knowledgeList, count, err := knowledge_base.SearchKnowledgeList(req.KeyWords, req.Tags, int(limit), int(offset))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -49,9 +48,17 @@ func convertToKnowledgeBaseListRes(knowledgeList []model.Knowledge) []*Knowledge
 func convertToTagRes(tags []*model.Tag) []*Tag {
 	tagRes := make([]*Tag, 0, len(tags))
 	for _, tag := range tags {
+		subTags := make([]*Tag, 0, len(tag.SubTag))
+		for _, subTag := range tag.SubTag {
+			subTags = append(subTags, &Tag{
+				ID:   subTag.ID,
+				Name: fmt.Sprint(subTag.Name),
+			})
+		}
 		tagRes = append(tagRes, &Tag{
-			ID:   tag.ID,
-			Name: fmt.Sprint(tag.Name),
+			ID:      tag.ID,
+			Name:    fmt.Sprint(tag.Name),
+			SubTags: subTags,
 		})
 	}
 	return tagRes
