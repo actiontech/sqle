@@ -47,6 +47,14 @@ func GenerateRuleByDriverRule(dr *driverV2.Rule, dbType string) *Rule {
 			Category:   v.Category,
 		}
 	}
+	for tagCate, tags := range dr.CategoryTags {
+		for _, tag := range tags {
+			r.Categories = append(r.Categories, &AuditRuleCategory{
+				Category: tagCate,
+				Tag:      tag,
+			})
+		}
+	}
 	return r
 }
 
@@ -450,15 +458,17 @@ func (s *Storage) GetRule(name, dbType string) (*Rule, bool, error) {
 
 func (s *Storage) GetAllRules() ([]*Rule, error) {
 	rules := []*Rule{}
-	err := s.db.Preload("Knowledge").Find(&rules).Error
+	err := s.db.Preload("Categories").Preload("Knowledge").Find(&rules).Error
 	return rules, errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) DeleteCascadeRule(name, dbType string) error {
-	err := s.db.Exec(`delete u,t, k 
+	err := s.db.Exec(`delete u,t,k,c
 					from rules u 
 					left join rule_template_rule t on u.name = t.rule_name and u.db_type = t.db_type 
-					left join rule_knowledge k on u.knowledge_id = k.id where u.name = ? AND u.db_type = ? `, name, dbType).Error
+					left join rule_knowledge k on u.knowledge_id = k.id
+					left join audit_rule_category_rels c on u.name = c.rule_name and u.db_type = c.rule_db_type
+					where u.name = ? AND u.db_type = ?`, name, dbType).Error
 	return err
 }
 

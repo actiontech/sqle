@@ -23,7 +23,14 @@ func init() {
 			Desc:       plocale.Rule00032Desc,
 			Annotation: plocale.Rule00032Annotation,
 			Category:   plocale.RuleTypeNamingConvention,
-			Level:      driverV2.RuleLevelNotice,
+			CategoryTags: map[string][]string{
+				plocale.RuleCategoryOperand.ID:              {plocale.RuleTagDatabase.ID},
+				plocale.RuleCategorySQL.ID:                  {plocale.RuleTagManagement.ID, plocale.RuleTagDDL.ID},
+				plocale.RuleCategoryAuditPurpose.ID:         {plocale.RuleTagMaintenance.ID},
+				plocale.RuleCategoryAuditAccuracy.ID:        {plocale.RuleTagOffline.ID},
+				plocale.RuleCategoryAuditPerformanceCost.ID: {},
+			},
+			Level: driverV2.RuleLevelNotice,
 			Params: []*rulepkg.SourceParam{{
 				Key:   rulepkg.DefaultSingleParamKeyName,
 				Value: "_DB",

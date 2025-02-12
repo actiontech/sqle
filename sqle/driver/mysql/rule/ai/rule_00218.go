@@ -17,10 +17,17 @@ const (
 func init() {
 	rh := rulepkg.SourceHandler{
 		Rule: rulepkg.SourceRule{
-			Name:         SQLE00218,
-			Desc:         plocale.Rule00218Desc,
-			Annotation:   plocale.Rule00218Annotation,
-			Category:     plocale.RuleTypeIndexInvalidation,
+			Name:       SQLE00218,
+			Desc:       plocale.Rule00218Desc,
+			Annotation: plocale.Rule00218Annotation,
+			Category:   plocale.RuleTypeIndexInvalidation,
+			CategoryTags: map[string][]string{
+				plocale.RuleCategoryOperand.ID:              {plocale.RuleTagIndex.ID},
+				plocale.RuleCategorySQL.ID:                  {plocale.RuleTagDML.ID},
+				plocale.RuleCategoryAuditPurpose.ID:         {plocale.RuleTagPerformance.ID},
+				plocale.RuleCategoryAuditAccuracy.ID:        {plocale.RuleTagOnline.ID},
+				plocale.RuleCategoryAuditPerformanceCost.ID: {},
+			},
 			Level:        driverV2.RuleLevelWarn,
 			Params:       []*rulepkg.SourceParam{},
 			Knowledge:    driverV2.RuleKnowledge{},
@@ -89,8 +96,7 @@ func RuleSQLE00218(input *rulepkg.RuleHandlerInput) error {
 				table2colNames[getTableName(col)] = append(table2colNames[getTableName(col)], col.Name)
 			}
 
-			aliasInfos := util.GetTableAliasInfoFromJoin(selectStmt.From.TableRefs)
-			if selectStmt.Where == nil || util.IsExprConstTrue(input.Ctx, selectStmt.Where, aliasInfos) {
+			if selectStmt.Where == nil || util.IsExprConstTrue(input.Ctx, selectStmt.Where, alias) {
 				// get column names in group by when there is no where condition
 				if selectStmt.GroupBy != nil {
 					for _, item := range selectStmt.GroupBy.Items {
