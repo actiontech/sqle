@@ -53,6 +53,9 @@ You should follow the following logic:
 // ==== Rule code start ====
 func RuleSQLE00178(input *rulepkg.RuleHandlerInput) error {
 	isSelectStmtViolation := func(stmt *ast.SelectStmt) bool {
+		if stmt == nil || stmt.From == nil {
+			return false
+		}
 		aliasInfo := util.GetTableAliasInfoFromJoin(stmt.From.TableRefs)
 		if stmt.Where == nil || util.IsExprConstTrue(input.Ctx, stmt.Where, aliasInfo) {
 			// where is nil or where is always true

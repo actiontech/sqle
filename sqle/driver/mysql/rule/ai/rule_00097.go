@@ -118,6 +118,9 @@ func RuleSQLE00097(input *rulepkg.RuleHandlerInput) error {
 			return false, fmt.Errorf("Failed to get CREATE TABLE statement for table %s: %v", table.Name.String(), err)
 		}
 		columnDef := getColumnDef(createTableStmt, col)
+		if columnDef == nil {
+			return false, nil
+		}
 
 		// 获取列类型
 		colType := columnDef.Tp.Tp
