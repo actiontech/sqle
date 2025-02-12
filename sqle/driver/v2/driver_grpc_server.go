@@ -36,7 +36,7 @@ type DSN struct {
 type Rule struct {
 	Name         string
 	Level        RuleLevel
-	Category     string
+	CategoryTags map[string][]string
 	Params       params.Params
 	I18nRuleInfo I18nRuleInfo
 	AllowOffline bool

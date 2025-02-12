@@ -27,7 +27,8 @@ type SourceRule struct {
 	Name         string
 	Desc         *i18n.Message
 	Annotation   *i18n.Message
-	Category     *i18n.Message
+	Category     *i18n.Message // Deprecated, use CategoryTags instead
+	CategoryTags map[string][]string
 	Level        driverV2.RuleLevel
 	Params       []*SourceParam
 	Knowledge    driverV2.RuleKnowledge
@@ -66,7 +67,7 @@ func ConvertSourceRule(bundle *i18nPkg.Bundle, sr *SourceRule) *driverV2.Rule {
 	r := &driverV2.Rule{
 		Name:         sr.Name,
 		Level:        sr.Level,
-		Category:     sr.Category.ID,
+		CategoryTags: sr.CategoryTags,
 		Params:       make(params.Params, 0, len(sr.Params)),
 		I18nRuleInfo: genAllI18nRuleInfo(bundle, sr),
 		AllowOffline: sr.AllowOffline,

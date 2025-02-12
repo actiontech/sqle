@@ -19,12 +19,8 @@ func TestRuleSQLE00039(t *testing.T) {
 		session.NewAIMockContext().WithSQL("CREATE TABLE table_users (id INT, username VARCHAR(50));"),
 		[]*AIMockSQLExpectation{
 			{
-				Query: "SELECT COUNT(*) AS total FROM `exist_db`.`table_users` LIMIT 50000",
-				Rows:  sqlmock.NewRows([]string{"total"}).AddRow(50000),
-			},
-			{
-				Query: "SELECT COUNT(*) AS record_count FROM (SELECT `username` FROM `exist_db`.`table_users` LIMIT 50000) AS limited GROUP BY `username` ORDER BY record_count DESC LIMIT 1",
-				Rows:  sqlmock.NewRows([]string{"record_count"}).AddRow(10000),
+				Query: "SELECT COUNT( DISTINCT ( `username` ) ) / COUNT( * ) * 100 AS 'username' FROM (SELECT `username` FROM `exist_db`.`table_users` LIMIT 50000) t;",
+				Rows:  sqlmock.NewRows([]string{"username"}).AddRow(1),
 			},
 		}, newTestResult())
 
@@ -33,12 +29,8 @@ func TestRuleSQLE00039(t *testing.T) {
 		session.NewAIMockContext().WithSQL("CREATE TABLE table_orders (order_id INT, order_date DATE);"),
 		[]*AIMockSQLExpectation{
 			{
-				Query: "SELECT COUNT(*) AS total FROM `exist_db`.`table_orders` LIMIT 50000",
-				Rows:  sqlmock.NewRows([]string{"total"}).AddRow(50000),
-			},
-			{
-				Query: "SELECT COUNT(*) AS record_count FROM (SELECT `order_id` FROM `exist_db`.`table_orders` LIMIT 50000) AS limited GROUP BY `order_id` ORDER BY record_count DESC LIMIT 1",
-				Rows:  sqlmock.NewRows([]string{"record_count"}).AddRow(25000),
+				Query: "SELECT COUNT( DISTINCT ( `order_id` ) ) / COUNT( * ) * 100 AS 'order_id' FROM (SELECT `order_id` FROM `exist_db`.`table_orders` LIMIT 50000) t;",
+				Rows:  sqlmock.NewRows([]string{"order_id"}).AddRow(0.5),
 			},
 		}, newTestResult().addResult(ruleName))
 
@@ -47,12 +39,8 @@ func TestRuleSQLE00039(t *testing.T) {
 		session.NewAIMockContext().WithSQL("CREATE TABLE table_products (product_id INT, product_code VARCHAR(50));"),
 		[]*AIMockSQLExpectation{
 			{
-				Query: "SELECT COUNT(*) AS total FROM `exist_db`.`table_products` LIMIT 50000",
-				Rows:  sqlmock.NewRows([]string{"total"}).AddRow(50000),
-			},
-			{
-				Query: "SELECT COUNT(*) AS record_count FROM (SELECT `product_code` FROM `exist_db`.`table_products` LIMIT 50000) AS limited GROUP BY `product_code` ORDER BY record_count DESC LIMIT 1",
-				Rows:  sqlmock.NewRows([]string{"record_count"}).AddRow(5000),
+				Query: "SELECT COUNT( DISTINCT ( `product_code` ) ) / COUNT( * ) * 100 AS 'product_code' FROM (SELECT `product_code` FROM `exist_db`.`table_products` LIMIT 50000) t;",
+				Rows:  sqlmock.NewRows([]string{"product_code"}).AddRow(1),
 			},
 		}, newTestResult())
 
@@ -61,12 +49,8 @@ func TestRuleSQLE00039(t *testing.T) {
 		session.NewAIMockContext().WithSQL("CREATE TABLE table_customers (customer_id INT, email VARCHAR(100));"),
 		[]*AIMockSQLExpectation{
 			{
-				Query: "SELECT COUNT(*) AS total FROM `exist_db`.`table_customers` LIMIT 50000",
-				Rows:  sqlmock.NewRows([]string{"total"}).AddRow(50000),
-			},
-			{
-				Query: "SELECT COUNT(*) AS record_count FROM (SELECT `email` FROM `exist_db`.`table_customers` LIMIT 50000) AS limited GROUP BY `email` ORDER BY record_count DESC LIMIT 1",
-				Rows:  sqlmock.NewRows([]string{"record_count"}).AddRow(20000),
+				Query: "SELECT COUNT( DISTINCT ( `email` ) ) / COUNT( * ) * 100 AS 'email' FROM (SELECT `email` FROM `exist_db`.`table_customers` LIMIT 50000) t;",
+				Rows:  sqlmock.NewRows([]string{"email"}).AddRow(0.5),
 			},
 		}, newTestResult().addResult(ruleName))
 
@@ -75,12 +59,8 @@ func TestRuleSQLE00039(t *testing.T) {
 		session.NewAIMockContext().WithSQL("CREATE TABLE table_employees (employee_id INT, salary DECIMAL(10, 2), INDEX idx_salary(salary));"),
 		[]*AIMockSQLExpectation{
 			{
-				Query: "SELECT COUNT(*) AS total FROM `exist_db`.`table_employees` LIMIT 50000",
-				Rows:  sqlmock.NewRows([]string{"total"}).AddRow(50000),
-			},
-			{
-				Query: "SELECT COUNT(*) AS record_count FROM (SELECT `salary` FROM `exist_db`.`table_employees` LIMIT 50000) AS limited GROUP BY `salary` ORDER BY record_count DESC LIMIT 1",
-				Rows:  sqlmock.NewRows([]string{"record_count"}).AddRow(7500),
+				Query: "SELECT COUNT( DISTINCT ( `salary` ) ) / COUNT( * ) * 100 AS 'salary' FROM (SELECT `salary` FROM `exist_db`.`table_employees` LIMIT 50000) t;",
+				Rows:  sqlmock.NewRows([]string{"salary"}).AddRow(1),
 			},
 		}, newTestResult())
 
@@ -89,12 +69,8 @@ func TestRuleSQLE00039(t *testing.T) {
 		session.NewAIMockContext().WithSQL("CREATE TABLE table_inventory (inventory_id INT, sku VARCHAR(50), INDEX idx_sku(sku));"),
 		[]*AIMockSQLExpectation{
 			{
-				Query: "SELECT COUNT(*) AS total FROM `exist_db`.`table_inventory` LIMIT 50000",
-				Rows:  sqlmock.NewRows([]string{"total"}).AddRow(50000),
-			},
-			{
-				Query: "SELECT COUNT(*) AS record_count FROM (SELECT `sku` FROM `exist_db`.`table_inventory` LIMIT 50000) AS limited GROUP BY `sku` ORDER BY record_count DESC LIMIT 1",
-				Rows:  sqlmock.NewRows([]string{"record_count"}).AddRow(30000),
+				Query: "SELECT COUNT( DISTINCT ( `sku` ) ) / COUNT( * ) * 100 AS 'sku' FROM (SELECT `sku` FROM `exist_db`.`table_inventory` LIMIT 50000) t;",
+				Rows:  sqlmock.NewRows([]string{"sku"}).AddRow(0.6),
 			},
 		}, newTestResult().addResult(ruleName))
 
@@ -103,12 +79,8 @@ func TestRuleSQLE00039(t *testing.T) {
 		session.NewAIMockContext().WithSQL("CREATE TABLE table_accounts (account_id INT, status VARCHAR(20), INDEX idx_account_id(account_id));"),
 		[]*AIMockSQLExpectation{
 			{
-				Query: "SELECT COUNT(*) AS total FROM `exist_db`.`table_accounts` LIMIT 50000",
-				Rows:  sqlmock.NewRows([]string{"total"}).AddRow(50000),
-			},
-			{
-				Query: "SELECT COUNT(*) AS record_count FROM (SELECT `account_id` FROM `exist_db`.`table_accounts` LIMIT 50000) AS limited GROUP BY `account_id` ORDER BY record_count DESC LIMIT 1",
-				Rows:  sqlmock.NewRows([]string{"record_count"}).AddRow(12500),
+				Query: "SELECT COUNT( DISTINCT ( `account_id` ) ) / COUNT( * ) * 100 AS 'account_id' FROM (SELECT `account_id` FROM `exist_db`.`table_accounts` LIMIT 50000) t;",
+				Rows:  sqlmock.NewRows([]string{"account_id"}).AddRow(1),
 			},
 		}, newTestResult())
 
@@ -117,12 +89,8 @@ func TestRuleSQLE00039(t *testing.T) {
 		session.NewAIMockContext().WithSQL("CREATE TABLE customers (customer_id INT, age INT, name VARCHAR(50));"),
 		[]*AIMockSQLExpectation{
 			{
-				Query: "SELECT COUNT(*) AS total FROM `exist_db`.`customers` LIMIT 50000",
-				Rows:  sqlmock.NewRows([]string{"total"}).AddRow(50000),
-			},
-			{
-				Query: "SELECT COUNT(*) AS record_count FROM (SELECT `age` FROM `exist_db`.`customers` LIMIT 50000) AS limited GROUP BY `age` ORDER BY record_count DESC LIMIT 1",
-				Rows:  sqlmock.NewRows([]string{"record_count"}).AddRow(25000),
+				Query: "SELECT COUNT( DISTINCT ( `age` ) ) / COUNT( * ) * 100 AS 'age' FROM (SELECT `age` FROM `exist_db`.`customers` LIMIT 50000) t;",
+				Rows:  sqlmock.NewRows([]string{"age"}).AddRow(0.1),
 			},
 		}, newTestResult().addResult(ruleName))
 
@@ -131,12 +99,8 @@ func TestRuleSQLE00039(t *testing.T) {
 		session.NewAIMockContext().WithSQL("CREATE TABLE customers (customer_id INT, name VARCHAR(50));"),
 		[]*AIMockSQLExpectation{
 			{
-				Query: "SELECT COUNT(*) AS total FROM `exist_db`.`customers` LIMIT 50000",
-				Rows:  sqlmock.NewRows([]string{"total"}).AddRow(50000),
-			},
-			{
-				Query: "SELECT COUNT(*) AS record_count FROM (SELECT `name` FROM `exist_db`.`customers` LIMIT 50000) AS limited GROUP BY `name` ORDER BY record_count DESC LIMIT 1",
-				Rows:  sqlmock.NewRows([]string{"record_count"}).AddRow(10000),
+				Query: "SELECT COUNT( DISTINCT ( `name` ) ) / COUNT( * ) * 100 AS 'name' FROM (SELECT `name` FROM `exist_db`.`customers` LIMIT 50000) t;",
+				Rows:  sqlmock.NewRows([]string{"name"}).AddRow(1),
 			},
 		}, newTestResult())
 
@@ -145,12 +109,8 @@ func TestRuleSQLE00039(t *testing.T) {
 		session.NewAIMockContext().WithSQL("CREATE TABLE customers (customer_id INT, name VARCHAR(50), age INT, INDEX idx_name(name));"),
 		[]*AIMockSQLExpectation{
 			{
-				Query: "SELECT COUNT(*) AS total FROM `exist_db`.`customers` LIMIT 50000",
-				Rows:  sqlmock.NewRows([]string{"total"}).AddRow(50000),
-			},
-			{
-				Query: "SELECT COUNT(*) AS record_count FROM (SELECT `name` FROM `exist_db`.`customers` LIMIT 50000) AS limited GROUP BY `name` ORDER BY record_count DESC LIMIT 1",
-				Rows:  sqlmock.NewRows([]string{"record_count"}).AddRow(7500),
+				Query: "SELECT COUNT( DISTINCT ( `name` ) ) / COUNT( * ) * 100 AS 'name' FROM (SELECT `name` FROM `exist_db`.`customers` LIMIT 50000) t;",
+				Rows:  sqlmock.NewRows([]string{"name"}).AddRow(1),
 			},
 		}, newTestResult())
 
@@ -159,12 +119,8 @@ func TestRuleSQLE00039(t *testing.T) {
 		session.NewAIMockContext().WithSQL("CREATE TABLE customers (customer_id INT, name VARCHAR(50), age INT, INDEX idx_age(age));"),
 		[]*AIMockSQLExpectation{
 			{
-				Query: "SELECT COUNT(*) AS total FROM `exist_db`.`customers` LIMIT 50000",
-				Rows:  sqlmock.NewRows([]string{"total"}).AddRow(50000),
-			},
-			{
-				Query: "SELECT COUNT(*) AS record_count FROM (SELECT `age` FROM `exist_db`.`customers` LIMIT 50000) AS limited GROUP BY `age` ORDER BY record_count DESC LIMIT 1",
-				Rows:  sqlmock.NewRows([]string{"record_count"}).AddRow(20000),
+				Query: "SELECT COUNT( DISTINCT ( `age` ) ) / COUNT( * ) * 100 AS 'age' FROM (SELECT `age` FROM `exist_db`.`customers` LIMIT 50000) t;",
+				Rows:  sqlmock.NewRows([]string{"age"}).AddRow(0.1),
 			},
 		}, newTestResult().addResult(ruleName))
 }
