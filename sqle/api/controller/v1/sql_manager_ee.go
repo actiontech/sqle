@@ -435,7 +435,6 @@ func getSqlManageSqlAnalysisChartV1(c echo.Context) error {
 }
 
 func getSqlAnalysisChart(sqlManageId string, metricName string, latestPointEnabled bool, startTime time.Time, endTime time.Time) ([]ChartPoint, error) {
-	duration := endTime.Sub(startTime)
 	storage := model.GetStorage()
 	sqlManageRecord, exist, err := storage.GetOriginManageSqlByID(sqlManageId)
 	if err != nil {
@@ -444,41 +443,19 @@ func getSqlAnalysisChart(sqlManageId string, metricName string, latestPointEnabl
 	if !exist {
 		return nil, fmt.Errorf("sql manage id %v not exist", sqlManageId)
 	}
-	durationHours := duration.Hours()
-	// duration <=24小时 不聚合
-	// duration <=7天 每个点取4小时内的最大值
-	// duration <=30天 每个点取24小时内的最大值
-	if durationHours <= 24 {
-		chartPoints, err := timeSliceQuerySqlManageMetricChartPoints(sqlManageRecord.SQLID, metricName, nil, startTime, endTime)
-		if err != nil {
-			return nil, err
-		}
-		if latestPointEnabled {
-			chartPoint, err := queryExplainChartPoint(*sqlManageRecord, sqlManageRecord.SchemaName, sqlManageRecord.SqlText)
-			if err != nil {
-				return nil, err
-			}
-			chartPoints = append(chartPoints, *chartPoint)
-		}
-		return chartPoints, nil
-	} else if durationHours <= 7*24 {
-		duration4Hour := 4 * time.Hour
-		chartPoints, err := timeSliceQuerySqlManageMetricChartPoints(sqlManageRecord.SQLID, metricName, &duration4Hour, startTime, endTime)
-		if err != nil {
-			return nil, err
-		}
-		return chartPoints, nil
-	} else if durationHours <= 30*24 {
-		duration24Hour := 24 * time.Hour
-		chartPoints, err := timeSliceQuerySqlManageMetricChartPoints(sqlManageRecord.SQLID, metricName, &duration24Hour, startTime, endTime)
-		if err != nil {
-			return nil, err
-		}
-		return chartPoints, nil
-	} else {
-		chartPoints := make([]ChartPoint, 0)
-		return chartPoints, fmt.Errorf("time range over limit")
+	chartPoints, err := timeSliceQuerySqlManageMetricChartPoints(sqlManageRecord.SQLID, metricName, nil, startTime, endTime)
+	if err != nil {
+		return nil, err
 	}
+	if latestPointEnabled {
+		chartPoint, err := queryExplainChartPoint(*sqlManageRecord, sqlManageRecord.SchemaName, sqlManageRecord.SqlText, endTime)
+		if err != nil {
+			return nil, err
+		}
+		chartPoints = append(chartPoints, *chartPoint)
+		return chartPoints, nil
+	}
+	return chartPoints, nil
 }
 
 // 根据时间分片查询
@@ -555,7 +532,7 @@ func record2ChartPoint(sqlManageMetricRecord model.SqlManageMetricRecord, create
 	}
 }
 
-func queryExplainChartPoint(sqlManageRecord model.SQLManageRecord, schema, sql string) (chartPoint *ChartPoint, err error) {
+func queryExplainChartPoint(sqlManageRecord model.SQLManageRecord, schema, sql string, endTime time.Time) (chartPoint *ChartPoint, err error) {
 	instance, exist, err := dms.GetInstancesById(context.TODO(), sqlManageRecord.InstanceID)
 	if err != nil {
 		return nil, err
@@ -603,7 +580,7 @@ func queryExplainChartPoint(sqlManageRecord model.SQLManageRecord, schema, sql s
 			explainColumns[11].Name: row[11],
 		})
 	}
-	nowTime := time.Now().Format(time.RFC3339)
+	nowTime := endTime.Format(time.RFC3339)
 	return &ChartPoint{
 		X:     &nowTime,
 		Y:     &cost,
