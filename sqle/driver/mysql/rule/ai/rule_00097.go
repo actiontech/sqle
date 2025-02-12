@@ -26,7 +26,14 @@ func init() {
 			Desc:       plocale.Rule00097Desc,
 			Annotation: plocale.Rule00097Annotation,
 			Category:   plocale.RuleTypeDMLConvention,
-			Level:      driverV2.RuleLevelError,
+			CategoryTags: map[string][]string{
+				plocale.RuleCategoryOperand.ID:              {plocale.RuleTagBusiness.ID},
+				plocale.RuleCategorySQL.ID:                  {plocale.RuleTagDML.ID},
+				plocale.RuleCategoryAuditPurpose.ID:         {plocale.RuleTagPerformance.ID},
+				plocale.RuleCategoryAuditAccuracy.ID:        {plocale.RuleTagOnline.ID},
+				plocale.RuleCategoryAuditPerformanceCost.ID: {},
+			},
+			Level: driverV2.RuleLevelError,
 			Params: []*rulepkg.SourceParam{{
 				Key:   rulepkg.DefaultSingleParamKeyName,
 				Value: "100",
@@ -111,6 +118,9 @@ func RuleSQLE00097(input *rulepkg.RuleHandlerInput) error {
 			return false, fmt.Errorf("Failed to get CREATE TABLE statement for table %s: %v", table.Name.String(), err)
 		}
 		columnDef := getColumnDef(createTableStmt, col)
+		if columnDef == nil {
+			return false, nil
+		}
 
 		// 获取列类型
 		colType := columnDef.Tp.Tp

@@ -15,8 +15,6 @@ import (
 
 	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 	"github.com/actiontech/sqle/sqle/driver/mysql/rule"
-	"golang.org/x/text/language"
-
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
@@ -24,6 +22,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/jmoiron/sqlx/reflectx"
 	xerrors "github.com/pkg/errors"
+	"golang.org/x/text/language"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -265,11 +264,11 @@ func (s *Storage) CreateRuleCategories() error {
 		return errors.New(errors.ConnectStorageError, err)
 	}
 	categoryTagMap := map[string][]string{
-		plocale.RuleCategoryOperand.ID:              {plocale.RuleTagDatabase.ID, plocale.RuleTagTablespace.ID, plocale.RuleTagTable.ID, plocale.RuleTagColumn.ID, plocale.RuleTagIndex.ID, plocale.RuleTagView.ID, plocale.RuleTagProcedure.ID, plocale.RuleTagFunction.ID, plocale.RuleTagTrigger.ID, plocale.RuleTagEvent.ID, plocale.RuleTagUser.ID},
-		plocale.RuleCategorySQL.ID:                  {plocale.RuleTagDML.ID, plocale.RuleTagDDL.ID, plocale.RuleTagDCL.ID, plocale.RuleTagIntegrity.ID, plocale.RuleTagQuery.ID, plocale.RuleTagTransaction.ID, plocale.RuleTagPrivilege.ID, plocale.RuleTagManagement.ID},
+		plocale.RuleCategoryOperand.ID:              {plocale.RuleTagDatabase.ID, plocale.RuleTagTablespace.ID, plocale.RuleTagTable.ID, plocale.RuleTagColumn.ID, plocale.RuleTagIndex.ID, plocale.RuleTagView.ID, plocale.RuleTagProcedure.ID, plocale.RuleTagFunction.ID, plocale.RuleTagTrigger.ID, plocale.RuleTagEvent.ID, plocale.RuleTagUser.ID, plocale.RuleTagSequence.ID, plocale.RuleTagBusiness.ID},
+		plocale.RuleCategorySQL.ID:                  {plocale.RuleTagDML.ID, plocale.RuleTagDDL.ID, plocale.RuleTagDCL.ID, plocale.RuleTagIntegrity.ID, plocale.RuleTagComplete.ID, plocale.RuleTagQuery.ID, plocale.RuleTagJoin.ID, plocale.RuleTagTransaction.ID, plocale.RuleTagPrivilege.ID, plocale.RuleTagManagement.ID, plocale.RuleTagSQLTablespace.ID, plocale.RuleTagSQLFunction.ID, plocale.RuleTagSQLProcedure.ID, plocale.RuleTagSQLTrigger.ID, plocale.RuleTagSQLView.ID},
 		plocale.RuleCategoryAuditPurpose.ID:         {plocale.RuleTagPerformance.ID, plocale.RuleTagMaintenance.ID, plocale.RuleTagSecurity.ID, plocale.RuleTagCorrection.ID},
 		plocale.RuleCategoryAuditAccuracy.ID:        {plocale.RuleTagOnline.ID, plocale.RuleTagOffline.ID},
-		plocale.RuleCategoryAuditPerformanceCost.ID: {plocale.RuleTagPerformanceCostHigh.ID},
+		plocale.RuleCategoryAuditPerformanceCost.ID: {plocale.RuleTagPerformanceCostHigh.ID, plocale.RuleTagPerformanceCostMedium.ID, plocale.RuleTagPerformanceCostLow.ID},
 	}
 	for category, tags := range categoryTagMap {
 		for _, tag := range tags {
@@ -304,16 +303,11 @@ func (s *Storage) CreateRulesIfNotExist(rulesMap map[string][]*Rule) error {
 	}
 	for dbType, rules := range rulesMap {
 		for _, rule := range rules {
-			// 持久化规则分类信息
-			categoryError := s.UpdateRuleCategoryRels(rule)
-			if categoryError != nil {
-				return categoryError
-			}
 			existedRule, exist := isRuleExistInDB(rulesInDB, rule, dbType)
 			// rule will be created or update if:
 			// 1. rule not exist;
 			if !exist {
-				err := s.Save(rule)
+				err := errors.New(errors.ConnectStorageError, s.db.Omit("Categories").Save(rule).Error)
 				if err != nil {
 					return err
 				}
@@ -342,7 +336,7 @@ func (s *Storage) CreateRulesIfNotExist(rulesMap map[string][]*Rule) error {
 						}
 					}
 					// 保存规则
-					err := s.Save(rule)
+					err := errors.New(errors.ConnectStorageError, s.db.Omit("Categories").Save(rule).Error)
 					if err != nil {
 						return err
 					}
@@ -354,6 +348,12 @@ func (s *Storage) CreateRulesIfNotExist(rulesMap map[string][]*Rule) error {
 						}
 					}
 				}
+			}
+
+			// 持久化规则分类信息
+			categoryError := s.UpdateRuleCategoryRels(rule, existedRule)
+			if categoryError != nil {
+				return categoryError
 			}
 		}
 	}
@@ -658,60 +658,68 @@ var categoryMapping = map[string]map[string][]string{
 	},
 }
 
-func (s *Storage) UpdateRuleCategoryRels(rule *Rule) error {
-	ruleInfo := rule.I18nRuleInfo.GetRuleInfoByLangTag(language.Chinese)
-	oldCategory := ruleInfo.Category
-	ruleDesc := ruleInfo.Desc
-	_, existed, err := s.FirstAuditRuleCategoryRelByRule(rule.Name, rule.DBType)
-	if err != nil {
-		return err
+func (s *Storage) UpdateRuleCategoryRels(rule, existedRule *Rule) error {
+	var err error
+	var auditRuleCategories []*AuditRuleCategory
+	if len(rule.Categories) > 0 {
+		// 规则定义了新的规则分类标签
+		db := s.db.Model(AuditRuleCategory{})
+		for _, v := range rule.Categories {
+			db = db.Or("category = ? and tag = ?", v.Category, v.Tag)
+		}
+		if err = db.Find(&auditRuleCategories).Error; err != nil {
+			return err
+		}
+	} else {
+		// 旧的分类 映射到 新的规则分类标签
+		var tags []string
+		ruleInfo := rule.I18nRuleInfo.GetRuleInfoByLangTag(language.Chinese)
+		oldCategory := ruleInfo.Category
+		ruleDesc := ruleInfo.Desc
+		tags = mappingToNewCategory(ruleDesc, oldCategory)
+		tags = append(tags, plocale.RuleTagOnline.ID)
+		if rule.AllowOffline {
+			tags = append(tags, plocale.RuleTagOffline.ID)
+		}
+
+		// 根据特定规则名添加性能消耗分类
+		if performanceCostId, ok := ruleNameToPerformanceCostId[rule.Name]; ok {
+			tags = append(tags, performanceCostId)
+		}
+
+		// 获取分类表中的分类信息
+		auditRuleCategories, err = s.GetAuditRuleCategoryByTagIn(tags)
+		if err != nil {
+			return err
+		}
 	}
-	// 某个规则存在分类不做处理
-	if existed {
-		return nil
-	}
-	tags := mappingToNewCategory(ruleDesc, oldCategory)
-	// 获取分类表中的分类信息
-	auditRuleCategories, err := s.GetAuditRuleCategoryByTagIn(tags)
-	if err != nil {
-		return err
+
+	var existedRuleCategoryMap map[string]*AuditRuleCategory
+	if existedRule != nil {
+		// map缓存已存在的规则分类标签
+		existedRuleCategoryMap = make(map[string]*AuditRuleCategory, len(existedRule.Categories))
+		for k := range existedRule.Categories {
+			existedRuleCategoryMap[existedRule.Categories[k].Category+existedRule.Categories[k].Tag] = existedRule.Categories[k]
+		}
 	}
 	for _, newCategory := range auditRuleCategories {
-		auditRuleCategoryRel := AuditRuleCategoryRel{CategoryId: newCategory.ID, RuleName: rule.Name, RuleDBType: rule.DBType}
-		err = s.db.Create(&auditRuleCategoryRel).Error
-		if err != nil {
-			return err
+		_, existed := existedRuleCategoryMap[newCategory.Category+newCategory.Tag]
+		if !existed {
+			// 创建规则与新增的标签分类的关联关系
+			auditRuleCategoryRel := AuditRuleCategoryRel{CategoryId: newCategory.ID, RuleName: rule.Name, RuleDBType: rule.DBType}
+			err = s.db.Create(&auditRuleCategoryRel).Error
+			if err != nil {
+				return err
+			}
+		} else {
+			// 可复用的关联关系，在map缓存中删除
+			delete(existedRuleCategoryMap, newCategory.Category+newCategory.Tag)
 		}
 	}
-	auditAccuracyCategories, err := s.GetAuditRuleCategoryByCategory(plocale.RuleCategoryAuditAccuracy.ID)
-	if err != nil {
-		return err
-	}
-	// 根据离线/在线审核生成规则的分类关系
-	for _, auditAccuracyCategory := range auditAccuracyCategories {
-		if !rule.AllowOffline && auditAccuracyCategory.Tag == plocale.RuleTagOffline.ID {
-			continue
-		}
-		auditRuleCategoryRel := AuditRuleCategoryRel{CategoryId: auditAccuracyCategory.ID, RuleName: rule.Name, RuleDBType: rule.DBType}
-		err = s.db.Create(&auditRuleCategoryRel).Error
-		if err != nil {
-			return err
-		}
-	}
-
-	auditPerformanceLevelCategories, err := s.GetAuditRuleCategoryByCategory(plocale.RuleCategoryAuditPerformanceCost.ID)
-	if err != nil {
-		return err
-	}
-	auditPerformanceLevelCategoriesMapTagToId := make(map[string]uint)
-	for i := range auditPerformanceLevelCategories {
-		auditPerformanceLevelCategoriesMapTagToId[auditPerformanceLevelCategories[i].Tag] = auditPerformanceLevelCategories[i].ID
-	}
-
-	// 根据特定规则名添加高消耗分类
-	if performanceCostId, ok := ruleNameToPerformanceCostId[rule.Name]; ok {
-		auditRuleCategoryRel := AuditRuleCategoryRel{CategoryId: auditPerformanceLevelCategoriesMapTagToId[performanceCostId], RuleName: rule.Name, RuleDBType: rule.DBType}
-		err = s.db.Create(&auditRuleCategoryRel).Error
+	for _, existedCategory := range existedRuleCategoryMap {
+		// 删除在map缓存剩下（规则弃用的标签）的关联关系
+		auditRuleCategoryRel := AuditRuleCategoryRel{CategoryId: existedCategory.ID, RuleName: rule.Name, RuleDBType: rule.DBType}
+		err = s.db.Delete(&auditRuleCategoryRel).Error
 		if err != nil {
 			return err
 		}
