@@ -73,7 +73,7 @@ func GetKnowledgeBaseTagList(c echo.Context) error {
 // @Tags knowledge
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.GetKnowledgeGraphResp
-// @router /v1/knowledge/graph [get]
+// @router /v1/knowledge_bases/graph [get]
 func GetKnowledgeGraph(c echo.Context) error {
 	return getKnowledgeGraph(c)
 }

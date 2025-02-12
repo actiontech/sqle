@@ -7375,20 +7375,6 @@ paths:
       summary: 获取规则模板文件
       tags:
       - rule_template
-  /v1/knowledge/graph:
-    get:
-      description: get knowledge graph
-      operationId: getKnowledgeGraph
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetKnowledgeGraphResp'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取知识库知识图谱
-      tags:
-      - knowledge
   /v1/knowledge_bases:
     get:
       description: get knowledge base list
@@ -7414,6 +7400,20 @@ paths:
       summary: 获取知识库列表
       tags:
       - knowledge_base
+  /v1/knowledge_bases/graph:
+    get:
+      description: get knowledge graph
+      operationId: getKnowledgeGraph
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetKnowledgeGraphResp'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取知识库知识图谱
+      tags:
+      - knowledge
   /v1/knowledge_bases/tags:
     get:
       description: get tag list of knowledge base

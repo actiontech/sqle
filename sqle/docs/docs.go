@@ -1369,29 +1369,6 @@ var doc = `{
                 }
             }
         },
-        "/v1/knowledge/graph": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get knowledge graph",
-                "tags": [
-                    "knowledge"
-                ],
-                "summary": "获取知识库知识图谱",
-                "operationId": "getKnowledgeGraph",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetKnowledgeGraphResp"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/knowledge_bases": {
             "get": {
                 "security": [
@@ -1427,6 +1404,29 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetKnowledgeBaseListRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/knowledge_bases/graph": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get knowledge graph",
+                "tags": [
+                    "knowledge"
+                ],
+                "summary": "获取知识库知识图谱",
+                "operationId": "getKnowledgeGraph",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetKnowledgeGraphResp"
                         }
                     }
                 }
