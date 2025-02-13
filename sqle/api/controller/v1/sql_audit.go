@@ -291,3 +291,38 @@ type SqlAnalysisResDataV1 struct {
 func DirectGetSQLAnalysis(c echo.Context) error {
 	return directGetSQLAnalysis(c)
 }
+
+type DirectParseSQLReq struct {
+	InstanceType string `json:"instance_type" query:"instance_type" example:"MySQL" valid:"required"`
+	SQL          string `json:"sql" query:"sql" example:"select * from t1; select * from t2;" valid:"required"`
+}
+
+type DirectParseSQLRes struct {
+	controller.BaseRes
+	Data []*ParseSQLResData `json:"data"`
+}
+
+type ParseSQLResData struct {
+	SQL          string          `json:"sql"`
+	SQLType      string          `json:"sql_type"`
+	ExtractTable []*ExtractTable `json:"extract_table"`
+}
+
+type ExtractTable struct {
+	SchemaName string `json:"schema_name"`
+	TableName  string `json:"table_name"`
+}
+
+// DirectParseSQL
+// @Summary 解析SQL
+// @Description parse sql
+// @Id parseSQL
+// @Tags sql_parse
+// @Security ApiKeyAuth
+// @param instance_type query string true "instance type"
+// @Param sql query string true "sql"
+// @Success 200 {object} v1.DirectParseSQLRes
+// @router /v1/sql_parse [get]
+func DirectParseSQL(c echo.Context) error {
+	return nil
+}
