@@ -133,7 +133,7 @@ func (s *Storage) CreateKnowledgeWithTags(knowledge *Knowledge, tags map[TypeTag
 func (s *Storage) GetKnowledgeByTagsAndTitle(filterTags []*Tag, title string) (*Knowledge, error) {
 	var (
 		modelKnowledge Knowledge
-		tagIds         []uint
+		tagIds         = make([]uint, 0, len(filterTags))
 	)
 
 	for _, tag := range filterTags {
