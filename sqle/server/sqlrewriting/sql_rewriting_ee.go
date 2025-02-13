@@ -97,15 +97,6 @@ type ruleIdConvert struct {
 	RuleId string `json:"RuleId"`
 }
 
-// 已经使用新规则ID实现的数据库类型插件，不需要进行规则ID转换
-func noNeedConvert(dbType string) bool {
-	switch strings.ToLower(dbType) {
-	case "tbase", "hana":
-		return true
-	}
-	return false
-}
-
 func getRuleIdConvert(dbType string) ([]ruleIdConvert, error) {
 	switch strings.ToLower(dbType) {
 	case "mysql":
@@ -127,8 +118,10 @@ func ConvertRuleNameToRuleId(dbType string, ruleName string) (string, error) {
 	if ruleName == "" {
 		return "", fmt.Errorf("rule name is empty")
 	}
-	if noNeedConvert(dbType) {
-		return ruleName, nil
+	// 无需转换的规则：新规则是以SQLEx开头的规则，不需要转换
+	if strings.HasPrefix(ruleName, "SQLE") {
+		// 重写模型只需要规则ID，不需要前缀
+		return strings.TrimPrefix(ruleName, "SQLE"), nil
 	}
 	ruleIdConvert, err := getRuleIdConvert(dbType)
 	if err != nil {
@@ -141,26 +134,6 @@ func ConvertRuleNameToRuleId(dbType string, ruleName string) (string, error) {
 		}
 	}
 	return "", fmt.Errorf("can't find rule id for rule name: %s", ruleName)
-}
-
-func ConvertRuleIDToRuleName(dbType string, ruleId string) (string, error) {
-	if ruleId == "" {
-		return "", fmt.Errorf("rule id is empty")
-	}
-	if noNeedConvert(dbType) {
-		return ruleId, nil
-	}
-	ruleIdConvert, err := getRuleIdConvert(dbType)
-	if err != nil {
-		return "", err
-	}
-
-	for _, r := range ruleIdConvert {
-		if r.RuleId == ruleId {
-			return r.Name, nil
-		}
-	}
-	return "", fmt.Errorf("can't find rule name for rule id: %s", ruleId)
 }
 
 type SQLRewritingParams struct {
