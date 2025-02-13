@@ -180,6 +180,8 @@ var autoMigrateList = []interface{}{
 	&SqlVersionStage{},
 	&SqlVersionStagesDependency{},
 	&WorkflowVersionStage{},
+	&Tag{},
+	&Knowledge{},
 }
 
 func (s *Storage) AutoMigrate() error {
@@ -192,10 +194,6 @@ func (s *Storage) AutoMigrate() error {
 		return errors.New(errors.ConnectStorageError, err)
 	}
 	err = s.db.SetupJoinTable(&CustomRule{}, "Categories", &CustomRuleCategoryRel{})
-	if err != nil {
-		return errors.New(errors.ConnectStorageError, err)
-	}
-	err = s.addFullTextIndexForKnowledge()
 	if err != nil {
 		return errors.New(errors.ConnectStorageError, err)
 	}
