@@ -3,65 +3,11 @@
 
 package model
 
-import (
-	"context"
+import "github.com/actiontech/sqle/sqle/errors"
 
-	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
-	"github.com/actiontech/sqle/sqle/errors"
-	"github.com/actiontech/sqle/sqle/locale"
-	"gorm.io/gorm"
-)
-
-func (s *Storage) CreateOrUpdateRuleKnowledgeContent(ctx context.Context, ruleName, dbType, content string) error {
-	lang := locale.Bundle.GetLangTagFromCtx(ctx)
-	rule := Rule{
-		Name:   ruleName,
-		DBType: dbType,
-	}
-	if err := s.db.Preload("Knowledge").Find(&rule).Error; err != nil {
-		return errors.New(errors.ConnectStorageError, err)
-	}
-	if rule.Knowledge == nil || rule.Knowledge.I18nContent == nil {
-		rule.Knowledge = &RuleKnowledge{I18nContent: i18nPkg.I18nStr{
-			lang: content,
-		}}
-	} else {
-		rule.Knowledge.I18nContent.SetStrInLang(lang, content)
-	}
-	return errors.New(errors.ConnectStorageError, s.db.Session(&gorm.Session{FullSaveAssociations: true}).Save(&rule).Error)
-}
-
-func (s *Storage) CreateOrUpdateCustomRuleKnowledgeContent(ctx context.Context, ruleName, dbType, content string) error {
-	lang := locale.Bundle.GetLangTagFromCtx(ctx)
-	rule := CustomRule{}
-	if err := s.db.Preload("Knowledge").Where("rule_id = ?", ruleName).Where("db_type = ?", dbType).Find(&rule).Error; err != nil {
-		return errors.New(errors.ConnectStorageError, err)
-	}
-	if rule.Knowledge == nil || rule.Knowledge.I18nContent == nil {
-		rule.Knowledge = &RuleKnowledge{I18nContent: i18nPkg.I18nStr{
-			lang: content,
-		}}
-	} else {
-		rule.Knowledge.I18nContent.SetStrInLang(lang, content)
-	}
-	return errors.New(errors.ConnectStorageError, s.db.Session(&gorm.Session{FullSaveAssociations: true}).Save(&rule).Error)
-}
-
-func (s *Storage) GetRuleWithKnowledge(ruleName, dbType string) (*Rule, error) {
-	rule := Rule{
-		Name:   ruleName,
-		DBType: dbType,
-	}
-	if err := s.db.Preload("Knowledge").Find(&rule).Error; err != nil {
-		return nil, errors.New(errors.ConnectStorageError, err)
-	}
-	return &rule, nil
-}
-
-func (s *Storage) GetCustomRuleWithKnowledge(ruleName, dbType string) (*CustomRule, error) {
-	rule := CustomRule{}
-	if err := s.db.Preload("Knowledge").Where("rule_id = ?", ruleName).Where("db_type = ?", dbType).Find(&rule).Error; err != nil {
-		return nil, errors.New(errors.ConnectStorageError, err)
-	}
-	return &rule, nil
+// 获取所有的自定义规则以及Knowledge
+func (s *Storage) GetAllCustomRules() ([]*CustomRule, error) {
+	rules := []*CustomRule{}
+	err := s.db.Preload("Knowledge").Preload("Categories").Find(&rules).Error
+	return rules, errors.New(errors.ConnectStorageError, err)
 }

@@ -10,6 +10,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/server/knowledge_base"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
 
@@ -133,6 +134,11 @@ func createCustomRule(c echo.Context) error {
 	}
 	err = createCustomRuleCategoryRels(ruleId, req.Tags)
 	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	// 创建规则知识库，以及打标签
+	err = knowledge_base.InitCustomRuleKnowledge(customRule)
+	if err!= nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))

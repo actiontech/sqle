@@ -10,9 +10,9 @@ import (
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/common"
 	dms "github.com/actiontech/sqle/sqle/dms"
-	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/server/knowledge_base"
 	"github.com/labstack/echo/v4"
 )
 
@@ -73,30 +73,29 @@ func directGetSQLAnalysis(c echo.Context) error {
 	})
 }
 
+// TODO 放到knowledge中
 func getRuleKnowledge(c echo.Context) error {
 	ruleName := c.Param("rule_name")
 	dbType := c.Param("db_type")
-	s := model.GetStorage()
-	lang := locale.Bundle.GetLangTagFromCtx(c.Request().Context())
 
-	rule, err := s.GetRuleWithKnowledge(ruleName, dbType)
+	knowledge, err := knowledge_base.GetRuleWithKnowledge(c.Request().Context(), ruleName, dbType)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	ruleInfo := rule.I18nRuleInfo.GetRuleInfoByLangTag(lang)
 	return c.JSON(http.StatusOK, GetRuleKnowledgeResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data: RuleKnowledgeResV1{
 			Rule: RuleInfo{
-				Desc:       ruleInfo.Desc,
-				Annotation: ruleInfo.Annotation,
+				Desc:       knowledge.Description,
+				Annotation: knowledge.Title,
 			},
-			KnowledgeContent: rule.Knowledge.GetContentByLangTag(lang),
+			KnowledgeContent: knowledge.Content,
 		},
 	})
 }
 
+// TODO 放到knowledge中
 func updateRuleKnowledge(c echo.Context) error {
 	req := new(UpdateRuleKnowledgeReq)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
@@ -109,8 +108,7 @@ func updateRuleKnowledge(c echo.Context) error {
 	}
 
 	ctx := c.Request().Context()
-	s := model.GetStorage()
-	if err := s.CreateOrUpdateRuleKnowledgeContent(ctx, ruleName, dbType, *req.KnowledgeContent); err != nil {
+	if err := knowledge_base.UpdateRuleKnowledgeContent(ctx, ruleName, dbType, *req.KnowledgeContent); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	return controller.JSONBaseErrorReq(c, nil)
@@ -119,8 +117,7 @@ func updateRuleKnowledge(c echo.Context) error {
 func getCustomRuleKnowledge(c echo.Context) error {
 	ruleName := c.Param("rule_name")
 	dbType := c.Param("db_type")
-	s := model.GetStorage()
-	rule, err := s.GetCustomRuleWithKnowledge(ruleName, dbType)
+	knowledge, err := knowledge_base.GetCustomRuleWithKnowledge(c.Request().Context(), ruleName, dbType)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -128,13 +125,15 @@ func getCustomRuleKnowledge(c echo.Context) error {
 		BaseRes: controller.NewBaseReq(nil),
 		Data: RuleKnowledgeResV1{
 			Rule: RuleInfo{
-				Desc:       rule.Desc,
-				Annotation: rule.Annotation,
+				Desc:       knowledge.Description,
+				Annotation: knowledge.Title,
 			},
-			KnowledgeContent: rule.Knowledge.GetContentByLangTag(locale.Bundle.GetLangTagFromCtx(c.Request().Context())),
+			KnowledgeContent: knowledge.Content,
 		},
 	})
 }
+
+// TODO 放到knowledge中
 func updateCustomRuleKnowledge(c echo.Context) error {
 	req := new(UpdateRuleKnowledgeReq)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
@@ -147,8 +146,7 @@ func updateCustomRuleKnowledge(c echo.Context) error {
 	}
 
 	ctx := c.Request().Context()
-	s := model.GetStorage()
-	if err := s.CreateOrUpdateCustomRuleKnowledgeContent(ctx, ruleName, dbType, *req.KnowledgeContent); err != nil {
+	if err := knowledge_base.UpdateCustomRuleKnowledgeContent(ctx, ruleName, dbType, *req.KnowledgeContent); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	return controller.JSONBaseErrorReq(c, nil)
