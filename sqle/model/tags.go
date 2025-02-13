@@ -1,9 +1,5 @@
 package model
 
-func init() {
-	autoMigrateList = append(autoMigrateList, &Tag{})
-}
-
 // TypeTag 标签类型
 type TypeTag string
 
