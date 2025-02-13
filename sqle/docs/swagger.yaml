@@ -1373,6 +1373,7 @@ definitions:
         description: 方便前端显示
         type: string
       is_directed:
+        description: 是否有向
         type: boolean
       to_id:
         description: 存储Node的ID而不是指针
@@ -1381,6 +1382,7 @@ definitions:
         description: 方便前端显示
         type: string
       weight:
+        description: 权重
         type: integer
     type: object
   v1.EnumsValueResV1:
@@ -3067,10 +3069,12 @@ definitions:
   v1.GraphResponse:
     properties:
       edges:
+        description: 边集合
         items:
           $ref: '#/definitions/v1.EdgeResponse'
         type: array
       nodes:
+        description: 节点集合
         items:
           $ref: '#/definitions/v1.NodeResponse'
         type: array
@@ -3335,6 +3339,9 @@ definitions:
       id:
         description: 知识库ID
         type: integer
+      rule_name:
+        description: 规则名称
+        type: string
       tags:
         description: 标签
         items:

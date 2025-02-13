@@ -19,11 +19,12 @@ type GetKnowledgeBaseListRes struct {
 }
 
 type KnowledgeBase struct {
-	ID          uint   `json:"id"`          // 知识库ID
-	Title       string `json:"title"`       // 标题
-	Description string `json:"description"` // 描述
-	Content     string `json:"content"`     // 内容
-	Tags        []*Tag `json:"tags"`        // 标签
+	ID          uint   `json:"id"`                  // 知识库ID
+	RuleName    string `json:"rule_name,omitempty"` // 规则名称
+	Title       string `json:"title"`               // 标题
+	Description string `json:"description"`         // 描述
+	Content     string `json:"content"`             // 内容
+	Tags        []*Tag `json:"tags"`                // 标签
 }
 
 type Tag struct {

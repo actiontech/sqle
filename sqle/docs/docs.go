@@ -13566,6 +13566,7 @@ var doc = `{
                     "type": "string"
                 },
                 "is_directed": {
+                    "description": "是否有向",
                     "type": "boolean"
                 },
                 "to_id": {
@@ -13577,6 +13578,7 @@ var doc = `{
                     "type": "string"
                 },
                 "weight": {
+                    "description": "权重",
                     "type": "integer"
                 }
             }
@@ -16025,12 +16027,14 @@ var doc = `{
             "type": "object",
             "properties": {
                 "edges": {
+                    "description": "边集合",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/v1.EdgeResponse"
                     }
                 },
                 "nodes": {
+                    "description": "节点集合",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/v1.NodeResponse"
@@ -16418,6 +16422,10 @@ var doc = `{
                 "id": {
                     "description": "知识库ID",
                     "type": "integer"
+                },
+                "rule_name": {
+                    "description": "规则名称",
+                    "type": "string"
                 },
                 "tags": {
                     "description": "标签",
