@@ -13573,11 +13573,7 @@ var doc = `{
             "type": "object",
             "properties": {
                 "from_id": {
-                    "description": "存储Node的ID而不是指针",
-                    "type": "string"
-                },
-                "from_name": {
-                    "description": "方便前端显示",
+                    "description": "存储Node的ID",
                     "type": "string"
                 },
                 "is_directed": {
@@ -13585,11 +13581,7 @@ var doc = `{
                     "type": "boolean"
                 },
                 "to_id": {
-                    "description": "存储Node的ID而不是指针",
-                    "type": "string"
-                },
-                "to_name": {
-                    "description": "方便前端显示",
+                    "description": "存储Node的ID",
                     "type": "string"
                 },
                 "weight": {
@@ -16054,22 +16046,6 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v1.NodeResponse"
                     }
-                },
-                "stats": {
-                    "description": "添加图的统计信息",
-                    "type": "object",
-                    "$ref": "#/definitions/v1.GraphStats"
-                }
-            }
-        },
-        "v1.GraphStats": {
-            "type": "object",
-            "properties": {
-                "total_edges": {
-                    "type": "integer"
-                },
-                "total_nodes": {
-                    "type": "integer"
                 }
             }
         },
@@ -16575,9 +16551,6 @@ var doc = `{
         "v1.NodeResponse": {
             "type": "object",
             "properties": {
-                "data": {
-                    "type": "object"
-                },
                 "id": {
                     "type": "string"
                 },
