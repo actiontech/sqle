@@ -1367,19 +1367,13 @@ definitions:
   v1.EdgeResponse:
     properties:
       from_id:
-        description: 存储Node的ID而不是指针
-        type: string
-      from_name:
-        description: 方便前端显示
+        description: 存储Node的ID
         type: string
       is_directed:
         description: 是否有向
         type: boolean
       to_id:
-        description: 存储Node的ID而不是指针
-        type: string
-      to_name:
-        description: 方便前端显示
+        description: 存储Node的ID
         type: string
       weight:
         description: 权重
@@ -3078,17 +3072,6 @@ definitions:
         items:
           $ref: '#/definitions/v1.NodeResponse'
         type: array
-      stats:
-        $ref: '#/definitions/v1.GraphStats'
-        description: 添加图的统计信息
-        type: object
-    type: object
-  v1.GraphStats:
-    properties:
-      total_edges:
-        type: integer
-      total_nodes:
-        type: integer
     type: object
   v1.HighPriorityConditionReq:
     properties:
@@ -3430,8 +3413,6 @@ definitions:
     type: object
   v1.NodeResponse:
     properties:
-      data:
-        type: object
       id:
         type: string
       name:
