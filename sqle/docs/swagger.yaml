@@ -1364,6 +1364,27 @@ definitions:
           type: string
         type: array
     type: object
+  v1.EdgeResponse:
+    properties:
+      from_id:
+        description: 存储Node的ID而不是指针
+        type: string
+      from_name:
+        description: 方便前端显示
+        type: string
+      is_directed:
+        description: 是否有向
+        type: boolean
+      to_id:
+        description: 存储Node的ID而不是指针
+        type: string
+      to_name:
+        description: 方便前端显示
+        type: string
+      weight:
+        description: 权重
+        type: integer
+    type: object
   v1.EnumsValueResV1:
     properties:
       desc:
@@ -2096,6 +2117,18 @@ definitions:
         type: string
       total_nums:
         type: integer
+    type: object
+  v1.GetKnowledgeGraphResp:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.GraphResponse'
+        type: object
+      message:
+        example: ok
+        type: string
     type: object
   v1.GetLicenseResV1:
     properties:
@@ -3033,6 +3066,30 @@ definitions:
       total_nums:
         type: integer
     type: object
+  v1.GraphResponse:
+    properties:
+      edges:
+        description: 边集合
+        items:
+          $ref: '#/definitions/v1.EdgeResponse'
+        type: array
+      nodes:
+        description: 节点集合
+        items:
+          $ref: '#/definitions/v1.NodeResponse'
+        type: array
+      stats:
+        $ref: '#/definitions/v1.GraphStats'
+        description: 添加图的统计信息
+        type: object
+    type: object
+  v1.GraphStats:
+    properties:
+      total_edges:
+        type: integer
+      total_nodes:
+        type: integer
+    type: object
   v1.HighPriorityConditionReq:
     properties:
       key:
@@ -3282,6 +3339,9 @@ definitions:
       id:
         description: 知识库ID
         type: integer
+      rule_name:
+        description: 规则名称
+        type: string
       tags:
         description: 标签
         items:
@@ -3367,6 +3427,17 @@ definitions:
     properties:
       is_supported:
         type: boolean
+    type: object
+  v1.NodeResponse:
+    properties:
+      data:
+        type: object
+      id:
+        type: string
+      name:
+        type: string
+      weight:
+        type: integer
     type: object
   v1.ObjectDiffResult:
     properties:
@@ -4521,6 +4592,11 @@ definitions:
       name:
         description: 标签名称
         type: string
+      sub_tags:
+        description: 子标签
+        items:
+          $ref: '#/definitions/v1.Tag'
+        type: array
     type: object
   v1.TargetReleaseInstance:
     properties:
@@ -7321,6 +7397,16 @@ paths:
           type: string
         name: tags
         type: array
+      - description: page index
+        in: query
+        name: page_index
+        required: true
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        required: true
+        type: integer
       responses:
         "200":
           description: OK
@@ -7331,6 +7417,20 @@ paths:
       summary: 获取知识库列表
       tags:
       - knowledge_base
+  /v1/knowledge_bases/graph:
+    get:
+      description: get knowledge graph
+      operationId: getKnowledgeGraph
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetKnowledgeGraphResp'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取知识库知识图谱
+      tags:
+      - knowledge
   /v1/knowledge_bases/tags:
     get:
       description: get tag list of knowledge base
@@ -12550,6 +12650,7 @@ paths:
         - execute_sql_file_mode
         - sql_optimization
         - backup
+        - knowledge_base
         in: query
         name: module_name
         type: string
