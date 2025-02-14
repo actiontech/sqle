@@ -7411,7 +7411,7 @@ paths:
       - ApiKeyAuth: []
       summary: 获取知识库知识图谱
       tags:
-      - knowledge
+      - knowledge_bases
   /v1/knowledge_bases/tags:
     get:
       description: get tag list of knowledge base
