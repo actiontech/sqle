@@ -172,7 +172,7 @@ func (crw *CustomRuleWrapper) GetRequiredTags(predefineTags map[model.TypeTag]*m
 	knowledgeTag := predefineTags[model.PredefineTagCustomizeKnowledgeBase]
 	i18nTag := predefineTags[langTag]
 	dbTag := predefineTags[model.TypeTag(crw.rule.DBType)]
-	versionTag := predefineTags[model.PredefineTagV2]
+	versionTag := predefineTags[model.PredefineTagV1]
 
 	return []*model.Tag{knowledgeTag, i18nTag, dbTag, versionTag}, nil
 }

@@ -131,6 +131,25 @@ func (d *DBTypeTagManager) GetPreDefinedTags() map[model.TypeTag]struct{} {
 	return model.GetTagMapPredefineDBType()
 }
 
+// VersionTagManager 版本标签管理器
+type VersionTagManager struct {
+	*BaseTagManager
+}
+
+func NewVersionTagManager(storage *model.Storage) *VersionTagManager {
+	return &VersionTagManager{
+		BaseTagManager: NewBaseTagManager(storage, model.PredefineTagVersion),
+	}
+}
+
+func (v *VersionTagManager) GetPreDefinedTags() map[model.TypeTag]struct{} {
+	versionTagMap := make(map[model.TypeTag]struct{})
+	for tagName := range model.GetTagMapPredefineVersion() {
+		versionTagMap[tagName] = struct{}{}
+	}
+	return versionTagMap
+}
+
 // TagService 用于协调不同类型的tag管理
 type TagService struct {
 	storage     *model.Storage
@@ -145,6 +164,7 @@ func NewTagService(storage *model.Storage) *TagService {
 			NewLanguageTagManager(storage),
 			NewDBTypeTagManager(storage),
 			NewCustomTagManager(storage),
+			NewVersionTagManager(storage),
 		},
 	}
 }
