@@ -1,0 +1,116 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00175</规则编号>
+    <级别>warn</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>执行计划</规则种类>
+    <规则简述>避免不必要的索引扫描合并</规则简述>
+    <规则描述>索引合并说明一个查询同时使用了多个索引，增加了更多IO操作，特别是在数据量大的情况下执行效率比复合索引明显更多。此外，索引合并操作可能消耗更多CPU和内存资源，以及较长的查询响应时间。
+    </规则描述>
+    <规则场景>
+      <场景 名称="复合查询条件" 数据库版本="MySQL 所有版本" 检查方式="连库审核" 适用句型="SELECT、UPDATE、DELETE">
+        <示例>
+          前置:
+        
+          CREATE TABLE customers(
+          id INT NOT NULL, -- 序号
+          name varchar(32) ,-- 姓名
+          sex INT, -- 性别
+          city varchar(32) , -- 所在城市
+          age INT , -- 年龄
+          log_date date,  -- 日期类型记录
+          mark varchar(300) , -- 备注
+          PRIMARY KEY (id) -- 主键
+          );
+
+          create index idx_name_customers on customers(name);
+          create index idx_age_customers on customers(age);
+
+  
+          -- 生成初始样例数据 （基于MySQL 8.0 版本）
+          set @@cte_max_recursion_depth=2000000;
+          insert into customers 
+          with recursive tmp(a,b,c,d,e,f,g) as (
+          select 1,'lucy1000000',0,'shanghai',20,current_date(),rpad('actionsky',20,'0')
+          union all
+                select a+1,concat('lily',mod(a,100)),floor(rand()*2),'shanghai',ceil(rand()*20)+30,date_sub(current_date(),interval ceil(rand()*1000) day),rpad('test',20,'0000')
+                from tmp where a &lt; 1000001
+          ) table tmp;
+          
+          -- 手动收集统计信息
+          analyze table customers;
+      
+
+          示例：
+          select count(*) from customers where name = 'lily10' and age = 47;
+          update customers set mark='test' where name = 'lily10' and age = 47;
+          delete from customers where name = 'lily10' and age = 47;
+
+  
+          原理说明：
+          1. SQL 语句执行计划中出现 INDEX_MERGE 表示 MySQL 优化器根据过滤条件匹配的两个或者多个索引对应的rowid
+             进行合并的一种算法。
+          2. 简单理解 INDEX_MERGE算法为索引扫描结果合并，更通俗的说法就是优化器使用多个索引来生成执行计划。
+          3. INDEX_MERGE 算法其实是一种对于表中没有最优的索引来使用的场景下，优化器选择的一种妥协。
+          4. 通过对表建立更加优化的索引，会让优化器避免选择 INDEX_MERGE 算法，进而使用最优索引。
+  
+          示例验证：
+            
+            -- 执行示例SQL，执行计划显示使用了 index_merge 算法，其扫描行数为 1773.
+            (mysql:8.0.31-cluster)explain select count(*) from customers where name = 'lily10' and age = 47\G
+            *************************** 1. row ***************************
+                       id: 1
+              select_type: SIMPLE
+                    table: customers
+               partitions: NULL
+                     type: index_merge
+            possible_keys: idx_name_customers,idx_age_customers
+                      key: idx_name_customers,idx_age_customers
+                  key_len: 131,5
+                      ref: NULL
+                     rows: 1773
+                 filtered: 99.97
+                    Extra: Using intersect(idx_name_customers,idx_age_customers); Using where; Using index
+            1 row in set, 1 warning (0.00 sec)
+            
+            -- 删除原来的两个索引，并且加上合适的联合索引。
+            (mysql:8.0.31-cluster)alter table customers drop key idx_age_customers, drop key idx_name_customers, add key idx_name_age_customers (name,age);
+            Query OK, 0 rows affected (6.81 sec)
+            Records: 0  Duplicates: 0  Warnings: 0
+            
+
+            
+            -- 重新执行此SQL 语句，此时优化器选择走最优的索引，从而 避免 INDEX_MERGE 算法。此时扫描行数由 1773 降低为 522。
+            (mysql:8.0.31-cluster)explain select   count(*) from customers where name = 'lily10' and age = 47\G
+            *************************** 1. row ***************************
+                       id: 1
+              select_type: SIMPLE
+                    table: customers
+               partitions: NULL
+                     type: ref
+            possible_keys: idx_name_age_customers
+                      key: idx_name_age_customers
+                  key_len: 136
+                      ref: const,const
+                     rows: 522
+                 filtered: 100.00
+                    Extra: Using index
+            1 row in set, 1 warning (0.00 sec)
+            
+          
+            示例说明：
+            1. 表customers 有三个索引。idx_name_customers 适合针对name 列的过滤；idx_age_customers 适合针对 age 列的过滤；idx_name_age_customers 适合针对name 和 age 列的联合过滤。
+            2. 在此示例中，联合索引idx_name_age_customers 才是最适合此SQL 语句的。
+  
+        </示例>
+        <检查流程描述>
+        1. 登录数据库；
+        2. 使用EXPLAIN FORMAT=TRADITIONAL 查看SQL 语句的执行计划，如果出现 INDEX_MERGE 关键词，则将该句子的完整语句加入到触发规则的SQL 列表中。
+        </检查流程描述>
+        <知识文档>
+        1. MySQL INDEX_MERGE 官方文档： https://dev.mysql.com/doc/refman/8.0/en/index-merge-optimization.html
+        </知识文档>
+      </场景>
+    </规则场景>
+  
+  <标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

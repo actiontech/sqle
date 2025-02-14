@@ -1,0 +1,171 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00094</规则编号>
+    <级别>notice</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>SQL语句规范和可维护性</规则种类>
+    <规则变量>
+    <变量 名称="函数名">JSON_ARRAY,GROUP_CONCAT,CONCAT_WS,FIND_IN_SET</变量>
+    </规则变量>
+    <规则简述>避免使用不必要的内置函数</规则简述>
+    <规则描述>通过配置该规则可以指定业务中需要禁止使用的内置函数，使用内置函数可能会导致SQL无法走索引或者产生一些非预期的结果。实际需要禁用的函数可通过规则设置。</规则描述>
+    <规则场景>
+        <场景 名称="使用内置函数示例" 数据库版本="大于等于 MySQL 5.7 " 检查方式="不连库审核" 适用句型="SELECT、UPDATE、DELETE、INSERT ...SELECT、UNION">
+            <示例>
+              前置：
+              示例表结构:
+              create database db_mysql;
+              use db_mysql;
+    
+              -- 主表
+              CREATE TABLE customers(
+                id INT(11) NOT NULL, -- 序号
+                name VARCHAR(32) DEFAULT '',-- 姓名
+                sex TINYINT NOT NULL, -- 性别
+                city VARCHAR(32) NOT NULL, -- 所在城市
+                age SMALLINT(4) NOT NULL, -- 值类型
+                PRIMARY KEY (id) -- 主键
+              );
+              create index idx_name_customers on customers(name);
+              create index idx_age_customers on customers(age);
+
+  
+    
+              -- 插入模拟数据 100W 条。
+              set @@cte_max_recursion_depth=20000000;
+              insert into customers  
+              with recursive tmp (a,b,c,d,e) as (
+                select 1,'小王22222333',floor(rand()*2),'上海',ceil(rand()*30)+20 
+                union all 
+                select a+1,concat('小王',a),floor(rand()*2),'上海',ceil(rand()*20)+20 from tmp where a &lt; 1000000) 
+                select * from tmp;
+
+              原理说明：
+              1. MySQL 提供了很多内置函数。 大部分函数都经过了优化处理，使用起来非常高效。然而在某些场景下，使用某些函数可能使得性能不如预期，大打折扣。
+                1. 这类函数比如数学计算函数：计算对数、指数、正弦值、随机数等；
+                2. 字符串操作函数：如字符串拼接、子串提取、正则表达式匹配与替换等；
+                3. 时间与日期函数： 比如日期计算、时间间隔计算、日期格式化等；
+                4. 聚合函数：比如平均值、中位数、众数等。
+              2. 此规则中我们来使用函数 JSON_ARRAY、GROUP_CONCAT、CONCAT_WS 等计算函数来展示内置函数的带来的性能缺陷。
+              3. 所以使用内置函数时需要格外注意。计算类函数本身是用来根据输入参数计算输出的，需要消耗CPU的资源；而数据库的擅长的不是计算，而是存储，所以需要把计算功能上推到应用程序中来做，数据库只提供读写数据就可。
+              4. 内置函数或者自定义函数适用场景无非三种场景：在投影列使用内置函数、在WHERE 过滤条件使用内置函数、在存储过程里使用内置函数进行数据计算。
+              5. 使用内置函数还有一个需要考虑的点就是：如果后期有底层数据库的迁移业务，比如从 MySQL 迁移到 Oracle 等。那么使用内置函数的场景都需要做目标数据库适配，增加了代码量。
+
+              反例：
+              SQL1：select json_array(id,name,age) result from customers group by result;
+              SQL2：select group_concat(name) as name_list,age from customers group by age;
+              SQL3：select concat_ws(',',id,name,sex,city,age) as row_list from customers limit 2;
+              SQL4：select count(*) from customers where find_in_set('小王1',name) ;
+
+              反例说明：
+              1. SQL1 表示把字段id、name、age 一起来组成数组样式输出，并且按照这个数组来分组。
+              1. SQL2 表示按照age 分组，并且拼串输出每个age的name 列表。由于 group_concat 函数生成1024个长度的字符，入参太多，会导致数据直接截断。
+              2. SQL3 表示输出表的前两行记录，并且使用逗号分隔符来拼接每个字段后输出。
+              3. SQL4 表示查找表中名字为'小王1'的记录。 由于find_in_set 函数在where 条件中，会造成优化器走错误的执行计划。
+              4. 以上这些 SQL 都可以把内置函数上推成应用代码中实现这些内置函数的功能，从而减少数据库端的计算压力。
+
+              反例验证： SQL1、SQL2、SQL3 同一种类型，只验证任意一个即可；SQL4 单独验证。
+              SQL1： 由于使用JSON_ARRAY 来输出数组格式，并且以数组为基准分组，效率很差，执行时间51秒多。
+              (mysql:8.4.0:db_mysql)explain analyze select json_array(id,name,age) result from customers group by result\G
+              *************************** 1. row ***************************
+              EXPLAIN: - Table scan on temporary  (cost=201525..213991 rows=997088) (actual time=47881..49475 rows=1e+6 loops=1)
+                  - Temporary table with deduplication  (cost=201525..201525 rows=997088) (actual time=47881..47881 rows=1e+6 loops=1)
+                      - Table scan on customers  (cost=101816 rows=997088) (actual time=11.1..5986 rows=1e+6 loops=1)
+              
+              1 row in set (51.02 sec)
+              
+              
+
+              SQL4：执行时间6秒钟。 这个查询只找出一条记录，时间有点太长了。
+              (mysql:8.4.0:db_mysql)select count(*) from customers where find_in_set('小王1',name) ;
+              +----------+
+              | count(*) |
+              +----------+
+              |        1 |
+              +----------+
+              1 row in set (6.22 sec)
+              
+
+              SQL4 执行计划：虽然有索引，但是走了全索引扫，执行路径不正确；查询警告信息，发现数据库没有消除内置函数 find_in_set。
+              (mysql:8.4.0:db_mysql)explain  select count(*) from customers where find_in_set('小王1',name) \G
+              *************************** 1. row ***************************
+                         id: 1
+                select_type: SIMPLE
+                      table: customers
+                 partitions: NULL
+                       type: index
+              possible_keys: NULL
+                        key: idx_name_customers
+                    key_len: 131
+                        ref: NULL
+                       rows: 997088
+                   filtered: 100.00
+                      Extra: Using where; Using index
+              1 row in set, 1 warning (0.00 sec)
+              
+              
+              (mysql:8.4.0:db_mysql)show warnings\G
+              *************************** 1. row ***************************
+                Level: Note
+                 Code: 1003
+              Message: /* select#1 */ select count(0) AS `count(*)` from `db_mysql`.`customers` where (0 &lt;&gt; find_in_set('小王1',`db_mysql`.`customers`.`name`))
+              1 row in set (0.00 sec)
+              
+
+              正例：
+              SQL1： select  id,name,age from customers;
+              SQL2： select name,age from customers;
+              SQL3： select id,name,sex,city,age as row_list from customers limit 2;
+              SQL4： select count(*) from customers where name='小王1';         
+
+              正例说明：
+              1. SQL1、SQL2、SQL3 都是把内置函数上推到应用来做，数据库只输出原始数据。
+              2. SQL4 直接修改SQL，取消内置函数，让SQL 走正确的执行计划。
+
+              正例验证：
+              SQL1： 执行时间从51秒到5秒，时间正常。
+              (mysql:8.4.0:db_mysql)explain analyze select  id,name,age from customers\G
+              *************************** 1. row ***************************
+              EXPLAIN: -&gt; Table scan on customers  (cost=100510 rows=997088) (actual time=12.1..4846 rows=1e+6 loops=1)
+              
+              1 row in set (5.21 sec)
+              
+
+              SQL4：  执行时间也正常了
+              (mysql:8.3.0:db_mysql)select count(*) from customers where name='小王1';  
+              +----------+
+              | count(*) |
+              +----------+
+              |        1 |
+              +----------+
+              1 row in set (0.01 sec)
+
+              SQL4 执行计划： 查询走了索引的常量扫，非常优化。
+              (mysql:8.3.0:db_mysql)explain select count(*) from customers where name='小王1'; 
+              +----+-------------+-----------+------------+------+--------------------+--------------------+---------+-------+------+----------+-------------+
+              | id | select_type | table     | partitions | type | possible_keys      | key                | key_len | ref   | rows | filtered | Extra       |
+              +----+-------------+-----------+------------+------+--------------------+--------------------+---------+-------+------+----------+-------------+
+              |  1 | SIMPLE      | customers | NULL       | ref  | idx_name_customers | idx_name_customers | 131     | const |    1 |   100.00 | Using index |
+              +----+-------------+-----------+------------+------+--------------------+--------------------+---------+-------+------+----------+-------------+
+              1 row in set, 1 warning (0.00 sec)
+              
+
+              结论：
+              1. 不推荐在SQL 中使用内置函数。 内置函数会导致可读性差、可移植性差、性能差等。
+              2. 应该有两个优化方向：
+                1. 取消内置函数，修改SQL，让SQL 走正确的执行计划。
+                2. 内置函数在数据库层过滤不了，可以考虑上推到应用层来实现内置函数的功能，弱化数据库的计算功能。
+
+            </示例>
+            <检查流程描述>
+              1. 对于所有DML语句，
+                1. 获取该规则指定的函数名列表，通过英文逗号拆分成一个函数集合
+                2. 如果SQL语句中出现了函数集合中的任意一个函数，则报告违反规则。
+            </检查流程描述>
+            <知识文档>
+            1. MySQL 优化官方文档：https://dev.mysql.com/doc/refman/8.0/en/optimization.html
+            2. MySQL 内置函数官方文档： https://dev.mysql.com/doc/refman/8.0/en/built-in-function-reference.html
+            </知识文档>
+        </场景>
+    </规则场景>
+    <标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值><分类值>增强可维护性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

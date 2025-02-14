@@ -1,0 +1,106 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+<规则编号>SQLE00027</规则编号>
+<级别>notice</级别>
+<数据库类型>MySQL</数据库类型>
+<规则种类>DDL规范</规则种类>
+<规则简述>列建议添加注释</规则简述>
+<规则描述>列添加注释能够使列的意义更明确，方便日后的维护</规则描述>
+<规则场景>
+  <场景 名称="创建表结构" 数据库版本="MySQL 5.7、MySQL 8.0" 检查方式="不连库审核" 适用关键词="COMMENT" 适用句型="CREATE TABLE">
+    <示例>
+      正例：
+      create table if not exists 
+      t1(
+        id bigint unsigned auto_increment comment '编号',
+        name varchar(64) default 'name' comment '名称',
+        type smallint comment '类型',
+        addr varchar(200) comment '地址',
+        primary key(id)
+      );
+
+      正例说明：
+      数据库中进行表结构定义的时候，可以在字段注释中增加该字段的用途。此时，在表关联、数据引用等场景下，用户可以通过字段注释快速选择到目标字段。
+
+      示例验证：
+      1、查看执行计划。
+        mysql&gt; show create table t1;
+        +-------+--------------------------------------+
+        | Table | Create Table                   |
+        +-------+--------------------------------------+
+        | t1    | CREATE TABLE `t1` (
+          `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '编号',
+          `name` varchar(64) COLLATE utf8mb4_bin DEFAULT 'name' COMMENT '名称',
+          `type` smallint(6) DEFAULT NULL COMMENT '类型',
+          `addr` varchar(200) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '地址',
+          PRIMARY KEY (`id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin         |
+        +-------+--------------------------------------+
+        1 row in set (0.00 sec)
+
+      反例：
+      create table if not exists 
+      t1(
+        id bigint unsigned auto_increment,
+        name varchar(64) default 'name',
+        type smallint comment '',
+        addr varchar(200) comment ' ',
+        primary key(id)
+      );
+
+      反例说明：
+      数据库中进行表结构定义的时候，未定义字段的注释。此时，在表关联、数据引用等场景下，用户只能结合字段存放的数据来判断其用途，增加了选择目标字段的成本。
+    </示例>
+    <检查流程描述>
+      1、检查CREATE TABLE句子中每一个column的属性是否都包含关键词comment，否则，将该完整SQL语句加入到触发规则的SQL列表中。
+      2、检查CREATE TABLE句子中每一个column的comment属性值存在只有空格或者空串，如果符合条件，将该完整SQL语句加入到触发规则的SQL列表中。
+    </检查流程描述>
+    <知识文档>
+      文档关键词：column_definition
+      文档地址：https://dev.mysql.com/doc/refman/8.0/en/create-table.html
+    </知识文档>
+  </场景>
+  <场景 名称="修改表结构变更列" 数据库版本="MySQL 5.7、MySQL 8.0" 检查方式="不连库审核" 适用关键词="COMMENT" 适用句型="ALTER TABLE">
+      <示例>
+        正例：
+        alter table t1 add column addr varchar(128) comment '地址';
+        alter table t1 change column addr addr varchar(256) comment '地址';
+        alter table t1 modify addr varchar(256) comment '地址';
+
+        正例说明：
+        数据库中进行表结构定义的时候，可以在字段注释中增加该字段的用途。此时，在表关联、数据引用等场景下，用户可以通过字段注释快速选择到目标字段。
+
+        示例验证：与【创建表结构】场景一致。
+
+        反例：
+        alter table t1 add column addr varchar(128);
+        alter table t1 change column addr addr varchar(64);
+        alter table t1 modify addr varchar(128);
+        alter table t1 add column addr varchar(128) comment '';
+        alter table t1 change column addr addr varchar(64) comment '';
+        alter table t1 modify addr varchar(128) comment '';
+        alter table t1 add column addr varchar(128) comment ' ';
+        alter table t1 change column addr addr varchar(64) comment ' ';
+        alter table t1 modify addr varchar(128) comment ' ';
+
+        反例说明：
+        数据库中进行表结构定义的时候，未定义字段的注释。此时，在表关联、数据引用等场景下，用户只能结合字段存放的数据来判断其用途，增加了选择目标字段的成本。
+
+        影响：修改表语句时，如果未指定字段原有属性，在修改后，仍然会丢失掉表结构定义的字段原有属性。
+      </示例>
+      <检查流程描述>
+        1、检查ALTER TABLE句子中每一个ADD column操作，对应的column属性是否包含关键词comment，否则，将该完整SQL语句加入到触发规则的SQL列表中。
+        2、检查ALTER TABLE句子中每一个ADD column操作，对应的column的comment属性值是否只有空格或者空串，如果符合条件，将该完整SQL语句加入到触发规则的SQL列表中。
+        3、检查ALTER TABLE句子中每一个CHANGE column操作，对应的column属性是否包含关键词comment，否则，将该完整SQL语句加入到触发规则的SQL列表中。
+        4、检查ALTER TABLE句子中每一个CHANGE column操作，对应的column的comment属性值是否只有空格或者空串，如果符合条件，将该完整SQL语句加入到触发规则的SQL列表中。
+        5、检查ALTER TABLE句子中每一个MODIFY column操作，对应的column属性是否包含关键词comment，否则，将该完整SQL语句加入到触发规则的SQL列表中。
+        6、检查ALTER TABLE句子中每一个MODIFY column操作，对应的column的comment属性值是否只有空格或者空串，如果符合条件，将该完整SQL语句加入到触发规则的SQL列表中。
+      </检查流程描述>
+      <知识文档>
+        文档关键词：column_definition
+        文档地址：https://dev.mysql.com/doc/refman/8.0/en/alter-table.html
+      </知识文档>
+    </场景>  
+</规则场景>
+<规则缺陷 />
+<标签><分类 名称="操作对象"><分类值>字段</分类值></分类><分类 名称="SQL分类"><分类值>DDL</分类值></分类><分类 名称="审核目的"><分类值>增强可维护性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

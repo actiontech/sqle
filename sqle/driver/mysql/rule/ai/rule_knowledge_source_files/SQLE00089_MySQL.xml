@@ -1,0 +1,87 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+  <规则编号>SQLE00089</规则编号>
+  <级别>warn</级别>
+  <数据库类型>MySQL</数据库类型>
+  <规则种类>DML规范</规则种类>
+  <规则简述>禁止INSERT ... SELECT</规则简述>
+  <规则描述>使用 INSERT ... SELECT 在默认事务隔离级别下，可能会导致对查询的表施加表级锁</规则描述>
+  <规则场景>
+    <原理说明 数据库版本="MySQL 5.7、MySQL 8.0" 检查方式="不连库审核" 适用句型="INSERT ... SELECT、INSERT ... WITH">
+     <示例>
+     前置:
+      CREATE TABLE customers (
+      id INT PRIMARY KEY,
+      name VARCHAR(50),
+      mark1 INT
+      );
+
+      CREATE TABLE customers_mark (
+      mark1 INT
+      );
+
+      INSERT INTO customers VALUES (1, 'John', 100), (2, 'Jane', 200), (3, 'Bob', 300);
+
+      原理说明：
+      在MySQL的默认事务隔离级别REPEATABLE READ下,执行INSERT...SELECT语句时,会对SELECT查询涉及的源表加SHARED_READ锁(意向共享锁IS)。当一个事务持有SHARED_READ锁(IS锁)时,其他事务可以继续获取SHARED_READ锁(IS锁)或SHARED_READ锁(S锁),但无法获取EXCLUSIVE锁(X锁)。
+
+      这意味着,当INSERT...SELECT语句执行时,它可能会阻塞其他事务对源表的写访问。特别是当SELECT子句没有恰当的筛选条件时,语句将进行全表扫描,对表中的所有记录加锁,同时产生大量IO消耗,最终可能造成并发事务阻塞,主从延时等性能问题。
+      
+      需要注意的是,SHARED_READ锁(IS锁)允许其他事务继续读取数据,因此INSERT...SELECT语句对源表的影响主要体现在阻塞写访问上。
+
+      示例:
+      INSERT INTO customers_mark
+      SELECT mark1 FROM customers ORDER BY mark1 DESC LIMIT 1;
+      INSERT INTO customers_mark
+      WITH tmp AS (SELECT mark1 FROM customers ORDER BY mark1 LIMIT 1)
+      SELECT * FROM tmp; ##仅适用于MySQL 8.0版本
+      
+      示例验证:
+      Session 1:
+      mysql&gt; START TRANSACTION;
+      mysql&gt; INSERT INTO customers_mark
+      SELECT mark1 FROM customers ORDER BY mark1 DESC LIMIT 1;
+
+      -- 查看表锁情况：可以看到源表customers上有SHARED_READ锁(IS锁)
+      mysql&gt; SELECT OBJECT_TYPE, OBJECT_SCHEMA, OBJECT_NAME, LOCK_TYPE, LOCK_DURATION, LOCK_STATUS FROM performance_schema.metadata_locks; ##对于8.0表锁情况需要查data_locks
+      
+      +-------------+--------------------+----------------+--------------+---------------+-------------+
+      | OBJECT_TYPE | OBJECT_SCHEMA | OBJECT_NAME | LOCK_TYPE | LOCK_DURATION | LOCK_STATUS |
+      +-------------+--------------------+----------------+--------------+---------------+-------------+
+      | TABLE | test | customers_mark | SHARED_WRITE | TRANSACTION | GRANTED |
+      | TABLE | test | customers | SHARED_READ | TRANSACTION | GRANTED |
+      +-------------+--------------------+----------------+--------------+---------------+-------------+
+
+      Session 2:
+      mysql&gt; UPDATE customers SET name = 'John Updated2' WHERE id = 1;
+
+      Session 1:
+      
+      mysql&gt; ROLLBACK; -- 释放锁
+      Query OK, 0 rows affected (0.01 sec)      
+
+      Session 2:
+      mysql&gt; UPDATE customers SET name = 'John Updated2' WHERE id = 1;
+      Query OK, 1 row affected (8.28 sec)
+      Rows matched: 1  Changed: 1  Warnings: 0
+      
+
+      结论:
+      当INSERT...SELECT语句使用WITH子句时,同样会对源表(customers)加SHARED_READ锁(IS锁)。这可能会阻塞其他事务对源表的写访问,导致并发性能问题。
+
+     </示例>
+     <检查流程描述>
+     1. 对于 "INSERT INTO ..."语句,如果以下任意一项为真，则报告违反规则
+       1. 存在 SELECT 子句
+       2. 存在 WITH 子句
+     </检查流程描述>
+     <知识文档>
+     1. INSERT-SELECT语法：https://dev.mysql.com/doc/refman/5.7/en/insert-select.html
+     2. transaction_isolation：https://dev.mysql.com/doc/refman/5.7/en/server-system-variables.html#sysvar_transaction_isolation
+     3. 应用文档：https://opensource.actionsky.com/20210607-mysql/
+     4. 应用文档：https://blog.csdn.net/weixin_42056745/article/details/106217314
+     </知识文档>  
+    </原理说明>
+  </规则场景>
+  <规则缺陷 />
+<标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

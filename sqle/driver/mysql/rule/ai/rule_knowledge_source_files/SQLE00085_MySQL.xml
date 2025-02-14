@@ -1,0 +1,100 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+  <规则编号>SQLE00085</规则编号>
+  <级别>warn</级别>
+  <数据库类型>MySQL</数据库类型>
+  <规则种类>执行计划</规则种类>
+  <规则简述>不建议对表进行全索引扫描</规则简述>
+  <规则描述>在数据量大的情况下索引全扫描严重影响SQL性能；一次性大数据量获取的场景较少，业务层需要考虑当前SQL的合理性，是否缺少过滤条件以及限制条数。</规则描述>
+  <规则变量>
+    <变量 name="大表的最低行数要求">1000000</变量>
+  </规则变量>
+  <规则场景>
+    <原理说明 数据库版本="MySQL 8.0" 检查方式="连库审核" 适用句型="SELECT">
+      <示例>
+            示例表结构:
+            create database db_mysql;
+            use db_mysql;
+  
+            -- 主表
+            CREATE TABLE customers(
+              id INT(11) NOT NULL, -- 序号
+              name VARCHAR(32) DEFAULT '',-- 姓名
+              sex TINYINT NOT NULL, -- 性别
+              city VARCHAR(32) NOT NULL, -- 所在城市
+              age SMALLINT(4) NOT NULL, -- 值类型
+              PRIMARY KEY (id) -- 主键
+            );
+  
+            -- 批量插入模拟数据，1500W条记录。
+            set @@cte_max_recursion_depth=20000000;
+            insert into customers  
+            with recursive tmp (a,b,c,d,e) as (
+              select 1,'小王22222333',floor(rand()*2),'上海',ceil(rand()*30)+20 
+              union all 
+              select a+1,concat('小王',a),floor(rand()*2),'上海',ceil(rand()*20)+20 from tmp where a &lt; 15000000) 
+              select * from tmp;
+
+           原理说明：
+           1. 索引的目的是为了加速带过滤条件或者排序的DML语句。
+           2. 但是索引本身在数据量大的时候，也需要部分过滤才能性能最佳；
+           3. 比如在表行数大于100W后，全索引扫，类似于只有索引字段的全表扫，此时也会性能降低。
+           4. 对于这种场景，从数据库端已经无法进行优化，需要在业务层来进行过滤；也就是说业务层需要修改检索逻辑。比如减少获取记录数、添加索引列的过滤条件等。
+
+           示例：
+           -- 以下这两条SQL，都是针对列name 的全索引扫描，由于没有过滤条件，只能利用索引的有序性消除额外的排序。
+           select name from customers order by name desc;
+           select name from customers group by name order by name desc;
+           select distinct name from customers;
+
+           示例验证：
+           -- 这两条SQL 执行时会获取很多记录，所以只列出执行计划。
+           -- 表总行数为1500W行，执行计划走的全索引扫描，扫描行数接近全表行数。 
+           (mysql:8.0.31-cluster)explain select name from customers order by name desc;
+            +----+-------------+-----------+------------+-------+---------------+--------------------+---------+------+----------+----------+----------------------------------+
+            | id | select_type | table     | partitions | type  | possible_keys | key                | key_len | ref  | rows     | filtered | Extra                            |
+            +----+-------------+-----------+------------+-------+---------------+--------------------+---------+------+----------+----------+----------------------------------+
+            |  1 | SIMPLE      | customers | NULL       | index | NULL          | idx_name_customers | 131     | NULL | 14621785 |   100.00 | Backward index scan; Using index |
+            +----+-------------+-----------+------------+-------+---------------+--------------------+---------+------+----------+----------+----------------------------------+
+            1 row in set, 1 warning (0.00 sec)
+
+           示例优化：
+           -- 修改SQL 语句，减少输出行数
+           select name from customers order by name desc limit 1;
+           select name from customers group by name order by name desc limit 1;
+           select distinct name from customers limit 1;
+
+           -- 或者修改SQL 语句，增加过滤条件
+           select name from customers where name='小王1' order by name desc;
+
+           -- 优化后的SQL 执行计划：减少输出行数，同样对索引的检索行数也减少。
+           (mysql:8.0.31-cluster)explain select name from customers order by name desc limit 1;
+            +----+-------------+-----------+------------+-------+---------------+--------------------+---------+------+------+----------+----------------------------------+
+            | id | select_type | table     | partitions | type  | possible_keys | key                | key_len | ref  | rows | filtered | Extra                            |
+            +----+-------------+-----------+------------+-------+---------------+--------------------+---------+------+------+----------+----------------------------------+
+            |  1 | SIMPLE      | customers | NULL       | index | NULL          | idx_name_customers | 131     | NULL |    1 |   100.00 | Backward index scan; Using index |
+            +----+-------------+-----------+------------+-------+---------------+--------------------+---------+------+------+----------+----------------------------------+
+            1 row in set, 1 warning (0.00 sec)
+        
+            结论：
+            1. 对于这类全索引扫描的SQL 语句，从数据库角度来讲，优化的点无非就是数据库内部并行对索引进行扫描，但是随着数据量的增加，性能也会越来越差。
+            2. 所以只有从业务层面修改SQL 语句，让其获取更少的数据才能做到根本优化。
+       
+      </示例>
+      <检查流程描述>
+            1. 登录数据库，判断执行计划的type值为index，则进一步检查。
+            2. 检查执行计划中影响行数rows值大于等于变量min_table_rows的值，报告违反规则。  
+      </检查流程描述>
+      <建议检查流程>
+            1. 查看SQL 语句，如果没有WHERE 条件或者 where 条件恒为真（比如 where 1=1 或者 where True），则进入下一步检查。
+            2. 进一步查看SQL 语句，如果有ORDER BY、GROUP BY、DISTINCT 中的任一个子句，则进入下一步检查。
+            3. 登录数据库。
+            4. 查看order by或者group by的字段是否有索引，如果有，则进入下一步检查；
+            5. 查看对应的表记录数，是否大于此规报告违反规则。
+      </建议检查流程>
+      <知识文档>
+        1. SQL 优化官方文档： https://dev.mysql.com/doc/refman/8.0/en/statement-optimization.html
+      </知识文档>
+    </原理说明>
+  </规则场景>
+<标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

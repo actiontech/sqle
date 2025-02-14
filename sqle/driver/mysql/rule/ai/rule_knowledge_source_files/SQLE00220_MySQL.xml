@@ -1,0 +1,111 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+  <规则编号>SQLE00220</规则编号>
+  <级别>warn</级别>
+  <数据库类型>MySQL</数据库类型>
+  <规则种类>使用建议</规则种类>
+  <规则简述>避免不带where条件的count(*)或者count(1)</规则简述>
+  <规则描述>不带 where 条件的 count(*) 或者 count(1) 都是对表进行暴力扫描，极其耗费系统资源</规则描述>
+  <规则场景>
+    <场景 名称="改造count(*)和count(1)" 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="SELECT">
+      <示例>
+            示例表结构:
+            create database db_mysql;
+            use db_mysql;
+  
+            -- 主表
+            CREATE TABLE customers(
+              id INT(11) NOT NULL, -- 序号
+              name VARCHAR(32) DEFAULT '',-- 姓名
+              sex TINYINT NOT NULL, -- 性别
+              city VARCHAR(32) NOT NULL, -- 所在城市
+              age SMALLINT(4) NOT NULL, -- 值类型
+              PRIMARY KEY (id) -- 主键
+            );
+  
+            -- 批量插入模拟数据，1500W条记录。
+            set @@cte_max_recursion_depth=20000000;
+            insert into customers  
+            with recursive tmp (a,b,c,d,e) as (
+              select 1,'小王22222333',floor(rand()*2),'上海',ceil(rand()*30)+20 
+              union all 
+              select a+1,concat('小王',a),floor(rand()*2),'上海',ceil(rand()*20)+20 from tmp where a &lt; 15000000) 
+              select * from tmp;
+
+           原理说明：
+           1. 不带where 条件的 count(*) 或者 count(1) 都是对表逐行扫描，需要谨慎使用;
+           2. count(*) 计算表中所有记录数，包含NULL值。
+           3. count(1) 是每行替换为1来计算表的记录数。
+           4. 由于其特殊性，故可以采用以下方式来改造优化：
+              1. 对需要求总记录数的表创建一个触发器，表每次变动一行记录行数到目标表，可以实时的查询目标表的记录。
+                  注意： 此方法需要谨慎，使用触发器的方式将会降低原来对表INSERT或者DELETE的速度，因为触发器是逐行进行匹配的。
+              2. 可以查询数据字典里的元数据，不过不太准确，对于一些要求精度不高的场景来讲，效率很高，非常合适。
+              3. 在业务层来设计一个计数器来记录表的记录数，每次表记录数变更，需要一起来更新这个计数器。
+
+           反例：
+           1. select count(*) from customers;
+           2. select count(1) from customers;
+
+           反例说明：
+           1. 不带where 条件的 count(*)/count(1) , 求表 customers 的记录数。
+
+           反例验证： 直接执行需要10秒多。
+           (mysql:8.4.0:db_mysql)select count(*) from customers;
+            +----------+
+            | count(*) |
+            +----------+
+            | 15000000 |
+            +----------+
+            1 row in set (10.96 sec)
+
+           正例：
+           select table_rows from information_schema.tables where table_name='customers' and table_schema='db_mysql';
+
+           正例说明：
+           1. 从数据字典里查询来替代直接执行。
+
+           正例验证： 瞬间出结果。
+           (mysql:8.4.0:db_mysql)select table_rows from information_schema.tables where table_name='customers' and table_schema='db_mysql';
+            +------------+
+            | TABLE_ROWS |
+            +------------+
+            |   14959288 |
+            +------------+
+            1 row in set (0.00 sec)
+
+            结论：
+            1. 对于不带 WHERE 条件的 count(*)、count(1)，可以通过一些变通的方式来减少对表逐行扫带来的开销。比如从数据字典里拿预估值。
+
+            延伸：触发器解决方案示例（此示例需要注意，truncate table 操作原表，也需要同时把总数记录表初始化）
+            1. 创建表总数记录表，并且初始化表
+            create table db_mysql_records(table_name varchar(64),total_cnt bigint unsigned );
+            insert into db_mysql_records values ('customers',0);
+            2. 创建触发器
+            delimiter ||
+            create trigger tr_after_insert after insert on customers 
+            for each row 
+            begin
+              update db_mysql_records set total_cnt = total_cnt + 1;
+              end;
+            ||
+
+            create trigger tr_after_delete after delete on customers 
+            for each row 
+            begin
+              update db_mysql_records set total_cnt = total_cnt - 1;
+            end;         
+            ||    
+            3. 给表customers 插入记录：比如插入1500W。
+            4. select count(*) from customers 直接替换为 select total_cnt from db_mysql_records where table_name='customers';
+       
+      </示例>
+      <检查流程描述>
+        1. 对于所有DQL语句，并且不带WHERE 条件的，如果存在以下任何一项，则报告违反规则：
+          1. 检查是否有关键词 count(*) 或者  count(1)
+      </检查流程描述>
+      <知识文档>
+        1. SQL 优化官方文档： https://dev.mysql.com/doc/refman/8.0/en/statement-optimization.html
+      </知识文档>
+    </场景>
+  </规则场景>
+<标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

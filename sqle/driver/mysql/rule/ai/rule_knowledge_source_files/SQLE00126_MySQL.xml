@@ -1,0 +1,127 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00126</规则编号>
+    <级别>warn</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>DML规范</规则种类>
+    <规则简述>不建议对字段编号进行 GROUP BY</规则简述>
+    <规则描述>GROUP BY 1 表示按第一列进行GROUP BY；在GROUP BY子句中使用字段编号，而不是表达式或列名称，当查询列顺序改变时，会导致查询逻辑出现问题</规则描述>
+    <规则场景>
+      <原理 关键词="GROUP BY" 数据库版本="MySQL 所有版本" 检查方式="不连库检查" 适用句型="SELECT">
+        <示例>
+          示例:
+          create database db_mysql;
+          use db_mysql;
+          CREATE TABLE customers(
+            id INT NOT NULL AUTO_INCREMENT,  -- 序号
+            name VARCHAR(32) DEFAULT '',-- 姓名
+            sex TINYINT NOT NULL, -- 性别
+            city VARCHAR(32) NOT NULL, -- 所在城市
+            age SMALLINT NOT NULL, -- 数值类型
+            PRIMARY KEY (id) -- 主键
+          );
+  
+        -- 插入示例数据
+        INSERT INTO customers(`name`,sex,city,age)  VALUES 
+        ('小李',1,'上海',18),('小王',0,'北京',22),
+        ('小饭',1,'北京',18),('小刘',0,'上海',22),
+        ('小菜',1,'深圳',18),('小张',0,'深圳',22),
+        ('小利',1,'上海',25),('小高',0,'深圳',23),
+        ('小娜',1,'深圳',25),('小五',0,'深圳',23);
+                
+
+          示例SQL：
+          select city,age,count(*) as cnt from customers group by 1;
+
+  
+          原理说明：
+       
+          1. 如果sql_mode 设置为only_full_group_by，则此规则失效。 此规则在 MySQL 8.0 下默认失效。
+             1. only_full_group_by 表示分组的字段和投影列的字段要严格匹配，不匹配则报错。
+             2. 在此模式下，group by 严格按照投影列的字段分组，即使投影列顺序发生变化，也不影响查询结果，所以不存在查询结果偏差。
+          2. 此规则的前提是sql_mode 不设置为only_full_group_by，则此规则生效。
+             1. group by 1,2 分别代表按照 select 字段的顺序来分组， 一旦 select 字段的顺序发生变化，查询结果也会发生变化，所以非常不推荐使用这样的方式来进行分组。
+          3. group by后面指定字段顺序，当一条SQL比较复杂时，增加用户对分组目标的理解难度。
+  
+          示例验证：
+          -- 关闭only_full_group_by。（MySQL 8.0 默认开启）
+          (mysql:8.0.31-cluster)set sql_mode='';
+          Query OK, 0 rows affected (0.00 sec)
+
+
+          -- 字段city 在 age 前，分组的结果
+          (mysql:8.0.31-cluster)select city,age,count(*) as cnt from customers group by 1;
+          +--------+-----+-----+
+          | city   | age | cnt |
+          +--------+-----+-----+
+          | 上海   |  18 |   3 |
+          | 北京   |  22 |   2 |
+          | 深圳   |  18 |   5 |
+          +--------+-----+-----+
+          3 rows in set (0.00 sec)
+          
+          -- 字段city 在 age 后，分组的结果。可以看到，两个执行结果完全不一样，仅仅是更改了投影列的顺序。
+          (mysql:8.0.31-cluster)select age,city,count(*) as cnt from customers group by 1;
+          +-----+--------+-----+
+          | age | city   | cnt |
+          +-----+--------+-----+
+          |  18 | 上海   |   3 |
+          |  22 | 北京   |   3 |
+          |  25 | 上海   |   2 |
+          |  23 | 深圳   |   2 |
+          +-----+--------+-----+
+          4 rows in set (0.00 sec)
+          
+  
+          解决方案：
+          1. 使用显式指定的字段名字来分组
+          select age,city,count(*) cnt from customers group by city;
+          2. 设置sql_mode='only_full_group_by'
+
+          解决方案验证：
+          -- 1. 更改投影列的顺序也不影响查询结果。
+          (mysql:8.0.31-cluster)select age,city,count(*) cnt from customers group by city;
+            +-----+--------+-----+
+            | age | city   | cnt |
+            +-----+--------+-----+
+            |  18 | 上海   |   3 |
+            |  22 | 北京   |   2 |
+            |  18 | 深圳   |   5 |
+            +-----+--------+-----+
+            3 rows in set (0.00 sec)
+
+            (mysql:8.0.31-cluster)select city,age,count(*) cnt from customers group by city;
+            +--------+-----+-----+
+            | city   | age | cnt |
+            +--------+-----+-----+
+            | 上海   |  18 |   3 |
+            | 北京   |  22 |   2 |
+            | 深圳   |  18 |   5 |
+            +--------+-----+-----+
+            3 rows in set (0.00 sec)
+
+            -- 2. 设置sql_mode='only_full_group_by', SQL 执行报错，不允许这样的SQL 执行，因为投影列没有完全包含在分组列中。
+
+            (mysql:8.0.31-cluster)set sql_mode='only_full_group_by';
+            Query OK, 0 rows affected (0.00 sec)
+
+            (mysql:8.0.31-cluster)select city,age,count(*) cnt from customers group by 1;
+            ERROR 1055 (42000): Expression #2 of SELECT list is not in GROUP BY clause and contains nonaggregated column 'db_mysql.customers.age' which is not functionally dependent on columns in GROUP BY clause; this is incompatible with sql_mode=only_full_group_by
+                    
+  
+        </示例>
+        <检查流程描述>
+        1. 对于"SELECT..."语句，
+          1. 检查句子中是否存在GROUP by 子句，如果存在，则进一步检查。
+          2. 检查Group By的内容是否是代表位置的数值编号，如果是，则报告违反规则。
+        2. 对于"INSERT..."语句，对INSERT语句中的SELECT子句进行与上述相同的检查.
+        3. 对于"DELETE..."语句，对DELETE语句中的SELECT子句进行与上述相同的检查.
+        4. 对于"UPDATE..."语句，对UPDATE语句中的SELECT子句进行与上述相同的检查.
+        </检查流程描述>
+        <知识文档>
+        1. group by 语法：https://dev.mysql.com/doc/refman/8.0/en/group-by-handling.html
+        </知识文档>
+      </原理>
+    </规则场景>
+  
+    <标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>增强可维护性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

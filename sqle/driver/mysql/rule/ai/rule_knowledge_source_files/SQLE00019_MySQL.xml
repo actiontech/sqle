@@ -1,0 +1,99 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+  <规则编号>SQLE00019</规则编号>
+  <级别>
+    <当前级别>notice</当前级别>
+  </级别>
+  <数据库类型>MySQL</数据库类型>
+  <规则种类>DDL规范</规则种类>
+  <规则简述>不建议使用复合类型（SET和ENUM类型）数据</规则简述>
+  <规则描述>SET类型，ENUM类型不是SQL标准，移植性较差；后期如修改或增加枚举值需重建整张表，代价较大；且无法通过字面值进行排序；在插入数据时，必须带上引号，否则将写入枚举值的顺序值，造成不可预期的问题</规则描述>
+  <规则场景>
+    <原理说明 数据库版本="MySQL 5.7.25" 检查方式="不连库审核" 适用句型="CREATE TABLE,ALTER TABLE">
+      <示例>
+          原理说明：
+          ENUM值属于MySQL在SQL标准上的扩展，无法明确其他数据库系统的支持情况，因此移植性较差。
+          https://dev.mysql.com/doc/refman/5.7/en/extensions-to-ansi.html
+          同时，在对ENUM字段的值进行修改或增加时，通常均需要对整个表进行重建，代价较大。
+          For example, adding a member to a SET column that has 8 members changes the required storage per value from 1 byte to 2 bytes; this requires a table copy. Adding members in the middle of the list causes renumbering of existing members, which requires a table copy.
+          https://dev.mysql.com/doc/refman/5.7/en/innodb-online-ddl-operations.html
+          ENUM的字段，无法通过字面值进行排序；在插入的时候，必须带上引号，否则会出现不可预期的问题。
+          任何不在枚举的范围的值插入都会报错，一般用tinyint替代ENUM比较合适。另外，ENUM的字段值默认区分大小写。
+
+          示例：
+          CREATE TABLE t1(
+          a int primary key auto_increment,
+          b enum('A','3','2','1') default '3');
+
+          示例验证：
+          -- 写入值时可支持集合的序号、具体值写入，容易混淆。
+          mysql&gt; create table t1(
+          a int primary key auto_increment,
+          b enum('A','3','2','1') default '3');
+          Query OK, 0 row affected (0.05 sec)  
+          
+          mysql&gt; INSERT INTO t1 (b) VALUES ('a');
+          ERROR 1265 (01000): Data truncated for column 'b' at row 1   
+
+          mysql&gt; INSERT INTO t1 (b) VALUES (2);
+          Query OK, 1 row affected (0.01 sec)
+
+          mysql&gt; INSERT INTO t1 (b) VALUES ('1');
+          Query OK, 1 row affected (0.01 sec)
+          
+          mysql&gt; SELECT * from t1;
+          +-----+-----+
+          |   a |   b |
+          |-----+-----|
+          |   1 |   A | 
+          |   2 |   1 | 
+          +-----+-----+
+          2 rows in set (0.01 sec)
+
+          -- 无法根据num字段值进行排序
+          mysql&gt; create table t3(id int ,name enum('C','D','E','F','A','N','Z'));
+          Query OK, 0 rows affected (0.04 sec)
+          
+          mysql&gt; insert into t3 (id, name) values (1, 'N'), (600000, 'A'), (331, 'D'), (40050066, 'Z'), (32,'E');
+          Query OK, 5 rows affected (0.01 sec)
+          Records: 5  Duplicates: 0  Warnings: 0
+          
+          mysql&gt; select * from t3 order by name;
+          +----------+------+
+          | id       | name |
+          +----------+------+
+          |      331 | D    |
+          |       32 | E    |
+          |   600000 | A    |
+          |        1 | N    |
+          | 40050066 | Z    |
+          +----------+------+
+          5 rows in set (0.01 sec)
+      
+      </示例>
+      <检查流程描述>
+      1. 对于 "CREATE TABLE..." 语句，检查是否含有 ENUM 或 SET 类型的字段，如果有则报告违反规则。
+      2. 对于 "ALTER TABLE..." 语句，检查是否含有 ENUM 或 SET 类型的字段，如果有则报告违反规则。
+      </检查流程描述>
+      <知识文档>
+    1. The ENUM Type：https://dev.mysql.com/doc/refman/5.7/en/enum.html
+    2. The SET Type：https://dev.mysql.com/doc/refman/5.7/en/set.html
+    3. MySQL Extensions to Standard SQL：https://dev.mysql.com/doc/refman/5.7/en/extensions-to-ansi.html
+    4. Online DDL Operations：https://dev.mysql.com/doc/refman/5.7/en/innodb-online-ddl-operations.html
+    </知识文档>
+    </原理说明>
+  </规则场景>
+  <规则缺陷 />
+  <标签>
+    <分类 名称="操作对象">
+      <分类值>字段</分类值>
+    </分类>
+    <分类 名称="SQL分类">
+      <分类值>DDL</分类值>
+    </分类>
+    <分类 名称="审核目的">
+      <分类值>保障正确性</分类值>
+    </分类>
+  <分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签>
+  <完成情况>完成</完成情况>
+</Rule>

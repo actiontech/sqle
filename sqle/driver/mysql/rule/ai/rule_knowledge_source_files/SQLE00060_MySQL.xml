@@ -1,0 +1,59 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+<规则编号>SQLE00060</规则编号>
+<级别>notice</级别>
+<数据库类型>MySQL</数据库类型>
+<规则种类>DDL规范</规则种类>
+<规则简述>表建议添加注释</规则简述>
+<规则描述>表添加注释能够使表的意义更明确，方便日后的维护</规则描述>
+<规则场景>
+  <原理说明 句型="CREATE TABLE" 数据库版本="MySQL 5.7、MySQL 8.0" 检查方式="不连库审核" 适用关键词="COMMENT">
+    <示例>
+      SQL语句：
+      create table if not exists 
+      customers (
+        id BIGINT, -- 序号
+        name VARCHAR(32) DEFAULT '', -- 姓名
+        sex SMALLINT NOT NULL, -- 性别
+        city VARCHAR(32) NOT NULL, -- 所在城市
+        age SMALLINT NOT NULL, -- 数值类型
+        PRIMARY KEY (id) -- 主键
+      ) COMMENT='客户';
+
+      示例验证：
+      1、查看执行计划。
+        mysql&gt; show create table customers;
+        +-------+--------------------------------------+
+        | Table | Create Table                   |
+        +-------+--------------------------------------+
+        | customers | CREATE TABLE `customers` (
+          `id` bigint NOT NULL,
+          `name` varchar(32) DEFAULT '',
+          `sex` smallint NOT NULL,
+          `city` varchar(32) NOT NULL,
+          `age` smallint NOT NULL,
+          PRIMARY KEY (`id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='客户'   |
+        +-------+--------------------------------------+
+        1 row in set (0.00 sec)
+
+      其他方案：
+      ALTER TABLE customers COMMENT = '客户表'; ##若没有定义表注释，可单独追加。
+
+      结论：
+      对于某些行业，表结构、字段可能需要遵守特定的标准和规范，缺少注释可能导致合规性风险。
+      在自动生成文档的情况下，缺少注释可能会导致生成的文档缺少表结构的现实意义。
+      在团队协作或者外部交付中，涉及到数据库对象部分，缺少注释会增加外部人员的理解成本。
+    
+    </示例>
+    <检查流程描述>
+      1、检查CREATE TABLE句子末尾是否都包含关键词comment，否则，将该完整SQL语句加入到触发规则的SQL表表中。
+    </检查流程描述>
+    <知识文档>
+      文档关键词：column_definition
+      文档地址：https://dev.mysql.com/doc/refman/8.0/en/create-table.html
+    </知识文档>
+  </原理说明>  
+</规则场景>
+<规则缺陷 />
+<标签><分类 名称="操作对象"><分类值>表</分类值></分类><分类 名称="SQL分类"><分类值>DDL</分类值></分类><分类 名称="审核目的"><分类值>增强可维护性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

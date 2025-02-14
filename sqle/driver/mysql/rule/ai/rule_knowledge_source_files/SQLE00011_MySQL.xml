@@ -1,0 +1,96 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+  <规则编号>SQLE00011</规则编号>
+  <级别>notice</级别>
+  <数据库类型>MySQL</数据库类型>
+  <规则种类>最佳实践</规则种类>
+  <规则简述>存在多条对同一个表的修改语句，建议合并成一个ALTER语句</规则简述>
+  <规则描述>避免对同一个表使用多条单独的ALTER语句，以减少数据库的锁定时间和执行开销，提高SQL语句的可读性和维护性。</规则描述>
+  <规则场景>
+    <原理说明 数据库版本="MySQL 5.7.25" 检查方式="不连库审核" 适用句型="ALTER TABLE">
+      <示例>
+          前置：
+          create table customers(
+              id int primary key,
+              name varchar(32) default '' not null, -- 序号
+              age int default 0 -- 年龄
+          );
+          原理说明：
+          1. 合并多个ALTER语句能够减少锁定时间，提升事务的效率和一致性。
+          2. 提高SQL脚本的可读性和可维护性，降低人为错误的风险。
+          3. 减少语句的执行开销，优化数据库的性能。
+              如：当同一个表，需要执行的多条ALTER语句均需要REBUILD表时，合并执行能有效减少REBUILD表的次数，提高执行效率。
+
+        反例：
+        alter table customers add column type varchar(4) not null default '1';
+        alter table customers add column sex smallint(2) not null default 0;
+        alter table customers change column name name varchar(64) comment '名称';
+        alter table customers change column id id int(11) comment '编号';
+        alter table customers add index idx_customers_column(type);
+        alter table customers drop index idx_customers_column;
+        create index idx_customers_column2 on customers(sex);
+
+        反例说明：
+        1. 给表customers 添加多个字段，不过分多次执行，需要与表customers 交互多次，浪费资源。
+
+        反例验证：
+        1. 执行示例SQL： 可以发现和数据库交互多次，包括多次分析和编译、多次执行等。
+        mysql&gt; alter table customers add column type varchar(4) not null default '1';
+        Query OK, 0 rows affected (0.04 sec)
+        Records: 0  Duplicates: 0  Warnings: 0
+        
+        mysql&gt; alter table customers add column sex smallint(2) not null default 0;
+        Query OK, 0 rows affected (0.03 sec)
+        Records: 0  Duplicates: 0  Warnings: 0
+        
+        mysql&gt; alter table customers change column name name varchar(64) comment '名称';
+        Query OK, 0 rows affected (0.03 sec)
+        Records: 0  Duplicates: 0  Warnings: 0
+        
+        mysql&gt; alter table customers change column id id int(11) comment '编号';
+        Query OK, 0 rows affected (0.02 sec)
+        Records: 0  Duplicates: 0  Warnings: 0
+        
+        mysql&gt; alter table customers add index idx_customers_column(type);
+        Query OK, 0 rows affected (0.02 sec)
+        Records: 0  Duplicates: 0  Warnings: 0
+        
+        mysql&gt; alter table customers drop index idx_customers_column;
+        Query OK, 0 rows affected (0.02 sec)
+        Records: 0  Duplicates: 0  Warnings: 0
+        
+        mysql&gt; create index idx_customers_column2 on customers(sex);
+        Query OK, 0 rows affected (0.02 sec)
+        Records: 0  Duplicates: 0  Warnings: 0
+        
+        正例：
+        alter table customers add column type varchar(4) not null default '1',
+        add column sex smallint(2) not null default 0,
+        change column name name varchar(64) comment '名称',
+        change column id id int(11) comment '编号',
+        add index idx_customers_column(type);     
+        
+        正例说明：
+        1. 把对表的多次ALTER 合并为一次 ALTER。
+
+        示例验证：
+        1. 同样来验证示例SQL： 执行后发现，合并为一的ALTER TABLE 只有一次分析和编译、一次执行。
+        mysql&gt; alter table customers add column type varchar(4) not null default '1',
+            -&gt; add column sex smallint(2) not null default 0,
+            -&gt; change column name name varchar(64) comment '名称',
+            -&gt; change column id id int(11) comment '编号',
+            -&gt; add index idx_customers_column(type);
+        Query OK, 0 rows affected (0.07 sec)
+        Records: 0  Duplicates: 0  Warnings: 0
+
+      </示例>
+      <检查流程描述>
+      1. 通过上下文进行检查，检查预期是一批SQL中存在多个ALTER TABLE操作，并且操作目标是针对同一个表，若存在这个情况，则报告违反规则。
+      </检查流程描述>
+      <知识文档>
+      1. MySQL Online DDL Operations：https://dev.mysql.com/doc/refman/5.7/en/innodb-online-ddl-operations.html
+      </知识文档>
+    </原理说明>      
+  </规则场景>
+  <规则缺陷 />
+  <标签><分类 名称="操作对象"><分类值>表</分类值></分类><分类 名称="SQL分类"><分类值>DDL</分类值></分类><分类 名称="审核目的"><分类值>增强可维护性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

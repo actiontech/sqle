@@ -1,0 +1,134 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00067</规则编号>
+    <级别>warn</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>DDL规范</规则种类>
+    <规则简述>表不建议使用外键</规则简述>
+    <规则描述>外键在大量写入场景下性能较差，强烈禁止使用</规则描述>
+    <规则场景>
+        <场景 名称="父表有外键删除和父表无外键删除的性能对比" 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="CREATE TABLE、ALTER TABLE">
+            <示例>
+                前置：
+                -- 如果没有数据库,,提前创建.
+                create database db_mysql;
+                use db_mysql;
+
+                -- 主表，有外键引用它
+                CREATE TABLE customers(
+                  id INT NOT NULL, -- 序号
+                  name VARCHAR(32) DEFAULT '',-- 姓名
+                  sex int NOT NULL, -- 性别
+                  city VARCHAR(32) NOT NULL, -- 所在城市
+                  age INT NOT NULL, -- 值类型
+                  PRIMARY KEY (id) -- 主键
+                );
+
+                -- 主表，无外键引用它
+                CREATE TABLE customers_no_fk(
+                  id INT NOT NULL, -- 序号
+                  name VARCHAR(32) DEFAULT '',-- 姓名
+                  sex int NOT NULL, -- 性别
+                  city VARCHAR(32) NOT NULL, -- 所在城市
+                  age INT NOT NULL, -- 值类型
+                  PRIMARY KEY (id) -- 主键
+                );
+
+                
+                -- 子表1有外键
+                create table customers_fk1 (id int);
+                ALTER TABLE customers_fk1 
+                ADD CONSTRAINT fk1_id_customers 
+                FOREIGN KEY (id) REFERENCES customers (ID) 
+                ON DELETE CASCADE; 
+
+                -- 子表2也有外键
+                create table customers_fk2 (id int);
+                ALTER TABLE customers_fk2
+                ADD CONSTRAINT fk2_id_customers 
+                FOREIGN KEY (id) REFERENCES customers (ID) 
+                ON DELETE CASCADE; 
+
+                -- 子表3也有外键
+                create table customers_fk3 (id int);
+                ALTER TABLE customers_fk3
+                ADD CONSTRAINT fk3_id_customers 
+                FOREIGN KEY (id) REFERENCES customers (ID) 
+                ON DELETE CASCADE; 
+
+                              
+                -- 生成初始样例数据 （基于MySQL 8.0 版本）,300W 行,时间20秒左右.
+                set @@cte_max_recursion_depth=5000000;
+                insert into customers 
+                with recursive tmp(a,b,c,d,e) as (
+                select 1,'lucy1000000',0,'shanghai',20
+                union all
+                      select a+1,concat('lily',mod(a,100)),floor(rand()*2),'shanghai',ceil(rand()*20)+30
+                      from tmp where a &lt; 3000001
+                ) table tmp;
+
+                -- 给外键表和非外键引用的主表插入数据
+                insert into customers_no_fk select * from customers;
+                insert into customers_fk1 select id from customers;
+                insert into customers_fk2 select id from customers;
+                insert into customers_fk3 select id from customers;
+       
+
+                -- 查询表是否有外键，有三张表引用主表。
+                (mysql:8.0.31-cluster)select * from information_schema.innodb_foreign where ref_name = 'db_mysql/customers';
+                +---------------------------+------------------------+--------------------+--------+------+
+                | ID                        | FOR_NAME               | REF_NAME           | N_COLS | TYPE |
+                +---------------------------+------------------------+--------------------+--------+------+
+                | db_mysql/fk1_id_customers | db_mysql/customers_fk1 | db_mysql/customers |      1 |   33 |
+                | db_mysql/fk2_id_customers | db_mysql/customers_fk2 | db_mysql/customers |      1 |   33 |
+                | db_mysql/fk3_id_customers | db_mysql/customers_fk3 | db_mysql/customers |      1 |   33 |
+                +---------------------------+------------------------+--------------------+--------+------+
+                3 rows in set (0.00 sec)                
+
+
+                示例：
+                -- 有外键表的删除
+                delete from customers;
+
+                -- 有外键表的删除，删除300万行,时间为2分钟9.25秒.
+                (mysql:8.0.31-cluster)delete from customers;
+                Query OK, 3000001 rows affected (2 min 9.25 sec)
+
+                -- 无外键表的删除
+                delete from customers_no_fk;
+
+                -- 无外键表的删除，删除1200万行,时间为33.19秒,比外键表的记录删除要快的多.
+                (mysql:8.0.31-cluster)delete from customers_no_fk;
+                Query OK, 3000001 rows affected (33.19 sec)
+
+
+                示例说明:
+                1. 对有外键表的删除，删除主表记录需要删除对应外键表的记录。
+                2. 原则上对主表引用的外键表越多，主表记录删除的时间越长。
+                
+
+                示例结论：
+                1. 无外键表的删除速度比有外键表的删除记录要快的多，所以建议禁止外键表，由业务来保证父表与子表的从属性。
+                2. 此示例中是演示有级联删除的外键。
+                3. 建立外键的时候，也可以选择非级联删除的外键，但是需要注意：
+                   1. 外键存在的意义就是让数据库来保证父表和子表的约束。
+                   2. 如果非级联删除，那么在删除主表时，就需要业务端先来删除子表的相关记录，然后再删除父表的相关记录。
+
+
+                解决方案： 
+                -- 以表customers_fk1为例，其他子表同样的方法。
+                1. alter table customers_fk1 drop foreign key fk1_id_customers; -- 删除外键。
+                2. 调整建表语句：
+                create table customers_fk1 (id int); -- 引用表 customers 的 id 字段。     
+      
+            </示例>
+            <检查流程描述>
+                1. 检查CREATE TABLE 语句或者 ALTER TABLE 语句,查看有无外键表,有的话, 则报告违反规则。
+            </检查流程描述>
+            <知识文档>
+              1. MySQL Create table 官方文档： https://dev.mysql.com/doc/refman/8.0/en/create-table.html
+            </知识文档>
+        </场景>
+    </规则场景>
+    <规则缺陷 />
+    <标签><分类 名称="操作对象"><分类值>表</分类值></分类><分类 名称="SQL分类"><分类值>完整性约束</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

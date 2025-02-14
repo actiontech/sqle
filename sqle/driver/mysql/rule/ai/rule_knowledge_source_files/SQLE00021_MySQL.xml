@@ -1,0 +1,77 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+  <原始顺序>14.0</原始顺序>
+  <规则编号>SQLE00021</规则编号>
+  <级别>warn</级别>
+  <数据库类型>MySQL</数据库类型>
+  <规则种类>DDL规范</规则种类>
+  <规则简述>禁止表字段缺少NOT NULL约束</规则简述>
+  <规则描述>若数据库表字段缺少NOT NULL约束，则字段存储值可能是NULL，后期判断时，需要加上IS NULL判断，增加SQL编写的复杂度。</规则描述>
+  <规则场景>
+    <原理说明 数据库版本="5.7+" 检查方式="不连库审核" 适用句型="CREATE TABLE,ALTER TABLE">
+      <示例>
+      原理说明：
+      表字段应该明确指定NOT NULL约束，以避免存储NULL值并简化后续SQL查询。
+
+      反例：
+      CREATE TABLE employees (
+        id INT,
+        name VARCHAR(50),
+        salary DECIMAL(10,2)
+      );
+
+      反例验证：
+      mysql&gt; DESC employees;
+      +--------+---------------+------+-----+---------+-------+
+      | Field  | Type          | Null | Key | Default | Extra |
+      +--------+---------------+------+-----+---------+-------+
+      | id     | int           | YES  |     | NULL    |       |
+      | name   | varchar(50)   | YES  |     | NULL    |       |
+      | salary | decimal(10,2) | YES  |     | NULL    |       |
+      +--------+---------------+------+-----+---------+-------+
+      3 rows in set (0.00 sec)
+
+      正例：
+      CREATE TABLE employees (
+        id INT NOT NULL,
+        name VARCHAR(50) NOT NULL,
+        salary DECIMAL(10,2) NOT NULL
+      );
+
+      正例验证：
+      mysql&gt; DESC employees;
+      +--------+---------------+------+-----+---------+-------+
+      | Field  | Type          | Null | Key | Default | Extra |
+      +--------+---------------+------+-----+---------+-------+
+      | id     | int           | NO   |     | NULL    |       |
+      | name   | varchar(50)   | NO   |     | NULL    |       |
+      | salary | decimal(10,2) | NO   |     | NULL    |       |
+      +--------+---------------+------+-----+---------+-------+
+      3 rows in set (0.00 sec)
+      </示例>
+      <检查流程描述>
+      1. 对于 "CREATE TABLE..." 语句，检查表定义中的每个字段是否明确指定了 NOT NULL 约束，如果存在任何字段未指定 NOT NULL 约束，则报告违反规则。
+      2. 对于 "ALTER TABLE..." 语句：
+        1. 如果是添加新列，检查新列定义是否包含 NOT NULL 约束，如果没有，则报告违反规则。
+        2. 如果是修改现有列，检查修改后的列定义是否移除了原有的 NOT NULL 约束或未添加 NOT NULL 约束，如果是，则报告违反规则。
+      </检查流程描述>
+      <知识文档>
+      1. MySQL NOT NULL约束: https://dev.mysql.com/doc/refman/8.0/en/create-table.html#create-table-null-not-null
+      2. MySQL数据类型: https://dev.mysql.com/doc/refman/8.0/en/data-types.html
+      </知识文档>
+    </原理说明>
+  </规则场景>
+  <标签>
+    <分类 名称="操作对象">
+      <分类值>字段</分类值>
+    </分类>
+    <分类 名称="SQL分类">
+      <分类值>DDL</分类值>
+      <分类值>完整性约束</分类值>
+    </分类>
+    <分类 名称="审核目的">
+      <分类值>保障正确性</分类值>
+    </分类>
+  <分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签>
+  <完成情况>完成</完成情况>
+</Rule>

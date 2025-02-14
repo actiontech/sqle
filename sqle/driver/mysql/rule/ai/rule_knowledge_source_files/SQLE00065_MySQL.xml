@@ -1,0 +1,157 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00065</规则编号>
+    <级别>error</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>DDL操作风险防范</规则种类>
+    <规则简述>禁止修改表时指定或调整字段在表结构中的顺序</规则简述>
+    <规则描述>FIRST 和 AFTER 关键词在 ALTER TABLE 语句中用于调整字段的顺序，这种操作会改变表字段的物理顺序，可能导致依赖默认列顺序的业务SQL出现错误，影响数据的一致性和业务的稳定性。</规则描述>
+    <规则场景>
+        <场景 名称="更改表字段定义" 数据库版本="大于等于 MySQL 5.7 " 检查方式="不连库审核" 适用句型="ALTER TABLE">
+            <示例>
+                前置：
+                create database db_mysql;
+                use db_mysql;
+
+                -- 示例表结构
+                CREATE TABLE customers(
+                  id INT NOT NULL, -- 序号
+                  name VARCHAR(32) DEFAULT 'lucy',-- 姓名
+                  sex int NOT NULL default 0, -- 性别
+                  city VARCHAR(32) NOT NULL default 'beijing', -- 所在城市
+                  age INT NOT NULL default 0, -- 值类型
+                  PRIMARY KEY (id) -- 主键
+                );
+
+                -- 导入的数据文件，验证时会用到
+                [root@ytt-pc mysql-files]# cat customers.csv 
+                1	小王22222333	1	北京	22
+                2	小王1	1	上海	33
+                3	小王2	1	上海	33
+                4	小王3	0	上海	37
+                5	小王4	0	上海	31
+                6	小王5	0	上海	33
+                7	小王6	1	上海	35
+                8	小王7	1	上海	25
+                9	小王8	1	上海	22
+                10	小王9	1	上海	25
+                
+
+
+                原理说明：
+                1. MySQL 可以对表列顺序进行调整。不同于默认加列，都放在表所有列的最后；调整列的顺序可以使列不放在最后，放到指定的位置。
+                2. 对表列顺序进行调整，可以使用INPLACE的方式来进行DDL，不影响在线DML的事务；但是会影响插入业务、导入业务的正确性。
+    
+
+                示例：
+                alter table customers change  age age int not null first;
+                alter table customers change age age int not null after name;
+
+                alter table customers modify age int not null first;
+                alter table customers modify age int not null after name;
+                
+                alter table customers add addr varchar(2000) null after name;
+                alter table customers add addr varchar(2000) null first;
+
+                示例说明：
+                1. 此示例里对字段age 调整顺序。分别调整为表 customers 的第一位；以及跟在字段name 的后面。
+
+  
+
+                示例验证： 
+                1. 对插入业务的影响
+                  -- 原始表顺序
+                  (mysql:8.3.0:db_mysql)show create table customers\G
+                  *************************** 1. row ***************************
+                        Table: customers
+                  Create Table: CREATE TABLE `customers` (
+                    `id` int NOT NULL,
+                    `name` varchar(32) DEFAULT 'lucy',
+                    `sex` int NOT NULL DEFAULT '0',
+                    `city` varchar(32) NOT NULL DEFAULT 'beijing',
+                    `age` int NOT NULL DEFAULT '0',
+                    PRIMARY KEY (`id`)
+                  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+                  1 row in set (0.01 sec)
+                  
+                  -- 更改字段age 的顺序，只验证一条SQL 即可。
+                  (mysql:8.3.0:db_mysql)alter table customers change  age age int not null first;
+                  Query OK, 0 rows affected (0.05 sec)
+                  Records: 0  Duplicates: 0  Warnings: 0
+
+                  -- 此时字段age的顺序排列在第一位
+                  (mysql:8.3.0:db_mysql)show create table customers\G
+                  *************************** 1. row ***************************
+                        Table: customers
+                  Create Table: CREATE TABLE `customers` (
+                    `age` int NOT NULL,
+                    `id` int NOT NULL,
+                    `name` varchar(32) DEFAULT 'lucy',
+                    `sex` int NOT NULL DEFAULT '0',
+                    `city` varchar(32) NOT NULL DEFAULT 'beijing',
+                    PRIMARY KEY (`id`)
+                  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+                  1 row in set (0.00 sec)
+
+                  -- 更改字段顺序后，原来的顺序对不上，就会报错。
+                  (mysql:8.3.0:db_mysql)insert into customers value (20,'张小王',1,'兰州',20);
+                  ERROR 1366 (HY000): Incorrect integer value: '张小王' for column 'id' at row 1
+
+                  -- 需要更改SQL 语句，指定字段名字，方可成功
+                  (mysql:8.3.0:db_mysql)insert into customers(age,id,name,sex,city) value (20,20,'张小王',1,'兰州');
+                  Query OK, 1 row affected (0.02 sec)
+
+                  (mysql:8.3.0:db_mysql)select * from customers;
+                  +-----+----+-----------+-----+--------+
+                  | age | id | name      | sex | city   |
+                  +-----+----+-----------+-----+--------+
+                  |  20 | 20 | 张小王    |   1 | 兰州   |
+                  +-----+----+-----------+-----+--------+
+                  1 row in set (0.00 sec)
+
+                2. 对导入业务的影响
+                  -- 导入业务同样会报错
+                  (mysql:8.3.0:db_mysql)load data infile '/var/lib/mysql-files/customers.csv' into table customers;
+                  ERROR 1366 (HY000): Incorrect integer value: '小王22222333' for column 'id' at row 1
+                  
+                  --同样需要指定字段顺序
+                  (mysql:8.3.0:db_mysql)load data infile '/var/lib/mysql-files/customers.csv' into table customers(id,name,sex,city,age);
+                  Query OK, 10 rows affected (0.01 sec)
+                  Records: 10  Deleted: 0  Skipped: 0  Warnings: 0
+
+                  (mysql:8.3.0:db_mysql)select * from customers;
+                  +-----+----+----------------+-----+--------+
+                  | age | id | name           | sex | city   |
+                  +-----+----+----------------+-----+--------+
+                  |  22 |  1 | 小王22222333   |   1 | 北京   |
+                  |  33 |  2 | 小王1          |   1 | 上海   |
+                  |  33 |  3 | 小王2          |   1 | 上海   |
+                  |  37 |  4 | 小王3          |   0 | 上海   |
+                  |  31 |  5 | 小王4          |   0 | 上海   |
+                  |  33 |  6 | 小王5          |   0 | 上海   |
+                  |  35 |  7 | 小王6          |   1 | 上海   |
+                  |  25 |  8 | 小王7          |   1 | 上海   |
+                  |  22 |  9 | 小王8          |   1 | 上海   |
+                  |  25 | 10 | 小王9          |   1 | 上海   |
+                  |  20 | 20 | 张小王         |   1 | 兰州   |
+                  +-----+----+----------------+-----+--------+
+                  11 rows in set (0.00 sec)
+
+                结论：
+                1. 禁止对表字段顺序进行更改，会严重影响业务SQL 的正确性，包括插入语句、导入语句。
+      
+            </示例>
+            <检查流程描述>
+              1. 对于 "ALTER TABLE...MODIFY ..."语句，如果存在以下任何一项，则报告违反规则：
+                1. 检查是否有关键词 FIRST
+                2. 检查是否有关键词 AFTER
+              2. 对于语句 "ALTER TABLE ... CHANGE ..."，执行与上述相同的检查步骤。
+              3. 对于语句 "ALTER TABLE ... ADD ..."，执行与上述相同的检查步骤。
+            </检查流程描述>
+            <知识文档>
+              1. ALTER TABLE 官方文档：https://dev.mysql.com/doc/refman/8.0/en/alter-table.html
+            </知识文档>
+        </场景>
+    </规则场景>
+    <规则缺陷 />
+    <标签><分类 名称="操作对象"><分类值>表</分类值><分类值>字段</分类值></分类><分类 名称="SQL分类"><分类值>DDL</分类值></分类><分类 名称="审核目的"><分类值>保障正确性</分类值><分类值>增强可维护性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

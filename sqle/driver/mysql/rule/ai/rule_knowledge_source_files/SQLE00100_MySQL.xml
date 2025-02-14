@@ -1,0 +1,159 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+  <规则编号>SQLE00100</规则编号>
+  <级别>error</级别>
+  <数据库类型>MySQL</数据库类型>
+  <规则种类>数据修改和操作安全</规则种类>
+  <规则简述>避免SELECT语句一次性返回的结果过多</规则简述>
+  <规则变量>
+    <变量 name="结果集返回行数" type="int">1000</变量>
+  </规则变量>
+  <规则描述>如果查询的扫描行数很大，会导致IO、网络资源消耗过大，并且可能会导致优化器选择错误的执行计划而不走索引。</规则描述>
+  <规则场景>
+  <场景 名称="未限定数据量查询" 数据库版本="MySQL 所有版本" 检查方式="连库审核" 适用句型="SELECT、INSERT... SELECT、UPDATE、DELETE、UNION、WITH">
+  <示例>
+        前置：
+        -- 表1
+        create table customers(
+          ID INT primary key,
+          cname varchar(32) default '' not null, -- 序号
+          sex int default 0, -- 性别
+          age int default 0 -- 年龄
+          );
+
+
+          -- 插入模拟数据,20W 条。
+          set @@cte_max_recursion_depth=20000000;
+          insert into customers  
+          with recursive tmp (a1,a2,a3,a4) as (
+            select 1,'小王22222333',floor(rand()*2),ceil(rand()*30)+20
+            union all 
+            select a1+1,concat('小王',a1),floor(rand()*2),ceil(rand()*20)+20 from tmp where a1 &lt; 200000) 
+            select * from tmp;
+
+          原理说明：
+          1. SELECT 操作一次返回的结果集太多，增加I/O负载和网络传输负载，导致资源严重浪费，影响整体TPS。
+          2. 需要限制输出的结果集。比如使用 limit子句、区分度好的条件字段来过滤等。
+
+          反例：
+          select * from customers;
+
+          注：其他句型与SELECT句型语法相同，都是指SQL语句中包含SELECT的情况，因此省略相似的示例。
+
+          反例验证:
+          1. 执行示例SQL：查询所有记录，总耗时 140 毫秒。
+          (mysql:8.4.0:db_mysql)select * from customers;
+          ##省略结果集部分##
+          200000 rows in set (0.14 sec)
+
+        
+          3. 查看执行计划。
+
+          (mysql:8.4.0:db_mysql)explain select * from customers\G
+          *************************** 1. row ***************************
+                     id: 1
+            select_type: SIMPLE
+                  table: customers
+             partitions: NULL
+                   type: ALL
+          possible_keys: NULL
+                    key: NULL
+                key_len: NULL
+                    ref: NULL
+                   rows: 199662
+               filtered: 100.00
+                  Extra: NULL
+          1 row in set, 1 warning (0.00 sec)
+          
+          (mysql:8.4.0:db_mysql)show warnings\G
+          *************************** 1. row ***************************
+            Level: Note
+             Code: 1003
+             Message: /* select#1 */ select `test`.`customers`.`ID` AS `ID`,`test`.`customers`.`cname` AS `cname`,`test`.`customers`.`sex` AS `sex`,`test`.`customers`.`age` AS `age` from `test`.`customers`
+             1 row in set (0.00 sec)                    
+    
+          正例：
+          select * from customers where id &lt; 900;
+          
+          正例说明：
+          1. 示例SQL输出行数都小于1000行，非常少。
+          2. 正例 SQL 需要更改业务逻辑，与业务端联动修改，即要求用户通过增加过滤条件来限定返回行数。
+
+          正例验证：
+          1. 执行示例SQL：由于结果集变少，瞬间出结果。
+          (mysql:8.4.0:db_mysql)select * from customers where id &lt; 900;
+          ...
+          899 rows in set (0.00 sec)
+
+          
+          2. 查看执行计划：可以看到，走主键扫，输出行数和成本都大幅降低。
+
+          (mysql:8.4.0:db_mysql)explain select * from customers where id &lt; 900\G
+          *************************** 1. row ***************************
+                        id: 1
+               select_type: SIMPLE
+                     table: customers
+                partitions: NULL
+                      type: range
+             possible_keys: PRIMARY
+                       key: PRIMARY
+                   key_len: 4
+                       ref: NULL
+                      rows: 899
+                  filtered: 100.00
+                     Extra: Using where
+             1 row in set, 1 warning (0.00 sec)
+          
+          (mysql:8.4.0:db_mysql)show warnings\G
+          *************************** 1. row ***************************
+            Level: Note
+             Code: 1003
+             Message: /* select#1 */ select `test`.`customers`.`ID` AS `ID`,`test`.`customers`.`cname` AS `cname`,`test`.`customers`.`sex` AS `sex`,`test`.`customers`.`age` AS `age` from `test`.`customers` where (`test`.`customers`.`ID` &lt; 900)
+             1 row in set (0.00 sec)          
+      
+          总结：
+          1.  SELECT 返回的记录数太多，会严重消耗系统资源、使得查询结果变慢，需要限制在一定范围内。
+
+      </示例>
+      <检查流程描述>
+        1. 对于所有DML语句的“SELECT ... ”子句：
+          1. 登录数据库
+          2. 查看SELECT子句的执行计划，获取执行计划中最下面的 rows 的结果
+          3. 如果 rows 大于规则阈值，则报告违反规则。
+      </检查流程描述>
+      <知识文档>
+      1.SELECT 优化官方文档： https://dev.mysql.com/doc/refman/8.4/en/select-optimization.html
+      </知识文档>
+    </场景>
+    <场景 名称="限定数据量查询" 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用关键词="LIMIT" 适用句型="SELECT、INSERT... SELECT、UPDATE、DELETE、UNION、WITH">
+      <示例>
+        前置：
+        -- 表1
+        create table customers(
+          ID INT primary key,
+          cname varchar(32) default '' not null, -- 序号
+          sex int default 0, -- 性别
+          age int default 0 -- 年龄
+        );
+
+        原理说明：
+        与场景【未限定数据量查询】一致。
+
+        示例：
+        select  * from customers limit 50000;
+
+        解决方案：
+        通过限定数据返回的关键词limit来调整数据行数，这样即使表记录数在后续持续增长，也不会影响当前SQL一次性返回的结果，严格控制每次查询返回的结果行数。
+
+      </示例>
+      <检查流程描述>
+        1. 对于所有DML语句的“SELECT ... ”子句，
+          1. 存在限定行数的关键词 LIMIT
+          2. 若关键词后的限定行数大于规则阈值，则报告违反规则。
+      </检查流程描述>
+      <知识文档>
+      1.SELECT 优化官方文档： https://dev.mysql.com/doc/refman/8.4/en/select-optimization.html
+      </知识文档>
+    </场景>
+  </规则场景>
+<标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值><分类值>增强安全性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值><分类值>连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

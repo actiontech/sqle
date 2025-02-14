@@ -1,0 +1,121 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+<规则编号>SQLE00001</规则编号>
+<级别>
+  <当前级别>error</当前级别>
+  <新级别>warn</新级别>
+</级别>
+<数据库类型>MySQL</数据库类型>
+<规则种类>DML规范</规则种类>
+<规则简述>禁止SQL语句不带WHERE条件或者WHERE条件为永真</规则简述>
+<规则描述>使用有效的WHERE条件能够避免全表扫描，提高SQL执行效率；而恒为TRUE的WHERE条件，如where 1=1、where true=true等，在执行时会进行全表扫描产生额外开销。
+</规则描述>
+<规则场景> 
+  <场景 名称="明确的恒真条件数据处理" 数据库版本="MySQL 5.7.25" 检查方式="不连库审核" 适用句型="SELECT、UPDATE、DELETE、INSERT...SELECT、UNION ALL、WITH">
+    <示例>
+    前置：主表1结构
+    CREATE TABLE customers (
+      id int, -- 编号
+      name varchar(200), -- 姓名
+      sex int, -- 性别
+      city varchar(200), -- 城市
+      age int, -- 年龄
+      log_date varchar(200),  -- 记录日志时间
+      primary key (id) -- 主键
+    );
+
+    -- 给列age 加索引。
+    create index idx_age_customers on customers(age);
+
+    -- 主表2 结构:
+    CREATE TABLE customers_insert (
+      id int, -- 编号
+      name varchar(200), -- 姓名
+      sex int, -- 性别
+      city varchar(200), -- 城市
+      age int, -- 年龄
+      log_date varchar(200),  -- 记录日志时间
+      primary key (id) -- 主键
+    );
+
+    insert into customers(id,name,sex,age,log_date) values(1,'a',0,22,'2022-12-12');
+    insert into customers(id,name,sex,age,log_date) values(2,'b',0,22,'2022-12-12');
+    
+    原理说明：
+    1. SQL WHERE 条件为永真或者不加WHERE条件，查询将返回大量数据，这不仅增加了网络传输的负担，还会占用大量数据库资源，导致性能下降。
+    2. 在 UPDATE 或 DELETE 语句中使用恒真条件会导致所有行被修改或删除，导致数据丢失，可能需要从备份中恢复数据，造成业务中断和损失。
+    3. 恒真条件可能掩盖逻辑错误，导致意外的数据污染。
+    4. 基于安全性来考虑，恒真条件增加了SQL注入攻击的风险，会导致会必要的数据安全问题。 
+
+    示例：
+    select count(*) from customers;
+    select count(*) from customers where 1=1;
+    select count(*) from customers where (1=1) or (age=35);
+    select count(*) from customers where name=name;
+    select count(*) from customers where EXISTS (SELECT 1 FROM dual);
+    select count(*) from customers where 1 IN (SELECT 1 FROM dual);
+    select count(*) from customers WHERE COALESCE(city, 'default') IS NOT NULL;
+    insert into customers_insert select * from customers;
+    select * from customers union all select * from customers where 1=1;
+    update customers set age = 88;
+    delete from customers;        
+
+    示例说明：
+    在数据库系统中，SQL语句不设置WHERE条件或者使用的WHERE条件是恒真，如WHERE 1=1、WHERE (1=1) or (age=35)、where true=true、where true等，导致SQL语句进行了全表扫描，最终出现SQL执行效率低下等情况。WHERE条件为恒真还包含如下几种情况，如表内同一字段的等式比较、EXISTS (SELECT 1)、1 IN (SELECT 1)、COALESCE函数，以及OR条件中包含了恒真等等。
+
+  </示例>
+  <检查流程描述>
+    1. 对于所有DML语句，如果以下任意一项为真，则报告违反规则：
+      1. SQL 语句中不带 WHERE 条件。
+      2. SQL 语句中仅带 WHERE 1=1。
+      3. SQL 语句中仅带 WHERE column = column，即使column是在同一个表的相同字段。
+      4. SQL 语句中仅带 WHERE EXISTS (SELECT 1)。
+      5. SQL 语句中仅带 WHERE 1 IN (SELECT 1)。
+      6. SQL 语句中仅带 WHERE COALESCE(column, 'default') IS NOT NULL，且column是表内一个字段。
+      7. SQL 语句中 WHERE 条件的最外层使用了 OR，且 OR 条件中包含恒真表达式。
+    2. 对于"WITH.." 语句，执行与上述同样检查。
+
+  </检查流程描述>   
+  <知识文档>
+  1. SELECT语法：https://dev.mysql.com/doc/refman/5.7/en/select.html
+  2. 表达式：https://dev.mysql.com/doc/refman/5.7/en/expressions.html
+  3. 函数与操作：https://dev.mysql.com/doc/refman/5.7/en/functions.html
+  </知识文档>
+  </场景>
+  <场景 名称="可能的恒真条件数据处理" 数据库版本="MySQL 5.7.25" 检查方式="连库审核" 适用句型="SELECT、UPDATE、DELETE、INSERT...SELECT、UNION ALL、WITH">
+  <示例>
+    前置：
+    CREATE TABLE customers (
+      id int, -- 编号
+      name varchar(200) not null, -- 姓名
+      sex int, -- 性别
+      city varchar(200), -- 城市
+      age int, -- 年龄
+      log_date varchar(200),  -- 记录日志时间
+      primary key (id) -- 主键
+    );
+
+    原理说明：与场景【明确的恒真条件数据处理】一致
+
+    示例：
+    select * from customers where name is not null;        
+    
+    示例说明：
+    在数据库系统中，SQL语句在WHERE条件中仅使用了非空字段的is not null判断时，也满足了WHERE条件为恒真的情况，导致SQL语句进行了全表扫描，最终出现SQL执行效率低下等情况。
+
+  </示例>
+  <检查流程描述>
+    1. 对于所有DML语句，如果以下任意一项为真，则报告违反规则：
+      1. SQL 语句中仅带 WHERE column IS NOT NULL，且登录数据库获取 column的属性 是一个不可为空的字段。
+      2. SQL 语句中 WHERE 条件的最外层使用了 OR，且 OR 条件中包含上述条件。
+    2. 对于"WITH.." 语句，执行与上述同样检查。
+  </检查流程描述>   
+  <知识文档>
+    1. SELECT语法：https://dev.mysql.com/doc/refman/5.7/en/select.html
+  </知识文档>
+  </场景>      
+</规则场景>
+<规则缺陷>
+类似where 1=1这类无效条件的SQL，常常来自于程序中生成SQL语句，保证SQL语法正确的需求。虽然在多条件下，MySQL优化器会自动忽略此类条件，但产生的优化成本无法避免。因此建议尝试在程序中优化此类无效条件的表示方法。
+</规则缺陷>
+<标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值><分类值>连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

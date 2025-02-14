@@ -1,0 +1,175 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+  <规则编号>SQLE00124</规则编号>
+  <级别>notice</级别>
+  <数据库类型>MySQL</数据库类型>
+  <规则种类>DML规范</规则种类>
+  <规则简述>删除全表时建议使用 TRUNCATE 替代 DELETE</规则简述>
+  <规则描述>TRUNCATE TABLE 比 DELETE 速度快，且使用的系统和事务日志资源少，同时TRUNCATE后表所占用的空间会被释放，而DELETE后需要手工执行OPTIMIZE才能释放表空间</规则描述>
+  <规则场景>
+    <场景 名称="快速清空表数据" 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="DELETE">
+      <示例>
+        前置:
+        create database db_mysql;
+        use db_mysql;
+        CREATE TABLE customers(
+          id INT(11) NOT NULL AUTO_INCREMENT,  -- 序号
+          name VARCHAR(32) DEFAULT '',-- 姓名
+          sex TINYINT NOT NULL, -- 性别
+          city VARCHAR(32) NOT NULL, -- 所在城市
+          age SMALLINT(4) NOT NULL, -- 数值类型
+          PRIMARY KEY (id) -- 主键
+        );
+
+        DELIMITER $$
+
+        USE `db_mysql`$$
+
+        DROP PROCEDURE IF EXISTS `sp_generate_data_customers`$$
+
+        CREATE PROCEDURE `sp_generate_data_customers`(f_cnt INT) -- 生成海量数据的存储过程
+        BEGIN
+              DECLARE i,total_cnt INT DEFAULT 0;
+              TRUNCATE TABLE customers;
+              INSERT INTO customers(`name`,sex,city,age)  VALUES 
+              ('小李',1,'上海',18),('小王',0,'北京',22),
+              ('小饭',1,'上海',25),('小刘',0,'北京',30),
+              ('小菜',1,'上海',28),('小张',0,'天津',60),
+              ('小利',1,'上海',25),('小高',0,'北京',30),
+              ('小娜',1,'上海',28),('小五',0,'天津',60);
+              
+              INSERT INTO customers(`name`,sex,city,age) SELECT a.name,a.sex,a.city,a.age FROM customers a ,customers b;
+              INSERT INTO customers(`name`,sex,city,age) SELECT a.name,a.sex,a.city,a.age FROM customers a ,customers b LIMIT 100000;
+              
+              SET total_cnt = f_cnt + 1;
+              WHILE i &lt; total_cnt
+              DO
+                SET i = i + 1;
+                IF MOD(i,100000) = 0 THEN
+                  INSERT INTO customers(`NAME`,sex,city,age) SELECT a.name,a.sex,a.city,a.age FROM customers a ,customers b LIMIT 100000;
+                END IF;
+              END WHILE;
+              
+            END$$
+
+        DELIMITER ;
+
+        call sp_generate_data_customers(10000000); -- 存储过程调用，正反例示例都需要先执行
+
+        反例：
+        delete from customers;
+        delete from customers where 1=1;
+        delete from customers where true;
+
+        反例说明：
+        1. delete 不带 where 条件触发。
+        2. delete 带 where 条件但是条件为 where 1=1 或者 where true 等恒真条件也触发。
+        1. delete 对全表进行删除，由于是逐行删除，随着表记录数越大，删除速度越慢。
+        2. delete 对比 truncate table 操作， 会造成日志的写入放大（比如binlog，redo log 等）。
+
+        示例验证：
+        (mysql:8.0.18)select count(*) from customers;
+        +----------+
+        | count(*) |
+        +----------+
+        | 10012210 |
+        +----------+
+        1 row in set (0.52 sec)
+
+        (mysql:8.0.18)reset master;
+        Query OK, 0 rows affected (0.04 sec)
+
+        (mysql:8.0.18)show master status; -- 二进制日志初始大小
+        +---------------+----------+--------------+------------------+-------------------+
+        | File          | Position | Binlog_Do_DB | Binlog_Ignore_DB | Executed_Gtid_Set |
+        +---------------+----------+--------------+------------------+-------------------+
+        | binlog.000001 |      155 |              |                  |                   |
+        +---------------+----------+--------------+------------------+-------------------+
+        1 row in set (0.00 sec)
+
+        (mysql:8.0.18)delete from customers; -- 用时大于7分钟
+        Query OK, 10012210 rows affected (7 min 10.72 sec)
+
+        (mysql:8.0.18)select count(*) from customers;
+        +----------+
+        | count(*) |
+        +----------+
+        |        0 |
+        +----------+
+        1 row in set (0.00 sec)
+
+        (mysql:8.0.18)show master status;
+        +---------------+-----------+--------------+------------------+-------------------+
+        | File          | Position  | Binlog_Do_DB | Binlog_Ignore_DB | Executed_Gtid_Set |
+        +---------------+-----------+--------------+------------------+-------------------+
+        | binlog.000001 | 221213622 |              |                  |                   |
+        +---------------+-----------+--------------+------------------+-------------------+
+        1 row in set (0.00 sec)
+
+
+        (mysql:8.0.18)select truncate(221213622/1024/1024,0) as total_size_MB; -- delete 需要用210MB的二进制日志，造成日志空间放大。
+        +---------------+
+        | total_size_MB |
+        +---------------+
+        |           210 |
+        +---------------+
+        1 row in set (0.00 sec)
+
+        [root@ytt-pc db_mysql]# du -sh customers.ibd -- 表空间没有释放
+        556M	customers.ibd
+
+
+
+        正例：
+        truncate table customers;
+
+        正例说明：
+        1. truncate table 操作原理是先对表进行删除，再创建和原表一样结构的空表，所以速度很快，适合大表数据库的快速删除。
+        2. truncate table 和表记录数关系不大，对于超级大表的速度则受限于底层磁盘文件系统的性能。
+
+        示例验证：
+
+        (mysql:8.0.18)select count(*) from customers;
+        +----------+
+        | count(*) |
+        +----------+
+        | 10012210 |
+        +----------+
+        1 row in set (0.66 sec)
+        
+        (mysql:8.0.18)show master status;
+        +---------------+----------+--------------+------------------+-------------------+
+        | File          | Position | Binlog_Do_DB | Binlog_Ignore_DB | Executed_Gtid_Set |
+        +---------------+----------+--------------+------------------+-------------------+
+        | binlog.000001 |      155 |              |                  |                   |
+        +---------------+----------+--------------+------------------+-------------------+
+        1 row in set (0.00 sec)
+        
+        (mysql:8.0.18)truncate table customers; -- 快速删除
+        Query OK, 0 rows affected (0.19 sec)
+        
+        (mysql:8.0.18)show master status; -- 日志空间没有放大。
+        +---------------+----------+--------------+------------------+-------------------+
+        | File          | Position | Binlog_Do_DB | Binlog_Ignore_DB | Executed_Gtid_Set |
+        +---------------+----------+--------------+------------------+-------------------+
+        | binlog.000001 |      339 |              |                  |                   |
+        +---------------+----------+--------------+------------------+-------------------+
+        1 row in set (0.00 sec)
+
+        [root@ytt-pc db_mysql]# du -sh customers.ibd -- 表空间立即释放
+        112K	customers.ibd
+
+        
+
+      </示例>
+      <检查流程描述>
+      1. 对于"DELETE..."语句，检查句子 没有WHERE 条件或者 where 条件恒为真（比如 where 1=1 或者 where True），则报告违反规则。
+      </检查流程描述>
+      <知识文档>
+      1. truncate table 介绍：https://dev.mysql.com/doc/refman/8.0/en/truncate-table.html
+      </知识文档>
+    </场景>
+  </规则场景>
+
+  <关联规则>SQLE00123</关联规则>
+  <标签><分类 名称="操作对象"><分类值>表</分类值><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DDL</分类值></分类><分类 名称="审核目的"><分类值>增强安全性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

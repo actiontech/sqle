@@ -1,0 +1,103 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+<规则编号>SQLE00177</规则编号>
+<级别>warn</级别>
+<数据库类型>MySQL</数据库类型>
+<规则种类>排序和分组效率</规则种类>
+<规则简述>建议Order By字段个数不超过指定阈值</规则简述>
+<规则变量>
+  <变量 name="排序字段个数">3</变量>
+</规则变量>
+<规则描述>
+  使用过多的Order By字段会增加排序操作的复杂性，并可能导致性能下降。排序时，MySQL需要对结果集中的每一行进行多字段比较，这可能会耗费更多的CPU和内存资源。如果排序数据集大小超过了可用内存，则可能会导致创建临时表并在磁盘上进行排序，从而增加I/O开销。
+</规则描述>
+<规则场景>
+    <场景 名称="优化排序操作" 数据库版本="MySQL 5.7.25" 检查方式="不连库审核" 适用句型="SELECT、DELETE、UPDATE">
+        <示例>
+            前置：
+            CREATE TABLE customers (
+                id INT,
+                name VARCHAR(50),
+                city VARCHAR(50),
+                age INT,
+                country VARCHAR(50),
+                zipcode INT,
+                income INT
+            );
+            -- 创建索引
+            CREATE INDEX idx_customers_city ON customers(city);
+            CREATE INDEX idx_customers_age ON customers(age);
+            CREATE INDEX idx_customers_name ON customers(name);
+            CREATE INDEX idx_customers_country ON customers(country);
+
+            -- 插入模拟数据：十万条数据
+            --创建模拟数据的存储过程
+            DELIMITER //
+
+            CREATE PROCEDURE FillCustomers()
+            BEGIN
+                DECLARE i INT DEFAULT 1;
+
+                REPEAT
+                    INSERT INTO customers VALUES (
+                        i,
+                        CONCAT('Customer ', i),
+                        CONCAT('City', MOD(i, 100)),
+                        MOD(i, 100) + 20,
+                        CONCAT('Country', MOD(i, 50)),
+                        MOD(i, 50) + 10000,
+                        MOD(i, 100000) + 50000
+                    );
+                    SET i = i + 1;
+                UNTIL i &gt; 100000 END REPEAT;
+
+                COMMIT;
+            END//
+
+            DELIMITER ;
+            -- 调用存储过程进行数据插入
+            CALL FillCustomers();
+
+            反例：
+            SELECT name FROM customers ORDER BY name,city,age,id,country;
+
+            示例验证：
+            1、查看SQL的执行计划。
+            mysql&gt; explain  SELECT name FROM customers ORDER BY name,city,age,id,country;
+            +----+-------------+-----------+------------+------+---------------+------+---------+------+-------+----------+----------------+
+            | id | select_type | table     | partitions | type | possible_keys | key  | key_len | ref  | rows  | filtered | Extra          |
+            +----+-------------+-----------+------------+------+---------------+------+---------+------+-------+----------+----------------+
+            |  1 | SIMPLE      | customers | NULL       | ALL  | NULL          | NULL | NULL    | NULL | 99016 |   100.00 | Using filesort |
+            +----+-------------+-----------+------------+------+---------------+------+---------+------+-------+----------+----------------+
+            1 row in set, 1 warning (0.01 sec)
+
+            正例：
+            SELECT name FROM customers ORDER BY name;
+
+            示例验证：
+            1、查看SQL的执行计划。
+            mysql&gt; explain  SELECT name FROM customers ORDER BY  name;
+            +----+-------------+-----------+------------+-------+---------------+--------------------+---------+------+-------+----------+-------------+
+            | id | select_type | table     | partitions | type  | possible_keys | key                | key_len | ref  | rows  | filtered | Extra       |
+            +----+-------------+-----------+------------+-------+---------------+--------------------+---------+------+-------+----------+-------------+
+            |  1 | SIMPLE      | customers | NULL       | index | NULL          | idx_customers_name | 203     | NULL | 99016 |   100.00 | Using index |
+            +----+-------------+-----------+------------+-------+---------------+--------------------+---------+------+-------+----------+-------------+
+            1 row in set, 1 warning (0.00 sec)
+
+            示例结论：
+            MySQL对于每个需要排序的查询都会分配一个独立的sort_buffer_size大小的内存缓冲区。如果排序数据集大小超过了sort_buffer_size的设定值，则MySQL会使用磁盘上的临时文件来辅助排序。合理的索引设计可以让MySQL直接使用索引来排序，减少临时文件的使用，提高查询效率。另外，在ORDER BY中使用较少的字段可以减少排序过程中的比较操作数量，从而减少CPU和内存的使用。
+            从示例的结论看，由于反例中的SQL语句Order By引入了过多字段，使MySQL无法通过索引的预排序来减少或者避免排序操作。
+
+        </示例>
+        <检查流程描述>
+            1、对于"select..."语句，
+              * 检查SQL语句中是否存在ORDER BY关键词，如果存在，则进行下一步
+              * 计算ORDER BY子句中字段的数量，如果字段数超过阈值，则报告违反规则
+        </检查流程描述>
+        <知识文档>
+            1、如何优化ORDER BY：https://dev.mysql.com/doc/refman/5.7/en/order-by-optimization.html
+        </知识文档>
+    </场景>
+</规则场景>
+<规则缺陷 />
+<标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

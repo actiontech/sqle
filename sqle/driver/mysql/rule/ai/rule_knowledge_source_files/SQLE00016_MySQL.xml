@@ -1,0 +1,65 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+  <规则编号>SQLE00016</规则编号>
+  <级别>
+    <当前级别>warn</当前级别>
+    <新级别>ERROR</新级别>
+  </级别>
+  <数据库类型>MySQL</数据库类型>
+  <规则种类>DDL规范</规则种类>
+  <规则简述>存储大数据类型（如长文本、图片等）的字段只能设置为NULL</规则简述>
+  <规则描述>在MySQL中，存储大数据类型的内容常用BLOB和TEXT、GEOMETRY以及JSON类型，但它们无法指定默认值；写入数据时，如未对该字段指定值会导致写入失败。</规则描述>
+  <规则场景>
+    <原理说明 数据库版本="MySQL 5.7.25" 检查方式="不连库审核">
+      <示例>
+      原理说明：
+      MySQL数据类型默认值处理机制在官方文档中有着明确的定义。其中，显式默认值通过DEFAULT子句指定，要求为常量，以确保数据的确定性。对于NOT NULL约束的字段，设置默认值可有效防止数据插入时因缺少值而导致错误。需要注意的是，BLOB、TEXT、GEOMETRY和JSON等类型不支持默认值设置。
+  
+      示例：
+      CREATE TABLE `tb_text` (
+        `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '主键',
+        `a` tinytext,
+        `b` text NOT NULL,
+        `c` varchar(255) DEFAULT NULL,
+        `d` blob NOT NULL,
+        PRIMARY KEY (`id`)
+      );
+      ALTER TABLE tb_text add column d2 blob not null;
+      ALTER TABLE tb_text change column c c blob not null;
+      ALTER TABLE tb_text modify column c geometry not null;
+
+
+      示例验证：       
+      mysql&gt; insert into tb_text (a, b, c, d) values ('aaa', 'bbb','','');
+      Query OK, 1 row affected (0.00 sec)
+
+      mysql&gt; select * from tb_text;
+      +----+------+-----+------+---+
+      | id | a    | b   | c    | d |
+      +----+------+-----+------+---+
+      |  1 | aaa  | bbb |      |   |
+      +----+------+-----+------+---+
+      1 row in set (0.00 sec)
+
+      mysql&gt; insert into tb_text (a, b) values ('aaa', 'bbb'); 
+      ERROR 1364 (HY000): Field 'd' doesn't have a default value
+      mysql&gt; insert into tb_text (a, b, c, d) values ('aaa', 'bbb',NULL,NULL);
+      ERROR 1048 (23000): Column 'd' cannot be null
+      </示例>
+     
+      <检查流程描述>.
+      1. 对于"CREATE TABLE..."语句，如果含有BLOB类型、TEXT类型、GEOMETRY类型以及JSON类型的任一类型，并且该类型又指定了NOT NULL约束，则报告违反规则。
+      2. 对于"ALTER TABLE..."语句，执行与上述语句相同的检查。
+      </检查流程描述>
+    
+      <知识文档>
+      1. BLOB与TEXT类型: https://dev.mysql.com/doc/refman/5.7/en/blob.html
+      2. JSON类型：https://dev.mysql.com/doc/refman/5.7/en/json.html
+      3. GEOMETRY类型：https://dev.mysql.com/doc/refman/5.7/en/spatial-type-overview.html
+      4. 数据类型的默认值：https://dev.mysql.com/doc/refman/5.7/en/data-type-defaults.html
+      </知识文档>
+    </原理说明>
+  </规则场景>
+  <规则缺陷 />
+<关联规则>SQLE00017</关联规则>
+<标签><分类 名称="操作对象"><分类值>字段</分类值></分类><分类 名称="SQL分类"><分类值>DDL</分类值></分类><分类 名称="审核目的"><分类值>保障正确性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

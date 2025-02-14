@@ -73,7 +73,7 @@ func directGetSQLAnalysis(c echo.Context) error {
 	})
 }
 
-// TODO 放到knowledge中
+
 func getRuleKnowledge(c echo.Context) error {
 	ruleName := c.Param("rule_name")
 	dbType := c.Param("db_type")
@@ -87,15 +87,15 @@ func getRuleKnowledge(c echo.Context) error {
 		BaseRes: controller.NewBaseReq(nil),
 		Data: RuleKnowledgeResV1{
 			Rule: RuleInfo{
-				Desc:       knowledge.Description,
-				Annotation: knowledge.Title,
+				Desc:       knowledge.Title,
+				Annotation: knowledge.Description,
 			},
 			KnowledgeContent: knowledge.Content,
 		},
 	})
 }
 
-// TODO 放到knowledge中
+
 func updateRuleKnowledge(c echo.Context) error {
 	req := new(UpdateRuleKnowledgeReq)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
@@ -133,7 +133,6 @@ func getCustomRuleKnowledge(c echo.Context) error {
 	})
 }
 
-// TODO 放到knowledge中
 func updateCustomRuleKnowledge(c echo.Context) error {
 	req := new(UpdateRuleKnowledgeReq)
 	if err := controller.BindAndValidateReq(c, req); err != nil {

@@ -1,0 +1,116 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00127</规则编号>
+    <级别>warn</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>排序和分组效率</规则种类>
+    <规则简述>不建议在ORDER BY中使用表达式或函数</规则简述>
+    <规则描述> 在ORDER BY子句中使用表达式或函数会导致无法有效利用索引，从而可能涉及到全表扫描和使用临时表进行数据排序。这样的操作在处理大数据量时会显著降低查询性能。</规则描述>
+    <规则场景>
+        <场景 名称="函数或者表达式排序" 数据库版本="MySQL 8.0" 检查方式="连库审核" 适用句型="SELECT、INSERT">
+            <示例>
+            预先定义结构:
+            create database db_mysql;
+            use db_mysql;
+
+            CREATE TABLE customers(
+            id INT(11) NOT NULL, -- 序号
+            name VARCHAR(32) DEFAULT '',-- 姓名
+            sex TINYINT NOT NULL, -- 性别
+            city VARCHAR(32) NOT NULL, -- 所在城市
+            age SMALLINT(4) NOT NULL, -- 值类型
+            PRIMARY KEY (id) -- 主键
+            );
+
+            预先定义索引：
+            create index idx_age_customers on customers(age);
+
+
+            -- 插入模拟数据 500W 条。
+            set @@cte_max_recursion_depth=20000000;
+            insert into customers  
+            with recursive tmp (a,b,c,d,e) as (
+            select 1,'小王22222333',floor(rand()*2),'上海',ceil(rand()*30)+20 
+            union all 
+            select a+1,concat('小王',a),floor(rand()*2),'上海',ceil(rand()*20)+20 from tmp where a &lt; 5000000) 
+            select * from tmp;
+
+          示例：
+          select age from customers order by mod(age,10) limit 5;
+          select age from customers order by age-20 limit 5;
+          select age from customers where age &lt; 50 order by mod(age,10) limit 5;
+
+
+          示例说明：
+          1. 使用函数或者表达式排序，由于每行都需要计算一次表达式或者函数的值，完了使用结果进行排序。
+          2. 在没有WHERE 条件或者WHERE 条件返回的结果集较大时，即使有索引，也使用不了索引的有序性，性能较差。
+
+          示例验证： 几条SQL 都类似，验证第一条即可。 使用函数排序，时间接近2秒。
+          (mysql:8.0.31-cluster)select age from customers order by mod(age,10) limit 5;
+          +-----+
+          | age |
+          +-----+
+          |  30 |
+          |  40 |
+          |  30 |
+          |  30 |
+          |  30 |
+          +-----+
+          5 rows in set (1.89 sec)
+          
+          
+          查看执行计划： 走了全索引扫描，但是依然需要排序。
+          (mysql:8.0.31-cluster) explain select age from customers order by mod(age,10) limit 5\G
+          *************************** 1. row ***************************
+                     id: 1
+            select_type: SIMPLE
+                  table: customers
+             partitions: NULL
+                   type: index
+          possible_keys: NULL
+                    key: idx_age_customers
+                key_len: 2
+                    ref: NULL
+                   rows: 4988304
+               filtered: 100.00
+                  Extra: Using index; Using filesort
+          1 row in set, 1 warning (0.00 sec)
+          
+          示例优化：可以有几种优化方案
+          1. 创建一个表达式或者函数索引，SQL 语句不变，这样就可以利用新索引的有序性。
+          2. 修改业务SQL，使用非表达式或者函数排序，这样可以使用表原来的索引，避免建立新索引。
+
+          优化方案验证：由于两种优化方案类似，只验证第一种，直接在表上建立新索引即可。
+          (mysql:8.0.31-cluster)create index idx_mod_age_10 on customers((mod(age,10)));
+            Query OK, 0 rows affected (29.78 sec)
+            Records: 0  Duplicates: 0  Warnings: 0
+          
+          重新执行示例SQL： 结果秒出。
+          (mysql:8.0.31-cluster)select age from customers order by mod(age,10) limit 5;
+            +-----+
+            | age |
+            +-----+
+            |  40 |
+            |  30 |
+            |  30 |
+            |  30 |
+            |  40 |
+            +-----+
+            5 rows in set (0.00 sec)
+
+
+          结论：
+          1. 使用带有表达式或者函数来排序，虽然可以命中索引，但是使用不了索引的有序性，而排序是数据库里最耗时的操作。
+          2. 可以使用建立函数索引或者更改业务SQL 来避免这种排序，使用索引的有序性。
+            </示例>
+            <检查流程描述>
+              1. 对于"SELECT...Order BY..."语句，检查SQL语句，如果存在Order By子句中包含任何非列直接引用的表达式或函数，报告违反规则。其中表达式索引信息是在线获取的信息。
+              2. 对于"INSERT...SELECT..."语句，执行与上面类似的检查。
+            </检查流程描述>
+            <知识文档>
+            1. SQL 优化官方文档： https://dev.mysql.com/doc/refman/8.0/en/statement-optimization.html
+            </知识文档>
+        </场景>
+    </规则场景>
+    <关联规则>SQLE00104、SQLE00102、SQLE00101、SQLE00119、SQLE00121、SQLE00131</关联规则>
+<标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

@@ -1,0 +1,113 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+  <规则编号>SQLE00123</规则编号>
+  <级别>notice</级别>
+  <数据库类型>MySQL</数据库类型>
+  <规则种类>DML规范</规则种类>
+  <规则简述>禁止使用TRUNCATE操作</规则简述>
+  <规则描述>TRUNCATE是DDL，可以快速清理全表数据，回收磁盘空间，执行后数据默认隐式提交，无法回滚，在没有备份的场景下，谨慎使用TRUNCATE</规则描述>
+  <规则场景>
+    <场景 名称="没有备份下无法回滚删除操作" 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="TRUNCATE">
+      <示例>
+        前置:
+        create database db_mysql;
+        use db_mysql;
+        CREATE TABLE customers(
+        id INT(11) NOT NULL, -- 序号
+        name VARCHAR(32) DEFAULT '',-- 姓名
+        sex TINYINT NOT NULL, -- 性别
+        city VARCHAR(32) NOT NULL, -- 所在城市
+        age SMALLINT(4) NOT NULL, -- 数值类型
+        PRIMARY KEY (id) -- 主键
+        );
+
+        insert into customers values (1,'小李',1,'上海',18),(2,'小王',0,'北京',22);
+        insert into customers values (3,'小饭',1,'上海',25),(4,'小刘',0,'北京',30);
+        insert into customers values (5,'小菜',1,'上海',28),(6,'小张',0,'天津',60);
+
+        反例：
+        truncate table customers;
+
+        反例说明：
+        1. 在binlog和主从复制上，truncate table是作为一个DDL 语句记录的，其效果是先对表进行drop操作，再进行create 表操作。
+        2. DDL 本身是符合原子性的，无法人为进行中间环节的干预。
+        3. truncate table操作，其中表记录删除行为是一个隐式提交，因此无法通过rollback语句进行数据回滚。
+        
+        示例验证：
+        (mysql:8.0.18)select count(*) from customers;
+        +----------+
+        | count(*) |
+        +----------+
+        | 6 |
+        +----------+
+        1 row in set (0.00 sec)
+
+        (mysql:8.0.18)begin;
+        Query OK, 0 rows affected (0.00 sec)
+
+        (mysql:8.0.18)truncate table customers; -- 隐式提交，后面没法回滚到此处。
+        Query OK, 0 rows affected (0.05 sec)
+
+        (mysql:8.0.18)rollback; -- 回滚了一个空事务
+        Query OK, 0 rows affected (0.00 sec)
+
+        (mysql:8.0.18)select count(*) from customers;
+        +----------+
+        | count(*) |
+        +----------+
+        | 0 |
+        +----------+
+        1 row in set (0.00 sec)
+
+        正例：
+        delete from customers;
+
+        正例说明：
+        1. 使用delete 语句来代替 truncate语句，可以灵活的对事务的中间环境进行干预。
+        2. 如果有对表删除后回滚的需求，请使用 delete 语句来代替 truncate语句。
+
+        示例验证：
+        (mysql:8.0.18)select count(*) from customers;
+        +----------+
+        | count(*) |
+        +----------+
+        | 6 |
+        +----------+
+        1 row in set (0.00 sec)
+
+        (mysql:8.0.18)begin;
+        Query OK, 0 rows affected (0.00 sec)
+
+        (mysql:8.0.18)delete from customers;
+        Query OK, 6 rows affected (0.00 sec)
+
+        (mysql:8.0.18)select count(*) from customers;
+        +----------+
+        | count(*) |
+        +----------+
+        | 0 |
+        +----------+
+        1 row in set (0.00 sec)
+
+        (mysql:8.0.18)rollback;
+        Query OK, 0 rows affected (0.01 sec)
+
+        (mysql:8.0.18)select count(*) from customers;
+        +----------+
+        | count(*) |
+        +----------+
+        | 6 |
+        +----------+
+        1 row in set (0.00 sec)
+
+      </示例>
+      <检查流程描述>
+      1. "对于TRUNCATE..."语句，报告违反规则。
+      </检查流程描述>
+      <知识文档>
+      1. DDL 语句无法回滚：https://dev.mysql.com/doc/refman/8.0/en/truncate-table.html
+      </知识文档>
+    </场景>
+  </规则场景>
+  <关联规则>SQLE00123</关联规则>
+  <标签><分类 名称="操作对象"><分类值>表</分类值><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DDL</分类值></分类><分类 名称="审核目的"><分类值>增强安全性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

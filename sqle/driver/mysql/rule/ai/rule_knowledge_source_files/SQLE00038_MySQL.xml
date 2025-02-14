@@ -1,0 +1,96 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00038</规则编号>
+    <级别>warn</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>索引规范</规则种类>
+    <适用性>不适用当前数据库</适用性>
+    <规则简述>索引字段需要有非空约束</规则简述>
+    <规则描述>索引字段上如果没有非空约束，则表记录与索引记录不会完全映射。</规则描述>
+    <规则场景>
+        <原理说明 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="CREATE TABLE、ALTER TABLE">
+            <示例>     
+                前置：
+                create database db_mysql;
+                use db_mysql;           
+
+                原理说明：
+                1. MySQL 默认引擎 InnoDB 可以索引NULL字段, 此规则不适用.
+                2. 官网描述如下:
+                    If neither NULL nor NOT NULL is specified, the column is treated as though NULL had been specified.
+                    In MySQL 5.7/8.0/8.4, only the InnoDB, MyISAM, and MEMORY storage engines support indexes on columns that can have NULL values. In other cases, you must declare indexed columns as NOT NULL or an error results.
+                                    
+                示例：
+                create table t1(
+                    a int primary key, 
+                    c1 varchar(100) ,
+                    key idx_c1(c1) -- 二级索引
+                );
+
+                示例说明：
+                1. 表t1 有两个字段，分别为主键和非主键字段；其中非主键字段c1 在定义的时候，没有定义 NOT NULL 约束，默认为NULL。
+
+                示例验证:
+                -- 先插入样例数据：
+                insert into t1 values (1,'ob');
+                insert into t1 values (2,null);
+                insert into t1 values (3,'actionsky');
+                insert into t1 values (4,'oracle');
+                insert into t1 values (5,'mysql');
+                insert into t1 values (6,'db2');
+                insert into t1 values (7,uuid());
+                insert into t1 values (8,'tidb');
+                insert into t1 values (9,'lily');
+                insert into t1 values (10,'book');
+                insert into t1 values (11,'tv');
+                insert into t1 values (12,'phone');
+                insert into t1 values (13,'男人');
+                insert into t1 values (14,'外星人');
+                insert into t1 values (15,'女人');
+                insert into t1 values (16,'老师');
+                insert into t1 values (17,'学生');
+                insert into t1 values (18,NULL);
+
+                查询非NULL记录,可以精确走索引(执行计划rows结果)
+                (mysql:8.3.0:db_mysql)select * from  t1 where c1 is not  null limit 1;
+                +---+--------------------------------------+
+                | a | c1                                   |
+                +---+--------------------------------------+
+                | 7 | a4946a66-0d1c-11ef-8d50-08002789d7fb |
+                +---+--------------------------------------+
+                1 row in set (0.00 sec)
+
+                (mysql:8.3.0:db_mysql)explain select * from  t1 where c1 is not  null limit 1;
+                +----+-------------+-------+------------+-------+---------------+--------+---------+------+------+----------+--------------------------+
+                | id | select_type | table | partitions | type  | possible_keys | key    | key_len | ref  | rows | filtered | Extra                    |
+                +----+-------------+-------+------------+-------+---------------+--------+---------+------+------+----------+--------------------------+
+                |  1 | SIMPLE      | t1    | NULL       | range | idx_c1        | idx_c1 | 403     | NULL |   16 |   100.00 | Using where; Using index |
+                +----+-------------+-------+------------+-------+---------------+--------+---------+------+------+----------+--------------------------+
+                1 row in set, 1 warning (0.00 sec)
+
+                查询 NULL记录也可以精确走索引(执行计划rows结果)
+                (mysql:8.3.0:db_mysql)select * from  t1 where c1 is   null limit 1;
+                +---+------+
+                | a | c1   |
+                +---+------+
+                | 2 | NULL |
+                +---+------+
+                1 row in set (0.00 sec)
+                (mysql:8.3.0:db_mysql)explain select * from  t1 where c1 is   null limit 1;
+                +----+-------------+-------+------------+------+---------------+--------+---------+-------+------+----------+--------------------------+
+                | id | select_type | table | partitions | type | possible_keys | key    | key_len | ref   | rows | filtered | Extra                    |
+                +----+-------------+-------+------------+------+---------------+--------+---------+-------+------+----------+--------------------------+
+                |  1 | SIMPLE      | t1    | NULL       | ref  | idx_c1        | idx_c1 | 403     | const |    2 |   100.00 | Using where; Using index |
+                +----+-------------+-------+------------+------+---------------+--------+---------+-------+------+----------+--------------------------+
+                1 row in set, 1 warning (0.00 sec)
+
+                结论:
+                1. 索引列即使有NULL 定义, 也可以精确查找,不存在不对应的场景,此规则不适用.
+
+            </示例>
+            <知识文档>
+              1. NULL 优化官方文档： https://dev.mysql.com/doc/refman/8.4/en/is-null-optimization.html
+            </知识文档>
+        </原理说明>
+    </规则场景>
+<标签><分类 名称="操作对象"><分类值>字段</分类值><分类值>索引</分类值></分类><分类 名称="SQL分类"><分类值>完整性约束</分类值></分类><分类 名称="审核目的"><分类值>保障正确性</分类值><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

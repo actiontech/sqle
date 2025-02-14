@@ -1,0 +1,118 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+<规则编号>SQLE00108</规则编号>
+<级别>notice</级别>
+<数据库类型>MySQL</数据库类型>
+<规则种类>DML规范</规则种类>
+<规则简述>避免子查询嵌套层数过多</规则简述>
+<规则变量>
+  <变量 name="子查询嵌套层数">5</变量>
+</规则变量>
+<规则描述>子查询嵌套层数超过阈值，有些情况下，子查询并不能使用到索引。同时对于返回结果集比较大的子查询，会产生大量的临时表，消耗过多的CPU和IO资源，产生大量的慢查询</规则描述>
+<规则场景>
+  <场景 名称="嵌套子查询" 数据库版本="MySQL 5.7、MySQL 8.0" 检查方式="不连库审核" 适用句型="SELECT、UPDATE、DELETE、INSERT、UNION、WITH">
+    <示例>
+      前置：
+      CREATE TABLE st1 (
+          id bigint,
+          name VARCHAR(32),
+          cid bigint,
+          grade NUMERIC
+      );
+      create index idx_st_name on st1(name);
+      create index idx_st_cid on st1(cid);
+      INSERT INTO st1 VALUES(1,'t1',1,100);
+      INSERT INTO st1 SELECT ID + (SELECT count(1) from st1),concat('t',(ID + (SELECT count(1) from st1))),4,120 from st1; ###执行多次，模拟13W左右数据；
+
+      CREATE TABLE st_class (
+          cid bigint,
+          cname VARCHAR(32)
+      );
+      create index idx_stclass_name on st_class(cname);
+      create index idx_stclass_cid on st_class(cid);
+      INSERT INTO st_class VALUES(1,'class1');
+      INSERT INTO st_class SELECT CID + (SELECT count(1) from st_class),'class2' from st_class;###执行多次，模拟13W左右数据；
+
+      反例：
+      SELECT count(1) cn FROM st1
+      WHERE grade &gt; (
+          SELECT MAX(subquery_outer_avg)
+          FROM (
+              SELECT AVG(subquery_inner_avg) AS subquery_outer_avg
+              FROM (
+                  SELECT MAX(subquery_middle_avg) AS subquery_inner_avg
+                  FROM (
+                      SELECT AVG(subquery_grade) AS subquery_middle_avg
+                      FROM (
+                          SELECT grade AS subquery_grade
+                          FROM st1
+                          WHERE st1.cid IN (
+                              SELECT cid
+                              FROM st_class
+                              WHERE cname = 'class2'
+                          )
+                      ) subquery_middle
+                  ) subquery_inner
+              ) subquery_outer
+          ) subquery_outermost
+      );
+      注：其他句型与SELECT句型语法相同，都是指WHERE子句中包含SELECT的情况，因此省略相似的示例。
+
+      正例：
+      SELECT count(1) cn
+      FROM st1
+      CROSS JOIN (
+        SELECT AVG(st1.grade) AS avg_grade
+        FROM st1
+        WHERE st1.cid IN (
+                SELECT cid
+                FROM st_class
+                WHERE cname = 'class2'
+            )
+        )avg_grades
+      WHERE st1.grade &gt; avg_grades.avg_grade;
+
+      结论：
+      数据库系统中，在一条SQL语句中，每嵌套一层的子查询原则上都会对父查询的结果进行处理，增加了不必要的处理步骤和额外的资源开销，在大数据量的情况下，其执行效率比较低下。另外，过多的子查询嵌套，在SQL的阅读、可维护性对用户来说都是较大的考验。可以使用JOIN连接或者CTE临时表的方式进行优化，当前正例采用临时表来计算查询的结果，减少子查询嵌套的层数，提供查询的可读性和性能。
+      嵌套子查询指的是在DML语句中嵌套了一个SELECT子句，以SELECT句型为例，通常有如下几种情况：
+      -- SELECT子句的FROM子句中嵌套了SELECT子查询
+      SELECT ... FROM (SELECT ...) AS subquery
+      -- WHERE子句中嵌套了SELECT子查询
+      SELECT ... WHERE column IN (SELECT ...)
+      -- SELECT子句的列表达式中嵌套了SELECT子查询
+      SELECT (SELECT ...), column2 FROM ...
+      -- GROUP BY子句中嵌套了SELECT子查询
+      SELECT ... GROUP BY (SELECT ...)
+      -- HAVING子句中嵌套了SELECT子查询
+      SELECT ... HAVING column &gt; (SELECT ...)
+      -- ORDER BY子句中嵌套了SELECT子查询
+      SELECT ... ORDER BY (SELECT ...)
+      -- JOIN条件中嵌套了SELECT子查询
+      SELECT ... FROM table1 JOIN table2 ON table1.column = (SELECT ...)
+
+    </示例>
+    <检查流程描述>
+    1. 对于所有DML语句，
+      1. 准确识别并统计子查询的个数，
+        子查询判断的标准：一条SQL语句中包含了一个SELECT查询
+        嵌套子查询的几种形式：
+        1）WHERE嵌套子查询
+        2）FROM子句嵌套子查询
+        3）SELECT子句的列表达式嵌套子查询
+        4）GROUP BY嵌套子查询
+        5）HAVING子句嵌套子查询
+        6）ORDER BY嵌套子查询
+        7）JOIN的ON条件嵌套子查询
+        嵌套层数：2。
+        以WHERE嵌套子查询为例:SELECT... WHERE column IN (SELECT... WHERE column2 IN (SELECT ...))
+        该示例中包含2层嵌套子查询,其中SELECT 可以替换成DML语句中的各种句型、IN可以替换成=、ANY等其他操作符。
+      2. 若子查询的个数大于规则变量设定的值，则报告违反规则。
+    </检查流程描述>
+    <知识文档>
+      1、子查询：https://dev.mysql.com/doc/refman/5.7/en/subqueries.html
+      2、子查询的限制：https://dev.mysql.com/doc/refman/5.7/en/subquery-restrictions.html
+    </知识文档>
+  </场景>
+</规则场景>
+<规则缺陷 />
+<标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值><分类值>嵌套查询和连接</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值><分类值>增强可维护性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

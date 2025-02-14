@@ -1,0 +1,79 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+<规则编号>SQLE00047</规则编号>
+<级别>
+   <当前级别>error</当前级别>
+   <新级别>warn</新级别>
+</级别>
+<数据库类型>MySQL</数据库类型>
+<规则种类>命名规范</规则种类>
+<规则简述>数据库对象名称的字符个数不建议超过阈值</规则简述>
+<规则变量>
+  <变量 name="字符个数">64</变量>
+</规则变量>
+<规则描述>通过配置该规则可以规范指定业务的对象命名长度，具体长度可以自定义设置。</规则描述>
+<规则场景>
+   <场景 名称="数据库对象名初始化" 数据库版本="MySQL" 检查方式="不连库审核" 适用关键词="DATABASE、TABLE、VIEW、INDEX、USER、COLUMN、EVENT" 适用句型="CREATE、ALTER">
+    <示例>  
+      示例：
+      CREATE DATABASE test;
+      CREATE TABLE order_his(
+         id BIGINT UNSIGNED AUTO_INCREMENT,
+         name varchar(64) DEFAULT '',
+         primary key(id)
+      );
+      CREATE VIEW order_view AS SELECT name FROM order_his;###创建视图
+      CREATE INDEX ord_name_idx ON order_his (name);###创建索引
+      ALTER TABLE order_his ADD COLUMN type varchar(4);###修改表添加列字段；
+      ALTER TABLE order_his ADD INDEX idx_t2_column2(name); ###创建索引
+      CREATE USER 'test'@'localhost' REQUIRE NONE;###创建用户
+      CREATE EVENT ename ON SCHEDULE EVERY 10 SECOND DO DELETE FROM order_his; ###创建一个事件每10秒清空表数据,默认event_scheduler是未启用。
+     
+      示例说明：      
+      数据库系统中，常用数据库对象包含数据库、表、索引、字段列、别名、视图、存储过程、分区、表空间等。其中数据库、表、列名不能以空格结尾。
+      数据库系统中，除了以下特例外，对象名默认长度限制为64个字符。在当超过64个字节长度后，系统直接报错。
+      1）NDB引擎下的数据库名，限制为63个字符。
+      2）NDB引擎下的表名，限制为63个字符。
+      3）别名，限制为256个字符。（注意：创建视图中的列别名仍需遵循64个字符限制。）
+      4）复合语句标签，限制为16个字符。
+    </示例>
+    <检查流程描述>
+      1、检查当前句子是ALTER还是CREATE类型，如果是ALTER句子，则进入检查步骤4；否则，进入检查步骤2。
+      2、检查CREATE句子中的目标对象名的长度是否超过阈值，如果是，报告违反规则。
+      3、提供触发规则的SQL列表，并退出检查流程。
+      4、检查ALTER句子中是否存在ADD关键词，如果存在，则进入下一步检查。
+      5、检查ADD目标对象名的长度是否超过阈值，如果是，，报告违反规则。
+    </检查流程描述>
+    <知识文档>
+      1、对象名定义规范：https://dev.mysql.com/doc/refman/5.7/en/identifier-length.html
+      2、SQL模式：https://dev.mysql.com/doc/refman/5.7/en/sql-mode.html
+    </知识文档>
+   </场景>
+   <场景 名称="数据库对象重命名" 数据库版本="MySQL" 检查方式="不连库审核" 适用关键词="TABLE、USER、COLUMN、INDEX、EVENT" 适用句型="ALTER、RENAME">
+    <示例>  
+      示例：
+      ALTER TABLE order_his RENAME TO order_his2; ###表重命名
+      ALTER TABLE order_his RENAME INDEX name TO uniq_name;###重命名索引 
+      RENAME TABLE order_his2 TO order_his; ###表重命名
+      ALTER TABLE order_his CHANGE name new_name varchar(64); ###重命名表字段
+      RENAME USER 'test'@'localhost' TO 'test2'@'localhost';###重命名用户
+      ALTER EVENT ename RENAME TO newname;###重命名事件
+     
+      示例说明：与【数据库对象名初始化】场景一致。
+    </示例>
+    <检查流程描述>
+      1、检查当前句子是ALTER还是RENAME类型，如果是ALTER句子，则进入检查步骤2；否则，进入检查步骤3。
+      2、检查ALTER句子中是否存在RENAME关键词，如果存在，则进入下一步检查。
+      3、检查RENAME目标对象名的长度是否超过阈值，如果是，，报告违反规则。
+    </检查流程描述>
+    <知识文档>
+      1、对象名定义规范：https://dev.mysql.com/doc/refman/5.7/en/identifier-length.html
+      2、SQL模式：https://dev.mysql.com/doc/refman/5.7/en/sql-mode.html
+    </知识文档>
+   </场景>   
+</规则场景>
+<规则缺陷>数据库对象中DATABASE、EVENT、FUNCTION、PROCEDURE、TRIGGER这几个，目前规则暂未覆盖</规则缺陷>
+<关联规则>
+SQLE00048、SQLE00046、SQLE00049
+</关联规则>
+<标签><分类 名称="操作对象"><分类值>数据库</分类值><分类值>表</分类值><分类值>字段</分类值><分类值>索引</分类值><分类值>视图</分类值><分类值>存储过程</分类值><分类值>函数</分类值><分类值>触发器</分类值><分类值>事件</分类值></分类><分类 名称="SQL分类"><分类值>DDL</分类值></分类><分类 名称="审核目的"><分类值>增强可维护性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

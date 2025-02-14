@@ -1,0 +1,118 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00023</规则编号>
+    <级别>warn</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>DDL规范</规则种类>
+    <规则变量>
+      <变量 name="主键内字段个数" type="int">2</变量>
+    </规则变量>
+    <规则简述>主键包含的列数不建议超过阈值</规则简述>
+    <规则描述>主建中的列过多，会导致辅助索引占用更多的空间，同时增加索引维护的开销；具体规则阈值可根据业务需求调整，默认值：2</规则描述>
+    <规则场景>
+      <场景 名称="主键列过多" 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="CREATE TABLE、ALTER TABLE">
+        <示例>
+            前置：
+            create database if not exists db_mysql;
+            use db_mysql;
+
+            -- 插入语句，后面会用到
+            set @@cte_max_recursion_depth=200000000;
+            insert into t1/t2
+            with recursive tmp(a,b,c,d,e,f) as 
+            (
+              select 1,1,uuid(),ceil(rand()*1000),ceil(rand()*100),ceil(rand()*10) from dual
+              union all
+              select a+1,b+ceil(rand()*10000000000000),uuid(),ceil(rand()*1000),ceil(rand()*100),ceil(rand()*10) from tmp where a &lt; 1000001
+            ) table tmp;
+
+
+            原理说明：
+            1. MySQL的默认引擎是InnoDB. InnoDB 的数据以B+树的方式存储，叶子节点存放的是行数据，非叶子节点存放的是主键。
+            2. InnoDB 支持辅助索引。 辅助索引也是B+树的方式存储。 不同的是，辅助索引的叶子节点存储的是索引键的值和主键、非叶子节点存放的是索引键。
+            3. 基于以上两点，主键包含的列数越多，辅助索引占用的空间就越大，对其更新也就越慢。
+
+            反例：
+            create table t1(id1 bigint,id2 bigint,id3 char(36),r1 int,r2 int,r3 int);
+            alter table t1 add primary key (id1,id2,id3);
+            create index idx_r1_t1 on t1(r1);
+
+            反例说明:
+            1. 表t1 有联合主键,主键包含的列数为3个。
+            2. 表t1 有一个辅助索引，基于列r1。
+
+            反例验证：
+            1. 插入100W 行数据，记录插入时间： 26.96秒。
+
+            (mysql:8.4.0:db_mysql) insert into t1 
+            -&gt;             with recursive tmp(a,b,c,d,e,f) as 
+            -&gt;          (
+            -&gt;               select 1,1,uuid(),ceil(rand()*1000),ceil(rand()*100),ceil(rand()*10) from dual
+            -&gt;            union all
+            -&gt;            select a+1,b+ceil(rand()*10000000000000),uuid(),ceil(rand()*1000),ceil(rand()*100),ceil(rand()*10) from tmp where a &lt; 1000001
+            -&gt;         ) table tmp;
+
+            Query OK, 1000001 rows affected (26.96 sec)
+            Records: 1000001  Duplicates: 0  Warnings: 0
+
+
+            2. 查看辅助索引的大小： 91 MB.
+            (mysql:8.4.0:db_mysql)select sys.format_bytes(index_length) from information_schema.tables where table_name='t1';
+            +--------------------------------+
+            | sys.format_bytes(index_length) |
+            +--------------------------------+
+            | 91.00 MiB                      |
+            +--------------------------------+
+            1 row in set (0.02 sec)
+
+
+
+            正例：
+            create table t2(id1 bigint,id2 bigint,id3 char(36),r1 int,r2 int,r3 int);
+            alter table t2 add primary key (id1,id2);            
+            create index idx_r1_t2 on t2(r1);
+
+            正例说明:
+            1. 表t2 和反例的表t1 结构一样，只是主键包含的列数比表t1少。
+            2. 表t2 也有一个辅助索引，基于列r1。
+
+            正例验证：
+            1. 也插入100W 行数据，记录插入时间: 22.74秒，比表t1的时间短。
+            (mysql:8.4.0:db_mysql)            insert into t2
+            -&gt;            with recursive tmp(a,b,c,d,e,f) as 
+            -&gt;            (
+            -&gt;             select 1,1,uuid(),ceil(rand()*1000),ceil(rand()*100),ceil(rand()*10) from dual
+            -&gt;              union all
+            -&gt;              select a+1,b+ceil(rand()*10000000000000),uuid(),ceil(rand()*1000),ceil(rand()*100),ceil(rand()*10) from tmp where a &lt; 1000001
+            -&gt;           ) table tmp;
+            
+            Query OK, 1000001 rows affected (22.74 sec)
+            Records: 1000001  Duplicates: 0  Warnings: 0
+        
+            
+            2. 查看辅助索引的大小： 50.64 MB，比表t1的辅助索引要小的多。
+            (mysql:8.4.0:db_mysql)select sys.format_bytes(index_length) from information_schema.tables where table_name='t2';
+            +--------------------------------+
+            | sys.format_bytes(index_length) |
+            +--------------------------------+
+            | 50.64 MiB                      |
+            +--------------------------------+
+            1 row in set (0.01 sec)
+
+            结论：
+            1. 主键包含的字段数量不能太多。 由于InnoDB 特殊的表存储方式，主键包含的字段数量越多，二级索引就越占用磁盘空间，对表的更新性能也会降低。
+            2. 一般建议主键包含的字段不超过两个。
+            
+        </示例>
+        <检查流程描述>
+          1. 对于“ CREATE TABLE...” 语句，如果以下任意一项为真，则报告违反规则
+            1. 语句中的 PRIMARY KEY （）括号里包含的字段数量超过规则变量max_primary_key_count
+          2. 对于“ALTER TABLE ... ADD PRIMARY KEY ” 语句，执行与上述同样检查。
+        </检查流程描述>
+        <知识文档>
+          1. CREATE TABLE 官方文档：https://dev.mysql.com/doc/refman/8.4/en/create-table.html
+          2. ALTER TABLE 官方文档：https://dev.mysql.com/doc/refman/8.4/en/alter-table.html
+        </知识文档>
+      </场景>
+    </规则场景>
+    <标签><分类 名称="操作对象"><分类值>索引</分类值><分类值>字段</分类值></分类><分类 名称="SQL分类"><分类值>DDL</分类值><分类值>完整性约束</分类值></分类><分类 名称="审核目的"><分类值>增强可维护性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

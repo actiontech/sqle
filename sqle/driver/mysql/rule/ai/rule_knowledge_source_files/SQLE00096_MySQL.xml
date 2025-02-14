@@ -1,0 +1,319 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+  <规则编号>SQLE00096</规则编号>
+  <级别>notice</级别>
+  <数据库类型>MySQL</数据库类型>
+  <规则种类>连接优化</规则种类>
+  <规则简述>不建议参与连接操作的表数量过多</规则简述>
+  <规则变量>
+    <变量 name="参与表连接的表个数">3</变量>
+  </规则变量>
+  <规则描述>表关联越多，意味着各种驱动关系组合就越多，比较各种结果集的执行成本的代价也就越高，进而SQL查询性能会大幅度下降。</规则描述>
+  <规则场景>
+    <场景 名称="联合查询" 数据库版本="大于等于 MySQL 5.7" 检查方式="不连库审核" 适用句型="SELECT、UPDATE、DELETE、INSERT ... SELECT、UNION、WITH">
+      <示例>
+          前置：
+          create database if not exists db_mysql;
+          use db_mysql;
+
+          -- 表1： 学生表
+          CREATE TABLE student (
+            id int DEFAULT NULL comment '学生ID',
+            name varchar(20) DEFAULT NULL comment '学生名字',
+            age int DEFAULT NULL comment '学生年龄',
+            sex varchar(20) DEFAULT NULL comment '学生性别',
+            update_time datetime DEFAULT current_timestamp ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+          ) ;
+        
+          -- 插入模拟数据 100W 条。
+          set @@cte_max_recursion_depth=20000000;
+          insert into student (id,name,age,sex) 
+          with recursive tmp (a,b,c,d) as (
+            select 1000,'小王22222333',ceil(rand()*5)+18,if(floor(rand()*2)=1,'男','女')
+            union all 
+            select a+1,concat('小王',a),ceil(rand()*5)+18,if(floor(rand()*2)=1,'男','女') from tmp where a &lt; 1001000) 
+            select * from tmp;
+
+          -- 表2： 老师表
+          CREATE TABLE teacher (
+            id int DEFAULT NULL comment '老师ID',
+            name varchar(20) DEFAULT NULL comment '老师名字'
+          ) ;
+
+          -- 样例数据
+          set @@cte_max_recursion_depth=20000000;
+          insert into teacher  
+          with recursive tmp (a,b) as (
+            select 8000,'老师22222333'
+            union all 
+            select a+1,concat('老师',a) from tmp where a &lt; 9000) 
+            select * from tmp;
+
+
+          -- 表3： 课程表
+          CREATE TABLE course (
+            id int DEFAULT NULL comment '课程ID',
+            name varchar(255) DEFAULT NULL comment '课程名字',
+            teacher_id int DEFAULT NULL comment '老师ID'
+          ) ;
+
+          -- 样例数据
+          set @@cte_max_recursion_depth=20000000;
+          insert into course
+          with recursive tmp (a,b,c) as (
+            select 1,'课程22222333',8000
+            union all 
+            select a+1,concat('课程',a),c+1 from tmp where a &lt; 1000) 
+            select * from tmp;
+
+
+          -- 表4： 选课表
+          CREATE TABLE sc (
+            student_id int DEFAULT NULL comment '学生ID',
+            course_id int DEFAULT NULL comment '课程ID',
+            score int DEFAULT NULL comment '分数'
+          ) ;
+
+          -- 样例数据，假设每个学生选了3门课程。
+          set @@cte_max_recursion_depth=20000000;
+          insert into sc
+          with recursive tmp (a,b,c) as (
+            select 1000,ceil(rand()*1000),ceil(rand()*70)+30
+            union all 
+            select a+1,b+1,ceil(rand()*70)+30 from tmp where a &lt; 1001000) 
+            select * from tmp;
+          insert into sc
+          with recursive tmp (a,b,c) as (
+            select 1000,ceil(rand()*1000),ceil(rand()*70)+30
+            union all 
+            select a+1,b+1,ceil(rand()*70)+30 from tmp where a &lt; 1001000) 
+            select * from tmp;
+          insert into sc
+          with recursive tmp (a,b,c) as (
+            select 1000,ceil(rand()*1000),ceil(rand()*70)+30
+            union all 
+            select a+1,b+1,ceil(rand()*70)+30 from tmp where a &lt; 1001000) 
+            select * from tmp;            
+
+            
+          -- 表5： 健康报告表
+          create table health_report (
+            id int  primary key,
+            is_health varchar(10) default '100%' comment '健康程度'
+          );
+
+          -- 样例数据
+          insert into health_report values (1,'健康'),(2,'强壮'),(3,'亚健康'),(4,'无药可治')
+                  
+          -- 表6： 学生健康档案表
+          CREATE TABLE health_archives (
+            id int NOT NULL AUTO_INCREMENT COMMENT '自增id',
+            student_id varchar(100) DEFAULT NULL COMMENT '学生id',
+            health_report_id int comment '监控报告ID',
+            update_time datetime DEFAULT current_timestamp ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+            PRIMARY KEY (id)
+          ) ;
+        
+          -- 样例数据
+          set @@cte_max_recursion_depth=20000000;
+          insert into health_archives (student_id,health_report_id)
+          with recursive tmp (a,b) as (
+            select 1000,ceil(rand()*4)
+            union all 
+            select a+1,ceil(rand()*4) from tmp where a &lt; 1001000) 
+            select * from tmp;         
+
+            -- 表7： INSERT 记录表
+            create table student_ids(
+              id int not null default 0 comment '学生ID',
+              update_time datetime DEFAULT current_timestamp ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+            );
+
+          原理说明：
+          1. 数据库系统中，在一条SQL语句中，关联过多的表可能会对数据库性能和查询效率产生影响。
+          2. 表关联过多，会导致查询、更新性能下降，数据库需要执行更多的表连接、数据匹配操作。
+          3. 表关联过多，会导致更多的资源消耗，关联多个表会占用更多的系统资源。如CPU、内存和磁盘IO，如同时出现类似这样的查询，可能引起资源竞争和性能瓶颈。
+          4. 表关联过多，会导致执行计划复杂化，数据库优化器会生成一个复杂的执行计划，以确定最优的查询路径。
+          5. 可以考虑如下优化：
+            1. 做适当的冗余，减少表关联的次数。这个是使用空间换时间的典型设计。
+            2. 把表关联交给业务层来处理，数据只做简单的单表查询。
+            3. 理想场景下，表关联的个数尽量控制在3个以内。
+
+          示例：
+          SQL1：
+          select a.id,a.name,c.name,hr.is_health,sc.score,t.name from student a, sc, course c ,health_archives ha, health_report hr, teacher t
+          where  a.id = sc.student_id 
+          and sc.course_id = c.id
+          and ha.student_id = a.id
+          and ha.health_report_id = hr.id
+          and t.id = c.teacher_id
+          and sc.score &gt; 80
+          and c.name='课程911'
+          and hr.is_health='强壮';
+
+          SQL2： 
+          update  student a, sc, course c ,health_archives ha, health_report hr, teacher t
+          set a.update_time = now()
+          where  a.id = sc.student_id 
+          and sc.course_id = c.id
+          and ha.student_id = a.id
+          and ha.health_report_id = hr.id
+          and t.id = c.teacher_id
+          and sc.score &gt; 80
+          and c.name='课程911'
+          and hr.is_health='强壮';
+
+          SQL3:
+          delete a from student a
+          inner join sc
+          inner join course c 
+          inner join health_archives ha 
+          inner join health_report hr
+          inner join teacher t
+          where  a.id = sc.student_id 
+          and sc.course_id = c.id
+          and ha.student_id = a.id
+          and ha.health_report_id = hr.id
+          and t.id = c.teacher_id
+          and sc.score &gt; 80
+          and c.name='课程911'
+          and hr.is_health='强壮';
+
+          SQL4: 
+          insert into student_ids
+          select a.id from student a, sc, course c ,health_archives ha, health_report hr, teacher t
+          where  a.id = sc.student_id 
+          and sc.course_id = c.id
+          and ha.student_id = a.id
+          and ha.health_report_id = hr.id
+          and t.id = c.teacher_id
+          and sc.score &gt; 80
+          and c.name='课程911'
+          and hr.is_health='强壮';
+
+          示例说明：
+          1. 示例SQL1 是查询所有选了课程名为 '课程911'的、并且最终分数大于80分、并且健康程度是强壮的学生ID、学生名字、健康程度、分数。
+          2. 示例SQL2 是更新所有选了课程名为 '课程911'的、并且最终分数大于80分、并且健康程度是强壮的学生对应的更新时间。
+          3. 示例SQL3 是删除所有选了课程名为 '课程911'的、并且最终分数大于80分、并且健康程度是强壮的学生记录。
+          4. 示例SQL4 是把所有选了课程名为 '课程911'的、并且最终分数大于80分、并且健康程度是强壮的学生ID记录下来，写入到表student_ids。
+          5. 以上示例SQL 都是6张表关联。 
+          
+
+          示例验证：由于以上示例SQL 的逻辑一样，所以只验证SQL1 即可，执行时间5.68秒。
+          (mysql:8.4.0:db_mysql)         select a.id,a.name,c.name,hr.is_health,sc.score,t.name from student a, sc, course c ,health_archives ha, health_report hr, teacher t
+              -&gt;           where  a.id = sc.student_id 
+              -&gt;           and sc.course_id = c.id
+              -&gt;           and ha.student_id = a.id
+              -&gt;           and ha.health_report_id = hr.id
+              -&gt;           and t.id = c.teacher_id
+              -&gt;           and sc.score &gt; 80
+              -&gt;           and c.name='课程911'
+              -&gt;           and hr.is_health='强壮';
+          +------+----------------+-----------+-----------+-------+------------+
+          | id   | name           | name      | is_health | score | name       |
+          +------+----------------+-----------+-----------+-------+------------+
+          | 1000 | 小王22222333   | 课程911   | 强壮      |    82 | 老师8910   |
+          +------+----------------+-----------+-----------+-------+------------+
+          1 row in set (5.68 sec)
+
+          示例优化：
+          1. 比如我们可以采用表冗余的方式，把健康信息列冗余到学生表里，这样表的关联个数就能减少到两个。由于各种句型相似，此处只写SELECT 句型的优化结果。
+          
+          优化步骤：
+          1. 冗余健康档案表、更新健康档案表、删除字段 health_report_id。
+          alter table health_archives add is_health varchar(10) default '100%'comment '健康程度';
+          update health_archives ha, health_report hr set ha.is_health = hr.is_health where ha.health_report_id = hr.id;
+          alter table health_archives drop health_report_id;
+
+          2. 更新学生表，加入健康字段、更新健康字段值。
+          alter table student add is_health varchar(10) default '100%'comment '健康程度';
+          update student a, health_archives ha set a.is_health = ha.is_health where a.id = ha.student_id;
+
+          3. 减少表关联个数后的SQL1：表关联个数由6个减少到4个。
+          select a.id,a.name,c.name,a.is_health,sc.score,t.name from student a, sc, course c , teacher t
+          where  a.id = sc.student_id 
+          and sc.course_id = c.id
+          and t.id = c.teacher_id
+          and sc.score &gt; 80
+          and c.name='课程911'
+          and a.is_health='强壮';
+
+          最终执行结果： 由之前6表关联的5.68秒减少到4.66秒。
+          (mysql:8.4.0:db_mysql)          select a.id,a.name,c.name,a.is_health,sc.score,t.name from student a, sc, course c , teacher t
+              -&gt;           where  a.id = sc.student_id 
+              -&gt;           and sc.course_id = c.id
+              -&gt;           and t.id = c.teacher_id
+              -&gt;           and sc.score &gt; 80
+              -&gt;           and c.name='课程911'
+              -&gt;           and a.is_health='强壮';
+          +------+----------------+-----------+-----------+-------+------------+
+          | id   | name           | name      | is_health | score | name       |
+          +------+----------------+-----------+-----------+-------+------------+
+          | 1000 | 小王22222333   | 课程911   | 强壮      |    82 | 老师8910   |
+          +------+----------------+-----------+-----------+-------+------------+
+          1 row in set (4.66 sec)
+
+          4.再次冗余课程表，加入老师名字、更新老师名字值、把老师ID删除。
+          alter table course add teacher_name varchar(20) comment '老师名字';
+          update course c, teacher t set c.teacher_name = t.name where c.teacher_id = t.id;
+          alter table course drop teacher_id;
+
+          5. 表关联个数最终减少到3个：
+          select a.id,a.name,c.name,a.is_health,sc.score,c.teacher_name from student a, sc, course c 
+          where  a.id = sc.student_id 
+          and sc.course_id = c.id
+          and sc.score &gt; 80
+          and c.name='课程911'
+          and a.is_health='强壮';
+
+          执行时间由4.66秒降低到4.19秒。
+          (mysql:8.4.0:db_mysql)          select a.id,a.name,c.name,a.is_health,sc.score,c.teacher_name from student a, sc, course c 
+              -&gt;         where  a.id = sc.student_id 
+              -&gt;          and sc.course_id = c.id
+              -&gt;          and sc.score &gt; 80
+              -&gt;          and c.name='课程911'
+              -&gt;          and a.is_health='强壮';
+          +------+----------------+-----------+-----------+-------+--------------+
+          | id   | name           | name      | is_health | score | teacher_name |
+          +------+----------------+-----------+-----------+-------+--------------+
+          | 1000 | 小王22222333   | 课程911   | 强壮      |    82 | 老师8910     |
+          +------+----------------+-----------+-----------+-------+--------------+
+          1 row in set (4.19 sec)
+          
+          6. 表关联个数下降后，给其中一张表加入合适的索引，
+          create index idx_course_id on sc(course_id);
+          再次执行，时间由4.19秒，降低到10毫秒。
+          (mysql:8.4.0:db_mysql)          select a.id,a.name,c.name,a.is_health,sc.score,c.teacher_name from student a, sc, course c 
+              -&gt;         where  a.id = sc.student_id 
+              -&gt;          and sc.course_id = c.id
+              -&gt;          and sc.score &gt; 80
+              -&gt;          and c.name='课程911'
+              -&gt;          and a.is_health='强壮';
+          +------+----------------+-----------+-----------+-------+--------------+
+          | id   | name           | name      | is_health | score | teacher_name |
+          +------+----------------+-----------+-----------+-------+--------------+
+          | 1000 | 小王22222333   | 课程911   | 强壮      |    82 | 老师8910     |
+          +------+----------------+-----------+-----------+-------+--------------+
+          1 row in set (0.01 sec)
+
+          总结：
+          1. 表关联个数太多，会导致优化器生成复杂的执行计划、数据资源的严重消耗，最终影响到整体的TPS严重下降。
+          2. 想尽办法减少表关联个数：
+            1. 反范式设计表结构。
+            2. 复杂关联逻辑上推到应用来做。
+            3. 如果实在没有办法减少关联个数，可以考虑关联字段加合适的索引、增减join_buffer_size；升级数据库架构，读写分离、增加缓存等等方式来提升SQL 的查询性能。            
+
+      </示例>
+      <检查流程描述>
+        1. 对于 DML语句，统计语句中关联的表名个数，去除重复的表名，若表总数大于阈值，则报告违反规则。
+        2. 对于 WITH语句，执行上述相同的检查。
+      </检查流程描述>
+      <知识文档>
+        1. SELECT 官方文档：https://dev.mysql.com/doc/refman/8.4/en/select.html
+        2. SELECT 语句优化官方文档：https://dev.mysql.com/doc/refman/8.4/en/select-optimization.html
+        3. UPDATE 官方文档： https://dev.mysql.com/doc/refman/8.4/en/update.html
+        4. DELETE 官方文档： https://dev.mysql.com/doc/refman/8.4/en/delete.html
+      </知识文档>
+    </场景>
+  </规则场景>
+<标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值><分类值>连接</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

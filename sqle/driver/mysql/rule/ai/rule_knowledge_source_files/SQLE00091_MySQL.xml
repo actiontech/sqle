@@ -1,0 +1,149 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+<规则编号>SQLE00091</规则编号>
+<级别>
+  <当前级别>warn</当前级别>
+  <新级别>error</新级别>
+</级别>
+<数据库类型>MySQL</数据库类型>
+<规则种类>表连接优化</规则种类>
+<规则简述>建议表连接时有连接条件</规则简述>
+<规则描述>为了确保连接操作的正确性和可靠性，应该始终指定连接条件，定义正确的关联关系。缺少连接条件，可能导致连接操作失败，最终数据库会使用笛卡尔积的方式进行处理，产生不正确的连接结果，并导致性能问题，消耗大量的CPU和内存资源。</规则描述>
+<规则场景>
+  <场景 名称="查询语句中表连接缺少关联条件" 数据库版本="MySQL 5.7、MySQL 8.0" 检查方式="不连库审核" 适用句型="SELECT、INSERT...SELECT、UPDATE、DELETE、UNION、WITH">
+    <示例>
+      前置：
+      CREATE TABLE customers(
+        id INT(11) NOT NULL,##序号
+        name VARCHAR(32) DEFAULT '',##姓名
+        sex TINYINT NOT NULL,##性别
+        city VARCHAR(32) NOT NULL,##所在城市
+        age SMALLINT(4) NOT NULL,##数值类型
+        PRIMARY KEY (id)##主键
+      );
+      INSERT INTO customers VALUES(1,'xiaoli',1,'shanghai',18);
+      INSERT INTO customers SELECT ID + (SELECT count(1) FROM customers),concat('t',(ID + (SELECT count(1) FROM customers))),1,'shanghai',18 FROM customers; ##执行2次
+
+      CREATE TABLE orders(
+        id INT(11) NOT NULL,##序号
+        c_id INT(11) NOT NULL,##客户编号
+        amount NUMERIC,##总金额
+        PRIMARY KEY (id)##主键
+      );
+      INSERT INTO orders VALUES(1,1,2000);
+      INSERT INTO orders SELECT id + (SELECT count(1) FROM orders),2,3000 FROM orders;##执行3次；
+
+      CREATE TABLE customers_insert (
+          id int, -- 编号
+          cname VARCHAR(50), -- 姓名
+          sex int, -- 性别
+          age int, -- 年龄
+          primary key (id) -- 主键
+      );
+
+      反例：
+      SELECT a.id,a.name,b.id as ord_id,b.amount FROM customers a,orders b;
+      SELECT a.id,a.name,b.id as ord_id,b.amount FROM customers a JOIN orders b; 
+      (select * from customers a,orders b )
+        union all
+      (select * from customers a ,orders b); 
+      
+      INSERT INTO customers(name,sex,city,age) SELECT a.name,a.sex,a.city,a.age FROM customers a,orders b;
+      UPDATE customers set age= age+10 WHERE id IN (SELECT a.id FROM customers_insert a,orders b);
+      DELETE FROM customers WHERE id IN (SELECT a.id FROM customers_insert a,orders b);
+
+      with tmp(id) as (select a.id from customers a , orders b) select * from tmp; # 仅适用于MySQL8.0
+
+      示例验证：
+      1、查看执行计划。
+      mysql&gt; explain SELECT a.id,a.name,b.id as ord_id,b.amount FROM customers a,orders b;
+      +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+---------------------------------------+
+      | id | select_type | table | partitions | type | possible_keys | key  | key_len | ref  | rows | filtered | Extra                                 |
+      +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+---------------------------------------+
+      |  1 | SIMPLE      | b     | NULL       | ALL  | NULL          | NULL | NULL    | NULL |    4 |   100.00 | NULL                                  |
+      |  1 | SIMPLE      | a     | NULL       | ALL  | NULL          | NULL | NULL    | NULL |    8 |   100.00 | Using join buffer (Block Nested Loop) |
+      +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+---------------------------------------+
+      2 rows in set, 1 warning (0.01 sec)
+
+      反例说明：
+      数据库系统中，在一条SQL语句中，如果表连接没有设置条件，会出现下述影响：
+      1）发生笛卡尔积操作，结果集的行数是连接的表行数的乘积，消耗大量的计算资源和存储空间。
+      2）连接失败，数据库无法确定如何将两个表中的行进行匹配。
+      3）不正确的连接结果，没有指定连接条件，可能导致返回的结果与预期不符。
+      4）性能低下，由于笛卡尔积，产生了大量的结果行，查询的执行时间会非常长，并消耗大量的CPU和内存资源。
+      5）笛卡尔积操作，会导致查询不走索引。
+
+      正例：
+      SELECT a.id,a.name,b.id as ord_id,b.amount FROM customers a,orders b WHERE a.id = b.c_id;
+      SELECT a.id,a.name,b.id as ord_id,b.amount FROM customers a JOIN orders b ON a.id = b.c_id; 
+      (select * from customers a,orders b where a.id = b.c_id)
+        union all
+      (select * from customers a ,orders b where a.id = b.c_id); 
+
+      INSERT INTO customers(name,sex,city,age) SELECT a.name,a.sex,a.city,a.age FROM customers a,orders b WHERE a.id = b.c_id;     
+      UPDATE customers set age= age+10 WHERE id IN (SELECT a.id FROM customers_insert a,orders b where a.id=b.c_id);
+      DELETE FROM customers WHERE id IN (SELECT a.id FROM customers_insert a,orders b where a.id=b.c_id); 
+
+      with tmp(id) as (select a.id from customers a , orders b where a.id=b.c_id) select * from tmp; # 仅适用于MySQL8.0
+
+      示例验证：
+      1、查看执行计划。
+      mysql&gt; explain SELECT a.id,a.name,b.id as ord_id,b.amount FROM customers a,orders b where a.id =b.c_id;
+      +----+-------------+-------+------------+--------+---------------+---------+---------+-------------+------+----------+-------+
+      | id | select_type | table | partitions | type   | possible_keys | key     | key_len | ref         | rows | filtered | Extra |
+      +----+-------------+-------+------------+--------+---------------+---------+---------+-------------+------+----------+-------+
+      |  1 | SIMPLE      | b     | NULL       | ALL    | NULL          | NULL    | NULL    | NULL        |    4 |   100.00 | NULL  |
+      |  1 | SIMPLE      | a     | NULL       | eq_ref | PRIMARY       | PRIMARY | 4       | test.b.c_id |    1 |   100.00 | NULL  |
+      +----+-------------+-------+------------+--------+---------------+---------+---------+-------------+------+----------+-------+
+      2 rows in set, 1 warning (0.00 sec)
+
+      正例说明：
+      数据库系统中，在一条SQL语句中，表连接时指定条件下，当条件字段存在索引时，优化器能够优先采用索引，提高查询效率。同时，指定连接条件，能够确保连接操作按照预期进行，并返回准确的结果集。
+    </示例>
+    <检查流程描述>
+    1. 对于DML语句中的所有 SELECT子句，识别出所有的JOIN操作(包括隐式JOIN和显式JOIN)
+      1. 对于每个JOIN操作,检查ON子句或WHERE子句中是否存在 类似table1.column1 =（或者 &gt;、 &lt;、 !=、 &lt;&gt;） table2.column1 这样的关联条件。
+      2. 如果任一JOIN操作缺少连接条件,则报告违反规则。
+    2. 对于WITH...语句，对于其中的所有SELECT子句进行与DML语句相同的检查。
+    </检查流程描述>
+    <知识文档>
+      1、SQL查询：https://dev.mysql.com/doc/refman/5.7/en/select.html
+      2、JOIN嵌套优化：https://dev.mysql.com/doc/refman/5.7/en/nested-join-optimization.html
+      3、WITH语法：https://dev.mysql.com/doc/refman/8.0/en/with.html
+    </知识文档>
+  </场景>
+  <场景 名称="数据变更语句中表连接缺少关联条件" 数据库版本="MySQL 5.7、MySQL 8.0" 检查方式="不连库审核" 适用句型="UPDATE、DELETE">
+    <示例>
+      前置：
+      与【联合查询】场景一致。
+      注：对已有表customers增加自增键
+      ALTER TABLE customers MODIFY id INT(11) AUTO_INCREMENT;
+
+      反例：      
+      UPDATE customers INNER JOIN orders SET customers.age = customers.age +10 WHERE customers.id&gt;5;
+      DELETE customers,orders FROM customers INNER JOIN orders WHERE customers.id&gt;5; 
+
+      反例说明：
+      与【联合查询】场景一致。
+
+      正例：
+      UPDATE customers INNER JOIN orders ON customers.id = orders.c_id SET customers.age = customers.age +10 WHERE customers.id&gt;5;
+      DELETE customers,orders FROM customers INNER JOIN orders ON customers.id = orders.c_id WHERE customers.id&gt;5;          
+
+      正例说明：
+      与【联合查询】场景一致。
+
+    </示例>
+    <检查流程描述>
+      1. 对于 update... 语句，识别出所有的JOIN操作(包括隐式JOIN和显式JOIN)
+        1. 对于每个JOIN操作,检查ON子句或WHERE子句中是否存在 类似table1.column1 =（或者 &gt;、 &lt;、 !=、 &lt;&gt;） table2.column1 这样的关联条件。
+        2. 如果任一JOIN操作缺少连接条件,则报告违反规则。
+      2. 对于 delete... 语句，执行与UPDATE语句相同的检查。
+    </检查流程描述>
+    <知识文档>
+      与【联合查询】场景一致。
+    </知识文档>
+  </场景>
+</规则场景>
+<规则缺陷 />
+<标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值><分类值>嵌套查询和连接</分类值></分类><分类 名称="审核目的"><分类值>保障正确性</分类值><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

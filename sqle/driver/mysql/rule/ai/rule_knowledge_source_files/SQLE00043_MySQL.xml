@@ -1,0 +1,85 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+<规则编号>SQLE00043</规则编号>
+<级别>warn</级别>
+<数据库类型>MySQL</数据库类型>
+<规则种类>索引规范</规则种类>
+<规则简述>避免表内同一字段上存在过多索引</规则简述>
+<规则变量>
+  <变量 name="同一字段存在索引个数">2</变量>
+</规则变量>
+<规则描述>一个表内同一字段上存在过多索引，一般情况下这些索引都是没有存在价值的；相反，还会降低数据增加删除时的性能，特别是对频繁更新的表来说，负面影响更大；具体规则阈值可以根据业务需求调整，默认值：2</规则描述>
+<规则场景>
+  <场景 名称="定义表结构" 数据库版本="MySQL" 检查方式="不连库审核" 适用句型="CREATE TABLE">
+    <示例>
+      示例：
+      create table if NOT EXISTS
+        t2 (
+          id BIGINT UNSIGNED AUTO_INCREMENT,
+          name varchar(64) DEFAULT '',
+          cid int not null DEFAULT 0,
+          gid int not null  DEFAULT 0,
+          create_date date DEFAULT '2023-11-06',
+          type varchar(4) DEFAULT 0,
+          INDEX idx_multi_col (gid, create_date),
+          INDEX idx_multi_col2 (cid, gid),
+          INDEX idx_multi_col3 (cid, create_date),
+          INDEX idx_multi_col4(cid,type),
+          INDEX idx_multi_col5(gid,type),
+          PRIMARY KEY (id)
+        );
+      
+      示例说明：
+      数据库系统中，常用的索引通常是PRIMARY KEY、UNIQUE、INDEX，默认是以B-trees存储的。一个表中存在多个索引，优化器会选择一个匹配到行数最少的索引，因此索引越多，会增加索引存储空间，增加优化器选择索引的成本。
+      引用知识文档1：Although it can be tempting to create an indexes for every possible column used in a query, unnecessary indexes waste space and waste time for MySQL to determine which indexes to use. Indexes also add to the cost of inserts, updates, and deletes because each index must be updated. 
+
+    </示例>
+    <检查流程描述>
+      1、检查CREATE TABLE 句子中是否存在INDEX索引，如果存在，进一步检查。
+      2、统计每一个索引里的字段，当同一个字段在不同索引里出现次数超过阈值，报告违反规则。
+    </检查流程描述>
+    <知识文档>
+      1、优化器与索引：https://dev.mysql.com/doc/refman/5.7/en/optimization-indexes.html
+      2、创建索引：https://dev.mysql.com/doc/refman/5.7/en/create-index.html#create-index-options
+      3、如何使用索引：https://dev.mysql.com/doc/refman/5.7/en/mysql-indexes.html
+      4、索引合并：https://dev.mysql.com/doc/refman/5.7/en/index-merge-optimization.html
+    </知识文档>
+  </场景>
+  <场景 名称="表更表结构" 数据库版本="MySQL" 检查方式="连库审核" 适用句型="ALTER TABLE、CREATE INDEX">
+    <示例>  
+      前置：
+      create table if NOT EXISTS
+        t2 (
+          id BIGINT UNSIGNED AUTO_INCREMENT,
+          name varchar(64) DEFAULT '',
+          cid int not null DEFAULT 0,
+          gid int not null  DEFAULT 0,
+          create_date date DEFAULT '2023-11-06',
+          type varchar(4) DEFAULT 0,
+          INDEX idx_multi_col (gid, create_date),
+          INDEX idx_multi_col2 (cid, gid),
+          INDEX idx_multi_col3 (cid, create_date),
+          INDEX idx_multi_col4(cid,type),
+          PRIMARY KEY (id)
+        );
+      示例：
+      alter table t2 add index idx_t2_col(gid);
+      create index idx_t1_column2 on t1(cid);
+
+      示例说明：与【定义表结构】场景一致。
+    </示例>
+    <检查流程描述>
+      1、判断当前句子是CREATE INDEX，如果是，则直接进入第三步检查。
+      2、检查ALTER TABLE 句子中是否存在ADD INDEX子句或者，如果存在，进一步检查；。
+      3、连接数据库，获取ALTER目标表内的索引信息。
+      4、结合本次新增的索引、存量索引，统计每一个索引里的字段，当同一个字段在不同索引里出现次数超过阈值，报告违反规则。
+    </检查流程描述>
+    <知识文档>
+      1、优化器与索引：https://dev.mysql.com/doc/refman/5.7/en/optimization-indexes.html
+      2、创建索引：https://dev.mysql.com/doc/refman/5.7/en/create-index.html#create-index-options
+      3、如何使用索引：https://dev.mysql.com/doc/refman/5.7/en/mysql-indexes.html
+      4、索引合并：https://dev.mysql.com/doc/refman/5.7/en/index-merge-optimization.html
+    </知识文档>
+  </场景>
+</规则场景>  
+<标签><分类 名称="操作对象"><分类值>索引</分类值><分类值>字段</分类值></分类><分类 名称="SQL分类"><分类值>DDL</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值><分类值>连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

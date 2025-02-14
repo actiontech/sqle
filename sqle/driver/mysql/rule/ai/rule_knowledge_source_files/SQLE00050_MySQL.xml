@@ -1,0 +1,38 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+<规则编号>SQLE00050</规则编号>
+<级别>
+   <当前级别>warn</当前级别>
+   <新级别>notice</新级别>
+</级别>
+<适用性>不适用当前数据库</适用性>
+<数据库类型>MySQL</数据库类型>
+<规则种类>命名规范</规则种类>
+<规则简述>建议主键命名遵循指定格式</规则简述>
+<规则变量>
+  <变量 name="主键命名格式">主键缩写+表名，如PK_TABLENAME</变量>
+</规则变量>
+<规则描述>主键命名格式规范化，有助于开发人员、运维人员、DBA等了解表的主键意义，增加业务的可读性、易用性、规范化等</规则描述>
+<规则场景>
+   <场景 名称="创建主键" 数据库版本="MySQL" 检查方式="不连库审核" 适用关键词="PRIMARY" 适用句型="CREATE、ALTER">
+    <示例>  
+      示例：
+      CREATE TABLE order_his(
+          id BIGINT NOT NULL PRIMARY KEY,
+          name varchar(64) DEFAULT '',
+          UNIQUE INDEX(name)
+      );
+
+      ALTER TABLE order_his ADD PRIMARY KEY pk_order(id);
+
+      示例说明：
+      数据库系统中，一张表只有一个主键，其主键名称一直是PRIMARY，因此该关键词不能应用于其他索引名。
+      引用知识文档1： A table can have only one PRIMARY KEY. The name of a PRIMARY KEY is always PRIMARY, which thus cannot be used as the name for any other kind of index.
+    </示例>
+    <检查流程描述 />
+    <知识文档>
+      1、创建表规范：https://dev.mysql.com/doc/refman/5.7/en/create-table.html
+    </知识文档>
+   </场景>
+</规则场景>
+<标签><分类 名称="操作对象"><分类值>表</分类值><分类值>字段</分类值></分类><分类 名称="SQL分类"><分类值>完整性约束</分类值><分类值>DDL</分类值></分类><分类 名称="审核目的"><分类值>增强可维护性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

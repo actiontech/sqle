@@ -1,0 +1,160 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00143</规则编号>
+    <级别>warn</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>子查询与连接效率</规则种类>
+    <规则简述>多表关联时，不建议在WHERE条件中对不同表的字段使用OR条件</规则简述>
+    <规则描述>多表关联时，在WHERE条件中对不同表的字段使用OR条件可能会导致SQL无法使用正确的索引</规则描述>
+    <规则场景>
+      <场景 名称="多表关联 OR 过滤" 数据库版本="MySQL 所有版本" 检查方式="连库审核" 适用句型="SELECT、INSERT">
+        <示例>
+            前置:
+            create database db_mysql;
+            use db_mysql;
+  
+            -- 主表1
+            CREATE TABLE customers1(
+              id INT(11) NOT NULL, -- 序号
+              name VARCHAR(32) DEFAULT '',-- 姓名
+              sex TINYINT NOT NULL, -- 性别
+              city VARCHAR(32) NOT NULL, -- 所在城市
+              age SMALLINT(4) NOT NULL, -- 值类型
+              PRIMARY KEY (id) -- 主键
+            );
+            -- 主表2
+            CREATE TABLE customers2(
+              id INT(11) NOT NULL, -- 序号
+              name VARCHAR(32) DEFAULT '',-- 姓名
+              sex TINYINT NOT NULL, -- 性别
+              city VARCHAR(32) NOT NULL, -- 所在城市
+              age SMALLINT(4) NOT NULL, -- 值类型
+              PRIMARY KEY (id) -- 主键
+            );
+
+  
+            -- 主表1插入模拟数据 20W 条。
+            set @@cte_max_recursion_depth=20000000;
+            insert into customers1  
+            with recursive tmp (a,b,c,d,e) as (
+              select 1,'小王22222333',floor(rand()*2),'上海',ceil(rand()*30)+20 
+              union all 
+              select a+1,concat('小王',a),floor(rand()*2),'上海',ceil(rand()*20)+20 from tmp where a &lt; 200001) 
+              select * from tmp;
+
+            -- 主表2插入模拟数据 200W 条。
+            insert into customers2 
+            with recursive tmp (a,b,c,d,e) as (
+              select 1,'小王22222333',floor(rand()*2),'上海',ceil(rand()*30)+20 
+              union all 
+              select a+1,concat('小王',a),floor(rand()*2),'上海',ceil(rand()*20)+20 from tmp where a &lt; 2000001) 
+              select * from tmp;
+
+            -- 构建索引
+            create index idx_name_customers1 on customers1(name);
+            create index idx_name_customers2 on customers2(name);
+
+
+            原理说明：
+            1. 两表或者多表关联时，关联条件或者WHERE 条件中不能对多表不同列采用OR的形式；
+            2. OR 关联条件过滤，即使有索引，也无法命中；或者是可以命中索引，但是内部又根据两个索引生成一个临时的索引；效率都不高。
+            3. 优化方式是把 OR 展开成UNION 或者UNION ALL的方式。这样 OR 操作的前后两个条件都可以正确使用索引了。
+
+            反例：
+            select count(*) from customers1 a join customers2 b on ( a.id = b.id or a.name=b.name );
+            或者
+            select count(*) from customers1 a ,customers2 b where a.id = b.id or a.name = b.name;
+
+
+            反例说明：
+            1. 表 customers1 和表 customers2 关联，关联条件是两表的id 列和两表的 name 列；
+            2. 列id 是等值匹配；列 name 也是等值匹配；两个匹配是OR 关系；
+            3. 强烈不建议在表关联时使用 OR 来作为关联条件。
+      
+            反例验证： 
+
+            -- SQL 执行时间接近6秒。
+            (mysql:8.3.0:db_mysql)select count(*) from customers1 a join customers2 b on ( a.id = b.id or a.name=b.name );
+            +----------+
+            | count(*) |
+            +----------+
+            |   200001 |
+            +----------+
+            1 row in set (5.93 sec)
+            
+           
+
+            -- 执行计划：此查询走了表customers1 的索引 idx_name_customers1，但是对于customers2 来讲，没有正确使用索引。
+
+            (mysql:8.3.0:db_mysql)explain select count(*) from customers1 a join customers2 b on ( a.id = b.id or a.name=b.name );
+            +----+-------------+-------+------------+-------+-----------------------------+---------------------+---------+------+---------+----------+------------------------------------------------+
+            | id | select_type | table | partitions | type  | possible_keys               | key                 | key_len | ref  | rows    | filtered | Extra                                          |
+            +----+-------------+-------+------------+-------+-----------------------------+---------------------+---------+------+---------+----------+------------------------------------------------+
+            |  1 | SIMPLE      | a     | NULL       | index | PRIMARY,idx_name_customers1 | idx_name_customers1 | 131     | NULL |  199589 |   100.00 | Using index                                    |
+            |  1 | SIMPLE      | b     | NULL       | ALL   | PRIMARY,idx_name_customers2 | NULL                | NULL    | NULL | 1992082 |    19.00 | Range checked for each record (index map: 0x3) |
+            +----+-------------+-------+------------+-------+-----------------------------+---------------------+---------+------+---------+----------+------------------------------------------------+
+            2 rows in set, 1 warning (0.00 sec)
+            
+          
+
+            正例：
+            select count(*) from customers1 a join customers2 b on  a.id = b.id
+            union
+            select count(*) from customers1 a join customers2 b on  a.name = b.name;
+            或者
+            select count(*) from customers1 a , customers2 b where  a.id = b.id
+            union
+            select count(*) from customers1 a , customers2 b where  a.name = b.name;
+
+            正例说明：
+            1. 关联条件OR被转换为对两个字段的单独关联，并且使用UNION。 这样，两个索引就都能被正确使用了。
+
+            正例验证： 优化后，执行时间降低到接近2秒，性能提升明显。
+            (mysql:8.3.0:db_mysql)select count(*) from customers1 a join customers2 b on  a.id = b.id  
+             union
+             select count(*) from customers1 a join customers2 b on  a.name = b.name;
+            +----------+
+            | count(*) |
+            +----------+
+            |   200001 |
+            +----------+
+            1 row in set (1.93 sec)
+            
+            
+
+            执行计划： 优化后的SQL，语句中涉及到的索引都能最优使用，性能大幅提升。
+            (mysql:8.3.0:db_mysql)explain  select count(*) from customers1 a join customers2 b on  a.id = b.id             union             select count(*) from customers1 a join customers2 b on  a.name = b.name;
+            +----+--------------+------------+------------+--------+---------------------+---------------------+---------+-----------------+--------+----------+--------------------------+
+            | id | select_type  | table      | partitions | type   | possible_keys       | key                 | key_len | ref             | rows   | filtered | Extra                    |
+            +----+--------------+------------+------------+--------+---------------------+---------------------+---------+-----------------+--------+----------+--------------------------+
+            |  1 | PRIMARY      | a          | NULL       | index  | PRIMARY             | idx_name_customers1 | 131     | NULL            | 199589 |   100.00 | Using index              |
+            |  1 | PRIMARY      | b          | NULL       | eq_ref | PRIMARY             | PRIMARY             | 4       | db_mysql.a.id   |      1 |   100.00 | Using index              |
+            |  2 | UNION        | a          | NULL       | index  | idx_name_customers1 | idx_name_customers1 | 131     | NULL            | 199589 |   100.00 | Using where; Using index |
+            |  2 | UNION        | b          | NULL       | ref    | idx_name_customers2 | idx_name_customers2 | 131     | db_mysql.a.name |      1 |   100.00 | Using index              |
+            |  3 | UNION RESULT | union1,2   | NULL       | ALL    | NULL                | NULL                | NULL    | NULL            |   NULL |     NULL | Using temporary          |
+            +----+--------------+------------+------------+--------+---------------------+---------------------+---------+-----------------+--------+----------+--------------------------+
+            5 rows in set, 1 warning (0.00 sec)
+
+            结论：
+            1. 在关联条件中使用OR 来匹配字段，虽然可以使用索引，但是没有最优化的方式使用索引，需要拆开OR条件，改为UNION 的方式。
+            2. 在去掉 OR 操作符后， 查询能正确使用所有可能得索引，SQL 整体得到最佳优化状态。
+  
+        </示例>
+        <检查流程描述>
+        1. 对于"SELECT..."语句，检查是否有多表关联，如果有多表关联，则：
+          1. 定义一个集合
+          2. 将sql中的where条件放到集合中
+          3. 将sql中的join on条件放到集合中
+          4. 获取集合中的操作符
+          5. 进行检查，如果操作符中包含了OR，则报告违反规则
+        2. 对于"INSERT..."语句，对于语句中每个SELECT子句进行与上述相同的检查。
+        3. 对于"DELETE..."语句，对于语句中每个SELECT子句进行与上述相同的检查。
+        4. 对于"UPDATE..."语句，对于语句中每个SELECT子句进行与上述相同的检查。
+        5. 对于"UNION..."语句，对于语句中每个SELECT子句进行与上述相同的检查。
+       </检查流程描述>
+        <知识文档>
+          1. MySQL 优化官方文档： https://dev.mysql.com/doc/refman/8.3/en/optimization.html
+        </知识文档>
+      </场景>
+    </规则场景>
+  <标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值><分类值>嵌套查询和连接</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

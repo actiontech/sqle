@@ -1,0 +1,145 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+  <规则编号>SQLE00062</规则编号>
+  <级别>notice</级别>
+  <数据库类型>MySQL</数据库类型>
+  <规则种类>使用建议</规则种类>
+  <规则简述>建议事务隔离级别设置成RC</规则简述>
+  <规则描述>RC 虽然没有解决幻读的问题，但是没有间隙锁，从而每次在做更新操作时影响的行数比默认RR要小很多；默认的RR隔离级别虽然解决了幻读问题，但是增加了间隙锁，导致加锁的范围扩大，性能比RC要低，增加死锁的概率；在大多数情况下，出现幻读的几率较小，所以建议使用RC。</规则描述>
+  <规则场景>
+    <场景 名称="更改隔离级别" 数据库版本="MySQL 所有版本 " 检查方式="不连库审核" 适用句型="SET">
+      <示例>
+          前置：
+          create database if not exists db_mysql;
+          use db_mysql;
+          create table customers(
+              id bigint not null primary key,
+              name varchar(32) default '' not null, -- 序号
+              sex int default 0, -- 性别
+              age int default 0 -- 年龄
+          );
+
+          -- 10 条样例数据
+          insert into customers values (1,'小季',0,20);
+          insert into customers values (2,'小李',0,30);
+          insert into customers values (3,'小徐',0,40);
+          insert into customers values (4,'小张',0,60);
+          insert into customers values (5,'小菜',0,50);
+          insert into customers values (6,'小怪',0,29);
+          insert into customers values (7,'小王',0,23);
+          insert into customers values (8,'小强',0,40);
+          insert into customers values (9,'小非',0,52);
+          insert into customers values (10,'小海',0,37);
+
+          原理说明：
+          1. 不可重复读：是指在一个事务内多次读取同一数据集合，在这个事务还没有结束时，如果另一个事务恰好修改了该数据集合的数据，那么第一个事务再次读取的数据就和第一次读取的数据不一致。重点在于对同一条记录的读取结果前后不同。
+            1. 比如事务 A 读取了一条记录，事务 B 随后更新了这条记录并提交，当事务 A 再次读取该记录时，得到了不同的值。
+          2.幻读：是指一个事务在执行过程中，按照相同的条件查询，第二次查询结果却包含了第一次查询没有出现的数据，或者缺少了第一次查询出现的数据。幻读强调的是对符合某个条件的一批数据的操作。
+            1. 例如，事务 A 按照某个条件查询出一些记录，事务 B 插入或删除了一些符合该条件的记录并提交，当事务 A 再次按照相同条件查询时，发现结果的数量或内容发生了变化。
+          3. 事务隔离级别决定了事务在并发执行时的行为和可见性。
+          4. MySQL 支持四种标准的隔离级别:每种级别都在一定程度上平衡了数据的一致性和并发性.
+            1. Read Uncommitted：读未提交，一个事务可以读取另一个未提交事务的数据，会出现脏读、不可重复读和幻读问题。
+            2. Read Committed：读提交，一个事务要等另一个事务提交后才能读取数据，可以解决脏读问题，但可能会出现不可重复读和幻读问题。
+            3. Repeatable Read：可重复读，在开始读取数据（事务开启）时，不再允许修改操作，可以解决不可重复读问题，但可能会出现幻读问题（MySQL通过间隙锁：Next-Key Lock 来避免幻读）。这是MySQL的默认隔离级别。
+            4. Serializable：序列化，是最高的事务隔离级别，事务串行化顺序执行，可以避免脏读、不可重复读与幻读，但这种事务隔离级别效率低下，比较耗数据库性能，一般不使用。
+          5.由于RR级别的间隙锁每次锁的范围太大，很容易导致事务超时、TPS减小、死锁等；所以强烈建议使用RC隔离级别。
+                    
+          反例SQL：
+          SQL1： SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+          SQL2:  SET GLOBAL transaction_isolation = 'REPEATABLE-READ';
+          SQL3： SET SESSION transaction_isolation = 'REPEATABLE-READ';
+          SQL4:  SET transaction_isolation = 'REPEATABLE-READ';
+
+          
+          反例说明：
+          1. 反例设置事务的隔离级别为RR；或者保持默认也可。
+          2. SQL1 设置事务的隔离级别，尽在事务内生效。
+          3. SQL2 设置全局隔离级别，对后续所有新建的SESSION 有效，对当前SESSION 无效。
+          4. SQL3、SQL4 设置当前SESSION 隔离级别，SESSION 退出后，失效。
+
+          反例验证：
+          1. SESSION 1、SESSION 2 两个隔离级别都设置为 RR。
+          SESSION 1、SESSION 2 都操作如下：
+          (mysql:8.4.0:db_mysql)SET transaction_isolation = 'REPEATABLE-READ';
+          Query OK, 0 rows affected (0.00 sec)
+
+          2. SESSION 1 修改表记录：
+
+          (mysql:8.4.0:db_mysql)begin;
+          Query OK, 0 rows affected (0.00 sec)
+          
+          (mysql:8.4.0:db_mysql)update customers set name='小王' where id = 3;
+          Query OK, 1 row affected (0.00 sec)
+          Rows matched: 1  Changed: 1  Warnings: 0
+          
+
+          3. SESSION 2 修改另外一条记录： 此时，update 语句执行卡住直到事务超时;或者等待SESSION 1提交或者回滚完成。
+          (mysql:8.4.0:db_mysql)begin;
+          Query OK, 0 rows affected (0.00 sec)
+
+          (mysql:8.4.0:db_mysql)update customers set name='小里' where id = 4;
+          ERROR 1205 (HY000): Lock wait timeout exceeded; try restarting transaction
+          
+          4. SESSION 1 提交：
+          (mysql:8.4.0:db_mysql)commit;
+          Query OK, 0 rows affected (0.01 sec)
+
+
+          5. SESSION 2 重新更新： 很快就完成。
+          (mysql:8.4.0:db_mysql)update customers set name='小里' where id = 4;
+          Query OK, 1 row affected (0.00 sec)
+          Rows matched: 1  Changed: 1  Warnings: 0
+
+
+          正例SQL：
+          SQL1： SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
+          SQL2:  SET GLOBAL transaction_isolation = 'READ-COMMITTED';
+          SQL3： SET SESSION transaction_isolation = 'READ-COMMITTED';
+          SQL4:  SET transaction_isolation = 'READ-COMMITTED';
+
+          正例说明：
+          1. 正例设置事务的隔离级别为RC。
+          2. SQL1 设置事务的隔离级别，尽在事务内生效。
+          3. SQL2 设置全局隔离级别，对后续所有新建的SESSION 有效，对当前SESSION 无效。
+          4. SQL3、SQL4 设置当前SESSION 隔离级别，SESSION 退出后，失效。
+
+          正例验证：
+          1. SESSION 1、SESSION 2 两个隔离级别都设置为 RC。
+          SESSION 1、SESSION 2 都操作如下：
+          (mysql:8.4.0:db_mysql)SET transaction_isolation = 'READ-COMMITTED';
+          Query OK, 0 rows affected (0.00 sec)
+
+          2. SESSION 1 修改表记录：
+
+          (mysql:8.4.0:db_mysql)begin;
+          Query OK, 0 rows affected (0.00 sec)
+          
+          (mysql:8.4.0:db_mysql)update customers set name='小王' where id = 3;
+          Query OK, 1 row affected (0.00 sec)
+          Rows matched: 1  Changed: 1  Warnings: 0
+          
+
+          3. SESSION 2 修改另外一条记录： 此时，update 语句成功执行，不会卡。
+          (mysql:8.4.0:db_mysql)begin;
+          Query OK, 0 rows affected (0.00 sec)
+
+          (mysql:8.4.0:db_mysql)update customers set name='小里' where id = 4;
+          Query OK, 1 row affected (0.00 sec)
+          Rows matched: 1  Changed: 1  Warnings: 0
+          
+          结论：
+          1. 使用RC 隔离级别虽然避免不了幻读，但是可以避免RR级别的间隙锁带来的锁放大问题，从而提升数据库整体的TPS。
+          2. 幻读的场景几率比较少，如果可以忽略幻读，建议使用RC。
+
+      </示例>
+      <检查流程描述>
+        1. 对于 "SET ... TRANSACTION...ISOLATION LEVEL..."语句，如果不存在关键词 READ COMMITTED，则报告违反规则。
+        2. 对于 "SET ... transaction_isolation ... " 语句，如果不存在关键词 READ-COMMITTED，则报告违反规则。
+      </检查流程描述>
+      <知识文档>
+        1. 设置隔离级别官方文档：https://dev.mysql.com/doc/refman/8.4/en/set-transaction.html
+      </知识文档>   
+    </场景>
+  </规则场景>
+  <规则缺陷 />
+<标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>事务控制</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值><分类值>增强可维护性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

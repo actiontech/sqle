@@ -1,0 +1,101 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00102</规则编号>
+    <级别>error</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>使用建议</规则种类>
+    <规则简述>禁止UPDATE/DELETE语句使用ORDER BY操作 </规则简述>
+    <规则描述>使用ORDER BY子句的UPDATE或DELETE语句会导致不必要的性能开销，影响数据库响应时间，并可能导致锁竞争，从而影响到系统的整体性能和稳定性。</规则描述>
+    <规则场景>
+        <场景 名称="更新使用ORDER BY 子句" 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="DELETE、UPDATE">
+            <示例>
+                前置：
+                示例表结构:
+                create database db_mysql;
+                use db_mysql;
+    
+                -- 主表
+                CREATE TABLE customers(
+                id INT(11) NOT NULL, -- 序号
+                name VARCHAR(32) DEFAULT '',-- 姓名
+                sex TINYINT NOT NULL, -- 性别
+                city VARCHAR(32) NOT NULL, -- 所在城市
+                age SMALLINT(4) NOT NULL, -- 值类型
+                PRIMARY KEY (id) -- 主键
+                );
+
+                -- order表
+                CREATE TABLE orders(
+                    id int(11) not null, -- 序号
+                    c_id int(11) not null, -- 客户编号
+                    PRIMARY KEY (id) -- 主键
+                );
+        
+                -- 插入模拟数据,100W 条。
+                set @@cte_max_recursion_depth=20000000;
+                insert into customers  
+                with recursive tmp (a,b,c,d,e) as (
+                select 1,'小王22222333',floor(rand()*2),'上海',ceil(rand()*30)+20 
+                union all 
+                select a+1,concat('小王',a),floor(rand()*2),'上海',ceil(rand()*20)+20 from tmp where a &lt; 1000000) 
+                select * from tmp;
+
+                原理说明：
+                1. UPDATE、DELETE 加 ORDER BY 子句，可以根据 ORDER BY 指定的字段来进行排序更新、删除，一般是和 LIMIT 一起使用。
+                2. 加 ORDER BY 子句会造成不必要的排序开销，浪费资源，严重影响性能。
+                  1. 在并发环境中，UPDATE和DELETE操作通常需要锁定目标数据行。如果使用ORDER BY，可能需要额外锁定更多的数据行进行排序，这增加了死锁的风险，同时降低了并发性能。
+                  2. 对于UPDATE和DELETE操作，数据库需要记录事务日志。排序操作可能导致这些命令处理更多的数据，从而增加了事务日志的大小，对I/O性能造成影响。
+
+                反例：      
+                update customers set city = '北京' order by age;
+                delete from customers order by age;
+                update customers set city = '北京'  where id in (select c_id from orders order by id desc);
+                delete from customers where id in (select c_id from orders order by id desc);
+    
+                反例验证： 
+                -- 两条SQL 类似，只验证 update 语句即可;为了不重新插入数据，把语句包在一个事务块里。 更新语句执行时间12.37秒。
+                
+                (mysql:8.4.0:db_mysql)begin;
+                Query OK, 0 rows affected (0.00 sec)
+
+                (mysql:8.4.0:db_mysql)update customers set city = '北京' order by age;
+                Query OK, 1000000 rows affected (12.37 sec)
+                Rows matched: 1000000  Changed: 1000000  Warnings: 0
+
+                (mysql:8.4.0:db_mysql)rollback;
+                Query OK, 0 rows affected (7.66 sec)
+                
+                正例：
+                update customers set city = '北京';
+                delete from customers;
+                update customers set city = '北京'  where id in (select c_id from orders);
+                delete from customers where id in (select c_id from orders);
+
+                正例验证： 同样，为了简化验证流程，把语句包在事务块里。可以看到，取消了 ORDER BY 子句的更新只花了8秒。
+                (mysql:8.4.0:db_mysql)begin;
+                Query OK, 0 rows affected (0.00 sec)
+
+                (mysql:8.4.0:db_mysql)update customers set city = '北京';
+                Query OK, 1000000 rows affected (8.08 sec)
+                Rows matched: 1000000  Changed: 1000000  Warnings: 0
+
+                (mysql:8.4.0:db_mysql)rollback;
+                Query OK, 0 rows affected (6.59 sec)
+
+                结论：
+                1. DELETE、UPDATE 语句加上 ORDER BY 子句，造成额外的排序；排序在数据库中的耗时最大，最消耗资源，所以应该禁止UPDATE、DELETE 语句加上 ORDER BY 子句。
+
+            </示例>
+            <检查流程描述>
+                1. 对于 "UPDATE ..." 语句，
+                    1. 句子中存在关键词： ORDER BY，则报告违反规则。
+                2. 对于 "DELETE ..." 语句，执行与上述同样检查。
+            </检查流程描述>
+            <知识文档>
+            1. UPDATE 官方文档： https://dev.mysql.com/doc/refman/8.4/en/update.html
+            2. DELETE 官方文档： https://dev.mysql.com/doc/refman/8.4/en/delete.html
+            </知识文档>
+        </场景>
+    </规则场景>
+    <关联规则>SQLE00104、SQLE00101、SQLE00119、SQLE00121</关联规则>
+    <标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

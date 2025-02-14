@@ -1,0 +1,106 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+<原始顺序>5</原始顺序>
+<规则编号>SQLE00004</规则编号>
+<级别>warn</级别>
+<数据库类型>MySQL</数据库类型>
+<规则种类>DDL规范</规则种类>
+<规则简述>建议表的自增字段起始值为0</规则简述>
+<规则描述>创建表时AUTO_INCREMENT设置为0则自增从1开始，可以避免数据空洞。例如在导出表结构DDL时，表结构内AUTO_INCREMENT通常为当前的自增值，如果建表时没有把AUTO_INCREMENT设置为0，那么通过该DDL进行建表操作会导致自增值从一个无意义数字开始。</规则描述>
+<规则场景>
+    <场景 名称="表初始化定义" 数据库版本="MySQL5.7、MySQL8.0" 检查方式="不连库审核" 适用句型="CREATE TABLE、SET">
+        <示例>              
+            原理说明：
+            1. AUTO_INCREMENT默认起始值由系统参数auto_increment_offset来决定，默认为1，允许用户在创建表时针对某个表单独定义起始值。   
+                CREATE TABLE t1 (            
+                    id INT AUTO_INCREMENT PRIMARY KEY,            
+                    c1 INT            
+                )AUTO_INCREMENT = 3;      
+               注：AUTO_INCREMENT默认设置为0或者1，新增表记录的起始值都会从1开始。
+            2. 如果AUTO_INCREMENT起始值设置过高,会导致以下问题:            
+              1. 起始值之前的序号空间浪费,产生数据空洞,对于需要连续序号的业务场景不友好。
+              2. 起始值设置过大(如接近INT上限),容易导致自增列溢出,大量插入报错,影响业务正常运行。       
+            4. MySQL支持使用ALTER TABLE语句修改AUTO_INCREMENT起始值,但不推荐频繁修改。
+            5. 系统参数auto_increment_offset与 auto_increment_increment 的使用要点：
+              1. auto_increment_offset值大于auto_increment_increment时，则自增列在计算时，忽略auto_increment_offset的参数值，即按默认值1作为起始值。
+              2. 同时，如当前表的自增列数据已经存在，即通过show create table t1可以查看当前auto_increment的值；在当前情况下，变更auto_increment_offset值，则根据公式auto_increment_offset + N × auto_increment_increment序列值后，会取第一个大于当前表里的最大值，作为新增记录的起始值。
+
+            反例:
+            CREATE TABLE t1 (
+              id INT AUTO_INCREMENT PRIMARY KEY,
+              c1 INT
+            ) AUTO_INCREMENT=100;
+    
+            CREATE TABLE t2 (
+              id INT AUTO_INCREMENT PRIMARY KEY,
+              c1 INT  
+            ) AUTO_INCREMENT=2147483647;
+            set @@auto_increment_offset = 100; ##注意该参数是对于所有未指定自增起始值的表都生效。
+    
+            反例说明:
+            1. 示例SQL使用AUTO_INCREMENT定义自增主键,但起始值均不为1。
+            2. 第二个SQL将起始值设为INT上限,新增记录极易溢出报错。
+    
+            反例验证:
+            1. t1表验证:
+            mysql&gt; INSERT INTO t1 (c1) VALUES (10);
+            Query OK, 1 row affected (0.01 sec)
+    
+            mysql&gt; SELECT * FROM t1;
+            +-----+------+
+            | id  | c1   |
+            +-----+------+
+            | 100 |   10 |
+            +-----+------+
+            1 row in set (0.00 sec)
+    
+            可见t1表第一条记录的id为100,1-99的序号空间被浪费。
+    
+            2. t2表验证:
+            mysql&gt; INSERT INTO t2 (c1) VALUES (20);  
+            Query OK, 1 row affected (0.00 sec)
+    
+            mysql&gt; INSERT INTO t2 (c1) VALUES (30);
+            ERROR 1062 (23000): Duplicate entry '2147483647' for key 't2.PRIMARY'
+    
+            可见t2表只能插入一条记录,再次插入就报主键冲突,因为id已经达到上限值。
+            
+            正例:
+            CREATE TABLE t1 (
+              id INT AUTO_INCREMENT PRIMARY KEY, 
+              c1 INT
+            );
+    
+            正例说明:
+            1. 示例SQL使用默认的AUTO_INCREMENT=1,新增记录的id会从1开始自增,不会产生空洞。
+            2. 使用默认的起始值,可支持插入大量记录而不会轻易溢出。
+    
+            正例验证:
+            mysql&gt; INSERT INTO t1 (c1) VALUES (10), (20), (30);
+            Query OK, 3 rows affected (0.01 sec)
+            Records: 3  Duplicates: 0  Warnings: 0
+    
+            mysql&gt; SELECT * FROM t1;                         
+            +----+------+
+            | id | c1   |
+            +----+------+
+            |  1 |   10 |
+            |  2 |   20 |
+            |  3 |   30 |
+            +----+------+
+            3 rows in set (0.00 sec)
+    
+            可见,使用默认的AUTO_INCREMENT=0,新增记录的id按序生成,从1开始无间断自增。
+        </示例>
+        <检查流程描述>
+            1. 对于"CREATE TABLE ..."语句,检查以下条件,如果任意一个满足则报告违反规则:
+               1. 语句中包含AUTO_INCREMENT关键字,且AUTO_INCREMENT的值不等于1。
+            2. 对于"SET ..."语句，若设置的目标是auto_increment_offset参数，且值大于1，则报告违反规则。
+        </检查流程描述>
+        <知识文档>
+        1. AUTO_INCREMENT官方文档: https://dev.mysql.com/doc/refman/8.0/en/example-auto-increment.html
+        </知识文档>            
+    </场景>
+</规则场景>
+<规则缺陷 />
+<标签><分类 名称="操作对象"><分类值>表</分类值></分类><分类 名称="SQL分类"><分类值>DDL</分类值><分类值>完整性约束</分类值></分类><分类 名称="审核目的"><分类值>增强可维护性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

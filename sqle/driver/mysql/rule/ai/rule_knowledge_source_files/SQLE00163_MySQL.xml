@@ -1,0 +1,99 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00163</规则编号>
+    <级别>warn</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>并行处理与锁管理</规则种类>
+    <适用性>不适用当前数据库</适用性>
+    <规则简述>建议创建索引或重建索引时设置并行度</规则简述>
+    <规则描述>在大数据量表的情况下，创建索引时如果缺少并行度设置，该操作的耗时加大，且长时间占用大量的CPU和IO资源，可能会影响到系统的稳定性和可用性。特别是夜间维护期间，提高创建索引效率，可以在有限的时间内完成更多的维护任务。</规则描述>
+    <规则场景>
+      <原理说明 数据库版本="MySQL 8.0" 检查方式="不连库审核" 适用句型="CREATE INDEX、ALTER TABLE">
+      <示例>
+      
+          示例表结构:
+          create database db_mysql;
+          use db_mysql;
+
+          CREATE TABLE customers(
+            id INT(11) NOT NULL, -- 序号
+            name VARCHAR(32) DEFAULT '',-- 姓名
+            sex TINYINT NOT NULL, -- 性别
+            city VARCHAR(32) NOT NULL, -- 所在城市
+            age SMALLINT(4) NOT NULL, -- 值类型
+            PRIMARY KEY (id) -- 主键
+          );
+
+
+          -- 插入模拟数据 500W 条。
+          set @@cte_max_recursion_depth=20000000;
+          insert into customers  
+          with recursive tmp (a,b,c,d,e) as (
+            select 1,'小王22222333',floor(rand()*2),'上海',ceil(rand()*30)+20 
+            union all 
+            select a+1,concat('小王',a),floor(rand()*2),'上海',ceil(rand()*20)+20 from tmp where a &lt; 5000000) 
+            select * from tmp;   
+
+        原理说明：
+          1. 此规则不适用MySQL。
+          2. MySQL 在 8.0.27 之前，创建索引是单线程的；
+          3. MySQL 在 8.0.27 后， 默认多线程创建索引，相关参数是：innodb_ddl_threads ，表示创建或者重建二级索引的线程数量，默认为4，最大64.
+          4. MySQL 在 8.0.27 后，有新的参数 innodb_ddl_buffer_size 用来定义DDL期间的所有线程的总内存大小，默认1M，最大4G。
+          5. 针对以上，除非参数 innodb_ddl_threads 被手动设置为1，否则默认都是多线程创建索引。
+          6. MySQL 有自己的索引创建方式，都统一归类到在线DDL范畴里。
+             比如给表customers 创建基于字段age的索引:
+             create index idx_age_customers on customers(age) algorithm=inplace lock=none;
+
+             或者使用alter table 来建立同样的索引：
+             alter table customers add key idx_age_customers (age), algorithm=inplace,lock=none;
+          7. 还有一种方式是基于第三方工具来在线创建索引。
+             1. 比如Percona-tookit 里的pt-online-schema-change，使用触发器的方式来在线创建索引；
+             2. 又比如工具GH-OST 工具，使用模拟MySQL 从库的方式来在线创建索引。
+          8. 更多在线DDL方式可以参考规则SQLE00059。
+          
+        示例：
+        单线程创建索引，耗时20秒。
+        (mysql:8.0.31-cluster)select @@innodb_ddl_threads;
+        +----------------------+
+        | @@innodb_ddl_threads |
+        +----------------------+
+        |                    4 |
+        +----------------------+
+        1 row in set (0.00 sec)
+        
+        (mysql:8.0.31-cluster)set @@innodb_ddl_threads=1;
+        Query OK, 0 rows affected (0.00 sec)
+        
+        (mysql:8.0.31-cluster)create index idx_age_customers on customers(age);
+        Query OK, 0 rows affected (20.63 sec)
+        Records: 0  Duplicates: 0  Warnings: 0
+        
+
+        4个线程创建索引，耗时18秒。
+        (mysql:8.0.31-cluster)drop index idx_age_customers on customers;
+        Query OK, 0 rows affected (0.05 sec)
+        Records: 0  Duplicates: 0  Warnings: 0
+
+        (mysql:8.0.31-cluster)set @@innodb_ddl_buffer_size=500*1024*1024;
+        Query OK, 0 rows affected (0.00 sec)
+
+        (mysql:8.0.31-cluster)set @@innodb_ddl_threads=4;
+        Query OK, 0 rows affected (0.00 sec)
+
+        (mysql:8.0.31-cluster)create index idx_age_customers on customers(age);
+        Query OK, 0 rows affected (18.25 sec)
+        Records: 0  Duplicates: 0  Warnings: 0
+
+
+
+      </示例> 
+        <知识文档>
+          1. 创建索引官方文档： https://dev.mysql.com/doc/refman/8.0/en/create-index.html
+          2. 并行DDL 配置参数： https://dev.mysql.com/doc/refman/8.0/en/online-ddl-parallel-thread-configuration.html
+          3. DDL 线程总内存配置： https://dev.mysql.com/doc/refman/8.0/en/innodb-parameters.html#sysvar_innodb_ddl_buffer_size
+        </知识文档>
+      </原理说明>
+    </规则场景>
+  
+    <关联规则>SQLE00162、SQLE00148、SQLE00151、SQLE00164</关联规则>
+    <标签><分类 名称="操作对象"><分类值>索引</分类值></分类><分类 名称="SQL分类"><分类值>DDL</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

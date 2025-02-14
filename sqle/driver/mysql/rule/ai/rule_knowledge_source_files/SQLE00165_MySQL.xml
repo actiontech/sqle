@@ -1,0 +1,59 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00165</规则编号>
+    <级别>warn</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>并行处理与锁管理</规则种类>
+    <适用性>不适用当前数据库</适用性>
+    <规则简述>建议创建或重建索引使用在线方式</规则简述>
+    <规则描述>在大数据量表的情况下，创建索引时如果不使用在线方式，可能会导致长时间的锁表、以及阻塞更新类的业务操作。特别是7*24小时的业务，使用在线方式创建索引，可以在不停机的情况下完成索引创建，提高业务查询效率。</规则描述>
+    <规则场景>
+      <原理说明 数据库版本="MySQL 所有版本" 检查方式="不连库审核">
+        <示例>
+          示例表结构:
+          create database db_mysql;
+          use db_mysql;
+
+          CREATE TABLE customers(
+            id INT(11) NOT NULL, -- 序号
+            name VARCHAR(32) DEFAULT '',-- 姓名
+            sex TINYINT NOT NULL, -- 性别
+            city VARCHAR(32) NOT NULL, -- 所在城市
+            age SMALLINT(4) NOT NULL, -- 值类型
+            PRIMARY KEY (id) -- 主键
+          );
+
+
+          -- 插入模拟数据 500W 条。
+          set @@cte_max_recursion_depth=20000000;
+          insert into customers  
+          with recursive tmp (a,b,c,d,e) as (
+            select 1,'小王22222333',floor(rand()*2),'上海',ceil(rand()*30)+20 
+            union all 
+            select a+1,concat('小王',a),floor(rand()*2),'上海',ceil(rand()*20)+20 from tmp where a &lt; 5000000) 
+            select * from tmp;   
+            
+          原理说明：
+          1. MySQL 创建索引不支持 online 或者 concurrently 关键词，索引是否在线创建由MySQL内部判断。
+          2. 可以参考规则SQLE00059、SQLE00163：在线DDL 与 并行在线DDL。
+          3. MySQL 有自己的索引创建方式，都统一归类到在线DDL范畴里。
+             比如给表customers 创建基于字段age的索引:
+             create index idx_age_customers on customers(age) algorithm=inplace lock=none;
+
+             或者使用alter table 来建立同样的索引：
+             alter table customers add key idx_age_customers (age), algorithm=inplace,lock=none;
+          4. 还有一种方式是基于第三方工具来在线创建索引。
+             1. 比如Percona-tookit 里的pt-online-schema-change，使用触发器的方式来在线创建索引；
+             2. 又比如工具GH-OST 工具，使用模拟MySQL 从库的方式来在线创建索引。
+          
+
+        </示例>
+        <知识文档>
+          1. INNODB ONLINE DDL 官方文档： https://dev.mysql.com/doc/refman/8.0/en/innodb-online-ddl-limitations.html
+          2. CREATE INDEX 官方文档： https://dev.mysql.com/doc/refman/8.0/en/create-index.html
+        </知识文档>
+      </原理说明>
+    </规则场景>
+  
+    <关联规则>SQLE00163、SQLE00164</关联规则>
+  <标签><分类 名称="操作对象"><分类值>索引</分类值></分类><分类 名称="SQL分类"><分类值>DDL</分类值></分类><分类 名称="审核目的"><分类值>增强安全性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

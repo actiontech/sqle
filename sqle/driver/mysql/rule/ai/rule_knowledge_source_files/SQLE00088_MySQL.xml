@@ -1,0 +1,43 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+<规则编号>SQLE00088</规则编号>
+<级别>notice</级别>
+<数据库类型>MySQL</数据库类型>
+<规则种类>DML规范</规则种类>
+<规则简述>INSERT 语句必须指定COLUMN</规则简述>
+<规则描述>当表结构发生变更，INSERT请求不明确指定列名，会发生插入数据不匹配的情况；建议开启此规则，避免插入结果与业务预期不符</规则描述>
+<规则场景>
+  <场景 名称="插入表数据必须指定列" 数据库版本="MySQL 5.7、MySQL 8.0" 检查方式="不连库审核" 适用关键词="" 适用句型="INSERT">
+    <示例>
+      前置：
+      CREATE TABLE t1 (
+          id INT(11) NOT NULL,
+          name VARCHAR(32) DEFAULT NULL,
+          cid VARCHAR(20) NOT NULL DEFAULT '',
+          KEY idx_cid_temp (cid) USING BTREE
+      );
+
+      反例：
+      INSERT INTO t1() VALUES (1,'1','a');
+      INSERT INTO t1 SELECT 3,cid,name FROM t1;
+
+      反例说明：
+      在执行写入数据操作前，未指定列时，无法快速了解写入的内容是更新到对应的列上；执行操作后，发现本次操作不符合预期，提交错误信息并影响后续业务，需要对数据进行清理。
+      
+      正例：
+      INSERT INTO t1(id,name) VALUES (1,'a');
+      INSERT INTO t1(id,name,cid) SELECT id,name,cid from t1;
+
+      正例说明：
+      在执行写入数据操作前，指定列后，可快速检查数据是否更新到对应列上，避免插入结果与业务预期不符。
+    </示例>
+    <检查流程描述>
+      1. 对于 insert... 语句，检查INSERT 句子的更新表中是否指定列，如果未指定列，则报告违反规则。
+    </检查流程描述>
+    <知识文档>
+      1、INSERT语法：https://dev.mysql.com/doc/refman/5.7/en/insert.html
+    </知识文档>
+  </场景> 
+</规则场景> 
+<规则缺陷 />
+<标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>增强可维护性</分类值><分类值>保障正确性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

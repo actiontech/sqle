@@ -1,0 +1,110 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00051</规则编号>
+    <级别>warn</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>索引规范</规则种类>
+    <规则简述>禁止主键使用自增</规则简述>
+    <规则描述>后期维护相对不便，过于依赖数据库自增机制达到全局唯一，不易拆分，容易造成主键冲突</规则描述>
+    <规则场景>
+        <场景 名称="定义主键与自增属性" 适用句型="CREATE TABLE、ALTER TABLE" 数据库版本="MySQL 所有版本" 检查方式="不连库审核">
+            <示例>
+                原理说明：
+                1. 对于MySQL 单实例来讲，对表使用自增主键肯定是最优的；参考规则SQLE00052
+                2. 不推荐自增主键的使用主要是针对非单实例MySQL来讲。比如以下几个：
+                    1. 分布式数据库下： 后台每个节点都自己生成自增主键，如果不同的节点间自增主键不同步，最终会导致自增主键冲突或者读取序号不对问题。
+                    2. 单机后期扩展问题： 由于单机使用自增主键，后期需要扩展会多机器架构、分布式数据库时，自增主键的扩展也会变的很复杂。
+                    3. 数据迁移问题： 如果没有正确处理迁移前后自增主键，也会导致乱序或者主键冲突等问题。
+                3. 对于业务数据来讲，使用自增主键则失去了业务本身主键的可读性，建议使用跟业务相关的主键。
+
+                示例：
+                create table customers(
+                    id int auto_increment primary key,
+                    name varchar(32) default '' not null, -- 序号
+                    sex int default 0, -- 性别
+                    age int default 0 -- 年龄 
+                )AUTO_INCREMENT=11;
+                ALTER TABLE customers ADD primary key(id) auto_increment;
+                ALTER TABLE t2 MODIFY id int not null auto_increment primary key;
+
+                示例说明：
+                1. 假设数据库实例A已经有10条记录。
+                    insert into customers values (1,'小季',0,20);
+                    insert into customers values (2,'小李',0,30);
+                    insert into customers values (3,'小徐',0,40);
+                    insert into customers values (4,'小张',0,60);
+                    insert into customers values (5,'小菜',0,50);
+                    insert into customers values (6,'小怪',0,29);
+                    insert into customers values (7,'小王',0,23);
+                    insert into customers values (8,'小强',0,40);
+                    insert into customers values (9,'小非',0,52);
+                    insert into customers values (10,'小海',0,37);
+                2. 后续需要拆分数据库实例A的数据到三台数据库实例B、C、D；数据库和应用间部署中间件，中间件里处理后台数据的物理分布。
+                3. 目前10条数据，无法有效的平滑拆分到后台三个新节点上。
+                4. 如果表的主键不是自增主键，而是预先按照后台3个节点拆分的预期分布，那就非常好拆分了；而且主键是中间件或者应用来生成的，可以保证全局唯一性。
+                    比如如下示例，可以按照主键最末一个数字来拆分；
+                    1 拆分到 实例B； 2 拆分到实例C；3 拆分到实例D。
+
+                    create table customers(
+                        id int  primary key,
+                        name varchar(32) default '' not null, -- 序号
+                        sex int default 0, -- 性别
+                        age int default 0 -- 年龄 
+                    );
+
+                    -- 单实例数据库A，已有数据
+                    insert into customers values (100000001,'小季',0,20);
+                    insert into customers values (100000002,'小李',0,30);
+                    insert into customers values (100000003,'小徐',0,40);
+                    insert into customers values (100000011,'小张',0,60);
+                    insert into customers values (100000012,'小菜',0,50);
+                    insert into customers values (100000013,'小怪',0,29);
+                    insert into customers values (100000021,'小王',0,23);
+                    insert into customers values (100000022,'小强',0,40);
+                    insert into customers values (100000023,'小非',0,52);
+                    insert into customers values (100000031,'小海',0,37);
+     
+
+                示例验证：由于验证需要搭建一整套新架构，省略；原理部分已经在示例说明里讲到了。
+
+                结论：
+                1. 对于单机数据库来讲，且不考虑主键需要业务属性的要求，单从性能上则推荐使用自增主键；
+                2. 对于非单机数据库或者期望主键具备业务属性来讲，则不推荐使用自增主键，由应用或者中间件等来生成全局主键，保证全局唯一性。
+                        
+            </示例>
+            <检查流程描述>
+            1. 对于"CREATE TABLE..."语句，针对一个主键的字段，若定义为 AUTO_INCREMENT，则报告违反规则。
+            2. 对于"ALTER TABLE..."语句，当前操作的字段是主键即包含PRIMARY KEY，若定义为 AUTO_INCREMENT，则报告违反规则。
+            </检查流程描述>
+            <知识文档>
+              1. CREATE TABLE 官方文档： https://dev.mysql.com/doc/refman/8.3/en/create-table.html
+              2. ALTER TABLE 官方文档： https://dev.mysql.com/doc/refman/8.3/en/alter-table.html
+            </知识文档>
+        </场景>
+        <场景 名称="变更索引字段为主键" 适用句型="ALTER TABLE" 数据库版本="MySQL 所有版本" 检查方式="连库审核">
+            <示例>
+                原理说明：
+                与场景【定义主键与自增属性】一致。
+
+                前置：
+                create table customers(
+                    id int not null auto_increment,
+                    name varchar(32) default '' not null, -- 序号
+                    sex int default 0, -- 性别
+                    age int default 0, -- 年龄 
+                    index idx_customers_id(id)
+                );
+
+                示例：
+                ALTER TABLE customers ADD primary key(id);
+                
+            </示例>
+            <检查流程描述>
+            1. 对于"ALTER TABLE..."语句，当前操作的字段是主键，登录数据库，获取操作表的表结构，若当前操作的字段属性包含AUTO_INCREMENT，则报告违反规则。
+            </检查流程描述>
+            <知识文档>
+              1. ALTER TABLE 官方文档： https://dev.mysql.com/doc/refman/8.3/en/alter-table.html
+            </知识文档>
+        </场景>
+    </规则场景>
+<标签><分类 名称="操作对象"><分类值>表</分类值></分类><分类 名称="SQL分类"><分类值>完整性约束</分类值></分类><分类 名称="审核目的"><分类值>增强可维护性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值><分类值>连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

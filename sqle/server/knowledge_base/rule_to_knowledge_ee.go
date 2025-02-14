@@ -4,7 +4,7 @@
 package knowledge_base
 
 import (
-	"fmt"
+	"strings"
 
 	"github.com/actiontech/sqle/sqle/model"
 	"golang.org/x/text/language"
@@ -13,10 +13,10 @@ import (
 /*
 	该文件的主要目的是为了统一管理和维护规则到知识的转换逻辑，避免重复代码和不一致的转换规则。
 	该文件的结构如下：
-		1. RuleInfoProvider 接口定义了获取规则信息的通用行为，包括获取规则名称、描述、内容等。
-		2. BaseRuleWrapper 是 RuleInfoProvider 接口的基础实现，提供了获取规则名称、描述、内容等的通用逻辑。
-		3. RuleWrapper 是 RuleInfoProvider 接口的实现，用于将 model.Rule 转换为 RuleInfoProvider。
-		4. CustomRuleWrapper 是 RuleInfoProvider 接口的实现，用于将 model.CustomRule 转换为 RuleInfoProvider。
+		1. KnowledgeInfoProvider 接口定义了获取规则信息的通用行为，包括获取规则名称、描述、内容等。
+		2. BaseRuleWrapper 是 KnowledgeInfoProvider 接口的基础实现，提供了获取规则名称、描述、内容等的通用逻辑。
+		3. RuleWrapper 是 KnowledgeInfoProvider 接口的实现，用于将 model.Rule 转换为 RuleInfoProvider。
+		4. CustomRuleWrapper 是 KnowledgeInfoProvider 接口的实现，用于将 model.CustomRule 转换为 RuleInfoProvider。
 		5. getDefaultRuleKnowledgeWithTags 函数用于将默认规则转换为知识。
 		6. getCustomRuleKnowledgeWithTags 函数用于将自定义规则转换为知识。
 */
@@ -34,7 +34,7 @@ type BaseRuleWrapper struct {
 }
 
 // ToModelKnowledge 是模板方法，包含通用逻辑
-func (brw *BaseRuleWrapper) ToModelKnowledge(rule RuleInfoProvider) ([]*KnowledgeWithFilter, error) {
+func (brw *BaseRuleWrapper) ToModelKnowledge(rule KnowledgeInfoProvider) ([]*KnowledgeWithFilter, error) {
 	var result []*KnowledgeWithFilter
 
 	for langTag, lang := range model.GetTagMapPredefineLanguage() {
@@ -42,32 +42,30 @@ func (brw *BaseRuleWrapper) ToModelKnowledge(rule RuleInfoProvider) ([]*Knowledg
 		tagMap := make(map[model.TypeTag]*model.Tag)
 
 		// 获取必需的基础标签
-		knowledgeTag, i18nTag, dbTag, err := rule.GetRequiredTags(brw.predefineTags, langTag)
+		requiredTags, err := rule.GetRequiredTags(brw.predefineTags, langTag)
 		if err != nil {
 			return nil, err
 		}
 
 		// 添加必需标签
-		tagMap[model.PredefineTagKnowledgeBase] = knowledgeTag
-		tagMap[model.TypeTag(langTag)] = i18nTag
-		tagMap[model.TypeTag(rule.GetDBType())] = dbTag
+		for _, tag := range requiredTags {
+			tagMap[tag.Name] = tag
+		}
 
 		// 额外的规则特定标签
 		rule.AddExtraTags(tagMap, brw.predefineTags)
 
 		// 创建知识对象
 		knowledge := &model.Knowledge{
-			Title:       rule.GetRuleName(),
-			Description: rule.GetRuleDescription(lang),
-			Content:     rule.GetRuleContent(lang),
+			RuleName:    rule.GetRuleName(),
+			Title:       rule.GetTitle(lang),
+			Description: rule.GetDescription(lang),
+			Content:     rule.GetContent(lang),
 		}
-
-		// 必需的过滤标签
-		filterTags := []*model.Tag{knowledgeTag, i18nTag, dbTag}
 
 		result = append(result, &KnowledgeWithFilter{
 			knowledge:  knowledge,
-			filterTags: filterTags,
+			filterTags: requiredTags, // 必须的基础标签即为过滤标签，用于过滤出唯一的知识
 			tagMap:     tagMap,
 		})
 	}
@@ -75,52 +73,59 @@ func (brw *BaseRuleWrapper) ToModelKnowledge(rule RuleInfoProvider) ([]*Knowledg
 	return result, nil
 }
 
-// RuleInfoProvider 作为策略接口，提供不同规则的获取方式
-type RuleInfoProvider interface {
+// KnowledgeInfoProvider 作为策略接口，提供不同规则的获取方式
+type KnowledgeInfoProvider interface {
 	GetRuleName() string
-	GetRuleDescription(lang language.Tag) string
+	GetTitle(lang language.Tag) string
+	GetDescription(lang language.Tag) string
 	GetDBType() model.TypeTag
-	GetRuleContent(lang language.Tag) string
-	GetRequiredTags(predefineTags map[model.TypeTag]*model.Tag, langTag model.TypeTag) (*model.Tag, *model.Tag, *model.Tag, error)
+	GetContent(lang language.Tag) string
+	GetRequiredTags(predefineTags map[model.TypeTag]*model.Tag, langTag model.TypeTag) ([]*model.Tag, error)
 	AddExtraTags(tagMap map[model.TypeTag]*model.Tag, predefineTags map[model.TypeTag]*model.Tag)
 }
 
-// RuleWrapper 实现 RuleInfoProvider
+// RuleWrapper 实现 KnowledgeInfoProvider
 type RuleWrapper struct {
 	BaseRuleWrapper
 	rule *model.Rule
 }
 
 // RuleWrapper 具体实现方法
+func (rw *RuleWrapper) GetTitle(lang language.Tag) string {
+	return rw.rule.I18nRuleInfo.GetRuleInfoByLangTag(lang).Desc
+}
+
 func (rw *RuleWrapper) GetRuleName() string {
 	return rw.rule.Name
 }
 
-func (rw *RuleWrapper) GetRuleDescription(lang language.Tag) string {
-	return rw.rule.I18nRuleInfo.GetRuleInfoByLangTag(lang).Desc
+func (rw *RuleWrapper) GetDescription(lang language.Tag) string {
+	return rw.rule.I18nRuleInfo.GetRuleInfoByLangTag(lang).Annotation
 }
 
 func (rw *RuleWrapper) GetDBType() model.TypeTag {
 	return model.TypeTag(rw.rule.DBType)
 }
 
-func (rw *RuleWrapper) GetRuleContent(lang language.Tag) string {
+func (rw *RuleWrapper) GetContent(lang language.Tag) string {
 	if rw.rule.Knowledge == nil {
 		return ""
 	}
 	return rw.rule.Knowledge.I18nContent.GetStrInLang(lang)
 }
 
-func (rw *RuleWrapper) GetRequiredTags(predefineTags map[model.TypeTag]*model.Tag, langTag model.TypeTag) (*model.Tag, *model.Tag, *model.Tag, error) {
+func (rw *RuleWrapper) GetRequiredTags(predefineTags map[model.TypeTag]*model.Tag, langTag model.TypeTag) ([]*model.Tag, error) {
 	knowledgeTag := predefineTags[model.PredefineTagKnowledgeBase]
+
+	versionTag := predefineTags[model.PredefineTagV1]
+	// TODO 此处为了判断新的规则，临时写死SQLE前缀，后续需要优化
+	if strings.HasPrefix(rw.rule.Name, "SQLE") {
+		versionTag = predefineTags[model.PredefineTagV2]
+	}
 	i18nTag := predefineTags[langTag]
 	dbTag := predefineTags[model.TypeTag(rw.rule.DBType)]
 
-	if knowledgeTag == nil || i18nTag == nil || dbTag == nil {
-		return nil, nil, nil, fmt.Errorf("missing required tags for rule %s", rw.rule.Name)
-	}
-
-	return knowledgeTag, i18nTag, dbTag, nil
+	return []*model.Tag{knowledgeTag, i18nTag, dbTag, versionTag}, nil
 }
 
 func (rw *RuleWrapper) AddExtraTags(tagMap map[model.TypeTag]*model.Tag, predefineTags map[model.TypeTag]*model.Tag) {
@@ -133,18 +138,18 @@ func (rw *RuleWrapper) AddExtraTags(tagMap map[model.TypeTag]*model.Tag, predefi
 	}
 }
 
-// CustomRuleWrapper 实现 RuleInfoProvider
+// CustomRuleWrapper 实现 KnowledgeInfoProvider
 type CustomRuleWrapper struct {
 	BaseRuleWrapper
 	rule *model.CustomRule
 }
 
 // CustomRuleWrapper 具体实现方法
-func (crw *CustomRuleWrapper) GetRuleName() string {
-	return crw.rule.RuleId
+func (crw *CustomRuleWrapper) GetTitle(lang language.Tag) string {
+	return crw.rule.Annotation
 }
 
-func (crw *CustomRuleWrapper) GetRuleDescription(lang language.Tag) string {
+func (crw *CustomRuleWrapper) GetDescription(lang language.Tag) string {
 	return crw.rule.Desc
 }
 
@@ -152,23 +157,24 @@ func (crw *CustomRuleWrapper) GetDBType() model.TypeTag {
 	return model.TypeTag(crw.rule.DBType)
 }
 
-func (crw *CustomRuleWrapper) GetRuleContent(lang language.Tag) string {
+func (crw *CustomRuleWrapper) GetRuleName() string {
+	return crw.rule.RuleId
+}
+
+func (crw *CustomRuleWrapper) GetContent(lang language.Tag) string {
 	if crw.rule.Knowledge == nil {
 		return ""
 	}
 	return crw.rule.Knowledge.I18nContent.GetStrInLang(lang)
 }
 
-func (crw *CustomRuleWrapper) GetRequiredTags(predefineTags map[model.TypeTag]*model.Tag, langTag model.TypeTag) (*model.Tag, *model.Tag, *model.Tag, error) {
+func (crw *CustomRuleWrapper) GetRequiredTags(predefineTags map[model.TypeTag]*model.Tag, langTag model.TypeTag) ([]*model.Tag, error) {
 	knowledgeTag := predefineTags[model.PredefineTagCustomizeKnowledgeBase]
 	i18nTag := predefineTags[langTag]
 	dbTag := predefineTags[model.TypeTag(crw.rule.DBType)]
+	versionTag := predefineTags[model.PredefineTagV1]
 
-	if knowledgeTag == nil || i18nTag == nil || dbTag == nil {
-		return nil, nil, nil, fmt.Errorf("missing required tags for rule %s", crw.rule.Annotation)
-	}
-
-	return knowledgeTag, i18nTag, dbTag, nil
+	return []*model.Tag{knowledgeTag, i18nTag, dbTag, versionTag}, nil
 }
 
 func (crw *CustomRuleWrapper) AddExtraTags(tagMap map[model.TypeTag]*model.Tag, predefineTags map[model.TypeTag]*model.Tag) {
@@ -176,7 +182,7 @@ func (crw *CustomRuleWrapper) AddExtraTags(tagMap map[model.TypeTag]*model.Tag, 
 }
 
 // 统一的知识获取方法
-func getKnowledgeWithTags(rule RuleInfoProvider, predefineTags map[model.TypeTag]*model.Tag) ([]*KnowledgeWithFilter, error) {
+func getKnowledgeWithTags(rule KnowledgeInfoProvider, predefineTags map[model.TypeTag]*model.Tag) ([]*KnowledgeWithFilter, error) {
 	baseWrapper := &BaseRuleWrapper{predefineTags: predefineTags}
 	return baseWrapper.ToModelKnowledge(rule)
 }

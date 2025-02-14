@@ -1,0 +1,201 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00005</规则编号>
+    <级别>warn</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>索引规范</规则种类>
+    <规则变量>
+        <变量 name="复合索引内字段个数">5</变量>
+    </规则变量>     
+    <规则简述>避免复合索引中包含过多字段</规则简述>
+    <规则描述>在设计复合索引过程中，每增加一个索引字段，都会使索引的大小线性增加，从而占用更多的磁盘空间，且增加索引维护的开销。尤其是在数据频繁变动的环境中，这会显著增加数据库的维护压力。</规则描述>
+    <规则场景>
+        <原理说明 关键词="CREATE TABLE、ALTER TABLE、CREATE INDEX" 数据库版本="MySQL 所有版本" 检查方式="不连库审核">
+            <示例>
+                前置:
+                create database db_mysql;
+                use db_mysql;
+
+                create table customers(
+                    id int auto_increment primary key,
+                    name varchar(32) default '' not null, -- 序号
+                    sex int default 0, -- 性别
+                    age int default 0, -- 年龄
+                    mark1 varchar(20) not null, -- 备注1
+                    mark2 varchar(30) not null, -- 备注2
+                    mark3 varchar(40) not null, -- 备注3
+                    mark4 varchar(50) not null, -- 备注4
+                    mark5 varchar(100) not null -- 备注5
+                );
+
+                -- 测试数据存储过程，验证时调用：
+                DELIMITER $$
+
+                USE `db_mysql`$$
+                
+                DROP PROCEDURE IF EXISTS `sp_insert_customers`$$
+                
+                CREATE DEFINER=`admin`@`%` PROCEDURE `sp_insert_customers`()
+                BEGIN
+                    TRUNCATE TABLE customers;
+                    INSERT INTO customers(NAME,sex,age,mark1,mark2,mark3,mark4,mark5)
+                    VALUES ('小王',1,39,'城市：上海','地址:上海市闵行区','地址:actionsky','actionsky','actionsky');
+                    INSERT INTO customers(NAME,sex,age,mark1,mark2,mark3,mark4,mark5)
+                    SELECT CONCAT('小王',CEIL(RAND()*1000000)),FLOOR(RAND()*2),CEIL(RAND()*20)+30,'城市：上海','地址:上海市闵行区',RPAD('actionsky',20,'8'),RPAD('actionsky',20,'8'),RPAD('actionsky',20,'8')
+                    FROM customers a JOIN customers b;
+                    INSERT INTO customers(NAME,sex,age,mark1,mark2,mark3,mark4,mark5)
+                    SELECT CONCAT('小王',CEIL(RAND()*1000000)),FLOOR(RAND()*2),CEIL(RAND()*20)+30,'城市：上海','地址:上海市闵行区',RPAD('actionsky',20,'8'),RPAD('actionsky',20,'8'),RPAD('actionsky',20,'8')
+                    FROM customers a JOIN customers b;
+                    INSERT INTO customers(NAME,sex,age,mark1,mark2,mark3,mark4,mark5)
+                    SELECT CONCAT('小王',CEIL(RAND()*1000000)),FLOOR(RAND()*2),CEIL(RAND()*20)+30,'城市：上海','地址:上海市闵行区',RPAD('actionsky',20,'8'),RPAD('actionsky',20,'8'),RPAD('actionsky',20,'8')
+                    FROM customers a JOIN customers b;
+                    INSERT INTO customers(NAME,sex,age,mark1,mark2,mark3,mark4,mark5)
+                    SELECT CONCAT('小王',CEIL(RAND()*1000000)),FLOOR(RAND()*2),CEIL(RAND()*20)+30,'城市：上海','地址:上海市闵行区',RPAD('actionsky',20,'8'),RPAD('actionsky',20,'8'),RPAD('actionsky',20,'8')
+                    FROM customers a JOIN customers b;
+                    INSERT INTO customers(NAME,sex,age,mark1,mark2,mark3,mark4,mark5)
+                    SELECT CONCAT('小王',CEIL(RAND()*1000000)),FLOOR(RAND()*2),CEIL(RAND()*20)+30,'城市：上海','地址:上海市闵行区',RPAD('actionsky',20,'8'),RPAD('actionsky',20,'8'),RPAD('actionsky',20,'8')
+                    FROM customers a JOIN customers b LIMIT 2000000;
+                    ANALYZE TABLE customers;
+                END$$
+                
+                DELIMITER ;
+
+                -- 查询索引占用磁盘空间大小 SQL，验证时调用：
+                SELECT TRUNCATE(other_index_size*16/1024,2) 'INDEX MB' 
+                FROM information_schema.innodb_tablestats 
+                WHERE NAME='db_mysql/customers';
+
+
+                原理说明：
+                1. 复合索引的目的是为了提升复合字段匹配的速度。 
+                2. 除了要满足复合索引的最左列选择度高外，还要想办法减少其中包含的列个数，比如 3 个字段列。
+                3. 列数不能无限制增加，列数越多，占用磁盘空间越大；每次对表更新时就需要消耗更多的资源来处理索引的数据分布；
+                4. 复合索引一般用于二级索引，也可以用于主键。比如：
+                create table table1(c1 int,c2 int,c3 int,c4 int, primary key (c1,c2,c3));
+
+                示例：
+                -- 创建两个索引：
+                -- 索引1：
+                create index idx_com1 on customers(name,age,mark1);
+                -- 或者使用
+                alter table customers add key idx_com1 (name,age,mark1);
+                alter table customers add index idx_com1 (name,age,mark1);
+            
+                -- 索引2：
+                create index idx_com2 on customers(name,age,mark1,mark4,mark5);
+                -- 或者使用
+                alter table customers add key idx_com2 (name,age,mark1,mark4,mark5);
+                alter table customers add index idx_com2 (name,age,mark1,mark4,mark5);
+
+                示例说明：
+                创建完索引，分两个步骤来验证：
+                第一，验证两个索引对表更新的性能影响。（也就是判断是否会增加索引维护的开销；插入、删除、更新都属于维护索引导致性能低下的示例，这里验证一个例子即可。）
+                第二，验证两个索引的大小比对。（判断是否对磁盘空间的占用增加）
+
+                示例验证：
+                -- 创建索引1：
+                (mysql:8.3.0:db_mysql)create index idx_com1 on customers(name,age,mark1);
+                Query OK, 0 rows affected (0.02 sec)
+                Records: 0  Duplicates: 0  Warnings: 0
+
+                -- 执行插入数据的存储过程： 时间1分钟16秒多。
+                (mysql:8.3.0:db_mysql)call sp_insert_customers;
+                +--------------------+---------+----------+----------+
+                | Table              | Op      | Msg_type | Msg_text |
+                +--------------------+---------+----------+----------+
+                | db_mysql.customers | analyze | status   | OK       |
+                +--------------------+---------+----------+----------+
+                1 row in set (1 min 16.39 sec)
+
+                Query OK, 0 rows affected (1 min 16.39 sec)
+
+                -- 查看表记录数：200W条
+                (mysql:8.3.0:db_mysql)select count(*) from customers;
+                +----------+
+                | count(*) |
+                +----------+
+                |  2001806 |
+                +----------+
+                1 row in set (0.96 sec)
+
+
+                -- 查看索引1的大小： 143 MB
+                (mysql:8.3.0:db_mysql) SELECT TRUNCATE(other_index_size*16/1024,2) 'INDEX MB'  FROM information_schema.innodb_tablestats  WHERE NAME='db_mysql/customers';
+                +----------+
+                | INDEX MB |
+                +----------+
+                |   143.00 |
+                +----------+
+                1 row in set (0.01 sec)
+
+
+                -- 创建索引2：
+                -- 先删除索引1，再创建索引2
+                (mysql:8.3.0:db_mysql)drop index idx_com1 on customers;
+                Query OK, 0 rows affected (0.03 sec)
+                Records: 0  Duplicates: 0  Warnings: 0
+                
+                -- 清空表数据
+                (mysql:8.3.0:db_mysql)truncate table customers;
+                Query OK, 0 rows affected (0.09 sec)
+
+                -- 创建索引2
+                (mysql:8.3.0:db_mysql)create index idx_com2 on customers(name,age,mark1,mark4,mark5);
+                Query OK, 0 rows affected (0.02 sec)
+                Records: 0  Duplicates: 0  Warnings: 0
+                
+
+                -- 执行插入数据的存储过程：同样插入200W条记录，时间接近8分钟。
+                (mysql:8.3.0:db_mysql)call sp_insert_customers;
+                +--------------------+---------+----------+----------+
+                | Table              | Op      | Msg_type | Msg_text |
+                +--------------------+---------+----------+----------+
+                | db_mysql.customers | analyze | status   | OK       |
+                +--------------------+---------+----------+----------+
+                1 row in set (7 min 58.28 sec)
+
+                Query OK, 0 rows affected (7 min 58.28 sec)
+
+                -- 查看表记录数：200W条
+                (mysql:8.3.0:db_mysql)select count(*) from customers;
+                +----------+
+                | count(*) |
+                +----------+
+                |  2001806 |
+                +----------+
+                1 row in set (1.09 sec)
+
+
+                -- 查询索引2的大小： 274 MB， 比索引1大多了。
+                (mysql:8.3.0:db_mysql) SELECT TRUNCATE(other_index_size*16/1024,2) 'INDEX MB'  FROM information_schema.innodb_tablestats  WHERE NAME='db_mysql/customers';
+                +----------+
+                | INDEX MB |
+                +----------+
+                |   274.00 |
+                +----------+
+                1 row in set (0.00 sec)
+
+                结论：
+                1. 对于复合索引来讲，其中包含的列数越多，占用磁盘空间越大；对基表的更新性能就越差；进而消耗更多的资源，影响数据库整体的TPS。
+                2. 根据实际业务的查询模式，决定哪些字段组合是最常用的。避免将很少用于查询条件的字段加入索引。
+                3. 需要根据实际情况来决定复合索引中的列个数。 一般来讲，一个复合索引里包含3个字段列会比较合适。
+
+            </示例>
+            <检查流程描述>
+                1. 对于"CREATE TABLE"语句，
+                    1. 定义一个集合
+                    2. 将语句中的 key 或者 index 关键词后的括号里的字段放到集合中
+                    3. 获取集合中字段数目，应该小于等于规则变量值
+                    4. 进行检查，如果集合中的字段数目大于规则变量值，则报告违反规则
+                2. 对于 ALTER TABLE语句，进行与上述相同的检查。
+                3. 对于 CREATE INDEX 语句，进行与上述相同的检查。
+            </检查流程描述>
+            <知识文档>
+              1. CREATE TABLE 官方文档： https://dev.mysql.com/doc/refman/8.4/en/create-table.html
+              2. ALTER TABLE  官方文档： https://dev.mysql.com/doc/refman/8.4/en/alter-table.html
+              3. CREATE INDEX 官方文档： https://dev.mysql.com/doc/refman/8.4/en/create-index.html
+            </知识文档>
+        </原理说明>
+    </规则场景>
+    <标签><分类 名称="操作对象"><分类值>索引</分类值></分类><分类 名称="SQL分类"><分类值>DDL</分类值></分类><分类 名称="审核目的"><分类值>增强可维护性</分类值><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况>
+</Rule>

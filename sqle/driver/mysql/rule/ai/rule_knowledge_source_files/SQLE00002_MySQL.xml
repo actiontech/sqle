@@ -1,0 +1,91 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+  <规则编号>SQLE00002</规则编号>
+  <级别>
+    <当前级别>error</当前级别>
+    <新级别>warn</新级别>
+  </级别>
+  <数据库类型>MySQL</数据库类型>
+  <规则种类>最佳实践</规则种类>
+  <规则简述>SQL绑定的变量个数不建议超过阈值</规则简述>
+  <规则变量>
+    <变量 name="绑定变量阈值" type="int">100</变量>
+  </规则变量>
+  <规则描述>过度使用绑定变量会增加查询的复杂度，从而降低查询性能。同时还会增加维护成本。SQLE设置MySQL绑定变量个数最大阈值：100</规则描述>
+  <规则场景>
+    <原理说明 名称="SQL语句占位符数量限制" 数据库版本="MySQL 5.7.25" 检查方式="不连库审核" 适用句型="SELECT、INSERT...SELECT、UPDATE、DELETE、UNION ALL、WITH">
+      <示例>
+      前置：
+      --表结构
+      CREATE TABLE test_table (id INT PRIMARY KEY, col1 INT, col2 INT, ..., col101 INT);
+
+      -- 插入一些测试数据
+      INSERT INTO test_table (id, col1, col2, ..., col101) VALUES (1, 1, 2, ..., 101);
+
+      原理说明：
+      在使用驱动程序连接MySQL执行SQL时，通常会用到prepareStatement方法来处理SQL：将待执行的相同的SQL语句抽象为一个模板，以达到减少解析次数，提高执行效率，增加SQL安全性的目的。
+
+      在SQL模板中，使用占位符（如符号：?）表示具体的数据。但占位符过多，会影响SQL执行效率；超过MySQL支持的最大阈值时，SQL语句将报错：MySQL 1390 Prepared statement contains too many placeholders。这个最大阈值在MySQL中为：65535。
+
+      过度使用绑定变量会带来以下问题：
+      1. 增加查询复杂度：每个绑定变量都需要在运行时进行解析和替换，大量的绑定变量会增加这个过程的复杂度。
+      2. 降低查询性能：过多的绑定变量会增加SQL语句的解析时间和执行时间。
+      3. 增加维护成本：含有大量绑定变量的SQL语句通常较难阅读和维护。
+      4. 可能触发MySQL的限制：虽然MySQL的最大限制是65535个占位符，但在实际使用中，远远达不到这个数量就可能遇到性能问题。
+
+      示例：
+      prepare stmt from "SELECT * FROM test_table WHERE col1 = ? AND col2 = ? AND col3 = ? ... AND col101 = ?";
+      -- 假设这里有101个占位符
+
+      示例验证：
+      -- 准备带有大量占位符的语句
+      SET @sql = CONCAT('SELECT * FROM test_table WHERE ', 
+                        CONCAT_WS(' AND ', 
+                                  CONCAT('col1 = ?'),
+                                  CONCAT('col2 = ?'),
+                                  ...,
+                                  CONCAT('col101 = ?')
+                        ));
+
+      PREPARE stmt FROM @sql;
+
+      -- 设置大量变量
+      SET @var1 = 1, @var2 = 2, ..., @var101 = 101;
+
+      -- 执行语句
+      EXECUTE stmt USING @var1, @var2, ..., @var101;
+
+      -- 清理
+      DEALLOCATE PREPARE stmt;
+      DROP TABLE test_table;
+
+      结论：
+      过度使用绑定变量会增加查询的复杂度，从而降低查询性能。同时还会增加维护成本。因此，建议限制SQL语句中绑定变量的数量，以保持查询的简洁性和可维护性。
+      </示例>
+      <检查流程描述>
+      1. 对于所有DML语句（包括SELECT、INSERT...SELECT、UPDATE、DELETE、UNION ALL、WITH）的SQL文本，执行以下检查：
+        1. 统计SQL语句中占位符（如"?"）的数量。
+        2. 将统计得到的占位符数量与规则配置的阈值（默认为100）进行比较。
+        3. 如果占位符数量超过配置的阈值，则报告违反规则。
+      </检查流程描述>
+      <知识文档>
+      1. https://stackoverflow.com/questions/4922345/how-many-bind-variables-can-i-use-in-a-sql-query-in-mysql-5
+      2. https://dev.mysql.com/doc/mysql-errors/5.7/en/server-error-reference.html
+      </知识文档>
+    </原理说明>
+  </规则场景>
+  <规则缺陷 />
+  <标签>
+    <分类 名称="操作对象">
+      <分类值>业务数据</分类值>
+    </分类>
+    <分类 名称="SQL分类">
+      <分类值>DML</分类值>
+    </分类>
+    <分类 名称="审核目的">
+      <分类值>增强可维护性</分类值>
+      <分类值>发现性能问题</分类值>
+    </分类>
+  <分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签>
+  <完成情况>完成</完成情况>
+</Rule>

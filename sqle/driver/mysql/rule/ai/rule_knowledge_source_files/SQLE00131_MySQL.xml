@@ -1,0 +1,169 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00131</规则编号>
+    <级别>warn</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>排序和分组效率</规则种类>
+    <规则简述>避免使用 ORDER BY RAND() 进行随机排序</规则简述>
+    <规则描述>使用 ORDER BY RAND() 会导致数据库生成临时表并进行完整的表扫描和排序，这在处理大数据量时会显著增加查询时间和服务器负载。建议采用更高效的随机数据检索方法，如利用主键或其他索引实现快速随机访问。</规则描述>
+    <规则场景>
+      <场景 名称="随机查询" 数据库版本="MySQL 8.0" 检查方式="不连库审核" 适用关键词="ORDER BY">
+        <示例>
+              示例表结构:
+              create database db_mysql;
+              use db_mysql;
+    
+              CREATE TABLE customers(
+                id INT(11) NOT NULL, -- 序号
+                name VARCHAR(32) DEFAULT '',-- 姓名
+                sex TINYINT NOT NULL, -- 性别
+                city VARCHAR(32) NOT NULL, -- 所在城市
+                age SMALLINT(4) NOT NULL, -- 值类型
+                PRIMARY KEY (id) -- 主键
+              );
+  
+    
+              -- 插入模拟数据 500W 条。
+              set @@cte_max_recursion_depth=20000000;
+              insert into customers  
+              with recursive tmp (a,b,c,d,e) as (
+                select 1,'小王22222333',floor(rand()*2),'上海',ceil(rand()*30)+20 
+                union all 
+                select a+1,concat('小王',a),floor(rand()*2),'上海',ceil(rand()*20)+20 from tmp where a &lt; 5000000) 
+                select * from tmp;
+
+          反例：
+          select * from customers order by rand() limit 5;
+          反例说明：
+          1. 随机检索出表的5行，可以使用order by rand()。
+          2. 但是order by rand() 根据随机数来排序，而随机数每行都要计算一次，完后收集排序，效率非常差。
+
+          反例验证： 使用order by rand() 随机检索5条记录，时间接近5秒，性能太差了。
+          (mysql:8.0.31-cluster)select * from customers order by rand() limit 5;
+            +---------+---------------+-----+--------+-----+
+            | id      | name          | sex | city   | age |
+            +---------+---------------+-----+--------+-----+
+            | 3018131 | 小王3018130   |   0 | 上海   |  32 |
+            | 1443601 | 小王1443600   |   0 | 上海   |  38 |
+            | 4181075 | 小王4181074   |   1 | 上海   |  32 |
+            | 2343498 | 小王2343497   |   1 | 上海   |  38 |
+            | 4114760 | 小王4114759   |   1 | 上海   |  21 |
+            +---------+---------------+-----+--------+-----+
+            5 rows in set (4.92 sec)
+         
+          执行计划：全表扫，并且使用了临时表和文件排序
+          (mysql:8.0.31-cluster)explain select * from customers order by rand() limit 5\G
+          *************************** 1. row ***************************
+                    id: 1
+            select_type: SIMPLE
+                  table: customers
+            partitions: NULL
+                  type: ALL
+          possible_keys: NULL
+                    key: NULL
+                key_len: NULL
+                    ref: NULL
+                  rows: 4988304
+              filtered: 100.00
+                  Extra: Using temporary; Using filesort
+          1 row in set, 1 warning (0.00 sec)
+
+
+
+          正例： MySQL 8.0 以上版本使用WITH 表达式
+          with tmp(a) as (
+            select ceil(5000000*rand()) 
+            union all 
+            select ceil(5000000*rand())
+            union all 
+            select ceil(5000000*rand())
+            union all 
+            select ceil(5000000*rand())
+            union all 
+            select ceil(5000000*rand())
+            ) 
+          select b.* from tmp a join customers b on a.a = b.id;
+
+          或者MySQL 8.0 以下版本使用非WITH 表达式，效果一致。
+          select * from (
+            select ceil(5000000*rand()) a
+            union all 
+            select ceil(5000000*rand())
+            union all 
+            select ceil(5000000*rand())
+            union all 
+            select ceil(5000000*rand())
+            union all 
+            select ceil(5000000*rand())
+            )
+            a join customers b on a.a = b.id;
+
+
+          正例说明：
+          1. 避免order by rand()，使用主表和基于主键的随机通用表达式来检索随机数。
+          2. 性能远超 order by rand()，避免了随机数排序。
+          正例验证：结果秒出。
+          (mysql:8.0.31-cluster)with tmp(a) as (
+                -&gt; select ceil(5000000*rand()) 
+                -&gt; union all 
+                -&gt; select ceil(5000000*rand())
+                -&gt; union all 
+                -&gt; select ceil(5000000*rand())
+                -&gt; union all 
+                -&gt; select ceil(5000000*rand())
+                -&gt; union all 
+                -&gt; select ceil(5000000*rand())
+                -&gt; ) select b.* from tmp a join customers b on a.a = b.id;
+            +---------+---------------+-----+--------+-----+
+            | id      | name          | sex | city   | age |
+            +---------+---------------+-----+--------+-----+
+            | 3979142 | 小王3979141   |   0 | 上海   |  38 |
+            | 4048766 | 小王4048765   |   1 | 上海   |  21 |
+            | 3306404 | 小王3306403   |   0 | 上海   |  39 |
+            | 4385720 | 小王4385719   |   0 | 上海   |  39 |
+            | 2009390 | 小王2009389   |   0 | 上海   |  37 |
+            +---------+---------------+-----+--------+-----+
+            5 rows in set (0.00 sec)
+          
+          执行计划： 走主键，消除了临时表和排序
+          (mysql:8.0.31-cluster)explain 
+           -&gt;   with tmp(a) as (
+              -&gt; select ceil(5000000*rand()) 
+                -&gt; union all 
+                -&gt; select ceil(5000000*rand())
+                -&gt; union all 
+                -&gt; select ceil(5000000*rand())
+                -&gt; union all 
+                -&gt; select ceil(5000000*rand())
+                -&gt; union all 
+                -&gt; select ceil(5000000*rand())
+                -&gt; ) select b.* from tmp a join customers b on a.a = b.id;
+        +----+-------------------+------------+------------+--------+---------------+---------+---------+------+------+----------+----------------+
+        | id | select_type       | table      | partitions | type   | possible_keys | key     | key_len | ref  | rows | filtered | Extra          |
+        +----+-------------------+------------+------------+--------+---------------+---------+---------+------+------+----------+----------------+
+        |  1 | PRIMARY       |&lt;derived2&gt;| NULL       | ALL    | NULL          | NULL    | NULL    | NULL |    5 |   100.00 | NULL           |
+        |  1 | PRIMARY           | b          | NULL       | eq_ref | PRIMARY       | PRIMARY | 4       | a.a  |    1 |   100.00 | Using where    |
+        |  2 | DERIVED           | NULL       | NULL       | NULL   | NULL          | NULL    | NULL    | NULL | NULL |     NULL | No tables used |
+        |  3 | UNCACHEABLE UNION | NULL       | NULL       | NULL   | NULL          | NULL    | NULL    | NULL | NULL |     NULL | No tables used |
+        |  4 | UNCACHEABLE UNION | NULL       | NULL       | NULL   | NULL          | NULL    | NULL    | NULL | NULL |     NULL | No tables used |
+        |  5 | UNCACHEABLE UNION | NULL       | NULL       | NULL   | NULL          | NULL    | NULL    | NULL | NULL |     NULL | No tables used |
+        |  6 | UNCACHEABLE UNION | NULL       | NULL       | NULL   | NULL          | NULL    | NULL    | NULL | NULL |     NULL | No tables used |
+        +----+-------------------+------------+------------+--------+---------------+---------+---------+------+------+----------+----------------+
+        7 rows in set, 1 warning (0.00 sec)
+
+
+          结论：
+          1. 使用 order by rand() 来检索随机行，性能很差，执行时间长。
+          2. 可以使用生成随机主键的方式，结合原表做关联检索随机行，性能大幅提升。
+  
+        </示例>
+        <检查流程描述>
+          1. 对于DML语句中的所有SELECT子句，检查SQL语句，如果Order By子句包含RAND函数，报告违反规则
+        </检查流程描述>
+        <知识文档>
+            1. SQL 优化官方文档： https://dev.mysql.com/doc/refman/8.0/en/statement-optimization.html
+        </知识文档>
+      </场景>
+    </规则场景>
+    <关联规则>SQLE00104、SQLE00102、SQLE00101、SQLE00119、SQLE00121、SQLE00127</关联规则>
+<标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

@@ -1,0 +1,214 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00037</规则编号>
+    <级别>warn</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>索引规范</规则种类>
+    <规则变量>
+        <变量 name="二级索引个数" type="int">5</变量>
+    </规则变量>
+    <规则简述>避免一张表内二级索引的个数过多</规则简述>
+    <规则描述>在表上建立的每个索引都会增加存储开销，索引对于插入、删除、更新操作也会增加维护索引处理上的开销（TPS），且太多与不充分、不正确的索引对性能都毫无益处。</规则描述>
+    <规则场景>
+        <场景 名称="初始表结构定义" 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="CREATE TABLE">
+            <示例>
+                前置:
+                create database db_mysql;
+                use db_mysql;
+                create table customers(
+                    id int auto_increment primary key,
+                    name varchar(32) default '' not null, -- 序号
+                    sex int default 0, -- 性别
+                    age int default 0, -- 年龄
+                    mark1 varchar(20) not null, -- 备注1
+                    mark2 varchar(30) not null, -- 备注2
+                    mark3 varchar(40) not null, -- 备注3
+                    mark4 varchar(50) not null, -- 备注4
+                    mark5 varchar(100) not null -- 备注5
+                );
+
+                -- 预先创建5个二级索引：
+                create index idx_name_customers on customers(name);
+                create index idx_age_customers on customers(age);
+                create index idx_sex_customers on customers(sex);
+                create index idx_mark1_customers on customers(mark1);
+                create index idx_mark2_customers on customers(mark2);
+   
+
+                -- 测试数据存储过程，验证时调用：
+                DELIMITER $$
+
+                USE `db_mysql`$$
+                
+                DROP PROCEDURE IF EXISTS `sp_insert_customers`$$
+                
+                CREATE DEFINER=`admin`@`%` PROCEDURE `sp_insert_customers`()
+                BEGIN
+                    TRUNCATE TABLE customers;
+                    INSERT INTO customers(NAME,sex,age,mark1,mark2,mark3,mark4,mark5)
+                    VALUES ('小王',1,39,'城市：上海','地址:上海市闵行区','地址:actionsky','actionsky','actionsky');
+                    INSERT INTO customers(NAME,sex,age,mark1,mark2,mark3,mark4,mark5)
+                    SELECT CONCAT('小王',CEIL(RAND()*1000000)),FLOOR(RAND()*2),CEIL(RAND()*20)+30,'城市：上海','地址:上海市闵行区',RPAD('actionsky',20,'8'),RPAD('actionsky',20,'8'),RPAD('actionsky',20,'8')
+                    FROM customers a JOIN customers b;
+                    INSERT INTO customers(NAME,sex,age,mark1,mark2,mark3,mark4,mark5)
+                    SELECT CONCAT('小王',CEIL(RAND()*1000000)),FLOOR(RAND()*2),CEIL(RAND()*20)+30,'城市：上海','地址:上海市闵行区',RPAD('actionsky',20,'8'),RPAD('actionsky',20,'8'),RPAD('actionsky',20,'8')
+                    FROM customers a JOIN customers b;
+                    INSERT INTO customers(NAME,sex,age,mark1,mark2,mark3,mark4,mark5)
+                    SELECT CONCAT('小王',CEIL(RAND()*1000000)),FLOOR(RAND()*2),CEIL(RAND()*20)+30,'城市：上海','地址:上海市闵行区',RPAD('actionsky',20,'8'),RPAD('actionsky',20,'8'),RPAD('actionsky',20,'8')
+                    FROM customers a JOIN customers b;
+                    INSERT INTO customers(NAME,sex,age,mark1,mark2,mark3,mark4,mark5)
+                    SELECT CONCAT('小王',CEIL(RAND()*1000000)),FLOOR(RAND()*2),CEIL(RAND()*20)+30,'城市：上海','地址:上海市闵行区',RPAD('actionsky',20,'8'),RPAD('actionsky',20,'8'),RPAD('actionsky',20,'8')
+                    FROM customers a JOIN customers b;
+                    INSERT INTO customers(NAME,sex,age,mark1,mark2,mark3,mark4,mark5)
+                    SELECT CONCAT('小王',CEIL(RAND()*1000000)),FLOOR(RAND()*2),CEIL(RAND()*20)+30,'城市：上海','地址:上海市闵行区',RPAD('actionsky',20,'8'),RPAD('actionsky',20,'8'),RPAD('actionsky',20,'8')
+                    FROM customers a JOIN customers b LIMIT 2000000;
+                    ANALYZE TABLE customers;
+                END$$
+                
+                DELIMITER ;
+
+                -- 查询索引占用磁盘空间大小 SQL，验证时调用：
+                SELECT TRUNCATE(other_index_size*16/1024,2) 'INDEX MB'  FROM information_schema.innodb_tablestats  WHERE NAME='db_mysql/customers';
+
+
+                原理说明：
+                1. 给表设计索引的目的是为了加快带合适过滤条件读、更新等的性能，减少这部分操作的IO成本、CPU成本等；
+                2. 一般来讲，业务表上索引的个数不能超过一定的个数。索引个数的增加，会增加对表的更新成本，造成更新变慢，影响整体TPS数量。 
+                3. 具体的个数可以根据实际场景来实时调整，一般单表最大允许 5 个索引。
+
+                示例：
+
+                创建多于阈值的索引：
+                create index idx_mark5_customers on customers(mark5);
+
+                或者使用
+                alter table customers add key idx_mark5_customers (mark5);
+                alter table customers add index idx_mark5_customers (mark5);
+
+                示例说明：
+                1. 由于表customers 已经有5个二级索引， 为了验证多余索引的影响，多加了一个索引 idx_mark5_customers。
+                2. 只需要验证索引 idx_mark5_customers 创建之后的影响。
+                3. 创建完索引，分两个步骤来验证：
+                    1. 验证多个索引对表更新的性能影响。（也就是判断是否会增加索引维护的开销：插入、删除、更新都属于维护索引导致性能低下的示例，这里验证一个例子即可。）
+                    2. 验证多个索引的大小比对。（判断是否对磁盘空间的占用增加）
+
+                示例验证：
+
+                -- 执行插入数据的存储过程： 时间1分钟9秒多。(存储过程里面会先清空表数据，所以这个步骤是用来测试原来有5个索引的场景下的更新性能。)
+                (mysql:8.3.0:db_mysql)call sp_insert_customers;
+                +--------------------+---------+----------+----------+
+                | Table              | Op      | Msg_type | Msg_text |
+                +--------------------+---------+----------+----------+
+                | db_mysql.customers | analyze | status   | OK       |
+                +--------------------+---------+----------+----------+
+                1 row in set (1 min 9.79 sec)
+
+                Query OK, 0 rows affected (1 min 9.79 sec)
+
+                -- 查看表记录数：200W条
+                (mysql:8.3.0:db_mysql)select count(*) from customers;
+                +----------+
+                | count(*) |
+                +----------+
+                |  2001806 |
+                +----------+
+                1 row in set (1.39 sec)
+                          
+                -- 查看5个二级索引的总大小： 254 MB
+                (mysql:8.3.0:db_mysql)SELECT TRUNCATE(other_index_size*16/1024,2) 'INDEX MB'  FROM information_schema.innodb_tablestats  WHERE NAME='db_mysql/customers';
+                +----------+
+                | INDEX MB |
+                +----------+
+                |   254.12 |
+                +----------+
+                1 row in set (0.00 sec)
+
+                -- 创建第6个二级索引：
+                -- 先清空表数据
+                (mysql:8.3.0:db_mysql)truncate table customers;
+                Query OK, 0 rows affected (0.09 sec)
+
+                -- 创建二级索引
+                (mysql:8.3.0:db_mysql)create index idx_mark5_customers on customers(mark5);
+                Query OK, 0 rows affected (0.03 sec)
+                Records: 0  Duplicates: 0  Warnings: 0
+
+                            
+                -- 执行插入数据的存储过程：同样插入200W条记录，时间1分16秒多，新加了一个二级索引比原来更新时间多了7秒。
+                (mysql:8.3.0:db_mysql)call sp_insert_customers;
+                +--------------------+---------+----------+----------+
+                | Table              | Op      | Msg_type | Msg_text |
+                +--------------------+---------+----------+----------+
+                | db_mysql.customers | analyze | status   | OK       |
+                +--------------------+---------+----------+----------+
+                1 row in set (1 min 16.73 sec)
+                
+                Query OK, 0 rows affected (1 min 16.73 sec)
+                
+
+                -- 查看表记录数：200W条
+                (mysql:8.3.0:db_mysql)select count(*) from customers;
+                +----------+
+                | count(*) |
+                +----------+
+                |  2001806 |
+                +----------+
+                1 row in set (1.09 sec)
+
+                查询新加索引后索引的总大小： 312 MB， 比原先5个二级索引多了快60MB磁盘空间。
+                (mysql:8.3.0:db_mysql)SELECT TRUNCATE(other_index_size*16/1024,2) 'INDEX MB'  FROM information_schema.innodb_tablestats  WHERE NAME='db_mysql/customers';
+                +----------+
+                | INDEX MB |
+                +----------+
+                |   312.76 |
+                +----------+
+                1 row in set (0.00 sec)
+                
+
+                结论：
+                1. 对于表的索引来讲，索引个数越多，对应的过滤列的查询和更新都能提升性能；
+                2. 但是对没有过滤列的更新来讲，性能随着索引的个数增加而降低；并且占用磁盘空间也会越来越大；进而消耗更多的资源，影响数据库整体的TPS。
+                3. 需要根据实际情况来决定索引的个数。 一般来讲，一张表内5个二级索引 比较合适。
+
+            </示例>
+            <检查流程描述>
+                1. 对于"CREATE TABLE..." 语句，
+                    1. 定义一个变量
+                    2. 获取集合KEY 或者 INDEX 关键词的数目，更新到变量上
+                    3. 进行检查，如果变量上的索引个数大于规则变量值，则报告违反规则。
+            </检查流程描述>
+            <知识文档>
+              1. MySQL 优化官方文档： https://dev.mysql.com/doc/refman/8.3/en/optimization.html
+              2. CREATE TABLE 官方文档： https://dev.mysql.com/doc/refman/8.4/en/create-table.html
+            </知识文档>
+        </场景>
+        <场景 名称="创建索引" 数据库版本="MySQL 所有版本" 检查方式="连库审核" 适用句型="ALTER TABLE、CREATE INDEX">
+            <示例>
+                示例：
+                create index idx_mark5_customers on customers(mark5);
+                或者使用
+                alter table customers add key idx_mark5_customers (mark5);
+                alter table customers add index idx_mark5_customers (mark5);
+                
+                示例验证：与【初始表结构定义】场景一致
+                原理说明：与【初始表结构定义】场景一致
+                结论：与【初始表结构定义】场景一致
+                
+            </示例>
+            <检查流程描述>
+                1. 对于"ALTER TABLE..." 语句，
+                    1. 定义一个变量
+                    2. 获取语句中KEY 或者 INDEX 关键词的数目，更新到变量上
+                    3. 登录数据库，获取表现有二级索引的个数，与变量累计后并更新到变量上
+                    4. 进行检查，如果变量上的索引个数大于规则变量值，则报告违反规则。
+                2. 对于"CREATE INDEX ..." 语句，执行与上述相同检查；
+            </检查流程描述>
+
+            <知识文档>
+            1. MySQL 优化官方文档： https://dev.mysql.com/doc/refman/8.3/en/optimization.html
+            2. ALTER TABLE 官方文档： https://dev.mysql.com/doc/refman/8.4/en/alter-table.html
+            3. CREATE INDEX 官方文档： https://dev.mysql.com/doc/refman/8.4/en/create-index.html
+            </知识文档>
+        </场景>
+    </规则场景>
+<标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值><分类值>增强可维护性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值><分类值>连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

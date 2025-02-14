@@ -1,0 +1,105 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00158</规则编号>
+    <级别>warn</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>SQL语句风格与格式</规则种类>
+    <适用性>不适用当前数据库</适用性>
+    <规则简述>建议表名和关键字大写</规则简述>
+    <规则描述>表名和关键字大写，使SQL更加易读，方便维护</规则描述>
+    <规则场景>
+      <原理说明 数据库版本="MySQL 所有版本" 检查方式="不连库审核">
+        <示例>
+
+
+            原理说明：
+            1. 本规则不适用于MySQL数据库，理由如下：
+               1. MySQL 推荐的是表和关键词等全部小写，由参数 lower_case_table_names 来决定。
+                1. lower_case_table_names = 0 表示 create table、create database 等区分大小写；对象名字比对也区分大小写；
+                2. lower_case_table_names = 1 表示 create table、create database 等不区分大小写；对象名字比对也不区分大小写，统一按照小写处理；
+                3. lower_case_table_names = 2 表示 create table、create database 等区分大小写；但是对象名字比对不区分大小写，统一按照小写处理；
+                4. unix、linux下lower_case_table_names的默认值为 0 ；Windows 下默认值是 1 ；Mac OS X下默认值是 2。
+            2. 当MySQL 实例初始化时，参数 lower_case_table_names 设置为1 后，所有的对表的操作都是不区分大小写的。
+
+            示例1：
+            create table TabC (C1 int, c2 int);
+            create table tabc (c1 int,C2 int);
+            示例2：
+            insert into tabc (c1,c2) values (1,2);
+            insert into tabc (c1,C2) values (1,2);
+          
+            示例3：
+            select table_name,column_name from information_schema.columns where table_name='TabC';
+            select table_name,column_name from information_schema.columns where table_name='tabc';
+
+            示例说明：
+            1. 建立两张表TabC、tabc； 在MySQL 中，第一张表建立成功，第二张表将会建立失败；
+            2. 插入数据也不区分字段大小写；
+            3. 不区分大小写，从元数据里找出对应的表名或者列名。
+
+            示例验证： 三个示例相互关联，所以一起验证。
+            (mysql:8.3.0:db_mysql)select @@lower_case_table_names;
+            +--------------------------+
+            | @@lower_case_table_names |
+            +--------------------------+
+            |                        1 |
+            +--------------------------+
+            1 row in set (0.00 sec)
+            
+            -- 成功建立
+            (mysql:8.3.0:db_mysql)create table TabC (C1 int, c2 int);
+            Query OK, 0 rows affected (0.04 sec)
+
+            -- 建立失败，提示表tabc已经存在
+            (mysql:8.3.0:db_mysql)create table tabc (c1 int,C2 int);
+            ERROR 1050 (42S01): Table 'tabc' already exists
+
+            -- 插入记录，两条都成功
+            (mysql:8.3.0:db_mysql)insert into tabc (c1,c2) values (1,2);
+            Query OK, 1 row affected (0.01 sec)
+
+            (mysql:8.3.0:db_mysql)insert into tabc (c1,C2) values (1,2);
+            Query OK, 1 row affected (0.00 sec)
+
+
+            (mysql:8.3.0:db_mysql)select c1,c2 from tabc;
+            +------+------+
+            | c1   | c2   |
+            +------+------+
+            |    1 |    2 |
+            |    1 |    2 |
+            +------+------+
+            2 rows in set (0.00 sec)
+            
+
+            -- 查询元数据，两条查询结果一样
+            (mysql:8.3.0:db_mysql)select table_name,column_name from information_schema.columns where table_name='TabC';
+            +------------+-------------+
+            | TABLE_NAME | COLUMN_NAME |
+            +------------+-------------+
+            | tabc       | C1          |
+            | tabc       | c2          |
+            +------------+-------------+
+            2 rows in set (0.01 sec)
+
+            (mysql:8.3.0:db_mysql)select table_name,column_name from information_schema.columns where table_name='tabc';
+            +------------+-------------+
+            | TABLE_NAME | COLUMN_NAME |
+            +------------+-------------+
+            | tabc       | C1          |
+            | tabc       | c2          |
+            +------------+-------------+
+            2 rows in set (0.00 sec)
+
+            结论：
+            1. 在MySQL里，表、数据库、字段等都在推荐的参数lower_case_table_names = 1下，不区分大小写建立、比对等。
+            2. 所以对象需要全部大写的规则不适用于MySQL。
+
+                      
+        </示例>
+        <知识文档>
+        1. MySQL 大小写标识符官方文档： https://dev.mysql.com/doc/refman/8.3/en/identifier-case-sensitivity.html
+        </知识文档>
+      </原理说明>
+    </规则场景>
+  <标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>增强可维护性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

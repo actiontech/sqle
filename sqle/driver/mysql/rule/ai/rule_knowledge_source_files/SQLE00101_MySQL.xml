@@ -1,0 +1,82 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00101</规则编号>
+    <级别>notice</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>排序和分组效率</规则种类>
+    <规则简述>不建议针对大表执行SELECT 语句时存在ORDER BY操作</规则简述>
+    <规则变量>
+      <变量 name="大表的最低行数要求">1000000</变量>
+    </规则变量>
+    <规则描述>在大表的情况下，数据查询中的ORDER BY 操作对查询性能影响较大，建议将排序部分放到业务处理或者限定查询数据的范围。</规则描述>
+    <规则场景>
+        <场景 名称="避免SELECT 语句中的ORDER BY 子句" 数据库版本="MySQL 8.0" 检查方式="连库审核" 适用句型="SELECT、INSERT">
+            <示例>
+            示例表结构:
+            create database db_mysql;
+            use db_mysql;
+
+            CREATE TABLE customers(
+            id INT(11) NOT NULL, -- 序号
+            name VARCHAR(32) DEFAULT '',-- 姓名
+            sex TINYINT NOT NULL, -- 性别
+            city VARCHAR(32) NOT NULL, -- 所在城市
+            age SMALLINT(4) NOT NULL, -- 值类型
+            PRIMARY KEY (id) -- 主键
+            );
+
+            示例索引：
+            create index idx_age_customers on customers(age);
+
+            -- 插入模拟数据 500W 条。
+            set @@cte_max_recursion_depth=20000000;
+            insert into customers  
+            with recursive tmp (a,b,c,d,e) as (
+            select 1,'小王22222333',floor(rand()*2),'上海',ceil(rand()*30)+20 
+            union all 
+            select a+1,concat('小王',a),floor(rand()*2),'上海',ceil(rand()*20)+20 from tmp where a &lt; 5000000) 
+            select * from tmp;
+
+          反例：
+          select * from customers order by age desc;
+          select * from customers order by age asc;          
+
+          反例说明：
+          1. 排序操作对数据库来讲，资源消耗较大，建议放到业务端来处理。
+
+          反例验证： 由于SQL 语句返回很多记录，所以使用explain analyze 打印实际执行的时间与执行计划。执行时间很长，达到6秒多。
+          (mysql:8.0.31-cluster)explain analyze select * from customers order by age desc\G
+          *************************** 1. row ***************************
+          EXPLAIN: -&gt; Sort: customers.age DESC (cost=510766.63 rows=4988304) (actual time=4882.614..5335.973 rows=5000000 loops=1)
+              -&gt; Table scan on customers (cost=510766.63 rows=4988304) (actual time=0.042..2234.656 rows=5000000 loops=1)
+          
+          1 row in set (6.02 sec)
+          
+          正例：
+          select * from customers;
+
+          正例说明：
+          1. 取消order by 子句，减少了数据库端排序的耗时，可以让数据库腾出资源来处理其他的请求。
+         
+          正例验证： 取消 order by 子句，执行时间仅需2.71秒。 
+          (mysql:8.0.31-cluster)explain analyze select * from customers \G
+          *************************** 1. row ***************************
+          EXPLAIN: -&gt;  Table scan on customers (cost=510766.63 rows=4988304) (actual time=0.036..2100.546 rows=5000000 loops=1)
+          
+          1 row in set (2.71 sec)
+          
+          结论：
+          1. 把排序子句从数据库挪到业务端，可以减少数据库端的排序开销。
+          2. 限定本次查询的记录数范围，降低排序操作给数据库带来的负荷，提高SQL查询效率。
+            </示例>
+            <检查流程描述>
+              1. 对于"SELECT..."语句，检查SELECT语句中有无 ORDER BY 子句，如果存在，报告违反规则。其中本次查询的影响行数是在线获取的信息。
+              2. 对于"INSERT...SELECT...FROM..."语句，执行与上面类似的检查。
+            </检查流程描述>
+            <知识文档>
+            1. SQL 优化官方文档： https://dev.mysql.com/doc/refman/8.0/en/statement-optimization.html
+            </知识文档>
+        </场景>
+    </规则场景>
+    <关联规则>SQLE00104、SQLE00102、SQLE00119、SQLE00121</关联规则>
+    <标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

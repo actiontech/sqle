@@ -1,0 +1,162 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+  <规则编号>SQLE00017</规则编号>
+  <级别>
+    <当前级别>notice</当前级别>
+  </级别>
+  <数据库类型>MySQL</数据库类型>
+  <规则种类>DDL规范</规则种类>
+  <规则简述>不建议使用BLOB或TEXT类型</规则简述>
+  <规则描述>BLOB或TEXT类型消耗大量的磁盘空间、网络IO带宽，同时在该表上的DML操作都会变得很慢</规则描述>
+  <规则场景>
+    <原理说明 数据库版本="MySQL 5.7.25" 检查方式="不连库审核" 适用句型="CREATE TABLE、ALTER TABLE">
+      <示例>
+前置：
+--表结构
+CREATE TABLE `t_long` (
+  `id` int(11) DEFAULT NULL,
+  `col1` text
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `t_short` (
+  `id` int(11) DEFAULT NULL,
+  `col1` varchar(8090)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+原理说明：
+一、在原理上：大字段的存储会消耗大量磁盘空间
+
+1. MySQL 5.7中的最大行大小（maximum row size，excluding any variable-length columns that are stored off-page），略小于innodb_page_size的一半。总行大小（total row size，including BLOB and TEXT columns），比如小于4G。
+
+如当innodb_page_size为默认值16KB时，最大行大小为8000字节（bytes）。
+原理是，根据InnoDB存储数据的B+tree结构，每个数据页中至少应该有两行记录；否则就不是B+tree，而是链表了。
+
+2. 当行的实际大小未超过最大行大小（maximum row size）时，如8000字节，MySQL将把行数据存储在一个数据页里；
+当超过最大行大小时，MySQL将选择变长字段（variable-length columns：VARCHAR, VARBINARY, BLOB, TEXT）进行off-page存储，直到剩下的字段总长度不超过最大行大小。
+
+3. MySQL 5.7中，默认行格式为DYNAMIC；对于变长字段数据（VARCHAR, VARBINARY, BLOB, TEXT）采用完全溢出的策略进行存储，即将变长数据字段的所有内容都存放到off-page。原数据页中只保留20字节（bytes）的指针，指向真实存放变长字段数据的数据页地址。
+- DYNAMIC格式的设计逻辑认为，当一部分数据（a portion of long data）使用off-page存储时，将直接将完整数据(entire value)进行off-page会更有效率
+- 只有当TEXT或BLOB字段长度小于或等于40字节（bytes）时，才和其他字段存储在一个数据页
+
+二、实践的角度看：大字段会增加网络传输成本，容易造成业务SQL报错，增加运维复杂度；同时还可能影响其他DML的正常执行
+1. 容易超过max_allowed_packet限制，造成SQL报错：Row size too large
+2. 容易超过MySQL行大小限制（excluding variable-column，如8000KB），造成SQL报错：Row size too large
+3. BLOB字段和TEXT字段删除的时候，会留下大量"空洞"，对写入数据性能上有影响；需要定期执行OPTIMIZE TABLE进行碎片清理。
+4. 在需要创建临时表的情况下，容易导致临时表超过tmp_table_size默认值，被存储在磁盘上，导致SQL整体速度下降
+5. binglog刷新过快，导致IOPS高，影响其他正常的DML操作
+6. 大字段可能无法作为WHERE条件索引，导致相关查询很慢
+
+示例：
+# 写入样例数据
+#!/bin/bash
+for ((i=1;i&lt;=48849;i++));
+do
+  /data/mysql/base/5.7.25/bin/mysql -S /data/mysql/data/3306/mysqld.sock -udba -p -e"insert into test.t_short select $i,repeat('a',8090)";
+  /data/mysql/base/5.7.25/bin/mysql -S /data/mysql/data/3306/mysqld.sock -udba -p -e"insert into test.t_long select $i,repeat('a',8098)";
+done
+
+mysql&gt; show create table t_long\G
+*************************** 1. row ***************************
+       Table: t_long
+Create Table: CREATE TABLE `t_long` (
+  `id` int(11) DEFAULT NULL,
+  `col1` text
+) ENGINE=InnoDB DEFAULT CHARSET=utf8
+1 row in set (0.00 sec)
+
+mysql&gt; show create table t_short\G
+*************************** 1. row ***************************
+       Table: t_short
+Create Table: CREATE TABLE `t_short` (
+  `id` int(11) DEFAULT NULL,
+  `col1` varchar(8090)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8
+1 row in set (0.00 sec)
+
+# 观察实际文件大小，并使用innochecksum工具观察文件页数量
+# t_short.idb文件大小=8KB*48849，t_long.ibd文件大小=16KB*48849；t_long表由于单独使用48849个单独数据页，因此相对占据了大量磁盘空间
+[root@10-186-61-115~]# du -sh * | grep 'long\|short' | grep ibd
+785M  t_long.ibd
+397M  t_short.ibd
+
+[root@10-186-61-115~]# /data/mysql/base/5.7.25/bin/innochecksum   --page-type-summary  t_long.ibd
+================PAGE TYPE SUMMARY==============
+#PAGE_COUNT     PAGE_TYPE
+===============================================
+    168        Index page
+      0        Undo log page
+      1        Inode page
+      0        Insert buffer free list page
+    1150        Freshly allocated page
+      4        Insert buffer bitmap
+      0        System page
+      0        Transaction system page
+      1        File Space Header
+      3        Extent descriptor page
+  48849        BLOB page
+      0        Compressed BLOB page
+      0        Other type of page
+===============================================
+Additional information:
+Undo page type: 0 insert, 0 update, 0 other
+Undo page state: 0 active, 0 cached, 0 to_free, 0 to_purge, 0 prepared, 0 other
+
+[root@10-186-61-115~]# /data/mysql/base/5.7.25/bin/innochecksum   --page-type-summary  t_short.ibd
+File::t_short.ibd
+================PAGE TYPE SUMMARY==============
+#PAGE_COUNT     PAGE_TYPE
+===============================================
+  24452        Index page
+      0        Undo log page
+      1        Inode page
+      0        Insert buffer free list page
+    887        Freshly allocated page
+      2        Insert buffer bitmap
+      0        System page
+      0        Transaction system page
+      1        File Space Header
+      1        Extent descriptor page
+      0        BLOB page
+      0        Compressed BLOB page
+      0        Other type of page
+===============================================
+Additional information:
+Undo page type: 0 insert, 0 update, 0 other
+Undo page state: 0 active, 0 cached, 0 to_free, 0 to_purge, 0 prepared, 0 other
+
+示例验证：
+通过示例可以看出，使用BLOB或TEXT类型会导致数据占用更多的磁盘空间。t_long表的ibd文件大小是t_short表的两倍，而且t_long表使用了大量的BLOB页面来存储数据。
+
+结论：
+使用BLOB或TEXT类型会导致数据占用更多的磁盘空间，增加网络传输成本，可能造成SQL报错，影响性能，并增加运维复杂度。应尽量避免使用这些类型，或者在必要时进行适当的优化。
+</示例>
+      <检查流程描述>
+1. 对于 "CREATE TABLE" 和 "ALTER TABLE" 语句，执行以下检查：
+   1. 解析表结构定义。
+   2. 检查是否存在 BLOB 或 TEXT 类型的列。
+   3. 如果发现 BLOB 或 TEXT 类型的列，则报告违反规则。
+</检查流程描述>
+      <知识文档>
+1. InnoDB Row Formats：https://dev.mysql.com/doc/refman/5.7/en/innodb-row-format.html
+2. File Space Management：https://dev.mysql.com/doc/refman/5.7/en/innodb-file-space.html
+3. InnoDB Limits：https://dev.mysql.com/doc/refman/5.7/en/innodb-limits.html
+4. variable-length type：https://dev.mysql.com/doc/refman/5.7/en/glossary.html#glos_variable_length_type
+5. MySQL实战系列：大字段如何优化：https://keithlan.github.io/2016/04/07/idb_biger/
+</知识文档>
+    </原理说明>
+  </规则场景>
+  <规则缺陷 />
+  <关联规则>SQLE00016</关联规则>
+  <标签>
+    <分类 名称="操作对象">
+      <分类值>字段</分类值>
+    </分类>
+    <分类 名称="SQL分类">
+      <分类值>DDL</分类值>
+    </分类>
+    <分类 名称="审核目的">
+      <分类值>保障正确性</分类值>
+    </分类>
+  <分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签>
+  <完成情况>完成</完成情况>
+</Rule>

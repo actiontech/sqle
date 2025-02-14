@@ -1,0 +1,59 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+<规则编号>SQLE00063</规则编号>
+<级别>warn</级别>
+<数据库类型>MySQL</数据库类型>
+<规则种类>命名规范</规则种类>
+<规则简述>唯一索引名必须遵循指定格式</规则简述>
+<规则变量>
+  <变量 name="索引命名格式">固定字符+索引类型+表名+字段名，如IDX_UK_TABLENAME_COLNAME</变量>
+</规则变量>
+<规则描述>通过配置该规则可以规范指定业务的唯一索引命名规则，如索引字段存在多个，则可以拼接字段名，不要超过索引名长度即可。</规则描述>
+<规则场景>
+   <场景 名称="创建索引" 数据库版本="MySQL" 检查方式="不连库审核" 适用关键词="UNIQUE" 适用句型="CREATE、ALTER">
+    <示例>  
+      示例：
+      CREATE TABLE order_his(
+          id BIGINT,
+          name varchar(64) DEFAULT '',
+          UNIQUE INDEX IDX_UK_ORDER_HIS_NAME(name)
+      );
+      CREATE UNIQUE INDEX IDX_UK_ORDER_HIS_NAME ON order_his (name);
+      ALTER TABLE order_his ADD UNIQUE INDEX IDX_UK_ORDER_HIS_NAME(id);
+
+      示例说明：
+      数据库系统默认的SQL模式下（即ANSI_QUOTES禁用），数据库对象名定义允许使用字符：ASCII: 【0-9,a-z,A-Z$_】以及Extended:【U+0080 .. U+FFFF】，且允许数字开头但不能由全数字组成。索引的命名也遵从数据库对象命名规范。
+      从业务实践角度出发，遵循指定格式且避免特殊字符的使用，可以提高代码的可读性、可维护性，并减少潜在的兼容性和语法问题。
+    </示例>
+    <检查流程描述>
+      1、检查当前句子是ALTER还是CREATE类型，如果是ALTER句子，则进入检查步骤2；否则，进入检查步骤3。
+      2、检查ALTER句子中是否存在ADD关键词，如果存在，则进入下一步检查。
+      3、检查句子中是否存在UNIQUE INDEX关键词，如果存在，则进入下一步检查。
+      4、检查目标索引名是否遵从固定格式，如果不遵从，报告违反规则。
+    </检查流程描述>
+    <知识文档>
+      1、创建唯一索引：https://dev.mysql.com/doc/refman/5.7/en/create-index.html#create-index-unique
+      2、创建表规范：https://dev.mysql.com/doc/refman/5.7/en/create-table.html
+      3、修改表规范：https://dev.mysql.com/doc/refman/5.7/en/alter-table.html
+      4、对象名定义规范：https://dev.mysql.com/doc/refman/5.7/en/identifiers.html
+    </知识文档>
+   </场景>
+   <场景 名称="重命名索引" 数据库版本="MySQL" 检查方式="连库审核" 适用关键词="INDEX" 适用句型="ALTER">
+    <示例>  
+      示例：
+      ALTER TABLE order_his RENAME INDEX name TO IDX_UK_ORDER_HIS_NAME;
+
+      示例说明：与【创建索引】场景一致。
+    </示例>
+    <检查流程描述>
+      1、检查ALTER句子中是否存在RENAME关键词，如果存在，则进入下一步检查。
+      2、连接数据库，获取当前索引，检查RENAME的目标对象类型是否唯一索引，如果是，则进入下一步检查。
+      3、检查目标索引名是否遵从固定格式，如果不遵从，报告违反规则。
+    </检查流程描述>
+    <知识文档>
+      1、修改表：https://dev.mysql.com/doc/refman/5.7/en/alter-table.html
+      2、对象名定义规范：https://dev.mysql.com/doc/refman/5.7/en/identifiers.html
+    </知识文档>
+   </场景>
+</规则场景>
+<标签><分类 名称="操作对象"><分类值>索引</分类值></分类><分类 名称="SQL分类"><分类值>DDL</分类值></分类><分类 名称="审核目的"><分类值>增强可维护性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值><分类值>连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

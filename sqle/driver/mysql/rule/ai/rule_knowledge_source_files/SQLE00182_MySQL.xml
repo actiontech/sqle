@@ -1,0 +1,30 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+<规则编号>SQLE00182</规则编号>
+<级别>warn</级别>
+<数据库类型>MySQL</数据库类型>
+<规则种类>执行计划</规则种类>
+<适用性>不适用当前数据库</适用性>
+<规则简述>避免在分区字段上使用全局索引</规则简述>
+<规则描述>在分区表的分区字段上创建全局索引，该全局索引会跨所有分区维护索引条目，导致分区维护活动（如分区拆分和合并）时的复杂性和成本增加。任何对分区的修改都会导致全局索引的重建或大量更新，进而导致维护成本的增加和数据库性能的降低。此外，全局索引可能导致数据库在执行分区级别的操作时出现不必要的复杂性和开销。</规则描述>
+<规则场景>
+    <原理说明 数据库版本="MySQL 所有版本" 检查方式="连库审核">
+        <示例>
+
+        原理说明：
+        1. MySQL  只支持本地索引，没有全局索引这种说法。
+        2. MySQL 环境中创建的索引相当于 Oracle 里的 local index。也就是类似 Oracle的 创建索引语句： create index idx_id1 on tb(id1) local;
+        3. 具体可以参考 MySQL 官方文档中关于 CREATE INDEX 的章节，没有GLOBAL 关键词。
+    
+        </示例>
+        <检查流程描述>       
+        </检查流程描述>
+        <知识文档>
+          1. MySQL CREATE INDEX 官方文档： https://dev.mysql.com/doc/refman/8.0/en/create-index.html
+          2. MySQL 分区索引限制官方文档： https://dev.mysql.com/doc/refman/8.0/en/partitioning-limitations.html
+          3. MySQL 不支持 GLOBAL INDEX 讨论： https://stackoverflow.com/questions/31258859/index-in-partitioned-table
+        </知识文档>
+    </原理说明>
+</规则场景>
+<规则缺陷 />
+<标签><分类 名称="操作对象"><分类值>索引</分类值></分类><分类 名称="SQL分类"><分类值>DDL</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

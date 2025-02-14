@@ -1,0 +1,169 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+  <规则编号>SQLE00072</规则编号>
+  <级别>error</级别>
+  <数据库类型>MySQL</数据库类型>
+  <规则种类>DDL操作风险防范</规则种类>
+  <规则简述>禁止删除外键</规则简述>
+  <规则描述>外键的存在是为了维持数据之间的引用完整性，确保数据的一致性。删除外键，可能导致依赖于这些外键约束的业务逻辑出现故障或数据完整性问题。</规则描述>
+  <规则场景>
+    <场景 名称="删除表外键" 数据库版本="大于等于 MySQL 5.7 " 检查方式="不连库审核" 适用句型="ALTER TABLE">
+      <示例>
+          前置：
+          create database db_mysql;
+          use db_mysql;
+
+          -- 主表
+          CREATE TABLE parent (
+              id INT NOT NULL,
+              PRIMARY KEY (id)
+          ) ENGINE=INNODB;
+          
+          -- 子表
+          CREATE TABLE child (
+              id INT,
+              parent_id INT,
+              INDEX par_ind (parent_id),
+              FOREIGN KEY (parent_id)
+                  REFERENCES parent(id)
+                  ON DELETE CASCADE
+          ) ENGINE=INNODB;
+
+          -- 导入的数据文件，验证时会用到：一个是父表数据、一个是子表数据。
+          [root@ytt-pc mysql-files]# cat parent.csv 
+          1
+          2
+          3
+          4
+          5
+          6
+          7
+          8
+          9
+          10
+          
+          -- 子表数据有外键约束失效的问题，会插入在主表不存在的外键。
+          [root@ytt-pc mysql-files]# cat child.csv 
+          14	10
+          43	20
+          76	30
+          50	40
+          23	50
+          61	60
+          38	70
+          7	  80
+          19	90
+          72	10
+          
+          
+
+
+          原理说明：
+          1. 外键约束是数据库中用来维护不同表之间数据一致性和完整性的一种机制。它确保一个表中的字段值必须在另一个表的指定字段中有对应值。
+          2. 当删除外键约束后，数据库将不再自动验证这种依赖关系，这可能导致“孤立”的数据记录出现，即那些在参照表中没有对应参照值的记录。
+          3. 删除外键约束后，对数据的插入、更新操作可能不再受到约束，导致插入或更新非法的数据，这些数据违反了业务规则，可能对业务操作造成严重影响。
+
+
+          示例：
+          alter table child drop constraint child_ibfk_1;
+
+          示例说明：
+          1. 此示例删除表 child 的外键约束。
+
+          示例验证：给子表导入数据
+            -- 删除外键约束
+            (mysql:8.3.0:db_mysql)alter table child drop constraint child_ibfk_1;
+            Query OK, 0 rows affected (0.03 sec)
+            Records: 0  Duplicates: 0  Warnings: 0
+            
+            -- 给主表导入数据
+            (mysql:8.3.0:db_mysql)load data infile '/var/lib/mysql-files/parent.csv' into table parent;
+            Query OK, 10 rows affected (0.03 sec)
+            Records: 10  Deleted: 0  Skipped: 0  Warnings: 0
+
+            (mysql:8.3.0:db_mysql)select * from parent;
+            +----+
+            | id |
+            +----+
+            |  1 |
+            |  2 |
+            |  3 |
+            |  4 |
+            |  5 |
+            |  6 |
+            |  7 |
+            |  8 |
+            |  9 |
+            | 10 |
+            +----+
+            10 rows in set (0.00 sec)
+
+            -- 给子表导入问题数据： 导入时不做检查，对应的parent_id 在主表只有一行对应，其他9行的记录完全不符合业务逻辑
+            (mysql:8.3.0:db_mysql)load data infile '/var/lib/mysql-files/child.csv' into table child;
+            Query OK, 10 rows affected (0.01 sec)
+            Records: 10  Deleted: 0  Skipped: 0  Warnings: 0
+
+            (mysql:8.3.0:db_mysql)select * from child;
+            +------+-----------+
+            | id   | parent_id |
+            +------+-----------+
+            |   14 |        10 |
+            |   43 |        20 |
+            |   76 |        30 |
+            |   50 |        40 |
+            |   23 |        50 |
+            |   61 |        60 |
+            |   38 |        70 |
+            |    7 |        80 |
+            |   19 |        90 |
+            |   72 |        10 |
+            +------+-----------+
+            10 rows in set (0.00 sec)
+
+            -- 清空子表数据，加上外键重新导入
+            (mysql:8.3.0:db_mysql)delete from child;
+            Query OK, 10 rows affected (0.02 sec)
+
+            (mysql:8.3.0:db_mysql)alter table child add constraint fk_parent_id foreign key (parent_id) references parent(id);
+            Query OK, 0 rows affected (0.06 sec)
+            Records: 0  Duplicates: 0  Warnings: 0
+
+            -- 此时导入会出错，因为数据库端外键约束检查数据不合格
+            (mysql:8.3.0:db_mysql)load data infile '/var/lib/mysql-files/child.csv' into table child;
+            ERROR 1452 (23000): Cannot add or update a child row: a foreign key constraint fails (`db_mysql`.`child`, CONSTRAINT `fk_parent_id` FOREIGN KEY (`parent_id`) REFERENCES `parent` (`id`))
+
+
+            -- child.csv 前9行数据都不符合外键约束，所以直接忽略前9行导入。 成功导入，只有一行符合外键约束条件。
+            (mysql:8.3.0:db_mysql)load data infile '/var/lib/mysql-files/child.csv' into table child ignore 9 lines;
+            Query OK, 1 row affected (0.02 sec)
+            Records: 1  Deleted: 0  Skipped: 0  Warnings: 0
+
+            (mysql:8.3.0:db_mysql)select * from child;
+            +------+-----------+
+            | id   | parent_id |
+            +------+-----------+
+            |   72 |        10 |
+            +------+-----------+
+            1 row in set (0.00 sec)
+
+
+          结论：
+          1. 删除外键是一个高危操作，因为它直接影响到数据库的引用完整性和数据的一致性。一旦删除了外键约束，错误的数据可能会被插入数据库，导致数据不一致的问题，进而影响应用程序的正常运行。
+
+          解决方案：
+          1. 禁止删除表外键。
+          2. 如果业务逻辑确实需要修改，应首先考虑在应用层增加逻辑来处理数据一致性，而不是直接在数据库层面移除外键。这要求开发团队对现有业务逻辑和数据关系有深入的理解，并设计出有效的数据验证机制来替代数据库的外键约束。（这里的工作量巨大）
+
+      </示例>
+      <检查流程描述>
+        1. 对于 "ALTER TABLE ..."语句，如果存在以下任何一项，则报告违反规则：
+          1. 检查是否有关键词 DROP CONSTRAINT
+      </检查流程描述>
+      <知识文档>
+        1. ALTER TABLE 官方文档：https://dev.mysql.com/doc/refman/8.0/en/alter-table.html
+        2. 外键 官方文档： https://dev.mysql.com/doc/refman/8.0/en/create-table-foreign-keys.html
+      </知识文档>
+    </场景>
+  </规则场景>
+  <规则缺陷 />
+<标签><分类 名称="操作对象"><分类值>表</分类值><分类值>字段</分类值></分类><分类 名称="SQL分类"><分类值>DDL</分类值><分类值>完整性约束</分类值></分类><分类 名称="审核目的"><分类值>保障正确性</分类值><分类值>增强安全性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

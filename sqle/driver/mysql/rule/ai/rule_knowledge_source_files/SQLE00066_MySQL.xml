@@ -1,0 +1,101 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00066</规则编号>
+    <级别>error</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>使用建议</规则种类>
+    <规则简述>禁止除索引外的DROP 操作</规则简述>
+    <规则描述>DROP 操作是数据定义语言（DDL）的一部分，一旦执行，将导致无法恢复的数据或结构丢失。在不恰当的情况下执行DROP操作可能导致数据丢失、系统功能缺失甚至业务中断。</规则描述>
+    <规则场景>
+        <原理说明 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="ALTER TABLE、DROP">
+            <示例>
+                前置：
+                create database if not exists db_mysql;
+                use db_mysql;
+
+                示例表结构：
+                create table t1(
+                  id int primary key,
+                  c1 int default 0,
+                  c2 int default 1,
+                  constraint t1_check_global check(c1 &lt; c2) enforced
+                )
+                partition by range(id) (
+                  partition p0 values less than (10),
+                  partition p1 values less than (20),
+                  partition p_max values less than (maxvalue)
+                );
+
+                原理说明： 
+                1. 在MySQL 中，DROP 动作属于DDL，一旦执行，无法回滚，属于高危操作。除了DROP 掉索引外，其他如表、列、分区、约束的DROP操作应严格控制，以避免意外或误操作带来的严重后果。
+                  1. DROP操作直接删除表、列或分区后，所有相关数据将永久丢失，无法回滚。
+                  2. 对于生产环境，这种无法预测的数据丢失可能导致业务中断或重大财务损失。
+                  3. 数据库中的表、列和约束通常与应用程序紧密集成。删除这些对象可能导致应用程序出错，尤其是当应用代码尚未更新以适应数据库结构变化时。
+                  4. 删除分区可能会影响数据的物理存储和查询性能，从而间接影响系统性能和响应时间。
+                2. 禁止的 DROP 操作包括：
+                  1. 删除数据库对象：库、表、视图、存储过程、函数、触发器、事件。
+                  2. 删除列。
+                  3. 删除分区。
+                  4. 删除列的默认值。
+                  5. 删除CHECK 约束。
+
+                示例：
+                alter table t1 drop c2; ##删除字段
+                alter table t1 drop partition p0; ##删除表分区
+                alter table t1 drop constraint t1_check_global; ##删除约束
+                alter table t1 alter c1 drop default; ##删除字段默认值
+                drop table t1; ##删除表
+                drop view t1_view;  ##删除视图
+                drop function t1_func;  ##删除函数
+                drop procedure t1_proc; ##删除存储过程
+                drop trigger t1_trigger; ##删除触发器
+                drop event t1_event; ##删除事件
+
+                示例说明：
+                1. 示例中的SQL 删除表t1的 列、分区、约束、字段默认值。
+                2. 这些都是不能回滚的，应该禁止操作，或者在管理员的指导下操作。
+
+                示例验证： 验证删除字段默认值的SQL，其他类似。
+                删除字段默认值的SQL，包含在事务块里，经过验证，无法回滚。
+                (mysql:8.4.0:db_mysql)begin;
+                Query OK, 0 rows affected (0.00 sec)
+                
+                (mysql:8.4.0:db_mysql)alter table t1 alter c2 drop default;
+                Query OK, 0 rows affected (0.03 sec)
+                Records: 0  Duplicates: 0  Warnings: 0
+                
+                (mysql:8.4.0:db_mysql)rollback;
+                Query OK, 0 rows affected (0.00 sec)
+
+                (mysql:8.4.0:db_mysql)show create table t1\G
+                *************************** 1. row ***************************
+                       Table: t1
+                Create Table: CREATE TABLE `t1` (
+                  `id` int NOT NULL,
+                  `c1` int DEFAULT '0',
+                  `c2` int,
+                  PRIMARY KEY (`id`),
+                  CONSTRAINT `t1_check_global` CHECK ((`c1` &lt; `c2`))
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+                /*!50100 PARTITION BY RANGE (`id`)
+                (PARTITION p0 VALUES LESS THAN (10) ENGINE = InnoDB,
+                 PARTITION p1 VALUES LESS THAN (20) ENGINE = InnoDB,
+                 PARTITION p_max VALUES LESS THAN MAXVALUE ENGINE = InnoDB) */
+                1 row in set (0.00 sec)
+                                
+                总结：
+                1. 除了索引外，其他对于字段、约束、字段默认值、约束定义等都禁止删除。因为删除动作本身在当前数据库里是无法回滚。
+      
+            </示例>
+            <检查流程描述>
+            1. 对于 "ALTER TABLE ..."语句，如果存在以下任何一项，则报告违反规则：
+              1. 句子中存在DROP操作且操作对象不是索引。
+            2. 对于 "Drop..."语句，如果操作对象不是索引，则报告违反规则。
+            </检查流程描述>
+            <知识文档>
+              1. ALTER TABLE 官方文档：https://dev.mysql.com/doc/refman/8.0/en/alter-table.html
+              2. DDL 相关的文档：https://dev.mysql.com/doc/refman/8.4/en/sql-data-definition-statements.html
+            </知识文档>
+        </原理说明>
+    </规则场景>
+    <标签><分类 名称="操作对象"><分类值>数据库</分类值><分类值>表</分类值><分类值>字段</分类值><分类值>视图</分类值><分类值>存储过程</分类值><分类值>函数</分类值><分类值>触发器</分类值><分类值>事件</分类值><分类值>用户</分类值></分类><分类 名称="SQL分类"><分类值>DDL</分类值></分类><分类 名称="审核目的"><分类值>增强安全性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

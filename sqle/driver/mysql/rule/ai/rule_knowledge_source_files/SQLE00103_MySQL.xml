@@ -1,0 +1,127 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00103</规则编号>
+    <级别>warn</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>数据修改和操作安全</规则种类>
+    <适用性>不适用当前数据库</适用性>
+    <规则简述>避免DELETE/UPDATE语句使用LIMIT条件</规则简述>
+    <规则描述>在事务性数据库操作中，如DELETE和UPDATE，保持操作的可预测性和一致性至关重要。使用像LIMIT这样的子句可能导致操作的结果不可预测，因为它们通常依赖于数据库的内部数据排序，而这一排序在不同的数据库系统或同一系统的不同配置中可能无法保持一致。这种不一致可能导致业务逻辑错误，并且在复制或备份环境中可能导致数据不同步。</规则描述>
+    <规则场景>
+        <原理说明 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="DELETE、UPDATE">
+            <示例>
+                前置：
+                create table customers(
+                    id bigint not null primary key,
+                    name varchar(32) default '' not null, -- 序号
+                    sex int default 0, -- 性别
+                    age int default 0 -- 年龄
+                );
+
+                -- 10 条样例数据
+                insert into customers values (100000001,'小季',0,20);
+                insert into customers values (100000010,'小李',0,30);
+                insert into customers values (100000080,'小徐',0,40);
+                insert into customers values (100000011,'小张',0,60);
+                insert into customers values (100000060,'小菜',0,50);
+                insert into customers values (100000013,'小怪',0,29);
+                insert into customers values (100000050,'小王',0,23);
+                insert into customers values (100000027,'小强',0,40);
+                insert into customers values (100000012,'小非',0,52);
+                insert into customers values (100000031,'小海',0,37);
+
+                原理说明：
+                1. 在 MySQL 数据库里，DELETE、UPDATE 操作可以在后面跟LIMIT 子句，类似 SELECT 语句；
+                2. 其意思是可以指删除或者更新LIMIT 子句执行的记录，而不是所有匹配的记录；
+                3. MySQL 默认按照主键排序（除非指定 ORDER BY 子句），带LIMIT 子句的更新或者删除语句只会精确操作LIMIT 子句指定的记录，不会出现随机记录的更新与删除。所以此操作是可以预测的，此规则并不适合MySQL。
+
+
+                示例：      
+                update customers set age = 100  limit 1;
+                delete from customers limit 1;
+
+    
+                示例说明：
+                1. 示例SQL 是加了 LIMIT 的更新操作，会更新或者删除表 customers 匹配记录的第一行，默认主键排序。
+
+                示例验证： 两条SQL 类似，只验证update 语句即可。
+                -- 表 customers 的记录：
+                (mysql:8.3.0:db_mysql)select * from customers;
+                +-----------+--------+------+------+
+                | id        | name   | sex  | age  |
+                +-----------+--------+------+------+
+                | 100000001 | 小季   |    0 |   20 |
+                | 100000010 | 小李   |    0 |   30 |
+                | 100000011 | 小张   |    0 |   60 |
+                | 100000012 | 小非   |    0 |   52 |
+                | 100000013 | 小怪   |    0 |   29 |
+                | 100000027 | 小强   |    0 |   40 |
+                | 100000031 | 小海   |    0 |   37 |
+                | 100000050 | 小王   |    0 |   23 |
+                | 100000060 | 小菜   |    0 |   50 |
+                | 100000080 | 小徐   |    0 |   40 |
+                +-----------+--------+------+------+
+                10 rows in set (0.00 sec)
+                
+                
+                -- 第一次执行更新，更新了1行记录
+                (mysql:8.3.0:db_mysql)update customers set age=100 limit 1;
+                Query OK, 1 row affected (0.02 sec)
+                Rows matched: 1  Changed: 1  Warnings: 0
+                
+                -- 更新了默认排序的第一行记录
+                (mysql:8.3.0:db_mysql)select * from customers;
+                +-----------+--------+------+------+
+                | id        | name   | sex  | age  |
+                +-----------+--------+------+------+
+                | 100000001 | 小季   |    0 |  100 |
+                | 100000010 | 小李   |    0 |   30 |
+                | 100000011 | 小张   |    0 |   60 |
+                | 100000012 | 小非   |    0 |   52 |
+                | 100000013 | 小怪   |    0 |   29 |
+                | 100000027 | 小强   |    0 |   40 |
+                | 100000031 | 小海   |    0 |   37 |
+                | 100000050 | 小王   |    0 |   23 |
+                | 100000060 | 小菜   |    0 |   50 |
+                | 100000080 | 小徐   |    0 |   40 |
+                +-----------+--------+------+------+
+                10 rows in set (0.00 sec)
+                
+                
+                
+                -- 第二次更新，更新了0行记录
+                (mysql:8.3.0:db_mysql)update customers set age=100 limit 1;
+                Query OK, 0 rows affected (0.01 sec)
+                Rows matched: 1  Changed: 0  Warnings: 0
+                
+                -- 数据没有变，没啥影响
+                (mysql:8.3.0:db_mysql)select * from customers;
+                +-----------+--------+------+------+
+                | id        | name   | sex  | age  |
+                +-----------+--------+------+------+
+                | 100000001 | 小季   |    0 |  100 |
+                | 100000010 | 小李   |    0 |   30 |
+                | 100000011 | 小张   |    0 |   60 |
+                | 100000012 | 小非   |    0 |   52 |
+                | 100000013 | 小怪   |    0 |   29 |
+                | 100000027 | 小强   |    0 |   40 |
+                | 100000031 | 小海   |    0 |   37 |
+                | 100000050 | 小王   |    0 |   23 |
+                | 100000060 | 小菜   |    0 |   50 |
+                | 100000080 | 小徐   |    0 |   40 |
+                +-----------+--------+------+------+
+                10 rows in set (0.00 sec)
+                
+                
+
+                结论：
+                1. DELETE 、 UPDATE 句子加上LIMIT 子句在MySQL 里不会有不及预期的效果， 此规则不适用于MySQL数据库。
+
+            </示例>
+            <知识文档>
+            1. UPDATE 官方文档： https://dev.mysql.com/doc/refman/8.4/en/update.html
+            2. DELETE 官方文档： https://dev.mysql.com/doc/refman/8.4/en/delete.html
+            </知识文档>
+        </原理说明>
+    </规则场景>
+    <标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>保障正确性</分类值><分类值>增强安全性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

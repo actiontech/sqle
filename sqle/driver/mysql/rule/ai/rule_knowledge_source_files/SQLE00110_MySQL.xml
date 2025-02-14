@@ -1,0 +1,142 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+  <规则编号>SQLE00110</规则编号>
+  <级别>warn</级别>
+  <数据库类型>MySQL</数据库类型>
+  <规则种类>索引优化</规则种类>
+  <规则简述>建议为SQL查询条件建立索引</规则简述>
+  <规则描述>为SQL查询条件建立索引可以显著提高查询性能，减少I/O操作，并提高查询效率。特别是在处理大数据量的表时，索引可以大幅度缩短查询时间，优化数据库性能。</规则描述>
+  <规则场景>
+    <原理说明 数据库版本="MySQL 8.0" 检查方式="连库审核">
+      <示例>
+            示例表结构:
+            create database db_mysql;
+            use db_mysql;
+  
+            -- 主表
+            CREATE TABLE customers(
+              id INT(11) NOT NULL, -- 序号
+              name VARCHAR(32) DEFAULT '',-- 姓名
+              sex TINYINT NOT NULL, -- 性别
+              city VARCHAR(32) NOT NULL, -- 所在城市
+              age SMALLINT(4) NOT NULL, -- 值类型
+              PRIMARY KEY (id) -- 主键
+            );
+
+  
+            -- 插入模拟数据,1500W 条。
+            set @@cte_max_recursion_depth=20000000;
+            insert into customers  
+            with recursive tmp (a,b,c,d,e) as (
+              select 1,'小王22222333',floor(rand()*2),'上海',ceil(rand()*30)+20 
+              union all 
+              select a+1,concat('小王',a),floor(rand()*2),'上海',ceil(rand()*20)+20 from tmp where a &lt; 15000000) 
+              select * from tmp;
+        
+
+            原理说明：
+            1. 索引是用来提升数据检索的效率，对于关系表的检索，无论什么SQL 语句，只要带过滤条件，都需要索引来加速。
+            2. 对于数据量比较大的表，索引对于数据检索的加速效率就非常明显。
+            3. 还有一种场景是没有过滤条件，但是需要对表进行排序，由于索引的有序性，利用索引可以减少排序的消耗，加快检索整体效率。
+
+            示例：
+            -- 以下示例有三类SQL。
+            -- SQL1：一类是针对age 列检索、分组的、更新、删除。
+            select count(*) from customers where age = 20;
+            select age,count(*) cnt from customers group by age order by cnt desc limit 1;
+            update customers set city='beijing' where age=20;
+            delete from customers where age = 20;
+
+            -- SQL2: 另外一类是针对name 列查询、更新、删除。
+            select * from customers where name like '小王1';
+            update customers set city='beijing' where name ='lucy';
+            delete from customers where name = 'lucy';
+
+            -- SQL3： 针对 age 列来排序
+            select * from customers order by age desc limit 1;
+
+            示例验证：
+            -- 每类SQL 验证一条，其他类似。
+            -- SQL1 age 列未加索引前，执行时间3.61秒。
+
+            (mysql:8.0.31-cluster) select count(*) from customers where age = 20;
+            +----------+
+            | count(*) |
+            +----------+
+            |        0 |
+            +----------+
+            1 row in set (3.61 sec)
+
+            -- SQL2 name 列未加索引前，执行时间5.79 秒。
+            (mysql:8.0.31-cluster)select * from customers where name like '小王1';
+            +----+---------+-----+--------+-----+
+            | id | name    | sex | city   | age |
+            +----+---------+-----+--------+-----+
+            |  2 | 小王1   |   1 | 上海   |  34 |
+            +----+---------+-----+--------+-----+
+            1 row in set (5.79 sec)
+            
+            --SQL3 age 为未加索引前，执行时间5.87秒。
+            (mysql:8.0.31-cluster) select * from customers order by age desc limit 1;
+            +----+----------------+-----+--------+-----+
+            | id | name           | sex | city   | age |
+            +----+----------------+-----+--------+-----+
+            |  1 | 小王22222333   |   1 | 上海   |  46 |
+            +----+----------------+-----+--------+-----+
+            1 row in set (5.87 sec)
+
+
+           -- 分别给字段age 和 name 添加索引。
+           (mysql:8.0.31-cluster)alter table customers add key idx_age_customers (age), add key idx_name_customers (name);
+            Query OK, 0 rows affected (2 min 25.66 sec)
+            Records: 0  Duplicates: 0  Warnings: 0
+
+
+            -- 加了索引后，SQL1、SQL2、SQL3 的提速非常明显。
+            (mysql:8.0.31-cluster) select count(*) from customers where age = 20;
+            +----------+
+            | count(*) |
+            +----------+
+            |        0 |
+            +----------+
+            1 row in set (0.00 sec)
+
+            (mysql:8.0.31-cluster)select * from customers where name like '小王1';
+            +----+---------+-----+--------+-----+
+            | id | name    | sex | city   | age |
+            +----+---------+-----+--------+-----+
+            |  2 | 小王1   |   1 | 上海   |  34 |
+            +----+---------+-----+--------+-----+
+            1 row in set (0.00 sec)
+
+            (mysql:8.0.31-cluster) select * from customers order by age desc limit 1;
+            +----+----------------+-----+--------+-----+
+            | id | name           | sex | city   | age |
+            +----+----------------+-----+--------+-----+
+            |  1 | 小王22222333   |   1 | 上海   |  46 |
+            +----+----------------+-----+--------+-----+
+            1 row in set (0.00 sec)
+
+            结论：
+            1. 对于SQL 语句中带where 、group by 、order by 子句中对应的字段必须强制加索引。
+            2. 加完索引后，性能得到巨大提升。
+
+
+      </示例>
+      <检查流程描述>
+      1. 对于所有DML语句的SELECT子句，
+        1. 创建一个集合，把表名、WHERE 条件的过滤字段、group by和order by的字段都写入集合中，
+        2. 登录数据库，使用集合中保存的字段来检查其在对应表中有无索引，
+        3. 如果没有索引，则报告违反规则。
+      2. 对于"UPDATE..."语句：
+        1. 创建一个集合，把表名、WHERE 条件的过滤字段，
+        2. 登录数据库，使用集合中保存的字段来检查其在对应表中有无索引，
+        3. 如果没有索引，则报告违反规则。
+      3. 对于"DELETE..."语句，执行与【UPDATE...】句型相同的检查。
+      </检查流程描述>
+      <知识文档>
+          1. SQL 优化官方文档： https://dev.mysql.com/doc/refman/8.0/en/statement-optimization.html
+      </知识文档>
+    </原理说明>
+  </规则场景>
+  <标签><分类 名称="操作对象"><分类值>业务数据</分类值><分类值>索引</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

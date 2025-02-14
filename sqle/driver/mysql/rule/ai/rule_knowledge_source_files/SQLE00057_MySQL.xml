@@ -1,0 +1,53 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00057</规则编号>
+    <级别>
+      <当前级别>notice</当前级别>
+      <新级别>warn</新级别>
+    </级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>DDL规范</规则种类>
+    <规则简述>必须使用INNODB数据库引擎</规则简述>
+    <规则描述>INNODB 支持事务，支持行级锁，更好的恢复性，高并发下性能更好。</规则描述>
+    <规则场景>
+      <原理说明 句型="CREATE TABLE" 数据库版本="MySQL 5.7、MySQL 8.0" 检查方式="连库审核">
+        <示例>
+          表定义：
+          create table if not exists 
+          customers (
+            id BIGINT, -- 序号
+            name VARCHAR(32) DEFAULT '', -- 姓名
+            sex SMALLINT NOT NULL, -- 性别
+            city VARCHAR(32) NOT NULL, -- 所在城市
+            age SMALLINT NOT NULL, -- 数值类型
+            PRIMARY KEY (id) -- 主键
+          ) engine innodb;
+    
+          原理说明：
+          1. MySQL 从5.7 开始，默认存储引擎已经为InnoDB。 InnoDB 是MySQL 数据库中唯一一个支持事务、MVCC、行级锁、聚簇索引的引擎。
+          2. 其他非InnoDB 引擎，比如MyISAM、BDB、CSV、ARCHIVE 等都不具备事务安全性，不推荐线上使用。
+          3. 有三种方法来使用InnoDB 引擎。
+             1. 在建表的时候指定 engine [=] innodb 关键词。比如:
+                create table t1(id int primary key, r1 int) engine  innodb;
+             2. 建表完后更改表引擎为 innodb: 通过 alter table 实现。
+                alter table t1 engine innodb;
+             3. 设置系统参数:default_storage_engine 为InnoDB，后续建表可以不用指定engine [=] innodb 关键词。
+                (mysql:8.0.31-cluster)set global default_storage_engine=innodb;
+                Query OK, 0 rows affected (0.00 sec)
+
+        
+        </示例>
+        <检查流程描述>
+        1. 检查 CREATE TABLE 句子末尾是否包含 ENGINE 关键词，如果没有，则进入下一步检查。
+            2. 登录数据库。
+            3. 检查参数 default_storage_engine，查看其值是否为innodb，如果不是，则将该完整SQL语句加入到触发规则的SQL表表中。
+        2. 检查 CREATE TABLE 或者 ALTER TABLE 句子末尾是否有 ENGINE = InnoDB 关键词（'=' 可以忽略），如果没有InnoDB,但是有其他的引擎，比如MyISAM、CSV、ARCHIVE等，则将该完整SQL语句加入到触发规则的SQL表表中。
+        </检查流程描述>
+        <知识文档>
+          1. CREATE TABLE 官方文档： https://dev.mysql.com/doc/refman/8.0/en/create-table.html
+          2. ALTER TABLE 官方文档： https://dev.mysql.com/doc/refman/8.0/en/alter-table.html
+          3. 默认引擎参数文档： https://dev.mysql.com/doc/refman/8.0/en/server-system-variables.html#sysvar_default_storage_engine
+        </知识文档>
+      </原理说明>  
+    </规则场景>
+    <标签><分类 名称="操作对象"><分类值>表</分类值></分类><分类 名称="SQL分类"><分类值>DDL</分类值><分类值>表空间和存储引擎</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值><分类值>增强可维护性</分类值></分类><分类 名称="审核精确度"><分类值>连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>
