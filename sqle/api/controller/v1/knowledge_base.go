@@ -89,15 +89,12 @@ type NodeResponse struct {
 	ID     string      `json:"id"`
 	Name   string      `json:"name"`
 	Weight uint64      `json:"weight"`
-	Data   interface{} `json:"data,omitempty"`
 }
 
 // EdgeResponse represents an edge in the API response
 type EdgeResponse struct {
-	FromID     string `json:"from_id"`     // 存储Node的ID而不是指针
-	FromName   string `json:"from_name"`   // 方便前端显示
-	ToID       string `json:"to_id"`       // 存储Node的ID而不是指针
-	ToName     string `json:"to_name"`     // 方便前端显示
+	FromID     string `json:"from_id"`     // 存储Node的ID
+	ToID       string `json:"to_id"`       // 存储Node的ID
 	Weight     uint64 `json:"weight"`      // 权重
 	IsDirected bool   `json:"is_directed"` // 是否有向
 }
@@ -106,11 +103,4 @@ type EdgeResponse struct {
 type GraphResponse struct {
 	Nodes []*NodeResponse `json:"nodes"` // 节点集合
 	Edges []*EdgeResponse `json:"edges"` // 边集合
-	Stats GraphStats      `json:"stats"` // 添加图的统计信息
-}
-
-// GraphStats 包含图的统计信息
-type GraphStats struct {
-	TotalNodes uint64 `json:"total_nodes"`
-	TotalEdges uint64 `json:"total_edges"`
 }
