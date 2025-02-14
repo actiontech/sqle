@@ -71,7 +71,7 @@ func GetKnowledgeBaseTagList(c echo.Context) error {
 // @Summary 获取知识库知识图谱
 // @Description get knowledge graph
 // @Id getKnowledgeGraph
-// @Tags knowledge
+// @Tags knowledge_bases
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.GetKnowledgeGraphResp
 // @router /v1/knowledge_bases/graph [get]
