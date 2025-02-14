@@ -29,7 +29,7 @@ type ModuleStatusRes struct {
 // @Tags system
 // @Security ApiKeyAuth
 // @Param db_type query string false "db type" Enums(MySQL,Oracle,TiDB,OceanBase For MySQL,PostgreSQL,DB2,SQL Server)
-// @Param module_name query string false "module name" Enums(execute_sql_file_mode,sql_optimization,backup)
+// @Param module_name query string false "module name" Enums(execute_sql_file_mode,sql_optimization,backup,knowledge_base)
 // @Success 200 {object} v1.GetModuleStatusResV1
 // @router /v1/system/module_status [get]
 func GetSystemModuleStatus(c echo.Context) error {
