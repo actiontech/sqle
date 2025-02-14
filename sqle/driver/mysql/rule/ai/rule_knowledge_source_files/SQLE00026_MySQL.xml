@@ -1,0 +1,86 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00026</规则编号>
+    <级别>notice</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>DDL规范</规则种类>
+    <规则简述>整数字段建议指定最大显示宽度</规则简述>
+    <规则描述>在表结构定义中，整数字段定义指定了最大显示宽度，可以体现业务对该字段的数据存储预期；同时保持了字段定义的一致性，减少在数据库之间迁移时需要修改字段长度的工作量。</规则描述>
+    <规则场景>
+        <原理说明 数据库版本="MySQL 5.7、MySQL 8.0" 检查方式="不连库审核">
+            <示例>
+            原理说明：
+            1. 字段数据类型定义时，需要标注字段宽度，并且使用 zerofill 来显示其宽度；如果不定义 zerofill 则宽度不会显示，可读性差。
+            2. 主要使用场景有两种：
+                1）流水号，类似发票号中自动编号那部分，如年月之后的00001；
+                2）保持月份、日期的位数相同，如12月20日、2月2日，则针对后一个日期自动补0，变成02月02日。
+            3. 这种只改变列宽度定义的，在单条 SELECT 语句检索时有效，在 SELECT 语句加 UNION ALL 子句时失效。
+            4. 该功能在MySQL8.0.17已经废弃，如果需要这样的功能，需要从数据写入上彻底改变：
+            比如对于非自增主键字段，定义此字段为 char(M),然后使用lpad函数填充字段值。
+
+            示例：
+            CREATE TABLE orders(
+                id BIGINT, -- 编号
+                sub_id INT(10) zerofill, -- 子编号
+                primary key (id) -- 主键
+            );
+            alter table orders modify id bigint(20) zerofill;
+
+            示例验证：
+
+            --模拟写入数据
+            (mysql:8.0.18)insert into orders values(1,10),(2,10000);
+
+            -- 常规select查询数据，则正常显示宽度
+            (mysql:8.0.18)select * from orders; 
+            +----------------------+------------+
+            | id                   | sub_id     |
+            +----------------------+------------+
+            | 00000000000000000001 | 0000000010 |
+            | 00000000000000000002 | 0000010000 |
+            +----------------------+------------+
+            2 rows in set (0.00 sec)
+
+            -- 如果使用union语句则宽度显示失效
+            (mysql:8.0.18)select * from orders where id = 1 union all select * from orders where id = 2;
+            +----+--------+
+            | id | sub_id |
+            +----+--------+
+            |  1 |     10 |
+            |  2 |  10000 |
+            +----+--------+
+            2 rows in set (0.00 sec)
+
+            -- 废弃后，建议采用新的方式。
+            
+            (mysql:8.0.18)truncate table orders;
+            Query OK, 0 rows affected (0.04 sec)
+            
+            (mysql:8.0.18)alter table orders modify sub_id  char(10),modify id char(20); -- 更改字段类型，使用lpad函数填充数据
+            Query OK, 0 rows affected (0.01 sec)
+            Records: 0  Duplicates: 0  Warnings: 0
+            
+            (mysql:8.0.18)insert into orders  values (lpad(1,20,'0'),lpad(99,10,'0'));
+            Query OK, 1 row affected (0.00 sec)
+            
+            (mysql:8.0.18)select * from orders;
+            +----------------------+------------+
+            | id                   | sub_id     |
+            +----------------------+------------+
+            | 00000000000000000001 | 0000000099 |
+            +----------------------+------------+
+            1 row in set (0.00 sec)
+            
+            </示例>
+            <检查流程描述>
+            1. 对于"CREATE TABLE..."语句， 如果存在INT、INTEGER、TINYINT、SMALLINT、MEDIUMINT、BIGINT类型的字段，并且为其指定长度，并且不包含关键词：zerofill，则报告违反规则。
+            2. 对于"ALTER TABLE..." 语句，执行上述相同的检查。
+            </检查流程描述>
+            <知识文档>
+            1. 整型宽度限定数目介绍以及使用：https://dev.mysql.com/doc/refman/8.0/en/numeric-type-attributes.html
+            2. 整型数据类型：https://dev.mysql.com/doc/refman/8.0/en/integer-types.html
+            3. 废弃链接： https://dev.mysql.com/doc/refman/8.0/en/mysql-nutshell.html
+            </知识文档>
+        </原理说明>
+    </规则场景>
+    <标签><分类 名称="操作对象"><分类值>字段</分类值></分类><分类 名称="SQL分类"><分类值>DDL</分类值></分类><分类 名称="审核目的"><分类值>保障正确性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

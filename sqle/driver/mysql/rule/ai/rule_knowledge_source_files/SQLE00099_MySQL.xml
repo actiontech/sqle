@@ -1,0 +1,110 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00099</规则编号>
+    <级别>notice</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>数据修改和操作安全</规则种类>
+    <规则简述>不建议在SELECT语句中存在FOR UPDATE操作</规则简述>
+    <规则描述>SELECT FOR UPDATE 会对查询结果集中每行数据都添加排他锁，其他线程对该记录的更新与删除操作都会阻塞，在高并发下，容易造成数据库大量锁等待，影响数据库查询性能</规则描述>
+    <规则场景>
+        <原理说明 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="SELECT、INSERT... SELECT、UPDATE、DELETE、UNION、WITH">
+            <示例>
+            示例表结构:
+            create database db_mysql;
+            use db_mysql;
+
+            CREATE TABLE customers(
+            id INT(11) NOT NULL, -- 序号
+            name VARCHAR(32) DEFAULT '',-- 姓名
+            sex TINYINT NOT NULL, -- 性别
+            city VARCHAR(32) NOT NULL, -- 所在城市
+            age SMALLINT(4) NOT NULL, -- 值类型
+            PRIMARY KEY (id) -- 主键
+            );
+
+            -- 插入模拟数据 10 条。
+            insert into customers values (1,'lily1',1,'shanghai',20);
+            insert into customers values (2,'lily2',0,'shanghai',30);
+            insert into customers values (3,'lily3',1,'shanghai',20);
+            insert into customers values (4,'lily4',0,'shanghai',20);
+            insert into customers values (5,'lily5',1,'shanghai',30);
+            insert into customers values (6,'lily6',0,'shanghai',20);
+            insert into customers values (7,'lily7',1,'shanghai',30);
+            insert into customers values (8,'lily8',0,'shanghai',40);
+            insert into customers values (9,'lily9',1,'shanghai',20);
+            insert into customers values (10,'lily10',1,'shanghai',40);
+
+    
+
+          原理说明：
+          1. SELECT FOR UPDATE 会对查询结果集中每行数据都添加排他锁，其他线程对该记录的更新与删除操作都会阻塞，在高并发下，容易造成数据库大量锁等待，影响数据库查询性能。
+          2. 如非必要，直接 SELECT 即可，MySQL 会读取最近提交的版本，不会对当前业务数据造成阻塞。
+
+          示例：
+          select * from customers where id &lt; 5 for update;
+
+          示例验证：
+          开启一个 SESSION 1 执行 SELECT FOR UPDATE，不提交。
+            (mysql:8.0.31-cluster)begin;
+            Query OK, 0 rows affected (0.00 sec)
+
+            (mysql:8.0.31-cluster)select * from customers where id &lt; 5 for update;
+            +----+-------+-----+----------+-----+
+            | id | name  | sex | city     | age |
+            +----+-------+-----+----------+-----+
+            |  1 | lily1 |   1 | shanghai |  20 |
+            |  2 | lily2 |   0 | shanghai |  30 |
+            |  3 | lily3 |   1 | shanghai |  20 |
+            |  4 | lily4 |   0 | shanghai |  20 |
+            +----+-------+-----+----------+-----+
+            4 rows in set (0.00 sec)
+
+
+          再开启一个新的 SESSION 2：
+            (mysql:8.0.31-cluster)update customers set age = 20 where id = 3;
+            ERROR 1205 (HY000): Lock wait timeout exceeded; try restarting transaction
+          
+          此时因为 SESSION 1未提交，所以这条语句一直卡，直到事务锁超时终止。
+
+          在SESSION 1 里查看目前的数据锁有哪些： 
+          1. 线程 59 是 SESSION 1、线程 60 是 SESSION 2。
+          2. 可以看到，线程 60 在等待 id 为 3的锁， 线程 59 持有的锁中包含 id 为 3 的记录。
+            (mysql:8.0.31-cluster)select * from data_locks;
+            +--------+----------------------------------------+-----------------------+-----------+----------+---------------+-------------+----------------+-------------------+------------+-----------------------+-----------+---------------+-------------+-----------+
+            | ENGINE | ENGINE_LOCK_ID                         | ENGINE_TRANSACTION_ID | THREAD_ID | EVENT_ID | OBJECT_SCHEMA | OBJECT_NAME | PARTITION_NAME | SUBPARTITION_NAME | INDEX_NAME | OBJECT_INSTANCE_BEGIN | LOCK_TYPE | LOCK_MODE     | LOCK_STATUS | LOCK_DATA |
+            +--------+----------------------------------------+-----------------------+-----------+----------+---------------+-------------+----------------+-------------------+------------+-----------------------+-----------+---------------+-------------+-----------+
+            | INNODB | 139669580807384:1081:139669585055424   |                  3242 |        60 |       13 | db_mysql      | customers   | NULL           | NULL              | NULL       |       139669585055424 | TABLE     | IX            | GRANTED     | NULL      |
+            | INNODB | 139669580807384:19:4:4:139669585052368 |                  3242 |        60 |       13 | db_mysql      | customers   | NULL           | NULL              | PRIMARY    |       139669585052368 | RECORD    | X,REC_NOT_GAP | WAITING     | 3         |
+            | INNODB | 139669580808192:1081:139669585061504   |                  3240 |        59 |       12 | db_mysql      | customers   | NULL           | NULL              | NULL       |       139669585061504 | TABLE     | IX            | GRANTED     | NULL      |
+            | INNODB | 139669580808192:19:4:2:139669585058400 |                  3240 |        59 |       12 | db_mysql      | customers   | NULL           | NULL              | PRIMARY    |       139669585058400 | RECORD    | X             | GRANTED     | 1         |
+            | INNODB | 139669580808192:19:4:3:139669585058400 |                  3240 |        59 |       12 | db_mysql      | customers   | NULL           | NULL              | PRIMARY    |       139669585058400 | RECORD    | X             | GRANTED     | 2         |
+            | INNODB | 139669580808192:19:4:4:139669585058400 |                  3240 |        59 |       12 | db_mysql      | customers   | NULL           | NULL              | PRIMARY    |       139669585058400 | RECORD    | X             | GRANTED     | 3         |
+            | INNODB | 139669580808192:19:4:5:139669585058400 |                  3240 |        59 |       12 | db_mysql      | customers   | NULL           | NULL              | PRIMARY    |       139669585058400 | RECORD    | X             | GRANTED     | 4         |
+            | INNODB | 139669580808192:19:4:6:139669585058744 |                  3240 |        59 |       12 | db_mysql      | customers   | NULL           | NULL              | PRIMARY    |       139669585058744 | RECORD    | X,GAP         | GRANTED     | 5         |
+            +--------+----------------------------------------+-----------------------+-----------+----------+---------------+-------------+----------------+-------------------+------------+-----------------------+-----------+---------------+-------------+-----------+
+            8 rows in set (0.00 sec)
+          
+
+          SESSION 1 提交：
+           (mysql:8.0.31-cluster)commit;
+            Query OK, 0 rows affected (0.00 sec)
+          
+          SESSION 2 重新执行： 此时执行成功。
+            (mysql:8.0.31-cluster)update customers set age = 20 where id = 3;
+            Query OK, 0 rows affected (0.00 sec)
+            Rows matched: 1  Changed: 0  Warnings: 0
+         
+          结论：
+          1. SELECT FOR UPDATE 由于操作期间阻塞结果集，所以不适合大并发的业务。
+          2. 除非必要，否则都直接 SELECT 即可。
+  
+            </示例>
+            <检查流程描述>
+            1. 对于所有DML语句中的SELECT子句，检查SQL语句中是否存在FOR UPDATE 操作，如果存在，则报告违反规则。
+            </检查流程描述>
+            <知识文档>
+            1. SELECT 官方文档：https://dev.mysql.com/doc/refman/5.7/en/select.html
+            </知识文档>
+        </原理说明>
+    </规则场景>
+<标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

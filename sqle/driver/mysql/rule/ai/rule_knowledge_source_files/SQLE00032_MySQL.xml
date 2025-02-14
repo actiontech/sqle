@@ -1,0 +1,33 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+<规则编号>SQLE00032</规则编号>
+<级别>notice</级别>
+<数据库类型>MySQL</数据库类型>
+<规则种类>命名规范</规则种类>
+<规则简述>数据库名称必须使用固定后缀结尾</规则简述>
+<规则变量>
+  <变量 name="固定后缀" type="string">_DB</变量>
+</规则变量>
+<规则描述>通过配置该规则可以规范指定业务的数据库命名规则，具体命名规范可以自定义设置。</规则描述>
+<规则场景>
+   <场景 名称="数据库对象名初始化" 数据库版本="MySQL" 检查方式="不连库审核" 适用关键词="DATABASE" 适用句型="CREATE">
+    <示例>  
+      示例：
+      CREATE DATABASE TEST_DB;
+      
+      示例说明：      
+      数据库系统默认的SQL模式下（即ANSI_QUOTES禁用），数据库对象名定义允许使用字符：ASCII: 【0-9,a-z,A-Z$_】以及Extended:【U+0080 .. U+FFFF】，且允许数字开头但不能由全数字组成。
+
+      从业务实践角度出发，数据库命名遵循良好的命名约定和使用固定后缀，可以提高代码的可读性、可维护性，并减少潜在的兼容性和语法问题。
+      引用知识文档1：Certain objects within MySQL, including database, table, index, column, alias, view, stored procedure, partition, tablespace, and other object names are known as identifiers. Database, table, and column names cannot end with space characters.
+    </示例>
+    <检查流程描述>
+      1、检查CREATE句子中是否存在DATABASE关键词，如果存在，则进入下一步检查。
+      2、检查数据库对象名是否遵从固定后缀要求，如果不遵从，报告违反规则。
+    </检查流程描述>
+    <知识文档>
+      与规则 SQLE00048一致，仅调整检查流程即可。
+    </知识文档>
+   </场景>
+</规则场景>
+<标签><分类 名称="操作对象"><分类值>数据库</分类值></分类><分类 名称="SQL分类"><分类值>数据库管理</分类值><分类值>DDL</分类值></分类><分类 名称="审核目的"><分类值>增强可维护性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

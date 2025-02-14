@@ -1,0 +1,124 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00153</规则编号>
+    <级别>warn</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>DDL规范</规则种类>
+    <规则简述>创建表建议添加索引</规则简述>
+    <规则描述>规划和设计表时，索引应根据业务需求和数据分布合理创建，无索引通常是不合理的情况</规则描述>
+    <规则场景>
+        <场景 名称="初始化表结构" 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="CREATE TABLE、ALTER TABLE">
+            <示例>
+                示例：
+                CREATE TABLE customers (
+                    id int, -- 编号
+                    name VARCHAR(50), -- 姓名
+                    sex int, -- 性别
+                    city VARCHAR(50), -- 城市
+                    age int, -- 年龄
+                    log_date varchar(20),  -- 记录日志时间
+                    primary key (id) -- 主键
+                );
+
+                原理说明:
+                1. 可以把索引看成基于原表的一张小表，目的就是为了减少对原表的访问，减少对系统资源的消耗。
+                2. 对表的查询语句中，如果对应的字段不加索引，那么对优化器来讲，只会走全表扫描，如果全表扫的数据量很大，就会严重影响查询性能。 
+                3. 对于MySQL数据库，定义表索引有三种方式：
+                   1. CREATE TABLE中直接对字段定义index；
+                   2. ALTER TABLE中 add index；
+                   3. CREATE INDEX指定表以及索引字段。              
+
+                示例验证：
+                -- 生成初始样例数据 （基于MySQL 8.0 版本）
+                set @@cte_max_recursion_depth=2000000;
+                insert into customers 
+                with recursive tmp(a,b,c,d,e,f) as (
+                select 1,'lucy1000000',0,'shanghai',20,current_date()
+                union all
+                      select a+1,concat('lily',mod(a,100)),floor(rand()*2),'shanghai',ceil(rand()*20)+30,date_sub(current_date(),interval ceil(rand()*1000) day)
+                      from tmp where a &lt; 1000001
+                ) table tmp;
+                
+    
+                案例SQL： 
+                select count(*) from customers where age = 40;
+    
+                实验对比：
+                
+                -- 查看执行结果和执行计划，执行时间为110毫秒。
+                (mysql:8.0.31-cluster)select count(*) from customers where age = 40;
+                +----------+
+                | count(*) |
+                +----------+
+                |    50049 |
+                +----------+
+                1 row in set (0.11 sec)
+
+                -- 执行计划显示扫描行数为 996337 行,成本为 110570.28,因为没有索引,所以走的全表扫.
+                (mysql:8.0.31-cluster)explain format=tree select count(*) from customers where age = 40\G
+                *************************** 1. row ***************************
+                EXPLAIN: -&gt; Aggregate: count(0) (cost=110570.28 rows=1)
+                    -&gt; Filter: (customers.age = 40) (cost=100606.55 rows=99637)
+                        -&gt; Table scan on customers (cost=100606.55 rows=996373)
+                
+                1 row in set (0.00 sec)
+                                              
+               -- 给字段age 加上索引
+               (mysql:8.0.31-cluster)create index idx_age_customers on customers(age);
+               Query OK, 0 rows affected (3.44 sec)
+               Records: 0  Duplicates: 0  Warnings: 0
+               
+                -- 再次执行同样的SQL，执行时间由110毫秒降低到10毫秒。
+
+                (mysql:8.0.31-cluster)select count(*) from customers where age = 40;
+                +----------+
+                | count(*) |
+                +----------+
+                |    50049 |
+                +----------+
+                1 row in set (0.01 sec)
+                
+                -- 查看执行计划, 过滤字段有索引后,执行计划走的Covering index,扫描行数由996337降低到95462,执行成本由110570.28 降低到 19198.19.
+                (mysql:8.0.31-cluster)explain format=tree select count(*) from customers where age = 40\G
+                *************************** 1. row ***************************
+                EXPLAIN: -&gt; Aggregate: count(0) (cost=19198.19 rows=1)
+                    -&gt; Covering index lookup on customers using idx_age_customers (age=40) (cost=9651.99 rows=95462)
+                
+                1 row in set (0.00 sec)
+                
+    
+                示例结论：
+                  1. 给SQL 语句中过滤字段加上索引后，查询效率成倍的增长。
+                  2. 务必要检查 SQL 语句中的过滤字段是否加上索引。
+                  3. 一般来讲，表只有主键的场景下，是不太可能适应大部分业务的。 大部分业务都是基于非主键字段的过滤，单个非主键字段过滤或者多个非主键字段的联合过滤等等。
+                  4. 对应一张表来讲，索引的数量也不能太多。根据大量项目经验，通常有以下结论：
+                     1. 合适的索引对查询语句、部分带过滤字段的更新和删除语句性能提升很明显。所以对于读多的场景，应该尽可能的多建索引。
+                     2. 索引对全表的写入、更新是有副作用的。因为不但要写入数据页，还得写入索引页；所以基于写多的场景，索引应该尽可能的少。
+
+                解决方案：
+                1. create index idx_age_customers on customers(age);  ##添加索引
+                2. alter table customers add index idx_age_customers(age);##添加索引 
+                3. 调整建表语句：
+                    CREATE table  customers (
+                        id int, -- 编号
+                        name VARCHAR(50), -- 姓名
+                        sex int, -- 性别
+                        city VARCHAR(50), -- 城市
+                        age int, -- 年龄
+                        log_date varchar(20),  -- 记录日志时间
+                        index idx_age_customers(age),
+                        primary key (id) -- 主键
+                    );            
+
+            </示例>
+            <检查流程描述>
+            1. 对于"CREATE TABLE..."语句，如果不存在除主键外的二级索引定义， 则报告违反规则。
+            </检查流程描述>
+            <知识文档>
+            1. Create table 官方文档： https://dev.mysql.com/doc/refman/8.0/en/create-table.html
+            </知识文档>
+        </场景>    
+    </规则场景>
+    <规则缺陷 />
+    <标签><分类 名称="操作对象"><分类值>表</分类值></分类><分类 名称="SQL分类"><分类值>DDL</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况>
+</Rule>

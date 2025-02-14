@@ -1,0 +1,74 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+<规则编号>SQLE00079</规则编号>
+<级别>warn</级别>
+<数据库类型>MySQL</数据库类型>
+<规则种类>DML规范</规则种类>
+<规则简述>别名不建议与表或列的名字相同</规则简述>
+<规则描述>表或列的别名与其真实名称相同, 这样的别名会使得查询更难去分辨</规则描述>
+<规则场景>   
+ <原理说明 名称="别名相同的表、列" 数据库版本="MySQL 5.7、MySQL 8.0" 检查方式="不连库审核" 适用句型="SELECT、UNION ALL、WITH">
+    <示例>
+      前置：
+      CREATE TABLE t1 (
+        id int,
+        r1 int
+      );
+      CREATE TABLE t2 (
+          id int,
+          r1 int
+      );
+
+      insert into t1 values (1,2);
+      insert into t2 values (1,2);
+
+      原理说明：
+      1. 从数据库执行层面看，对别名与真实表名、列名相同是不做限制的，对实际执行效果没有影响。数据库中别名的使用，有以下几方面的好处。
+        1. 表名、列名特别长、表达式等，采用别名可以更方便地阅读。
+        2. 多表关联场景中，多个表存在相同列名时，通过表名来指定列，此时采用别名缩短SQL句子长度。
+        3. self-join需要采用别名定义表名，防止出现一个查询中多次引用相同表的错误。
+        4. 从业务开发层面，列名采用别名后，代码适配性更强，即时真实字段引用变更，可减少业务代码变更的频率。
+        5. 带空格的字段拼接，会导致列名无法正确显示，可通过别名来处理。
+      2. 但是从业务层面来讲，不建议别名、列名等和表、列相同，这是为了避免混淆和潜在的错误。比如有一个数据库名为 DB1 ，同时有一个表也叫 DB1 ，并且在查询中为数据库起了别名也叫 DB1 ，这可能会导致以下问题：
+        1. 在复杂的查询语句中，可能会让开发人员或维护人员难以清晰地区分到底是在引用数据库、表还是别名，从而增加理解和维护的难度。
+        2. 也可能导致语法错误或意外的结果。
+        3. 所以为了保持代码的清晰性和可维护性，应该为数据库、表和列使用不同且具有明确含义的名称和别名。
+
+      反例：
+      SQL1:  select t1.id id, t1.r1 r1 ,t2.id id,t2.r1 r1 from t1 inner join t2 on t1.id = t2.id;
+      SQL2:  select t1.id id, t1.r1 r1 ,t2.id id,t2.r1 r1 from t1 t2 inner join t2 t1 on t1.id = t2.id;
+      SQL3:  WITH CTE_TMP (a,b,c,d) as (select t1.id id, t1.r1 r1 ,t2.id id,t2.r1 r1 from t1 t2 inner join t2 t1 on t1.id = t2.id) select a id,b r1, c id, d r1 from CTE_TMP;
+
+      反例说明：
+      1. 两条SQL ，都是表t1和表t2内联。但是SQL1 的别名和每张表的真实名字一样； SQL2 的别名除了和真实的字段名一样外，表的别名还相反了，这样导致查询的结果无法分辨来自哪张表，可读性非常差。
+
+      正例：
+      SQL1: select t1.id t1_id, t1.r1 t1_r1 ,t2.id t2_id,t2.r1 t2_r1 from t1 inner join t2 on t1.id = t2.id;
+      SQL2: select a.id t1_id, a.r1 t1_r1 ,b.id t2_id,b.r1 t2_r1 from t1 a inner join t2 as b on a.id = b.id;
+      SQL3: WITH CTE_TMP (t1_id,t1_r1,t2_id,t2_r1) as (select a.id t1_id, a.r1 t1_r1 ,b.id t2_id,b.r1 t2_r1 from t1 a inner join t2 as b on a.id = b.id) select t1_id,t1_r1,t2_id,t2_r1 from CTE_TMP;
+
+      正例说明：
+      1. 示例中的SQL 别名非常清晰，很容易就能看懂SQL 的语义。
+
+      结论：
+      1. SQL 语句中不建议对表、列等使用和其相同的别名；虽然说数据库语法正确，语义也支持，但是从业务角度来讲，可读性非常差，结果冗余混淆，增加后续编码的复杂性。
+
+    </示例>
+    <检查流程描述>
+      1. 对于所有DML、CTE语中句含有SELECT关键字，则：
+        1. 创建2个集合，集合A收集sql中表、列名，集合B收集sql中所有的别名
+        2. 判断集合B中所有别名是否有重复，如果有，则报告违反规则
+        3. 判断集合A和集合B是否有相同名称，如果有，则报告违反规则
+    </检查流程描述>
+    <知识文档>
+      1、SELECT语法：https://dev.mysql.com/doc/refman/5.7/en/select.html
+      2、INSER语法：https://dev.mysql.com/doc/refman/5.7/en/insert.html
+      3、SELECT语法：https://dev.mysql.com/doc/refman/5.7/en/update.html
+      4、DELELT语法：https://dev.mysql.com/doc/refman/5.7/en/delete.html
+      5、WITH(CTE)语法：https://dev.mysql.com/doc/refman/8.0/en/with.html
+      6、应用文档：https://dev.mysql.com/doc/refman/8.0/en/problems-with-alias.html
+    </知识文档>
+  </原理说明>
+</规则场景>   
+<规则缺陷 />  
+<标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>增强可维护性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

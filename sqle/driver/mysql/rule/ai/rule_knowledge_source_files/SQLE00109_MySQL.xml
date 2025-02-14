@@ -1,0 +1,95 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00109</规则编号>
+    <级别>notice</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>DML规范</规则种类>
+    <规则简述>禁止在子查询中使用LIMIT</规则简述>
+    <规则描述>不支持在子查询中进行'LIMIT &amp; IN/ALL/ANY/SOME'，数据库会执行报错。</规则描述>
+    <规则场景>
+        <场景 名称="子查询" 数据库版本="所有版本 MySQL " 检查方式="不连库审核" 适用句型="UPDATE、DELETE、SELECT、UNION、INSERT ... SELECT">
+            <示例>
+      
+              前置：
+              create database db_mysql;
+              use db_mysql;
+    
+              -- 示例表结构
+              CREATE TABLE customers(
+                id INT NOT NULL, -- 序号
+                name VARCHAR(32) DEFAULT 'lucy',-- 姓名
+                sex int NOT NULL default 0, -- 性别
+                city VARCHAR(32) NOT NULL default 'beijing', -- 所在城市
+                age INT NOT NULL default 0, -- 值类型
+                PRIMARY KEY (id) -- 主键
+              );
+              create index idx_age_customers on customers(age);
+
+                
+              -- 插入模拟数据,10W 条。
+              set @@cte_max_recursion_depth=20000000;
+              insert into customers  
+              with recursive tmp (a,b,c,d,e) as (
+                select 1,'小王22222333',floor(rand()*2),'上海',ceil(rand()*30)+20 
+                union all 
+                select a+1,concat('小王',a),floor(rand()*2),'上海',ceil(rand()*20)+20 from tmp where a &lt; 100000) 
+                select * from tmp;
+              原理说明：
+              1. 这类DML 语句，MySQL 暂时不支持；可以考虑变为语义相同的其他MySQL 支持的语句。比如可以使用主键来过滤行数。
+
+              反例：
+              select name,city,age from customers where id in (select id from customers limit 2);
+              select name,city,age from customers where id = ALL (select id from customers limit 2);
+              select name,city,age from customers where id = SOME (select id from customers limit 2);
+              select name,city,age from customers where id = ANY (select id from customers limit 2);
+              update customers set city='北京' where id in (select id from customers limit 2);
+              update customers set city='北京' where id = ALL (select id from customers limit 2);
+              update customers set city='北京' where id = SOME (select id from customers limit 2);
+              update customers set city='北京' where id = ANY (select id from customers limit 2);
+              delete from customers where id in (select id from customers limit 2);
+              delete from customers where id = ALL (select id from customers limit 2);
+              delete from customers where id = ANY (select id from customers limit 2);
+              delete from customers where id = SOME (select id from customers limit 2);
+
+              反例说明：
+              1. select、update、delete 语句 不支持 子查询有LIMIT 的更新，MySQL 不支持这样的语法，直接执行会报错。
+
+              反例验证： 执行这类SQL 直接报错
+              (mysql:8.3.0:db_mysql)update customers set city='北京' where id in (select * from customers limit 2);
+              ERROR 1235 (42000): This version of MySQL doesn't yet support 'LIMIT IN/ALL/ANY/SOME subquery'
+
+              正例：
+              select a.name,a.city,a.age from customers a join (select id from customers limit 2) b using(id);
+              update customers a,customers b set a.city='北京' where a.id = b.id and b.id &lt; 3;
+              delete a, b from customers a join customers b where a.id = b.id and b.id &lt; 
+
+              正例说明：
+              1. 由于MySQL 不支持子查询有LIMIT 子句的更新，需要消除LIMIT 子句，变为其他可以识别的语义相同的语句。
+              2. 正例里LIMIT 子句转换为 INNER JOIN 的多表更新、多表删除。
+
+              正例验证：修改后的SQL，可以正确执行。
+              (mysql:8.3.0:db_mysql)update customers a,customers b set a.city='北京' where a.id = b.id and b.id &lt; 3;
+              Query OK, 2 rows affected (0.03 sec)
+              Rows matched: 2  Changed: 2  Warnings: 0
+
+              结论：
+              1. 对于SELECT、UPDATE、DELETE 语句，MySQL 不支持其包含子查询里有 LIMIT 的语句，会报告错误。
+              2. 这类语句可以更改为语义相同的语句，比如依据主键过滤。
+
+
+            </示例>
+            <检查流程描述>
+            1. 对于"UPDATE ... ()" 语句，如果以下任意一个为真，则报告违反规则：
+              1. 括号里的子查询有LIMIT 子句
+            2. 对于"DELETE ... ()" 语句，执行与上述相同的检查。
+            3. 对于"SELECT ... ()" 语句，执行与上述相同的检查。
+            4. 对于"INSERT ...SELECT ... ()" 语句，执行与上述相同的检查。
+            5. 对于"SELECT ...()...UNION ALL SELECT... ()" 语句，执行与上述相同的检查。
+          </检查流程描述>
+          <知识文档>
+            1. DML 语句优化官方文档：https://dev.mysql.com/doc/refman/8.0/en/data-change-optimization.html
+          </知识文档>
+        </场景>
+      
+    </规则场景>
+    <标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>保障正确性</分类值><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

@@ -1,0 +1,190 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+  <规则编号>SQLE00112</规则编号>
+  <级别>notice</级别>
+  <数据库类型>MySQL</数据库类型>
+  <规则种类>DML规范</规则种类>
+  <规则简述>禁止WHERE子句中条件字段与值的数据类型不一致</规则简述>
+  <规则描述>WHERE子句中条件字段与值数据类型不一致会引发隐式数据类型转换，导致优化器选择错误的执行计划，在高并发、大数据量的情况下，不走索引会使得数据库的查询性能严重下降</规则描述>
+  <规则场景>
+    <原理说明 适用关键词="WHERE、ON" 数据库版本="MySQL 8.0" 检查方式="连库审核" 适用句型="SELECT、UPDATE、DELETE、INSERT...SELECT、UNION、WITH">
+      <示例>
+        前置：
+        -- 主表1
+        CREATE TABLE customers (
+            c_id int, -- 编号
+            name VARCHAR(50), -- 姓名
+            sex int, -- 性别
+            city VARCHAR(50), -- 城市
+            age int, -- 年龄
+            log_date varchar(20),  -- 记录日志时间
+            primary key (c_id) -- 主键
+        );
+
+        -- 主表2
+        CREATE TABLE orders (
+            id int auto_increment, -- 编号
+            c_id varchar(20), -- 客户编号
+            log_date varchar(20),  -- 记录日志时间
+            primary key (id) -- 主键
+        );
+              
+        -- 给主表1日期字段创建索引
+        create index idx_log_date_customers on customers(log_date);
+
+        -- 给主表2客户编号字段创建索引
+        create index idx_customers_id_orders on orders(c_id);
+   
+        -- 生成初始样例数据 （基于MySQL 8.0 版本）
+        set @@cte_max_recursion_depth=2000000;
+        insert into customers 
+        with recursive tmp(a,b,c,d,e,f) as (
+        select 1,'lucy1000000',0,'shanghai',20,current_date()
+        union all
+              select a+1,concat('lily',mod(a,100)),floor(rand()*2),'shanghai',ceil(rand()*20)+30,date_sub(current_date(),interval ceil(rand()*1000) day)
+              from tmp where a &lt; 1000001
+        ) table tmp;
+
+        insert into orders (c_id,log_date) select c_id,current_date from customers ;
+
+        原理说明：
+        1. 对于过滤字段数据类型不匹配的场景，数据库内部会隐式进行逐行数据类型转换，造成优化器生成了错误的执行计划，最终导致数据库性能变差，TPS降低。
+        2. 隐式数据类型转换发生在以下场景：
+           1. 单表查询的where 过滤条件中。
+           2. 多表关联的join操作下的ON条件。
+           3. 多表关联的join，如果关联键一样，可以使用Using 关键词，否则使用on 或者 where. 比如：
+              select * from tb1 join tb2 using(id);
+
+        示例:
+        SQL1： 单表查询，where 条件中，有数据类型不匹配的过滤。
+        select count(*) from customers where log_date = current_date;
+
+        SQL2: 多表关联，JOIN 条件中，有数据类型不匹配的关联。
+        select count(*) from customers a join orders b on a.id = b.customers_id;
+
+        SQL3： 多表关联，相同关联键使用Using关键词。
+        select * from customers join orders using(c_id);
+
+        注：在隐式数据类型转换发生的场景中，其他句型与SELECT句型语法相同，都是判断where过滤条件或者ON条件，因此省略相似的示例。
+
+        示例验证：
+
+        -- 查看SQL 1的执行时间以及执行计划。 从warnings 信息中可以看到不能使用合适的执行计划原因是发生了隐式数据类型转换：due to type or collation conversion
+        (mysql:8.0.31-cluster) select count(*) from customers where log_date = current_date;
+        +----------+
+        | count(*) |
+        +----------+
+        |        1 |
+        +----------+
+        1 row in set (0.49 sec)
+
+        (mysql:8.0.31-cluster)explain  select count(*) from customers where log_date = current_date;
+        +----+-------------+-----------+------------+-------+------------------------+------------------------+---------+------+--------+----------+--------------------------+
+        | id | select_type | table     | partitions | type  | possible_keys          | key                    | key_len | ref  | rows   | filtered | Extra                    |
+        +----+-------------+-----------+------------+-------+------------------------+------------------------+---------+------+--------+----------+--------------------------+
+        |  1 | SIMPLE      | customers | NULL       | index | idx_log_date_customers | idx_log_date_customers | 83      | NULL | 996373 |    10.00 | Using where; Using index |
+        +----+-------------+-----------+------------+-------+------------------------+------------------------+---------+------+--------+----------+--------------------------+
+        1 row in set, 3 warnings (0.00 sec)
+
+        (mysql:8.0.31-cluster)show warnings\G
+        *************************** 1. row ***************************
+        Level: Warning
+        Code: 1739
+        Message: Cannot use ref access on index 'idx_log_date_customers' due to type or collation conversion on field 'log_date'
+        *************************** 2. row ***************************
+        Level: Warning
+        Code: 1739
+        Message: Cannot use range access on index 'idx_log_date_customers' due to type or collation conversion on field 'log_date'
+        *************************** 3. row ***************************
+        Level: Note
+        Code: 1003
+        Message: /* select#1 */ select count(0) AS `count(*)` from `db_mysql`.`customers` where (`db_mysql`.`customers`.`log_date` = &lt;cache&gt;(curdate()))
+        3 rows in set (0.00 sec)
+
+
+        -- 查看SQL2 的执行时间和执行计划，执行时间很长，花费4秒多，查看warnings 信息，和SQL1有一样的问题。
+        (mysql:8.0.31-cluster)select count(*) from customers a join orders b on a.c_id = b.c_id ;
+        +----------+
+        | count(*) |
+        +----------+
+        |  1000001 |
+        +----------+
+        1 row in set (4.34 sec)
+        
+        (mysql:8.0.31-cluster)explain select count(*) from customers a join orders b on a.c_id = b.c_id ;
+        +----+-------------+-------+------------+--------+-------------------------+-------------------------+---------+-------------------------+--------+----------+--------------------------+
+        | id | select_type | table | partitions | type   | possible_keys           | key                     | key_len | ref                     | rows   | filtered | Extra                    |
+        +----+-------------+-------+------------+--------+-------------------------+-------------------------+---------+-------------------------+--------+----------+--------------------------+
+        |  1 | SIMPLE      | b     | NULL       | index  | idx_customers_id_orders | idx_customers_id_orders | 83      | NULL                    | 997350 |   100.00 | Using where; Using index |
+        |  1 | SIMPLE      | a     | NULL       | eq_ref | PRIMARY                 | PRIMARY                 | 4       | db_mysql.b.customers_id |      1 |   100.00 | Using where; Using index |
+        +----+-------------+-------+------------+--------+-------------------------+-------------------------+---------+-------------------------+--------+----------+--------------------------+
+        2 rows in set, 2 warnings (0.00 sec)
+        
+        (mysql:8.0.31-cluster)show warnings\G
+        *************************** 1. row ***************************
+          Level: Warning
+           Code: 1739
+        Message: Cannot use ref access on index 'idx_customers_id_orders' due to type or collation conversion on field 'c_id'
+        *************************** 2. row ***************************
+          Level: Note
+           Code: 1003
+        Message: /* select#1 */ select count(0) AS `count(*)` from `db_mysql`.`customers` `a` join `db_mysql`.`orders` `b` where (cast(`db_mysql`.`a`.`c_id` as double) = cast(`db_mysql`.`b`.`c_id` as double))
+        2 rows in set (0.00 sec)
+        
+        示例结论：
+          1. 两条示例SQL 的执行时间都很长；同时执行计划的警告信息中出现了数据类型隐式转换。
+          2. 解决这个问题的根本办法是修改相关字段为合适的数据类型。
+
+        解决方案： 修改表字段数据类型。
+        alter table customers modify log_date date;
+        alter table orders modify c_id int;
+
+        -- 解决方案验证： 两条SQL 执行时间都显著缩短。
+        (mysql:8.0.31-cluster) select count(*) from customers where log_date = current_date;
+        +----------+
+        | count(*) |
+        +----------+
+        |        1 |
+        +----------+
+        1 row in set (0.00 sec)
+
+        (mysql:8.0.31-cluster)select count(*) from customers a join orders b on a.c_id = b.c_id ;
+        +----------+
+        | count(*) |
+        +----------+
+        |  1000001 |
+        +----------+
+        1 row in set (2.82 sec)
+     
+      </示例>
+      <检查流程描述>          
+          1. 对于所有DML语句，解析SQL语句，获取所有的WHERE条件和ON条件字段，
+            1. 如果左侧和右侧都是列字段，则登录数据库，获取列字段的类型，检查左右的字段类型是否一致，若不一致，则报告违反规则。
+                对应的SQL 为： 假设左侧表为customers,右侧表为orders，字段都是c_id,以下SQL 返回结果为1，则代表违反规则。
+                SELECT CASE WHEN
+                (SELECT DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'customers' AND COLUMN_NAME = 'c_id') =
+                (SELECT DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'orders' AND COLUMN_NAME = 'c_id')
+                THEN 0 ELSE 1 END AS result;
+    
+            2. 如果左侧为列字段，右侧为常量，则登录数据库，获取列字段的类型，检查右侧的常量类型是否与列字段类型一致，若不一致，则报告违反规则； 
+                对应的SQL 为：假设左侧表名为customers,字段为age，常量类型为VARCHAR。以下SQL 返回结果为1，则代表违反规则。
+                select case when data_type_name = 'VARCHAR' then 0 else 1 end as result from table_columns  where table_name='customers' and column_name='AGE';
+    
+            3. 如果左侧为常量，右侧为列字段，则登录数据库，获取列字段的类型，检查左侧的常量类型是否与列字段类型一致，若不一致，则报告违反规则。
+            4. 如果左右都是常量，则检查左右的常量类型是否一致，若不一致，则报告违反规则。   
+        2. 对于所有DML语句，解析SQL语句，获取Using的条件字段， 
+           1. 登录数据库，获取Using字段在关联表的数据类型；
+           2. Using使用的字段在两张关联表内的数据类型不一致，则报告违反规则。     
+           对应的SQL为:假设使用USING关键字的字段为c_id,关联的两个表分别为customers和orders,以下SQL返回结果为1,则代表违反规则。
+            SELECT CASE WHEN
+            (SELECT DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'customers' AND COLUMN_NAME = 'c_id') =
+            (SELECT DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'orders' AND COLUMN_NAME = 'c_id')
+            THEN 0 ELSE 1 END AS result;
+      </检查流程描述>
+      <知识文档>
+          1. WHERE 条件优化官方文档：https://dev.mysql.com/doc/refman/5.7/en/where-optimization.html
+          2. ALTER TABLE 官方文档： https://dev.mysql.com/doc/refman/8.0/en/alter-table.html
+      </知识文档>
+    </原理说明>
+  </规则场景>
+  <标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>保障正确性</分类值></分类><分类 名称="审核精确度"><分类值>连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

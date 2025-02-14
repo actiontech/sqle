@@ -1,0 +1,202 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+  <规则编号>SQLE00058</规则编号>
+  <级别>notice</级别>
+  <数据库类型>MySQL</数据库类型>
+  <规则种类>使用建议</规则种类>
+  <规则简述>避免使用分区表相关功能</规则简述>
+  <规则描述>分区表在使用过程中存在诸多缺点，比如分区裁剪的不确定性、不支持全局分区索引、锁定粒度放大、分区前期规划较为繁杂等问题。如存在分区诉求，通常使用物理分表，即可避免分区表带来的缺点。</规则描述>
+  <规则场景>
+    <场景 名称="使用分区表" 数据库版本="MySQL 所有版本 " 检查方式="不连库审核" 适用句型="CREATE TABLE、ALTER TABLE">
+      <示例>
+          前置：
+          create database db_mysql;
+          use db_mysql;
+
+          原理说明：
+          1. 分区表指的是按照分区方式对特定的字段进行划分，分区之间数据不共享，后台表现为每个分区有独立的表空间，对外表现为一张表。
+          2. 分区表的优势有：
+            1. 冷热数据分离。可以把原先查询拆分为分别对热、冷数据的查询，减少原有查询的数据量。
+            2. 历史数据拆分。可以按照范围分区来把现有数据和历史数据拆分开来，便于管理和运维。
+            3. 命中分区键性能最优。 如果查询条件包含分区键，则数据库会把分区键下发到关联的分区，查询性能更加优化。
+          3. 分区表的缺点有：
+              1. 分区裁剪：分区裁剪不是总有效。某些查询可能无法利用分区裁剪，从而无法获得预期的性能提升。比如按照表达式分区，但是查询的过滤条件却不是完整表达式，就无法用到分区裁剪。
+              2. 不支持全局索引：查询条件不带分区键的，只能跨所有分区，无法命中指定分区。
+              3. DDL操作锁粒度放大问题：对分区表的DDL操作可能需要锁定整个表，而不仅是单个分区，从而导致性能瓶颈（MySQL 版本小于8.4，MySQL 8.4 已经不存在此问题。）。
+              4. 分区表的分区类型一旦确定，只能适用分区类型的查询语句来定位分区，否则讲会跨分区扫描。比如HASH 分区表，就不支持范围扫描，如果业务需要范围扫描，就得重新定义分区表。
+              5. 给非分区键创建唯一索引无法实现，唯一索引必须要包含主键。
+          4. 物理分表可以解决分区表的部分缺点并且有灵活的自主性。
+              1. 物理分表和应用之间一般都部署了自主开发的中间件来处理物理分表的全局路由、分片裁剪等性能问题。而自主开发的中间层，较MySQL 原生的中间层，自主可控，可以针对不同的业务进行适配。
+              2. 突破了水平分区的分区个数硬性限制，可以更加精细的控制每张表的数据范围，可以针对不同的业务场景进行专门的设计和优化。
+              3. 可以对独立的分片表进行管理与调优，而不影响其他分片表，相对分区表来讲，更加灵活。
+              4. 可以根据不同分片表的数据重要性和负载场景，定制化的分配系统资源。
+              5. 某张分片表损坏不影响其他分片表的正常运行。
+
+          反例： 
+          CREATE TABLE customers(
+          id INT NOT NULL, -- 序号
+          name VARCHAR(32) DEFAULT '',-- 姓名
+          sex TINYINT NOT NULL, -- 性别
+          city VARCHAR(32) NOT NULL, -- 所在城市
+          age SMALLINT NOT NULL, -- 值类型
+          PRIMARY KEY (id) -- 主键
+          ) partition by range(id-1000)
+          (
+            partition p0 values less than (100000),
+            partition p1 values less than (300000),
+            partition p2 values less than (500000),
+            partition p3 values less than (700000),
+            partition p4 values less than (900000),
+            partition p5 values less than (maxvalue)
+
+          );
+
+          -- 插入模拟数据,100W 条。
+          set @@cte_max_recursion_depth=20000000;
+          insert into customers  
+          with recursive tmp (a,b,c,d,e) as (
+          select 1,'小王22222333',floor(rand()*2),'上海',ceil(rand()*30)+20 
+          union all 
+          select a+1,concat('小王',a),floor(rand()*2),'上海',ceil(rand()*20)+20 from tmp where a &lt; 1000000) 
+          select * from tmp;
+
+
+          SQL1：  select count(*) from customers where id &lt; 10000;
+          SQL2：  update customers set city='北京' where id &lt; 10000;
+          SQL3:   delete  from customers where id &lt; 10000;
+          SQL4:   create unique index udx_name_customers on customers (name);
+
+          反例说明：
+          1. 表customers 是分区表，按照主键ID+1000做RANGE分区，分区数目为6个。
+          2. 给表 customers 插入100W条记录。
+          3. SQL1、SQL2、SQL3 使用分区键做范围扫描，却无法正确的进行分区裁剪，需要扫描全部分区。
+          4. SQL4 给name 列添加唯一索引，分区表是不支持的。
+
+          反例验证： 
+          1. 验证SQL1 的执行计划， 执行计划显式，扫描了全部分区；过滤条件的范围应该局限在分区p0里才对。
+          (mysql:8.4.0:db_mysql)explain select count(*) from customers where id &lt; 10000;
+            +----+-------------+-----------+-------------------+-------+---------------+---------+---------+------+-------+----------+--------------------------+
+            | id | select_type | table     | partitions        | type  | possible_keys | key     | key_len | ref  | rows  | filtered | Extra                    |
+            +----+-------------+-----------+-------------------+-------+---------------+---------+---------+------+-------+----------+--------------------------+
+            |  1 | SIMPLE      | customers | p0,p1,p2,p3,p4,p5 | range | PRIMARY       | PRIMARY | 4       | NULL | 19600 |   100.00 | Using where; Using index |
+            +----+-------------+-----------+-------------------+-------+---------------+---------+---------+------+-------+----------+--------------------------+
+            1 row in set, 1 warning (0.00 sec)
+
+          2. 验证 SQL4: 执行报错，索引必须包含主键
+            (mysql:8.4.0:db_mysql)create unique index udx_name_customers on customers (name);
+            ERROR 1503 (HY000): A UNIQUE INDEX must include all columns in the tables partitioning function (prefixed columns are not considered).
+
+
+          正例： 物理分表
+          
+          CREATE TABLE customers0(
+            id INT NOT NULL, -- 序号
+            name VARCHAR(32) DEFAULT '',-- 姓名
+            sex TINYINT NOT NULL, -- 性别
+            city VARCHAR(32) NOT NULL, -- 所在城市
+            age SMALLINT NOT NULL, -- 值类型
+            PRIMARY KEY (id) -- 主键
+            );
+          CREATE TABLE customers1(
+            id INT NOT NULL, -- 序号
+            name VARCHAR(32) DEFAULT '',-- 姓名
+            sex TINYINT NOT NULL, -- 性别
+            city VARCHAR(32) NOT NULL, -- 所在城市
+            age SMALLINT NOT NULL, -- 值类型
+            PRIMARY KEY (id) -- 主键
+            );
+          CREATE TABLE customers2(
+            id INT NOT NULL, -- 序号
+            name VARCHAR(32) DEFAULT '',-- 姓名
+            sex TINYINT NOT NULL, -- 性别
+            city VARCHAR(32) NOT NULL, -- 所在城市
+            age SMALLINT NOT NULL, -- 值类型
+            PRIMARY KEY (id) -- 主键
+            );
+          CREATE TABLE customers3(
+            id INT NOT NULL, -- 序号
+            name VARCHAR(32) DEFAULT '',-- 姓名
+            sex TINYINT NOT NULL, -- 性别
+            city VARCHAR(32) NOT NULL, -- 所在城市
+            age SMALLINT NOT NULL, -- 值类型
+            PRIMARY KEY (id) -- 主键
+            );
+          CREATE TABLE customers4(
+            id INT NOT NULL, -- 序号
+            name VARCHAR(32) DEFAULT '',-- 姓名
+            sex TINYINT NOT NULL, -- 性别
+            city VARCHAR(32) NOT NULL, -- 所在城市
+            age SMALLINT NOT NULL, -- 值类型
+            PRIMARY KEY (id) -- 主键
+            );
+          CREATE TABLE customers5(
+            id INT NOT NULL, -- 序号
+            name VARCHAR(32) DEFAULT '',-- 姓名
+            sex TINYINT NOT NULL, -- 性别
+            city VARCHAR(32) NOT NULL, -- 所在城市
+            age SMALLINT NOT NULL, -- 值类型
+            PRIMARY KEY (id) -- 主键
+            );
+
+            插入模拟数据：
+            insert into customers0 select * from customers partition(p0);
+            insert into customers1 select * from customers partition(p1);
+            insert into customers2 select * from customers partition(p2);
+            insert into customers3 select * from customers partition(p3);
+            insert into customers4 select * from customers partition(p4);
+            insert into customers5 select * from customers partition(p5);
+
+            SQL1：  select count(*) from customers0 where id &lt; 10000;
+            SQL2：  update customers0 set city='北京' where id &lt; 10000;
+            SQL3:   delete  from customers0 where id &lt; 10000;    
+            
+            给物理分表创建唯一索引的脚本:  
+            for i in `seq 0 5`;do mysql --login-path=admin_user -D db_mysql -e "create unique index udx_name_customers on customers$i (name);";done;
+
+            正例说明：
+            1. 分区表转换为同样功能的物理表，并且插入了相同的数据。
+            2. 同样的SQL1、SQL2、SQL3，由于确定了数据范围，只需要查询物理分表 customers0 即可。
+
+            正例验证：
+            1. 同样只验证SQL1 的执行计划，此时执行计划的只扫单表，避免了跨分区表扫描。
+            (mysql:8.4.0:db_mysql)explain select count(*) from customers0 where id &lt; 10000;
+            +----+-------------+------------+------------+-------+---------------+---------+---------+------+-------+----------+--------------------------+
+            | id | select_type | table      | partitions | type  | possible_keys | key     | key_len | ref  | rows  | filtered | Extra                    |
+            +----+-------------+------------+------------+-------+---------------+---------+---------+------+-------+----------+--------------------------+
+            |  1 | SIMPLE      | customers0 | NULL       | range | PRIMARY       | PRIMARY | 4       | NULL | 19600 |   100.00 | Using where; Using index |
+            +----+-------------+------------+------------+-------+---------------+---------+---------+------+-------+----------+--------------------------+
+            1 row in set, 1 warning (0.01 sec)
+
+            2. 给物理分表创建唯一索引，正常执行：
+            [root@ytt-pc scripts]# for i in `seq 0 5`;do mysql --login-path=admin_user -D db_mysql -e "create unique index udx_name_customers on customers$i (name);";done;
+
+            3. 查看创建的唯一索引：
+            (mysql:8.4.0:information_schema)select table_name,column_name,index_name from statistics where index_name='udx_name_customers';
+            +------------+-------------+--------------------+
+            | TABLE_NAME | COLUMN_NAME | INDEX_NAME         |
+            +------------+-------------+--------------------+
+            | customers0 | name        | udx_name_customers |
+            | customers1 | name        | udx_name_customers |
+            | customers2 | name        | udx_name_customers |
+            | customers3 | name        | udx_name_customers |
+            | customers4 | name        | udx_name_customers |
+            | customers5 | name        | udx_name_customers |
+            +------------+-------------+--------------------+
+            6 rows in set (0.00 sec)
+
+            结论：
+            1. 分区表虽然有很多优点，但是会有诸如分区裁剪失败、锁粒度放大、无全局索引、非分区键无法创建唯一索引等问题。
+            2. 建议使用物理分表来代替分区表。
+                   
+      </示例>
+      <检查流程描述>
+        1. 对于 "CREATE TABLE ..."语句，如果存在以下任何一项，则报告违反规则：
+          1. 句子中包含关键词：PARTITION
+        2. 对于 "ALTER TABLE ..." 语句，执行与上述同样检查。
+      </检查流程描述>
+      <知识文档>
+        1. 分区表 官方文档：https://dev.mysql.com/doc/refman/8.4/en/partitioning-overview.html
+      </知识文档>
+    </场景>
+  </规则场景>
+<标签><分类 名称="操作对象"><分类值>表</分类值><分类值>索引</分类值></分类><分类 名称="SQL分类"><分类值>DDL</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值><分类值>增强可维护性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

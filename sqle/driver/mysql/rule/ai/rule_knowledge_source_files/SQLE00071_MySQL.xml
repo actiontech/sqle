@@ -1,0 +1,105 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+  <规则编号>SQLE00071</规则编号>
+  <级别>error</级别>
+  <数据库类型>MySQL</数据库类型>
+  <规则种类>DDL操作风险防范</规则种类>
+  <规则简述>禁止进行删除列的操作</规则简述>
+  <规则描述>在业务系统中，表的列往往与多个业务流程紧密关联。删除表中的列可能导致与该列相关的数据访问、数据处理和数据表示逻辑出现故障，因为相关的SQL语句、应用程序代码或报告工具可能还在尝试访问已删除的列。</规则描述>
+  <规则场景>
+    <场景 名称="删除表字段" 数据库版本="大于等于 MySQL 5.7 " 检查方式="不连库审核" 适用句型="ALTER TABLE">
+      <示例>
+          前置：
+          create database db_mysql;
+          use db_mysql;
+
+          -- 示例表结构
+          CREATE TABLE customers(
+            id INT NOT NULL, -- 序号
+            name VARCHAR(32) DEFAULT 'lucy',-- 姓名
+            sex int NOT NULL default 0, -- 性别
+            city VARCHAR(32) NOT NULL default 'beijing', -- 所在城市
+            age INT NOT NULL default 0, -- 值类型
+            PRIMARY KEY (id) -- 主键
+          );
+
+          -- 导入的数据文件，验证时会用到
+          [root@ytt-pc mysql-files]# cat customers.csv 
+          1	小王22222333	1	北京	22
+          2	小王1	1	上海	33
+          3	小王2	1	上海	33
+          4	小王3	0	上海	37
+          5	小王4	0	上海	31
+          6	小王5	0	上海	33
+          7	小王6	1	上海	35
+          8	小王7	1	上海	25
+          9	小王8	1	上海	22
+          10	小王9	1	上海	25
+          
+
+
+          原理说明：
+          从以下三个角度，描述删除列是一个高风险的操作：
+          1. 业务逻辑依赖： 大多数业务应用都是围绕数据库设计构建的。删除字段可能影响到依赖这些字段的查询、报表、数据写入和数据更新功能。
+          2. 数据完整性： 删除列可能会破坏数据的完整性，特别是如果该列被用作业务规则或数据验证的一部分。
+          3. 代码维护问题： 在没有充分测试和代码修改的情况下，直接在数据库层面删除列会直接导致应用程序发生运行时错误，而代码层面的更新需要时间和资源来识别和修正。
+
+
+          示例：
+          alter table customers drop age;
+
+          示例说明：
+          1. 此示例删除表 customers 的字段 age。
+
+          示例验证： 
+          1. 对更新业务的影响
+            -- 删除字段 AGE
+            (mysql:8.3.0:db_mysql)alter table customers drop age;
+            Query OK, 0 rows affected (0.03 sec)
+            Records: 0  Duplicates: 0  Warnings: 0
+          
+
+            -- 删除字段后，原有插入业务就会报错。
+            (mysql:8.3.0:db_mysql)insert into customers value (20,'张小王',1,'兰州',20);
+            ERROR 1136 (21S01): Column count doesn't match value count at row 1
+            
+            -- 删除字段后，原有包含被删除字段的更新会报错。
+            (mysql:8.3.0:db_mysql)update customers set city='天津' where age = 20;
+            ERROR 1054 (42S22): Unknown column 'age' in 'where clause'
+
+            -- 同样,DELETE 语句也会报错。
+            (mysql:8.3.0:db_mysql)delete from customers where age = 20;
+            ERROR 1054 (42S22): Unknown column 'age' in 'where clause'
+
+
+          2. 对导入业务的影响
+            -- 导入业务同样会报错：由于导入的数据文件里列和表真实的列对不上，直接报错。
+            (mysql:8.3.0:db_mysql)load data infile '/var/lib/mysql-files/customers.csv' into table customers;
+            ERROR 1262 (01000): Row 1 was truncated; it contained more data than there were input columns
+          
+
+          3. 对查询业务的影响
+          -- 对查询业务同样报错，被删除的字段已经不存在
+          (mysql:8.3.0:db_mysql)select * from customers where age = 20;
+          ERROR 1054 (42S22): Unknown column 'age' in 'where clause'
+
+          结论：
+          1. 禁止对表字段进行删除，此为高危操作。删除后，将会影响所有包含包含被删除字段的业务正确性。
+
+          解决方案：
+          1. 禁止删除表字段。
+          2. 指定好备份策略，以防万一。
+          3. 优先进行应用相关的业务逻辑和代码依赖审查与修正，防止中断业务。
+
+      </示例>
+      <检查流程描述>
+        1. 对于 "ALTER TABLE ..."语句，如果存在以下任何一项，则报告违反规则：
+          1. 检查是否有关键词 DROP
+      </检查流程描述>
+      <知识文档>
+        1. ALTER TABLE 官方文档：https://dev.mysql.com/doc/refman/8.0/en/alter-table.html
+      </知识文档>
+    </场景>
+  </规则场景>
+  <规则缺陷 />
+<标签><分类 名称="操作对象"><分类值>字段</分类值></分类><分类 名称="SQL分类"><分类值>DDL</分类值></分类><分类 名称="审核目的"><分类值>增强安全性</分类值><分类值>增强可维护性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

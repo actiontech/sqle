@@ -1,0 +1,174 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00139</规则编号>
+    <级别>warn</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>执行计划</规则种类>
+    <规则简述>不建议使用全表扫描</规则简述>
+    <规则变量>
+    <变量 name="大表的最低容量要求">5GB</变量>
+    </规则变量>
+    <规则描述>全表扫描是数据库执行查询时读取表中每一行来查找匹配记录的过程。对于大型表来说，出现全表扫描的SQL会导致显著的性能下降和资源消耗，影响业务稳定运行。
+    </规则描述>    
+    <规则场景>
+      <场景 名称="未使用索引" 数据库版本="MySQL 所有版本" 检查方式="连库审核" 适用句型="SELECT、UPDATE、DELETE">
+        <示例>
+          前置:
+          use db_mysql;
+          CREATE TABLE customers(
+          id INT AUTO_INCREMENT NOT NULL, -- 序号
+          name varchar(32) ,-- 姓名
+          sex INT, -- 性别
+          city varchar(32) , -- 所在城市
+          age INT , -- 年龄
+          log_date date,  -- 日期类型记录
+          mark text, -- 备注
+          PRIMARY KEY (id) -- 主键
+          );
+  
+          DELIMITER $$
+
+          USE `db_mysql`$$
+          
+          DROP PROCEDURE IF EXISTS `sp_generate_data_customers`$$
+          
+          CREATE PROCEDURE `sp_generate_data_customers`(f_cnt INT)
+          BEGIN
+                DECLARE i,total_cnt INT DEFAULT 0;
+                TRUNCATE TABLE customers;
+                INSERT INTO customers(`name`,sex,city,age,log_date,mark)  VALUES 
+                ('小李',1,'上海',18,now(),'test'),('小王',0,'北京',22,now(),'test'),
+                ('小饭',1,'上海',25,now(),'test'),('小刘',0,'北京',30,now(),'test'),
+                ('小菜',1,'上海',28,now(),'test'),('小张',0,'天津',60,now(),'test'),
+                ('小利',1,'上海',25,now(),'test'),('小高',0,'北京',30,now(),'test'),
+                ('小娜',1,'上海',28,now(),'test'),('小五',0,'天津',60,now(),'test');
+                
+                INSERT INTO customers(`name`,sex,city,age,log_date,mark) SELECT a.name,a.sex,a.city,a.age,date_sub(now(),interval ceil(RAND()*1000) day),rpad('actionsky',1000,'0') FROM customers a ,customers b;
+                INSERT INTO customers(`name`,sex,city,age,log_date,mark) SELECT a.name,a.sex,a.city,a.age,date_sub(now(),interval ceil(RAND()*1000) day) ,rpad('actionsky',1000,'0') FROM customers a ,customers b LIMIT 100000;
+                
+                SET total_cnt = f_cnt + 1;
+                WHILE i &lt; total_cnt
+                DO
+                  SET i = i + 1;
+                  IF MOD(i,100000) = 0 THEN
+                  INSERT INTO customers(`name`,sex,city,age,log_date,mark) SELECT a.name,a.sex,a.city,a.age,date_sub(now(),interval ceil(RAND()*1000) day),rpad('actionsky',1000,'0')  FROM customers a ,customers b LIMIT 100000;
+              END IF;
+                END WHILE;
+                
+              END$$
+          
+          DELIMITER ;
+          
+          -- 造数据，使表大小大于等于5GB。
+          call sp_generate_data_customers(4500000);
+
+          -- 更改年龄字段的值分布。
+          update customers set age=ceil(rand()*20)+30 ;
+
+          示例：
+          select count(*) from customers where age = 34;
+          update customers set log_date=now() where age = 34;
+          delete from customers where age = 34;
+
+  
+          示例说明：
+          1. SQL 语句涉及到的大表空间占用大于 5GB。
+          2. SQL 语句的过滤字段没有索引。
+          3. SQL 语句的过滤字段有索引，但是没有匹配到。
+          4. 对大表进行全表扫描，会导致单个SQL 的响应时间升高，从而导致整个数据库实例对SQL的处理时间增加，
+             更进一步降低数据库整体QPS数值，最终影响整体业务的稳定运行。
+  
+          示例验证：
+            
+            -- 表记录数451 W 条。
+            (mysql:8.0.31-cluster)select count(*) from customers;
+            +----------+
+            | count(*) |
+            +----------+
+            |  4512210 |
+            +----------+
+            1 row in set (32.43 sec)
+            
+
+            -- 表大小为5 GB。
+            (mysql:8.0.31-cluster)select round((index_length+data_length)/1024/1024/1024) 'size_GB' from information_schema.tables where table_name='cust
+            tomers';
+            +---------+
+            | size_GB |
+            +---------+
+            |       5 |
+            +---------+
+            1 row in set (0.00 sec)
+            
+
+
+            -- 示例SQL 语句，总执行时间14秒。
+            (mysql:8.0.31-cluster)select count(*) from customers where age = 34;
+            +----------+
+            | count(*) |
+            +----------+
+            |   225367 |
+            +----------+
+            1 row in set (14.38 sec)
+            
+           
+           
+           -- 对应执行计划，type 列出现 ALL 关键词，代表全表扫描，总成本为 扫描总行数为420W行。
+           (mysql:8.0.31-cluster)explain select count(*) from customers where age = 34;
+           +----+-------------+-----------+------------+------+---------------+------+---------+------+---------+----------+-------------+
+           | id | select_type | table     | partitions | type | possible_keys | key  | key_len | ref  | rows    | filtered | Extra       |
+           +----+-------------+-----------+------------+------+---------------+------+---------+------+---------+----------+-------------+
+           |  1 | SIMPLE      | customers | NULL       | ALL  | NULL          | NULL | NULL    | NULL | 4207040 |    10.00 | Using where |
+           +----+-------------+-----------+------------+------+---------------+------+---------+------+---------+----------+-------------+
+           1 row in set, 1 warning (0.00 sec)
+           
+                     
+          解决方案:
+          -- 创建索引
+            create index idx_age_customers on customers (age);
+  
+          方案验证：
+
+            -- 给字段age 加索引。
+            (mysql:8.0.31-cluster)create index idx_age_customers on customers (age);
+            Query OK, 0 rows affected (47.20 sec)
+            Records: 0  Duplicates: 0  Warnings: 0
+            
+
+            -- 再次执行同样的SQL 语句，总执行时间从14秒降低到30毫秒。
+            (mysql:8.0.31-cluster)select count(*) from customers where age = 34;
+            +----------+
+            | count(*) |
+            +----------+
+            |   225367 |
+            +----------+
+            1 row in set (0.03 sec)
+            
+
+            -- 对应执行计划，使用了索引idx_age_customers，并且扫描行数从420W行降低到 45W行 。
+            (mysql:8.0.31-cluster)explain select count(*) from customers where age = 34;
+            +----+-------------+-----------+------------+------+-------------------+-------------------+---------+-------+--------+----------+-------------+
+            | id | select_type | table     | partitions | type | possible_keys     | key               | key_len | ref   | rows   | filtered | Extra       |
+            +----+-------------+-----------+------------+------+-------------------+-------------------+---------+-------+--------+----------+-------------+
+            |  1 | SIMPLE      | customers | NULL       | ref  | idx_age_customers | idx_age_customers | 5       | const | 457840 |   100.00 | Using index |
+            +----+-------------+-----------+------------+------+-------------------+-------------------+---------+-------+--------+----------+-------------+
+            1 row in set, 1 warning (0.00 sec)
+            
+  
+        </示例>
+        <检查流程描述>
+        1. 对于"select..."语句，
+          * 查看SQL 语句的执行计划，如果type列为 ALL，执行计划的获取需要在线，则进行下一步检查
+          * 查看type 列为ALL的表的大小，表的大小可以通过select round((index_length+data_length)/1024/1024/1024) 'size_GB' from information_schema.tables where table_name='表名'来获取，表大小的获取需要在线，如果表的大小大于等于阈值，则报告违反规则。
+        2. 对于"union..."语句，执行上述类似的检查。
+        3. 对于"update..."语句，执行上述类似的检查。
+        4. 对于"delete..."语句，执行上述类似的检查。
+        5. 对于"insert..."语句，执行上述类似的检查。
+        </检查流程描述>
+        <知识文档>
+        1. MySQL explain 文档： https://dev.mysql.com/doc/refman/8.0/en/explain.html
+        </知识文档>
+      </场景>
+    </规则场景>
+  
+    <标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

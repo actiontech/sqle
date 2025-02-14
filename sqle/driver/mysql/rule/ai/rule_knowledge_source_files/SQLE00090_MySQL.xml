@@ -1,0 +1,113 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+<规则编号>SQLE00090</规则编号>
+<级别>notice</级别>
+<数据库类型>MySQL</数据库类型>
+<规则种类>查询优化</规则种类>
+<规则简述>建议使用UNION ALL替代UNION</规则简述>
+<规则描述>union会对结果集进行去重，union all只是简单的将两个结果合并后就返回，从效率上看，union all 要比union快很多；如果合并的两个结果集中允许包含重复数据的话，建议开启此规则，使用union all替代union</规则描述>
+<规则场景>
+  <原理说明 关键词="UNION" 数据库版本="MySQL 5.7、MySQL 8.0" 检查方式="不连库审核" 适用句型="SELECT、UPDATE、DELETE、INSERT ... 、WITH">
+    <示例>
+      前置：
+      CREATE TABLE customers(
+        id INT(11) NOT NULL,##序号
+        name VARCHAR(32) DEFAULT '',##姓名
+        sex TINYINT NOT NULL,##性别
+        city VARCHAR(32) NOT NULL,##所在城市
+        age SMALLINT(4) NOT NULL,##数值类型
+        PRIMARY KEY (id)##主键
+      );
+
+      CREATE TABLE customers_insert(
+        id INT(11) NOT NULL,##序号
+        name VARCHAR(32) DEFAULT '',##姓名
+        sex TINYINT NOT NULL,##性别
+        city VARCHAR(32) NOT NULL,##所在城市
+        age SMALLINT(4) NOT NULL,##数值类型
+        PRIMARY KEY (id)##主键
+      );
+
+      INSERT INTO customers VALUES(1,'xiaoli',1,'shanghai',18);
+      INSERT INTO customers SELECT ID + (SELECT count(1) FROM customers),concat('t',(ID + (SELECT count(1) FROM customers))),1,'shanghai',18 FROM customers; ##执行3次
+
+      CREATE TABLE suppliers(
+        id INT(11) NOT NULL,##序号
+        name VARCHAR(32) DEFAULT '',##姓名
+        city VARCHAR(32) NOT NULL,##所在城市
+        PRIMARY KEY (id)##主键
+      );
+      INSERT INTO suppliers VALUES(1,'action','shanghai');
+      INSERT INTO suppliers SELECT id + (SELECT count(1) FROM suppliers),'action','shanghai' FROM suppliers; ##执行2次
+
+      反例：
+      SELECT name,city FROM customers UNION SELECT name,city FROM suppliers; 
+
+      insert into customers_insert select * from customers union  select * from customers;
+
+      with cte_tmp(a) as (select id from customers union  select id from customers);
+
+      update customers_insert set age = 20 where id in (select id from customers union  select id from customers);
+
+      delete from  customers_insert  where id in (select id from customers union  select id from customers);
+
+      反例说明：
+      1. 这些SQL 都包含有UNION 子句，UNION 子句会隐式排序，不推荐使用。
+
+      示例验证：
+      1、查看执行计划。      
+      mysql&gt; explain SELECT name,city FROM customers UNION SELECT name,city FROM suppliers;
+      +----+--------------+------------+------------+------+---------------+------+---------+------+------+----------+-----------------+
+      | id | select_type  | table      | partitions | type | possible_keys | key  | key_len | ref  | rows | filtered | Extra           |
+      +----+--------------+------------+------------+------+---------------+------+---------+------+------+----------+-----------------+
+      |  1 | PRIMARY      | customers  | NULL       | ALL  | NULL          | NULL | NULL    | NULL |    8 |   100.00 | NULL            |
+      |  2 | UNION        | suppliers  | NULL       | ALL  | NULL          | NULL | NULL    | NULL |    4 |   100.00 | NULL            |
+      | NULL | UNION RESULT | &lt;union1,2&gt; | NULL       | ALL  | NULL          | NULL | NULL    | NULL | NULL |     NULL | Using temporary |
+      +----+--------------+------------+------------+------+---------------+------+---------+------+------+----------+-----------------+
+      3 rows in set, 1 warning (0.00 sec)
+
+      正例：
+      SELECT name,city FROM customers UNION ALL SELECT name,city FROM suppliers;
+
+      insert into customers_insert select * from customers union  all select * from customers;
+
+      with cte_tmp(a) as (select id from customers union all  select id from customers);
+
+      update customers_insert set age = 20 where id in (select id from customers union all select id from customers);
+
+      delete from  customers_insert  where id in (select id from customers union all select id from customers);
+
+      正例说明：
+      1. 把反例的UNION 子句，改为推荐的UNION ALL 子句，避免隐式排序。
+
+
+      示例验证：
+      1. 查看执行计划。
+      mysql&gt; explain SELECT name,city FROM customers UNION ALL SELECT name,city FROM suppliers;
+      +----+-------------+-----------+------------+------+---------------+------+---------+------+------+----------+-------+
+      | id | select_type | table     | partitions | type | possible_keys | key  | key_len | ref  | rows | filtered | Extra |
+      +----+-------------+-----------+------------+------+---------------+------+---------+------+------+----------+-------+
+      |  1 | PRIMARY     | customers | NULL       | ALL  | NULL          | NULL | NULL    | NULL |    8 |   100.00 | NULL  |
+      |  2 | UNION       | suppliers | NULL       | ALL  | NULL          | NULL | NULL    | NULL |    4 |   100.00 | NULL  |
+      +----+-------------+-----------+------------+------+---------------+------+---------+------+------+----------+-------+
+      2 rows in set, 1 warning (0.00 sec)
+
+      结论：
+      1. 在MySQL 数据库中，UNION ALL 和 UNION 是用于合并查询结果集的操作符。UNION ALL仅进行了查询结果集的合并操作；UNION 会在合并查询结果集之后，自动去除重复的行，确保结果集中的每一行都是唯一的。因此，从正反例的执行计划结果得出，UNION ALL 避免了去重的开销，其的性能优于比UNION。在实际应用中，需结合业务要求，如果要求的查询结果是统一唯一性的，可以继续采用UNION操作；如果是需要统计真实的记录数，则应该采用UNION ALL操作。
+      2. 注意：在使用UNION ALL或者UNION过程中，所有参与合并操作的SELECT子句的字段数应该相同、且字段类型应相同。
+      3. 还要注意的一点是with 表达式适用于MySQL版本大约8.0.
+
+    </示例>
+    <检查流程描述>
+    1. 对于所有DML语句，如果下面任意一项为真，则报告违反规则
+      1. 检查其SELECT 子句，SELECT语句中包含UNION 子句，但是不包含 UNION ALL 子句
+    2. 对于"WITH ..."语句，执行与上述同样检查。
+    </检查流程描述>
+    <知识文档>
+      1. 结果集合并：https://dev.mysql.com/doc/refman/8.0/en/union.html
+      2. 实践应用：https://cloud.tencent.com/developer/article/2364982
+    </知识文档>
+  </原理说明>
+</规则场景>
+<规则缺陷 />
+<标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

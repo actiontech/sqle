@@ -1,0 +1,126 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+  <规则编号>SQLE00218</规则编号>
+  <级别>warn</级别>
+  <数据库类型>MySQL</数据库类型>
+  <规则种类>DML规范</规则种类>
+  <规则简述>联合索引最左侧的字段必须出现在查询条件内</规则简述>
+  <规则描述>当查询条件包含联合索引的最左侧字段时，查询语句才能更好的利用索引的特性：有序性、过滤性等</规则描述>
+  <规则场景>
+    <原理说明 数据库版本="MySQL 所有版本" 检查方式="连库审核">
+      <示例>
+            示例表结构:
+            create database db_mysql;
+            use db_mysql;
+  
+            -- 主表
+            CREATE TABLE customers(
+              id INT(11) NOT NULL, -- 序号
+              name VARCHAR(32) DEFAULT '',-- 姓名
+              sex TINYINT NOT NULL, -- 性别
+              city VARCHAR(32) NOT NULL, -- 所在城市
+              age SMALLINT(4) NOT NULL, -- 值类型
+              PRIMARY KEY (id) -- 主键
+            );
+
+  
+            -- 插入模拟数据,1000W 条。
+            set @@cte_max_recursion_depth=20000000;
+            insert into customers  
+            with recursive tmp (a,b,c,d,e) as (
+              select 1,'小王22222333',floor(rand()*2),'上海',ceil(rand()*30)+20 
+              union all 
+              select a+1,concat('小王',a),floor(rand()*2),'上海',ceil(rand()*20)+20 from tmp where a &lt; 10000000) 
+              select * from tmp;
+        
+
+            -- 预定义联合索引
+            create index idx_name_age_customers on customers(name,age);
+     
+           原理说明：
+           1. 当查询语句的过滤条件包含联合索引最左列时，查询才能走索引，否则查询会走全表扫或者全索引扫描。
+           2. 或者是查询语句无过滤条件或者过滤条件为恒真（where 1=1 或者 where True），但是排序或者分组中，必须包含联合索引最左列才行，否则依然走全表扫。
+           3. 还有一种就是在表关联或者子查询时，使用的是联合索引的非左列，那么查询也不会走联合索引，此时需要修改业务SQL把最左列包含进去。
+           3. 示例中的索引idx_name_age_customers 最左列为name，所以想使用这个索引，必须把name 列包含进去。
+           4. 还有一点需要注意：如果联合索引最左列选择性比较差，那么不带最左列的查询，数据库会走SKIP INDEX SCAN（参考已有规则）。
+
+           示例：
+           -- 以下这些SQL 都是不正确的用法
+           select *  from customers where age &lt; 30;
+           select age from customers order by age;
+           select age from customers group by age order by age desc;
+           select count(distinct age) from customers;
+           select * from customers order by age;
+           select * from customers where 1=1 order by age;
+           select * from customers where True order by age;
+           select count(*) from customers a join customers b on a.age = b.age where a.age = 20;
+           select count(*) from customers where age in (select age from customers limit 20);
+
+
+
+           -- 以下这些SQL 都是正确的写法，包含有name 列：
+           select *  from customers where name like '小王1' and age &lt; 30;
+           select age from customers order by name,age;
+           select age from customers group by name,age order by name,age desc;
+           select count(distinct name) from customers;
+           select * from customers order by name,age;
+           select * from customers where 1=1 order by name,age;
+           select * from customers where True order by name,age;
+           select count(*) from customers a join customers b on a.name=b.name and a.age = b.age where a.age = 20;
+           select count(*) from customers where (name,age) in (select name,age from customers limit 20);
+
+
+
+
+           示例验证：
+           -- 由于这些SQL 类似，选取第一个SQL 来进行验证，执行时间24秒，age 列虽然在索引idx_name_age_customers 里包含，但是由于非最左列，优化器依然走全表扫。 
+
+           (mysql:8.0.31-cluster)explain analyze select *  from customers where age &lt; 30;
+           +------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+           | EXPLAIN                                                                                                                                                                                                                                  |
+           +------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+           | -&gt; Filter: (customers.age &lt; 30)  (cost=1005484.65 rows=3248046) (actual time=0.763..21793.860 rows=4498650 loops=1)
+               -&gt; Table scan on customers  (cost=1005484.65 rows=9745114) (actual time=0.756..18807.101 rows=10000000 loops=1)
+            |
+           +------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+           1 row in set (24.07 sec)
+           
+
+           示例优化
+           -- 修改SQL 语句，使用包含有name 列的查询语句，执行时间0秒，直接走索引 idx_name_age_customers。 
+           
+           (mysql:8.0.31-cluster)explain analyze select *  from customers where name like '小王1' and age &lt; 30;
+           +-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+           | EXPLAIN                                                                                                                                                                                                                                               |
+           +-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+           | -&gt; Index range scan on customers using idx_name_age_customers over (name = '小王1' AND age &lt; 30), with index condition: ((customers.`name` like '小王1') and (customers.age &lt; 30))  (cost=2.04 rows=1) (actual time=0.072..0.072 rows=0 loops=1)
+                |
+           +-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+           1 row in set (0.00 sec)
+           
+
+        
+            结论：
+            1. 对于这类语句WHERE 条件或者 JOIN 的 ON 条件不带联合索引的最左列、或者排序不带联合索引最左列、或者分组也不带联合索引最左列。
+            2. 从数据库角度来讲，数据库无法命中索引从而走全表扫，不能做到最优化。
+            3. 所以只有从业务层面修改SQL 语句，让其包含联合索引最左列才可。
+
+       
+      </示例>
+      <检查流程描述>
+            1. 对于"SELECT..."语句，
+              * 定义一个集合
+              * 将sql中的where条件中用到的字段放到集合中
+              * 将sql中的join on条件中用到的字段放到集合中
+              * 当没有WHERE 条件或者 where 条件恒为真（比如 where 1=1 或者 where True）时，将sql中的Group by或者Order by中用到的字段放到集合中
+              * 获取集合中字段涉及的表的所有的联合索引，这里的获取需要在线操作
+              * 进行检查，如果字段包含在联合索引列表中，并且不是联合索引的最左列，则报告违反规则
+            2. 对于INSERT...语句，对INSERT语句中的SELECT子句进行与上述相同的检查。
+            3. 对于UNION...语句，对于语句中的每个SELECT子句进行与上述相同的检查。
+      </检查流程描述>
+      <知识文档>
+      1. SQL 优化官方文档： https://dev.mysql.com/doc/refman/8.0/en/statement-optimization.html
+      </知识文档>
+    </原理说明>
+  </规则场景>
+  <标签><分类 名称="操作对象"><分类值>索引</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

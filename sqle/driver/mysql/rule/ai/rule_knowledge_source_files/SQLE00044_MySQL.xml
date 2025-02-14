@@ -1,0 +1,65 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00044</规则编号>
+    <级别>notice</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>索引规范</规则种类>
+    <适用性>不适用当前数据库</适用性>
+    <规则简述>对字段创建外键约束前，建议先创建索引</规则简述>
+    <规则描述>外键约束在数据库设计中是一种常用的完整性约束，主要用于维护不同表之间的数据关系和一致性。外键通常应用在两表或多表关联查询的关联条件，若外键字段没有索引，可能会导致业务SQL出现全表扫描。</规则描述>
+    <规则场景>
+      <原理说明 关键词="FOREIGN KEY" 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="CREATE TABLE、ALTER TABLE">
+        <示例>
+            原理说明：
+            1. 对于外键来讲，创建约束后，对应的外键字段、被引用的字段都应该建立索引；这样后期针对父表和子表通过外键关联就可以走索引扫描，避免全表扫。
+            2. 此规则不适用于MySQL。MySQL 外键表在创建后，会隐式的直接给外键字段创建索引。
+            
+            示例：
+           
+            CREATE TABLE parent (
+                id INT NOT NULL,
+                PRIMARY KEY (id)
+            ) ENGINE=INNODB;
+
+            CREATE TABLE child (
+                id INT,
+                parent_id INT,
+                FOREIGN KEY (parent_id)
+                    REFERENCES parent(id)
+                    ON DELETE CASCADE
+            ) ENGINE=INNODB;
+
+            示例说明：
+            1. 表parent是父表；表child是子表，其中parent_id是子表的外键，引用了父表的主键。
+            2. 表child的外键字段parent_id 没有创建索引，MySQL 会自动创建索引。
+
+            示例验证：两表创建成功后，查看子表定义：使用 show index from child或者show create table 均可
+                (mysql:8.3.0:db_mysql)show index from child\G
+                *************************** 1. row ***************************
+                        Table: child
+                Non_unique: 1
+                    Key_name: parent_id
+                Seq_in_index: 1
+                Column_name: parent_id
+                    Collation: A
+                Cardinality: 0
+                    Sub_part: NULL
+                    Packed: NULL
+                        Null: YES
+                Index_type: BTREE
+                    Comment: 
+                Index_comment: 
+                    Visible: YES
+                Expression: NULL
+                1 row in set (0.00 sec)
+
+            结论：
+            1. MySQL 的外键约束在创建时会自动创建索引，不需要人为干预。此规则不适用于MySQL。
+
+        </示例>
+        <知识文档>
+        1. 外键约束 官方文档： https://dev.mysql.com/doc/refman/8.0/en/create-table-foreign-keys.html
+        </知识文档>
+      </原理说明>
+    </规则场景>
+    <标签><分类 名称="操作对象"><分类值>字段</分类值><分类值>索引</分类值></分类><分类 名称="SQL分类"><分类值>完整性约束</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

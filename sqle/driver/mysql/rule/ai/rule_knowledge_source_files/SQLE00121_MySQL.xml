@@ -1,0 +1,127 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00121</规则编号>
+    <级别>notice</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>DML规范</规则种类>
+    <规则简述>建议在限定记录数的查询语句中使用ORDER BY</规则简述>
+    <规则描述>在限定记录的查询语句中，如果没有ORDER BY子句，每次查询的结果可能会受数据更新影响而出现非确定性的结，最终与业务需求不符。</规则描述>
+    <规则场景>
+      <场景 名称="获取指定条数的数据查询" 数据库版本="MySQL 8.0" 检查方式="不连库审核" 适用句型="SELECT">
+        <示例>
+        前置：
+        create database db_mysql;
+        use db_mysql;
+        CREATE TABLE customers(
+          id INT NOT NULL AUTO_INCREMENT,  -- 序号
+          name VARCHAR(32) DEFAULT '',-- 姓名
+          sex TINYINT NOT NULL, -- 性别
+          city VARCHAR(32) NOT NULL, -- 所在城市
+          age SMALLINT NOT NULL, -- 数值类型
+          PRIMARY KEY (id) -- 主键
+        );
+
+        -- 插入示例数据
+        INSERT INTO customers(`name`,sex,city,age)  VALUES 
+        ('小李',1,'上海',18),('小王',0,'北京',22),
+        ('小饭',1,'北京',18),('小刘',0,'上海',22),
+        ('小菜',1,'深圳',18),('小张',0,'深圳',22),
+        ('小利',1,'上海',25),('小高',0,'深圳',23),
+        ('小娜',1,'深圳',25),('小五',0,'深圳',23);
+              
+
+        反例:
+        -- 查询最新的两条记录
+        select * from customers limit 2;
+
+        反例说明：
+        1. 示例SQL 没有使用ORDER BY 子句，默认是按照表的主键升序排序的；
+        2. 如果需要按照非主键字段排序或者需要按照主键来降序排序。比如查询最新的两条记录，很显然这条SQL 就无法完成目标。
+
+        反例验证：
+        -- 不加ORDER BY 子句， SQL 执行的结果默认按照主键排序，
+        (mysql:8.0.31-cluster)select * from customers limit 2;
+        +----+--------+-----+--------+-----+
+        | id | name   | sex | city   | age |
+        +----+--------+-----+--------+-----+
+        |  1 | 小李   |   1 | 上海   |  18 |
+        |  2 | 小王   |   0 | 北京   |  22 |
+        +----+--------+-----+--------+-----+
+        2 rows in set (0.00 sec)
+        
+        
+        -- 此时新加入两条记录，执行下面两条SQL语句。
+        insert into customers (name,sex,city,age) values ('lucy',0,'shagnhai',20);
+        insert into customers (name,sex,city,age) values ('lucy',0,'shagnhai',20);
+
+
+        -- 再次执行示例SQL，没有获取到需要的结果。
+        (mysql:8.0.31-cluster)select * from customers limit 2;
+        +----+--------+-----+--------+-----+
+        | id | name   | sex | city   | age |
+        +----+--------+-----+--------+-----+
+        |  1 | 小李   |   1 | 上海   |  18 |
+        |  2 | 小王   |   0 | 北京   |  22 |
+        +----+--------+-----+--------+-----+
+        2 rows in set (0.00 sec)
+
+
+
+        正例：
+        -- 获取最新的两条记录，按照主键来降序输出
+        select  * from customers order by id desc limit 2;
+
+        正例说明：
+        1. 跟反例不同的是，正例的SQL 加了order by 子句；
+        2. 加了 order by 子句后，就可以一直获取最新的两条记录，而避免查询结果的不确定性。
+
+        正例验证：
+        (mysql:8.0.31-cluster) select  * from customers order by id desc limit 2;
+        +----+------+-----+----------+-----+
+        | id | name | sex | city     | age |
+        +----+------+-----+----------+-----+
+        | 12 | lucy |   0 | shagnhai |  20 |
+        | 11 | lucy |   0 | shagnhai |  20 |
+        +----+------+-----+----------+-----+
+        2 rows in set (0.00 sec)
+        
+        
+
+        -- 新插入两条记录，执行以下两条SQL。
+        insert into customers (name,sex,city,age) values ('lily',1,'beijing',20);
+        insert into customers (name,sex,city,age) values ('xiaowanger',1,'beijing',30);
+
+        
+        -- 再次执行示例SQL，结果永远是正确的。
+        (mysql:8.0.31-cluster)select  * from customers order by id desc limit 2;
+        +----+------------+-----+---------+-----+
+        | id | name       | sex | city    | age |
+        +----+------------+-----+---------+-----+
+        | 14 | xiaowanger |   1 | beijing |  30 |
+        | 13 | lily       |   1 | beijing |  20 |
+        +----+------------+-----+---------+-----+
+        2 rows in set (0.01 sec)
+        
+        
+        结论：
+        1. 在需要进行部分输出的查询中，建议加上order by 子句来一并完成查询。
+        2. 不加 order by 子句的部分输出查询语句，会导致执行结果偏差。
+    
+        </示例>
+        <检查流程描述>
+            1. 对于"SELECT..."语句，
+              1. 检查句子中是否存在 limit 关键词，如果存在，则进行下一步检查。
+              2. 检查句子中是否有 order by 关键词，如果没有，则报告违反规则。
+            2. 对于INSERT...语句，对INSERT语句中的SELECT子句进行与上述相同的检查。
+            3. 对于UNION...语句，对于语句中的每个SELECT子句进行与上述相同的检查。
+            4. 对于UPDATE...语句，对于语句中的每个SELECT子句进行与上述相同的检查。
+            5. 对于DELETE...语句，对于语句中的每个SELECT子句进行与上述相同的检查。
+        </检查流程描述>
+        <知识文档>
+          1. LIMIT 优化文档： https://dev.mysql.com/doc/refman/8.0/en/limit-optimization.html
+        </知识文档>
+        </场景>
+    </规则场景>
+    <规则缺陷 />
+    <关联规则>SQLE00104、SQLE00102、SQLE00101、SQLE00119</关联规则>
+    <标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>保障正确性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

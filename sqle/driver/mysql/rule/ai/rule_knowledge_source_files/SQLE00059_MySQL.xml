@@ -1,0 +1,116 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00059</规则编号>
+    <级别>warn</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>性能优化建议</规则种类>
+    <规则简述>禁止修改大表的字段类型</规则简述>
+    <规则变量>
+      <变量 name="大表的最低容量要求">5GB</变量>
+    </规则变量>
+    <规则描述>对于大型数据表，修改字段类型的DDL操作将导致显著的性能下降和可用性影响。此类操作通常需要复制整个表来更改数据类型，期间表将无法进行写操作，并且可能导致长时间的锁等待，对线上业务造成过长时间的影响。</规则描述>
+    <规则场景>
+        <原理说明 数据库版本="&gt;= MySQL 5.5 " 检查方式="连库审核" 适用关键词="ALTER TABLE">
+            <示例>
+            示例表结构:
+            create database db_mysql;
+            use db_mysql;
+  
+            -- 主表
+            CREATE TABLE customers(
+              id INT(11) NOT NULL, -- 序号
+              name VARCHAR(32) DEFAULT '',-- 姓名
+              sex TINYINT NOT NULL, -- 性别
+              city VARCHAR(32) NOT NULL, -- 所在城市
+              age SMALLINT(4) NOT NULL, -- 值类型
+              PRIMARY KEY (id) -- 主键
+            );
+
+  
+            -- 插入模拟数据 预先插入 100W 条。
+            set @@cte_max_recursion_depth=20000000;
+            insert into customers  
+            with recursive tmp (a,b,c,d,e) as (
+              select 1,'小王22222333',floor(rand()*2),'上海',ceil(rand()*30)+20 
+              union all 
+              select a+1,concat('小王',a),floor(rand()*2),'上海',ceil(rand()*20)+20 from tmp where a &lt; 1000000) 
+              select * from tmp;
+
+            原理说明：            
+            在MySQL数据库中，在ALTER TABLE语法中提到，ALTER TABLE 操作从性能和存储空间方面可以采用三种不同的算法处理：COPY、INPLACE 和 INSTANT。在选择算法时，MySQL会根据操作的具体需求和数据库的当前版本自动选择最优的处理方法。在MySQL 8.0.12之前，INSTANT 算法不可用，因此MySQL会首选 INPLACE 算法。如果 INPLACE 也不支持特定的DDL操作，MySQL会回退到使用 COPY 算法。从MySQL 8.0.12开始，MySQL会尝试使用 INSTANT 算法，如果不支持则考虑 INPLACE，最后才考虑使用 COPY。哪些DDL操作适合什么算法，可以通过online DDL文档中的操作分类去查阅。
+
+            1. DDL操作的三种处理方式：
+               1. 传统拷贝表（Copy）的方式：在此DDL过程中，原表被加了共享读锁，并且原表多大，就需要多大的临时磁盘空间。
+                  1. 具体过程为：
+                     1. 新建一个带有新结构的临时表；
+                     2. 将原表数据全部拷贝到临时表，期间原表会持续表锁；
+                     3. 然后对新表重命名，释放原表的表锁。（表重建！）
+                     4. 删除原表。
+                  2. 示例： alter table customers add index idx_age_customers(age),algorithm=copy;
+                
+               2. 原地更新（Inplace）方式： DDL 在原表上直接进行，不会进行临时表拷贝。也就是整个操作是在引擎内部实现，与SERVER 层无关。相对于临时表拷贝方式，更加高效，原表也是需要加共享读锁，可读不可写。
+                   1. 对于是否需要重建表，分两种场景：
+                     1. 需要重建表的操作：比如添加索引、添加/删除列、修改列 NULL/NOT NULL 属性等；
+                     2. 不需要重建表的操作，只需要修改表的元数据：比如删除索引、修改列名、修改列默认值、修改列自增值等。
+                   2. 示例： alter table customers add index idx_age_customers(age),algorithm=inplace;
+
+               3. INSTANT方式：该方式是自MySQL8.0.12起生效，对原地更新做了进一步优化，解决了以上两种方式的痛点，无需临时表拷贝，无需锁定表等。
+                   1. 大概步骤如下：
+                     1. 创建新的表结构：以临时表方式存储，这样原表不加锁；
+                     2. 复制全量数据：将原表中的数据逐步复制到新的临时表中，并保持原表数据与新的临时表数据的同步；
+                     3. 增量数据捕获与重放： 内部捕获执行DDL操作期间发生的数据变更，并将其重放到临时表中；
+                     4. 切换原表流量到新表：数据库将在适当的时机把流量切换到新表。
+                   2. 但是目前应用的场景有限。比如修改二级索引类型、新增字段等少数几个场景。
+
+            2. 更改表字段类型属于第一种临时表拷贝的方式，所以表数据量越大，耗时越久，并影响在线业务。
+            3. MySQL 表的DDL 过程是可以由MySQL自动控制处理方式，无需人为干预；或者在执行前人工指定algorithm的方式。
+            
+
+            示例：
+            alter table customers change age age int;
+            或者
+            alter table customers modify age int;
+
+            示例说明：
+            1. 示例中更改表customers 的字段 age 字段类型从smallint 更改为 int。
+            2. 不建议直接执行。
+
+            示例验证：开启一个SESSION 执行以下语句， 耗时大约27秒。
+            (mysql:8.0.31-cluster)alter table customers change age age int;
+            Query OK, 1000000 rows affected (26.95 sec)
+            Records: 1000000  Duplicates: 0  Warnings: 0
+
+            开启另外一个SESSION： 不影响读，影响写，写入操作延迟到大约25秒。
+            (mysql:8.0.31-cluster)select * from customers limit 1;
+            +----+----------------+-----+--------+-----+
+            | id | name           | sex | city   | age |
+            +----+----------------+-----+--------+-----+
+            |  1 | 小王22222333   |   0 | 上海   |  35 |
+            +----+----------------+-----+--------+-----+
+            1 row in set (0.00 sec)
+
+
+            (mysql:8.0.31-cluster)update customers set age = 20 where id = 1;
+            Query OK, 1 row affected (24.91 sec)
+            Rows matched: 1  Changed: 1  Warnings: 0
+
+
+            结论：
+            1. 禁止修改大表的字段类型。
+            2. 如果实在有这个需求，可以使用第三方工具比如percona-toolkit、gh-ost 工具来更改表字典类型。
+            3. 这类第三方工具往往通过触发器或者模拟从库重放binlog的方式来修改表，所以对在线业务没啥影响。
+  
+            </示例>
+            <检查流程描述>
+            1. 对于"alter table..."语句，如果句子中否在MODIFY或者CHANGE关键词，则进行下述检查，
+              1. 登录数据库
+              2. 获取表的存储空间大小，表的大小可以通过select round((index_length+data_length)/1024/1024/1024) 'size_GB' from information_schema.tables where table_name='表名'来获取，表大小的获取需要在线，如果表的大小大于等于阈值，则报告违反规则。
+            </检查流程描述>
+            <知识文档>
+            1. ALTER TABLE语法：https://dev.mysql.com/doc/refman/5.7/en/alter-table.html
+            2. 在线DDL MySQL5.7: https://dev.mysql.com/doc/refman/5.7/en/innodb-online-ddl-operations.html#online-ddl-column-operations
+            3. 在线DDL MySQL8.0: https://dev.mysql.com/doc/refman/8.0/en/innodb-online-ddl-operations.html#online-ddl-column-operations
+            </知识文档>
+        </原理说明>
+    </规则场景>
+<标签><分类 名称="操作对象"><分类值>表</分类值><分类值>字段</分类值></分类><分类 名称="SQL分类"><分类值>DDL</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值><分类值>增强可维护性</分类值></分类><分类 名称="审核精确度"><分类值>连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

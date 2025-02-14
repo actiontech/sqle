@@ -1,0 +1,212 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00140</规则编号>
+    <级别>notice</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>DDL操作风险防护</规则种类>
+    <规则简述>建议对表、视图等对象进行操作时指定库名</规则简述>
+    <规则描述>对表、视图等对象进行创建、修改、查询、更新、删除等DDL、DML操作时，如未指定schema或者库名，会导致在不确定的数据库下执行，与实际业务预期不符合，而且会导致SQL语句执行错误。</规则描述>
+    <规则场景>
+        <原理说明 数据库版本="MySQL 所有版本 " 检查方式="不连库审核" 适用关键词="TABLE、VIEW、PROCEDURE、FUNCTION、SEQUENCE、TRIGGER、EVENT、INDEX">
+            <示例>    
+            前置：
+            CREATE DATABASE private;  
+
+            原理说明：
+            1. MySQL 数据库等价于模式，所以在MySQL里，这条规则的意思是说需要指定数据库名。
+            2. 每张表都属于一个数据库，不带 数据库名的表，属于当前的数据库，也就是USE 数据库名；操作后的数据库环境下。
+            3. 为了避免歧义，增加可读性和可运维性，需要对每个引用的表前面加上 数据库 名称。比如 private.t1，其中 private 是数据库名字,t1是表名。
+            4. MySQL 数据库中，需要指定库名的常见对象主要包含表、视图、存储过程、触发器、函数、事件、索引。
+          
+            反例：
+      
+            -- 表操作
+            SELECT COUNT(*) FROM t1;
+            CREATE TABLE t1 (id INT PRIMARY KEY, c1 TEXT);
+            DROP TABLE t1;
+            ALTER TABLE t1 ADD r2 INT;
+            INSERT INTO t1 VALUES (1, 's1.t1');
+            DELETE FROM t1;
+            UPDATE t1 SET r2 = MOD(id, 100);
+
+            -- 视图操作
+            CREATE VIEW v1 AS SELECT * FROM t1;
+            SELECT * FROM v1;
+            DROP VIEW v1;
+
+            -- 存储过程
+            DELIMITER $$
+            CREATE PROCEDURE my_procedure()
+            BEGIN
+                SELECT * FROM t1;
+            END $$
+            DELIMITER ;
+            CALL my_procedure();
+            drop procedure my_procedure;
+
+            -- 触发器
+            DELIMITER $$
+            CREATE TRIGGER trg1 AFTER INSERT ON t1 FOR EACH ROW
+            BEGIN
+                SET @x = NEW.id;
+            END $$
+            DELIMITER ;
+            DROP TRIGGER trg1;
+
+            -- 函数
+            DELIMITER $$
+            CREATE FUNCTION my_function() RETURNS INT
+            BEGIN
+                RETURN (SELECT COUNT(*) FROM t1);
+            END $$
+            DELIMITER ;
+            SELECT my_function();
+            DROP FUNCTION my_function;
+
+            -- 事件
+            DELIMITER $$
+            CREATE EVENT my_event
+            ON SCHEDULE EVERY 1 DAY
+            DO
+            BEGIN
+                DELETE FROM t1 WHERE id &lt; 100;
+            END $$
+            DELIMITER ;
+            DROP EVENT my_event;
+
+            -- 索引
+            CREATE INDEX idx_t1_id ON t1(id);
+            DROP INDEX idx_t1_id ON t1;
+            
+      
+            反例说明：
+            1. 示例 SQL 未指定数据库名，只能在默认的数据库下操作，依赖 USE 语句结果，可能导致SQL语句执行错误或者未在预期的 数据库下进行查询或变更。
+      
+            反例验证： 示例都类似，仅验证表操作的select 语句即可。
+            1. 不带 数据库的表操作，依赖USE 数据库的环境。示例中，不带数据库名，会导致查询出错。
+            (mysql:8.4.0:db_mysql)select count(*) from t1;
+            ERROR 1146 (42S02): Table 'db_mysql.t1' doesn't exist
+            
+            (mysql:8.4.0:db_mysql)select database();
+            +------------+
+            | database() |
+            +------------+
+            | db_mysql   |
+            +------------+
+            1 row in set (0.00 sec)
+
+            2. 切换数据库： 再次查询，结果正常。
+            (mysql:8.4.0:db_mysql)use private;
+            Reading table information for completion of table and column names
+            You can turn off this feature to get a quicker startup with -A
+
+            Database changed
+            (mysql:8.4.0:private)select count(*) from t1;
+            +----------+
+            | count(*) |
+            +----------+
+            |      100 |
+            +----------+
+            1 row in set (0.00 sec)
+
+            
+            正例：
+            -- 表操作
+            SELECT COUNT(*) FROM private.t1;
+            CREATE TABLE private.t1 (id INT PRIMARY KEY, c1 TEXT);
+            DROP TABLE private.t1;
+            ALTER TABLE private.t1 ADD r2 INT;
+            INSERT INTO private.t1 VALUES (1, 's1.t1');
+            DELETE FROM private.t1;
+            UPDATE private.t1 SET r2 = MOD(id, 100);
+            
+            -- 视图操作
+            CREATE VIEW private.v1 AS SELECT * FROM private.t1;
+            SELECT * FROM private.v1;
+            DROP VIEW private.v1;
+            
+            -- 存储过程
+            DELIMITER $$
+            CREATE PROCEDURE private.my_procedure()
+            BEGIN
+                SELECT * FROM private.t1;
+            END $$
+            DELIMITER ;
+            CALL private.my_procedure();
+            drop procedure private.my_procedure;
+            
+            -- 触发器
+            DELIMITER $$
+            CREATE TRIGGER private.trg1 AFTER INSERT ON private.t1 FOR EACH ROW
+            BEGIN
+                SET @x = NEW.id;
+            END $$
+            DELIMITER ;
+            DROP TRIGGER private.trg1;
+            
+            -- 函数
+            DELIMITER $$
+            CREATE FUNCTION private.my_function() RETURNS INT
+            BEGIN
+                RETURN (SELECT COUNT(*) FROM private.t1);
+            END $$
+            DELIMITER ;
+            SELECT private.my_function();
+            DROP FUNCTION private.my_function;
+            
+            -- 事件
+            DELIMITER $$
+            CREATE EVENT private.my_event
+            ON SCHEDULE EVERY 1 DAY
+            DO
+            BEGIN
+                DELETE FROM private.t1 WHERE id &lt; 100;
+            END $$
+            DELIMITER ;
+            DROP EVENT private.my_event;
+            
+            -- 索引
+            CREATE INDEX private.idx_t1_id ON private.t1(id);
+            DROP INDEX private.idx_t1_id ON private.t1;            
+      
+            正例说明：
+            1. 示例SQL 都是对表t1进行操作，并指定数据库名，这样后期的操作，不与USE 数据库环境相关。
+            
+            正例验证： 
+            1. 带有 数据库名的表操作，不依赖当前数据库的选择。
+            (mysql:8.4.0:db_mysql)select count(*) from private.t1;
+            +----------+
+            | count(*) |
+            +----------+
+            |      100 |
+            +----------+
+            1 row in set (0.00 sec)
+            
+            (mysql:8.4.0:db_mysql)select database();
+            +------------+
+            | database() |
+            +------------+
+            | db_mysql   |
+            +------------+
+            1 row in set (0.00 sec)
+            
+      
+            结论：
+            1. 对表创建、修改、查询、更新、删除等操作时，建议带上对象的数据库名称。
+            2. 不带数据库名称的SQL 访问的表USE 操作环境，有可能会造成歧义。比如示例中不带数据库名的表，当USE 另外一个数据后，对表t1操作的结果都不一样。
+      
+          </示例>
+          <检查流程描述>
+          1. 对所有SQL语句进行检查，包括但不限于以下类型：
+             - DDL语句：CREATE、ALTER、DROP等。
+             - DML语句：SELECT、INSERT、UPDATE、DELETE等。
+             - 存储过程调用：CALL。
+          2. 对每条SQL语句进行解析，检查是否指定了库名（schema）。
+          3. 如果发现任意SQL语句中存在未指定数据库的表、视图、存储过程、触发器、函数、事件或索引，则报告违反规则。
+          </检查流程描述>
+            <知识文档>
+              1. 使用数据库官方文档： https://dev.mysql.com/doc/refman/8.4/en/database-use.html
+            </知识文档>
+        </原理说明>
+    </规则场景>
+    <标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>增强安全性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

@@ -1,0 +1,89 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00170</规则编号>
+    <级别>warn</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>SQL语句规范和可维护性</规则种类>
+    <规则简述>避免缩短字段长度</规则简述>
+    <规则描述>修改字段长度值低于现有字段长度值，如果该字段现有数据超出设定后的长度，会造成语句执行报错</规则描述>
+    <规则场景>
+        <场景 名称="初始化表结构定义" 数据库版本="所有 MySQL 版本 " 检查方式="连库审核" 适用句型="ALTER TABLE">
+            <示例>
+              前置：
+              -- 示例表结构:
+              CREATE TABLE customers(
+                id int NOT NULL, -- 序号
+                name VARCHAR(32) DEFAULT '',-- 姓名
+                sex int NOT NULL, -- 性别
+                city VARCHAR(32) NOT NULL, -- 所在城市
+                age int NOT NULL, -- 值类型
+                PRIMARY KEY (id) -- 主键
+              );
+
+              insert into customers values (1,'小旭',0,'中华人民共和国北京市',48);
+
+              原理：
+              1. 表的字段数据类型长度可以修改为比之前的长。修改为更长的数据类型，可以让此字段存储比原来更多的数据；
+              2. 也可以修改为比原来的短。但是需要注意的是：不能比当前字段里存储的值长度短，否则会报错。因为字段的长度要能存放当前的所有数据才可以。
+
+              示例：
+              alter table customers modify city varchar(4);
+              或者
+              alter table customers change city city varchar(4);
+
+              示例说明：
+              1. 修改表 customers 的字段 city 长度变为 4.
+
+              示例验证：
+              修改比字段city 里存放的值还小的长度，直接报错。
+              (mysql:8.3.0:db_mysql)alter table customers modify city varchar(4);
+              ERROR 1265 (01000): Data truncated for column 'city' at row 1              
+
+              结论：
+              1. 不能修改字段的数据类型比字段里存放的值长度小，否则会报错。
+
+              解决方法：
+              1. 如果非要把字段的长度变小，可以先查询需要修改的字段值的长度是否允许变更再执行DDL。
+              (mysql:8.3.0:db_mysql)select max(char_length(city)) "max_city_length" from customers;
+              +-----------------+
+              | max_city_length |
+              +-----------------+
+              |              10 |
+              +-----------------+
+              1 row in set (0.00 sec)
+              
+
+              -- 查询出来字段的最大长度后，可以安全的变更
+              (mysql:8.3.0:db_mysql)alter table customers modify city varchar(10);
+              Query OK, 1 row affected (0.15 sec)
+              Records: 1  Duplicates: 0  Warnings: 0
+              
+              -- 变更成功
+              (mysql:8.3.0:db_mysql)desc customers;
+              +-------+-------------+------+-----+---------+-------+
+              | Field | Type        | Null | Key | Default | Extra |
+              +-------+-------------+------+-----+---------+-------+
+              | id    | int         | NO   | PRI | NULL    |       |
+              | name  | varchar(32) | YES  |     |         |       |
+              | sex   | int         | NO   |     | NULL    |       |
+              | city  | varchar(10) | YES  |     | NULL    |       |
+              | age   | int         | NO   |     | NULL    |       |
+              +-------+-------------+------+-----+---------+-------+
+              5 rows in set (0.00 sec)
+              
+            </示例>
+            <检查流程描述>
+              1. 对于"ALTER TABLE... modify ..."语句：
+                1. 定义一个集合
+                2. 将字段类型以及对应的长度放入集合中，命名为A
+                3. 登录数据库
+                4. 使用SQL(select max(char_length(col_name)) "max_length" from table_name)查询此字段存储值的最大长度，也放入集合中，命名为B
+                3. 进行检查，如果集合中A 对应的长度比 B 小，则报告违反规则。
+              2. 对于 "ALTER TABLE ... CHANGE ..." 语句，执行与上述相同检查。
+            </检查流程描述>
+            <知识文档>
+              1. ALTER TABLE 官方文档：https://dev.mysql.com/doc/refman/8.0/en/alter-table.html
+            </知识文档>
+        </场景>
+    </规则场景>
+    <标签><分类 名称="操作对象"><分类值>字段</分类值></分类><分类 名称="SQL分类"><分类值>DDL</分类值></分类><分类 名称="审核目的"><分类值>增强安全性</分类值></分类><分类 名称="审核精确度"><分类值>连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

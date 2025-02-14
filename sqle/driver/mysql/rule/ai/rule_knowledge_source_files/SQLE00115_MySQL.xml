@@ -1,0 +1,226 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+<规则编号>SQLE00115</规则编号>
+<级别>notice</级别>
+<数据库类型>MySQL</数据库类型>
+<规则种类>查询优化</规则种类>
+<规则简述>避免使用标量子查询</规则简述>
+<规则描述>标量子查询存在多次访问同一张表的问题，执行开销大效率低，可使用JOIN操作或者关联子查询结果集的方式替代标量子查询。</规则描述>
+<规则场景>
+  <场景 名称="WHERE条件中使用标量子查询" 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="SELECT、UPDATE、DELETE、INSERT... SELECT、UNION ALL、WITH">
+    <示例>
+      前置：
+      -- 员工表
+      create table employee(
+        id int primary key,
+        cname varchar(100),
+        sex int,
+        age int,
+        salary int
+      );
+
+      -- 创建索引
+      create index idx_salary_employee on employee(salary);
+
+      -- 临时表
+      create   table tmp_employee(
+        id int primary key,
+        cname varchar(100),
+        sex int,
+        age int,
+        salary int
+      );
+
+      -- 生成样例数据，每张表100W
+      set @@cte_max_recursion_depth=20000000;
+      insert into employee  
+      with recursive tmp (a,b,c,d,e) as (
+        select 1,'小王22222333',floor(rand()*2),ceil(rand()*30)+20,ceil(rand()*10000)+10000
+        union all 
+        select a+1,concat('小王',a),floor(rand()*2),ceil(rand()*20)+20,ceil(rand()*10000)+10000 from tmp where a &lt;=1000000) 
+        select * from tmp;
+  
+
+
+      原理说明：
+      1. 标量子查询是返回单一值的子查询，通常用于查询中某个表达式的计算结果。这种子查询返回一个值（单行单列），可用作其他查询条件的输入。
+      2. 避免使用标量子查询的主要原因包括：
+        1. 性能问题：标量子查询在每次外部查询的行求值时都会被执行，这可能导致大量的重复计算，尤其是在大数据量的情况下，会显著影响性能。
+        2. 可读性和可维护性：复杂的标量子查询可能会使整个查询语句变得难以理解和维护。
+      3. 可以通过连接和分组等，转换标量子查询，优化性能。
+      
+      反例：
+      SQL1:
+      SELECT id, salary FROM employee WHERE salary &gt;= (SELECT salary FROM employee order by salary desc limit 1);
+      
+      SQL2：
+      insert into tmp_employee SELECT * from employee WHERE salary &gt;= (SELECT salary FROM employee order by salary desc limit 1);
+    
+      SQL3:
+      SELECT id, salary FROM employee WHERE salary &gt;= (SELECT MAX(salary) FROM employee);
+      union all
+      SELECT id, salary FROM employee WHERE salary = (SELECT MIN(salary) FROM employee);
+
+      SQL4:
+      WITH cte_tmp(a,b) as 
+      (
+        SELECT id, salary FROM employee WHERE salary &gt;= (SELECT MAX(salary) FROM employee);
+        union all
+        SELECT id, salary FROM employee WHERE salary = (SELECT MIN(salary) FROM employee)
+  
+      ) select * from cte_tmp;
+
+      SQL5:
+      delete from employee where salary = (select max(salary) from employee);
+
+      SQL6：
+      update employee set age = 200 where salary = (select max(salary) from employee);
+      
+
+      反例说明：
+      1. 示例中的SQL 都是在WHERE 条件中使用标量子查询，不可取。
+
+      反例验证：
+      1. 由于SQL 都很类似，验证SQL1的执行计划： 虽然已经很优化，但是表employee 被扫描了多次，应该减少这种多余的扫描。
+      (mysql:8.4.0:db_mysql)explain SELECT id, salary FROM employee WHERE salary &gt;= (SELECT salary FROM employee order by salary desc limit 1);
+      +----+-------------+----------+------------+-------+---------------------+---------------------+---------+------+------+----------+----------------------------------+
+      | id | select_type | table    | partitions | type  | possible_keys       | key                 | key_len | ref  | rows | filtered | Extra                            |
+      +----+-------------+----------+------------+-------+---------------------+---------------------+---------+------+------+----------+----------------------------------+
+      |  1 | PRIMARY     | employee | NULL       | range | idx_salary_employee | idx_salary_employee | 5       | NULL |  117 |   100.00 | Using where; Using index         |
+      |  2 | SUBQUERY    | employee | NULL       | index | NULL                | idx_salary_employee | 5       | NULL |    1 |   100.00 | Backward index scan; Using index |
+      +----+-------------+----------+------------+-------+---------------------+---------------------+---------+------+------+----------+----------------------------------+
+      2 rows in set, 1 warning (0.00 sec)
+  
+
+      正例：
+      SQL1:
+      SELECT a.id, a.salary FROM employee a, (SELECT MAX(salary) salary FROM employee) b where a.salary = b.salary;
+      
+      SQL2：
+      insert into tmp_employee SELECT a.* FROM employee a, (SELECT MAX(salary) salary FROM employee) b where a.salary = b.salary;
+      
+      SQL3:
+      SELECT a.id, a.salary FROM employee a, (SELECT MAX(salary) salary FROM employee) b where a.salary = b.salary
+      union all
+      SELECT a.id, a.salary FROM employee a, (SELECT MIN(salary) salary FROM employee) b where a.salary = b.salary;
+
+      SQL4:
+      WITH cte_tmp(a,b) as 
+      (
+        SELECT a.id, a.salary FROM employee a, (SELECT MAX(salary) salary FROM employee) b where a.salary = b.salary
+        union all
+        SELECT a.id, a.salary FROM employee a, (SELECT MIN(salary) salary FROM employee) b where a.salary = b.salary
+  
+      ) select * from cte_tmp;
+
+      SQL5:
+      delete from employee using employee join (select max(salary) salary from employee2) b where employee.salary = b.salary;
+
+      SQL6:
+      UPDATE employee, (select max(salary) salary from employee2) b  SET employee.age = 200 where employee.salary = b.salary;
+      
+      正例说明：
+      1. 标量子查询都转化为JOIN。
+
+      示例验证：
+  
+      1. 同样查看SQL1的执行计划：表 EMPLOYEE 扫描次数减少，实际上只有一次。
+
+      (mysql:8.4.0:db_mysql)explain SELECT a.id, a.salary FROM employee a, (SELECT MAX(salary) salary FROM employee) b where a.salary = b.salary;
+      +----+-------------+------------+------------+--------+---------------------+---------------------+---------+-------+------+----------+------------------------------+
+      | id | select_type | table      | partitions | type   | possible_keys       | key                 | key_len | ref   | rows | filtered | Extra                        |
+      +----+-------------+------------+------------+--------+---------------------+---------------------+---------+-------+------+----------+------------------------------+
+      |  1 | PRIMARY     | &lt;derived2&gt; | NULL       | system | NULL                | NULL                | NULL    | NULL  |    1 |   100.00 | NULL                         |
+      |  1 | PRIMARY     | a          | NULL       | ref    | idx_salary_employee | idx_salary_employee | 5       | const |  117 |   100.00 | Using index                  |
+      |  2 | DERIVED     | NULL       | NULL       | NULL   | NULL                | NULL                | NULL    | NULL  | NULL |     NULL | Select tables optimized away |
+      +----+-------------+------------+------------+--------+---------------------+---------------------+---------+-------+------+----------+------------------------------+
+      3 rows in set, 1 warning (0.00 sec)
+
+
+      总结：
+      1. 对标量子查询的调用一般会产生重复的执行过程，耗费大量的资源。
+      2. 要相近办法取消标量子查询，转换为JOIN等写法，来使得引用的表自适应匹配数据库多样的表联接算法。
+
+    </示例>
+    <检查流程描述>
+      1. 对于所有DML 语句，如果以下任意一项为真，则报告违反规则
+        1. 检查 WHERE 子句部分，有类似 =(SELECT...) 这样的子句。
+      2. 对于 “WITH ...” 语句，执行与上述同样检查。
+    </检查流程描述>
+    <知识文档>
+    1. SQL 优化官方文档： https://dev.mysql.com/doc/refman/8.0/en/statement-optimization.html
+    </知识文档>
+  </场景>
+  <场景 名称="数据获取中使用标量子查询" 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="INSERT、WITH、SELECT">
+    <示例>
+      前置：
+      与【WHERE条件中使用标量子查询】一致
+      
+      反例：
+      SQL1:
+      insert into tmp_employee values (2000000,'小刘',1,88,(SELECT MAX(salary) FROM employee));
+      SQL2:
+      select id,(select count(*) from employee) as cnt from employee WHERE salary = 20000;
+      SQL3:
+      with cte_tmp(a,b) as (select id,(select count(*) from employee) as cnt from employee WHERE salary = 20000) select * from cte_tmp;
+
+      反例说明：
+      1. SQL1使用标量子查询充当VALUES 子句的常量来插入，不可取。
+      2. SQL2 使用标量子查询来充当投影列，也不可取。
+      3. SQL3 是WITH的形式，和SQL2一样。
+
+      正例：
+      SQL1:
+      insert into tmp_employee values (2000000,'小刘',1,88,20000);
+      SQL2:
+      select id,1000000 as cnt from employee WHERE salary = 20000;
+      SQL3:
+      with cte_tmp(a,b) as (select id,1000000 as cnt from employee WHERE salary = 20000) select * from cte_tmp;
+
+
+      正例说明：
+      1. SQL1 把标量子查询的结果计算出来，再使用VALUES插入，建议操作。
+      2. SQL2、SQL3也是把标量子查询的结果计算出来，再直接使用常量操作，建议使用。
+
+    </示例>
+    <检查流程描述>
+      1. 对于 ""INSERT..." 语句，如果以下任意一项为真，则报告违反规则。
+        1. 检查 VALUES 子句部分，有类似嵌套的  (SELECT ...) 子句。
+      2. 对于"SELECT ..."语句，如果以下任意一项为真，则报告违反规则。
+        1. 检查SELECT 语句的投影列部分，有嵌套的 SELECT 子句，并且在 FROM 之前。
+      3. 对于“WITH ...” 语句，如果以下任意一项为真，则报告违反规则。
+        1. 检查SELECT 语句的投影列部分，有嵌套的 SELECT 子句，并且在 FROM 之前。
+    </检查流程描述>
+    <知识文档>
+      与【在WHERE 条件中使用标量子查询】一致
+    </知识文档>
+  </场景>  
+  <场景 名称="UPDATE数据中使用标量子查询" 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="UPDATE">
+    <示例>
+      前置：
+      与【数据获取中使用标量子查询】一致
+
+      反例：
+      update employee set salary = (select max(salary) from employee) where id = 10846 ;
+
+      反例说明：
+      与【数据获取中使用标量子查询】一致
+
+      正例：
+      
+      update employee set salary = 20000 where id = 10846 ;
+
+      正例说明：
+      1. 对表 employee 的多次访问，使用变量赋值，变为访问一次即可。
+
+    </示例>
+    <检查流程描述>
+      1. 对于UPDATE 语句，如果以下任意一项为真，则报告违反规则。
+        1. 检查 set 子句部分，有类似嵌套的 = (SELECT ...) 子句。
+    </检查流程描述>
+    <知识文档>
+    与【数据获取中使用标量子查询】一致
+    </知识文档>
+  </场景>
+</规则场景>
+<标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值><分类值>嵌套查询和连接</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

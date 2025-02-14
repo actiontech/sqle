@@ -1,0 +1,132 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00068</规则编号>
+    <级别>warn</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>字段数据类型规范</规则种类>
+    <规则简述>禁止使用TIMESTAMP字段</规则简述>
+    <规则描述>TIMESTAMP类型字段受制于2038年问题，其时间范围仅限于1970-01-01 00:00:01 UTC至2038-01-19 03:14:07 UTC。超过这个时间范围，TIMESTAMP将无法存储更晚的时间点，导致应用报错。此外，TIMESTAMP字段在存储时会根据数据库服务器的时区进行转换，这可能导致跨时区应用中的时间不一致问题。</规则描述>
+    <规则场景>
+        <原理说明 句型="CREATE TABLE、ALTER TABLE" 数据库版本=" MySQL 所有版本" 检查方式="不连库审核">
+            <示例>
+
+                示例：
+                CREATE TABLE customers(
+                  id INT AUTO_INCREMENT NOT NULL, -- 序号
+                  name VARCHAR(32) DEFAULT 'lucy',-- 姓名
+                  sex int NOT NULL default 0, -- 性别
+                  city VARCHAR(32) NOT NULL default 'beijing', -- 所在城市
+                  age INT NOT NULL default 0, -- 值类型
+                  update_time1 timestamp default null on update current_timestamp, -- 时间字段
+                  PRIMARY KEY (id) -- 主键
+                ) charset utf8mb4;
+
+
+                原理说明：
+                1. MySQL 中可以精确到微秒级别的时间类型有两种，分别是 DATETIME和 TIMESTAMP，两个都可以存储时间数据。
+                2. TIMESTAMP 支持的时间范围从 1970-01-01 00:00:01.000000 到 2038-01-19 03:14:07.999999。使用TIMESTMAP 来存储时间，会遇到经典的2038问题。
+                   所谓2038问题，就是 TIMESTAMP在数据库中以INT32来存储的，而INT32转换为时间格式的最大值就是2038-01-19 03:14:07.999999。等后续时间超过这个值后，再次插入时间，就会报错，导致业务请求失败。
+                3. 还有一个问题是使用timestamp的字段，具体的值会随着时区的不同，发生自动转换，会使查询出来的数据有歧义。
+
+
+                示例验证： 
+
+                -- 插入一条正常的记录
+                (mysql:8.0.31-cluster) insert into customers values (1,'lily',0,'shanghai',20,now());
+                Query OK, 1 row affected (0.03 sec)
+
+                -- 正常查询
+                (mysql:8.0.31-cluster)select * from customers;
+                +----+------+-----+----------+-----+---------------------+
+                | id | name | sex | city     | age | update_time1        |
+                +----+------+-----+----------+-----+---------------------+
+                |  1 | lily |   0 | shanghai |  20 | 2024-04-22 17:21:41 |
+                +----+------+-----+----------+-----+---------------------+
+                1 row in set (0.00 sec)
+
+                -- 设置不同的时区
+                (mysql:8.0.31-cluster)SET @@session.time_zone = '-05:00';
+                Query OK, 0 rows affected (0.00 sec)
+
+                -- 再次查询，会自动发生时区转换，查询出来的时间和之前不一致。
+                (mysql:8.0.31-cluster)select * from customers;
+                +----+------+-----+----------+-----+---------------------+
+                | id | name | sex | city     | age | update_time1        |
+                +----+------+-----+----------+-----+---------------------+
+                |  1 | lily |   0 | shanghai |  20 | 2024-04-22 04:21:41 |
+                +----+------+-----+----------+-----+---------------------+
+                1 row in set (0.00 sec)
+
+                -- 插入一个超出timestamp范围的记录。
+                (mysql:8.0.31-cluster) insert into customers values (2,'lily',0,'shanghai',20,'2038-01-19 03:14:08');
+                ERROR 1292 (22007): Incorrect datetime value: '2038-01-19 03:14:08' for column 'update_time1' at row 1
+
+
+                结论：
+                1. 使用timestamp的字段会遇到经典的2038问题，禁止使用。
+                2. 使用timestamp的字段会自动发生时区转换，禁止使用。
+
+                解决方案：
+                1. 修改字段类型为datetime即可。
+
+                解决方案验证：
+                1. 验证时区问题：修改为datetime后，不会发生自动时区转换
+                (mysql:8.0.31-cluster)alter table customers modify update_time1 datetime default null on update current_timestamp;
+                Query OK, 1 row affected (0.48 sec)
+                Records: 1  Duplicates: 0  Warnings: 0
+
+                (mysql:8.0.31-cluster)set @@session.time_zone=default;
+                Query OK, 0 rows affected (0.00 sec)
+
+                (mysql:8.0.31-cluster)truncate table customers;
+                Query OK, 0 rows affected (0.26 sec)
+
+                (mysql:8.0.31-cluster)insert into customers values (1,'lily',0,'shanghai',20,now());
+                Query OK, 1 row affected (0.03 sec)
+
+                (mysql:8.0.31-cluster)select * from customers;
+                +----+------+-----+----------+-----+---------------------+
+                | id | name | sex | city     | age | update_time1        |
+                +----+------+-----+----------+-----+---------------------+
+                |  1 | lily |   0 | shanghai |  20 | 2024-04-22 17:32:41 |
+                +----+------+-----+----------+-----+---------------------+
+                1 row in set (0.00 sec)
+
+                (mysql:8.0.31-cluster)set @@session.time_zone='-05:00';
+                Query OK, 0 rows affected (0.00 sec)
+
+                (mysql:8.0.31-cluster)select * from customers;
+                +----+------+-----+----------+-----+---------------------+
+                | id | name | sex | city     | age | update_time1        |
+                +----+------+-----+----------+-----+---------------------+
+                |  1 | lily |   0 | shanghai |  20 | 2024-04-22 17:32:41 |
+                +----+------+-----+----------+-----+---------------------+
+                1 row in set (0.00 sec)
+
+                2. 超过timestamp 的上限时间插入： 可以正常插入
+                (mysql:8.0.31-cluster)insert into customers values (2,'lily',0,'shanghai',20,'2038-01-19 03:14:08');
+                Query OK, 1 row affected (0.07 sec)
+                
+                (mysql:8.0.31-cluster)select * from customers;
+                +----+------+-----+----------+-----+---------------------+
+                | id | name | sex | city     | age | update_time1        |
+                +----+------+-----+----------+-----+---------------------+
+                |  1 | lily |   0 | shanghai |  20 | 2024-04-22 17:32:41 |
+                |  2 | lily |   0 | shanghai |  20 | 2038-01-19 03:14:08 |
+                +----+------+-----+----------+-----+---------------------+
+                2 rows in set (0.00 sec)
+                
+
+            </示例>
+            <检查流程描述>
+            1. 对于"CREATE TABLE..."语句，检查SQL语句，如果句子中存在  TIMESTAMP 关键词，报告违反规则。
+            2. 对于"ALTER TABLE ..."语句，执行与上面相似的检查。
+            </检查流程描述>
+            <知识文档>
+            1. CREATE TABLE 官方文档： https://dev.mysql.com/doc/refman/8.0/en/create-table.html
+            2. ALTER TABLE 官方文档： https://dev.mysql.com/doc/refman/8.0/en/alter-table.html
+            </知识文档>
+        </原理说明>
+    </规则场景>
+    <规则缺陷 />
+    <标签><分类 名称="操作对象"><分类值>字段</分类值></分类><分类 名称="SQL分类"><分类值>DDL</分类值></分类><分类 名称="审核目的"><分类值>保障正确性</分类值><分类值>增强可维护性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

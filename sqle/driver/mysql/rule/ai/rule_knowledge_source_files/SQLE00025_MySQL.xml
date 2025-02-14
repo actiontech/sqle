@@ -1,0 +1,147 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00025</规则编号>
+    <级别>error</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>DDL规范</规则种类>
+    <规则简述>建议时间类型的列添加默认值</规则简述>
+    <规则描述>时间类型的字段添加默认值，可避免在数据写入未指定该字段值时，字段内容出现全为0的日期格式或者NULL值，与实际业务预期不符。</规则描述>
+    <规则场景>
+        <场景 名称="表结构初始定义" 数据库版本="MySQL 5.7、MySQL 8.0" 检查方式="不连库审核" 适用句型="CREATE TABLE、ALTER TABLE">
+        <示例>
+        示例：
+        create table t1(
+            log_date1 timestamp, ##时间戳字段1，隐式默认值null。
+            log_date2 timestamp not null, ##时间戳字段2，无默认值。
+            log_date3 timestamp default current_timestamp, ##时间戳字段3，指定默认值。
+            log_date4 date,
+            log_date5 time,
+            log_date6 datetime,
+            log_date7 year
+        );  
+        alter table t1 add column log_date8 timestamp;
+        alter table t1 add log_date8 timestamp;
+        alter table t1 add log_date8 timestamp default null;
+        alter table t1 change log_date8 log_date9 date default null;
+        alter table t1 modify log_date9 date default null;
+
+        原理说明：
+        在MySQL数据库中，日期、时间类型主要有DATE、TIMESTAMP、DATETIME、TIME、YEAR。另外，该数据库对所有日期时间字段类型未指定默认值时，如果未写入数据，则统一通过NULL来代替。
+
+        1. 所有字段有默认值，那么在写入时，即使不指定此字段，也会用默认值来代替。
+        2. 日期时间类型字段无默认值，分两种情况：
+            1. 第一是有约束 not null，那么在对此字段进行写入，如果不显式指定具体的时间戳，则会报错；
+            2. 第二是无约束，那么在MySQL里等价于 null，也就说在写入数据时只要不指定该字段的值，MySQL都会当null来处理，并且给一个默认值 null。
+        3. 针对timestamp类型，与参数 explicit_defaults_for_timestamp的设置有关：
+            1. MySQL 5.7 默认值为OFF，MySQL 8.0 默认值为ON。
+            2. 参数 explicit_defaults_for_timestamp 值设置为ON的场景下，此规则才会生效；如果是OFF，则MySQL会强制 timestamp 字段设置默认值，不然会报错。
+
+        总结实践经验得出，比如按照日期、时间去进行分组统计时，NULL值的分类需要应用特殊处理，否则有可能导致统计结果无法完整展示；通常应用针对日期、时间类型的数据都有格式要求，NULL值的数据有可能导致应用获取数据出现应用程序异常。        
+
+        示例验证：
+        (mysql:8.0.18)show create table t1\G
+        *************************** 1. row ***************************
+               Table: t1
+        Create Table: CREATE TABLE `t1` (
+            `log_date1` timestamp NULL DEFAULT NULL,
+            `log_date2` timestamp NOT NULL,
+            `log_date3` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+            `log_date4` date DEFAULT NULL,
+            `log_date5` time DEFAULT NULL,
+            `log_date6` datetime DEFAULT NULL,
+            `log_date7` year(4) DEFAULT NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+        1 row in set (0.01 sec)
+
+        (mysql:8.0.18)insert into t1(log_date2) values (222); -- 字段 log_date2 没有默认值，需要显式指定。
+        Query OK, 1 row affected (0.04 sec)
+
+        (mysql:8.0.18)select * from t1;
+        +-----------+---------------------+---------------------+-----------+-----------+-----------+-----------+
+        | log_date1 | log_date2           | log_date3           | log_date4 | log_date5 | log_date6 | log_date7 |
+        +-----------+---------------------+---------------------+-----------+-----------+-----------+-----------+
+        | NULL      | 2000-02-22 00:00:00 | 2024-03-28 18:15:20 | NULL      | NULL      | NULL      |      NULL |
+        +-----------+---------------------+---------------------+-----------+-----------+-----------+-----------+
+        1 row in set (0.00 sec)
+
+        (mysql:8.0.18)insert into t1(log_date1,log_date3) values (111,222); -- 字段log_date2 无默认值，不显式指定会报错。
+        ERROR 1364 (HY000): Field 'log_date2' doesn't have a default value
+
+        (mysql:8.0.18)alter table t1 modify log_date2 timestamp not null default current_timestamp; -- 给字段log_date2设置默认值。
+        Query OK, 0 rows affected (0.05 sec)
+        Records: 0  Duplicates: 0  Warnings: 0
+
+
+        (mysql:8.0.18)insert into t1(log_date1,log_date3) values (111,222); -- 插入正常。
+        Query OK, 1 row affected (0.02 sec)
+
+        (mysql:8.0.18)select * from t1;
+        +---------------------+---------------------+---------------------+-----------+-----------+-----------+-----------+
+        | log_date1           | log_date2           | log_date3           | log_date4 | log_date5 | log_date6 | log_date7 |
+        +---------------------+---------------------+---------------------+-----------+-----------+-----------+-----------+
+        | NULL                | 2000-02-22 00:00:00 | 2024-03-28 18:15:20 | NULL      | NULL      | NULL      |      NULL |
+        | 2000-01-11 00:00:00 | 2024-03-28 18:16:11 | 2000-02-22 00:00:00 | NULL      | NULL      | NULL      |      NULL |
+        +---------------------+---------------------+---------------------+-----------+-----------+-----------+-----------+
+        2 rows in set (0.00 sec)
+    
+
+        延伸说明：
+        1. 此场景不仅对insert 语句生效，同时对其他写入语句同样有效，比如replace、load data infile等都有效。
+
+        延伸示例：
+        (mysql:8.0.18)alter table t1 add log_date8 timestamp not null;
+        Query OK, 0 rows affected (0.22 sec)
+        Records: 0  Duplicates: 0  Warnings: 0
+
+        (mysql:8.0.18)replace into t1 (log_date1) values (current_timestamp); -- replace 也因无默认值替换失败。
+        ERROR 1364 (HY000): Field 'log_date8' doesn't have a default value
+
+
+        </示例>
+
+        <检查流程描述>
+        1. 检查CREATE TABLE、ALTER TABLE语句中，是否存在DATE、TIMESTAMP、DATETIME、TIME、YEAR的任一日期时间类型字段，如果存在则进一步检查。        
+        2. 判断句子中是否存在任意一个日期时间类型字段不包含default关键词，如果存在则将其加入到触发SQL的列表中；否则进一步检查。
+        3. 判断句子中是否存在任意一个日期时间类型字段的default值是NULL，如果存在则将其加入到触发SQL的列表中。
+        </检查流程描述>
+        <知识文档>
+        1. 表创建字段默认值设置：https://dev.mysql.com/doc/refman/8.0/en/create-table.html
+        2. 表变更字段默认值设置：https://dev.mysql.com/doc/refman/8.0/en/alter-table.html
+        3. timestamp 字段默认值：https://dev.mysql.com/doc/refman/8.0/en/timestamp-initialization.html
+        4. 日期时间类型范围：https://dev.mysql.com/doc/refman/8.0/en/date-and-time-types.html
+        5. explicit_defaults_for_timestamp官方文档: https://dev.mysql.com/doc/refman/8.0/en/timestamp-initialization.html
+        6. 数据类型默认值处理：https://dev.mysql.com/doc/refman/8.0/en/data-type-defaults.html
+        </知识文档>
+        </场景>
+        <场景 名称="变更字段默认值" 数据库版本="MySQL 所有版本" 检查方式="连库审核" 适用句型="ALTER TABLE">
+            <示例>
+            前置：
+            create table t1(
+                log_date1 timestamp, ##时间戳字段1，隐式默认值null。
+                log_date2 timestamp not null, ##时间戳字段2，无默认值。
+                log_date3 timestamp default current_timestamp, ##时间戳字段3，指定默认值。
+                log_date4 date,
+                log_date5 time,
+                log_date6 datetime,
+                log_date7 year
+            );  
+
+            示例SQL：
+            alter table t1 alter log_date7 set default null;
+
+            原理说明：与【表结构初始定义】一致
+                    
+            </示例>
+
+            <检查流程描述>
+            1. 检查ALTER TABLE句子后面是否包含 ALTER 关键字，存在则进一步检查。
+            2. 检查句子中是否包含 default关键字，存在则进一步检查。
+            3. 判断default的值是NULL，如果是则进一步检查。
+            4. 连接数据库，获取表结构的该字段类型，如果是DATE、TIMESTAMP、INTERVAL TO MONTH、INTERVAL TO DAY的其中一种类型，则将其加入到触发SQL的列表中。
+            </检查流程描述>
+            <知识文档>
+            与【表结构初始定义】一致
+            </知识文档>
+        </场景>
+    </规则场景>
+    <标签><分类 名称="操作对象"><分类值>字段</分类值></分类><分类 名称="SQL分类"><分类值>DDL</分类值><分类值>完整性约束</分类值></分类><分类 名称="审核目的"><分类值>保障正确性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值><分类值>连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

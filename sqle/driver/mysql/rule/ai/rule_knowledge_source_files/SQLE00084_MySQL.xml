@@ -1,0 +1,570 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+  <规则编号>SQLE00084</规则编号>
+  <级别>warn</级别>
+  <数据库类型>MySQL</数据库类型>
+  <规则种类>使用建议</规则种类>
+  <规则简述>不建议使用临时表</规则简述>
+  <规则描述>大数据量的情况下，临时表意味着SQL性能较低，会增加OS的开销，影响数据库性能</规则描述>
+  <规则场景>
+    <场景 名称="不建议使用显式临时表" 数据库版本="MySQL 8.0" 检查方式="不连库审核" 适用句型="CREATE">
+        前置:
+        create database db_mysql;
+        use db_mysql;
+
+        原理说明：
+        1. 显式的临时表是会话级别，数据不同，会造成严重的多SESSION 重复创建的临时表、表数据不一致的问题。
+        2. MySQL 可以在一个SESSION 创建同样的临时表和磁盘表，会造成代码混乱、出错的概率。
+        3. MySQL 的临时表在同一个SQL 执行过程中仅允许打开一次，多次打开会报错，索引应该避免显式临时表的使用，使用磁盘表代替。
+
+        示例：
+        create temporary table t1(id int primary key, r1 int);
+
+        示例验证：
+        1. SESSION 1 验证显式创建的临时表
+        (mysql:8.4.0:db_mysql)create temporary table t1(id int primary key, r1 int);
+        Query OK, 0 rows affected (0.00 sec)
+
+        (mysql:8.4.0:db_mysql)insert into t1 values (1,100);
+        Query OK, 1 row affected (0.01 sec)
+
+        2. SESSION 1 创建同名磁盘表，无报错，可以正常创建，但是无法正常插入数据，并且查询出来的数据是临时表的数据。
+        (mysql:8.4.0:db_mysql)create table t1(c1 varchar(2000));
+        Query OK, 0 rows affected (0.22 sec)
+
+        (mysql:8.4.0:db_mysql)insert into t1 values ('database');
+        ERROR 1136 (21S01): Column count doesn't match value count at row 1
+
+        (mysql:8.4.0:db_mysql)select * from t1;
+        +----+------+
+        | id | r1   |
+        +----+------+
+        |  1 |  100 |
+        +----+------+
+        1 row in set (0.00 sec)
+
+        3. SESSION 1 里 对临时表的多次关联会直接报错：不允许多次打开临时表。
+        (mysql:8.4.0:db_mysql)select * from t1 a ,t1 b;
+        ERROR 1137 (HY000): Can't reopen table: 'a'
+
+        4. 如果要插入磁盘表t1，必须开启一个新的SESSION 2，SESSION 2 可以给磁盘表t1插入数据。
+        (mysql:8.4.0:db_mysql)insert into t1 values ('mysql');
+        Query OK, 1 row affected (0.04 sec)
+
+        (mysql:8.4.0:db_mysql)select * from t1;
+        +-------+
+        | c1    |
+        +-------+
+        | mysql |
+        +-------+
+        1 row in set (0.00 sec)
+
+        总结：
+        1. MySQL的显式临时表不建议创建和使用，有以下几个原因：
+          1. 只对本SESSION 有效，其他SESSION 访问不了。
+          2. 不能对临时表多次关联，会直接报错。
+          3. 对本SESSION 建立同样的同名磁盘表，可以正常创建，但是无法正常使用。
+      <检查流程描述>
+        1. 对于“CREATE ... ”语句, 如果以下任意一项为真，则报告违反规则：
+          1. CREATE 语句后有 TEMPORARY 关键词。
+      </检查流程描述>
+      <知识文档>
+        1. CREATE TEMPORARY TABLE  官方文档： https://dev.mysql.com/doc/refman/8.4/en/create-temporary-table.html
+      </知识文档>
+    </场景>
+    <场景 名称="内部临时表优化示例" 数据库版本="MySQL 8.0" 检查方式="连库审核" 适用句型="SELECT、INSERT...SELECT、UNION、UPDATE、DELETE、WITH">
+      <示例>
+          前置:
+          create database db_mysql;
+          use db_mysql;
+
+          -- 主表
+          CREATE TABLE customers(
+            id INT(11) NOT NULL, -- 序号
+            name VARCHAR(32) DEFAULT '',-- 姓名
+            sex TINYINT NOT NULL, -- 性别
+            city VARCHAR(32) NOT NULL, -- 所在城市
+            age SMALLINT(4) NOT NULL, -- 值类型
+            PRIMARY KEY (id) -- 主键
+          );
+          
+          -- 子表
+          create table customers_records (id int primary key ,log_date date);
+
+          -- 给列age 创建索引。
+          create index idx_age_customers on customers(age);
+
+          -- 示例视图：
+          create   ALGORITHM = temptable view v_s_age as select age from customers group by age order by age desc; 
+
+          -- 插入模拟数据
+          set @@cte_max_recursion_depth=5000000;
+          insert into customers  
+          with recursive tmp (a,b,c,d,e) as (
+            select 1,'小王22222333',floor(rand()*2),'上海',ceil(rand()*30)+20 
+            union all 
+            select a+1,concat('小王',a),floor(rand()*2),'上海',ceil(rand()*20)+20 from tmp where a &lt; 5000000) 
+            select * from tmp;
+          
+          insert into customers_records select id,now() from customers;
+          analyze table customers;
+          analyze table customers_records;
+    
+          
+        示例：
+        -- SQL1， 从视图中求最大的age，由于视图本身的算法是temptable，所以势必有临时表产生。
+        select * from v_s_age order by age desc limit 1;
+
+        -- SQL2，简单的union，union 隐式排序，会导致临时表。
+        select * from customers where id = 1 union  select * from customers where id = 2;
+
+        -- SQL3，依然是从视图中查找age，但是视图作为子查询提供，会导致临时表。
+        select * from customers where age in (select age from v_s_age);
+
+        -- SQL4，with 表达式，仅限于MySQL 8.0 版本，会导致临时表。
+        select * from customers where age in (with recursive tmp (a) as (select 1 from dual union all select a+1 fromtmp where a &lt; 10) select * from tmp);
+        
+        -- SQL5， 两表JOIN，排序字段为被驱动表的字段，会导致临时表。
+        select * from customers a join customers_records b using(id) order by b.log_date desc;
+        
+        -- SQL6，求最小 age，由于对age 进行窗口展开，所以势必有临时表产生。
+        select age from (select age,row_number() over (partition by age order by age desc) gn from customers ) T where gn=1 order by age limit 1;
+
+
+
+
+        示例说明：
+        1. 所谓运行态临时表就是指的是在SQL 运行期间产生的临时表，SQL 执行完后立即销毁。当产生这些运行态临时表的时候，SQL 性能往往效率很差。 我们要做的就是尽可能的避免产生这种运行态的临时表。
+        2. MySQL 8.0 目前在如下场景中会用到临时表：
+            1. 语句中包含 UNION 查询； UNION 关键词代表隐式排序，所以必须有临时表。
+            2. 用到TEMPTABLE 算法或者是 UNION 查询中的视图；这类视图可以更改为算法为merge即可。
+            3. 语句中有with 表达式，这类不可避免的会使用临时表。
+            4. 语句中 ORDER BY和GROUP BY的子句不一样时； 这类前提是sql_mode 不为only_full_group_by 才可以；MySQL 8.0 默认已经禁止了此类SQL语句。其他的关系数据库也禁止这样的SQL 执行。
+            5. 表连接中，ORDER BY的列不是驱动表的列； 这类要想办法修改SQL来让排序列为驱动表的列，暂时没有办法单纯从SQL 上进行修改，需要和业务进一步沟通。
+            6. 有的不必要的窗口函数也会产生临时表。
+
+        3. 这类语句的优化方式一般有以下几种方式：
+           1. 必须修改SQL 语句本身，让其避免使用运行态临时表，从而效率更加高效。
+           2. SQL 本身无法进行优化的，得和开发沟通，调整业务SQL本身的逻辑。
+
+        示例验证：
+        SQL 1: select * from v_s_age order by age desc limit 1;
+        -- 这条SQL 的目的是求取表customers 中age 最大的记录，由于使用了 temptable 算法的视图，所以必然会产生临时表。
+        -- 查看优化前的部分执行计划：执行计划中 using_temporary_table 开关为 true，代表使用了临时表，总成本为4.75.
+        (mysql:8.0.31-cluster)explain format=json  select * from v_s_age order by age desc limit 1\G
+        *************************** 1. row ***************************
+        EXPLAIN: {
+          "query_block": {
+            "select_id": 1,
+            "cost_info": {
+              "query_cost": "4.75"
+            },
+            "ordering_operation": {
+              "using_filesort": true,
+              "table": {
+                "table_name": "v_s_age",
+                "access_type": "ALL",
+                "rows_examined_per_scan": 20,
+                "rows_produced_per_join": 20,
+                "filtered": "100.00",
+                "cost_info": {
+                  "read_cost": "2.75",
+                  "eval_cost": "2.00",
+                  "prefix_cost": "4.75",
+                  "data_read_per_join": "160"
+                },
+                "used_columns": [
+                  "age"
+                ],
+                "materialized_from_subquery": {
+                  "using_temporary_table": true,
+                  "dependent": false,
+                  "cacheable": true,
+                  "query_block": {
+                    "select_id": 2,
+                    "cost_info": {
+                      "query_cost": "46.76"
+                    },
+                    "ordering_operation": {
+                      "using_filesort": false,
+                      "grouping_operation": {
+                        "using_temporary_table": true,
+                        "using_filesort": true,
+                ...
+                        
+                      }
+                    
+                    }}}
+                }}}
+          }
+        1 row in set, 1 warning (0.00 sec)
+        
+        
+        
+        
+        SQL 1 优化后的SQL 为：  select max(age) from customers;
+        -- 对应的执行计划： 已经没有了临时表，执行成本由4.75 降低为0。 "Select tables optimized away" ，这个关键词的意思是以最优化的方式查询表，是MySQL里性能最好的方式。
+        (mysql:8.0.31-cluster)explain format=json select max(age) from customers\G
+        *************************** 1. row ***************************
+        EXPLAIN: {
+          "query_block": {
+            "select_id": 1,
+            "message": "Select tables optimized away"
+          }
+        }
+        1 row in set, 1 warning (0.00 sec)
+        
+
+        SQL 2: select * from customers where id = 1 union  select * from customers where id = 2;
+        -- 这条SQL 使用临时表的原因是使用了union ，union 子句本身就包含了临时表排序，所以这条SQL 的优化思路是去掉 union 即可。
+        -- 优化前的执行计划，由于json格式的执行计划不太明显，针对SQL 2 这里使用了树状格式的执行计划。有关键词 temporary，代表使用了临时表，并且成本为2.73
+        (mysql:8.0.31-cluster)explain format=tree select * from customers where id = 1 union  select * from customers where id = 2\G
+        *************************** 1. row ***************************
+        EXPLAIN: -  Table scan on union temporary (cost=1.46..2.73 rows=2)
+            - Union materialize with deduplication (cost=0.20..0.20 rows=2)
+                - Rows fetched before execution (cost=0.00..0.00 rows=1)
+                - Rows fetched before execution (cost=0.00..0.00 rows=1)
+        
+        1 row in set (0.00 sec)
+        
+        
+
+        SQL 2 优化后的SQL 为： select * from customers where id = 1 union all  select * from customers where id = 2;
+        -- 查看执行计划， temporary 关键词消失，代表不使用临时表，成本由2.73降低为0.
+        (mysql:8.0.31-cluster)explain format=tree select * from customers where id = 1 union all  select * from customers where id = 2\G
+        *************************** 1. row ***************************
+        EXPLAIN: - Append
+            - Stream results (cost=0.00..0.00 rows=1)
+                - Rows fetched before execution (cost=0.00..0.00 rows=1)
+            - Stream results (cost=0.00..0.00 rows=1)
+                - Rows fetched before execution (cost=0.00..0.00 rows=1)
+        
+        1 row in set (0.00 sec)
+        
+        
+
+
+        SQL 3:select * from customers where age in (select age from v_s_age);
+        -- 这条SQL 依然是从视图中查找age，但是视图作为子查询提供，会导致临时表。
+        -- 依然使用json 格式来查看优化前的部分执行计划：using_temporary_table 开关为true,代表使用了临时表，并且总成本为 1013252。
+        (mysql:8.0.31-cluster)explain format=json select * from customers where age in (select age from v_s_age)\G
+        *************************** 1. row ***************************
+        EXPLAIN: {
+          "query_block": {
+            "select_id": 1,
+            "cost_info": {
+              "query_cost": "1013252.00"
+            },
+            "nested_loop": [
+              {
+                "table": {
+                  "table_name": "customers",
+                  "access_type": "ALL",
+                  "possible_keys": [
+                    "idx_age_customers"
+                  ],
+                  "rows_examined_per_scan": 4988304,
+                  "rows_produced_per_join": 4988304,
+                  "filtered": "100.00",
+                  "cost_info": {
+                    "read_cost": "15583.45",
+                    "eval_cost": "498830.40",
+                    "prefix_cost": "514413.85",
+                    "data_read_per_join": "1G"
+                  },
+                  "used_columns": [
+                    "id",
+                    "name",
+                    "sex",
+                    "city",
+                    "age"
+                  ]
+                }
+              },
+              {
+                "table": {
+                  "table_name": "subquery2",
+                  "access_type": "eq_ref",
+                  "key": "auto_distinct_key",
+                  "key_length": "2",
+                  "ref": [
+                    "db_mysql.customers.age"
+                  ],
+                  "rows_examined_per_scan": 1,
+                  "materialized_from_subquery": {
+                    "using_temporary_table": true,
+    ...
+                                }
+                              }
+                            }
+                          }
+                        }
+
+        1 row in set, 1 warning (0.00 sec)
+        
+
+        SQL 3 优化后的SQL为： select * from customers；
+        -- 原SQL 的 子查询完全没必要。
+        -- 优化后的SQL 执行计划如下，临时表消失，成本由 1013252 降低到 514413。
+        (mysql:8.0.31-cluster)explain format=json select * from customers \G
+        *************************** 1. row ***************************
+        EXPLAIN: {
+        "query_block": {
+            "select_id": 1,
+            "cost_info": {
+            "query_cost": "514413.85"
+            },
+            "table": {
+            "table_name": "customers",
+            "access_type": "ALL",
+            "rows_examined_per_scan": 4988304,
+            "rows_produced_per_join": 4988304,
+            "filtered": "100.00",
+            "cost_info": {
+                "read_cost": "15583.45",
+                "eval_cost": "498830.40",
+                "prefix_cost": "514413.85",
+                "data_read_per_join": "1G"
+            },
+            "used_columns": [
+                "id",
+                "name",
+                "sex",
+                "city",
+                "age"
+            ]
+            }
+        }
+        }
+        1 row in set, 1 warning (0.00 sec)
+
+
+     
+        SQL 4:select * from customers where age in (with recursive tmp (a) as (select 1 from dual union all select a+1 from tmp where a &lt; 10) select * from tmp);
+        -- with 表达式， 仅限于MySQL 8.0 版本，会导致临时表。
+        -- 执行计划如下： using_temporary_table 开关为true,代表使用了临时表，并且最终的成本为 219160。
+        (mysql:8.0.31-cluster)explain format=json select * from customers where age in (with recursive tmp (a) as (select 1 from dual union all select a+1 from tmp where a &gt; 10) select * from tmp)\G
+        *************************** 1. row ***************************
+        EXPLAIN: {
+        "query_block": {
+            "select_id": 1,
+            "cost_info": {
+            "query_cost": "219160.36"
+            },
+            "nested_loop": [
+            {
+                "table": {
+                "table_name": "subquery2",
+                "access_type": "ALL",
+                "attached_condition": "(`subquery2`.`a` is not null)",
+                "materialized_from_subquery": {
+                    "using_temporary_table": true,
+                    "query_block": {
+                    "table": {
+                        "table_name": "tmp",
+                        "access_type": "ALL",
+                        "rows_examined_per_scan": 3,
+                        "rows_produced_per_join": 3,
+                        "filtered": "100.00",
+                        "cost_info": {
+                        "read_cost": "2.54",
+                        "eval_cost": "0.30",
+                        "prefix_cost": "2.84",
+                        "data_read_per_join": "48"
+                        },
+                        "used_columns": [
+                        "a"
+                        ],
+                        "materialized_from_subquery": {
+                        "using_temporary_table": true,
+                        ...
+                        }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+                
+        }
+        
+        SQL 4 优化后的SQL 为：select * from customers where age &gt;=1 and age &lt;=10;
+        -- 由于本身是求一个临时范围，所以把with 表达式取消，变为确切的范围查找。
+        -- 优化后的SQL， 临时表已经消除，总成本由原来的 195488 降低为 2.21。
+        (mysql:8.0.31-cluster)explain format=json select * from customers where age &gt;=1 and age &gt;=10\G
+        *************************** 1. row ***************************
+        EXPLAIN: {
+          "query_block": {
+            "select_id": 1,
+            "cost_info": {
+              "query_cost": "2.21"
+            },
+            "table": {
+              "table_name": "customers",
+              "access_type": "range",
+              "possible_keys": [
+                "idx_age_customers"
+              ],
+              "key": "idx_age_customers",
+              "used_key_parts": [
+                "age"
+              ],
+              "key_length": "2",
+              "rows_examined_per_scan": 1,
+              "rows_produced_per_join": 1,
+              "filtered": "100.00",
+              "index_condition": "((`db_mysql`.`customers`.`age` &gt;= 1) and (`db_mysql`.`customers`.`age` &lt;= 10))",
+              "cost_info": {
+                "read_cost": "2.11",
+                "eval_cost": "0.10",
+                "prefix_cost": "2.21",
+                "data_read_per_join": "272"
+              },
+              "used_columns": [
+                "id",
+                "name",
+                "sex",
+                "city",
+                "age"
+              ]
+            }
+          }
+        }
+
+        1 row in set, 1 warning (0.00 sec)
+        
+        
+        
+        SQL 5： select * from customers a join customers_records b using(id) order by b.log_date desc;
+        -- 两表JOIN，排序字段为被驱动表的字段，会导致临时表。这类SQL 需要和更改业务逻辑，单纯从SQL 角度来讲，无法优化。
+        -- 比如原来的排序字段为b.log_date，如果改为驱动表的字段，那SQL 本身的语义就变了。
+
+
+        SQL6: select age from (select age,row_number() over (partition by age order by age desc) gn from customers ) T where gn=1 order by age limit 1;
+        -- 求最小 age，由于对age 进行窗口展开，所以势必有临时表产生。
+        -- 查看执行计划：using_temporary_table 开关为 true, 代表有临时表产生，并且注意临时表的排序成本为 4988304, 已经非常高了。
+        (mysql:8.0.31-cluster)explain format=json select age from (select age,row_number() over (partition by age order by age desc) gn from customers ) T where gn=1 order by age limit 1\G
+            *************************** 1. row ***************************
+            EXPLAIN: {
+            "query_block": {
+                "select_id": 1,
+                "cost_info": {
+                "query_cost": "3.50"
+                },
+                "ordering_operation": {
+                "using_filesort": true,
+                "table": {
+                    "table_name": "T",
+                    "access_type": "ref",
+                    "possible_keys": [
+                    "auto_key0"
+                    ],
+                    "key": "auto_key0",
+                    "used_key_parts": [
+                    "gn"
+                    ],
+                    "key_length": "8",
+                    "ref": [
+                    "const"
+                    ],
+                    "rows_examined_per_scan": 10,
+                    "rows_produced_per_join": 10,
+                    "filtered": "100.00",
+                    "cost_info": {
+                    "read_cost": "2.50",
+                    "eval_cost": "1.00",
+                    "prefix_cost": "3.50",
+                    "data_read_per_join": "160"
+                    },
+                    "used_columns": [
+                    "age",
+                    "gn"
+                    ],
+                    "materialized_from_subquery": {
+                    "using_temporary_table": true,
+                    "dependent": false,
+                    "cacheable": true,
+                    "query_block": {
+                        "select_id": 2,
+                        "cost_info": {
+                        "query_cost": "5502733.65"
+                        },
+                        "windowing": {
+                        "windows": [
+                            {
+                            "name": "unnamed window",
+                            "using_filesort": true,
+                            "filesort_key": [
+                                "`age`",
+                                "`age` desc"
+                            ],
+                            "functions": [
+                                "row_number"
+                            ]
+                            }
+                        ],
+                        "cost_info": {
+                            "sort_cost": "4988304.00"
+                        },
+                        "table": {
+                            "table_name": "customers",
+                            "access_type": "index",
+                            "key": "idx_age_customers",
+                            "used_key_parts": [
+                            "age"
+                            ],
+                            "key_length": "2",
+                            "rows_examined_per_scan": 4988304,
+                            "rows_produced_per_join": 4988304,
+                            "filtered": "100.00",
+                            "using_index": true,
+                            "cost_info": {
+                            "read_cost": "15599.25",
+                            "eval_cost": "498830.40",
+                            "prefix_cost": "514429.65",
+                            "data_read_per_join": "1G"
+                            },
+                            "used_columns": [
+                            "id",
+                            "age"
+                            ]
+                        }
+                        }
+                    }
+                    }
+                }
+                }
+            }
+            }
+            1 row in set, 1 warning (0.00 sec)
+
+        SQL 6 优化为： select min(age) from customers;
+        -- 由于原来SQL 最终目的是求最小的age，所以直接优化为最简单的SQL 即可。临时表消失，并且运行成本为0。
+        (mysql:8.0.31-cluster)explain format=json select min(age) from customers\G
+        *************************** 1. row ***************************
+        EXPLAIN: {
+        "query_block": {
+            "select_id": 1,
+            "message": "Select tables optimized away"
+        }
+        }
+        1 row in set, 1 warning (0.00 sec)
+
+
+        结论：
+          1. SQL 的执行中产生了不必要的临时表，由于临时表的生成、数据载入、释放等都需要浪费系统资源，所以要避免生成临时表的SQL 语句。
+          2. 此类 SQL 优化的方式可以分为好几种。比如 直接添加索引、或者根据SQL 语义来修改SQL 使其避免临时表的生成。
+    
+      </示例>
+      <检查流程描述>
+        1. 对于 DML语句，
+          1. 登录数据库。
+          2. 查看SQL 语句执行计划，使用explain format=json 来输出执行计划，执行计划结果中using_temporary_table 开关为 true，则报告违反规则。
+        2. 对于 WITH语句，执行上述相同的检查。
+      </检查流程描述>
+      <知识文档>
+        1. MySQL 内部临时表官方文档： https://dev.mysql.com/doc/refman/8.0/en/internal-temporary-tables.html
+      </知识文档>
+    </场景>
+  </规则场景>
+<标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值><分类值>连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

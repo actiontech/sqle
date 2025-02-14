@@ -1,0 +1,119 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+  <规则编号>SQLE00015</规则编号>
+  <级别>
+    <当前级别>warn</当前级别>
+  </级别>
+  <数据库类型>MySQL</数据库类型>
+  <规则种类>使用建议</规则种类>
+  <规则简述>避免库内出现多种数据库排序规则</规则简述>
+  <规则描述>建议库内使用一致的数据库排序规则，以确保查询性能和索引有效性，避免因排序规则不一致导致的全表扫描和数据一致性问题。</规则描述>
+  <规则场景>
+    <原理说明 数据库版本="MySQL 5.7.25" 检查方式="连库审核" 适用句型="CREATE TABLE,ALTER TABLE">
+      <示例>
+      原理说明：
+      当两个表使用不同的排序规则时，在进行联接操作时可能会导致索引失效，从而引发全表扫描。这是因为MySQL需要在运行时进行字符集转换，这可能会阻止使用索引。
+
+      反例：
+      CREATE TABLE `table_a` (
+        `id` int(11) NOT NULL AUTO_INCREMENT,
+        `col_1` varchar(50) DEFAULT NULL,
+        `col_2` varchar(50) DEFAULT NULL,
+        PRIMARY KEY (`id`),
+        KEY `table_a_col_1_index` (`col_1`),
+        KEY `table_a_col_2_index` (`col_2`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE = utf8mb4_bin;
+      CREATE TABLE `table_b` (
+        `id` int(11) NOT NULL AUTO_INCREMENT,
+        `col_1` varchar(50) DEFAULT NULL,
+        `col_2` varchar(50) DEFAULT NULL,
+        PRIMARY KEY (`id`),
+        KEY `table_b_col_1_index` (`col_1`),
+        KEY `table_b_col_2_index` (`col_2`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE = utf8mb4_general_ci;
+
+      反例验证：
+      -- 创建示例表
+      -- 插入模拟数据到table_a
+      mysql&gt; INSERT INTO `table_a` (`col_1`, `col_2`) VALUES ('aaa', 'abc'), ('bbb', 'def'), ('ccc', 'ghi'), ('ddd', 'jkl'), ('eee', 'mno');
+      Query OK, 5 rows affected (0.01 sec)
+      Records: 5  Duplicates: 0  Warnings: 0
+      
+      -- 插入模拟数据到table_b
+      mysql&gt; INSERT INTO `table_b` (`col_1`, `col_2`) VALUES ('aaa', 'abc'), ('bbb', 'def'), ('ccc', 'ghi'), ('ddd', 'jkl'), ('eee', 'mno'), ('fff', 'pqr'), ('ggg', 'stu'), ('hhh', 'vwx'), ('iii', 'yz0'), ('jjj', '123');
+      Query OK, 10 rows affected (0.01 sec)
+      Records: 10  Duplicates: 0  Warnings: 0
+
+      -- 排序规则不一致的情况下，查看SQL的执行计划
+      mysql&gt; explain SELECT a.* from table_a a  left join table_b b on a.col_1 = b.col_1 where a.col_2 = 'abc' order by a.col_1  LIMIT 10;
+      +----+-------------+-------+------------+------+---------------------+---------------------+---------+-------+------+----------+------------------------------------------------+
+      | id | select_type | table | partitions | type | possible_keys       | key                 | key_len | ref   | rows | filtered | Extra                                          |
+      +----+-------------+-------+------------+------+---------------------+---------------------+---------+-------+------+----------+------------------------------------------------+
+      |  1 | SIMPLE      | a     | NULL       | ref  | table_a_col_2_index | table_a_col_2_index | 203     | const |    1 |   100.00 | Using index condition; Using filesort          |
+      |  1 | SIMPLE      | b     | NULL       | ALL  | table_b_col_1_index | NULL                | NULL    | NULL  |   10 |   100.00 | Range checked for each record (index map: 0x2) |
+      +----+-------------+-------+------------+------+---------------------+---------------------+---------+-------+------+----------+------------------------------------------------+
+      2 rows in set, 2 warnings (0.00 sec)
+
+      mysql&gt; show warnings;
+      +---------+------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+      | Level   | Code | Message                                                                                                                                                                                                                                                                                  |
+      +---------+------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+      | Warning | 1739 | Cannot use ref access on index 'table_b_col_1_index' due to type or collation conversion on field 'col_1'                                                                                                                                                                                |
+      | Note    | 1003 | /* select#1 */ select `test`.`a`.`id` AS `id`,`test`.`a`.`col_1` AS `col_1`,`test`.`a`.`col_2` AS `col_2` from `test`.`table_a` `a` left join `test`.`table_b` `b` on((`test`.`a`.`col_1` = `test`.`b`.`col_1`)) where (`test`.`a`.`col_2` = 'abc') order by `test`.`a`.`col_1` limit 10 |
+      +---------+------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+      2 rows in set (0.00 sec)
+
+      # 注意这里的警告信息，表明由于排序规则的不一致，无法使用索引进行连接操作
+
+      正例：
+      -- 确保两个表使用相同的排序规则
+      ALTER TABLE `table_b` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
+
+      正例验证：
+      -- 变更表的排序规则
+      mysql&gt; ALTER TABLE `table_b` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
+      Query OK, 0 rows affected (0.XX sec)
+
+      -- 确认一致的排序规则下 相同SQL的执行计划
+      mysql&gt; explain SELECT a.* from table_a a  left join table_b b on a.col_1 = b.col_1 where a.col_2 = 'abc' order by a.col_1  LIMIT 10;
+      +----+-------------+-------+------------+------+---------------------+---------------------+---------+--------------+------+----------+---------------------------------------+
+      | id | select_type | table | partitions | type | possible_keys       | key                 | key_len | ref          | rows | filtered | Extra                                 |
+      +----+-------------+-------+------------+------+---------------------+---------------------+---------+--------------+------+----------+---------------------------------------+
+      |  1 | SIMPLE      | a     | NULL       | ref  | table_a_col_2_index | table_a_col_2_index | 203     | const        |    1 |   100.00 | Using index condition; Using filesort |
+      |  1 | SIMPLE      | b     | NULL       | ref  | table_b_col_1_index | table_b_col_1_index | 203     | test.a.col_1 |    1 |   100.00 | Using index                           |
+      +----+-------------+-------+------------+------+---------------------+---------------------+---------+--------------+------+----------+---------------------------------------+
+      2 rows in set, 1 warning (0.00 sec)
+
+      </示例>
+      <检查流程描述>
+      1. 对于 CREATE TABLE 语句：
+        1. 检查是否在表级别指定了 COLLATION。
+        2. 如果指定了表级 COLLATION，比较其与数据库默认 COLLATION 是否一致。
+        3. 检查所有字符类型列（如 CHAR、VARCHAR、TEXT 等）是否指定了列级 COLLATION。
+        4. 如果指定了列级 COLLATION，比较其与数据库默认 COLLATION 是否一致。
+        5. 如果表级或任何列级 COLLATION 与数据库默认 COLLATION 不一致，报告违反规则。
+      2. 对于 ALTER TABLE 语句：
+        1. 如果语句中包含 CONVERT TO CHARACTER SET 子句，检查指定的 COLLATION 是否与数据库默认 COLLATION 一致。
+        2. 如果添加或修改字符类型列，检查是否指定了 COLLATION，并比较其与数据库默认 COLLATION 是否一致。
+        3. 如果指定的 COLLATION 与数据库默认 COLLATION 不一致，报告违反规则。
+      </检查流程描述>
+      <知识文档>
+      1. Explain Output Format: https://dev.mysql.com/doc/refman/5.7/en/explain-output.html
+      </知识文档>
+    </原理说明>
+  </规则场景>
+  <标签>
+    <分类 名称="操作对象">
+      <分类值>数据库</分类值>
+    </分类>
+    <分类 名称="SQL分类">
+      <分类值>数据库管理</分类值>
+      <分类值>DDL</分类值>
+    </分类>
+    <分类 名称="审核目的">
+      <分类值>发现性能问题</分类值>
+      <分类值>增强可维护性</分类值>
+    </分类>
+  <分类 名称="审核精确度"><分类值>连库审核</分类值></分类></标签>
+  <完成情况>完成</完成情况>
+</Rule>

@@ -1,0 +1,165 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+  <规则编号>SQLE00097</规则编号>
+  <级别>error</级别>
+  <数据库类型>MySQL</数据库类型>
+  <规则种类>使用建议</规则种类>
+  <规则简述>禁止对长字段排序</规则简述>
+  <规则变量>
+  <变量 名称="排序字段的最大长度">100</变量>
+  </规则变量>
+  <规则描述>在MySQL数据库中，对长字段（如VARCHAR(2000)、TEXT、BLOB等）进行排序操作（包括但不限于ORDER BY、DISTINCT、GROUP BY、UNION等）是不推荐的实践。这类操作会导致排序缓冲区（sort_buffer_size）溢出，引发性能下降和资源浪费。此外，由于长字段排序可能导致临时表（使用Temptable引擎）溢出到磁盘，这不仅会严重影响查询性能，还可能导致系统稳定性和响应能力的降低。</规则描述>
+  <规则场景>
+    <场景 名称="对长字符字段排序" 数据库版本="MySQL 所有版本 " 检查方式="连库审核" 适用句型="SELECT、INSERT...SELECT、UNION、UPDATE、DELETE、WITH">
+        <示例>
+            前置：
+            create database db_mysql;
+            use db_mysql;
+
+            -- 主表
+            CREATE TABLE customers(
+              id INT NOT NULL, -- 序号
+              name VARCHAR(32) DEFAULT '',-- 姓名
+              sex TINYINT NOT NULL, -- 性别
+              city VARCHAR(32) NOT NULL, -- 所在城市
+              age SMALLINT NOT NULL, -- 值类型
+              mark1 varchar(2000) default '上海爱可生信息技术股份有限公司', -- 备注1
+              mark2 varchar(100) default '上海爱可生信息技术股份有限公司', -- 备注2
+              PRIMARY KEY (id) -- 主键
+            );
+
+
+            -- 插入模拟数据,100W 条。
+            set @@cte_max_recursion_depth=20000000;
+            insert into customers  
+            with recursive tmp (a,b,c,d,e,f,g) as (
+              select 1,'小王22222333',floor(rand()*2),'上海',ceil(rand()*30)+20,repeat('爱可生',ceil(rand()*200)),repeat('爱可生',ceil(rand()*30))
+              union all 
+              select a+1,concat('小王',a),floor(rand()*2),'上海',ceil(rand()*20)+20,repeat('爱可生',ceil(rand()*200)),repeat('爱可生',ceil(rand()*30)) from tmp where a &lt; 1000000) 
+              select * from tmp;
+        
+
+          原理说明：
+          1. 类似如VARCHAR(2000)、TEXT、BLOB等这样的大字符字段，对这样的字段进行排序会造成如下问题：
+            1. 排序缓冲(sort_buffer_size) 不足，会溢出到磁盘，排序速度变慢。
+            2. 临时表缓冲(tmp_table_size) 不足，会溢出到磁盘，临时表创建、字段比对速度变慢。
+            3. 如果内部临时表设置为Temptable 引擎，同样会导致其缓存（temptable_max_ram） 溢出，导致后续处理变慢（MySQL 8.4默认 Temptable）。
+          2. 所以要禁止对长字符字段排序，避免内存溢出，从而引发磁盘排序，严重影响性能，占用系统资源。
+          3. 长字段范围如下：
+            1. VARCHAR：通常超过512字节以上就被视为较长的字段；
+            2. TEXT：TEXT类型用于存储大量的字符串数据，其中TINYTEXT、TEXT、MEDIUMTEXT和LONGTEXT可以存储不同大小的数据，从255字节到4GB不等。通常TEXT及以上大小的字段都被视为长字段。
+            3. BLOB: 类似于TEXT，BLOB类型用于存储大量的二进制数据。BLOB类型的字段也有TINYBLOB、BLOB、MEDIUMBLOB和LONGBLOB几种，存储能力从255字节到4GB不等。
+          4. 还有最重要的一点，MySQL对长字符字段创建索引有限制，参考规则SQLE00064。
+
+
+          反例SQL：
+          select distinct(mark1) from customers order by mark1 desc  limit 10;
+          select * from customers order by mark1 desc;
+          select mark1 from customers group by mark1 order by mark1 desc;
+          select count(*) from (select mark1 from customers group by mark1 order by mark1) T;
+          update customers set city='北京' order by mark1 desc ;
+          delete from customers order by mark1;
+          with tmp(a,b) as (select age,mark1 from customers order by mark1 desc) select * from tmp;
+
+
+          反例说明：
+          1. 这些SQL 语句都有一个共同点，就是对字段mark1 排序，字段mark1的定义是varchar(2000),属于长字符，不建议对他排序。
+
+          反例验证： 
+          1. 写个简单脚本使用100个并发来运行示例SQL：
+          [root@ytt-pc #innodb_temp]# for i in `seq 1 100`;do (mysql -S /var/lib/mysql/3306/mysql.sock -p'用户密码' -D db_mysql -e "select distinct(mark1) from customers order by mark1 desc  limit 10;") &amp; done;
+          2. 执行一会，就会大量出现如下报错： 代表内存临时表溢出，往
+          ERROR 1114 (HY000) at line 1: The table '/tmp/#sql23f1_107_0' is full
+          ERROR 1114 (HY000) at line 1: The table '/tmp/#sql23f1_105_0' is full
+          ERROR 1114 (HY000) at line 1: The table '/tmp/#sql23f1_114_0' is full
+          ERROR 1114 (HY000) at line 1: The table '/tmp/#sql23f1_fd_0' is full
+          ERROR 1114 (HY000) at line 1: The table '/tmp/#sql23f1_119_0' is full
+          ERROR 1114 (HY000) at line 1: The table '/tmp/#sql23f1_dd_0' is full
+          ERROR 1114 (HY000) at line 1: The table '/tmp/#sql23f1_13b_0' is full
+          ERROR 1114 (HY000) at line 1: The table '/tmp/#sql23f1_f0_0' is full
+          ERROR 1114 (HY000) at line 1: The table '/tmp/#sql23f1_e1_0' is full
+          ERROR 1114 (HY000) at line 1: The table '/tmp/#sql23f1_10c_0' is full
+          ERROR 1114 (HY000) at line 1: The table '/tmp/#sql23f1_122_0' is full
+          ERROR 1114 (HY000) at line 1: The table '/tmp/#sql23f1_11b_0' is full
+          ERROR 1114 (HY000) at line 1: The table '/tmp/#sql23f1_124_0' is full
+          ERROR 1114 (HY000) at line 1: The table '/tmp/#sql23f1_106_0' is full
+          ERROR 1114 (HY000) at line 1: The table '/tmp/#sql23f1_f4_0' is full
+
+
+          3. 查看溢出的临时表目录，发现大量的临时文件，占用7.5G
+          [root@ytt-pc #innodb_temp]# pwd
+          /var/lib/mysql/3306/#innodb_temp
+          [root@ytt-pc #innodb_temp]# du -sh
+          7.5G	
+          [root@ytt-pc #innodb_temp]# ls
+          temp_100.ibt  temp_110.ibt  temp_20.ibt  temp_30.ibt  temp_40.ibt  temp_50.ibt  temp_60.ibt  temp_70.ibt  temp_80.ibt  temp_90.ibt
+          temp_101.ibt  temp_11.ibt   temp_21.ibt  temp_31.ibt  temp_41.ibt  temp_51.ibt  temp_61.ibt  temp_71.ibt  temp_81.ibt  temp_91.ibt
+          temp_102.ibt  temp_12.ibt   temp_22.ibt  temp_32.ibt  temp_42.ibt  temp_52.ibt  temp_62.ibt  temp_72.ibt  temp_82.ibt  temp_92.ibt
+          temp_103.ibt  temp_13.ibt   temp_23.ibt  temp_33.ibt  temp_43.ibt  temp_53.ibt  temp_63.ibt  temp_73.ibt  temp_83.ibt  temp_93.ibt
+          temp_104.ibt  temp_14.ibt   temp_24.ibt  temp_34.ibt  temp_44.ibt  temp_54.ibt  temp_64.ibt  temp_74.ibt  temp_84.ibt  temp_94.ibt
+          temp_105.ibt  temp_15.ibt   temp_25.ibt  temp_35.ibt  temp_45.ibt  temp_55.ibt  temp_65.ibt  temp_75.ibt  temp_85.ibt  temp_95.ibt
+          temp_106.ibt  temp_16.ibt   temp_26.ibt  temp_36.ibt  temp_46.ibt  temp_56.ibt  temp_66.ibt  temp_76.ibt  temp_86.ibt  temp_96.ibt
+          temp_107.ibt  temp_17.ibt   temp_27.ibt  temp_37.ibt  temp_47.ibt  temp_57.ibt  temp_67.ibt  temp_77.ibt  temp_87.ibt  temp_97.ibt
+          temp_108.ibt  temp_18.ibt   temp_28.ibt  temp_38.ibt  temp_48.ibt  temp_58.ibt  temp_68.ibt  temp_78.ibt  temp_88.ibt  temp_98.ibt
+          temp_109.ibt  temp_19.ibt   temp_29.ibt  temp_39.ibt  temp_49.ibt  temp_59.ibt  temp_69.ibt  temp_79.ibt  temp_89.ibt  temp_99.ibt
+          temp_10.ibt   temp_1.ibt    temp_2.ibt   temp_3.ibt   temp_4.ibt   temp_5.ibt   temp_6.ibt   temp_7.ibt   temp_8.ibt   temp_9.ibt
+
+
+          4. SQL 由于报错已经无法继续运行，只能重启MySQL进程，释放内存和临时磁盘空间。
+          [root@ytt-pc #innodb_temp]# systemctl restart mysqld
+          [root@ytt-pc #innodb_temp]# du -sh
+          800K	
+
+          正例：
+          select distinct(mark2) from customers order by mark2 desc  limit 10;
+          select * from customers order by mark2 desc;
+          select mark2 from customers group by mark2 order by mark2 desc;
+          select count(*) from (select mark2 from customers group by mark2 order by mark2) T;
+          update customers set city='北京' order by mark2 desc ;
+          delete from customers order by mark2;
+          with tmp(a,b) as (select age,mark2 from customers order by mark2 desc) select * from tmp;
+
+          正例说明：
+          1. 对比反例，把对字段mark1的排序、分组等变为对字段mark2的处理。字段mark2的字符长度比字段mark1要小的多。
+          2. 需要注意的是：正例里的SQL 全部改变了SQL的语义，需要同业务一起处理。
+
+          正例验证：
+          1. 和反例一样的步骤，同样的脚本，把正例SQL 带进去，很快就执行完成。
+          for i in `seq 1 100`;do (mysql -S /var/lib/mysql/3306/mysql.sock -p'aaAA11__' -D db_mysql -e "select distinct(mark2) from customers order by mark2 desc  limit 10;") &amp; done;
+         
+          2. 查看临时磁盘空间： 虽然也内存溢出了，但是溢出的磁盘只用了1.2G
+          [root@ytt-pc #innodb_temp]# du -sh
+          1.2G	.
+
+          3. 查看SQL 的执行时间：平均一条SQL 执行时间63秒。
+          (mysql:8.4.0:(none))select * from sys.statements_with_temp_tables where query like '%mark2%';
+          +-------------------------------------------------------------------+----------+------------+---------------+-------------------+-----------------+--------------------------+------------------------+----------------------------+----------------------------+------------------------------------------------------------------+
+          | query                                                             | db       | exec_count | total_latency | memory_tmp_tables | disk_tmp_tables | avg_tmp_tables_per_query | tmp_tables_to_disk_pct | first_seen                 | last_seen                  | digest                                                           |
+          +-------------------------------------------------------------------+----------+------------+---------------+-------------------+-----------------+--------------------------+------------------------+----------------------------+----------------------------+------------------------------------------------------------------+
+          | SELECT DISTINCTROW ( `mark2` ) ...  ORDER BY `mark2` DESC LIMIT ? | db_mysql |        100 | 1.76 h        |               100 |               0 |                        1 |                      0 | 2024-05-29 12:25:42.141637 | 2024-05-29 12:25:47.421199 | 9b405f130de82f6ed68e29e7c87f3b45ff5af13aacbfdf1edce84bfbd03b7d6f |
+          +-------------------------------------------------------------------+----------+------------+---------------+-------------------+-----------------+--------------------------+------------------------+----------------------------+----------------------------+------------------------------------------------------------------+
+          1 row in set (0.00 sec)
+        
+
+          结论：
+          1. 对长字符的字段进行排序，会触发临时表缓存、排序缓存溢出，严重影响性能，有可能导致数据库资源被耗尽。
+          2. 禁止对此类字符的字段进行排序操作；如果可以，尽量对整型等字段进行排序，或者把排序操作上推到应用来做。
+
+      </示例>
+      <检查流程描述>
+        1. 对于 "SELECT  ..."语句：
+          1. 检查是否有关键词 ORDER BY 、DISTINCT 、 GROUP BY 子句
+          2. 定义一个集合，把表名、关键词后面的字段名写入集合
+          3. 不符合规范的字段类型：VARCHAR、TEXT、BLOB，其中VARCHAR要求长度是大于阈值才算不符合规范；
+          4. 登录数据库，查询集合中字段的字段类型，查看是否是VARCHAR，如果是VARCHAR且VARCHAR 字段的长度大于阈值或者是TEXT、BLOB类型，则报告违反规则。
+             对应的查询语句为： select data_type,character_maximum_length from information_schema.columns where table_name='表名' and column_name='字段名';
+        2. 对于 "UPDATE ... " 语句，执行与上述同样操作。
+        3. 对于 "DELETE ... " 语句，执行与上述同样操作。
+        4. 对于 "INSERT ... SELECT ... " 语句，执行与上述同样操作。
+      </检查流程描述>
+      <知识文档>
+        1. 字符数据类型官方文档：https://dev.mysql.com/doc/refman/8.4/en/string-types.html
+      </知识文档>
+    </场景>
+  </规则场景>
+<标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

@@ -1,0 +1,114 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+  <规则编号>SQLE00178</规则编号>
+  <级别>error</级别>
+  <数据库类型>MySQL</数据库类型>
+  <规则种类>索引优化</规则种类>
+  <规则简述>SQL语句存在全表排序操作</规则简述>
+  <规则描述>SQL语句存在全表排序操作，无过滤条件，也就是WHERE 必须显式指定过滤条件</规则描述>
+  <规则场景>
+    <原理说明 数据库版本="MySQL 8.0" 检查方式="不连库审核" 适用句型="SELECT、INSERT、UPDATE、DELETE">
+      <示例>
+            示例表结构:
+            create database db_mysql;
+            use db_mysql;
+  
+            -- 主表
+            CREATE TABLE customers(
+              id INT(11) NOT NULL, -- 序号
+              name VARCHAR(32) DEFAULT '',-- 姓名
+              sex TINYINT NOT NULL, -- 性别
+              city VARCHAR(32) NOT NULL, -- 所在城市
+              age SMALLINT(4) NOT NULL, -- 值类型
+              PRIMARY KEY (id) -- 主键
+            );
+  
+            -- 批量插入模拟数据，1500W条记录。
+            set @@cte_max_recursion_depth=20000000;
+            insert into customers  
+            with recursive tmp (a,b,c,d,e) as (
+              select 1,'小王22222333',floor(rand()*2),'上海',ceil(rand()*30)+20 
+              union all 
+              select a+1,concat('小王',a),floor(rand()*2),'上海',ceil(rand()*20)+20 from tmp where a &lt; 15000000) 
+              select * from tmp;
+
+           原理说明：
+           1. 有排序的SQL 语句必须有WHERE 条件匹配，否则会全表扫描或者全索引扫描。
+           2. 或者是SQL 语句中包含有WHERE 1=1 或者 WHERE True 这样的恒真条件，但是没有其他的过滤字段，一样的原理。
+           3. 此类语句包含 ORDER BY 、GROUP BY、DISTINCT 等子句。
+
+           示例：
+           -- 以下这些SQL 都是无过滤条件的排序语句
+           select age from customers order by age;
+           select age from customers group by age order by age desc;
+           select count(distinct age) from customers;
+           select * from customers order by age;
+           select * from customers where 1=1 order by age;
+           select * from customers where True order by age;
+
+
+           示例验证：
+           -- 由于这些SQL 类似，选取第一个SQL 来进行验证，执行时间9秒多。此时 列 age 没有索引，此时优化器走全表扫。
+           (mysql:8.0.31-cluster)explain analyze select age from customers order by age;
+           +-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+           | EXPLAIN                                                                                                                                                                                                                             |
+           +-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+           | - Sort: customers.age (cost=1541748.73 rows=14981684) (actual time=7873.165..8573.437 rows=15000000 loops=1)
+               - Table scan on customers (cost=1541748.73 rows=14981684) (actual time=0.110..3482.071 rows=15000000 loops=1)
+            |
+           +-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+           1 row in set (9.32 sec)
+           
+           
+
+           示例优化：
+           -- 给列age 加索引
+           (mysql:8.0.31-cluster)create index idx_age_customers on customers(age);
+            Query OK, 0 rows affected (48.89 sec)
+            Records: 0  Duplicates: 0  Warnings: 0
+
+           -- 再次执行，执行时间降低到3秒。 但是走的全索引扫描，扫描行数没有多大变化。
+           (mysql:8.0.31-cluster)explain analyze select age from customers order by age;
+           +---------------------------------------------------------------------------------------------------------------------------------------------------+
+           | EXPLAIN                                                                                                                                           |
+           +---------------------------------------------------------------------------------------------------------------------------------------------------+
+           | - Covering index scan on customers using idx_age_customers (cost=1539497.43 rows=14981684) (actual time=0.079..2266.452 rows=15000000 loops=1)
+            |
+           +---------------------------------------------------------------------------------------------------------------------------------------------------+
+           1 row in set (2.97 sec)
+           
+
+           -- 修改SQL 语句，增加过滤条件。
+           select age from customers where age &lt; 20;
+
+           -- 修改过的SQL 语句，执行时间16毫秒。
+          (mysql:8.0.31-cluster)explain analyze  select age from customers where age &lt; 20;
+          +----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+          | EXPLAIN                                                                                                                                                                                                                                            |
+          +----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+          | - Filter: (customers.age &lt; 20) (cost=1.21 rows=1) (actual time=0.016..0.016 rows=0 loops=1)
+              - Covering index range scan on customers using idx_age_customers over (age &lt; 20) (cost=1.21 rows=1) (actual time=0.015..0.015 rows=0 loops=1)
+          |
+          +----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+          1 row in set (0.00 sec)
+
+
+        
+            结论：
+            1. 对于这类排序无WHERE 条件或者 WHERE 条件恒真的 SQL 语句，从数据库角度来讲，优化的点无非就是并行扫数据页或者索引页，但是随着数据量的增加，性能也会越来越差。
+            2. 所以只有从业务层面修改SQL 语句，让其获取更少的数据才能做到根本优化。
+
+       
+      </示例>
+      <检查流程描述>
+          1. 对于SELETE...语句，检查SQL 语句，如果没有WHERE 条件或者 where 条件恒为真（比如 where 1=1 或者 where True），且SQL 语句有ORDER BY 或者 GROUP BY 或者 DISTINCT 子句，报告违反规则。
+          2. 对于INSERT...语句，判断是否存在SELECT子句，如存在，则执行与上面类似的检查。
+          3. 对于DELETE...语句，检查SQL 语句，如果没有WHERE 条件或者 where 条件恒为真（比如 where 1=1 或者 where True），且SQL 语句有ORDER BY，报告违反规则。
+          4. 对于UPDATE...语句，检查SQL 语句，如果没有WHERE 条件或者 where 条件恒为真（比如 where 1=1 或者 where True），且SQL 语句有ORDER BY，报告违反规则。
+      </检查流程描述>
+      <知识文档>
+        1. SQL 优化官方文档： https://dev.mysql.com/doc/refman/8.0/en/statement-optimization.html
+      </知识文档>
+    </原理说明>
+  </规则场景>
+  <标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

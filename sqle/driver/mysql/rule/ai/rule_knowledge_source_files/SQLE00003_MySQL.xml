@@ -1,0 +1,166 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+  <规则编号>SQLE00003</规则编号>
+  <级别>
+    <当前级别>warn</当前级别>
+    <新级别>notice</新级别>
+  </级别>
+  <数据库类型>MySQL</数据库类型>
+  <规则种类>最佳实践</规则种类>
+  <规则简述>建议为组成索引的字段添加非空约束，并配置合理的default值</规则简述>
+  <规则变量 />
+  <规则描述>在MySQL中，NULL值表示的含义为missing unknown value，在不同的场景下MySQL存在不同的处理方式；当字段内容存在NULL值时，处理结果可能存在异常</规则描述>
+  <规则场景>
+    <场景 名称="初始化表结构定义" 数据库版本="MySQL 5.7.25" 检查方式="不连库审核" 适用句型="CREATE TABLE">
+      <示例>
+      原理说明：
+      尽管在MySQL中支持含有NULL值的列上使用索引，但可能存在的异常：
+      1. 使用unique key的表存在重复数据，参考：https://bugs.mysql.com/bug.php?id=8173
+
+      2. count(), min()和sum()函数会忽略NULL值，而count(*)函数不会；count(*)表总行数，count(age)为age字段非NULL的行数
+
+      3. 同时，NULL值过多可能会影响执行计划，造成SQL执行效率问题，甚至主从延时问题
+      参考：
+      UK 包含 NULL 值备库延迟分析：https://developer.aliyun.com/article/423508
+      MySQL对NULL如何判断的参数：innodb_stats_method，https://dev.mysql.com/doc/refman/8.0/en/innodb-parameters.html#sysvar_innodb_stats_method
+
+      反例：
+      CREATE TABLE person (
+        id INT PRIMARY KEY,
+        name VARCHAR(50),
+        age INT,
+        INDEX idx_age (age)
+      );
+
+      反例验证：
+      mysql&gt; INSERT INTO person VALUES (1, 'Alice', NULL), (2, 'Bob', 25), (3, 'Charlie', NULL);
+      Query OK, 3 rows affected (0.02 sec)
+      Records: 3  Duplicates: 0  Warnings: 0
+
+      -- 由于索引字段允许null值，count统计函数不计算null，导致统计结果不正确。
+      mysql&gt; SELECT COUNT(*), COUNT(age) FROM person;
+      +----------+------------+
+      | COUNT(*) | COUNT(age) |
+      +----------+------------+
+      |        3 |          1 |
+      +----------+------------+
+      1 row in set (0.00 sec)
+
+      -- 补充案例SQL来说明基于反例的前提下该案例SQL效果不理想或者不可控、不符合预期等情况
+      -- 创建唯一索引
+      mysql&gt; ALTER TABLE person ADD UNIQUE INDEX idx_name_age (name, age);
+      Query OK, 0 rows affected (0.05 sec)
+      Records: 0  Duplicates: 0  Warnings: 0
+
+      -- 插入重复数据，但由于age为NULL，不会报错
+      mysql&gt; INSERT INTO person VALUES (4, 'David', NULL), (5, 'David', NULL);
+      Query OK, 2 rows affected (0.01 sec)
+      Records: 2  Duplicates: 0  Warnings: 0
+
+      mysql&gt; SELECT * FROM person WHERE name = 'David';
+      +----+-------+------+
+      | id | name  | age  |
+      +----+-------+------+
+      |  4 | David | NULL |
+      |  5 | David | NULL |
+      +----+-------+------+
+      1 row in set (0.00 sec)
+
+      -- 这里我们可以看到，尽管有唯一索引，但是由于age字段允许NULL值，导致出现了重复数据
+
+      正例：
+      CREATE TABLE person (
+        id INT PRIMARY KEY,
+        name VARCHAR(50),
+        age INT NOT NULL DEFAULT 0,
+        INDEX idx_age (age)
+      );
+
+      正例验证：
+      mysql&gt; INSERT INTO person VALUES (1, 'Alice', 0), (2, 'Bob', 25), (3, 'Charlie', 0);
+      Query OK, 3 rows affected (0.02 sec)
+      Records: 3  Duplicates: 0  Warnings: 0
+
+      mysql&gt; SELECT COUNT(*), COUNT(age) FROM person;
+      +----------+------------+
+      | COUNT(*) | COUNT(age) |
+      +----------+------------+
+      |        3 |          3 |
+      +----------+------------+
+      1 row in set (0.00 sec)
+
+      -- 使用与反例相同的案例SQL来说明基于正例的前提下该案例SQL效果是可控的、符合预期等情况
+      -- 创建唯一索引
+      mysql&gt; ALTER TABLE person ADD UNIQUE INDEX idx_name_age (name, age);
+      Query OK, 0 rows affected (0.04 sec)
+      Records: 0  Duplicates: 0  Warnings: 0
+
+      -- 尝试插入重复数据，会报错
+      mysql&gt; INSERT INTO person VALUES (4, 'David', 0), (5, 'David', 0);
+      ERROR 1062 (23000): Duplicate entry 'David-0' for key 'idx_name_age'
+
+      mysql&gt; SELECT * FROM person WHERE name = 'David';
+      +----+-------+-----+
+      | id | name  | age |
+      +----+-------+-----+
+      |  4 | David |   0 |
+      +----+-------+-----+
+      1 row in set (0.00 sec)
+
+      -- 这里我们可以看到，由于age字段不允许NULL值，唯一索引能够正常工作，防止了重复数据的插入
+
+      结论：
+      为索引字段添加非空约束并设置合理的默认值可以避免NULL值带来的问题，如统计函数的不一致性、执行计划的不稳定性以及潜在的主从延迟问题。这样可以提高查询性能和数据一致性。
+      </示例>
+      <检查流程描述>
+      1. 对于 "CREATE TABLE..." 语句，
+        1. 检查表中所有组成索引的字段，
+        2. 对于每个索引字段，验证是否包含 NOT NULL 约束和DEFAULT配置，
+        3. 发现任何索引字段缺少 NOT NULL 约束或者未配置DEFAULT值或者DEFAULT值是NULL，则报告违反规则。
+      </检查流程描述>
+      <知识文档>
+      1. https://dev.mysql.com/doc/refman/5.7/en/problems-with-null.html
+      2. https://dev.mysql.com/doc/mysql-tutorial-excerpt/5.7/en/working-with-null.html
+      3. https://bugs.mysql.com/bug.php?id=8173
+      4. https://mp.weixin.qq.com/s/2-Ie7OtdNaguHpJt6AL76w
+      </知识文档>
+    </场景>
+    <场景 名称="给存量数据添加索引" 数据库版本="MySQL 5.7.25" 检查方式="连库审核" 适用句型="CREATE INDEX、ALTER TABLE">
+      <示例>
+      原理说明：与场景【初始化表结构定义】一致
+
+      示例：
+      ALTER TABLE person ADD INDEX idx_person_age(age);
+      CREATE INDEX idx_person_age on person(age);
+      
+      </示例>
+      <检查流程描述>
+      1. 对于 "CREATE INDEX..." 语句：
+        1. 获取所有组成索引的字段。
+        2. 登录数据库，检查索引字段所在表信息，对于每个索引字段，验证是否包含 NOT NULL 约束。
+        3. 检查是否为这些字段设置了合理的 DEFAULT 值。
+        4. 发现任何索引字段缺少 NOT NULL 约束或者未配置DEFAULT值或者DEFAULT值是NULL，则报告违反规则。
+      2. 对于 "ALTER TABLE...ADD INDEX..." 语句，执行与上述相同的检查。
+      </检查流程描述>
+      <知识文档>
+      1. https://dev.mysql.com/doc/refman/5.7/en/problems-with-null.html
+      2. https://dev.mysql.com/doc/mysql-tutorial-excerpt/5.7/en/working-with-null.html
+      3. https://bugs.mysql.com/bug.php?id=8173
+      4. https://mp.weixin.qq.com/s/2-Ie7OtdNaguHpJt6AL76w
+      </知识文档>
+    </场景>
+  </规则场景>
+  <规则缺陷 />
+  <标签>
+    <分类 名称="操作对象">
+      <分类值>索引</分类值>
+    </分类>
+    <分类 名称="SQL分类">
+      <分类值>DDL</分类值>
+    </分类>
+    <分类 名称="审核目的">
+      <分类值>发现性能问题</分类值>
+    </分类>
+  <分类 名称="审核精确度"><分类值>不连库审核</分类值><分类值>连库审核</分类值></分类></标签>
+  <完成情况>完成</完成情况>
+</Rule>

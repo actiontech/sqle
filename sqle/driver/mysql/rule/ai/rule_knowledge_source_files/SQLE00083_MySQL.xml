@@ -1,0 +1,103 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+<规则编号>SQLE00083</规则编号>
+<级别>error</级别>
+<数据库类型>MySQL</数据库类型>
+<规则种类>DML规范</规则种类>
+<规则简述>不建议对表进行索引跳跃扫描</规则简述>
+<规则描述>索引扫描是跳跃扫描，未遵循最左匹配原则，可能降低索引的使用效率，影响查询性能，尽量避免使用。</规则描述>
+<规则场景>
+  <场景 名称="数据小范围查询" 数据库版本="&gt;=MySQL 8.0.13" 检查方式="连库审核" 适用句型="SELECT、INSERT...SELECT、UNION、UPDATE、DELETE、WITH">
+    <示例>
+      前置:
+      create database db_mysql;
+      use db_mysql;
+      CREATE TABLE customers(
+        id INT(11) NOT NULL, ##序号
+        name VARCHAR(32) DEFAULT '',##姓名
+        sex TINYINT NOT NULL, ##性别
+        city VARCHAR(32) NOT NULL, ##所在城市
+        age SMALLINT(4) NOT NULL, ##数值类型
+        key idx_sex_age_customers (sex,age), ##联合索引
+        PRIMARY KEY (id) ##主键
+      );
+      
+      create table customers_sub(
+        sex int, ##性别
+        age int ##数值类型
+      );
+
+      insert into customers values (1,'小李',1,'上海',18),(2,'小王',0,'北京',22);
+      insert into customers values (3,'小饭',1,'上海',25),(4,'小刘',0,'北京',30);
+      insert into customers values (5,'小菜',1,'上海',28),(6,'小张',0,'天津',60);
+      insert into customers  with recursive tmp (a,b,c,d,e) as (select 7,'小王22222333',floor(rand()*2),'上海',ceil(rand()*30)+20 union all select a+1,concat('小王',a),floor(rand()*2),'上海',ceil(rand()*30)+20 from tmp where a &lt; 1000) select * from tmp;
+      analyze table customers;
+
+      
+      Skip index scan 复现对应SQL：
+      select sex,age from customers where age &lt; 22; ## 获取年龄在小于22岁的性别和具体年龄。
+      或者
+      select count(*) from customers where age &lt; 22; ## 获取年龄在小于22岁的客户总数。
+
+
+      Skip index scan 发生场景验证：
+      查看对应SQL的执行计划。      
+      mysql [8.0.31] desc select sex,age from customers where age &lt; 22;
+      +----+-------------+-----------+------------+-------+-----------------------+-----------------------+---------+------+------+----------+----------------------------------------+
+      | id | select_type | table     | partitions | type  | possible_keys         | key                   | key_len | ref  | rows | filtered | Extra       
+      +----+-------------+-----------+------------+-------+-----------------------+-----------------------+---------+------+------+----------+----------------------------------------+
+      |  1 | SIMPLE      | customers | NULL       | range | idx_sex_age_customers | idx_sex_age_customers | 3       | NULL |  333 |   100.00 | Using where; Using index for skip scan |
+      +----+-------------+-----------+------------+-------+-----------------------+-----------------------+---------+------+------+----------+----------------------------------------+
+      1 row in set, 1 warning (0.00 sec)      
+
+      Skip index scan 具体说明：
+      1. Skip index scan的本意是在表中联合索引不合理的场景下，数据库做的一个被动优化；
+      2. 业务SQL被数据库优化器隐式修改了查询条件，不符合索引设计的基本准则，进而导致数据库端处理了本该业务过滤的请求，导致性能不及预期;
+      3. 在以下场景中会出现跳跃扫描现象：
+        A. 业务SQL只涉及到一张表，并且没有group by 和distinct操作；
+        B. 表有联合索引；
+        C. 业务SQL的条件仅有索引中的右列，并且索引中的左列选择性较差;
+        D. 业务SQL的条件为范围，而非等值。
+      4. 由于Skip index scan 只对SELECT 语句有效，类 SELECT 语句系列的语句 INSERT SELECT 也同样适用此规则。
+         比如如下语句：
+         insert  into customers_sub select sex,age from customers where age &lt; 22; 
+      
+
+      Skip index scan 如何消除：
+      1. 调整idx_sex_age_customers里的字段顺序，SQL本身不用改变。
+      2. alter table customers drop key idx_sex_age_customers;
+      3. alter table customers add key idx_sex_age_customers(age,sex);
+
+
+      消除 Skip index scan 场景验证：
+      查看执行计划，Extra 一栏中没有 Using index for skip scan ，替换为 Using index，代表 优化器在选执行计划时已经屏蔽了 Skip index scan 策略。 
+
+      mysql [8.0.31] desc select sex,age from customers where age &lt; 22;
+      +----+-------------+-----------+------------+-------+-----------------------+-----------------------+---------+------+------+----------+--------------------------+
+      | id | select_type | table     | partitions | type  | possible_keys         | key                   | key_len | ref  | rows | filtered | Extra       
+      +----+-------------+-----------+------------+-------+-----------------------+-----------------------+---------+------+------+----------+--------------------------+
+      |  1 | SIMPLE      | customers | NULL       | range | idx_sex_age_customers | idx_sex_age_customers | 2       | NULL |   36 |   100.00 | Using where; Using index |
+      +----+-------------+-----------+------------+-------+-----------------------+-----------------------+---------+------+------+----------+--------------------------+
+      1 row in set, 1 warning (0.00 sec)
+
+
+      消除 Skip index scan 场景说明：
+      1. 重新调整联合索引，使得数据库优化器 不选用 Skip index scan 策略来被动优化业务SQL；
+      2. 如若这类业务SQL 频繁请求，则需要根据SQL来反推索引设计，使索引符合最左、最小、选择性好的列前置，而不是相反。
+
+    </示例>
+    <检查流程描述>
+    1. 对于DML语句，
+      1. 检查句子中是否存在SELECT子句，如果存在，则进入下一步检查。
+      2. 检查句子中是否存在GROUP BY ,DISTINCT 语句，如果没有则进入下一步检查。
+      3. 检查句子中 FROM 子句是否只有一张表，如果有，则进入下一步检查。
+      4. 连接数据库，判断SELECT子句的字段是否为该表中联合索引的部分或者全部字段，如果有，则进入下一步检查。
+      5. 连接数据库，判断整条SELECT 语句的执行计划，判断结果中是否包含关键词：Using index for skip scan，如果有，报告违反规则。
+    2. 对于WITH语句，执行上述相同的检查。
+    </检查流程描述>
+    <知识文档>
+     https://dev.mysql.com/doc/refman/8.0/en/range-optimization.html#range-access-skip-scan
+    </知识文档>
+  </场景>
+</规则场景>
+<标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

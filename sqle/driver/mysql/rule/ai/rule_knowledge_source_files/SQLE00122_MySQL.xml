@@ -1,0 +1,91 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00122</规则编号>
+    <级别>notice</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>DML规范</规则种类>
+    <规则简述>避免对值全为NULL的列直接使用 SUM或COUNT函数</规则简述>
+    <规则描述>当某一列的值全是NULL时，COUNT(COL)的返回结果为0，但SUM(COL)的返回结果为NULL，因此使用SUM()时需注意NPE问题（指数据返回NULL）；如业务需避免NPE问题，建议开启此规则</规则描述>
+    <规则场景>
+        <场景 名称="对值全为NULL的字段特殊处理" 数据库版本="MySQL 8.0" 检查方式="连库审核" 适用句型="SELECT、UPDATE、DELETE、INSERT...SELECT、UNION、WITH">
+            <示例>
+        前置：
+        create database db_mysql;
+        use db_mysql;
+        CREATE TABLE customers(
+          id INT NOT NULL AUTO_INCREMENT,  -- 序号
+          name VARCHAR(32) DEFAULT '',-- 姓名
+          sex TINYINT NOT NULL, -- 性别
+          city VARCHAR(32) NOT NULL, -- 所在城市
+          age SMALLINT NULL, -- 数值类型
+          PRIMARY KEY (id) -- 主键
+        );
+
+        -- 插入示例数据
+        INSERT INTO customers(`name`,sex,city,age)  VALUES  ('小李',1,'上海',NULL);
+        INSERT INTO customers(`name`,sex,city,age)  VALUES  ('小王',0,'南京',NULL);
+        INSERT INTO customers(`name`,sex,city,age)  VALUES  ('小饭',1,'北京',NULL);
+        INSERT INTO customers(`name`,sex,city,age)  VALUES  ('小刘',0,'上海',NULL);
+              
+
+        反例:
+        -- 对年龄字段求和、求计数。
+        select sum(age) as sum_age,count(age) as count_age from customers;
+        
+        注：其他句型与SELECT句型语法相同，都是指SELECT子句中sum和count计算null值的情况，因此省略相似的示例。
+
+        反例说明：
+        1. 对年龄字段分别求和、求计数。
+        2. 由于年龄字段age 的值全为NULL，所以此条SQL 最终结果不正确，需要修改SQL。
+
+        反例验证：
+        (mysql:8.0.31-cluster)select sum(age) as sum_age,count(age) as count_age from customers;
+        +---------+-----------+
+        | sum_age | count_age |
+        +---------+-----------+
+        |    NULL |         0 |
+        +---------+-----------+
+        1 row in set (0.02 sec)
+
+
+
+        正例:
+        -- 也对年龄字段求和、求计数。
+        select sum(ifnull(age,0)) as sum_age,count(ifnull(age,0)) as count_age from customers;
+
+        正例说明：
+        1. 由于年龄字段值全为NULL，需要特殊处理，否则计算出来的结果就是错误的。
+        2. 可以使用ifnull函数对值为NULL的字段特殊处理。
+
+        正例验证：
+        (mysql:8.0.31-cluster)select sum(ifnull(age,0)) as sum_age,count(ifnull(age,0)) as count_age from customers;
+        +---------+-----------+
+        | sum_age | count_age |
+        +---------+-----------+
+        |       0 |         4 |
+        +---------+-----------+
+        1 row in set (0.01 sec)
+    
+        
+        
+        结论：
+        1. 字段全为NULL的场景下，需要进行特殊处理，否则检索的结果就是错误的。比如使用函数ifnull。
+        2. 验证某个字段是否全为NULL的方法，执行下面语句：比如检查字段age，如果结果为0，代表字段age 值全为NULL。
+        select (select count(*) from customers)-(select count(*) from customers where age is null) result;
+
+    
+            </示例>
+            <检查流程描述>
+        1. 对于所有DML语句，检查语句中是否包含sum或者count关键词，如果存在，则进一步检查。
+        2. 登录数据库。
+        3. 检查语句中sum或者count包含的字段值是否全为NULL，如果是，报告违反规则。
+        4. 验证某个字段是否全为NULL的方法，执行下面语句：比如检查字段age，如果结果为0，代表字段age 值全为NULL。
+        select (select count(*) from customers)-(select count(*) from customers where age is null) result;
+            </检查流程描述>
+            <知识文档>
+          1. SUM、COUNT 函数文档： https://dev.mysql.com/doc/refman/8.0/en/aggregate-functions.html#function_sum
+            </知识文档>
+        </场景>
+    </规则场景>
+    <规则缺陷 />
+<标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>保障正确性</分类值></分类><分类 名称="审核精确度"><分类值>连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

@@ -1,0 +1,123 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+  <规则编号>SQLE00008</规则编号>
+  <级别>
+    <当前级别>error</当前级别>
+  </级别>
+  <数据库类型>MySQL</数据库类型>
+  <规则种类>索引规范</规则种类>
+  <规则简述>表里必须存在主键</规则简述>
+  <规则描述>表必须存在主键。如果表没有明确指定主键，可能会导致一些问题，如数据一致性难以保证、查询性能下降、数据完整性问题、数据管理和维护困难以及数据库优化受限等。</规则描述>
+  <规则场景>
+    <原理说明 数据库版本="MySQL 5.7.25" 检查方式="不连库审核" 适用句型="CREATE TABLE、ALTER TABLE">
+      <示例>
+      原理说明：
+      InnoDB存储引擎要求每个表都有一个主键索引（也称为聚集索引或簇索引），并基于主键列的值组织表的存储结构。主键对InnoDB表特别重要，因为：
+      1. 它提供了一个唯一的标识符，确保数据的完整性。
+      2. InnoDB使用主键来组织数据，这可以显著提高查询和数据操作的性能。
+      3. 在没有显式定义主键的情况下，InnoDB会尝试使用唯一的非空索引作为主键，如果没有这样的索引，InnoDB会创建一个隐藏的主键，这可能会影响性能和数据管理。
+
+      https://dev.mysql.com/doc/refman/5.7/en/glossary.html#glos_primary_key
+
+      当不存在主键时，由于无法使用主键索引，因此可能导致读写SQL执行效率下降；在对无主键的表进行更新或删除时，容易引起主从延迟，业务响应变慢等故障；另外，常用的运维工具也需要表存在主键，如在线DDL工具Ghost。
+
+      示例：
+      CREATE TABLE no_primary_key (
+        id INT,
+        name VARCHAR(50)
+      );
+      ALTER TABLE no_primary_key drop PRIMARY KEY;
+
+      示例验证：
+      -- 创建一个没有主键的表
+      CREATE TABLE no_primary_key (
+        id INT,
+        name VARCHAR(50)
+      );
+
+      -- 验证表没有主键
+      mysql&gt; SHOW INDEX FROM no_primary_key;
+      Empty set (0.00 sec)
+
+      -- 结果将显示该表没有任何索引
+
+      -- 插入重复数据
+      mysql&gt; INSERT INTO no_primary_key (id, name) VALUES (1, 'John');
+      Query OK, 1 row affected (0.01 sec)
+
+      mysql&gt; INSERT INTO no_primary_key (id, name) VALUES (1, 'Jane');
+      Query OK, 1 row affected (0.01 sec)
+      -- 这两条插入语句都会成功，因为没有主键约束
+
+      -- 查询数据（可能会导致全表扫描）
+      mysql&gt; EXPLAIN SELECT * FROM no_primary_key WHERE id = 1;
+      +----+-------------+----------------+------------+------+---------------+------+---------+------+------+----------+-------------+
+      | id | select_type | table          | partitions | type | possible_keys | key  | key_len | ref  | rows | filtered | Extra       |
+      +----+-------------+----------------+------------+------+---------------+------+---------+------+------+----------+-------------+
+      |  1 | SIMPLE      | no_primary_key | NULL       | ALL  | NULL          | NULL | NULL    | NULL |    2 |    50.00 | Using where |
+      +----+-------------+----------------+------------+------+---------------+------+---------+------+------+----------+-------------+
+      1 row in set, 1 warning (0.00 sec)
+      -- 结果可能显示 type: ALL，表示全表扫描
+
+      -- 为没有主键的表添加主键
+      -- 优先清理重复数据，否则会报主键值重复
+      mysql&gt; ALTER TABLE no_primary_key ADD PRIMARY KEY(id);
+      Query OK, 0 rows affected (0.06 sec)
+      Records: 0  Duplicates: 0  Warnings: 0
+
+      -- 再次验证表已有主键
+      mysql&gt; SHOW INDEX FROM no_primary_key;
+      -- 现在结果将显示主键索引
+      +----------------+------------+----------+--------------+-------------+-----------+-------------+----------+--------+------+------------+---------+---------------+
+      | Table          | Non_unique | Key_name | Seq_in_index | Column_name | Collation | Cardinality | Sub_part | Packed | Null | Index_type | Comment | Index_comment |
+      +----------------+------------+----------+--------------+-------------+-----------+-------------+----------+--------+------+------------+---------+---------------+
+      | no_primary_key |          0 | PRIMARY  |            1 | id          | A         |           0 |     NULL | NULL   |      | BTREE      |         |               |
+      +----------------+------------+----------+--------------+-------------+-----------+-------------+----------+--------+------+------------+---------+---------------+
+      1 row in set (0.00 sec)
+
+      -- 尝试插入重复数据
+      mysql&gt; INSERT INTO no_primary_key (id, name) VALUES (1, 'John');
+      ERROR 1062 (23000): Duplicate entry '1' for key 'PRIMARY'
+      -- 这条插入语句会失败，因为违反了主键约束
+
+      -- 再次查询数据
+      mysql&gt; EXPLAIN SELECT * FROM no_primary_key WHERE id = 1;
+      +----+-------------+----------------+------------+-------+---------------+---------+---------+-------+------+----------+-------+
+      | id | select_type | table          | partitions | type  | possible_keys | key     | key_len | ref   | rows | filtered | Extra |
+      +----+-------------+----------------+------------+-------+---------------+---------+---------+-------+------+----------+-------+
+      |  1 | SIMPLE      | no_primary_key | NULL       | const | PRIMARY       | PRIMARY | 4       | const |    1 |   100.00 | NULL  |
+      +----+-------------+----------------+------------+-------+---------------+---------+---------+-------+------+----------+-------+
+      1 row in set, 1 warning (0.00 sec)
+      -- 结果应显示 type: const，表示使用了主键索引
+
+      结论：
+      通过示例验证，我们可以看到没有主键的表在添加主键后，能够显著提高表的结构质量。主键不仅能提高查询性能，还能保证数据的唯一性和完整性。因此，在设计表结构时，应始终添加适当的主键。主键的存在可以防止重复数据的插入，提高查询效率，并为数据库优化提供更多可能性。
+      </示例>
+      <检查流程描述>
+      1. 对于"CREATE TABLE..."语句，检查表定义中是否包含主键定义（使用PRIMARY KEY关键字）。如果不包含，则报告违反规则。
+      2. 对于"ALTER TABLE..."语句，如果操作是删除主键（DROP PRIMARY KEY），且没有同时添加新的主键，则报告违反规则。
+      </检查流程描述>
+      <知识文档>
+      1. How MySQL Uses Indexes：https://dev.mysql.com/doc/refman/5.7/en/mysql-indexes.html
+      2. Primary Key Optimization：https://dev.mysql.com/doc/refman/5.7/en/primary-key-optimization.html
+      </知识文档>
+    </原理说明>
+  </规则场景>
+  <规则缺陷>
+  分库分表架构中，如果分片键是主键，则主键不宜自增。
+  </规则缺陷>
+  <标签>
+    <分类 名称="操作对象">
+      <分类值>表</分类值>
+    </分类>
+    <分类 名称="SQL分类">
+      <分类值>DDL</分类值>
+      <分类值>完整性约束</分类值>
+    </分类>
+    <分类 名称="审核目的">
+      <分类值>保障正确性</分类值>
+      <分类值>增强可维护性</分类值>
+    </分类>
+  <分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签>
+  <完成情况>完成</完成情况>
+</Rule>

@@ -1,0 +1,103 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+<规则编号>SQLE00006</规则编号>
+<级别>warn</级别>
+<数据库类型>MySQL</数据库类型>
+<规则种类>DML规范</规则种类>
+<规则简述>建议JOIN字段类型保持一致</规则简述>
+<规则描述>JOIN操作时，如果关联字段的数据类型不一致，数据库引擎会进行隐式类型转换。这会增加系统开销，降低查询性能，且可能引发潜在错误。</规则描述>
+<规则场景>
+  <场景 名称="JOIN连接" 数据库版本="MySQL 5.7、MySQL 8.0" 检查方式="连库审核" 适用关键词="JOIN、INNER JOIN、OUTER JOIN、LEFT [OUTER] JOIN、RIGHT [OUTER] JOIN、FULL [OUTER] JOIN、USING" 适用句型="INSERT、SELECT、UPDATE、DELETE、WITH、UNION">
+    <示例>
+      前置：
+      CREATE TABLE t1 (
+          id INT(11) NOT NULL AUTO_INCREMENT,
+          name VARCHAR(32) DEFAULT NULL,
+          cid VARCHAR(20) NOT NULL DEFAULT '',
+          PRIMARY KEY (id),
+          KEY idx_cid_temp (cid) USING BTREE
+      );
+
+      CREATE TABLE t2 (
+          id BIGINT(20) NOT NULL,
+          name VARCHAR(50),
+          cid INT(11) NOT NULL DEFAULT 1,
+          PRIMARY KEY (id)
+      );
+
+      -- 模拟数据
+      insert into t1(id,name,cid) values(1,'ma1','1');
+      insert into t1(id,name,cid) values(2,'ma2','2');
+      insert into t2(id,name,cid) values(1,'ma1',1);
+      insert into t2(id,name,cid) values(2,'ma2',2);
+
+
+      反例：
+      SELECT count(1) FROM t2 JOIN t1 ON t2.id = t1.cid;
+      SELECT count(1) FROM t2 JOIN t1 USING(cid);
+      INSERT INTO t1 SELECT 3,t2.name,t2.email FROM t2 JOIN t1 ON t2.id = t1.cid;
+      UPDATE t1 JOIN t2 ON t2.id = t1.cid SET t1.name ='c1' WHERE t1.id =2;
+      DELETE t1 FROM t1 JOIN t2 WHERE t2.id = t1.cid;
+      DELETE FROM t1 USING t1 JOIN t2 WHERE t2.id = t1.cid;
+
+      反例说明：
+      数据库系统会隐式地将整数类型的id转换为字符串类型，以便进行比较操作。假设t1表里的cid建立了索引，此时JOIN操作进行了隐式转换，与索引的字段类型不匹配，索引失效，只能通过全表扫描，逐行比较两个表的数据，导致查询性能下降。
+      USING关键字内需要使用的是关联表相同字段，无法进行显式类型转换，此时建议采用ON关键字和显式转换来定义条件字段。
+      真实执行，上述SQL不会直接报错。
+
+      示例验证：
+      1、查看执行计划。
+      mysql&gt; explain SELECT count(1) FROM t2 JOIN t1 ON t2.id = t1.cid;
+      +----+-------------+-------+------------+-------+---------------+--------------+---------+------+------+----------+-----------------------------------------------------------------+
+      | id | select_type | table | partitions | type  | possible_keys | key          | key_len | ref  | rows | filtered | Extra                                                           |
+      +----+-------------+-------+------------+-------+---------------+--------------+---------+------+------+----------+-----------------------------------------------------------------+
+      |  1 | SIMPLE      | t2    | NULL       | index | PRIMARY       | PRIMARY      | 8       | NULL |    2 |   100.00 | Using index                                                     |
+      |  1 | SIMPLE      | t1    | NULL       | index | idx_cid_temp  | idx_cid_temp | 82      | NULL |    2 |    50.00 | Using where; Using index; Using join buffer (Block Nested Loop) |
+      +----+-------------+-------+------------+-------+---------------+--------------+---------+------+------+----------+-----------------------------------------------------------------+
+      2 rows in set, 3 warnings (0.00 sec)      
+
+      正例：
+      SELECT count(1) FROM t2 JOIN t1 ON CAST(t2.id as CHAR)  = t1.cid;
+      INSERT INTO t1 SELECT 3,t2.name,t2.email FROM t2 JOIN t1 ON CAST(t2.id as CHAR) = t1.cid;
+      UPDATE t1 JOIN t2 ON CAST(t2.id as CHAR) = t1.cid SET t1.name ='c1' WHERE t1.id =2;
+      DELETE t1 FROM t1 JOIN t2 WHERE CAST(t2.id as CHAR) = t1.cid;
+      DELETE FROM t1 USING t1 JOIN t2 WHERE CAST(t2.id as CHAR) = t1.cid;
+
+      正例说明：
+      数据库中需要JOIN的两张表，其条件字段的数据类型无法低成本地做到相同。此时，将被驱动表的条件字段其数据类型通过CAST函数指定转换数据类型，精确匹配驱动表的条件字段，有效利用驱动表的customer_id索引，提高SQL语句的查询性能以及避免发生不正确的匹配结果。
+
+      示例验证：
+      1、查看执行计划。
+      mysql&gt; explain SELECT count(1) FROM t2 JOIN t1 ON CAST(t2.id as CHAR)  = t1.cid;
+      +----+-------------+-------+------------+-------+---------------+--------------+---------+------+------+----------+--------------------------+
+      | id | select_type | table | partitions | type  | possible_keys | key          | key_len | ref  | rows | filtered | Extra                    |
+      +----+-------------+-------+------------+-------+---------------+--------------+---------+------+------+----------+--------------------------+
+      |  1 | SIMPLE      | t2    | NULL       | index | NULL          | PRIMARY      | 8       | NULL |    2 |   100.00 | Using index              |
+      |  1 | SIMPLE      | t1    | NULL       | ref   | idx_cid_temp  | idx_cid_temp | 82      | func |    1 |   100.00 | Using where; Using index |
+      +----+-------------+-------+------------+-------+---------------+--------------+---------+------+------+----------+--------------------------+
+      2 rows in set, 1 warning (0.00 sec)
+
+      其他修正手法：
+      根据业务要求，调整t1表的cid字段类型或者调整t2表的id字段类型。
+    </示例>
+    <检查流程描述>
+      1. 对于所有DML语句，
+        1. 存在JOIN操作，
+        2. 获取所有参与JOIN操作的表，以及JOIN操作的表关联字段
+        3. 登录数据库，根据关联条件的表、条件字段通过表结构获取字段类型，
+        4. 检查表之间的关联条件字段字段类型是否一致，如果不一致，则报告违反规则。
+      2. 对于"WITH..."语句，执行与上述相同的检查。
+    </检查流程描述>
+    <知识文档>
+      文档关键词：join_specification
+      1. join语法：https://dev.mysql.com/doc/refman/8.0/en/join.html
+      2. SELECT语法：https://dev.mysql.com/doc/refman/5.7/en/select.html
+      3. 应用文档：https://developer.aliyun.com/article/776160
+      4. INSERT-SELECT语法：https://dev.mysql.com/doc/refman/5.7/en/insert-select.html
+      5. UPDATE语法：https://dev.mysql.com/doc/refman/5.7/en/update.html
+      6. DELETE句子：https://dev.mysql.com/doc/refman/8.0/en/delete.html
+    </知识文档>
+  </场景>
+</规则场景>
+<规则缺陷>没有join关键字的规则无法覆盖。</规则缺陷>
+<标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值><分类值>嵌套查询和连接</分类值></分类><分类 名称="审核目的"><分类值>保障正确性</分类值><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

@@ -1,0 +1,105 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+  <规则编号>SQLE00056</规则编号>
+  <级别>error</级别>
+  <数据库类型>MySQL</数据库类型>
+  <规则种类>DDL规范</规则种类>
+  <规则简述>表建议使用指定的字符集</规则简述>
+  <规则变量>
+    <变量 name="标准字符集">UTF8MB4</变量>
+  </规则变量>
+  <规则描述>数据库内使用非标准的字符集，可能导致字符无法编码或者编码不全引起的乱码，最终出现应用写入数据失败或者查询结果显示乱码，影响数据库服务可用性。</规则描述>
+  <规则场景>
+    <场景 名称="表结构初始定义" 数据库版本="MySQL 大于等于 8.0 " 检查方式="不连库审核" 适用句型="CREATE DATABASE">
+      <示例>
+        原理说明：
+        1. MySQL 的字符集可以指定库、表、列等对象，建议使用统一的、指定的字符集。比如数据库使用默认字符集utf8mb4，表也应该使用字符集utf8mb4。
+        2. 不同的字符集支持的字符范围不同，如果使用非标准的字符集，可能导致字符无法编码或者编码补全导致的乱码，最终出现应用写入数据失败或者查询结果显示乱码，影响数据库服务可用性。
+       
+        示例：
+        CREATE DATABASE mydatabase
+          DEFAULT CHARACTER SET utf8mb4
+          DEFAULT COLLATE utf8mb4_general_ci;
+
+        ALTER DATABASE mydatabase
+          DEFAULT CHARACTER SET utf8mb4
+          DEFAULT COLLATE utf8mb4_general_ci;
+
+        create table c1(c1 varchar(100)) charset utf8mb4;
+        ALTER TABLE c1
+          CONVERT TO CHARACTER SET utf8mb4
+          COLLATE utf8mb4_general_ci;
+
+        示例验证：
+        -- 进行表使用不同的字符集的实验
+        -- 字符集为UTF8MB4
+        1. 创建表c1，字符集为UTF8MB4。
+        (mysql:8.4.0:db_mysql)create table c1(c1 varchar(100)) charset utf8mb4;
+        Query OK, 0 rows affected (0.03 sec)
+        
+        (mysql:8.4.0:db_mysql)INSERT INTO c1 VALUES ('Αα（alpha）');
+        Query OK, 1 row affected (0.00 sec)
+        
+        (mysql:8.4.0:db_mysql)select * from c1;
+        +-----------------+
+        | c1              |
+        +-----------------+
+        | Αα（alpha）     |
+        +-----------------+
+        1 row in set (0.00 sec)
+        
+        -- 字符集为 KOI8R
+        1. 创建表 c2，字符集为 KOI8R，同样的插入语句执行失败。
+        (mysql:8.4.0:db_mysql)create table c2(c1 varchar(100)) charset KOI8R;
+        Query OK, 0 rows affected (0.03 sec)
+
+        (mysql:8.4.0:db_mysql)INSERT INTO c2 VALUES ('Αα（alpha）');
+        ERROR 1366 (HY000): Incorrect string value: '\xCE\x91\xCE\xB1\xEF\xBC...' for column 'c1' at row 
+
+        -- 字符集采用默认字符集，即与库定义的字符集相同。
+        示例3 验证：
+        1. 创建表c3，默认字符集，应该和示例1一样的效果。同样的插入语句，插入成功。
+
+        (mysql:8.4.0:db_mysql)create table c3(c1 varchar(100));
+        Query OK, 0 rows affected (0.03 sec)
+
+        (mysql:8.4.0:db_mysql)INSERT INTO c3 VALUES ('Αα（alpha）');
+        Query OK, 1 row affected (0.01 sec)
+        
+        (mysql:8.4.0:db_mysql)select * from c3;
+        +-----------------+
+        | c1              |
+        +-----------------+
+        | Αα（alpha）     |
+        +-----------------+
+        1 row in set (0.00 sec)
+
+        2. 查看默认的库字符集
+        (mysql:8.4.0:db_mysql) show create database test;
+        +----------+--------------------------------------------------------------------------------------------------------------------------------+
+        | Database | Create Database                                                                                                                |
+        +----------+--------------------------------------------------------------------------------------------------------------------------------+
+        | test     | CREATE DATABASE `test` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci */ /*!80016 DEFAULT ENCRYPTION='N' */ |
+        +----------+--------------------------------------------------------------------------------------------------------------------------------+
+        1 row in set (0.00 sec)
+        
+
+        总结：
+        1. MySQL 支持库、表、列等级别的字符集指定。在建表时最好指定统一的字符集，不同的字符集支持的字符范围不同，选择不当，可能会导致数据插入失败、业务不同库感知数据不匹配等。
+              
+      </示例>
+
+      <检查流程描述>
+      1. 对于 "CREATE TABLE ..."语句，
+         1. 存在 charset或CHARACTER 关键词，
+         2. 且charset或CHARACTER 的值与阈值不一致时，则报告违反规则。
+      2. 对于"ALTER TABLE..." 语句，执行上述相同的检查。
+      3. 对于 "CREATE DATABASE ..."语句，执行上述相同的检查。
+      4. 对于 "ALTER DATABASE ..."语句，执行上述相同的检查。
+      </检查流程描述>
+      <知识文档>
+        1. CREATET TABLE 官方文档：https://dev.mysql.com/doc/refman/8.4/en/create-table.html
+      </知识文档>
+    </场景>
+  </规则场景>
+<标签><分类 名称="操作对象"><分类值>表</分类值></分类><分类 名称="SQL分类"><分类值>DDL</分类值><分类值>表空间和存储引擎</分类值></分类><分类 名称="审核目的"><分类值>保障正确性</分类值><分类值>增强可维护性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

@@ -1,0 +1,276 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+  <规则编号>SQLE00087</规则编号>
+  <级别>error</级别>
+  <数据库类型>MySQL</数据库类型>
+  <规则种类>使用建议</规则种类>
+  <规则变量>
+    <变量 name="IN的参数值个数">500</变量>
+  </规则变量>
+  <规则简述>避免WHERE条件内IN语句中的参数值个数过多</规则简述>
+  <规则描述>当IN值过多时，有可能会出现无法使用索引，导致查询走全表扫描、性能变差、资源消耗过多等问题。</规则描述>
+  <规则场景>
+    <场景 名称="固定IN的值列表" 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用关键词="IN、NOT IN" 适用句型="SELECT、UPDATE、DELETE、UNION、WITH、INSERT ... SELECT">
+      <示例>
+          前置:
+          -- 主表1
+          create table customers(
+            id INT PRIMARY KEY ,
+            cname varchar(32) default '' not null, -- 序号
+            sex int default 0, -- 性别
+            age int default 0 -- 年龄
+          );
+
+          -- 主表2
+
+          create table customers_insert(
+            id INT PRIMARY KEY,
+            cname varchar(32) default '' not null, -- 序号
+            sex int default 0, -- 性别
+            age int default 0 -- 年龄
+          );
+
+          -- 主表3
+
+          create table customers_ids(
+          id int primary key
+          );
+
+  
+
+          原理说明：
+          1. 对表进行DML操作时，可以在过滤条件中加IN 列表。
+          2. IN 列表可以简化查询语句的编写，但是也会带来性能问题和可读性一些列问题。
+              1. IN 列表如果太多，由于筛选的数据太多，会使得数据库不得不进行大量的记录匹配，从而造成内存、IO、网络带宽等的硬件资源浪费；还会造成索引无法使用，进一步降低语句的执行效率；就算可以使用索引，IN 列表多的也会比IN 列表少的执行效率差。
+              2. IN 列表过多，会造成代码冗长，可读性变差，维护变差。 
+          3. IN 列表分为固定的IN 子串列表，比如IN ('str1',...,'strN') ；也可以是非固定的IN 子查询，比如 IN (SELECT ID FROM TB1)。 
+
+          反例SQL：
+          select * from customers where id in (1,...,10000);
+          insert into customers_insert select * from customers where id in (1,...,10000);
+          update customers set age = 20 where id in (1,...,10000);
+          delete from customers where id in (1,...,10000);
+          select * from customers where id in (1,...,10000)
+          union all
+          select * from customers where id in (1,...,10000);
+         
+          with cte_tmp(id) as (select id from customers where id in (1,...,10000)) select * from cte_tmp;
+
+          反例说明：
+          1. 示例 SQL 的IN 列表有10000个不同的值，而且是针对主键的IN 列表。
+    
+          反例验证： 
+          1. 给示例表插入样例数据：(MySQL 8.0 之后的版本)
+          set @@cte_max_recursion_depth=20000000;
+          insert into customers  
+          with recursive tmp (a,b,c,d) as (
+            select 1,'小王22222333',floor(rand()*2),ceil(rand()*30)+20 
+            union all 
+            select a+1,concat('小王',a),floor(rand()*2),ceil(rand()*20)+20 from tmp where a &lt;=100000) 
+            select * from tmp;
+                
+          insert into customers_ids select  id from customers limit 10000;
+
+          2. 生成10000 个值的 IN 列表，并把查询结果的 IDS值列表带入示例SQL
+          (mysql:8.4.0:db_mysql)set group_concat_max_len=200000;
+          Query OK, 0 rows affected (0.01 sec)
+          
+          (mysql:8.4.0:db_mysql)select group_concat(id) ids from (select id from customers_ids limit 10000) T;
+          IDS
+          "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,...,9999,10000"
+          1 row in set (0.00 sec)
+
+
+          3. 执行示例SQL： 总执行时间大约40 毫秒。
+          (mysql:8.4.0:db_mysql)select * from customers where id in (1,...,10000);
+          ...
+          10000 rows in set (0.04 sec)
+
+  
+          4. 查看执行计划： 可以看到rows这一行是10000行，也就是说需要把IN 的列表全部扫一遍。
+          +----+-------------+-----------+------------+-------+---------------+---------+---------+------+-------+----------+-------------+
+          | id | select_type | table     | partitions | type  | possible_keys | key     | key_len | ref  | rows  | filtered | Extra       |
+          +----+-------------+-----------+------------+-------+---------------+---------+---------+------+-------+----------+-------------+
+          |  1 | SIMPLE      | customers | NULL       | range | PRIMARY       | PRIMARY | 4       | NULL | 10000 |   100.00 | Using where |
+          +----+-------------+-----------+------------+-------+---------------+---------+---------+------+-------+----------+-------------+
+          1 row in set, 1 warning (0.01 sec)
+          
+         
+          正例：
+          select * from customers where id in (1,...,400);
+          insert into customers_insert select * from customers where id in (1,...,400);
+          update customers set age = 20 where id in (1,...,400);
+          delete from customers where id in (1,...,400);
+          select * from customers where id in (1,...,400)
+          union all
+          select * from customers where id in (1,...,400);
+         
+          with cte_tmp(id) as (select id from customers where id in (1,...,400)) select * from cte_tmp;
+
+
+          正例说明：
+          1. 示例 SQL 中，仅有400个不同的值。
+
+          正例验证：
+          1. 生成 400 个值的 IN 列表，并把查询结果的 IDS值列表带入示例SQL
+          (mysql:8.4.0:db_mysql)set group_concat_max_len=200000;
+          Query OK, 0 rows affected (0.01 sec)
+          
+          (mysql:8.4.0:db_mysql)select group_concat(id) ids from (select id from customers_ids limit 400) T;
+          IDS
+          "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,...,399,400"
+          1 row in set (0.00 sec)
+
+          2. 执行正例SQL： 执行时间比反例SQL 降低很多。
+          (mysql:8.4.0:db_mysql)select * from customers where id in (1,...,400);
+          ...
+          400 rows in set (0.00 sec)
+
+
+          
+          3. 查看执行计划： 扫描行数大致等于IN 的列表个数，随着IN 列表个数降低，扫描行数也大幅降低。
+          (mysql:8.4.0:db_mysql)explain select * from customers where id in (1,...,399,400);
+          +----+-------------+-----------+------------+-------+---------------+---------+---------+------+------+----------+-------------+
+          | id | select_type | table     | partitions | type  | possible_keys | key     | key_len | ref  | rows | filtered | Extra       |
+          +----+-------------+-----------+------------+-------+---------------+---------+---------+------+------+----------+-------------+
+          |  1 | SIMPLE      | customers | NULL       | range | PRIMARY       | PRIMARY | 4       | NULL |  400 |   100.00 | Using where |
+          +----+-------------+-----------+------------+-------+---------------+---------+---------+------+------+----------+-------------+
+          1 row in set, 1 warning (0.01 sec)
+          
+          
+          结论：
+          1. SQL 中 WHERE 条件后的IN列表大小严重影响查询的性能，建议控制IN 列表在 500 以内，可以扫描更少的数据，使查询性能更佳。
+      </示例>
+      <检查流程描述>
+        1. 对于“SELECT ... ”语句, 计算 WHERE 条件后 IN  列表的元素数量，若计算得出的元素数量大于当前规则的阈值对比，则报告违反规则。
+        2. 对于“WITH ... ”语句, 执行与上述同样检查。 
+        3. 对于“INSERT ... SELECT”语句, 执行与上述同样检查。 
+        4. 对于“UPDATE ... ”语句, 执行与上述同样检查。 
+        5. 对于“DELETE ... ”语句, 执行与上述同样检查。 
+      </检查流程描述>
+      <知识文档>
+      1. SQL优化 官方文档： https://dev.mysql.com/doc/refman/8.0/en/statement-optimization.html
+      </知识文档>
+    </场景>
+    <场景 名称="非固定IN值列表" 数据库版本="所有MySQL版本" 检查方式="连库审核" 适用句型="SELECT、UPDATE、DELETE、UNION、WITH、INSERT ... SELECT">
+      <示例>
+          前置: 与场景【固定IN的值列表】一致
+          原理说明：与场景【固定IN的值列表】一致
+
+          反例SQL：
+          select count(*) from customers where id in (select * from customers_ids1 );
+          insert into customers_insert select * from customers where id in (select * from customers_ids1);
+          update customers set age = 20 where id in (select * from customers_ids1 );
+          delete from customers where id in (select  * from customers_ids1);
+          select * from customers where id in (select * from customers_ids1 )
+          union all
+          select * from customers where id in (select * from customers_ids1 );
+         
+          with cte_tmp(id) as (select id from customers where id in (select * from customers_ids1)) select * from cte_tmp;
+
+          反例说明：
+          1. 此示例的IN 为非固定的IN 列表，并且IN 列表里的元素个数限定值大于规则阈值，当实际表记录数低于top限定量时，是否超过规则阈值，主要取决于表的记录数。
+          2. 此示例中的表 customers_ids1 记录数为10000条。
+    
+          反例验证： 
+          1. 复制表customers_ids 为 customers_ids1
+             create table customers_ids1 like customers_ids;
+          2. 给示例表插入样例数据：(MySQL 8.0 之后的版本)
+          set @@cte_max_recursion_depth=20000000;
+          insert into customers  
+          with recursive tmp (a,b,c,d) as (
+            select 1,'小王22222333',floor(rand()*2),ceil(rand()*30)+20 
+            union all 
+            select a+1,concat('小王',a),floor(rand()*2),ceil(rand()*20)+20 from tmp where a &lt;=100000) 
+            select * from tmp;
+                
+          insert into customers_ids1 select  id from customers limit 10000;
+
+
+
+          3. 执行示例SQL： 总执行时间 20 毫秒。
+          (mysql:8.4.0:db_mysql)select count(*) from customers where id in (select * from customers_ids1 );
+          +----------+
+          | count(*) |
+          +----------+
+          |    10000 |
+          +----------+
+          1 row in set (0.02 sec)
+          
+          
+          4. 查看执行计划： 扫描行数大致等于IN 的列表个数（结果中table 列的 customers_ids1 对应的 rows 为 10000行。）
+          (mysql:8.4.0:db_mysql)explain select count(*) from customers where id in (select * from customers_ids1 );
+          +----+-------------+---------------+------------+--------+---------------+---------+---------+---------------------------+-------+----------+-------------+
+          | id | select_type | table         | partitions | type   | possible_keys | key     | key_len | ref                       | rows  | filtered | Extra       |
+          +----+-------------+---------------+------------+--------+---------------+---------+---------+---------------------------+-------+----------+-------------+
+          |  1 | SIMPLE      | customers_ids1 | NULL       | index  | PRIMARY       | PRIMARY | 4       | NULL                      | 10000 |   100.00 | Using index |
+          |  1 | SIMPLE      | customers     | NULL       | eq_ref | PRIMARY       | PRIMARY | 4       | db_mysql.customers_ids.id |     1 |   100.00 | Using index |
+          +----+-------------+---------------+------------+--------+---------------+---------+---------+---------------------------+-------+----------+-------------+
+          2 rows in set, 1 warning (0.01 sec)
+
+          
+                                      
+          正例：
+          select count(*) from customers where id in (select * from customers_ids2 );
+          insert into customers_insert select * from customers where id in (select * from customers_ids2);
+          update customers set age = 20 where id in (select * from customers_ids2 );
+          delete from customers where id in (select  * from customers_ids2);
+          select * from customers where id in (select * from customers_ids2 )
+          union all
+          select * from customers where id in (select * from customers_ids2 );
+         
+          with cte_tmp(id) as (select id from customers where id in (select * from customers_ids2)) select * from cte_tmp;
+
+
+          正例说明：
+          1. 示例 SQL 中，仅有400个不同的值，在规则变量的阈值以内。
+          2. 表customers_ids2的记录数到400条。
+
+          正例验证：
+          1. 复制表customers_ids 为 customers_ids2
+          create table customers_ids2 like customers_ids;
+          2. 给customers_ids2 造400条记录
+          (mysql:8.4.0:db_mysql)insert into customers_ids2 select id from customers limit 400;
+          Query OK, 400 rows affected (0.02 sec)
+          Records: 400  Duplicates: 0  Warnings: 0
+          
+          3. 执行正例SQL： 执行时间比反例SQL 降低很多。
+          (mysql:8.4.0:db_mysql)select count(*) from customers where id in (select id from customers_ids2 );
+          +----------+
+          | count(*) |
+          +----------+
+          |      400 |
+          +----------+
+          1 row in set (0.00 sec)
+          
+          4. 查看执行计划： 扫描行数大致等于IN 的列表个数，随着IN 列表个数降低，扫描行数也大幅降低。
+          (mysql:8.4.0:db_mysql)explain select count(*) from customers where id in (select id from customers_ids2 );
+          +----+-------------+----------------+------------+--------+---------------+---------+---------+----------------------------+------+----------+-------------+
+          | id | select_type | table          | partitions | type   | possible_keys | key     | key_len | ref                        | rows | filtered | Extra       |
+          +----+-------------+----------------+------------+--------+---------------+---------+---------+----------------------------+------+----------+-------------+
+          |  1 | SIMPLE      | customers_ids2 | NULL       | index  | PRIMARY       | PRIMARY | 4       | NULL                       |  400 |   100.00 | Using index |
+          |  1 | SIMPLE      | customers      | NULL       | eq_ref | PRIMARY       | PRIMARY | 4       | db_mysql.customers_ids2.id |    1 |   100.00 | Using index |
+          +----+-------------+----------------+------------+--------+---------------+---------+---------+----------------------------+------+----------+-------------+
+          2 rows in set, 1 warning (0.00 sec)
+          
+          
+          
+          结论：
+          1. SQL 中 WHERE 条件后的IN列表大小严重影响查询的性能，建议控制IN 列表在 500 以内，可以扫描更少的数据，使查询性能更佳。
+      </示例>
+      <检查流程描述>
+        1. 对于“SELECT ... ”语句, 
+          1. 定义一个集合
+          2. 登录数据库，查看IN 后的 子查询执行计划。比如语句select count(*) from t1 where id in (select id from t1)， 需要查看子查询 select id from t1 的执行计划，并且把对应的扫描行数存入集合。
+          3. 从集合中拿出保存对的值和当前规则的阈值对比，如果比当前规则的阈值大，则报告违反规则。
+        2. 对于“WITH ... ”语句, 执行与上述同样检查。 
+        3. 对于“INSERT ... SELECT”语句, 执行与上述同样检查。 
+        4. 对于“UPDATE ... ”语句, 执行与上述同样检查。 
+        5. 对于“DELETE ... ”语句, 执行与上述同样检查。 
+      </检查流程描述>
+      <知识文档>
+        1. SQL优化 官方文档： https://dev.mysql.com/doc/refman/8.0/en/statement-optimization.html
+      </知识文档>
+    </场景>
+  </规则场景>
+<标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值><分类值>连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

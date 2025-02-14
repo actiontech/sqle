@@ -1,0 +1,124 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00053</规则编号>
+    <级别>notice</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>DML规范</规则种类>
+    <规则简述>不建议使用SELECT *</规则简述>
+    <规则描述>当表结构变更时，使用*通配符选择所有列将导致查询行为会发生更改，与业务期望不符；同时SELECT * 中的无用字段会带来不必要的磁盘I/O，以及网络开销，且无法覆盖索引进而回表，大幅度降低查询效率。</规则描述>
+    <规则场景>
+        <场景 名称="查询表记录" 数据库版本="大于等于 MySQL 5.7 " 检查方式="不连库审核" 适用句型="SELECT">
+            <示例>
+            前置：
+            create database db_mysql;
+            use db_mysql;
+  
+            -- 示例表结构
+            CREATE TABLE customers(
+              id INT NOT NULL, -- 序号
+              name VARCHAR(32) DEFAULT 'lucy',-- 姓名
+              sex int NOT NULL default 0, -- 性别
+              city VARCHAR(32) NOT NULL default 'beijing', -- 所在城市
+              age INT NOT NULL default 0, -- 值类型
+              PRIMARY KEY (id) -- 主键
+            );
+            create index idx_age_customers on customers(age);
+
+              
+            -- 插入模拟数据,100W 条。
+            set @@cte_max_recursion_depth=20000000;
+            insert into customers  
+            with recursive tmp (a,b,c,d,e) as (
+              select 1,'小王22222333',floor(rand()*2),'上海',ceil(rand()*30)+20 
+              union all 
+              select a+1,concat('小王',a),floor(rand()*2),'上海',ceil(rand()*20)+20 from tmp where a &lt; 1000000) 
+              select * from tmp;
+        
+            原理说明：
+            1. 如果表中有很多字段，而业务只需要很少的几个字段，那么使用SELECT * 会导致不必要的数据传输、不必要的数据处理，影响查询的性能；如果查询的字段不完全包含在索引列中，还会造成不必要的回表扫描。
+            2. 如果对表删除、添加、改字段名等操作导致SELECT * 的列表发生变化，原先映射好的应用程序代码需要联代修改，增加应用代码的处理量；如果应用端不处理，可能会导致查询错误。
+                举个例子： 表 customers 原来有字段 select * 映射到应用代码中的数组arr1=['id','name','sex','city','age']；此时表 customers 表删除字段age，原有代码中的数组映射关系则需要重构。
+            3. 可读性问题。 SELECT * 比 SELECT 具体字段名 可读性差。
+
+            反例：
+            select * from customers;
+            select * from customers where 1=1;
+            select * from customers where age = 25;
+
+            反例说明：
+            1. 示例中的select * 语句可读性差、造成不必要的回表等，降低查询性能。
+            2. 输出不必要的数据量。
+
+            反例验证： 
+            1. 验证SQL 的执行计划，对比输出信息。SELECT * 走索引idx_age_customers，但是EXTRA输出里是NULL，需要回表扫磁盘数据。
+            (mysql:8.3.0:db_mysql)explain  select * from customers where age=25;
+            +----+-------------+-----------+------------+------+-------------------+-------------------+---------+-------+-------+----------+-------+
+            | id | select_type | table     | partitions | type | possible_keys     | key               | key_len | ref   | rows  | filtered | Extra |
+            +----+-------------+-----------+------------+------+-------------------+-------------------+---------+-------+-------+----------+-------+
+            |  1 | SIMPLE      | customers | NULL       | ref  | idx_age_customers | idx_age_customers | 4       | const | 99392 |   100.00 | NULL  |
+            +----+-------------+-----------+------------+------+-------------------+-------------------+---------+-------+-------+----------+-------+
+            1 row in set, 1 warning (0.00 sec)
+
+            2.验证 select * 执行时间与数据输出大小：执行时间1.2秒、输出2.5MB的数据。
+            (mysql:8.3.0:db_mysql)tee select_all.txt
+            Logging to file 'select_all.txt'
+            (mysql:8.3.0:db_mysql)select * from customers where age = 25;
+            ...
+            49718 rows in set (1.20 sec)
+
+            (mysql:8.3.0:db_mysql)notee
+            Outfile disabled.
+
+            [root@ytt-pc scripts]# du -sh select_all.txt 
+            2.5M	select_all.txt
+
+            正例：
+            select age from customers;
+            select age from customers where 1=1;
+            select age from customers where age = 25;
+
+            正例说明：
+            1. 只查询出需要的列，减少了多余列的查询，可以走字段 age 的全索引扫，避免回表;
+            2. 输出更少的数据量。
+
+            正例验证：
+            1. 同样验证SQL 的执行计划，对比输出信息。SELECT age 走索引idx_age_customers，但是EXTRA输出里是 Using index ，代表Covering index，也就是覆盖索引扫描，不用回表扫磁盘数据。
+            (mysql:8.3.0:db_mysql)explain  select age from customers where age=25;
+            +----+-------------+-----------+------------+------+-------------------+-------------------+---------+-------+-------+----------+-------------+
+            | id | select_type | table     | partitions | type | possible_keys     | key               | key_len | ref   | rows  | filtered | Extra       |
+            +----+-------------+-----------+------------+------+-------------------+-------------------+---------+-------+-------+----------+-------------+
+            |  1 | SIMPLE      | customers | NULL       | ref  | idx_age_customers | idx_age_customers | 4       | const | 99392 |   100.00 | Using index |
+            +----+-------------+-----------+------------+------+-------------------+-------------------+---------+-------+-------+----------+-------------+
+            1 row in set, 1 warning (0.00 sec)
+
+            2.验证 select age 实际的执行时间与输出数据量：执行时间0.02秒、输出数据392K。比SELECT * 要优化很多。
+            (mysql:8.3.0:db_mysql)tee select_age.txt
+            Logging to file 'select_age.txt'
+            (mysql:8.3.0:db_mysql)select age from customers where age = 25;
+            ...
+            49718 rows in set (0.02 sec)
+
+            (mysql:8.3.0:db_mysql)notee
+            Outfile disabled.
+
+            [root@ytt-pc scripts]# du -sh select_age.txt 
+            392K	select_age.txt
+
+
+
+
+            总结：
+            1. select *  会导致回表扫，性能差，可读性差，建议只select  需要的列。
+
+            </示例>
+            <检查流程描述>
+              1. 对于所有DML、DQL 语句中的SELECT子句，如果存在SELECT目标是只有一个*符号，则报告违反规则。
+            </检查流程描述>
+            <知识文档>
+              1. SELECT 优化官方文档：https://dev.mysql.com/doc/refman/8.0/en/select-optimization.html
+            </知识文档>
+        </场景>
+
+    </规则场景>
+    <规则缺陷 />
+<标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值><分类值>增强可维护性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

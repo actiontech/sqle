@@ -1,0 +1,116 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+  <规则编号>SQLE00113</规则编号>
+  <级别>notice</级别>
+  <数据库类型>MySQL</数据库类型>
+  <规则种类>查询优化</规则种类>
+  <规则简述>不建议对条件字段使用负向查询</规则简述>
+  <规则描述>SQL查询条件中存在NOT、NOT IN、NOT LIKE、NOT EXISTS、不等于等负向查询条件，将导致优化器选择错误的执行计划，导致出现慢SQL。</规则描述>
+  <规则场景>
+    <原理说明 关键词="WHERE" 数据库版本="MySQL 5.7.25" 检查方式="不连库审核" 适用句型="SELECT、INSERT、UPDATE、DELETE">
+      <示例>
+        前置：
+        CREATE TABLE customers(
+          id INT(11) NOT NULL,##序号
+          name VARCHAR(32) DEFAULT '',##姓名
+          sex TINYINT NOT NULL,##性别
+          city VARCHAR(32) NULL,##所在城市
+          age SMALLINT(4) NOT NULL,##数值类型
+          PRIMARY KEY (id)##主键
+        );
+        ALTER TABLE customers ADD INDEX (city); 
+        INSERT INTO customers VALUES(1,'xiaoli',1,'shanghai',18);
+        INSERT INTO customers VALUES(2,'xiaoli',1,NULL,20);
+        INSERT INTO customers SELECT ID + (SELECT count(1) FROM customers),concat('t',(ID + (SELECT count(1) FROM customers))),1,'hangzhou',18 FROM customers;##执行5次；
+
+        CREATE TABLE orders(
+          id INT(11) NOT NULL,##序号
+          c_id INT(11) NOT NULL,##客户编号
+          amount NUMERIC,##总金额
+          PRIMARY KEY (id)##主键
+        );
+        ALTER TABLE orders ADD INDEX(amount);
+        INSERT INTO orders VALUES(1,1,2000);
+        INSERT INTO orders SELECT id + (SELECT count(1) FROM orders),2,3000+ (SELECT count(1) FROM orders) FROM orders;##执行5次；
+
+        原理说明：
+        1. 负向查询是指在查询条件中使用了否定操作符（如NOT、!=、&lt;&gt;、&lt;、&gt;等）或IN、OR、UNION等操作符的查询。这些查询操作可能会导致数据库无法使用索引，从而影响查询性能。
+        2. 为了避免负向查询导致的索引失效，可以考虑以下几种方法：
+          1. 尽量避免使用负向查询：如果可以通过其他方式表达查询条件，尽量避免使用否定操作符或IN、OR、UNION等操作符。
+          2. 使用索引覆盖：如果查询只需要返回索引列的值，可以使用索引覆盖来避免回表查询，从而提高查询性能。
+          3. 使用合适的索引：如果必须使用负向查询，可以考虑使用合适的索引来提高查询性能。例如，可以使用覆盖索引或联合索引来避免回表查询。
+          4. 优化查询语句：可以通过优化查询语句的结构和逻辑，减少负向查询的使用，从而提高查询性能。
+
+        反例：
+        SELECT * FROM customers WHERE city NOT LIKE 'hang%';
+        SELECT * FROM customers WHERE NOT(city  LIKE 'hang%');
+        SELECT * FROM orders WHERE amount NOT BETWEEN 1000 AND 2000;
+        SELECT c.* FROM customers c WHERE NOT EXISTS(SELECT * FROM orders o WHERE o.c_id=c.id);
+        SELECT c.* FROM customers c WHERE id NOT IN (SELECT c_id FROM orders);
+
+        注：下述3种示例，在当前表数据量比较小的时候，全表扫描速度优于索引键扫描，因此直接不走索引。
+        SELECT * FROM customers WHERE city !='hangzhou';
+        SELECT * FROM customers WHERE city &lt;&gt;'hangzhou';
+        SELECT * FROM customers WHERE city NOT IN ('hangzhou','shanghai');
+
+        示例验证：
+        1、查看执行计划。
+        mysql&gt; explain SELECT * FROM customers WHERE city NOT LIKE 'hang%';
+        +----+-------------+-----------+------------+------+---------------+------+---------+------+------+----------+-------------+
+        | id | select_type | table     | partitions | type | possible_keys | key  | key_len | ref  | rows | filtered | Extra       |
+        +----+-------------+-----------+------------+------+---------------+------+---------+------+------+----------+-------------+
+        |  1 | SIMPLE      | customers | NULL       | ALL  | NULL          | NULL | NULL    | NULL |   64 |    88.89 | Using where |
+        +----+-------------+-----------+------------+------+---------------+------+---------+------+------+----------+-------------+
+        1 row in set, 1 warning (0.00 sec)
+
+        正例：
+        SELECT * FROM customers WHERE city LIKE 'hang%' = 0;##针对NOT LIKE示例使用反向条件优化
+        SELECT * FROM customers WHERE city &lt;&gt;'';##针对IS NOT NULL示例优化
+        SELECT * FROM orders WHERE amount&lt;1000 OR amount&gt;2000;##代替NOT BETWEEN
+        SELECT c.* FROM customers c LEFT JOIN orders o ON c.id = o.c_id WHERE o.c_id IS NULL;##通过连接查询代替子查询提高效率
+
+        示例验证：
+        1、查看执行计划。
+        mysql&gt; explain SELECT * FROM customers WHERE city LIKE 'hang%' = 0;
+        +----+-------------+-----------+------------+------+---------------+------+---------+------+------+----------+-------------+
+        | id | select_type | table     | partitions | type | possible_keys | key  | key_len | ref  | rows | filtered | Extra       |
+        +----+-------------+-----------+------------+------+---------------+------+---------+------+------+----------+-------------+
+        |  1 | SIMPLE      | customers | NULL       | ALL  | NULL          | NULL | NULL    | NULL |   64 |   100.00 | Using where |
+        +----+-------------+-----------+------------+------+---------------+------+---------+------+------+----------+-------------+
+        1 row in set, 1 warning (0.00 sec)
+
+        结论：
+        数据库系统中，一条SQL语句执行时出现全表扫描，通常有如下几个情况：
+        1）是一张小表，如表记录低于10行或者字段个数较少，当全表扫描比通过索引键查询更快时，优化器会选择全表扫描。
+        2）条件字段未加索引。
+        3）条件字段的索引列是与常量比较，且这个常量值覆盖了表的大部分，且执行计划预测全表扫描速度更快。
+        4）通过一列使用基数较低的键，但是实际值与键值都匹配的情况下，全表扫描速度通常会优于通过查找键再进行数据匹配的方式。
+
+        通常有几种优化方式来避免走全表扫描：
+        前置：先对条件字段建索引。
+        1）通过ANALYZE TABLE句子更新扫描目标表的键分布。
+        2）通过Index Hints来指明SQL语句采用指定索引进行数据处理。
+        3）max_seeks_for_key 参数用于限制范围扫描的次数，当数据分布不均匀时，可以适当地调高该参数的阈值。
+        在MySQL数据库系统中，默认创建索引的索引类型是B-Tree，从知识文档【B-Tree索引】中，一条SQL语句的条件采用比较操作运算符（如不等于、范围过滤、IS NULL等）时，在查询过程中会执行索引，只有当目标表的数量较少或者负向查询时，索引才会失效。
+      </示例>
+      <检查流程描述>
+      1. 对于"SELECT...WHERE..."语句，检查以下条件，如果有任意一个条件触发，则报告违反规则：
+        1. WHERE条件中存在NOT、NOT IN、NOT EXISTS、NOT LIKE、NOT BETWEEN关键词中任意一个，但不包含NOT NULL。
+        2. WHERE条件中存在 操作符是不等于的，如"!="。
+      2. 对于"INSERT..."语句，对INSERT语句中的SELECT子句进行与上述相同的检查。
+      3. 对于"UNION..."语句，对于语句中的每个SELECT子句进行与上述相同的检查。
+      4. 对于"UPDATE...WHERE..."语句，执行与上述相同的检查。
+      5. 对于"DELETE...WHERE..."语句，执行与上述相同的检查。
+      6. 对于"WITH..."语句，执行与上述相同的检查。
+      </检查流程描述>
+      <知识文档>
+      1、WHERE条件优化：https://dev.mysql.com/doc/refman/5.7/en/where-optimization.html
+      2、比较操作：https://dev.mysql.com/doc/refman/5.7/en/comparison-operators.html
+      2、B-Tree索引：https://dev.mysql.com/doc/refman/8.0/en/index-btree-hash.html
+      3、避免全表扫描：https://dev.mysql.com/doc/refman/5.7/en/table-scan-avoidance.html
+      4、NULL在条件中的优化：https://dev.mysql.com/doc/refman/8.0/en/is-null-optimization.html
+      </知识文档>
+    </原理说明>
+  </规则场景>
+  <规则缺陷 />
+  <标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

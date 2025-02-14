@@ -1,0 +1,132 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+<规则编号>SQLE00141</规则编号>
+<级别>notice</级别>
+<数据库类型>MySQL</数据库类型>
+<规则种类>连接优化</规则种类>
+<规则简述>表关联嵌套循环的层次过多</规则简述>
+<规则变量>
+  <变量 name="表关联嵌套循环层数">3</变量>
+</规则变量>
+<适用性>不适用：与SQLE00108、SQLE00096高度重复</适用性>
+<规则描述>嵌套越深，需要扫描的行数、生成的结果集就越大，SQL的执行效率越低。</规则描述>
+<规则场景>
+  <场景 名称="联合查询" 数据库版本="MySQL 5.7、MySQL 8.0" 检查方式="不连库审核" 适用句型="SELECT">
+    <示例>
+      前置：
+      CREATE TABLE st1 (
+          id bigint,
+          name VARCHAR(32),
+          pid bigint,
+          addr_id bigint,
+          dp_id bigint,
+          grade NUMERIC
+      );
+      create index idx_st_name on st1(name);
+      INSERT INTO st1 VALUES(1,'xiaoli',1,1,1,100);
+
+      CREATE TABLE st_ps (
+          id bigint,
+          post VARCHAR(32)
+      );
+      INSERT INTO st_ps VALUES(1,'prd'); 
+      
+      CREATE TABLE st_addr (
+          id bigint,
+          addr VARCHAR(32)
+      );
+      INSERT INTO st_addr VALUES(1,'ddd1');
+
+      CREATE TABLE st_dp (
+          id bigint,
+          dp_name VARCHAR(32)
+      );
+      INSERT INTO st_dp VALUES(1,'HR');
+
+      示例：
+      SELECT a.id,a.name,b.post,c.addr,d.dp_name FROM st1 a JOIN st_ps b ON a.pid=b.id JOIN st_addr c ON a.addr_id=c.id JOIN st_dp d ON a.dp_id=d.id;
+
+      示例说明：
+      数据库系统中，在一条SQL语句中，关联过多的表可能会对数据库性能和查询效率产生影响。
+      1）性能下降，数据库需要执行更多的表连接、数据匹配操作。
+      2）资源消耗，关联多个表会占用更多的系统资源，如CPU、内存和磁盘I/O，如同时出现类似这样的查询，可能引起资源竞争和性能瓶颈。
+      3）执行计划复杂化，数据库优化器会生成一个复杂的执行计划，以确定最优的查询路径。
+      4）可读性和维护性差，关联多个表会增加语句的复杂度，导致理解困难，并增加了错误的风险。
+      可以考虑如下两个策略：
+      1）重新设计数据模型，避免不必要的表关联；
+      2）采用分步查询或子查询，拆分为多个简单的查询，由应用层面进行数据合并和处理。
+
+    </示例>
+    <检查流程描述>
+      1、检查句子中是否存在FROM子句，如果存在，则进一步检查。
+      2、检查FROM子句后面参与表连接的个数，如果表连接个数超过阈值，报告违反规则。
+    </检查流程描述>
+    <知识文档>
+      1、SQL查询：https://dev.mysql.com/doc/refman/5.7/en/select.html
+      2、JOIN嵌套优化：https://dev.mysql.com/doc/refman/5.7/en/nested-join-optimization.html
+    </知识文档>
+  </场景>
+  <场景 名称="联合多表进行数据插入、更新、删除等变更操作" 数据库版本="MySQL 5.7、MySQL 8.0" 检查方式="不连库审核" 适用句型="INSERT、UPDATE、DELETE">
+    <示例>
+      前置：
+      CREATE TABLE st1 (
+          id bigint,
+          name VARCHAR(32),
+          pid bigint,
+          addr_id bigint,
+          dp_id bigint,
+          grade NUMERIC
+      );
+      create index idx_st_name on st1(name);
+      INSERT INTO st1 VALUES(1,'xiaoli',1,1,1,100);
+
+      CREATE TABLE st_ps (
+          id bigint,
+          post VARCHAR(32)
+      );
+      INSERT INTO st_ps VALUES(1,'prd'); 
+      
+      CREATE TABLE st_addr (
+          id bigint,
+          addr VARCHAR(32)
+      );
+      INSERT INTO st_addr VALUES(1,'ddd1');
+
+      CREATE TABLE st_dp (
+          id bigint,
+          dp_name VARCHAR(32)
+      );
+      INSERT INTO st_dp VALUES(1,'HR');
+
+      CREATE TABLE st_detail(
+          id bigint,
+          name VARCHAR(32),
+          post VARCHAR(32),
+          addr VARCHAR(32),
+          dp_name VARCHAR(32),
+          grade NUMERIC
+      );
+
+      示例：
+      INSERT INTO st_detail(id,name,post,addr,dp_name,grade)
+      SELECT a.id,a.name,b.post,c.addr,d.dp_name,a.grade FROM st1 a JOIN st_ps b ON a.pid=b.id JOIN st_addr c ON a.addr_id=c.id JOIN st_dp d ON a.dp_id=d.id;
+      UPDATE st1 JOIN st_ps b ON st1.pid=b.id JOIN st_addr c ON st1.pid=c.id JOIN st_dp d ON st1.pid=d.id set grade= grade+10;
+      DELETE st1 FROM st1 JOIN st_ps b ON st1.pid=b.id JOIN st_addr c ON st1.pid=c.id JOIN st_dp d ON st1.pid=d.id WHERE b.id =2;
+
+      示例说明：
+      与【联合查询】场景一致。
+
+    </示例>
+    <检查流程描述>
+      1、检查当前句子的句型是否UPDATE操作，如果是则进入下一步检查，否则进入检查步骤3。
+      2、检查句子中JOIN操作的表连接的个数，如果表连接个数超过阈值，报告违反规则。
+      3、检查句子中是否存在FROM子句，如果存在，则进一步检查。
+      4、检查FROM子句后面参与表连接的个数，如果表连接个数超过阈值，报告违反规则。
+    </检查流程描述>
+    <知识文档>
+      与【联合查询】场景一致。
+    </知识文档>
+  </场景>
+</规则场景>
+<规则缺陷 />
+<标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值><分类值>嵌套查询和连接</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值><分类值>增强可维护性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

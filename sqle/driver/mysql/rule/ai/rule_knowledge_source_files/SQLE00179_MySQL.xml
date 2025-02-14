@@ -1,0 +1,160 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00179</规则编号>
+    <级别>warn</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>执行计划</规则种类>
+    <规则简述>避免隐式数据类型转换的SQL查询</规则简述>
+    <规则描述>确保WHERE子句中用于索引列的条件字段与索引列的数据类型一致。不一致的数据类型会导致执行计划存在隐式类型转换操作。这种转换不仅增加CPU负担，还可能使得原本高效的索引无法使用，导致查询性能显著下降。
+    </规则描述>
+    <规则场景>
+        <场景 名称="SQL 执行过程中避免内部数据类型转换" 数据库版本="MySQL 8.0" 检查方式="连库审核" 适用句型="SELECT、UPDATE、DELETE">
+            <示例>
+                前置：
+                use db_mysql;
+                CREATE TABLE customers (
+                    id int, -- 编号
+                    name VARCHAR(50), -- 姓名
+                    sex int, -- 性别
+                    city VARCHAR(50), -- 城市
+                    age tinyint, -- 年龄
+                    log_date varchar(20),  -- 记录日志时间
+                    primary key (id) -- 主键
+                );
+
+                -- 创建索引
+                create index idx_log_date_customers on customers(log_date) ;
+
+
+                -- 生成初始样例数据 （基于MySQL 8.0 版本）
+                set @@cte_max_recursion_depth=2000000;
+                insert into customers 
+                with recursive tmp(a,b,c,d,e,f) as (
+                select 1,'lucy1000000',0,'shanghai',20,current_date()
+                union all
+                      select a+1,concat('lily',mod(a,100)),floor(rand()*2),'shanghai',ceil(rand()*20)+30,date_sub(current_date(),interval ceil(rand()*1000) day)
+                      from tmp where a &lt; 1000001
+                ) table tmp;
+                
+    
+                反例：
+                select count(*) from customers where log_date = now();
+                update customers set name='lily175' where log_date = now();
+                delete from customers where log_date = now()
+
+                反例说明:
+                  1. 执行计划中出现 due to type or collation conversion 代表字段在匹配的过程中发生了隐式转换。
+                  2. 隐式转换出现后，字段上即使有合适的索引，也不会被优化器使用，取而代之的是使用全表扫。
+
+    
+                示例验证：
+
+                   -- 实际执行示例SQL，执行时间为93毫秒。
+                   (mysql:8.0.31-cluster)select count(*) from customers where log_date=now();
+                   +----------+
+                   | count(*) |
+                   +----------+
+                   |        0 |
+                   +----------+
+                   1 row in set (0.93 sec)
+                   
+                   -- 查看示例SQL 的执行计划，发现扫描行数接近100W行，并且有3个警告。
+                   (mysql:8.0.31-cluster)explain select count(*) from customers where log_date=now()\G
+                   *************************** 1. row ***************************
+                              id: 1
+                     select_type: SIMPLE
+                           table: customers
+                      partitions: NULL
+                            type: index
+                   possible_keys: idx_log_date_customers
+                             key: idx_log_date_customers
+                         key_len: 83
+                             ref: NULL
+                            rows: 996547
+                        filtered: 10.00
+                           Extra: Using where; Using index
+                   1 row in set, 3 warnings (0.00 sec)
+                   
+                   -- 查看警告，发现有 due to type or collation conversion on field 关键词，表示发生了匹配字段隐式转化。
+                   (mysql:8.0.31-cluster)show warnings\G
+                   *************************** 1. row ***************************
+                     Level: Warning
+                      Code: 1739
+                   Message: Cannot use ref access on index 'idx_log_date_customers' due to type or collation conversion on field 'log_date'
+                   *************************** 2. row ***************************
+                     Level: Warning
+                      Code: 1739
+                   Message: Cannot use range access on index 'idx_log_date_customers' due to type or collation conversion on field 'log_date'
+                   *************************** 3. row ***************************
+                     Level: Note
+                      Code: 1003
+                   Message: /* select#1 */ select count(0) AS `count(*)` from `db_mysql`.`customers` where (`db_mysql`.`customers`.`log_date` = (now()))
+                   3 rows in set (0.01 sec)
+                   
+                                   
+                
+    
+                正例：
+                select count(*) from customers where log_date = concat(now(),'');
+                update customers set name='lily175' where log_date = concat(now(),'');
+                delete from customers where log_date = concat(now(),'');
+    
+                正例说明：
+                  1. 过滤条件显式转换为和字段 log_date 一样的字符类型，可避免优化器内部隐式转换数据类型，从而能正确的使用字段log_date上的索引。
+                  2. 可以查看正例SQL 的执行计划，并立即打印 show warnings信息，发现关键词 due to type or collation conversion on field 消失。
+
+                示例验证：
+                -- 实际执行示例SQL，执行时间由93毫秒降低到0毫秒。
+                (mysql:8.0.31-cluster)select count(*) from customers where log_date=concat(now(),'');
+                +----------+
+                | count(*) |
+                +----------+
+                |        0 |
+                +----------+
+                1 row in set (0.00 sec)
+                
+                -- 从执行计划可以看到，扫描行数由接近100W行，降低到1行。
+                (mysql:8.0.31-cluster)explain select count(*) from customers where log_date=concat(now(),'')\G
+                *************************** 1. row ***************************
+                           id: 1
+                  select_type: SIMPLE
+                        table: customers
+                   partitions: NULL
+                         type: ref
+                possible_keys: idx_log_date_customers
+                          key: idx_log_date_customers
+                      key_len: 83
+                          ref: const
+                         rows: 1
+                     filtered: 100.00
+                        Extra: Using index
+                1 row in set, 1 warning (0.00 sec)
+                
+                -- 查看警告信息，发现 due to type or collation conversion on field 关键词消失。
+                (mysql:8.0.31-cluster)show warnings\G
+                *************************** 1. row ***************************
+                  Level: Note
+                   Code: 1003
+                Message: /* select#1 */ select count(0) AS `count(*)` from `db_mysql`.`customers` where (`db_mysql`.`customers`.`log_date` = concat(now(),''))
+                1 row in set (0.00 sec)
+                
+    
+    
+                示例结论：
+                  1. 在 MySQL 执行计划中如果出现了 due to type or collation conversion on field 关键词，代表过滤字段出现隐式类型转换，必须要消除这个隐患，修改SQL 语句过滤条件。
+               
+            </示例>
+            <检查流程描述>
+                1. 对于"select..."语句，检查SQL语句的执行计划的告警信息，如果告警信息中出现 "due to type or collation conversion on field" 关键词，则报告违反规则。
+                2. 对于"update..."语句，执行与上述相同的检查流程。
+                3. 对于"delete..."语句，执行与上述相同的检查流程。
+                4. 对于"insert..."语句，执行与上述相同的检查流程。
+            </检查流程描述>
+            <知识文档>
+              1. MySQL explain 文档： https://dev.mysql.com/doc/refman/8.0/en/explain.html
+            </知识文档>
+        </场景>
+    </规则场景>
+    <规则缺陷 />
+    <标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值><分类值>保障正确性</分类值></分类><分类 名称="审核精确度"><分类值>连库审核</分类值></分类></标签><完成情况>完成</完成情况>
+</Rule>

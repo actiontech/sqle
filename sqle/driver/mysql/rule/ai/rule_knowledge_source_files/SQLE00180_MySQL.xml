@@ -1,0 +1,135 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00180</规则编号>
+    <级别>warn</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>执行计划</规则种类>
+    <规则简述>避免执行计划中 filter 次数过多</规则简述>
+    <规则变量>
+        <变量 name="filter 个数阈值" type="int">2</变量>
+    </规则变量>
+    <规则描述>执行计划中的filter 步骤表示查询在检索数据之后需要进行额外的行过滤。过滤通常发生在已经通过索引或其他方法获取的行集上。如果这个步骤处理的行数很多，那么它可能会成为查询性能的瓶颈。</规则描述>
+    <规则场景>
+        <场景 名称="存在子查询的数据查询操作" 数据库版本="MySQL 8.0" 检查方式="连库审核" 适用句型="SELECT、UPDATE、DELETE、UNION、WITH、INSERT ... SELECT">
+            <示例>
+                前置：
+                use db_mysql;
+                CREATE TABLE customers (
+                    id int, -- 编号
+                    name VARCHAR(50), -- 姓名
+                    sex int, -- 性别
+                    city VARCHAR(50), -- 城市
+                    age tinyint, -- 年龄
+                    log_date varchar(20),  -- 记录日志时间
+                    primary key (id) -- 主键
+                );
+
+                -- 生成初始样例数据 （基于MySQL 8.0 版本）
+                set @@cte_max_recursion_depth=2000000;
+                insert into customers 
+                with recursive tmp(a,b,c,d,e,f) as (
+                select 1,'lucy1000000',0,'shanghai',20,current_date()
+                union all
+                      select a+1,concat('lily',mod(a,100)),floor(rand()*2),'shanghai',ceil(rand()*20)+30,date_sub(current_date(),interval ceil(rand()*1000) day)
+                      from tmp where a &lt; 1000001
+                ) table tmp;
+
+                原理说明：
+                1. filter 和 filtered 在MySQL中是一个意思。
+                2. 官方文档中 filtered 列表示：
+                   The filtered column indicates an estimated percentage of table rows that are filtered by the table condition. 
+                   The maximum value is 100, which means no filtering of rows occurred. 
+                   Values decreasing from 100 indicate increasing amounts of filtering. 
+                   rows shows the estimated number of rows examined and rows × filtered shows the number of rows  that are joined with the following table. 
+                   For example, if rows is 1000 and filtered is 50.00 (50%), the number of rows to be joined with the following table is 1000 × 50% = 500.
+                   翻译过来就是：
+                   1. filtered 列是表根据条件筛选行的百分比值，最大值为100，这意味着没有对其进行筛选。
+                   2. 从100开始递减的值表示过滤量的增加。rows显示检查的估计行数，rows × filtered 显示表连接的行数。
+                   3. 例如，如果行数为1000，过滤后的行数为50.00（50%），则与表连接的行数是1000×50%=500。
+                3. 所以从理论上来讲，其值越大表示对表的过滤记录减少，性能越好。当然对于全表扫或者全索引扫没有任何过滤的除外。
+                4. 如果单纯从执行计划中出现filtered的个数来讲，个数越少越好。 所以本规则的目的是想办法减少SQL 执行计划中的filtered 个数。
+    
+                反例:
+                select count(*) from customers tb_outer where name in  (select name from customers tb_inner where name='lily75');
+                select count(*) from customers tb_outer where exists (select 1 from customers tb_inner where tb_inner.name = tb_outer.name and tb_inner.name='lily75');
+
+                注：其他句型与SELECT句型语法相同，都是指SQL语句中包含SELECT的情况，因此省略相似的示例。
+
+                反例说明:
+                1. 我们找一个 NDV 值比较低的字段来做过滤。
+                2. 如果 filter 对应的字段 NDV 值较低，就需要想办法减少执行计划中出现 filter 关键词的个数。
+        
+                示例验证：
+                -- 执行示例SQL，执行时间为0.52秒。
+                (mysql:8.3.0:db_mysql)select count(*) from customers tb_outer where name in  (select name from customers tb_inner where name='lily75');
+                +----------+
+                | count(*) |
+                +----------+
+                |    10000 |
+                +----------+
+                1 row in set (0.52 sec)
+        
+                -- 查看示例SQL的执行计划，可以看到出现了4个 filter 关键词，执行成本为170364，需要减少 filter 的个数。
+                (mysql:8.3.0:db_mysql)explain format=tree select count(*) from customers tb_outer where name in  (select name from customers tb_inner where
+                name='lily75')\G
+                *************************** 1. row ***************************
+                EXPLAIN: - Aggregate: count(0)  (cost=170364 rows=1)
+                    - Nested loop inner join  (cost=160397 rows=99672)
+                        - Filter: ((tb_outer.`name` = 'lily75') and (tb_outer.`name` is not null))  (cost=100594 rows=99672)
+                            - Table scan on tb_outer  (cost=100594 rows=996723)
+                        - Filter: (`subquery2`.`name` = 'lily75')  (cost=0.5..0.5 rows=1)
+                            - Single-row index lookup on subquery2 using auto_distinct_key (name=tb_outer.`name`)  (cost=110561..110561 rows=1)
+                                - Materialize with deduplication  (cost=110561..110561 rows=99672)
+                                    - Filter: (tb_inner.`name` is not null)  (cost=100594 rows=99672)
+                                        - Filter: (tb_inner.`name` = 'lily75')  (cost=100594 rows=99672)
+                                            - Table scan on tb_inner  (cost=100594 rows=996723)
+                
+                1 row in set (0.00 sec)
+    
+                正例：
+                select count(*) from customers tb_outer where id in  (select id from customers tb_inner where name='lily75');   
+    
+                正例说明：
+                1. 由于name 字段的NDV比较低，所以选择使用主键字段id来过滤，主键字段的NDV值最高，性能最好，可以直接减少执行计划中的 filter 关键词。
+
+                示例验证：
+                -- 执行示例SQL，执行时间由0.52秒降低到0.31秒。
+                (mysql:8.3.0:db_mysql)select count(*) from customers tb_outer where id in  (select id from customers tb_inner where name='lily75');
+                +----------+
+                | count(*) |
+                +----------+
+                |    10000 |
+                +----------+
+                1 row in set (0.31 sec)                
+                
+                -- 实际执行示例SQL。 从执行计划可以看到， filter 关键词由3个减少为1个，执行成本也比原来减少，符合预期。
+                (mysql:8.3.0:db_mysql)explain format=tree select count(*) from customers tb_outer where id in  (select id from customers tb_inner where name='lily75')\G
+                *************************** 1. row ***************************
+                EXPLAIN: - Aggregate: count(0)  (cost=145446 rows=1)
+                    - Nested loop inner join  (cost=135479 rows=99672)
+                        - Filter: (tb_inner.`name` = 'lily75')  (cost=100594 rows=99672)
+                            - Table scan on tb_inner  (cost=100594 rows=996723)
+                        - Single-row covering index lookup on tb_outer using PRIMARY (id=tb_inner.id)  (cost=0.25 rows=1)
+                
+                1 row in set (0.00 sec)
+                
+                示例结论：
+                1. 由于使用了选择性更好的主键字段来代替普通字段，从而使得执行计划减少了 filter 关键词的个数。
+                2. 如果需要进一步优化此SQL，请参考其他规则。比如过滤字段建索引或者更改SQL 语句。比如示例SQL 可以进一步优化为以下：
+                    select count(id) from customers where name='lily75'; 
+                3. 由于MySQL 8.0 之前的版本不支持explain format=tree 的输出，所以此规则仅在版本大于 MySQL 8.0 生效。
+
+            </示例>
+            <检查流程描述>
+            1. 对于所有的DML 语句，
+              1. 登录数据库。
+              2. 检查SQL语句的执行计划，如果出现 filter 关键词，则记录下来 filter 关键词的个数，和规则变量对比，比它大，则报告违反规则。
+            2. 对于"...WITH... "语句，执行与上面类似的检查。
+            </检查流程描述>
+            <知识文档>
+              1. MySQL explain 文档： https://dev.mysql.com/doc/refman/8.0/en/explain.html
+            </知识文档>
+        </场景>
+    </规则场景>
+    <规则缺陷 />
+    <标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

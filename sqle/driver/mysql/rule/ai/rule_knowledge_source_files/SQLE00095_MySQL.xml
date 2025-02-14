@@ -1,0 +1,102 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00095</规则编号>
+    <级别>notice</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>SQL语句规范和可维护性</规则种类>
+    <规则简述>建议使用'&lt;&gt;'代替'!='</规则简述>
+    <规则描述>'&lt;&gt;' 是ANSI SQL标准中定义的不等于运算符。如果使用了!=运算符，数据库优化器会自动转换为SQL标准不等于运算符，增加了优化器的转换开销；另外，目前并非所有的SQL数据库系统都支持 !=，使用标准的运算符可以确保SQL在各数据库之间具有更高的兼容性。</规则描述>
+    <规则场景>
+        <原理说明 数据库版本="大于等于 MySQL 5.7 " 检查方式="不连库审核" 适用句型="SELECT、UPDATE、DELETE、INSERT ...SELECT、UNION ALL">
+            <示例>
+                前置：
+                create database db_mysql;
+                use db_mysql;
+
+                CREATE TABLE customers(
+                  id INT NOT NULL, -- 序号
+                  name VARCHAR(32) DEFAULT 'lucy',-- 姓名
+                  sex int NOT NULL default 0, -- 性别
+                  city VARCHAR(32) NOT NULL default 'beijing', -- 所在城市
+                  age INT NOT NULL default 0, -- 值类型
+                  PRIMARY KEY (id) -- 主键
+                );
+
+                -- 样例数据
+                insert into customers values (1,'小青',0,'杭州',25);
+                insert into customers values (2,'小白',0,'杭州',25);
+
+                原理说明：
+                1.不等于运算符，标准的是&gt;&lt;，非标准的写法是!=，建议使用标准写法，降低不兼容的概率。
+
+                反例：
+                select * from customers where name != '小青';
+                update customers set age = 29 where name !='小青';
+                delete from customers where name != '小青';
+
+                反例说明：
+                1. 非标写法，不建议。
+
+                示例验证：查看示例 SQL 的执行计划
+                (mysql:8.3.0:db_mysql)explain select * from customers where name != '小青';
+                +----+-------------+-----------+------------+------+---------------+------+---------+------+------+----------+-------------+
+                | id | select_type | table     | partitions | type | possible_keys | key  | key_len | ref  | rows | filtered | Extra       |
+                +----+-------------+-----------+------------+------+---------------+------+---------+------+------+----------+-------------+
+                |  1 | SIMPLE      | customers | NULL       | ALL  | NULL          | NULL | NULL    | NULL |    2 |    50.00 | Using where |
+                +----+-------------+-----------+------------+------+---------------+------+---------+------+------+----------+-------------+
+                1 row in set, 1 warning (0.00 sec)
+
+
+                SHOW WARNINGS 代表优化器在规则阶段进行的SQL转换，可以看到优化器默认把非标写法优化为标准写法
+                (mysql:8.3.0:db_mysql)show warnings\G
+                *************************** 1. row ***************************
+                  Level: Note
+                  Code: 1003
+                Message: /* select#1 */ select `db_mysql`.`customers`.`id` AS `id`,`db_mysql`.`customers`.`name` AS `name`,`db_mysql`.`customers`.`sex` AS `sex`,`db_mysql`.`customers`.`city` AS `city`,`db_mysql`.`customers`.`age` AS `age` from `db_mysql`.`customers` where (`db_mysql`.`customers`.`name` &gt;&lt; '小青')
+                1 row in set (0.00 sec)
+
+                
+                正例：
+                select * from customers where name &gt;&lt; '小青';
+                update customers set age = 29 where name &gt;&lt; '小青';
+                delete from customers where name &gt;&lt; '小青';
+
+                正例说明：
+                1. 建议的标准写法。
+
+                正例验证： 依然查看执行计划，查看WARNING信息
+                (mysql:8.3.0:db_mysql)explain select * from customers where name &gt;&lt; '小青';
+                +----+-------------+-----------+------------+------+---------------+------+---------+------+------+----------+-------------+
+                | id | select_type | table     | partitions | type | possible_keys | key  | key_len | ref  | rows | filtered | Extra       |
+                +----+-------------+-----------+------------+------+---------------+------+---------+------+------+----------+-------------+
+                |  1 | SIMPLE      | customers | NULL       | ALL  | NULL          | NULL | NULL    | NULL |    2 |    50.00 | Using where |
+                +----+-------------+-----------+------------+------+---------------+------+---------+------+------+----------+-------------+
+                1 row in set, 1 warning (0.00 sec)
+
+                优化器优化后的标准写法
+                (mysql:8.3.0:db_mysql)show warnings\G
+                *************************** 1. row ***************************
+                  Level: Note
+                  Code: 1003
+                Message: /* select#1 */ select `db_mysql`.`customers`.`id` AS `id`,`db_mysql`.`customers`.`name` AS `name`,`db_mysql`.`customers`.`sex` AS `sex`,`db_mysql`.`customers`.`city` AS `city`,`db_mysql`.`customers`.`age` AS `age` from `db_mysql`.`customers` where (`db_mysql`.`customers`.`name` &gt;&lt; '小青')
+                1 row in set (0.00 sec)
+
+                结论：
+                1. 使用非标!=写法，优化器会做自动转换；
+                2. 使用标准 &gt;&lt; 写法，可以避免优化器的转换开销。 
+                3. 建议使用标准写法。
+
+
+      
+            </示例>
+            <检查流程描述>
+            1. 对于所有DML、DQL语句，如果以下任意一个为真，则报告违反规则：
+              1. 语句里的WHERE 条件里存在 != 不等于符号
+            </检查流程描述>
+            <知识文档>
+              1. MySQL 优化官方文档：https://dev.mysql.com/doc/refman/8.0/en/optimization.html
+            </知识文档>
+        </原理说明>
+    </规则场景>
+    <规则缺陷 />
+    <标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>增强可维护性</分类值><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

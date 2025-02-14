@@ -1,0 +1,121 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+  <规则编号>SQLE00014</规则编号>
+  <级别>
+    <当前级别>notice</当前级别>
+  </级别>
+  <数据库类型>MySQL</数据库类型>
+  <规则种类>使用建议</规则种类>
+  <规则简述>不建议使用自定义函数</规则简述>
+  <规则描述>自定义函数和存储过程维护较困难，且依赖性高，可能导致SQL无法跨库使用。此外，它们在使用时存在一些限制，如无法使用事务相关语句、无法直接产生输出的语句，以及无法在函数体内使用USE语句指定数据库。</规则描述>
+  <规则场景>
+    <场景 名称="自定义函数使用" 数据库版本="MySQL 5.7.25" 检查方式="不连库审核" 适用句型="CREATE FUNCTION">
+      <示例>
+      前置：
+      -- 创建测试数据库和表
+      CREATE DATABASE test_db;
+      USE test_db;
+      CREATE TABLE users (
+          id INT PRIMARY KEY,
+          name VARCHAR(50),
+          age INT
+      );
+      INSERT INTO users VALUES (1, 'John', 30), (2, 'Alice', 25);
+
+      原理说明：
+      自定义函数和存储过程维护较困难，主要因为它们的逻辑封装在数据库中，不易于版本控制和代码审查。依赖性高是指一旦函数逻辑改变，可能会影响到所有调用该函数的SQL语句。跨库使用困难是因为函数定义存储在特定数据库中，无法直接在其他数据库中使用。此外，自定义函数在使用时还有一些限制，如无法使用事务相关语句、无法直接产生输出，以及无法在函数体内使用USE语句切换数据库。
+
+      反例：
+      DELIMITER //
+      CREATE FUNCTION get_user_age(user_id INT) RETURNS INT
+      BEGIN
+          DECLARE user_age INT;
+          SELECT age INTO user_age FROM users WHERE id = user_id;
+          RETURN user_age;
+      END //
+      DELIMITER ;
+
+      -- 使用自定义函数
+      SELECT id, name, get_user_age(id) AS age FROM users;
+
+      反例验证：
+      mysql&gt; DELIMITER //
+      mysql&gt; CREATE FUNCTION get_user_age(user_id INT) RETURNS INT
+      -&gt; BEGIN
+      -&gt;     DECLARE user_age INT;
+      -&gt;     SELECT age INTO user_age FROM users WHERE id = user_id;
+      -&gt;     RETURN user_age;
+      -&gt; END //
+      Query OK, 0 rows affected (0.01 sec)
+      
+      mysql&gt; DELIMITER ;
+      mysql&gt; SELECT id, name, get_user_age(id) AS age FROM users;
+      +----+-------+------+
+      | id | name  | age  |
+      +----+-------+------+
+      |  1 | John  |   30 |
+      |  2 | Alice |   25 |
+      +----+-------+------+
+      2 rows in set (0.01 sec)
+
+      正例：
+      -- 不使用自定义函数，直接在查询中获取用户年龄
+      SELECT id, name, age FROM users;
+
+      -- 对于更复杂的逻辑，可以使用子查询或JOIN操作
+      SELECT u.id, u.name, 
+            CASE 
+                WHEN u.age &lt; 18 THEN 'Minor'
+                WHEN u.age BETWEEN 18 AND 65 THEN 'Adult'
+                ELSE 'Senior'
+            END AS age_category
+      FROM users u;
+
+      正例验证：
+      mysql&gt; SELECT id, name, age FROM users;
+      +----+-------+------+
+      | id | name  | age  |
+      +----+-------+------+
+      |  1 | John  |   30 |
+      |  2 | Alice |   25 |
+      +----+-------+------+
+      2 rows in set (0.00 sec)
+
+      mysql&gt; SELECT u.id, u.name, 
+      -&gt;        CASE 
+      -&gt;            WHEN u.age &lt; 18 THEN 'Minor'
+      -&gt;            WHEN u.age BETWEEN 18 AND 65 THEN 'Adult'
+      -&gt;            ELSE 'Senior'
+      -&gt;        END AS age_category
+      -&gt; FROM users u;
+      +----+-------+--------------+
+      | id | name  | age_category |
+      +----+-------+--------------+
+      |  1 | John  | Adult        |
+      |  2 | Alice | Adult        |
+      +----+-------+--------------+
+      2 rows in set (0.00 sec)
+      </示例>
+      <检查流程描述>
+1. 对于 "CREATE FUNCTION ..." 语句，直接报告违反规则。
+</检查流程描述>
+      <知识文档>
+    1. CREATE FUNCTION Statements: https://dev.mysql.com/doc/refman/5.7/en/create-procedure.html
+    </知识文档>
+    </场景>
+  </规则场景>
+  <规则缺陷 />
+  <标签>
+    <分类 名称="操作对象">
+      <分类值>函数</分类值>
+    </分类>
+    <分类 名称="SQL分类">
+      <分类值>DDL</分类值>
+      <分类值>函数</分类值>
+    </分类>
+    <分类 名称="审核目的">
+      <分类值>增强可维护性</分类值>
+    </分类>
+  <分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签>
+  <完成情况>完成</完成情况>
+</Rule>

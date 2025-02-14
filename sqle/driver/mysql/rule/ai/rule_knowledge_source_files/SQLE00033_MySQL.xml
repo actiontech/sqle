@@ -1,0 +1,148 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00033</规则编号>
+    <级别>warn</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>数据生命周期管理</规则种类>
+    <规则简述>建表DDL必须包括更新时间字段，并应设置该字段为自动根据其他字段内容的变更进行更新。</规则简述>
+    <规则变量>
+        <变量 name="更新时间字段名" type="string">update_time</变量>
+    </规则变量>
+    <规则描述>使用更新时间字段，有利于问题查找跟踪和检索数据，同时避免后期对数据生命周期管理不便，可保证时间的准确性</规则描述>
+    <规则场景>
+        <场景 名称="表结构定义" 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="CREATE TABLE、ALTER TABLE">
+            <示例>  
+            前置：
+            create database db_mysql;
+            use db_mysql;
+
+            原理说明：
+            1. 在数据库表结构定义中，字段应设置为 timestamp或datetime 类型，并使用 ON UPDATE CURRENT_TIMESTAMP 来确保字段值在每次数据变更时自动更新。
+            2. 这样的设计可以自动记录每次数据变更发生的时间，有助于数据追踪和问题分析
+
+            反例：
+            CREATE TABLE customers(
+                id INT NOT NULL, -- 序号
+                name VARCHAR(32) DEFAULT '',-- 姓名
+                sex TINYINT NOT NULL, -- 性别
+                city VARCHAR(32) NOT NULL, -- 所在城市
+                age SMALLINT NOT NULL, -- 值类型
+                update_time1 datetime default NULL,
+                update_time2 timestamp NOT NULL DEFAULT '2022-12-01 01:01:11',
+                PRIMARY KEY (id) -- 主键
+            );
+            
+            反例说明：
+            1. 建表语句中未定义规则中约定的update_time字段。即使存在类似字段如update_time1、update_time2，但都未指定时间字段关键词 ON UPDATE CURRENT_TIMESTAMP。
+            2. 最终这个几个字段的值不会随着其他字段的值更新而自动更新，除非显式更新这几个字段的值。
+    
+            反例验证：
+            
+            -- 插入模拟数据 3 条：字段 update_time1、update_time2 都没有显式指定插入数据，使用默认值。
+            insert into customers(id,name,sex,city,age) values (1,'lily1',1,'shanghai',20);
+            insert into customers(id,name,sex,city,age) values (2,'lily2',0,'shanghai',30);
+            insert into customers(id,name,sex,city,age) values (3,'lily3',1,'shanghai',20);
+
+            -- 查询表记录：
+            (mysql:8.0.31-cluster)select * from customers;
+            +----+--------+-----+----------+-----+--------------+---------------------
+            | id | name   | sex | city     | age | update_time1 | update_time2        | 
+            +----+--------+-----+----------+-----+--------------+---------------------
+            |  1 | lily1  |   1 | shanghai |  20 | NULL         | 2022-12-01 01:01:11 | 
+            |  2 | lily2  |   0 | shanghai |  30 | NULL         | 2022-12-01 01:01:11 | 
+            |  3 | lily3  |   1 | shanghai |  20 | NULL         | 2022-12-01 01:01:11 | 
+            +----+--------+-----+----------+-----+--------------+---------------------
+            3 rows in set (0.00 sec)
+
+            -- 更新表记录： 字段 update_time1、update_time2 的值都没有发生任何变化。
+            (mysql:8.0.31-cluster)update customers set city='beijing';
+            Query OK, 3 rows affected (0.01 sec)
+            Rows matched: 3  Changed: 3  Warnings: 0
+
+            (mysql:8.0.31-cluster)select * from customers;
+            +----+--------+-----+---------+-----+--------------+---------------------
+            | id | name   | sex | city    | age | update_time1 | update_time2        | 
+            +----+--------+-----+---------+-----+--------------+---------------------
+            |  1 | lily1  |   1 | beijing |  20 | NULL         | 2022-12-01 01:01:11 | 
+            |  2 | lily2  |   0 | beijing |  30 | NULL         | 2022-12-01 01:01:11 | 
+            |  3 | lily3  |   1 | beijing |  20 | NULL         | 2022-12-01 01:01:11 | 
+            +----+--------+-----+---------+-----+--------------+---------------------
+            3 rows in set (0.00 sec)
+
+            正例：
+            CREATE TABLE customers(
+                id INT NOT NULL, -- 序号
+                name VARCHAR(32) DEFAULT '',-- 姓名
+                sex TINYINT NOT NULL, -- 性别
+                city VARCHAR(32) NOT NULL, -- 所在城市
+                age SMALLINT NOT NULL, -- 值类型
+                update_time datetime default NULL ON UPDATE CURRENT_TIMESTAMP,
+                update_time2 timestamp  NOT NULL DEFAULT '2022-12-01 01:01:11' ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (id) -- 主键
+            );
+
+            正例说明：
+            1. 建表时根据业务需要，包含字段update_time且为 timestamp类型，且显式指定了时间字段关键词 ON UPDATE CURRENT_TIMESTAMP。
+            2. 后续对表进行更新时，这些字段就会在每次变更后，更新为当时的时间戳，有助于问题排查定位。
+
+            正例验证：
+            -- 插入模拟数据 3 条：字段 update_time、update_time2都没有显式指定插入数据，使用默认值。
+            insert into customers(id,name,sex,city,age) values (1,'lily1',1,'shanghai',20);
+            insert into customers(id,name,sex,city,age) values (2,'lily2',0,'shanghai',30);
+            insert into customers(id,name,sex,city,age) values (3,'lily3',1,'shanghai',20);
+
+
+            -- 查询表记录： 时间字段默认不指定，插入后新值即为默认。
+            (mysql:8.0.31-cluster)select * from customers;
+            +----+--------+-----+----------+-----+--------------+---------------------
+            | id | name   | sex | city     | age | update_time | update_time2        | 
+            +----+--------+-----+----------+-----+--------------+---------------------
+            |  1 | lily1  |   1 | shanghai |  20 | NULL         | 2022-12-01 01:01:11 | 
+            |  2 | lily2  |   0 | shanghai |  30 | NULL         | 2022-12-01 01:01:11 | 
+            |  3 | lily3  |   1 | shanghai |  20 | NULL         | 2022-12-01 01:01:11 | 
+            +----+--------+-----+----------+-----+--------------+---------------------
+            3 rows in set (0.00 sec)
+
+
+            -- 对表进行更新： 字段 update_time、update_time2 的值都已经自动变为更新时的时间戳。
+
+            (mysql:8.0.31-cluster)update customers set city='beijing';
+            Query OK, 3 rows affected (0.01 sec)
+            Rows matched: 3  Changed: 3  Warnings: 0
+
+            (mysql:8.0.31-cluster)select * from customers;
+            +----+--------+-----+---------+-----+---------------------+---------------------
+            | id | name   | sex | city    | age | update_time         | update_time2        |
+            +----+--------+-----+---------+-----+---------------------+---------------------
+            |  1 | lily1  |   1 | beijing |  20 | 2024-04-22 12:13:42 | 2024-04-22 12:13:42 |
+            |  2 | lily2  |   0 | beijing |  30 | 2024-04-22 12:13:42 | 2024-04-22 12:13:42 |
+            |  3 | lily3  |   1 | beijing |  20 | 2024-04-22 12:13:42 | 2024-04-22 12:13:42 |
+            +----+--------+-----+---------+-----+---------------------+---------------------
+            3 rows in set (0.00 sec)
+
+            结论：
+            在设计数据库时，对于需要追踪修改历史表，则应定义一个字段类型为 datetime 或 timestamp的更新时间字段，且应设置 ON UPDATE CURRENT_TIMESTAMP 属性。此属性保证字段值在每次数据行更新时自动设置为当前时间戳，无需手动操作，提高数据的精确性和维护的有效性。这种自动更新机制特别适用于错误追踪和数据审计场景，帮助管理员准确判断数据的最后修改时间，从而提高问题解决的效率。
+
+            其他示例：
+            alter table customers add update_time timestamp  NOT NULL ON UPDATE CURRENT_TIMESTAMP;
+            alter table customers modify update_time datetime on update current_timestamp;
+            alter table customers change update_time update_time datetime on update current_timestamp;
+
+
+            </示例>
+            <检查流程描述>
+            1. 对于"CREATE TABLE..."语句，检查以下条件，如果有任意一个条件不满足，则报告违反规则：
+               1. 该表应该有一个更新时间的列，类型是datetime或timestamp，列名应用与规则变量值相同。
+               2. 更新时间列的默认值应该配置为` CURRENT_TIMESTAMP `
+               3. 更新时间列的ON-UPDATE值应该配置为` CURRENT_TIMESTAMP `
+            2. 对于"ALTER TABLE..."语句，如果增加或变更的字段列名是与规则变量值相同，则检查以下条件，如果有任意一个条件不满足，则报告违反规则：
+               1. 其数据类型应该是datetime或timestamp。
+               2. 该更新时间列的默认值应该配置为` CURRENT_TIMESTAMP `
+               3. 该更新时间列的ON-UPDATE值应该配置为` CURRENT_TIMESTAMP `
+            </检查流程描述>
+            <知识文档>
+            1. 时间字段默认值官方文档： https://dev.mysql.com/doc/refman/8.0/en/timestamp-initialization.html
+            </知识文档>
+        </场景>    
+    </规则场景>
+<标签><分类 名称="操作对象"><分类值>表</分类值><分类值>字段</分类值></分类><分类 名称="SQL分类"><分类值>DDL</分类值></分类><分类 名称="审核目的"><分类值>增强可维护性</分类值><分类值>保障正确性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

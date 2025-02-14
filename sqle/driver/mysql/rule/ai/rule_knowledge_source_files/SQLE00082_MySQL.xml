@@ -1,0 +1,367 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00082</规则编号>
+    <级别>warn</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>DML规范</规则种类>
+    <规则简述>禁止使用文件排序</规则简述>
+    <规则描述>大数据量的情况下，文件排序意味着SQL性能较低，会增加OS的开销，影响数据库性能。</规则描述>
+    <规则场景>
+        <场景 名称="临时表文件存储消除" 数据库版本="MySQL 8.0" 检查方式="连库审核" 适用句型="SELECT、INSERT...SELECT、UNION、UPDATE、DELETE、WITH">
+            <示例>
+            前置:
+            create database db_mysql;
+            use db_mysql;
+  
+            -- 主表
+            CREATE TABLE customers(
+              id INT(11) NOT NULL, -- 序号
+              name VARCHAR(32) DEFAULT '',-- 姓名
+              sex TINYINT NOT NULL, -- 性别
+              city VARCHAR(32) NOT NULL, -- 所在城市
+              age SMALLINT(4) NOT NULL, -- 值类型
+              PRIMARY KEY (id) -- 主键
+            );
+            
+            -- 子表
+            create table customers_records (id int primary key ,log_date date);
+  
+            -- 给列age 创建索引。
+            create index idx_age_customers on customers(age);
+  
+            -- 示例视图：
+            create   ALGORITHM = temptable view v_s_age as select age from customers group by age order by age desc; 
+  
+            -- 插入模拟数据
+            set @@cte_max_recursion_depth=5000000;
+            insert into customers  
+            with recursive tmp (a,b,c,d,e) as (
+              select 1,'小王22222333',floor(rand()*2),'上海',ceil(rand()*30)+20 
+              union all 
+              select a+1,concat('小王',a),floor(rand()*2),'上海',ceil(rand()*20)+20 from tmp where a &lt; 5000000) 
+              select * from tmp;
+            
+            insert into customers_records select id,now() from customers;
+            analyze table customers;
+            analyze table customers_records;
+      
+            
+          示例： 
+          -- 由于临时文件排序和临时表相关性非常大，所以其他 SQL 参考规则 00084。这里只举两个例子，来说明文件排序。
+          -- SQL 1 求最小 age，由于对age 进行窗口展开，所以势必有临时表产生，并且伴随着文件排序。
+          SQL 1： select age from (select age,row_number() over (partition by age order by age desc) gn from customers ) T where gn=1 limit 1;
+          
+          -- SQL 2 前提必须是 sql_mode 不为 only_full_group_by 。需要注意的是：在其他的所有数据库产品中，已经不允许运行这样的SQL 语句，只有MySQL 保留了下来。
+          -- 这条SQL 的意思是说 分组的字段和排序的字段名不一致导致产生了临时表，并且伴随着文件排序。
+          SQL2： select count(*) from (select age from customers group by age order by name desc) T;
+     
+  
+          示例说明：
+          1. 所谓运行态的临时表指的就是在SQL 运行中生成，在SQL 运行结束后立即销毁的表。
+          2. 当产生这些运行态临时表的时候，往往伴随着临时数据的排序，临时数据过大时，还会导致这部分数据迁移到磁盘上，从而导致磁盘排序，SQL 性能往往效率很差。
+          2. 我们要做的就是尽可能的避免产生这种运行态的临时表。  
+          4. 这种临时表默认存放在MySQL的一块内存区域中，这块内存区域的大小为 tmp_table_size 参数指定的值。
+          5. 一旦这块内存区域满了，MySQL就会把存放不下的表内容搬到磁盘上。以下为内存中的临时表被转存到磁盘的情况：
+             1. 临时表被存储到磁盘上时，引擎会转为 internal_tmp_mem_storage_engine 参数指定的引擎，这个参数有两个值，默认是 Temptable，还有一个是Memeory。
+             2. 引擎为Temptable 时，内存最大值由参数 tmp_table_size 决定，默认为16MB； 表大小达到该限制或所有会话的内部临时表总大小大于temptable_max_ram+temptable_max_mmap 后会被转换为参数 default_tmp_storage_engine 指定的磁盘临时表，默认为InnoDB 引擎。
+             3. 引擎为Memory 时，超过min(max_heap_table_size,tmp_table_size)，会产生磁盘临时表，对应的状态变量 Created_tmp_disk_tables会增加。
+          6. 在 MySQL 里，磁盘临时表一般是和排序需求一起而来的，所以这类问题有以下两个优化方向：
+             1. 参考规则000084 的临时表优化方案。
+             2. 如果实在无法避免临时表排序，可以想办法增加系统资源来更快地进行文件排序。   
+  
+          示例验证：
+          SQL 1: select age from (select age,row_number() over (partition by age order by age desc) gn from customers ) T where gn=1 order by age limit 1;
+          -- 求最小 age，由于对age 进行窗口展开，所以势必有临时表产生。
+          -- 查看执行计划：using_temporary_table 开关为 true, 代表有临时表产生，并且注意临时表的排序成本为 4988304, 已经非常高了。
+          (mysql:8.0.31-cluster)explain format=json select age from (select age,row_number() over (partition by age order by age desc) gn from customers ) T where gn=1 order by age limit 1\G
+              *************************** 1. row ***************************
+              EXPLAIN: {
+              "query_block": {
+                  "select_id": 1,
+                  "cost_info": {
+                  "query_cost": "3.50"
+                  },
+                  "ordering_operation": {
+                  "using_filesort": true,
+                  "table": {
+                      "table_name": "T",
+                      "access_type": "ref",
+                      "possible_keys": [
+                      "auto_key0"
+                      ],
+                      "key": "auto_key0",
+                      "used_key_parts": [
+                      "gn"
+                      ],
+                      "key_length": "8",
+                      "ref": [
+                      "const"
+                      ],
+                      "rows_examined_per_scan": 10,
+                      "rows_produced_per_join": 10,
+                      "filtered": "100.00",
+                      "cost_info": {
+                      "read_cost": "2.50",
+                      "eval_cost": "1.00",
+                      "prefix_cost": "3.50",
+                      "data_read_per_join": "160"
+                      },
+                      "used_columns": [
+                      "age",
+                      "gn"
+                      ],
+                      "materialized_from_subquery": {
+                      "using_temporary_table": true,
+                      "dependent": false,
+                      "cacheable": true,
+                      "query_block": {
+                          "select_id": 2,
+                          "cost_info": {
+                          "query_cost": "5502733.65"
+                          },
+                          "windowing": {
+                          "windows": [
+                              {
+                              "name": "unnamed window",
+                              "using_filesort": true,
+                              "filesort_key": [
+                                  "`age`",
+                                  "`age` desc"
+                              ],
+                              "functions": [
+                                  "row_number"
+                              ]
+                              }
+                          ],
+                          "cost_info": {
+                              "sort_cost": "4988304.00"
+                          },
+                          "table": {
+                              "table_name": "customers",
+                              "access_type": "index",
+                              "key": "idx_age_customers",
+                              "used_key_parts": [
+                              "age"
+                              ],
+                              "key_length": "2",
+                              "rows_examined_per_scan": 4988304,
+                              "rows_produced_per_join": 4988304,
+                              "filtered": "100.00",
+                              "using_index": true,
+                              "cost_info": {
+                              "read_cost": "15599.25",
+                              "eval_cost": "498830.40",
+                              "prefix_cost": "514429.65",
+                              "data_read_per_join": "1G"
+                              },
+                              "used_columns": [
+                              "id",
+                              "age"
+                              ]
+                          }
+                          }
+                      }
+                      }
+                  }
+                  }
+              }
+              }
+              1 row in set, 1 warning (0.00 sec)
+  
+          SQL 1 优化为： select min(age) from customers;
+          -- 由于原来SQL 最终目的是求最小的age，所以直接优化为最简单的SQL 即可。临时表消失，并且运行成本为0。
+          (mysql:8.0.31-cluster)explain format=json select min(age) from customers\G
+          *************************** 1. row ***************************
+          EXPLAIN: {
+          "query_block": {
+              "select_id": 1,
+              "message": "Select tables optimized away"
+          }
+          }
+          1 row in set, 1 warning (0.00 sec)
+  
+          SQL 2： select count(*) from (select age from customers group by age order by name desc) T;
+          -- 这条语句前提必须是 sql_mode 不为 only_full_group_by 。需要注意的是：在其他的所有数据库产品中，已经不允许运行这样的SQL 语句，只有MySQL 保留了下来。
+          -- 这条SQL 的意思是说 分组的字段和排序的字段名不一致导致产生了临时表。
+          -- 现在从MySQL 角度来讲，假设 sql_mode = '',也就是可以允许这样的SQL 运行，那么我们来看看优化前后的执行计划。
+          -- 优化前的部分执行计划： using_filesort 开关为 true，代表使用了文件排序，总成本为 561186。
+          (mysql:8.0.31-cluster)explain format=json  select count(*) from (select age from customers group by age order by name desc) T\G
+          *************************** 1. row ***************************
+          EXPLAIN: {
+            "query_block": {
+              "select_id": 1,
+              "cost_info": {
+                "query_cost": "561186.70"
+              },
+              "table": {
+                "table_name": "T",
+                "access_type": "ALL",
+                "rows_examined_per_scan": 4988304,
+                "rows_produced_per_join": 4988304,
+                "filtered": "100.00",
+                "cost_info": {
+                  "read_cost": "62356.30",
+                  "eval_cost": "498830.40",
+                  "prefix_cost": "561186.70",
+                  "data_read_per_join": "38M"
+                },
+                "used_columns": [
+                  "age"
+                ],
+                "materialized_from_subquery": {
+                  "using_temporary_table": true,
+                  "dependent": false,
+                  "cacheable": true,
+                  "query_block": {
+                    "select_id": 2,
+                    "cost_info": {
+                      "query_cost": "514429.65"
+                    },
+                    "ordering_operation": {
+                      "using_temporary_table": true,
+                      "using_filesort": true,
+                      "grouping_operation": {
+                        "using_filesort": false,
+                        "table": {
+                          "table_name": "customers",
+                          "access_type": "index",
+                          "possible_keys": [
+                            "idx_age_customers"
+                          ],
+                          "key": "idx_age_customers",
+                          "used_key_parts": [
+                            "age"
+                          ],
+                          "key_length": "2",
+                          "rows_examined_per_scan": 4988304,
+                          "rows_produced_per_join": 4988304,
+                          "filtered": "100.00",
+                          "cost_info": {
+                            "read_cost": "15599.25",
+                            "eval_cost": "498830.40",
+                            "prefix_cost": "514429.65",
+                            "data_read_per_join": "1G"
+                          },
+                          "used_columns": [
+                            "id",
+                            "name",
+                            "age"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+          1 row in set, 1 warning (0.00 sec)
+          
+          执行下SQL 2： 总时间为33.76 秒。
+          (mysql:8.0.31-cluster)select count(*) from (select age from customers group by age order by name desc) T;
+            +----------+
+            | count(*) |
+            +----------+
+            |       21 |
+            +----------+
+            1 row in set (33.76 sec)
+
+          SQL 2 优化后的SQL：select count(*) from (select age from customers group by age) T;
+          -- 由于是求count，所以取消了子查询里的排序。
+          -- 查看部分执行计划，文件排序消除，总成本由561186 降低为 4.75。
+          (mysql:8.0.31-cluster)explain format=json  select count(*) from (select age from customers group by age) T\G
+              *************************** 1. row ***************************
+              EXPLAIN: {
+              "query_block": {
+                  "select_id": 1,
+                  "cost_info": {
+                  "query_cost": "4.75"
+                  },
+                  "table": {
+                  "table_name": "T",
+                  "access_type": "ALL",
+                  "rows_examined_per_scan": 20,
+                  "rows_produced_per_join": 20,
+                  "filtered": "100.00",
+                  "cost_info": {
+                      "read_cost": "2.75",
+                      "eval_cost": "2.00",
+                      "prefix_cost": "4.75",
+                      "data_read_per_join": "160"
+                  },
+                  "used_columns": [
+                      "age"
+                  ],
+                  "materialized_from_subquery": {
+                      "using_temporary_table": true,
+                      "dependent": false,
+                      "cacheable": true,
+                      "query_block": {
+                      "select_id": 2,
+                      "cost_info": {
+                          "query_cost": "26.81"
+                      },
+                      "grouping_operation": {
+                          "using_filesort": false,
+                          "table": {
+                          "table_name": "customers",
+                          "access_type": "range",
+                          "possible_keys": [
+                              "idx_age_customers"
+                          ],
+                          "key": "idx_age_customers",
+                          "used_key_parts": [
+                              "age"
+                          ],
+                          "key_length": "2",
+                          "rows_examined_per_scan": 20,
+                          "rows_produced_per_join": 20,
+                          "filtered": "100.00",
+                          "using_index_for_group_by": true,
+                          "cost_info": {
+                              "read_cost": "24.81",
+                              "eval_cost": "2.00",
+                              "prefix_cost": "26.81",
+                              "data_read_per_join": "5K"
+                          },
+                          "used_columns": [
+                              "id",
+                              "age"
+                          ]
+                          }
+                      }
+                      }
+                  }
+                  }
+              }
+              }
+              1 row in set, 1 warning (0.00 sec)
+
+        执行优化后的 SQL 2：总时间由33.76 秒降低为0秒。
+        
+            (mysql:8.0.31-cluster)select count(*) from (select age from customers group by age) T;
+            +----------+
+            | count(*) |
+            +----------+
+            |       21 |
+            +----------+
+            1 row in set (0.00 sec)
+
+          结论：
+            1. SQL 的执行中产生了不必要的临时表排序，并且伴随着临时表过大而溢出到磁盘上，极其浪费系统资源，所以要想办法来使得SQL 避免生成临时表。
+            2. 此类 SQL 优化的方式可以分为好几种。比如 直接添加索引、或者根据SQL 语义来修改SQL 使其避免临时表的生成。
+            3. 若如无法消除临时表，可以临时增加临时表的内存区域。 比如 set @@tmp_table_size = 64*1024*1024，此条命令提升临时表的内存区域为64MB。
+
+            </示例>
+            <检查流程描述>
+            1. 对于 DML语句，
+              1. 登录数据库。
+              2. 查看SQL 语句执行计划，使用explain format=json 来输出执行计划，如果执行计划结果中using_filesort 开关为 true，则报告违反规则。
+            2. 对于 WITH语句，执行上述相同的检查。
+            </检查流程描述>
+            <知识文档>
+            1. MySQL 内部临时表官方文档： https://dev.mysql.com/doc/refman/8.0/en/internal-temporary-tables.html
+            </知识文档>
+        </场景>
+    </规则场景>
+<标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

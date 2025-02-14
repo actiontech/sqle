@@ -1,0 +1,152 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+<规则编号>SQLE00045</规则编号>
+<级别>notice</级别>
+<数据库类型>MySQL</数据库类型>
+<规则种类>分页和限制条件优化</规则种类>
+<规则简述>避免在分页查询中使用过大偏移量</规则简述>
+<规则变量>
+  <变量 name="最大偏移量">10000</变量>
+</规则变量>
+<规则描述>在数据库中，分页查询通常使用 LIMIT 和 OFFSET 语句进行。当数据量较大时，使用大的偏移量（OFFSET）进行分页查询可能会导致性能下降，因为数据库需要跳过大量的行来获得所需的结果集。</规则描述>
+<规则场景>
+  <原理说明 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="SELECT、INSERT ...SELECT、UNION ALL">
+    <示例>
+        前置：
+        CREATE TABLE customers (
+            id INT primary key, -- 主键 ID
+            name VARCHAR(50), -- 姓名
+            city VARCHAR(50), -- 城市
+            age INT, -- 性别
+            country varchar(50), -- 国家
+            zipcode INT, -- 邮编
+            income INT -- 收益
+        );
+        -- 创建索引
+        CREATE INDEX idx_customers_age ON customers(age);
+
+        -- 插入模拟数据：100W 条数据  （基于MySQL 8.0 版本）
+        set @@cte_max_recursion_depth=20000000;
+        insert into customers 
+        with recursive tmp(a,b,c,d,e,f,g) as (
+        select 1,'lucy1000000','shanghai000',20,'country000',10000,50000
+        union all
+              select a+1,concat('lily',mod(a,100)),concat('shanghai',mod(a,10)),MOD(a, 100)+ 20,concat('country',mod(a,10)), MOD(a, 50) + 10000,MOD(a, 100000) + 50000
+              from tmp where a &lt; 1000001
+        ) table tmp;      
+
+        原理说明：
+        1. 在 MySQL 中，当 LIMIT子句中的偏移量 offset 很大时，可能会导致性能问题，主要包括以下几个方面：
+          1. 查询耗时增加：随着偏移量的增大，查询需要扫描更多的数据行，然后抛弃前面的行，只返回后面的部分结果。这会导致大量的磁盘 I/O 操作和数据传输，从而增加查询的响应时间。
+          2. 内存消耗增加：较大的偏移量可能导致查询需要在内存中缓存更多的数据，以满足返回结果的需求。这会增加内存的使用量，可能导致内存不足或影响其他查询的性能。
+          3. 锁竞争加剧：在并发环境下，多个查询同时使用较大的偏移量可能会导致锁竞争加剧，从而影响数据库的并发性能。
+        2. 为了避免 LIMIT 大偏移量导致的性能问题，可以考虑以下优化措施：
+          1. 使用索引：确保在查询中使用合适的索引，以加速数据的检索和过滤。可以在排序的列上创建索引，以便更快地定位数据。
+          2. 覆盖索引：尝试使用覆盖索引来避免回表操作。覆盖索引是指索引中包含了查询所需的所有列，这样可以直接从索引中获取数据，而无需回表查询。
+          3. 延迟关联：将查询分为两个步骤，首先获取需要的主键或索引列，然后在第二步中根据这些值进行关联查询获取其他列的数据。这样可以减少回表操作的次数。
+          4. 限制分页数量：在业务允许的情况下，尽量限制分页的数量，避免用户请求过大的偏移量。
+          5. 条件过滤：如果可能，使用条件过滤来减少需要扫描的数据量。例如，根据其他条件筛选出一部分数据，然后再应用 LIMIT 子句。
+          6. 优化表结构：合理设计表结构，确保表中的数据分布均匀，避免热点数据集中在某些区域。
+          7. 分表或分区：如果数据量非常大，可以考虑将表进行分表或分区，以提高查询的性能。
+          8. 使用主键： 如果有条件，可以先把对应偏移量的主键找出来，然后在去表里查找主键，这样能在回表的过程中直接走主键索引。
+
+    
+        反例：
+        SQL1:
+        SELECT * FROM customers ORDER BY age,id LIMIT 5 OFFSET 50000;
+        或者这样写：
+        SELECT * FROM customers ORDER BY age,id LIMIT 50000,5;
+
+        反例说明：
+        1. 示例 SQL 使用 LIMIT 查询，但是OFFSET 偏移量太大。
+
+        反例验证：
+        1. 执行SQL：执行时间 820 毫秒。
+        (mysql:8.4.0:db_mysql)SELECT * FROM customers ORDER BY age,id LIMIT 50000,5;
+        +--------+-------+-----------+------+----------+---------+--------+
+        | id     | name  | city      | age  | country  | zipcode | income |
+        +--------+-------+-----------+------+----------+---------+--------+
+        | 999905 | lily4 | shanghai4 |   24 | country4 |   10004 | 149904 |
+        |      6 | lily5 | shanghai5 |   25 | country5 |   10005 |  50005 |
+        |    106 | lily5 | shanghai5 |   25 | country5 |   10005 |  50105 |
+        |    206 | lily5 | shanghai5 |   25 | country5 |   10005 |  50205 |
+        |    306 | lily5 | shanghai5 |   25 | country5 |   10005 |  50305 |
+        +--------+-------+-----------+------+----------+---------+--------+
+        5 rows in set (0.82 sec)
+        
+        
+        2. 查看执行计划： 走全表扫，并且还有文件排序。
+        (mysql:8.4.0:db_mysql)explain  SELECT * FROM customers ORDER BY age,id LIMIT 50000,5;
+        +----+-------------+-----------+------------+------+---------------+------+---------+------+--------+----------+----------------+
+        | id | select_type | table     | partitions | type | possible_keys | key  | key_len | ref  | rows   | filtered | Extra          |
+        +----+-------------+-----------+------------+------+---------------+------+---------+------+--------+----------+----------------+
+        |  1 | SIMPLE      | customers | NULL       | ALL  | NULL          | NULL | NULL    | NULL | 995902 |   100.00 | Using filesort |
+        +----+-------------+-----------+------------+------+---------------+------+---------+------+--------+----------+----------------+
+        1 row in set, 1 warning (0.00 sec)
+        
+        
+        正例：
+
+        SQL 1:
+        with tmp(id) as 
+        (
+          SELECT  id FROM customers ORDER BY age,id LIMIT 50000,5
+          ) 
+        select * from customers a, tmp b where a.id= b.id;
+
+        或者写成：
+        with tmp(id) as 
+        (
+          SELECT  id FROM customers ORDER BY age,id LIMIT 5 offset 50000
+          ) 
+        select * from customers a, tmp b where a.id= b.id;
+  
+
+        正例说明：
+        1. 示例 SQL1 使用WITH 表达式来找出主键ID，完了使用主键ID来直接扫主键取数据，性能要好很多。      
+
+        正例验证： 
+        1. 执行 SQL1： 时间从820毫秒降低到0毫秒。
+        (mysql:8.4.0:db_mysql)with tmp(id) as (SELECT  id FROM customers ORDER BY age,id LIMIT 50000,5) select * from customers a, tmp b where a.id= b.id;
+        +--------+-------+-----------+------+----------+---------+--------+--------+
+        | id     | name  | city      | age  | country  | zipcode | income | id     |
+        +--------+-------+-----------+------+----------+---------+--------+--------+
+        | 999905 | lily4 | shanghai4 |   24 | country4 |   10004 | 149904 | 999905 |
+        |      6 | lily5 | shanghai5 |   25 | country5 |   10005 |  50005 |      6 |
+        |    106 | lily5 | shanghai5 |   25 | country5 |   10005 |  50105 |    106 |
+        |    206 | lily5 | shanghai5 |   25 | country5 |   10005 |  50205 |    206 |
+        |    306 | lily5 | shanghai5 |   25 | country5 |   10005 |  50305 |    306 |
+        +--------+-------+-----------+------+----------+---------+--------+--------+
+        5 rows in set (0.00 sec)
+
+        2. 查看执行计划，查询语句能正确利用上所有索引。
+        (mysql:8.4.0:db_mysql)explain with tmp(id) as (SELECT  id FROM customers ORDER BY age,id LIMIT 50000,5) select * from customers a, tmp b where a.id = b.id;
+        +----+-------------+------------+------------+--------+---------------+-------------------+---------+------+-------+----------+-------------+
+        | id | select_type | table      | partitions | type   | possible_keys | key               | key_len | ref  | rows  | filtered | Extra       |
+        +----+-------------+------------+------------+--------+---------------+-------------------+---------+------+-------+----------+-------------+
+        |  1 | PRIMARY     | &lt;derived2&gt; | NULL       | ALL    | NULL          | NULL              | NULL    | NULL | 50005 |   100.00 | NULL        |
+        |  1 | PRIMARY     | a          | NULL       | eq_ref | PRIMARY       | PRIMARY           | 4       | b.id |     1 |   100.00 | NULL        |
+        |  2 | DERIVED     | customers  | NULL       | index  | NULL          | idx_customers_age | 5       | NULL | 50005 |   100.00 | Using index |
+        +----+-------------+------------+------------+--------+---------------+-------------------+---------+------+-------+----------+-------------+
+
+                
+        结论:
+        1. 数据库中使用大偏移量查询时，优化器可能会走不正确的执行计划，导致查询变慢。
+        2. 可以在数据库端定位到具体主键值，完了使用主键的范围查找来加快查询。
+        3. 或者可以和业务讨论， 改变查询逻辑，减少偏移量的获取。
+
+    </示例>
+    <检查流程描述>
+      1. 对于 “SELECT ... ” 语句
+        1. 定义一个集合
+        2. 把语句中 LIMIT 子句中的偏移量存入集合
+        3. 从集合中读取偏移量数值，与规则变量max_offset_size 对比，如果比它大，则报告违反规则。
+      2. 对于 “INSERT ... SELECT ” 语句，执行与上述同样检查。
+      3. 对于 “... UNION ALL ... ” 语句，执行与上述同样检查。
+    </检查流程描述>
+    <知识文档>
+      1、LIMIT 语句优化官方文档：https://dev.mysql.com/doc/refman/8.4/en/limit-optimization.html
+    </知识文档>
+  </原理说明>
+</规则场景>
+<标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

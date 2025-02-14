@@ -1,0 +1,133 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+  <规则编号>SQLE00073</规则编号>
+  <级别>warn</级别>
+  <数据库类型>MySQL</数据库类型>
+  <规则种类>DDL操作风险防范</规则种类>
+  <规则简述>不建议修改表的默认字符集</规则简述>
+  <规则描述>修改表的默认字符集，只会影响后续新增的字段，不会修改表已有字段的字符集，最终可能会出现表与字段的字符集不一致，引发数据查询出现乱码以及索引失效情况。</规则描述>
+  <规则场景>
+    <场景 名称="修改表的字符集" 数据库版本="大于等于 MySQL 5.7 " 检查方式="不连库审核" 适用句型="ALTER TABLE">
+      <示例>
+          前置：
+          create database db_mysql;
+          use db_mysql;
+
+          -- 示例表结构
+          CREATE TABLE customers(
+            id INT NOT NULL, -- 序号
+            name VARCHAR(32) DEFAULT 'lucy',-- 姓名
+            sex int NOT NULL default 0, -- 性别
+            city VARCHAR(32) NOT NULL default 'beijing', -- 所在城市
+            age INT NOT NULL default 0, -- 值类型
+            mark1 varchar(100), -- 备注1
+            key idx_mark1_customers (mark1), -- 索引1
+            PRIMARY KEY (id) -- 主键
+          ) charset GBK;
+
+
+          原理说明：
+          1. 表的字符集和字段的字符集应该一致，不应该存在不一致的字符集；相关规则可参考SQLE00075。
+          2. 修改表的字符集不会影响已有字段，只会影响后期新增的字段字符集。 
+          3. 新旧字段字符集不一致，会导致乱码、字段过滤索引不匹配的问题。
+
+          示例：
+          alter table customers charset utf8mb4;
+
+
+          示例说明：
+          1. 此示例修改表customers 的字符集为 UTF8MB4
+
+          示例验证： 
+          默认字符集下，客户端的字符集是utf8mb4.          
+          插入一行记录
+          (mysql:8.3.0:db_mysql)insert into customers values (1,'小张',0,'北京',25,'测试数据');
+          Query OK, 1 row affected (0.00 sec)
+          
+          (mysql:8.3.0:db_mysql)select * from customers;
+          +----+--------+-----+--------+-----+--------------+
+          | id | name   | sex | city   | age | mark1        |
+          +----+--------+-----+--------+-----+--------------+
+          |  1 | 小张   |   0 | 北京   |  25 | 测试数据     |
+          +----+--------+-----+--------+-----+--------------+
+          1 row in set (0.00 sec)
+          
+          更改表字符集为utf8mb4
+          (mysql:8.3.0:db_mysql)alter table customers charset utf8mb4;
+          Query OK, 0 rows affected (0.03 sec)
+          Records: 0  Duplicates: 0  Warnings: 0
+          
+          
+          添加新字段：新字段mark2 默认字符集也是utf8mb4，继承了表的字符集。
+          (mysql:8.3.0:db_mysql)alter table customers add mark2 varchar(200);
+          Query OK, 0 rows affected (0.04 sec)
+          Records: 0  Duplicates: 0  Warnings: 0
+          
+          插入一行记录
+          (mysql:8.3.0:db_mysql)insert into customers values (2,'小呐',0,'北京',35,'测试数据','测试数据2');
+          Query OK, 1 row affected (0.01 sec)
+
+          把mark2和mark1的字段值更新为一样
+          (mysql:8.3.0:db_mysql)update customers set mark2 = '测试数据',mark1='测试数据';
+          Query OK, 0 rows affected (0.00 sec)
+          Rows matched: 2  Changed: 0  Warnings: 0
+        
+          
+          查询表记录： 两行记录正确查询，但是字段mark1的字符集是gbk、字段mark2的字符集是utf8mb4，两个字段字符集不一致。
+          (mysql:8.3.0:db_mysql)select *,charset(mark1),charset(mark2) from customers;
+          +----+--------+-----+--------+-----+--------------+--------------+----------------+----------------+
+          | id | name   | sex | city   | age | mark1        | mark2        | charset(mark1) | charset(mark2) |
+          +----+--------+-----+--------+-----+--------------+--------------+----------------+----------------+
+          |  1 | 小张   |   0 | 北京   |  25 | 测试数据     | 测试数据     | gbk            | utf8mb4        |
+          |  2 | 小呐   |   0 | 北京   |  35 | 测试数据     | 测试数据     | gbk            | utf8mb4        |
+          +----+--------+-----+--------+-----+--------------+--------------+----------------+----------------+
+          2 rows in set (0.00 sec)
+
+          字段类型不一致，可能会导致乱码或者有索引无法正确匹配的问题：
+          1. 乱码问题：比如导数，包含两种字符集的字段值
+          (mysql:8.3.0:db_mysql)select * from customers into outfile '/var/lib/mysql-files/c.txt';
+          Query OK, 2 rows affected (0.00 sec)
+
+          从OS层面查看，数据已经乱码
+          [root@ytt-pc mysql-files]# cat c.txt 
+          1	Сօ	0	±±¾©	25	²㋔˽¾	测试数据
+          2	СŅ	0	±±¾©	35	²㋔˽¾	测试数据
+
+
+          2.索引无法匹配问题示例：
+          比如 表 customers 自连，关联键是mark1和mark2，两个字段字符集不同，导致用不了customers 表的索引 idx_mark1_customers
+          (mysql:8.3.0:db_mysql)explain format=tree select * from customers a ,customers b where a.mark1 = b.mark2\G
+          *************************** 1. row ***************************
+          EXPLAIN: - Filter: (a.mark1 = b.mark2)  (cost=1.1 rows=2)
+              - Inner hash join ( hash (a.mark1)= hash (b.mark2))  (cost=1.1 rows=2)
+                  - Table scan on a  (cost=0.176 rows=2)
+                  - Hash
+                      - Table scan on b  (cost=0.45 rows=2)
+
+          1 row in set, 2 warnings (0.00 sec)
+
+          (mysql:8.3.0:db_mysql)show warnings;
+          +---------+------+-------------------------------------------------------------------------------------------------------------+
+          | Level   | Code | Message                                                                                                     |
+          +---------+------+-------------------------------------------------------------------------------------------------------------+
+          | Warning | 1739 | Cannot use ref access on index 'idx_mark1_customers' due to type or collation conversion on field 'mark1'   |
+          | Warning | 1739 | Cannot use range access on index 'idx_mark1_customers' due to type or collation conversion on field 'mark1' |
+          +---------+------+-------------------------------------------------------------------------------------------------------------+
+          2 rows in set (0.00 sec)
+
+          结论：
+          1. 不建议修改表的默认字符集；修改默认字符集后，后续新加的字段和存量字段字符集不匹配。
+          2. 字段字符集不匹配后，会导致导出数据乱码、检索字段值使用不了索引的问题。
+
+      </示例>
+      <检查流程描述>
+        1. 对于 "ALTER TABLE ..."语句，如果存在以下任何一项，则报告违反规则：
+          1. 检查是否有关键词 CHARSET
+      </检查流程描述>
+      <知识文档>
+        1. ALTER TABLE 官方文档：https://dev.mysql.com/doc/refman/8.0/en/alter-table.html
+      </知识文档>
+    </场景>
+  </规则场景>
+  <规则缺陷 />
+<标签><分类 名称="操作对象"><分类值>表</分类值><分类值>字段</分类值></分类><分类 名称="SQL分类"><分类值>DDL</分类值><分类值>表空间和存储引擎</分类值></分类><分类 名称="审核目的"><分类值>保障正确性</分类值><分类值>增强可维护性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

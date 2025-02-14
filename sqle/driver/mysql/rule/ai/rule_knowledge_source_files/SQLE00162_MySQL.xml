@@ -1,0 +1,29 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00162</规则编号>
+    <级别>error</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>DDL规范</规则种类>
+    <适用性>不适用当前数据库</适用性>
+    <规则简述>建议创建索引时指定索引表空间</规则简述>
+    <规则描述>创建索引时不指定表空间，将放在用户默认表空间。如果索引未放在适当的表空间中，可能会造成索引和表在数据处理过程中争抢IO资源。</规则描述>
+    <规则场景>
+        <原理说明 数据库版本="MySQL 所有版本" 检查方式="不连库审核">
+            <示例>
+
+                原理说明：
+                1. MySQL 建立索引时，没有指定表空间的选项。
+                2. 由于MySQL的表和数据一起存放在表空间中，无法分离，此规则不适用。
+                3. 比如 create table t1(id int, r1 int,key idx_r1(r1)) tablespace ts1; 将会把表t1和索引idx_r1 一起放入表空间ts1中。
+    
+                
+            </示例>
+            <知识文档>
+              1. CREATE INDEX 官方文档：https://dev.mysql.com/doc/refman/8.0/en/create-index.html
+              2. ALTER TABLE 官方文档：https://dev.mysql.com/doc/refman/8.0/en/alter-table.html
+              3. CREATE TABLESPACE 官方文档： https://dev.mysql.com/doc/refman/8.0/en/create-tablespace.html
+            </知识文档>
+        </原理说明>
+    </规则场景>
+<关联规则>SQLE00148、SQLE00151、SQLE00163</关联规则>
+<标签><分类 名称="操作对象"><分类值>索引</分类值></分类><分类 名称="SQL分类"><分类值>DDL</分类值></分类><分类 名称="审核目的"><分类值>增强安全性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

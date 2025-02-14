@@ -1,0 +1,82 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00034</规则编号>
+    <级别>warn</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>字段默认值规范</规则种类>
+    <规则简述>字段约束为NOT NULL时必须带默认值</规则简述>
+    <规则描述>如存在NOT NULL且不带默认值的字段，对字段进行写入时不包含该字段，会导致插入报错</规则描述>
+    <规则场景>
+        <场景 名称="初始化表结构定义" 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="CREATE TABLE、ALTER TABLE">
+            <示例>  
+            前置：
+            create database db_mysql;
+            use db_mysql;
+
+            原理说明：
+            1. 建表时字段属性为 NOT NULL 但是不设置默认值，后期在执行INSERT、REPLACE 时，如果不指定该字段，均会报错。
+               比如下面两条语句：  没有显式指定字段 age, 字段age 如果有默认值，则不会报错；如果没有默认值，则会报错。    
+               1. insert into customers(id,name,sex,city) values (1,'lucy',0,'beijing');
+               2. replace into customers(id,name,sex,city) values (2,'lily',0,'shanghai');
+
+            反例：       
+            CREATE TABLE customers(
+            id INT NOT NULL default 0, -- 序号
+            name VARCHAR(32) DEFAULT '',-- 姓名
+            sex TINYINT NOT NULL default 0, -- 性别
+            city VARCHAR(32) NOT NULL default 'beijing', -- 所在城市
+            age SMALLINT NOT NULL, -- 值类型
+            PRIMARY KEY (id) -- 主键
+            );
+            alter table customers add type int not null; -- 添加字段：前提是表是空表，不含记录。
+            alter table customers modify age int not null;
+            alter table customers change age age int not null;
+
+            反例验证：
+            (mysql:8.0.31-cluster)insert into customers(id,name,sex,city) values (1,'lucy',0,'beijing');
+            ERROR 1364 (HY000): Field 'age' doesn't have a default value
+
+            正例： 
+            CREATE TABLE customers(
+                id INT NOT NULL default 0, -- 序号
+                name VARCHAR(32) DEFAULT '',-- 姓名
+                sex TINYINT NOT NULL default 0, -- 性别
+                city VARCHAR(32) NOT NULL default 'beijing', -- 所在城市
+                age SMALLINT NOT NULL default 0, -- 值类型
+                PRIMARY KEY (id) -- 主键
+                );
+            alter table customers add type int not null default 0;
+            alter table customers modify age int not null default 0;
+            alter table customers change age age int not null default 0;
+
+            正例验证： 字段age 添加默认值后，插入成功，字段age 被隐式插入默认值0.
+            (mysql:8.0.31-cluster)insert into customers(id,name,sex,city) values (1,'lucy',0,'beijing');
+            Query OK, 1 row affected (0.02 sec)
+            
+            (mysql:8.0.31-cluster)select * from customers;
+            +----+------+-----+---------+-----+
+            | id | name | sex | city    | age |
+            +----+------+-----+---------+-----+
+            |  1 | lucy |   0 | beijing |   0 |
+            +----+------+-----+---------+-----+
+            1 row in set (0.00 sec)
+
+            结论：
+            1. 在创建表时，字段显式定义为NOT NULL时，则需显式指定默认值，否则后续插入语句 INSERT 或者 REPLACE 都会报错。
+            2. 解决方法为：重新创建表或者使用ALTER TABLE 来添加字段默认值。
+            
+            </示例>
+            <检查流程描述>
+            1. 对于"CREATE TABLE..."语句，检查SQL语句，
+                1. 获取句子中存在NOT NULL 关键词的字段，
+                2. NOT NULL约束的字段缺少DEFAULT 关键词或者DEFAULT的值是NULL，则报告违反规则。
+            2. 对于"ALTER TABLE ..."语句，执行与上述同样的检查。
+            </检查流程描述>
+            <知识文档>
+            1. CREATE TABLE 官方文档：https://dev.mysql.com/doc/refman/8.0/en/create-table.html
+            2. ALTER TABLE 官方文档：https://dev.mysql.com/doc/refman/8.0/en/alter-table.html
+            </知识文档>
+        </场景>        
+    </规则场景>
+    <关联规则>SQLE00028、SQLE00021</关联规则>
+<标签><分类 名称="操作对象"><分类值>字段</分类值></分类><分类 名称="SQL分类"><分类值>DDL</分类值><分类值>完整性约束</分类值></分类><分类 名称="审核目的"><分类值>保障正确性</分类值><分类值>增强可维护性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

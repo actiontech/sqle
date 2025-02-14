@@ -1,0 +1,134 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00161</规则编号>
+    <级别>warn</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>数据完整性规范</规则种类>
+    <规则简述>建议序列或自增字段的步长为1</规则简述>
+    <规则描述>序列或自增字段的步长为1时，有助于保证主键和其他自增字段的连续性，避免不必要的数据间隔和数字资源的浪费。不仅简化了数据库的管理和维护，而且也提高了系统的可预测性和稳定性。特别是在处理大量数据插入或高并发场景时，连续的主键值还能减少潜在的冲突和错误。</规则描述>
+    <规则场景>
+        <原理说明 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="SET" 适用关键词="auto_increment_increment">
+            <示例>
+            
+                前置： 
+                create table customers(
+                    id smallint auto_increment primary key, -- 主键字段 id 为 自增字段，默认起始值为1，步长也为1.
+                    name varchar(32) default '' not null, -- 序号
+                    sex int default 0, -- 性别
+                    age int default 0 -- 年龄 
+                    );
+
+                插入示例数据，后面验证要用到
+                insert into customers(name,sex,age) select '小季',0,20 from dual;
+
+                原理说明：
+                1. MySQL 的自增字段是字段的属性，用于生成唯一的数字序号；主要用途是生成表的主键序号，可以确保每次生成不重复的值，避免由于并发插入导致的冲突；
+                2. 自增字段由数据库统一来管理，并且一次可以缓存批量的序号值，所以可以减少应用到数据库端的网络开销，提高性能。
+                3. MySQL 自增字段的步长默认为1，不建议调整；自增字段的步长是由系统参数  auto_increment_increment 来决定的，此参数最小值为1，最大为65535。修改此参数影响所有包含自增字段的表。             
+        
+    
+                示例: 
+                -- 修改系统参数 auto_increment_increment，并且修改其值为30000，也就是自增字段的步长为 30000.
+                set @@auto_increment_increment=30000;
+
+                示例说明：
+                1. 设置自增字段的步长为30000，对于表customers 的自增字段id来讲，步长不是1，而是30000； 
+                2. 这个场景下，自增字段的序号值就非常浪费；比如表customers来讲，自增字段id 类型是mediumint，只能运行当前设置下，生成两个序号，第三次就溢出了。
+
+                示例验证：
+                -- 执行插入语句： 可以成功插入2次，第3次报错。
+                (mysql:8.3.0:db_mysql)insert into customers(name,sex,age) select '小季',0,20 from dual;
+                Query OK, 1 row affected (0.03 sec)
+                Records: 1  Duplicates: 0  Warnings: 0
+                
+                (mysql:8.3.0:db_mysql)insert into customers(name,sex,age) select '小季',0,20 from dual;
+                Query OK, 1 row affected (0.06 sec)
+                Records: 1  Duplicates: 0  Warnings: 0
+                
+                (mysql:8.3.0:db_mysql)insert into customers(name,sex,age) select '小季',0,20 from dual;
+                ERROR 1264 (22003): Out of range value for column 'id' at row 1
+
+                -- 查看表记录， 成功插入2条记录.
+                (mysql:8.3.0:db_mysql)select * from customers;
+                +-------+--------+------+------+
+                | id    | name   | sex  | age  |
+                +-------+--------+------+------+
+                |     1 | 小季   |    0 |   20 |
+                | 30001 | 小季   |    0 |   20 |
+                +-------+--------+------+------+
+                2 rows in set (0.00 sec)
+
+                -- 查看表定义，auto_increment 属性已经到了32767，表目前才两条记录，非常浪费自增序列。
+                (mysql:8.3.0:db_mysql)show create table customers\G
+                *************************** 1. row ***************************
+                       Table: customers
+                Create Table: CREATE TABLE `customers` (
+                  `id` smallint NOT NULL AUTO_INCREMENT,
+                  `name` varchar(32) NOT NULL DEFAULT '',
+                  `sex` int DEFAULT '0',
+                  `age` int DEFAULT '0',
+                  PRIMARY KEY (`id`)
+                ) ENGINE=InnoDB AUTO_INCREMENT=32767 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+                1 row in set (0.00 sec)                
+
+                示例优化：
+                -- 修改系统参数 auto_increment_increment 为 默认 1，重新插入测试数据
+                (mysql:8.3.0:db_mysql)set @@auto_increment_increment=default;
+                Query OK, 0 rows affected (0.01 sec)
+
+                -- 清空表
+                (mysql:8.3.0:db_mysql)truncate table customers;
+                Query OK, 0 rows affected (0.49 sec)
+                
+                -- 重新插入 10 条记录， 这条语句执行 10 次
+                (mysql:8.3.0:db_mysql)insert into customers(name,sex,age) select '小季',0,20 from dual;
+                Query OK, 1 row affected (0.04 sec)
+                Records: 1  Duplicates: 0  Warnings: 0
+        
+                ...
+                -- 查看新插入的记录，成功插入10条
+                (mysql:8.3.0:db_mysql)select * from customers;
+                +----+--------+------+------+
+                | id | name   | sex  | age  |
+                +----+--------+------+------+
+                |  1 | 小季   |    0 |   20 |
+                |  2 | 小季   |    0 |   20 |
+                |  3 | 小季   |    0 |   20 |
+                |  4 | 小季   |    0 |   20 |
+                |  5 | 小季   |    0 |   20 |
+                |  6 | 小季   |    0 |   20 |
+                |  7 | 小季   |    0 |   20 |
+                |  8 | 小季   |    0 |   20 |
+                |  9 | 小季   |    0 |   20 |
+                | 10 | 小季   |    0 |   20 |
+                +----+--------+------+------+
+                10 rows in set (0.00 sec)
+                
+                -- 查看自增序列的下一个值，只有11，很健康。
+                (mysql:8.3.0:db_mysql)show create table customers\G
+                *************************** 1. row ***************************
+                       Table: customers
+                Create Table: CREATE TABLE `customers` (
+                  `id` smallint NOT NULL AUTO_INCREMENT,
+                  `name` varchar(32) NOT NULL DEFAULT '',
+                  `sex` int DEFAULT '0',
+                  `age` int DEFAULT '0',
+                  PRIMARY KEY (`id`)
+                ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+                1 row in set (0.00 sec)
+                
+                结论：
+                1. MySQL 的自增字段和标准的序列一样，主要是为了给主键生成全局唯一的序号，由服务器来生成，存放在内存里；序列的如果设置大于1，会造成序号浪费和引起使用跳号。
+                2. 在数据库设计中，建议将自增字段的步长设置为1。这种设置有助于保证主键和其他自增字段的连续性，避免不必要的数据间隔和数字资源的浪费。这不仅简化了数据库的管理和维护，而且也提高了系统的可预测性和稳定性。在处理大量数据插入或高并发场景时，连续的主键值还能减少潜在的冲突和错误。
+                
+            </示例>
+            <检查流程描述>
+            1. 对于"SET..."语句，若设置的目标是auto_increment_increment参数，且值大于1，则报告违反规则。
+            </检查流程描述>
+            <知识文档>
+            1. MySQL 自增字段步长参数官方文档： https://dev.mysql.com/doc/refman/8.4/en/replication-options-source.html#sysvar_auto_increment_increment
+            </知识文档>
+        </原理说明>
+    </规则场景>
+    <关联规则>SQLE00160</关联规则>
+    <标签><分类 名称="操作对象"><分类值>序列</分类值></分类><分类 名称="SQL分类"><分类值>DDL</分类值><分类值>完整性约束</分类值></分类><分类 名称="审核目的"><分类值>保障正确性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

@@ -1,0 +1,61 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+  <规则编号>SQLE00031</规则编号>
+  <级别>error</级别>
+  <数据库类型>MySQL</数据库类型>
+  <规则种类>使用建议</规则种类>
+  <规则简述>禁止使用视图</规则简述>
+  <规则描述>视图的查询性能较差，同时基表结构变更，需要对视图进行维护。如果视图可读性差，且包含复杂的逻辑，会增加维护的成本。</规则描述>
+  <规则场景>
+    <场景 名称="使用视图" 数据库版本="MySQL 所有版本 " 检查方式="不连库审核" 适用句型="CREATE VIEW、SELECT、INSERT...SELECT、UNION ALL、UPDATE、DELETE">
+      <示例>
+          前置：
+          示例表结构:
+          create database db_mysql;
+          use db_mysql;
+
+          -- 主表
+          CREATE TABLE customers(
+            id INT(11) NOT NULL, -- 序号
+            cname VARCHAR(32) DEFAULT '',-- 姓名
+            sex TINYINT NOT NULL, -- 性别
+            city VARCHAR(32) NOT NULL, -- 所在城市
+            age SMALLINT(4) NOT NULL, -- 值类型
+            PRIMARY KEY (id) -- 主键
+          );
+
+          原理说明：
+          1. 视图的设计初衷是为了简化查询、封装复杂的逻辑。但正是因为这个设计，所以会导致如下问题：
+            1. 性能问题： 比如嵌套视图。 一个视图定义里存在对另外一个视图的调用，这样对优化器来讲，就不容易生成最佳的执行计划；或者视图本身的定义里包含的SQL 不够优化，也会导致视图本身执行效率大打折扣。
+            2. 后期运维： 如果表结构变更、又有与变更的表结构相关的视图，那么后期运维将变得繁杂；里面的逻辑，如果注释不足，会导致理解和后期变更也变的繁杂。
+            3. 视图本身无法创建索引，可能影响查询性能，需依赖基表的索引。
+
+
+          示例：
+          create view v1 as (select id,cname,sex,age from customers where age in (select distinct age from customers));
+          create view v2 as (select id,cname,sex,age from customers);
+
+          SQL1：select count(*) from v1 join v2 on v1.id = v2.id  where v2.age in (select distinct age from customers);
+          
+          问题场景：
+          1. 表customers增加新列address后，相关的视图需要即时更新，否则会导致业务查询视图获取不到新增列的数据。
+          2. 若cname发生重命名，视图也需要重建，否则会导致业务查询视图报错。
+          3. 多视图嵌套或者视图内多表嵌套等复杂逻辑，任一基表变更都会影响视图的使用，增加开发和维护成本。
+
+          
+          解决方案：
+          1. 直接编写SQL 语句来代替原有视图。
+          2. 具有复杂逻辑的视图，上推到应用端来处理。          
+
+      </示例>
+      <检查流程描述>
+        1. 对于 "CREATE ..."语句，如果存在以下任何一项，则报告违反规则：
+          1. 句子中包含关键词：VIEW
+      </检查流程描述>
+      <知识文档>
+        1. CREATE VIEW 官方文档：https://dev.mysql.com/doc/refman/8.4/en/create-view.html
+      </知识文档>
+    </场景>
+  </规则场景>
+  <规则缺陷 />
+<标签><分类 名称="操作对象"><分类值>视图</分类值></分类><分类 名称="SQL分类"><分类值>DDL</分类值><分类值>视图</分类值></分类><分类 名称="审核目的"><分类值>增强可维护性</分类值><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

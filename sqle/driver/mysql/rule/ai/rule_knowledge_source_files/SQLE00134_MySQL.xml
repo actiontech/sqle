@@ -1,0 +1,90 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00134</规则编号>
+    <级别>error</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>DML规范</规则种类>
+    <规则简述>避免对主键值进行修改</规则简述>
+    <规则描述>主键在大多数数据库系统中用于定义数据的唯一性，并且常常与数据的物理存储结构密切相关。更新主键会导致底层存储结构（如聚簇索引）的重大重新组织，引发性能下降。此外，主键的更改可能影响数据一致性，尤其在涉及复杂事务处理和高并发操作的场景中。</规则描述>
+    <规则场景>
+        <场景 名称="更改表主键" 数据库版本="MySQL 所有版本" 检查方式="连库审核" 适用句型="UPDATE">
+            <示例>
+                前置：
+                create database db_mysql;
+                use db_mysql;
+    
+                -- 主表
+                CREATE TABLE customers(
+                id BIGINT NOT NULL, -- 序号
+                customer_no BIGINT not null, -- 客户编号，值和序号一样，只是为了对比更新此值与主键的对比。 
+                name VARCHAR(32) DEFAULT '', -- 姓名
+                sex INT NOT NULL, -- 性别
+                city VARCHAR(32) NOT NULL, -- 所在城市
+                age INT NOT NULL, -- 值类型
+                PRIMARY KEY (id), -- 主键
+                key idx_name_customers (name), -- 索引1
+                key idx_customer_no_customers (customer_no) -- 索引2
+                );
+
+                -- 插入模拟数据 10W 条。
+                set @@cte_max_recursion_depth=20000000;
+                insert into customers  
+                with recursive tmp (a,b,c,d,e,f) as (
+                  select 1,1,'小王22222333',floor(rand()*2),'上海',ceil(rand()*30)+20 
+                  union all 
+                  select a+1,a+1,concat('小王',a),floor(rand()*2),'上海',ceil(rand()*20)+20 from tmp where a &lt; 100000) 
+                  select * from tmp;
+
+
+                原理说明：
+                1. 在 MySQL 中， 默认的引擎是InnoDB. InnoDB 表的主键存放在聚簇索引结构上的叶子节点上，并以每个页块16KB的大小按序容纳这些值，最终这些数据页被按照主键的顺序依次排列，多个数据页以双向链表的形式存储。
+                2. 频繁更改主键，也就是需要更改数据页中的主键值分布，需要把更新的值更新到合适的数据页；会引起数据页的频繁合并分裂，非常消耗资源。
+                3. 如果表有多个二级索引，每个二级索引上同样存放了主键的值，频繁更新主键也会造成二级索引频繁的更新，同样耗费巨大的资源。
+
+        
+                反例：
+                update customers set id = 100000000000 + id;
+
+                反例说明：
+                1. 语句用来更新主键，全部更新，每行记录加上 100000000000。
+                2. 记录时间，用来和正例的执行时间做对比。
+                
+                反例验证： 执行时间23.28秒。
+                (mysql:8.3.0:db_mysql)update customers set id = 100000000000 + id;
+                Query OK, 100000 rows affected (23.28 sec)
+                Rows matched: 100000  Changed: 100000  Warnings: 0
+            
+
+                正例：
+                update customers set customer_no = 100000000000 + customer_no;
+
+                正例说明：
+                1. 语句用来更新二级索引，这个二级索引和主键的值是相同的，更新后的值也是相同的。
+                2. 记录时间，用来和反例的执行时间做对比。
+
+                正例验证： 执行时间11.41秒，比更新主键节省了一倍的时间
+                (mysql:8.3.0:db_mysql)update customers set customer_no = 100000000000 + customer_no;
+                Query OK, 100000 rows affected (11.41 sec)
+                Rows matched: 100000  Changed: 100000  Warnings: 0
+
+                结论：
+                1. MySQL 主键的顺序也就是在数据页在磁盘上存储的顺序；
+                2. 对主键频繁更新会造成数据页的频繁分裂、合并，极大的耗费资源；
+                3. 不建议对主键频繁更新。
+
+            </示例>
+            <检查流程描述>
+                1. 对于"UPDATE..."语句，执行以下步骤：
+                2. 创建一个集合
+                3. 把语句中的SET 列 记录到集合
+                4. 登录数据库
+                5. 查询表结构，记录下主键字段
+                6. 把集合里的字段和主键字段做比对，如果相同或者是主键被包含在集合里，就报告违反规则
+            </检查流程描述>
+            <知识文档>
+            1. UPDATE 官方文档： https://dev.mysql.com/doc/refman/8.4/en/update.html
+            </知识文档>
+        </场景>
+    </规则场景>
+<关联规则>SQLE00010、SQLE00051、SQLE00052、SQLE00054</关联规则>
+<标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值><分类值>完整性约束</分类值></分类><分类 名称="审核目的"><分类值>保障正确性</分类值></分类><分类 名称="审核精确度"><分类值>连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

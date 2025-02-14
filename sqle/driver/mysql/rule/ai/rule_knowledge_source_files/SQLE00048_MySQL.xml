@@ -1,0 +1,75 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+<规则编号>SQLE00048</规则编号>
+<级别>
+   <当前级别>error</当前级别>
+   <新级别>warn</新级别>
+</级别>
+<数据库类型>MySQL</数据库类型>
+<规则种类>命名规范</规则种类>
+<规则简述>数据库对象命名只能使用英文、下划线或数字，首字母必须是英文</规则简述>
+<规则描述>遵循良好的命名约定和避免特殊字符的使用，可以提高代码的可读性、可维护性，并减少潜在的兼容性和语法问题。</规则描述>
+<规则场景>
+   <场景 名称="数据库对象名初始化" 数据库版本="MySQL" 检查方式="不连库审核" 适用关键词="DATABASE、TABLE、VIEW、INDEX、USER、COLUMN、EVENT" 适用句型="CREATE、ALTER">
+    <示例>  
+      示例：
+      CREATE DATABASE test;
+      CREATE TABLE order_his(
+         id BIGINT UNSIGNED AUTO_INCREMENT,
+         name varchar(64) DEFAULT '',
+         primary key(id)
+      );
+      CREATE VIEW order_view AS SELECT name FROM order_his;###创建视图
+      CREATE INDEX ord_name_idx ON order_his (name);###创建索引
+      ALTER TABLE order_his ADD COLUMN type varchar(4);###修改表添加列字段；
+      ALTER TABLE order_his ADD INDEX idx_t2_column2(name); ###创建索引
+      CREATE USER 'test'@'localhost' REQUIRE NONE;###创建用户
+      CREATE EVENT ename ON SCHEDULE EVERY 10 SECOND DO DELETE FROM order_his; ###创建一个事件每10秒清空表数据,默认event_scheduler是未启用。
+     
+      示例说明：      
+      数据库系统默认的SQL模式下（即ANSI_QUOTES禁用），数据库对象名定义允许使用字符：ASCII: 【0-9,a-z,A-Z$_】以及Extended:【U+0080 .. U+FFFF】，且允许数字开头但不能由全数字组成。从业务实践角度出发，遵循良好的命名约定和避免特殊字符的使用，可以提高代码的可读性、可维护性，并减少潜在的兼容性和语法问题。数据库对象通常会在各个应用程序中引用，不同应用程序使用的开发语言不同，对象名使用了如【-、$】等特殊字符，可能会导致无法兼容默认的应用设置，增加了应用程序的开发兼容成本。
+      引用知识文档1：Certain objects within MySQL, including database, table, index, column, alias, view, stored procedure, partition, tablespace, and other object names are known as identifiers. Database, table, and column names cannot end with space characters.
+    </示例>
+    <检查流程描述>
+      1、检查当前句子是ALTER还是CREATE类型，如果是ALTER句子，则进入检查步骤5；否则，进入检查步骤2。
+      2、检查CREATE句子中的目标对象名的首个字符是否英文字母，如果不是，报告违反规则。
+      3、检查CREATE句子中的目标对象名是否存在除了英文字母、下划线、数字外的其他字符，如果是，报告违反规则。
+      4、提供触发规则的SQL列表，并退出检查流程。
+      5、检查ALTER句子中是否存在ADD关键词，如果存在，则进入下一步检查。
+      6、检查ADD目标对象名的首个字符是否英文字母，如果不是，报告违反规则。
+      7、检查ADD目标对象名是否存在除了英文字母、下划线、数字外的其他字符，如果是，报告违反规则。
+    </检查流程描述>
+    <知识文档>
+      1、对象名定义规范：https://dev.mysql.com/doc/refman/5.7/en/identifiers.html
+      2、SQL模式：https://dev.mysql.com/doc/refman/5.7/en/sql-mode.html
+    </知识文档>
+   </场景>
+   <场景 名称="数据库对象重命名" 数据库版本="MySQL" 检查方式="不连库审核" 适用关键词="TABLE、USER、COLUMN、INDEX、EVENT" 适用句型="ALTER、RENAME">
+    <示例>  
+      示例：
+      ALTER TABLE order_his RENAME TO order_his2; ###表重命名
+      ALTER TABLE order_his2 RENAME INDEX name TO uniq_name;###重命名索引 
+      RENAME TABLE order_his2 TO order_his; ###表重命名
+      ALTER TABLE order_his2 CHANGE name new_name varchar(64); ###重命名表字段
+      ALTER EVENT ename RENAME TO newname;###重命名事件
+      RENAME USER 'user1'@'localhost' TO 'user2'@'127.0.0.1';###用户重命名
+     
+      示例说明：与【数据库对象名初始化】场景一致。
+    </示例>
+    <检查流程描述>
+      1、检查当前句子是ALTER还是RENAME类型，如果是ALTER句子，则进入检查步骤2；否则，进入检查步骤3。
+      2、检查ALTER句子中是否存在RENAME或CHANGE关键词，如果存在，则进入下一步检查。
+      3、检查RENAME或CHANGE目标对象名的首个字符是否英文字母，如果不是，报告违反规则。
+      4、检查RENAME或CHANGE目标的新对象名是否存在除了英文字母、下划线、数字外的其他字符，如果是，报告违反规则。
+    </检查流程描述>
+    <知识文档>
+      1、对象名定义规范：https://dev.mysql.com/doc/refman/5.7/en/identifiers.html
+      2、SQL模式：https://dev.mysql.com/doc/refman/5.7/en/sql-mode.html
+    </知识文档>
+   </场景>   
+</规则场景>
+<规则缺陷>数据库对象中EVENT、FUNCTION、PROCEDURE、TRIGGER这几个，目前规则暂未覆盖</规则缺陷>
+<关联规则>
+SQLE00046、SQLE00047、SQLE00049
+</关联规则>
+<标签><分类 名称="操作对象"><分类值>数据库</分类值><分类值>表</分类值><分类值>字段</分类值><分类值>索引</分类值><分类值>视图</分类值><分类值>存储过程</分类值><分类值>函数</分类值><分类值>触发器</分类值><分类值>事件</分类值></分类><分类 名称="SQL分类"><分类值>DDL</分类值></分类><分类 名称="审核目的"><分类值>增强可维护性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

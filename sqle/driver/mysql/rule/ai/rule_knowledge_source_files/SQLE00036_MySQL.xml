@@ -1,0 +1,71 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00036</规则编号>
+    <级别>warn</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>索引规范</规则种类>
+    <适用性>不适用当前数据库</适用性>
+    <规则简述>禁止将BLOB类型的列加入索引</规则简述>
+    <规则描述>BLOB类型属于大字段类型，作为索引会占用很大的存储空间</规则描述>
+    <规则场景>
+      <原理说明 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="CREATE TABLE、CREATE INDEX、ALTER TABLE">
+        <示例>
+            前置：
+            create database if not exists db_mysql;
+            use db_mysql;
+
+            原理说明：
+            1. BLOB 类型在MySQL 里指的是TINYBLOB、BLOB、MEDIUMBLOB、LONGBLOB 这几种的统称。 
+            2. BLOB 类型用来存储大对象，比如图片、视频、文章等； 其中，LONGBLOB最大支持4GB 存储。
+            3. MySQL 对 BLOB 类型的存储目前是这样的： 数据页上不存储 BLOB 数据本身，而是把 BLOB 页单独存储，并且数据页上保存指向 BLOB 页的指针，指针大小为20个字节。
+            4. MySQL 支持对BLOB 字段建立前缀索引，最大支持3072个字节；而且由于数据页本身只存储指向 BLOB 页的指针，所以即使表很大，建立的索引可能只有几个PAGE。
+            5. 所以此规则不适用于MySQL 数据库。
+
+            示例：
+            create table t1(id int auto_increment primary key, c1 longblob, key idx_c1_t1 (c1(3072)));
+
+            示例说明：
+            1. 建立表t1，表 t1 的blob 字段上有前缀索引。
+
+            示例验证：
+            1. 给表t1 插入三条记录
+            insert /*+ set_var(max_allowed_packet=1024*1024*1024) */ into t1 (c1) select repeat('a',1073741824);
+            insert /*+ set_var(max_allowed_packet=1024*1024*1024) */ into t1 (c1) select repeat('a',1073741824);
+            insert /*+ set_var(max_allowed_packet=1024*1024*1024) */ into t1 (c1) select repeat('a',1073741824);
+            
+            2. 收集统计信息
+            (mysql:8.4.0:db_mysql)optimize table t1;
+            +-------------+----------+----------+-------------------------------------------------------------------+
+            | Table       | Op       | Msg_type | Msg_text                                                          |
+            +-------------+----------+----------+-------------------------------------------------------------------+
+            | db_mysql.t1 | optimize | note     | Table does not support optimize, doing recreate + analyze instead |
+            | db_mysql.t1 | optimize | status   | OK                                                                |
+            +-------------+----------+----------+-------------------------------------------------------------------+
+            2 rows in set (3 min 14.25 sec)
+
+            3. 查看表数据大小
+              1. SHELL 中查看: 3.1 GB
+              [root@ytt-pc db_mysql]# ls -sihl t1.ibd
+              115 3.1G -rw-r----- 1 mysql mysql 3.1G Jun 13 15:48 t1.ibd
+
+
+              2. 数据库中查看: 数据大小为3.02GB, BLOB 列的前缀索引只有一个PAGE的大小16KB.
+              (mysql:8.4.0:db_mysql)select name,num_rows,sys.format_bytes(clust_index_size*16*1024) data_size, sys.format_bytes(other_index_size*16*1024)idx_c1_t1_size from information_schema.inno
+              +-------------+----------+-----------+----------------+
+              | name        | num_rows | data_size | idx_c1_t1_size |
+              +-------------+----------+-----------+----------------+
+              | db_mysql/t1 |        3 | 3.02 GiB  | 16.00 KiB      |
+              +-------------+----------+-----------+----------------+
+              1 row in set (0.00 sec)
+
+            总结：
+            1. BLOB 类型的字段在MySQL 中会有特殊处理，所以不会有大空间占用。 此规则不适用于MySQL。 
+            
+        </示例>
+        <知识文档>
+          1. BLOB 官方文档：https://dev.mysql.com/doc/refman/8.4/en/blob.html
+          2. InnoDB 表存储格式： https://dev.mysql.com/doc/refman/8.4/en/innodb-row-format.html
+        </知识文档>
+      </原理说明>
+    </规则场景>
+    <标签><分类 名称="操作对象"><分类值>索引</分类值><分类值>字段</分类值></分类><分类 名称="SQL分类"><分类值>DDL</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值><分类值>保障正确性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

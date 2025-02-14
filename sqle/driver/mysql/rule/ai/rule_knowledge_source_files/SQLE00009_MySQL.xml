@@ -1,0 +1,135 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+  <规则编号>SQLE00009</规则编号>
+  <级别>notice</级别>
+  <数据库类型>MySQL</数据库类型>
+  <规则种类>DML规范</规则种类>
+  <规则简述>避免对条件字段使用函数操作</规则简述>
+  <规则描述>对条件字段做函数操作，可能会破坏索引值的有序性，导致优化器选择放弃走索引，使查询性能大幅度降低</规则描述>
+  <规则场景>
+      <场景 名称="WHERE 过滤条件字段有函数匹配" 数据库版本="MySQL 8.0" 检查方式="连库审核" 适用关键词="WHERE" 适用句型="SELECT、INSERT、UPDATE、DELETE">
+          <示例>
+            前置：
+            -- 主表1
+            CREATE TABLE customers (
+                id int, -- 编号
+                name VARCHAR(50), -- 姓名
+                sex int, -- 性别
+                city VARCHAR(50), -- 城市
+                age int, -- 年龄
+                log_date date,  -- 记录日志时间
+                mark varchar(100), -- 备注
+                primary key (id) -- 主键
+            );
+
+                  
+            -- 给主表1 日期字段创建索引
+            create index idx_log_date_customers on customers(log_date);
+
+      
+            -- 生成初始样例数据 （基于MySQL 8.0 版本），400W条记录。
+            set @@cte_max_recursion_depth=20000000;
+            insert into customers 
+            with recursive tmp(a,b,c,d,e,f,g) as (
+            select 1,'lucy1000000',0,'shanghai',20,current_date(),''
+            union all
+                  select a+1,concat('lily',mod(a,100)),floor(rand()*2),'shanghai',ceil(rand()*20)+30,date_sub(current_date(),interval ceil(rand()*500) day),''
+                  from tmp where a &lt; 4000001
+            ) table tmp;
+
+            原理说明：
+            1. 在数据库中，对字段做函数操作可能会导致不走索引，原因是函数操作可能会破坏索引值的有序性。
+            2. 索引通常是基于字段的值建立的 B+ 树结构，用于快速定位和检索数据。当对索引字段应用函数时，会导致索引值的计算和比较变得复杂，无法直接使用索引进行快速定位。
+
+
+            反例：
+            SQL1： WHERE 条件中有对字段的函数匹配。
+            select count(*) from customers where substr(log_date,2,6) = '02';
+            update customers set mark = '10' where substr(log_date,2,6) = '02';
+            delete from customers where substr(log_date,2,6) = '02';
+
+
+            反例说明：
+            1. 示例中的SQL，是对log_date 字段做函数匹配。
+            2. 在对WHERE 条件中的字段做函数匹配时，优化器由于使用不了合适的索引，会走错误的执行计划，导致执行时间变长，性能变差。
+            3. 如果这类SQL 并发过高，会使得最终的QPS变低，极大影响系统性能。
+            4. 有的函数可以消除，有的无法消除。比如 date 函数可以消除、date_format函数就无法消除。无法消除的函数匹配需要建立函数索引。
+
+
+            反例验证：
+            SQL1： 执行时间540毫秒。
+            (mysql:8.0.31-cluster)select count(*) from customers where substr(log_date,2,6) = '02';
+            +----------+
+            | count(*) |
+            +----------+
+            |        0 |
+            +----------+
+            1 row in set (0.54 sec)
+            
+            SQL1 执行计划： 仅次于全表扫的index scan，总成本为810903.
+            (mysql:8.0.31-cluster)explain format=tree select count(*) from customers where substr(log_date,2,6) = '02'\G
+            *************************** 1. row ***************************
+            EXPLAIN: -&gt; Aggregate: count(0) (cost=810903.42 rows=1)
+                -&gt; Filter: (substr(customers.log_date,2,6) = '02') (cost=412210.92 rows=3986925)
+                    -&gt; Index scan on customers using idx_log_date_customers (cost=412210.92 rows=3986925)
+            
+            1 row in set (0.00 sec)
+
+
+            正例：
+
+            SQL1： WHERE 条件中有对字段的函数匹配，无法简单的拆解，所以SQL 语句不变，只需要针对函数匹配专门建立索引即可。
+            建表函数索引的语句为：
+            1. create index idx_log_date_2_6 on customers((substr(log_date,2,6)));
+            2. alter table customers add key idx_log_date_2_6 ((substr(log_date,2,6)));
+
+
+            正例说明：
+            1. 示例 SQL 无法拆解，需要建立函数索引。
+
+            正例验证：
+     
+            SQL1： 创建基于函数的索引 idx_log_date_2_6
+            (mysql:8.0.31-cluster)create index idx_log_date_2_6 on customers((substr(log_date,2,6)));
+            Query OK, 0 rows affected (20.98 sec)
+            Records: 0  Duplicates: 0  Warnings: 0
+            
+            执行瞬间出结果，创建函数索引后，性能大幅上升。
+            (mysql:8.0.31-cluster)select count(*) from customers where substr(log_date,2,6) = '02';
+            +----------+
+            | count(*) |
+            +----------+
+            |        0 |
+            +----------+
+            1 row in set (0.00 sec)
+
+            SQL1 对应执行计划， 使用了最新创建的函数索引，成本巨幅降低。
+
+            (mysql:8.0.31-cluster)explain format=tree select count(*) from customers where substr(log_date,2,6) = '02'\G
+              *************************** 1. row ***************************
+              EXPLAIN: -&gt; Aggregate: count(0) (cost=1.20 rows=1)
+                  -&gt; Index lookup on customers using idx_log_date_2_6 (substr(log_date,2,6)='02') (cost=1.10 rows=1)
+
+              1 row in set (0.00 sec)
+
+
+            结论：
+            1. WHERE 条件中的字段使用函数匹配，会造成优化器选择了错误的执行计划，大幅降低查询性能。
+            2. 字段有函数匹配可以优先考虑消除函数，函数如不能消除，则考虑建立函数索引来优化。
+
+     
+          </示例>
+          <检查流程描述>
+          1. 对于"SELECT..."语句，检查SQL语句，如果存在 WHERE 关键词以及WHERE条件中存在字段是否有函数计算，若存在函数计算且不存在函数索引，则报告违反规则。其中函数索引信息是在线获取的信息。
+          2. 对于"INSERT...SELECT..."语句，执行与上面类似的检查。
+          3. 对于"UPDATE..."语句，执行与上面类似的检查。
+          4. 对于"DELETE..."语句，执行与上面类似的检查。
+          </检查流程描述>
+          <知识文档>
+          1. WHERE 条件优化官方文档：https://dev.mysql.com/doc/refman/5.7/en/where-optimization.html
+          2. ALTER TABLE 官方文档： https://dev.mysql.com/doc/refman/8.0/en/alter-table.html
+          3. CREATE INDEX 官方文档： https://dev.mysql.com/doc/refman/8.0/en/create-index.html
+          </知识文档>
+      </场景>
+  </规则场景>
+  <标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

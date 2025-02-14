@@ -1,0 +1,175 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+<规则编号>SQLE00080</规则编号>
+<级别>warn</级别>
+<数据库类型>MySQL</数据库类型>
+<规则种类>DML规范</规则种类>
+<规则简述>建议单条SQL写入数据的行数不超过阈值</规则简述>
+<规则变量>
+  <变量 name="单条SQL写入行数上限">100</变量>
+</规则变量>
+<规则描述>为了避免单个SQL语句在批量写入时对数据库性能造成过大压力，限制每条SQL语句一次性插入的数据行数不得超过指定行。这有助于提高事务的可管理性，减少锁冲突，优化日志处理，以及提升错误恢复速度。</规则描述>
+<规则场景>
+<场景 名称="多行写入" 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="INSERT、REPLACE">
+  <示例>
+  前置：
+      -- 主表1
+      CREATE TABLE customers (
+        id int primary key, -- 序号
+        cname VARCHAR(32) DEFAULT '', -- 姓名
+        sex int NOT NULL, -- 性别
+        city VARCHAR(32) NOT NULL, -- 所在城市
+        age int NOT NULL -- 数值类型
+      );
+
+      -- 主表2
+      CREATE TABLE customers_insert (
+        id int primary key, -- 序号
+        cname VARCHAR(32) DEFAULT '', -- 姓名
+        sex int NOT NULL, -- 性别
+        city VARCHAR(32) NOT NULL, -- 所在城市
+        age int NOT NULL -- 数值类型
+      );
+
+
+      原理说明：
+      1. 大批量的DML操作会导致大量的redo数据生成，这可能会影响redo、undo日志的写入性能，并在恢复操作时增加时间成本。
+      2. 大批量的插入操作会增加脏页的数量，这可能会导致检查点操作变得更频繁，增加了后台I/O负载。
+      3. 大批量插入可能导致缓冲区缓存迅速填满，尤其是当插入的数据超过缓冲池大小时。这可能导致频繁的数据块替换，进一步增加I/O。
+      4. 必须大数据插入的优化建议：
+        1. 在应用程序中实现批量写入逻辑，降低一条SQL的批量写入行数。
+        2. 分批插入数据，或者使用数据库的批量插入特性如直接路径插入。例如，MySQL 可以使用 LOAD DATA INFILE ..来导入大量数据；或者使用mysqlimport工具来导入。
+  
+
+      示例：
+      SQL1:
+      insert into customers values (1,'小王',1,'北京',30),...,(N,'小李',0,'深圳',99);
+      replace into customers values (1,'小王',1,'北京',30),...,(N,'小李',0,'深圳',99);
+      
+      SQL2:
+      INSERT INTO customers(id,cname,sex,city,age) SELECT ID + (SELECT count(1) from customers),a.cname,a.sex,a.city,a.age FROM customers a; 
+      insert into customers_insert with cte1 (a,b,c,d,e) as (select * from customers limit 1000) select * from cte1;
+      replace customers_insert select * from customers limit 1000 offset 200;
+     
+
+      示例说明：
+      1. 示例都是一次性给表插入多条记录
+      2. 若实际表记录数大于100行，则批量写入的数据会超过该规则限制。
+
+      示例验证： 为了演示方便，验证SQL1 的第一条
+      1. 先给表customers 插入一些样例数据，2000 条，使用如下脚本来生成插入语句：
+      [root@ytt-pc scripts]# cat generate_values
+      #!/bin/bash
+      
+      # 插入行数
+      ROWS=2000
+      
+      # 生成插入语句
+      INSERT_VALUES=""
+      
+      for ((i=1; i&lt;=ROWS; i++)); do
+          # 生成随机数据
+          id=$i
+          cname="lily_$i"
+          sex=$((RANDOM % 2))  # 0 或 1
+          city="City_$((RANDOM % 10))"  # City_0 到 City_9
+          age=$((RANDOM % 60 + 1))  # 1 到 100
+      
+          # 追加到插入值中
+          INSERT_VALUES+="($id, '$cname', $sex, '$city', $age),"
+      done
+      
+      # 去掉最后一个逗号
+      INSERT_VALUES=${INSERT_VALUES::-1}
+      
+      # 生成完整的 INSERT 语句
+      SQL="INSERT INTO customers (id, cname, sex, city, age) VALUES $INSERT_VALUES;"
+      
+      echo "$SQL"
+
+      2. 调用脚本生成插入SQL：
+      [root@ytt-pc scripts]# sh generate_values &gt; /var/lib/mysql-files/customers_2000.values;
+      
+      3. 连接MySQL 客户端，执行插入语句：一次性插入2000行，花费 70毫秒。
+      (mysql:8.4.0:db_mysql)\. /var/lib/mysql-files/customers_2000.values
+      Query OK, 2000 rows affected (0.07 sec)
+      Records: 2000  Duplicates: 0  Warnings: 0
+      
+      (mysql:8.4.0:db_mysql)select count(*) from customers;
+      +----------+
+      | count(*) |
+      +----------+
+      |     2000 |
+      +----------+
+      1 row in set (0.01 sec)
+      
+      
+      4. 修改脚本的ROWS=100,再次生成插入SQL，并且执行。执行时间仅为10毫秒。
+      -- 先清空表记录
+      (mysql:8.4.0:db_mysql)truncate table customers;
+      Query OK, 0 rows affected (0.06 sec)
+
+
+      -- 修改脚本的ROWS=100 后，生成插入语句
+      [root@ytt-pc scripts]# ./generate_values &gt; /var/lib/mysql-files/customers_100.values;
+     
+      -- 连接MySQL 命令行，导入插入语句：执行时间仅为10 毫秒。
+
+      (mysql:8.4.0:db_mysql)\. /var/lib/mysql-files/customers_100.values
+      Query OK, 100 rows affected (0.01 sec)
+      Records: 100  Duplicates: 0  Warnings: 0
+
+      (mysql:8.4.0:db_mysql)select count(*) from customers;
+      +----------+
+      | count(*) |
+      +----------+
+      |      100 |
+      +----------+
+      1 row in set (0.00 sec)
+
+
+      总结：
+      1. 大数据量插入，一次最好控制插入的行数在100 以内；过大的插入行会导致插入时间变长、持续占用资源，进而影响其他业务正常运行；大量的行插入也会导致拍错困难、异常后恢复慢等问题。
+      2. 必须大数据插入的优化建议：
+        1. 在应用程序中实现批量写入逻辑，降低一条SQL的批量写入行数。
+        2. 可采用LOAD DATA方法快速写入数据。
+        
+  </示例>
+  <检查流程描述>
+    1. 对于"INSERT...VALUES ..."语句，
+      1. 如果VALUES后面的数据行数大于阈值，则报告违反规则。
+    2. 对于"REPLACE ... VALUES ..." 语句，执行与上述同样检查。
+  </检查流程描述>
+  <知识文档>
+    1. INSERT语法：https://dev.mysql.com/doc/refman/8.0/en/insert.html
+    2. INSERT优化：https://dev.mysql.com/doc/refman/8.0/en/insert-optimization.html
+    3. 不同SQL句子的Lock SET：https://dev.mysql.com/doc/refman/8.0/en/innodb-locks-set.html
+  </知识文档>
+</场景>
+<场景 名称="多行在线写入" 数据库版本="MySQL 所有版本" 检查方式="连库审核" 适用句型="INSERT ... SELECT、REPLACE">
+<示例>
+    前置：与 【多行写入】一致
+    示例：
+    INSERT INTO customers(`name`,sex,city,age) SELECT a.name,a.sex,a.city,a.age FROM customers a -- 若实际表记录数大于100行，则会批量写入数据会超过该规则限制。
+    REPLACE INTO customers(`name`,sex,city,age) SELECT a.name,a.sex,a.city,a.age FROM customers a -- 若实际表记录数大于100行，则会批量写入数据会超过该规则限制。
+
+    原理说明： 与 【多行写入】 一致    
+</示例>
+<检查流程描述>
+  1. 对于"INSERT...SELECT ..."语句，
+    1. 连接数据库
+    2. 通过explain获取SELECT的数据行数
+    3. 若数据行数大于阈值，则报告违反规则。
+  2. 对于“REPLACE ... SELECT ...” 语句，执行与上述同样规则。
+</检查流程描述>
+<知识文档>
+与 【多行写入】一致
+</知识文档>
+</场景>
+</规则场景>
+<规则缺陷>
+<缺陷说明>
+    本规则不适用于数据迁移或大规模数据导入场景，这些场景可能需要一次性插入超过100行数据的需求。
+</缺陷说明>
+</规则缺陷>
+<标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值><分类值>增强安全性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值><分类值>连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

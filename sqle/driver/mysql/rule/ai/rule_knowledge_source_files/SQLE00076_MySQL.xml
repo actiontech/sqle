@@ -1,0 +1,93 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+<规则编号>SQLE00076</规则编号>
+<级别>
+  <当前级别>error</当前级别>
+  <新级别>warn</新级别>
+</级别>
+<数据库类型>MySQL</数据库类型>
+<规则种类>DML规范</规则种类>
+<规则简述>UPDATE/DELETE操作影响行数不建议超过阈值</规则简述>
+<规则变量>
+  <变量 name="影响行数上限">10000</变量>
+</规则变量>
+<规则描述>在数据库中，进行修改或删除等数据变更操作时，一次性操作的数据量过大，会消耗大量的系统资源，产生长事务，会导致查询性能下降，影响其他事务或查询的执行。</规则描述>
+<规则场景>
+  <场景 名称="一次变更数据过多容易引发并发查询请求慢" 数据库版本="MySQL 5.7、MySQL 8.0" 检查方式="连库审核" 适用句型="UPDATE、DELETE">
+    <示例>
+      前置：
+      CREATE TABLE t2 (
+          id INT(11) NOT NULL,
+          name VARCHAR(32) DEFAULT NULL,
+          type VARCHAR(4),
+          addr VARCHAR(200),
+          PRIMARY KEY (id),
+          index idx_t2_name (name) USING BTREE
+      );
+
+      INSERT INTO t2 VALUES(1,'t1','a','a1'),(2,'2t','a3','a2'),(3,'t3','a4','a3'),(4,'4t','a2','a4');
+      INSERT INTO t2 SELECT ID + (SELECT count(1) from t2),name,type,addr from t2; ###持续执行6次，模拟多条数据。
+
+      反例：
+      UPDATE t2 SET name =concat(name,'1'); ###不设置条件
+      UPDATE t2 SET name =concat(name,'1') where name LIKE '%t%';###更新索引字段内容
+
+      DELETE FROM t2 ; ###不设置条件
+      DELETE FROM t2 where name LIKE '%t%';###子字符串匹配搜索
+
+      反例说明：
+      数据库中一次更新操作影响的数据量非常大时，可能会遇到如下性能问题：
+      1）锁冲突：更新操作可能会锁定被更新的数据行，这会导致其他并发查询操作需要等待锁的释放，从而影响系统的响应性能。
+      2）事务日志：每次更新操作都会生成事务日志，当数据量过大时，写入事务日志的开销会变得非常大，可能导致磁盘I/O负载过高。
+      3）索引维护：更新操作可能涉及到索引的维护，当数据量非常大时，索引的维护成本也会变得非常高。
+
+      示例验证：
+      1、查看执行计划。
+      mysql&gt; explain UPDATE t2 SET name =concat(name,'1') where name LIKE '%t%';
+      +----+-------------+-------+------------+-------+---------------+---------+---------+------+------+----------+-------------+
+      | id | select_type | table | partitions | type  | possible_keys | key     | key_len | ref  | rows | filtered | Extra       |
+      +----+-------------+-------+------------+-------+---------------+---------+---------+------+------+----------+-------------+
+      |  1 | UPDATE      | t2    | NULL       | index | NULL          | PRIMARY | 4       | NULL |  256 |   100.00 | Using where |
+      +----+-------------+-------+------------+-------+---------------+---------+---------+------+------+----------+-------------+
+      1 row in set (0.00 sec)
+      2、检查数据库中事务相关参数配置，如innodb_flush_log_at_trx_commit为1时，表示每一次数据变更进行事务提交，则会进行数据写入磁盘操作。
+
+      正例：
+      1、使用合适的条件、分批次更新数据。
+      SET autocommit =0;
+      START TRANSACTION; ###通过事务进行一次提交，避免短时间内事务量过多。
+      UPDATE t2 SET name =concat(name,'1') WHERE (id&lt; 101) AND name LIKE 't%'; ###使用合适的条件
+      UPDATE t2 SET name =concat(name,'1') WHERE (id BETWEEN 101 AND 200) AND REVERSE(name) LIKE 't%'; ###分批次
+      COMMIT;
+      2、缩小变更范围
+      UPDATE t2 SET name =concat(name,'1') WHERE name LIKE 't%' Limit 10; ###通过limit能缩小数据变更范围
+      说明：如果预期是需要变更所有符合条件的数据，则建议采用合适的条件、分批更新数据。
+
+      DELETE FROM t2 WHERE id &lt;= 100;###使用合适的条件精确目标数据、分批删除数据
+
+      正例说明：
+      数据库中进行大批量数据变更时，可采用使用合适的条件、分批次更新两种方式中任意一种来提高变更效率，避免锁冲突、减少事务日志，降低大量事务导致磁盘I/O负载过高的可能性。
+
+      正例验证：
+      1、查看执行计划。
+      mysql&gt; explain UPDATE t2 SET name =concat(name,'1') WHERE (id&lt; 101) AND name LIKE 't%';
+      +----+-------------+-------+------------+-------+---------------------+---------+---------+-------+------+----------+-------------+
+      | id | select_type | table | partitions | type  | possible_keys       | key     | key_len | ref   | rows | filtered | Extra       |
+      +----+-------------+-------+------------+-------+---------------------+---------+---------+-------+------+----------+-------------+
+      |  1 | UPDATE      | t2    | NULL       | range | PRIMARY,idx_t2_name | PRIMARY | 4       | const |  100 |   100.00 | Using where |
+      +----+-------------+-------+------------+-------+---------------------+---------+---------+-------+------+----------+-------------+
+      1 row in set (0.00 sec)
+          
+    </示例>
+    <检查流程描述>
+    1. 对于"UPDATE ... "语句，登录数据库，通过执行计划获取操作类型是UPDATE的估算受影响的记录行数，如果估算的记录行数超过阈值，则报告违反规则。
+    2. 对于"DELETE ..." 语句，执行与上述同样检查。需要根据语句类型更换执行计划中的操作类型。
+    </检查流程描述>
+    <知识文档>
+      1、UPDATE优化：https://dev.mysql.com/doc/refman/5.7/en/update-optimization.html
+      2、LIMIT用法：https://dev.mysql.com/doc/refman/5.7/en/limit-optimization.html
+      3、应用文档：https://blog.51cto.com/u_16213384/7262527
+    </知识文档>
+  </场景>
+</规则场景>
+<标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>增强安全性</分类值><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

@@ -1,0 +1,115 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00075</规则编号>
+    <级别>warn</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>字符集和编码规范</规则种类>
+    <规则简述>建议列与表使用同一个字符集</规则简述>
+    <规则描述>统一字符集可以避免由于字符集转换产生的乱码，不同的字符集进行比较前需要进行转换会造成索引失效</规则描述>
+    <规则场景>   
+     <场景 名称="显式指定表的字符集编码" 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="CREATE TABLE">
+        <示例>
+          原理说明：
+          1. MySQL 表的编码分为两种：
+             1. 显式指定编码。那么表里的字段也会和表编码一致。
+             2. 不显式指定编码。那么表的编码继承当前数据库的编码设置；当前数据库的编码如果没有指定，那么继承当前MySQL 实例的编码设置。
+             3. 举个例子：
+                1. 实例级别的编码设置参数：character_set_server，一般默认设置为utf8mb4；
+                2. 数据库级别的编码设置参数：character_set_database，不设置的话，继承 character_set_server。
+          2. 强烈建议统一字符集，避免列、行、与表的乱码问题。
+          3. 不同的字符集会导致SQL 检索时的索引失效，参见规则SQLE00015、SQLE000179。
+
+          示例SQL：
+          CREATE TABLE customers(
+            id INT NOT NULL, -- 序号
+            name VARCHAR(32) character set latin1,-- 姓名
+            sex TINYINT NOT NULL, -- 性别
+            city VARCHAR(32) character set gb2312, -- 所在城市
+            age SMALLINT NOT NULL, -- 值类型
+            PRIMARY KEY (id) -- 主键
+          ) charset utf8mb4;
+
+          示例说明：
+          1. 表customers 编码为utf8mb4，字段 name的编码为 latin1、字段city的编码为gb2312，和表不统一。
+          2. 此类编码不一致会导致插入字段name、city 需要单独处理，否则直接报错无法插入。
+          3. 在插入成功后，查询字段name和city 的值会乱码，因为客户端的编码只允许一种，任何和客户端编码不兼容则会乱码。
+
+          示例验证：
+          -- 不进行编码转换插入报错。
+          (mysql:8.0.31-cluster)insert into customers values (1,'小王',1,'上海',20);
+            ERROR 1366 (HY000): Incorrect string value: '\xE4\xB8\x8A\xE6\xB5\xB7' for column 'city' at row 1
+            (mysql:8.0.31-cluster)
+          -- 针对字段name和city 分别指定不同的编码插入。
+          (mysql:8.0.31-cluster)insert into customers values (1,_latin1 '小王',1,convert('上海' using gb2312),20);
+          Query OK, 1 row affected (0.01 sec)
+          
+          -- 查询结果，字段name和city 直接乱码。
+          (mysql:8.0.31-cluster)select * from customers;
+          +----+---------------+-----+--------+-----+
+          | id | name          | sex | city   | age |
+          +----+---------------+-----+--------+-----+
+          |  1 | å°çŽ‹        |   1 | ?????? |  20 |
+          +----+---------------+-----+--------+-----+
+          1 row in set (0.00 sec)
+                    
+
+          解决方案：
+          -- 主表
+          CREATE TABLE customers(
+            id INT NOT NULL, -- 序号
+            name VARCHAR(32),-- 姓名
+            sex TINYINT NOT NULL, -- 性别
+            city VARCHAR(32) NOT NULL, -- 所在城市
+            age SMALLINT NOT NULL, -- 值类型
+            PRIMARY KEY (id) -- 主键
+          ) charset utf8mb4;
+
+
+          结论：
+          1. 建表时，字段编码需要与表编码一致，否则会出现乱码问题。
+          2. 字段编码和表编码不一致时，也会导致后期对字段进行过滤查询时，命中不到索引的问题。
+          3. 在创建表时不单独指定具体列的字符集编码即可。
+
+        </示例>
+        <检查流程描述>
+          1. 对于"create table...charset.."语句，检查SQL语句中是否存在对字段单独设置编码且显示指定表的字符集编码，如果存在，报告违反规则。
+        </检查流程描述>
+        <知识文档>
+        1. MySQL Create table 官方文档： https://dev.mysql.com/doc/refman/8.0/en/create-table.html
+        2. MySQL Alter table 官方文档: https://dev.mysql.com/doc/refman/8.0/en/alter-table.html
+        </知识文档>
+      </场景>
+      <场景 名称="未指定表的字符集编码" 数据库版本="MySQL 所有版本" 检查方式="连库审核" 适用句型="CREATE TABLE、ALTER TABLE">
+        <示例>
+          原理说明：与【显示指定表的字符集编码】场景一致。
+          
+          示例：
+          CREATE TABLE customers(
+            id INT NOT NULL, -- 序号
+            name VARCHAR(32) character set latin1,-- 姓名
+            sex TINYINT NOT NULL, -- 性别
+            city VARCHAR(32) character set gb2312, -- 所在城市
+            age SMALLINT NOT NULL, -- 值类型
+            PRIMARY KEY (id) -- 主键
+          );
+          alter table customers modify name varchar(32) character set latin1;
+          alter table customers modify city varchar(32) character set gb2312;
+
+
+          示例说明：与【显示指定表的字符集编码】场景一致。
+          
+          结论：与【显示指定表的字符集编码】场景一致。
+
+        </示例>
+        <检查流程描述>
+          1. 对于"create table..."语句，检查SQL语句中是否存在对字段单独设置编码且未显示指定表的字符集编码，如果存在报告违反规则。其中表的字符集编码是在线获取的信息。
+          2. 对于"alter table...set..."语句，执行上述类似的检查。
+        </检查流程描述>
+        <知识文档>
+        1. MySQL Create table 官方文档： https://dev.mysql.com/doc/refman/8.0/en/create-table.html
+        2. MySQL Alter table 官方文档: https://dev.mysql.com/doc/refman/8.0/en/alter-table.html
+        </知识文档>
+      </场景>      
+    </规则场景>   
+    <规则缺陷 />  
+    <标签><分类 名称="操作对象"><分类值>表</分类值><分类值>字段</分类值><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>表空间和存储引擎</分类值><分类值>DDL</分类值></分类><分类 名称="审核目的"><分类值>增强可维护性</分类值><分类值>保障正确性</分类值><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值><分类值>连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

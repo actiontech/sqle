@@ -1,0 +1,200 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00039</规则编号>
+    <级别>notice</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>索引优化</规则种类>
+    <规则简述>建议使用数据区分度高的索引字段</规则简述>
+    <规则变量>
+        <变量 name="数据区分度" type="">0.7</变量>
+    </规则变量>    
+    <规则描述> 为了提高查询效率，建议在执行SQL时优先使用区分度高的索引字段。区分度高的索引可以更快地定位数据，减少不必要的数据扫描，从而加速查询响应时间。规则检查将会计算候选索引字段的区分度，如果索引的区分度低于设定的阈值，则建议调整索引策略。</规则描述>
+    <规则场景>
+    <场景 名称="表结构初始定义" 数据库版本="MySQL 所有版本" 检查方式="连库审核" 适用句型="ALTER TABLE、CREATE INDEX">
+    <示例>
+          前置：
+  
+          -- 主表
+          CREATE TABLE customers(
+            id INT NOT NULL, -- 序号
+            name VARCHAR(32) DEFAULT '',-- 姓名
+            sex TINYINT NOT NULL, -- 性别
+            city VARCHAR(32) NOT NULL, -- 所在城市
+            age SMALLINT NOT NULL, -- 值类型
+            PRIMARY KEY (id) -- 主键
+          );
+  
+          示例：对name、age 列建立索引。
+          SQL1：使用ALTER TABLE ADD INDEX/KEY 
+          alter table customers add index idx_age_customers(age);
+          alter table customers add index idx_name_customers(name);
+          
+          SQL2：使用 CREATE INDEX
+          create index idx_age_customers on customers(age);
+          create index idx_name_customers on customers(name);          
+      
+          原理说明：
+          1. 索引字段区分度 selectivity 是用来计算索引是否高效的基础。区分度的计算公式为： 
+             selectivity = count(distinct field1)/count(*)。具体解释如下：
+             1. 其中 count(distinct field1) 术语叫基数，也就是列的NDV值，表示不一样的值的个数；
+             2. count(*) 表示表的总行数； 
+             3. 索引字段区分度=基数/表总行数
+          2. 当索引字段区分度越高，检索速度越快，索引区分度低，则说明重复的数据比较多，检索的时候需要访问更多的记录才能够找到所有目标数据。
+          3. 当索引字段区分度小到无限趋近于0的时候，基本等同于全表扫描了，此时检索效率肯定是慢的；
+          4. 同理，当索引区分度大到无限接近1的时候，基本等同于常量扫描，此时检索效率最高。比如主键或者唯一索引。
+          5. 创建联合索引时也是一样，按照区分度高低来建立，最左列是区分度最高的字段。
+          6. 一般来讲，数据库都会通过抽样来计算索引区分度，比如表数据页有100个，选取20个来计算平均值。
+             所以对于优化器来讲，统计信息的更新及时与否影响着执行计划的正确性选择。
+ 
+
+        示例验证：
+        -- 数据种类少，但是分布均匀。
+        -- 批量造数据语句，插入500W行数据，基于MySQL 8.0 版本。
+        set @@cte_max_recursion_depth=10000000;
+        insert into customers  
+        with recursive tmp (a,b,c,d,e) as (
+          select 1,'小王22222333',floor(rand()*2),'上海',ceil(rand()*30)+20 
+          union all 
+          select a+1,concat('小王',a),floor(rand()*2),'上海',ceil(rand()*20)+20 from tmp where a &lt; 5000000) 
+          select * from tmp;     
+
+        -- 列 name、age 区分度计算： name 的区分度最好，age 的区分度最差直接是0。所以对于这样的场景，应该对name列建立索引，或者是联合索引中name列排最左边；而age 列最好是放弃建立索引。
+         (mysql:8.0.31-cluster)select count(distinct name)/count(*) as name_sel, count(distinct age)/count(*) as age_sel from customers limit 50000;
+        +----------+---------+
+        | name_sel | age_sel |
+        +----------+---------+
+        |   1.0000 |  0.0000 |
+        +----------+---------+
+        1 row in set (1 min 25.95 sec)
+
+        -- 对name 、age 列分别建立索引
+        (mysql:8.0.31-cluster)create index idx_name_customers on customers(name);
+        Query OK, 0 rows affected (2 min 9.00 sec)
+        Records: 0  Duplicates: 0  Warnings: 0
+
+        (mysql:8.0.31-cluster)create index idx_age_customers on customers(age);
+        Query OK, 0 rows affected (1 min 9.08 sec)
+        Records: 0  Duplicates: 0  Warnings: 0
+
+        
+        -- 对一条SQL 语句使用不同的索引来验证执行时间： 默认优化器选择的是name 列的索引。所以不加HINT和加HINT使用name 列效果一致，秒出结果。
+        (mysql:8.0.31-cluster)select * from customers where  name = '小王22222333' and age &lt; 50;
+        +----+----------------+-----+--------+-----+
+        | id | name           | sex | city   | age |
+        +----+----------------+-----+--------+-----+
+        |  1 | 小王22222333   |   0 | 上海   |  22 |
+        +----+----------------+-----+--------+-----+
+        1 row in set (0.00 sec)
+
+        -- 使用name 列的索引：和不加HINT效果一致。
+        (mysql:8.0.31-cluster)select /*+ index(customers idx_name_customers) */ * from customers where  name = '小王22222333' and age &lt; 50;
+        +----+----------------+-----+--------+-----+
+        | id | name           | sex | city   | age |
+        +----+----------------+-----+--------+-----+
+        |  1 | 小王22222333   |   0 | 上海   |  22 |
+        +----+----------------+-----+--------+-----+
+        1 row in set (0.00 sec)
+
+        -- 使用age 列的索引： 选择了区分度非常差的索引字段age，同样的SQL，执行性能大幅降低，执行时间为1分30秒。
+        (mysql:8.0.31-cluster)select /*+ index(customers idx_age_customers) */ * from customers where  name = '小王22222333' and age &lt; 50;
+        +----+----------------+-----+--------+-----+
+        | id | name           | sex | city   | age |
+        +----+----------------+-----+--------+-----+
+        |  1 | 小王22222333   |   0 | 上海   |  22 |
+        +----+----------------+-----+--------+-----+
+        1 row in set (1 min 30.13 sec)
+
+    
+
+        结论：
+        1. 当索引字段的数据分布集中在某个值时，即使数据种类比较多，当业务SQL在集中度高的数据范围中搜索数据时，SQL的执行效率仍然比较低下。
+        2. 在对字段建立索引的时候，需要预先检查索引的区分度；建议对于区分度较高的字段建立索引；区分度不高的字段放弃建立索引；
+        3. 或者说对于区分度不高的字段，和默认值0.7相差不大，比如0.6，也是可以建立索引的。 这时候可以考虑降低索引区分度的阈值。
+
+        </示例>
+
+        <检查流程描述>
+        1. 对于CREATE INDEX...语句，
+            1. 定义一个集合A
+            2. 将本次新增索引涉及的字段放到集合A中
+            3. 计算集合A中的每个字段的区分度，如果区分度小于规则变量值，则报告违反规则。
+                区分度计算需要在线进行，公式： select count(distinct column_name)/count(*) as column_name_sel from tablename;
+        2. 对于ALTER TABLE ...ADD KEY/INDEX...语句，执行与上面类似的检查。
+        </检查流程描述>
+        <知识文档>
+            1. 创建索引官方文档：https://dev.mysql.com/doc/refman/8.0/en/create-index.html
+            2. 修改表官方文档：https://dev.mysql.com/doc/refman/8.0/en/alter-table.html
+        </知识文档>
+        </场景>
+        <场景 名称="根据查询语句反向建立索引" 数据库版本="MySQL 所有版本" 检查方式="连库审核" 适用句型="SELECT、UPDATE、DELETE、INSERT...SELECT、UNION、WITH">
+            <示例>
+        前置：与【表结构初始定义】场景一致
+        
+        原理说明：与【表结构初始定义】场景一致
+
+        示例：以下有两条SQL，条件都是根据name、age 字段检索，需要决定对哪个字段建立索引。
+        SQL1: select * from customers where  name = '小王22222333' and age &lt; 50;
+
+        SQL2: 
+        select * from customers where name = '小王22222333' and age &lt; 50
+        union all 
+        select * from customers where name = '小王1' and age &lt; 50;
+
+        注：其他句型与SELECT句型语法相同，都是指SELECT子句中where条件，因此省略相似的示例。
+
+        示例说明：
+        1. 针对示例SQL，一般会想到如下几个索引：
+           1. 根据name 列建立索引；
+           2. 根据age 列建立索引；
+           3. 根据name,age 建立联合索引；
+           4. 根据age,name 建立联合索引。
+        2. 以上几个索引创建的依据就是每个字段的区分度，对区分度高的字段单独建立索引；或者把区分度高的字段放在联合索引的左侧。
+        3. 索引字段的数据区分度的计算，见【表结构初始定义】场景的【原理说明】。
+ 
+        示例验证：
+        -- 对name 、age 列分别建立索引
+        (mysql:8.0.31-cluster)create index idx_name_customers on customers(name);
+        Query OK, 0 rows affected (2 min 9.00 sec)
+        Records: 0  Duplicates: 0  Warnings: 0
+
+        (mysql:8.0.31-cluster)create index idx_age_customers on customers(age);
+        Query OK, 0 rows affected (1 min 9.08 sec)
+        Records: 0  Duplicates: 0  Warnings: 0
+
+        -- 使用粗略计算方法来计算索引字段的区分度
+        (mysql:8.0.31-cluster)select table_rows into @cnt from information_schema.tables where table_name='customers' ;
+        Query OK, 1 row affected (0.00 sec)
+
+        (mysql:8.0.31-cluster)select  column_name,cardinality/@cnt as col_sel from information_schema.statistics where table_name='customers' and collumn_name in ('name','age');
+        +-------------+---------+
+        | COLUMN_NAME | col_sel |
+        +-------------+---------+
+        | age         |  0.0000 |
+        | name        |  1.0000 |
+        +-------------+---------+
+        2 rows in set (0.00 sec)
+
+        -- 以上算出字段name的区分度最好为1，字段age的区分度很差为0。所以应该给字段name上建立索引，并且删掉字段age上的索引。
+        drop index idx_age_customers on customers;
+
+
+        结论：
+        1. 根据SELECT 语句来反推索引的过程中，需要计算那个字段的区分度最佳，才能针对性建立索引。
+        2. 不能盲目的每个字段都建立索引，否则区分度低的字段建立索引对查询提升不大，还会降低表更新的性能。
+                
+    </示例>
+    <检查流程描述>
+    1.  对于所有DML语句中的SELECT子句，如果where 条件不是恒为真，
+        1. 定义一个集合A
+        2. 将WHERE子句中用到的条件字段放到集合A中
+        3. 连接数据库，根据集合A的字段，将存在索引的字段放到集合B中
+        4. 计算集合B中的每个字段的区分度，如果区分度小于规则变量值，则报告违反规则。
+            区分度计算需要在线进行，公式： select count(distinct column_name)/count(*) as column_name_sel from tablename;
+    </检查流程描述>
+    <知识文档>
+        1. 创建索引官方文档：https://dev.mysql.com/doc/refman/8.0/en/create-index.html
+        2. 修改表官方文档：https://dev.mysql.com/doc/refman/8.0/en/alter-table.html
+    </知识文档>
+        </场景>
+    </规则场景>
+<标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

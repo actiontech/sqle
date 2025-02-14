@@ -1,0 +1,89 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+  <规则编号>SQLE00010</规则编号>
+  <级别>
+    <当前级别>error</当前级别>
+  </级别>
+  <数据库类型>MySQL</数据库类型>
+  <规则种类>DDL规范</规则种类>
+  <规则简述>禁止进行删除主键的操作</规则简述>
+  <规则描述>删除主键将影响表数据结构和性能，属于高开销操作。另外，如果业务中使用了主键，删除主键可能导致业务逻辑阻塞、异常等问题。</规则描述>
+  <规则场景>
+    <原理说明 数据库版本="MySQL 5.7.25" 检查方式="不连库审核" 适用句型="ALTER TABLE">
+      <示例>
+      前置：
+      --表结构
+      CREATE TABLE test_table (
+        id INT PRIMARY KEY,
+        name VARCHAR(50)
+      );
+
+      原理说明：
+      在MySQL中，默认使用主键作为聚簇索引，删除主键将影响表数据结构和性能，属于高开销操作。另外，如果业务中使用了主键，删除主键可能导致业务逻辑阻塞、异常等问题。
+
+      示例：
+      ALTER TABLE test_table DROP PRIMARY KEY;
+
+      示例验证：
+      mysql&gt; ALTER TABLE test_table DROP PRIMARY KEY;
+      Query OK, 0 rows affected (0.05 sec)
+      Records: 0  Duplicates: 0  Warnings: 0
+
+      mysql&gt; SHOW CREATE TABLE test_table\G
+      *************************** 1. row ***************************
+            Table: test_table
+      Create Table: CREATE TABLE `test_table` (
+        `id` int(11) NOT NULL,
+        `name` varchar(50) DEFAULT NULL
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+
+      -- 此时，表已经失去了主键，可能导致以下问题：
+      -- 1. 性能下降：失去聚簇索引，可能导致查询性能下降
+      -- 2. 数据完整性：无法保证id的唯一性
+      -- 3. 业务逻辑问题：依赖主键的应用程序可能会出错
+
+      -- 模拟受影响的查询
+      mysql&gt; SELECT * FROM test_table WHERE id = 1;
+      -- 此查询可能会变慢，因为没有主键索引
+
+      结论：
+      删除主键是一个高风险操作，会导致表结构发生重大变化。在MySQL InnoDB存储引擎中，主键通常作为聚簇索引，删除主键可能会导致性能下降、数据重组织，以及潜在的业务逻辑问题。因此，除非有特殊的业务需求和充分的评估，否则应避免删除主键。
+
+      &lt;引用&gt;
+      Dropping a primary key：
+      ALTER TABLE tbl_name DROP PRIMARY KEY, ALGORITHM=COPY;
+
+      Only ALGORITHM=COPY supports dropping a primary key without adding a new one in the same ALTER TABLE statement.
+
+      Data is reorganized substantially, making it an expensive operation.
+
+      https://dev.mysql.com/doc/refman/5.7/en/innodb-online-ddl-operations.html
+      &lt;/引用&gt;
+      </示例>
+      <检查流程描述>
+      1. 对于 "ALTER TABLE..." 语句，如果包含 "DROP PRIMARY KEY" 操作，则报告违反规则。
+      2. 对于 "DROP INDEX..." 语句，如果包含 "PRIMARY" 关键字，则报告违反规则。
+      </检查流程描述>
+      <知识文档>
+      1. MySQL 5.7 Online DDL Operations: https://dev.mysql.com/doc/refman/5.7/en/innodb-online-ddl-operations.html
+      2. MySQL主键的重要性: https://www.modb.pro/db/162891
+      3. MySQL Glossary - Clustered Index: https://dev.mysql.com/doc/refman/5.7/en/glossary.html
+      </知识文档>
+    </原理说明>
+  </规则场景>
+  <规则缺陷 />
+  <标签>
+    <分类 名称="操作对象">
+      <分类值>表</分类值>
+      <分类值>字段</分类值>
+    </分类>
+    <分类 名称="SQL分类">
+      <分类值>DDL</分类值>
+      <分类值>完整性约束</分类值>
+    </分类>
+    <分类 名称="审核目的">
+      <分类值>增强安全性</分类值>
+    </分类>
+  <分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签>
+  <完成情况>完成</完成情况>
+</Rule>

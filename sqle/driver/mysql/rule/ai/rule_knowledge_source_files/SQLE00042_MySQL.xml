@@ -1,0 +1,100 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+<规则编号>SQLE00042</规则编号>
+<级别>warn</级别>
+<数据库类型>MySQL</数据库类型>
+<规则种类>命名规范</规则种类>
+<规则简述>临时表必须使用固定前缀</规则简述>
+<规则变量>
+  <变量 name="固定前缀">tmp_</变量>
+</规则变量>
+<规则描述>统一命名规范，有利于后期维护以及业务开发</规则描述>
+<规则场景>
+   <场景 名称="创建临时表" 数据库版本="MySQL" 检查方式="不连库审核" 适用关键词="TEMPORARY" 适用句型="CREATE">
+    <示例>  
+      示例：
+      CREATE TEMPORARY TABLE tmp_order_his(
+          id BIGINT,
+          name varchar(64) DEFAULT ''
+      );
+
+      示例说明：
+      数据库中创建临时表，需要在CREATE TABLE句子中指定参数TEMPORARY。临时表通常在会话结束后，自动被删除，也可选择在当前事务结束后删除。 
+      从业务实践角度出发，采用固定前缀，可以提高代码的可读性、可维护性。另外，如存储过程或者事务内批量维护临时表时，可以更容易筛选临时表。
+    </示例>
+    <检查流程描述>
+      1、检查CREATE句子中是否存在TEMPORARY关键词，如果存在，则进入下一步检查。
+      2、检查CREATE句子中是否存在TABLE关键词，如果存在，则进入下一步检查。
+      3、检查目标表名是否包含固定前缀，如果不包含，报告违反规则。
+    </检查流程描述>
+    <知识文档>
+      1、创建临时表：https://dev.mysql.com/doc/refman/5.7/en/create-table.html#create-table-temporary-tables
+      2、对象名定义规范：https://dev.mysql.com/doc/refman/5.7/en/identifiers.html
+    </知识文档>
+   </场景>
+   <场景 名称="重命名临时表" 数据库版本="MySQL" 检查方式="不连库审核" 适用句型="ALTER">
+    <示例>  
+      示例：
+      ALTER TABLE order_his RENAME TO tmp_order_his;
+
+      示例说明：与【创建临时表】场景一致。
+
+      示例验证：
+      -- 创建临时表
+      mysql&gt; CREATE TEMPORARY TABLE tmp_order_his(id BIGINT, name varchar(64) DEFAULT '' );
+      Query OK, 0 rows affected (0.01 sec)
+      
+      -- 重命名临时表
+      mysql&gt; alter table tmp_order_his rename to tm_123;
+      Query OK, 0 rows affected (0.00 sec)
+      Records: 0  Duplicates: 0  Warnings: 0
+      -- 对临时表写入数据
+      mysql&gt; insert into tm_123(id,name) values (1,'123');
+      Query OK, 1 row affected (0.00 sec)
+      -- 查询临时表
+      mysql&gt; select * from tm_123;
+      +------+------+
+      | id   | name |
+      +------+------+
+      |    1 | 123  |
+      +------+------+
+      1 row in set (0.00 sec)
+      -- 退出当前session
+      mysql&gt; exit
+      Bye
+
+      -- 重新开启新的session
+      [root@62-9-udp-3 opt]# /opt/mysql/base/5.7.25/bin/mysql -uroot -p123 -S/opt/mysql/data/3306/mysqld.sock
+      mysql: [Warning] Using a password on the command line interface can be insecure.
+      Welcome to the MySQL monitor.  Commands end with ; or \g.
+      Your MySQL connection id is 3
+      Server version: 5.7.25-log MySQL Community Server (GPL)
+      
+      Copyright (c) 2000, 2019, Oracle and/or its affiliates. All rights reserved.
+      
+      Oracle is a registered trademark of Oracle Corporation and/or its
+      affiliates. Other names may be trademarks of their respective
+      owners.
+      
+      Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+      
+      -- 查看临时表
+      mysql&gt; use test;
+      Database changed
+      mysql&gt; select * from tm_123;
+      ERROR 1146 (42S02): Table 'test.tm_123' doesn't exist      
+
+      限制：由于临时表是属于session级别的，RENAME句子要对临时表进行重命名，需要在同一个session内进行，否则会提示表不存在。
+    </示例>
+    <检查流程描述>
+      1、检查ALTER句子中是否存在RENAME关键词，如果存在，则进入下一步检查。
+      2、通过上下文进行检查，检查RENAME的目标对象类型是否临时表，如果是，则进入下一步检查。
+      3、检查目标表名是否包含固定前缀，如果不包含，报告违反规则。
+    </检查流程描述>
+    <知识文档>
+      1、修改表：https://dev.mysql.com/doc/refman/5.7/en/alter-table.html
+      2、对象名定义规范：https://dev.mysql.com/doc/refman/5.7/en/identifiers.html
+    </知识文档>
+   </场景>
+</规则场景>
+<标签><分类 名称="操作对象"><分类值>表</分类值></分类><分类 名称="SQL分类"><分类值>DDL</分类值></分类><分类 名称="审核目的"><分类值>增强可维护性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

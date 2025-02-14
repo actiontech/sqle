@@ -1,0 +1,106 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00092</规则编号>
+    <级别>warn</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>数据修改和操作安全</规则种类>
+    <规则简述>建议DELETE/UPDATE语句使用LIMIT子句控制影响行数</规则简述>
+    <规则描述>在进行DELETE和UPDATE操作时，通过添加LIMIT子句可以明确限制操作影响的数据行数。这样做有助于减少由于执行错误而导致的数据损失风险，并可以有效地控制长事务的执行时间，降低对数据库性能的影响。</规则描述>
+    <规则场景>
+        <场景 名称="带限制行数的表更新" 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="DELETE、UPDATE">
+            <示例>
+                
+                前置：
+                create table customers(
+                    id bigint not null primary key,
+                    name varchar(32) default '' not null, -- 序号
+                    sex int default 0, -- 性别
+                    age int default 0 -- 年龄
+                );
+
+                -- 10 条样例数据
+                insert into customers values (100000001,'小季',0,20);
+                insert into customers values (100000002,'小李',0,30);
+                insert into customers values (100000003,'小徐',0,40);
+                insert into customers values (100000011,'小张',0,60);
+                insert into customers values (100000012,'小菜',0,50);
+                insert into customers values (100000013,'小怪',0,29);
+                insert into customers values (100000021,'小王',0,23);
+                insert into customers values (100000022,'小强',0,40);
+                insert into customers values (100000023,'小非',0,52);
+                insert into customers values (100000031,'小海',0,37);
+
+                原理说明：
+                1. 在 MySQL 数据库里，DELETE、UPDATE 操作可以在后面跟LIMIT 子句，类似 SELECT 语句；
+                2. 其意思是可以指删除或者更新LIMIT 子句执行的记录，而不是所有匹配的记录；
+                3. 加LIMIT 子句的好处有两个：
+                    1. 降低 DELETE、UPDATE 删除或者更新错误的数据的代价；
+                    2. 对于大表来讲，可以把同样一张表的行锁时间降低到LIMIT 指定的几条记录，从而避免事务执行过长。
+                4. 从操作结果的可预测性和一致性上考虑，建议不要使用LIMIT子句，具体参考SQLE00103规则。
+                
+
+
+                示例：
+                delete from custommers;
+                update customers set age = 100;
+
+                反例说明：
+                1. 两条SQL，一条是DELETE 语句，删除所有记录；另外一条是UPDATE 语句，更新所有年龄；
+                2. 这两条SQL 都没有带 LIMIT 子句，如果删错数据或者更新错数据，并且已经提交，那么想回退的话，只能找到备份集整个回退；
+                   如果操作的数据量很大，那么回退也会慢；或者备份集只包含部分删除的数据，那么将回退不完整。
+            
+
+                反例验证： 执行语句后，发现删除错了，需要重新找回数据。
+                (mysql:8.3.0:db_mysql)delete from customers;
+                Query OK, 10 rows affected (0.00 sec)
+
+                -- 删除前数据10条，假设备份集里只有3条数据，那只能恢复3条。
+                insert into customers values (100000022,'小强',0,40);
+                insert into customers values (100000023,'小非',0,52);
+                insert into customers values (100000031,'小海',0,37);
+
+                -- 恢复后的数据，不完整。
+                (mysql:8.3.0:db_mysql)select * from customers;
+                +-----------+--------+------+------+
+                | id        | name   | sex  | age  |
+                +-----------+--------+------+------+
+                | 100000022 | 小强   |    0 |   40 |
+                | 100000023 | 小非   |    0 |   52 |
+                | 100000031 | 小海   |    0 |   37 |
+                +-----------+--------+------+------+
+                3 rows in set (0.00 sec)
+
+
+                正例：
+                delete from customers limit 1;
+                update customers set age = 100 limit 1;
+                正例说明：
+                1. 两条SQL 语句都加了 LIMIT 子句，即使删除或者更新错了，只需要找回LIMIT 指定数目的记录。
+
+                正例验证： 执行完后，发现删除错了，需要重新找回数据
+                (mysql:8.3.0:db_mysql)delete from customers limit 1;
+                Query OK, 1 row affected (0.01 sec)
+
+                -- 从备份集里找到 LIMIT 后面的记录，恢复即可
+                (mysql:8.3.0:db_mysql)insert into customers values (100000001,'小季',0,20);
+                Query OK, 1 row affected (0.01 sec)
+            
+                              
+                结论：
+                1. DELETE 、 UPDATE 句子需要加上 LIMIT 子句执行，可以避免删错数据的代价，比如恢复数据时间短。
+                2. DELETE 、 UPDATE 句子执行时间和表记录数相关；记录数越大，其执行越长，也越影响总体的事务TPS。
+                3. 通常应用的场景有分批处理大量数据、实现特定的业务场景（如随机删除几个过时的促销活动）、模拟测试数据。
+
+            </示例>
+            <检查流程描述>
+                1. 对于"DELETE..."语句，检查以下条件，如果有任意一个条件不满足，则报告违反规则：
+                    1. 句子中应该有 LIMIT 子句。
+                2. 对于"UPDATE..."语句，进行与上述相同的检查。
+            </检查流程描述>
+            <知识文档>
+            1. DELETE 官方文档： https://dev.mysql.com/doc/refman/8.4/en/delete.html
+            2. UPDATE 官方文档： https://dev.mysql.com/doc/refman/8.4/en/update.html
+            </知识文档>
+        </场景>
+    </规则场景>
+<标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值></分类><分类 名称="审核目的"><分类值>增强安全性</分类值><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

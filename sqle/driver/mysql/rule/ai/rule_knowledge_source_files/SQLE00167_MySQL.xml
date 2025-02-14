@@ -1,0 +1,76 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00167</规则编号>
+    <级别>warn</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>DDL操作风险防护</规则种类>
+    <适用性>不适用当前数据库</适用性>
+    <规则简述>建议序列设置循环</规则简述>
+    <规则描述>若序列创建或变更时设置成不循环，当序列值到达最大/最小值后，数据写入时会因序列取值报错而导致SQL执行错误。</规则描述>
+    <规则场景>
+          <原理说明 数据库版本="所有MySQL 版本 " 检查方式="不连库审核" 适用句型="CREATE TABLE、ALTER TABLE">
+            <示例>
+              原理说明：              
+              1. MySQL没有序列，只有字段的自增属性：auto_increment。
+              2. MySQL的 auto_increment 属性一般是为了给主键生成一个自动增长的序号。 与 Oracle 序列不同，MySQL的自增序列并不支持设置循环，到了最大值后，直接就报错。
+              3. 所以此规则不适用于MySQL数据库。自增序列的使用参考规则 SQLE00052。
+
+              示例：
+
+              create table t1(
+                id tinyint auto_increment primary key, -- 序号，主键
+                c1 int -- 一般字段
+              );
+
+              示例说明：
+              1. 表t1 有一个自增字段 id，是tinyint类型，最大值为127；
+              2. 当 id 值为127时，自增字段的值就等于tinyint的最大值127了；再次插入将会报错。
+
+              示例验证：
+              插入一条记录，默认从ID从1开始
+              (mysql:8.3.0:db_mysql)insert into t1(c1) select 10;
+              Query OK, 1 row affected (0.01 sec)
+              Records: 1  Duplicates: 0  Warnings: 0
+
+              (mysql:8.3.0:db_mysql)select * from t1;
+              +----+------+
+              | id | c1   |
+              +----+------+
+              |  1 |   10 |
+              +----+------+
+              1 row in set (0.00 sec)
+
+              给ID指定值为126，下次加1.
+              (mysql:8.3.0:db_mysql)insert into t1 select 126,10;
+              Query OK, 1 row affected (0.01 sec)
+              Records: 1  Duplicates: 0  Warnings: 0
+
+              ID插入127
+              (mysql:8.3.0:db_mysql)insert into t1(c1) select 100;
+              Query OK, 1 row affected (0.01 sec)
+              Records: 1  Duplicates: 0  Warnings: 0
+
+              自增字段到达最大值，无法继续。
+              (mysql:8.3.0:db_mysql)insert into t1(c1) select 100;
+              ERROR 1062 (23000): Duplicate entry '127' for key 't1.PRIMARY'
+              (mysql:8.3.0:db_mysql)select * from t1;
+              +-----+------+
+              | id  | c1   |
+              +-----+------+
+              |   1 |   10 |
+              | 126 |   10 |
+              | 127 |  100 |
+              +-----+------+
+              3 rows in set (0.00 sec)
+  
+              结论：
+              1. MySQL 的自增字段无法设置循环，当到达字段定义的自增字段最大值时，不再增长，也不在重新从1开始。
+              2. 此规则不适用于MySQL。
+
+            </示例>
+            <知识文档>
+              1. AUTO_INCREMENT 官方文档：https://dev.mysql.com/doc/refman/8.0/en/example-auto-increment.html
+            </知识文档>
+        </原理说明>
+    </规则场景>
+    <标签><分类 名称="操作对象"><分类值>序列</分类值></分类><分类 名称="SQL分类"><分类值>DDL</分类值></分类><分类 名称="审核目的"><分类值>保障正确性</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>

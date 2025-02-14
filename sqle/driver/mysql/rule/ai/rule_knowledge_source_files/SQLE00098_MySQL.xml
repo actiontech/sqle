@@ -1,0 +1,173 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Rule>
+    <规则编号>SQLE00098</规则编号>
+    <级别>error</级别>
+    <数据库类型>MySQL</数据库类型>
+    <规则种类>子查询和连接效率</规则种类>
+    <规则简述>避免对同一张表进行多次连接或查询。</规则简述>
+    <规则变量>
+        <变量 name="同一张表的连接次数">3</变量>
+    </规则变量>
+    <规则描述>在设计SQL语句时，应避免对同一张表进行多次连接或查询。这种做法可能导致查询性能显著下降，因为它会增加数据库的I/O操作，CPU处理以及内存使用，从而影响整体查询效率。</规则描述>
+    <规则场景>
+        <场景 名称="对表多次查询" 数据库版本=" MySQL 所有版本" 检查方式="不连库审核" 适用句型="SELECT、INSERT...SELECT、UNION、UPDATE、DELETE、WITH">
+            <示例>
+                前置：
+                create database db_mysql;
+                use db_mysql;
+
+                -- 主表结构
+                CREATE TABLE customers(
+                id INT(11) NOT NULL, -- 序号
+                name VARCHAR(32) DEFAULT '',-- 姓名
+                sex TINYINT NOT NULL, -- 性别
+                city VARCHAR(32) NOT NULL, -- 所在城市
+                age SMALLINT(4) NOT NULL, -- 值类型
+                PRIMARY KEY (id) -- 主键
+                );
+
+
+                -- 插入模拟数据,500W 条。
+                set @@cte_max_recursion_depth=20000000;
+                insert into customers  
+                with recursive tmp (a,b,c,d,e) as (
+                select 1,'小王22222333',floor(rand()*2),'上海',ceil(rand()*30)+20 
+                union all 
+                select a+1,concat('小王',a),floor(rand()*2),'上海',ceil(rand()*20)+20 from tmp where a &lt; 5000000) 
+                select * from tmp;
+                
+                -- 预先定义索引
+                create index idx_age_customers on customers(age);
+
+                原理说明：
+                1. 分两种场景。
+                1. 场景1： 单表多次被显式关联；
+                2. 场景2： 单表多次被查，但是没有显式的被关联
+                2. 以上两种场景都会导致多余的表查询，导致整体性能下降。
+                
+                反例：
+                SQL1:
+                select count(*) from (
+                    select * from customers where age &lt; 41 
+                    union  
+                    select * from customers where age &lt; 40 
+                    union
+                    select * from customers where age &lt; 39 
+                    union
+                    select * from customers where age &lt; 32
+                    ) T;
+
+                SQL2:
+                select  count(*)  from customers a 
+                left join (select * from customers where age &lt; 41 limit 100) b using(id) 
+                left join (select * from customers where age &lt; 41 limit 100 ) c using(id)
+                left join (select * from customers where age &lt; 41 limit 100 ) d using(id)
+                where a.age &lt; 41; 
+                
+
+                反例说明：
+                1. SQL1 对表 customers 根据 字段age 的几个range来求union ，最终求取符合记录的条数。这里对表customers 有多次无效扫描，可以优化。
+                2. SQL2 对表 customers 根据一个子表进行左外连接，但是过滤条件有非NULL约束，也是可以减少对表customers 的关联次数，最终得以优化。 
+
+                反例验证：
+                执行SQL1，时间1分钟5秒多。
+                (mysql:8.3.0:db_mysql)select count(*) from (select * from customers where age &lt; 41 union  select * from customers where age &lt; 40 union select * from customers where age &lt; 39 union select * from customers where age &lt; 32) T;
+                +----------+
+                | count(*) |
+                +----------+
+                |  5000000 |
+                +----------+
+                1 row in set (1 min 5.74 sec)
+
+                查看执行计划： 表 customers 被查询了 4 次。
+                (mysql:8.3.0:db_mysql)explain select count(*) from (select * from customers where age &lt; 41 union  select * from customers where age &lt; 40 unioon select * from customers where age &lt; 39 union select * from customers where age &lt; 32) T;
+                +----+--------------+----------------+------------+------+---------------+------+---------+------+---------+----------+-----------------+
+                | id | select_type  | table          | partitions | type | possible_keys | key  | key_len | ref  | rows    | filtered | Extra           |
+                +----+--------------+----------------+------------+------+---------------+------+---------+------+---------+----------+-----------------+
+                |  1 | PRIMARY      | derived2     | NULL       | ALL  | NULL          | NULL | NULL    | NULL | 6650404 |   100.00 | NULL            |
+                |  2 | DERIVED      | customers      | NULL       | ALL  | NULL          | NULL | NULL    | NULL | 4988304 |    33.33 | Using where     |
+                |  3 | UNION        | customers      | NULL       | ALL  | NULL          | NULL | NULL    | NULL | 4988304 |    33.33 | Using where     |
+                |  4 | UNION        | customers      | NULL       | ALL  | NULL          | NULL | NULL    | NULL | 4988304 |    33.33 | Using where     |
+                |  5 | UNION        | customers      | NULL       | ALL  | NULL          | NULL | NULL    | NULL | 4988304 |    33.33 | Using where     |
+                |  6 | UNION RESULT | union2,3,4,5 | NULL       | ALL  | NULL          | NULL | NULL    | NULL |    NULL |     NULL | Using temporary |
+                +----+--------------+----------------+------------+------+---------------+------+---------+------+---------+----------+-----------------+
+                6 rows in set, 1 warning (0.00 sec)
+
+
+                执行SQL2， 时间34秒多。
+                (mysql:8.3.0:db_mysql) select  count(*)  from customers a 
+                left join (select * from customers where age &lt; 41 limit 100) b using(id) 
+                left join (select * from customers where age &lt; 41 limit 100 ) c using(id)
+                left join (select * from customers where age &lt; 41 limit 100 ) d using(id)
+                where a.age &lt; 41; 
+                +----------+
+                | count(*) |
+                +----------+
+                |  5000000 |
+                +----------+
+                1 row in set (34.16 sec)            
+
+                查看执行计划：  表 customers 被join 了3 次, 被扫了 4次。
+                (mysql:8.3.0:db_mysql)explain   select  count(*)  from customers a    
+                left join (select * from customers where age &lt; 41 limit 100) b using(id)  
+                left join (select * from customers where age &lt; 41 limit 100 ) c using(id)   
+                left join (select * from customers where age &lt; 41 limit 100 ) d using(id)    
+                where a.age &lt; 41;
+                +----+-------------+------------+------------+-------+-------------------+-------------------+---------+---------------+---------+----------+----------------------------------+
+                | id | select_type | table      | partitions | type  | possible_keys     | key               | key_len | ref           | rows    | filtered | Extra                            |
+                +----+-------------+------------+------------+-------+-------------------+-------------------+---------+---------------+---------+----------+----------------------------------+
+                |  1 | PRIMARY     | a          | NULL       | range | idx_age_customers | idx_age_customers | 2       | NULL          | 2494152 |   100.00 | Using where; Using index         |
+                |  1 | PRIMARY     |  derived2  | NULL       | ref   | auto_key0         | auto_key0         | 4       | db_mysql.a.id |      10 |   100.00 | NULL                             |
+                |  1 | PRIMARY     |  derived3  | NULL       | ref   | auto_key0         | auto_key0         | 4       | db_mysql.a.id |      10 |   100.00 | NULL                             |
+                |  1 | PRIMARY     |  derived4  | NULL       | ref   | auto_key0         | auto_key0         | 4       | db_mysql.a.id |      10 |   100.00 | NULL                             |
+                |  4 | DERIVED     | customers  | NULL       | range | idx_age_customers | idx_age_customers | 2       | NULL          | 2494152 |   100.00 | Using index condition; Using MRR |
+                |  3 | DERIVED     | customers  | NULL       | range | idx_age_customers | idx_age_customers | 2       | NULL          | 2494152 |   100.00 | Using index condition; Using MRR |
+                |  2 | DERIVED     | customers  | NULL       | range | idx_age_customers | idx_age_customers | 2       | NULL          | 2494152 |   100.00 | Using index condition; Using MRR |
+                +----+-------------+------------+------------+-------+-------------------+-------------------+---------+---------------+---------+----------+----------------------------------+
+                7 rows in set, 1 warning (0.00 sec)
+            
+
+                正例：
+                SQL1 和 SQL2 都可以优化为： select count(*) from customers where age &lt; 41;
+
+                正例说明：
+                1. 反例的 SQL1 和SQL 2里对表customers 多次无效的扫描和关联，都可以被优化为单次有效的扫描。
+
+                正例验证：
+                -- SQL 1 和 SQL2 优化后的执行时间降低至1秒。
+                (mysql:8.3.0:db_mysql)select count(*) from customers where age &lt; 41;
+                +----------+
+                | count(*) |
+                +----------+
+                |  5000000 |
+                +----------+
+                1 row in set (1.07 sec)  
+                
+                -- 查看执行计划： 表 customers 的 扫描次数降低到 1 次。
+
+                (mysql:8.3.0:db_mysql)explain select count(*) from customers where age &lt; 41;
+                +----+-------------+-----------+------------+-------+-------------------+-------------------+---------+------+---------+----------+--------------------------+
+                | id | select_type | table     | partitions | type  | possible_keys     | key               | key_len | ref  | rows    | filtered | Extra                    |
+                +----+-------------+-----------+------------+-------+-------------------+-------------------+---------+------+---------+----------+--------------------------+
+                |  1 | SIMPLE      | customers | NULL       | range | idx_age_customers | idx_age_customers | 2       | NULL | 2494152 |   100.00 | Using where; Using index |
+                +----+-------------+-----------+------------+-------+-------------------+-------------------+---------+------+---------+----------+--------------------------+
+                1 row in set, 1 warning (0.01 sec)
+
+
+                结论：
+                1. 对表多次扫描，相当于对磁盘上的数据块多次扫描，这样会导致SQL 整体的 TPS下降， 最终影响整个数据库的性能。
+                2. 优化目标就是把对表的多次扫描转换为对表的单次扫描或者想办法尽量减少对表的扫描次数。
+
+   
+
+            </示例>
+            <检查流程描述>
+            1. 对于所有DML语句中的SELECT子句，检查SELECT中的FROM子句，获取其中涉及的表，记录下相同表或重复出现表的个数，如果表的个数大于等于阈值，则报告违反规则。
+            2. 对于 WITH语句，执行上述相同的检查。
+            </检查流程描述>
+            <知识文档>
+            1. SQL 优化官方文档： https://dev.mysql.com/doc/refman/8.3/en/statement-optimization.html
+            </知识文档>
+        </场景>
+    </规则场景>
+<标签><分类 名称="操作对象"><分类值>业务数据</分类值></分类><分类 名称="SQL分类"><分类值>DML</分类值><分类值>嵌套查询和连接</分类值></分类><分类 名称="审核目的"><分类值>发现性能问题</分类值></分类><分类 名称="审核精确度"><分类值>不连库审核</分类值></分类></标签><完成情况>完成</完成情况></Rule>
