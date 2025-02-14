@@ -79,3 +79,7 @@ func getKnowledgeBaseTagList(c echo.Context) error {
 		Data:      tagRes,
 	})
 }
+
+func getKnowledgeGraph(c echo.Context) error {
+	return nil
+}
