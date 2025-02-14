@@ -115,17 +115,26 @@ func (rw *RuleWrapper) GetContent(lang language.Tag) string {
 }
 
 func (rw *RuleWrapper) GetRequiredTags(predefineTags map[model.TypeTag]*model.Tag, langTag model.TypeTag) ([]*model.Tag, error) {
-	knowledgeTag := predefineTags[model.PredefineTagKnowledgeBase]
+	var requiredTags []*model.Tag
 
-	versionTag := predefineTags[model.PredefineTagV1]
+	if knowledgeTag, ok := predefineTags[model.PredefineTagCustomizeKnowledgeBase]; ok {
+		requiredTags = append(requiredTags, knowledgeTag)
+	}
+	if i18nTag, ok := predefineTags[langTag]; ok {
+		requiredTags = append(requiredTags, i18nTag)
+	}
+	if dbTag, ok := predefineTags[model.TypeTag(rw.rule.DBType)]; ok {
+		requiredTags = append(requiredTags, dbTag)
+	}
 	// TODO 此处为了判断新的规则，临时写死SQLE前缀，后续需要优化
+	versionTag := predefineTags[model.PredefineTagV1]
 	if strings.HasPrefix(rw.rule.Name, "SQLE") {
 		versionTag = predefineTags[model.PredefineTagV2]
 	}
-	i18nTag := predefineTags[langTag]
-	dbTag := predefineTags[model.TypeTag(rw.rule.DBType)]
-
-	return []*model.Tag{knowledgeTag, i18nTag, dbTag, versionTag}, nil
+	if versionTag != nil {
+		requiredTags = append(requiredTags, versionTag)
+	}
+	return requiredTags, nil
 }
 
 func (rw *RuleWrapper) AddExtraTags(tagMap map[model.TypeTag]*model.Tag, predefineTags map[model.TypeTag]*model.Tag) {
@@ -169,12 +178,22 @@ func (crw *CustomRuleWrapper) GetContent(lang language.Tag) string {
 }
 
 func (crw *CustomRuleWrapper) GetRequiredTags(predefineTags map[model.TypeTag]*model.Tag, langTag model.TypeTag) ([]*model.Tag, error) {
-	knowledgeTag := predefineTags[model.PredefineTagCustomizeKnowledgeBase]
-	i18nTag := predefineTags[langTag]
-	dbTag := predefineTags[model.TypeTag(crw.rule.DBType)]
-	versionTag := predefineTags[model.PredefineTagV1]
+	var requiredTags []*model.Tag
 
-	return []*model.Tag{knowledgeTag, i18nTag, dbTag, versionTag}, nil
+	if knowledgeTag, ok := predefineTags[model.PredefineTagCustomizeKnowledgeBase]; ok {
+		requiredTags = append(requiredTags, knowledgeTag)
+	}
+	if i18nTag, ok := predefineTags[langTag]; ok {
+		requiredTags = append(requiredTags, i18nTag)
+	}
+	if dbTag, ok := predefineTags[model.TypeTag(crw.rule.DBType)]; ok {
+		requiredTags = append(requiredTags, dbTag)
+	}
+	if versionTag, ok := predefineTags[model.PredefineTagV1]; ok {
+		requiredTags = append(requiredTags, versionTag)
+	}
+
+	return requiredTags, nil
 }
 
 func (crw *CustomRuleWrapper) AddExtraTags(tagMap map[model.TypeTag]*model.Tag, predefineTags map[model.TypeTag]*model.Tag) {

@@ -145,6 +145,7 @@ const (
 	PredefineTagDB2            TypeTag = driverV2.DriverTypeDB2
 	PredefineTagTBase          TypeTag = driverV2.DriverTypeTBase
 	PredefineTagOceanBase      TypeTag = driverV2.DriverTypeOceanBase
+	PredefineTagActionDB       TypeTag = "ActionDB"
 )
 
 // 获取数据库预定义标签映射
