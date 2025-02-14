@@ -448,6 +448,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		// 知识库 Knowledge Base
 		v1Router.GET("/knowledge_bases", v1.GetKnowledgeBaseList)
 		v1Router.GET("/knowledge_bases/tags", v1.GetKnowledgeBaseTagList)
+		v1Router.GET("/knowledge_bases/graph", v1.GetKnowledgeGraph)
 
 		//rule
 		v1Router.GET("/rules", v1.GetRules)
