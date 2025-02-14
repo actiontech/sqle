@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 
 	baseV1 "github.com/actiontech/dms/pkg/dms-common/api/base/v1"
 	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
@@ -633,7 +632,7 @@ func convertParamsToInstanceAdditionalParamRes(params params.Params) []*Instance
 }
 
 type DatabaseDriverLogosReqV1 struct {
-	FilterDBTypes string `json:"db_types" query:"db_types"`
+	FilterDBTypes []string `json:"db_types" query:"db_types"`
 }
 
 type GetDatabaseDriverLogosResV1 struct {
@@ -651,7 +650,7 @@ type DatabaseDriverLogosV1 struct {
 // @Description get database driver logos
 // @Id GetDatabaseDriverLogos
 // @Tags instance
-// @Param db_types query string true "MySQL,Oracle"
+// @Param db_types query []string true "MySQL,Oracle"
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.GetDatabaseDriverLogosResV1
 // @router /v1/database_driver_logos [get]
@@ -660,11 +659,10 @@ func GetDatabaseDriverLogos(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	dbTypes := strings.Split(req.FilterDBTypes, ",")
 	pluginMgr := driver.GetPluginManager()
 	allLogos := pluginMgr.AllLogo()
-	logos := make([]*DatabaseDriverLogosV1, len(dbTypes))
-	for i, dbType := range dbTypes {
+	logos := make([]*DatabaseDriverLogosV1, len(req.FilterDBTypes))
+	for i, dbType := range req.FilterDBTypes {
 		logos[i] = &DatabaseDriverLogosV1{
 			DBType: dbType,
 			Logo:   allLogos[dbType],
