@@ -117,7 +117,7 @@ func (rw *RuleWrapper) GetContent(lang language.Tag) string {
 func (rw *RuleWrapper) GetRequiredTags(predefineTags map[model.TypeTag]*model.Tag, langTag model.TypeTag) ([]*model.Tag, error) {
 	var requiredTags []*model.Tag
 
-	if knowledgeTag, ok := predefineTags[model.PredefineTagCustomizeKnowledgeBase]; ok {
+	if knowledgeTag, ok := predefineTags[model.PredefineTagKnowledgeBase]; ok {
 		requiredTags = append(requiredTags, knowledgeTag)
 	}
 	if i18nTag, ok := predefineTags[langTag]; ok {
