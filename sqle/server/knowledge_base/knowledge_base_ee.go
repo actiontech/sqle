@@ -7,6 +7,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/actiontech/sqle/sqle/config"
+	"github.com/actiontech/sqle/sqle/driver/mysql/rule/ai"
+	"github.com/actiontech/sqle/sqle/license"
 	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
@@ -15,6 +18,21 @@ import (
 
 // 迁移规则知识库到知识库，并且关联标签
 func MigrateKnowledgeFromRules(rulesMap map[string] /* DBType */ []*model.Rule) error {
+	if license.CheckKnowledgeBaseLicense(config.GetOptions().SqleOptions.KnowledgeBaseTempLicense) == nil {
+		// 获取所有规则的知识
+		defaultAIRuleKnowledge, err := ai.GetAIRulesKnowledge()
+		if err != nil {
+			panic(fmt.Errorf("get ai rules knowledge failed: %v", err))
+		}
+		// 初始化规则的知识
+		for dbType, ruleList := range rulesMap {
+			for idx, rule := range ruleList {
+				if knowledge, exist := defaultAIRuleKnowledge[rule.Name]; exist {
+					rulesMap[dbType][idx].Knowledge.I18nContent[language.Chinese] = knowledge
+				}
+			}
+		}
+	}
 	predefineTags, err := NewTagService(model.GetStorage()).GetOrCreatePredefinedTags()
 	if err != nil {
 		log.Logger().Errorf("get or create predefined tags failed: %v", err)
@@ -110,7 +128,7 @@ func updateRuleKnowledgeContent(ctx context.Context, ruleName, dbType, content s
 		return err
 	}
 	// 获取知识库
-	knowledge, err := s.GetKnowledgeByTagsAndTitle(tagFilter, ruleName)
+	knowledge, err := s.GetKnowledgeByTagsAndRuleName(tagFilter, ruleName)
 	if err != nil {
 		log.Logger().Errorf("get knowledge by langTag and title failed, err: %v", err)
 		return err
@@ -142,7 +160,7 @@ func getRuleWithKnowledge(ctx context.Context, ruleName, dbType string, ruleType
 		return nil, err
 	}
 	// 获取知识库
-	knowledge, err := s.GetKnowledgeByTagsAndTitle(tagFilter, ruleName)
+	knowledge, err := s.GetKnowledgeByTagsAndRuleName(tagFilter, ruleName)
 	if err != nil {
 		log.Logger().Errorf("get knowledge by langTag and title failed, err: %v", err)
 		return nil, err
@@ -189,8 +207,11 @@ func getKnowledgeDefaultTag(ctx context.Context, dbType string, ruleType model.T
 }
 
 // 搜索知识列表
-func SearchKnowledgeList(keyword string, tags []string, limit, offset int) ([]model.Knowledge, int64, error) {
+func SearchKnowledgeList(ctx context.Context, keyword string, tags []string, limit, offset int) ([]model.Knowledge, int64, error) {
 	s := model.GetStorage()
+	// 根据语言和数据库版本过滤
+	tags = append(tags, locale.Bundle.GetLangTagFromCtx(ctx).String())
+	tags = append(tags, string(model.PredefineTagV2))
 	knowledge, count, err := s.SearchKnowledge(keyword, tags, limit, offset)
 	if err != nil {
 		return nil, 0, err
