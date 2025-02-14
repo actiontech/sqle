@@ -122,8 +122,8 @@ func (s *Storage) GetTagRelations() ([]TagTagRelation, error) {
 }
 
 // 获取所有知识库标签的关联关系
-func (s *Storage) GetKnowledgeBaseTagRelations() ([]KnowledgeTagRelation, error) {
-	var relations []KnowledgeTagRelation
+func (s *Storage) GetKnowledgeBaseTagRelations() ([]*KnowledgeTagRelation, error) {
+	var relations []*KnowledgeTagRelation
 	err := s.db.Model(&KnowledgeTagRelation{}).Find(&relations).Error
 	if err != nil {
 		return nil, err
