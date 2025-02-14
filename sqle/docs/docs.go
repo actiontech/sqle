@@ -1397,6 +1397,20 @@ var doc = `{
                         "description": "tags",
                         "name": "tags",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -1404,6 +1418,29 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetKnowledgeBaseListRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/knowledge_bases/graph": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get knowledge graph",
+                "tags": [
+                    "knowledge"
+                ],
+                "summary": "获取知识库知识图谱",
+                "operationId": "getKnowledgeGraph",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetKnowledgeGraphResp"
                         }
                     }
                 }
@@ -9409,7 +9446,8 @@ var doc = `{
                         "enum": [
                             "execute_sql_file_mode",
                             "sql_optimization",
-                            "backup"
+                            "backup",
+                            "knowledge_base"
                         ],
                         "type": "string",
                         "description": "module name",
@@ -13531,6 +13569,35 @@ var doc = `{
                 }
             }
         },
+        "v1.EdgeResponse": {
+            "type": "object",
+            "properties": {
+                "from_id": {
+                    "description": "存储Node的ID而不是指针",
+                    "type": "string"
+                },
+                "from_name": {
+                    "description": "方便前端显示",
+                    "type": "string"
+                },
+                "is_directed": {
+                    "description": "是否有向",
+                    "type": "boolean"
+                },
+                "to_id": {
+                    "description": "存储Node的ID而不是指针",
+                    "type": "string"
+                },
+                "to_name": {
+                    "description": "方便前端显示",
+                    "type": "string"
+                },
+                "weight": {
+                    "description": "权重",
+                    "type": "integer"
+                }
+            }
+        },
         "v1.EnumsValueResV1": {
             "type": "object",
             "properties": {
@@ -14600,6 +14667,23 @@ var doc = `{
                 },
                 "total_nums": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.GetKnowledgeGraphResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.GraphResponse"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
@@ -15954,6 +16038,41 @@ var doc = `{
                 }
             }
         },
+        "v1.GraphResponse": {
+            "type": "object",
+            "properties": {
+                "edges": {
+                    "description": "边集合",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.EdgeResponse"
+                    }
+                },
+                "nodes": {
+                    "description": "节点集合",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.NodeResponse"
+                    }
+                },
+                "stats": {
+                    "description": "添加图的统计信息",
+                    "type": "object",
+                    "$ref": "#/definitions/v1.GraphStats"
+                }
+            }
+        },
+        "v1.GraphStats": {
+            "type": "object",
+            "properties": {
+                "total_edges": {
+                    "type": "integer"
+                },
+                "total_nodes": {
+                    "type": "integer"
+                }
+            }
+        },
         "v1.HighPriorityConditionReq": {
             "type": "object",
             "properties": {
@@ -16319,6 +16438,10 @@ var doc = `{
                     "description": "知识库ID",
                     "type": "integer"
                 },
+                "rule_name": {
+                    "description": "规则名称",
+                    "type": "string"
+                },
                 "tags": {
                     "description": "标签",
                     "type": "array",
@@ -16446,6 +16569,23 @@ var doc = `{
             "properties": {
                 "is_supported": {
                     "type": "boolean"
+                }
+            }
+        },
+        "v1.NodeResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "object"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "weight": {
+                    "type": "integer"
                 }
             }
         },
@@ -18142,6 +18282,13 @@ var doc = `{
                 "name": {
                     "description": "标签名称",
                     "type": "string"
+                },
+                "sub_tags": {
+                    "description": "子标签",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.Tag"
+                    }
                 }
             }
         },
