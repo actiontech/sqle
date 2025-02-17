@@ -1432,7 +1432,7 @@ var doc = `{
                 ],
                 "description": "get knowledge graph",
                 "tags": [
-                    "knowledge_bases"
+                    "knowledge_base"
                 ],
                 "summary": "获取知识库知识图谱",
                 "operationId": "getKnowledgeGraph",
