@@ -391,12 +391,8 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 		}
 
 		if err := handler.Func(input); err != nil {
-			// todo #1630 临时跳过解析建表语句失败导致的规则
-			if session.IsParseShowCreateTableContentErr(err) {
-				i.Logger().Errorf("skip rule, rule_desc_name=%v rule_desc=%v err:%v", rule.Name, rule.Desc, err.Error())
-				continue
-			}
-			return nil, err
+			i.result.AddResultWithError(rule.Level, rule.Name, err.Error(), true, rule.Desc)
+			i.Logger().Errorf("rule_desc_name=%v rule_desc=%v err:%v", rule.Name, rule.Desc, err.Error())
 		}
 	}
 

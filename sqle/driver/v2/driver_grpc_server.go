@@ -195,9 +195,11 @@ func (d *DriverGrpcServer) Audit(ctx context.Context, req *protoV2.AuditRequest)
 		}
 		for _, result := range results.Results {
 			rets.Results = append(rets.Results, &protoV2.AuditResult{
-				Level:    string(result.Level),
-				Message:  result.Message,
-				RuleName: result.RuleName,
+				Level:           string(result.Level),
+				Message:         result.Message,
+				RuleName:        result.RuleName,
+				ExecutionFailed: result.ExecutionFailed,
+				ErrorInfo:       result.ErrorInfo,
 			})
 		}
 		resp.AuditResults = append(resp.AuditResults, rets)
