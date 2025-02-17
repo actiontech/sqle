@@ -30,6 +30,7 @@ func GetAffectedRowNum(ctx context.Context, originSql string, conn *executor.Exe
 	var newNode ast.Node
 	var affectedRowSql string
 	var cannotConvert bool
+	isGroupByAndHavingBothExist := false
 
 	// 语法规则文档
 	// select: https://dev.mysql.com/doc/refman/8.0/en/select.html
@@ -38,11 +39,8 @@ func GetAffectedRowNum(ctx context.Context, originSql string, conn *executor.Exe
 	// delete: https://dev.mysql.com/doc/refman/8.0/en/delete.html
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
-		isGroupByAndHavingBothExist := stmt.GroupBy != nil && stmt.Having != nil
-		if stmt.GroupBy != nil || isGroupByAndHavingBothExist || stmt.Limit != nil {
-			cannotConvert = true
-		}
-
+		isGroupByAndHavingBothExist = stmt.GroupBy != nil && stmt.Having != nil
+		cannotConvert = stmt.GroupBy != nil || stmt.Limit != nil
 		newNode = getSelectNodeFromSelect(stmt)
 	case *ast.InsertStmt:
 		// 普通的insert语句，insert into t1 (name) values ('name1'), ('name2')
@@ -63,11 +61,12 @@ func GetAffectedRowNum(ctx context.Context, originSql string, conn *executor.Exe
 	default:
 		return 0, ErrUnsupportedSqlType
 	}
-
-	// 1. 存在group by或者group by和having都存在的select语句，无法转换为select count语句
-	// 2. SELECT COUNT(1) FROM test LIMIT 10,10 类型的SQL结果集为空
-	// 已上两种情况,使用子查询 select count(*) from (输入的sql) as t的方式来获取影响行数
-	if cannotConvert {
+	// 1. group by和having都存在
+	if isGroupByAndHavingBothExist {
+		// 移除后缀分号，避免sql语法错误
+		trimSuffix := strings.TrimRight(originSql, ";")
+		affectedRowSql = fmt.Sprintf("select count(*) from (%s) as t", trimSuffix)
+	} else if cannotConvert {
 		// 将select语句中的查询字段替换为数字1
 		// https://github.com/actiontech/sqle/issues/2175
 		newSql, err := useIntReplaceSelectFields(node)
@@ -84,7 +83,6 @@ func GetAffectedRowNum(ctx context.Context, originSql string, conn *executor.Exe
 		if err != nil {
 			return 0, err
 		}
-
 		affectedRowSql = sqlBuilder.String()
 	}
 
