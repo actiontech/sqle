@@ -75,6 +75,7 @@ func FillingSQLWithParamMarker(sqlContent string, task *model.Task) (string, err
 	if err != nil {
 		return sqlContent, err
 	}
+	defer conn.Db.Close()
 	ctx := session.NewContext(nil, session.WithExecutor(conn))
 	ctx.SetCurrentSchema(schema)
 
