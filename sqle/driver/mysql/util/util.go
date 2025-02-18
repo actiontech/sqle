@@ -29,8 +29,8 @@ func GetAffectedRowNum(ctx context.Context, originSql string, conn *executor.Exe
 
 	var newNode ast.Node
 	var affectedRowSql string
-	var cannotConvert bool
-	isGroupByAndHavingBothExist := false
+	isGroupBy := false
+	isLimit := false
 
 	// 语法规则文档
 	// select: https://dev.mysql.com/doc/refman/8.0/en/select.html
@@ -39,8 +39,8 @@ func GetAffectedRowNum(ctx context.Context, originSql string, conn *executor.Exe
 	// delete: https://dev.mysql.com/doc/refman/8.0/en/delete.html
 	switch stmt := node.(type) {
 	case *ast.SelectStmt:
-		isGroupByAndHavingBothExist = stmt.GroupBy != nil && stmt.Having != nil
-		cannotConvert = stmt.GroupBy != nil || stmt.Limit != nil
+		isGroupBy = stmt.GroupBy != nil
+		isLimit = stmt.Limit != nil
 		newNode = getSelectNodeFromSelect(stmt)
 	case *ast.InsertStmt:
 		// 普通的insert语句，insert into t1 (name) values ('name1'), ('name2')
@@ -62,11 +62,11 @@ func GetAffectedRowNum(ctx context.Context, originSql string, conn *executor.Exe
 		return 0, ErrUnsupportedSqlType
 	}
 	// 1. group by和having都存在
-	if isGroupByAndHavingBothExist {
+	if isGroupBy {
 		// 移除后缀分号，避免sql语法错误
 		trimSuffix := strings.TrimRight(originSql, ";")
 		affectedRowSql = fmt.Sprintf("select count(*) from (%s) as t", trimSuffix)
-	} else if cannotConvert {
+	} else if isLimit {
 		// 将select语句中的查询字段替换为数字1
 		// https://github.com/actiontech/sqle/issues/2175
 		newSql, err := useIntReplaceSelectFields(node)
