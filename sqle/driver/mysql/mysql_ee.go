@@ -181,6 +181,7 @@ func (i *MysqlDriverImpl) GetDatabaseDiffModifySQL(ctx context.Context, calibrat
 	if err != nil {
 		return nil, err
 	}
+	defer compareConn.Db.Close()
 	compareSchemaInfos := make([]*driverV2.DatabasSchemaInfo, len(objInfos))
 	baseSchemaInfos := make([]*driverV2.DatabasSchemaInfo, len(objInfos))
 	for i, objInfo := range objInfos {
