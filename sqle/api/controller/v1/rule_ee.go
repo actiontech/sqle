@@ -138,7 +138,7 @@ func createCustomRule(c echo.Context) error {
 	}
 	// 创建规则知识库，以及打标签
 	err = knowledge_base.InitCustomRuleKnowledge(customRule)
-	if err!= nil {
+	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
