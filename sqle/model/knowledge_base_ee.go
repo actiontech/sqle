@@ -5,6 +5,8 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"golang.org/x/text/language"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
+	// "gorm.io/gorm"
 )
 
 // 知识库标签
@@ -258,9 +260,9 @@ func GetTagMapDefaultRuleKnowledge() map[string] /* rule_name */ []TypeTag {
 }
 
 // 创建知识库
-func (s *Storage) CreateKnowledgeWithTags(knowledge *Knowledge, tags map[TypeTag] /* tag name */ *Tag, filterTags []*Tag) (*Knowledge, error) {
+func (s *Storage) CreateKnowledgeWithTags(knowledge *Knowledge, ruleName string, tags map[TypeTag] /* tag name */ *Tag, filterTags []*Tag) (*Knowledge, error) {
 	// 先查询是否存在同名的知识库
-	modelKnowledge, err := s.GetKnowledgeByTagsAndRuleName(filterTags, knowledge.RuleName)
+	modelKnowledge, err := s.GetKnowledgeByTagsAndRuleName(filterTags, ruleName)
 	if err != nil {
 		if err != gorm.ErrRecordNotFound {
 			return nil, err
@@ -315,8 +317,12 @@ func (s *Storage) GetKnowledgeByTagsAndRuleName(filterTags []*Tag, ruleName stri
 	}
 
 	err := s.db.Model(&Knowledge{}).Preload(`Tags`).
-		Joins(`JOIN knowledge_tag_relations ktr ON knowledge.id = ktr.knowledge_id JOIN tags t ON ktr.tag_id = t.id`).
-		Where(`t.id IN ? AND knowledge.rule_name = ?`, tagIds, ruleName).
+		Joins(`
+			JOIN knowledge_tag_relations ktr ON knowledge.id = ktr.knowledge_id 
+			JOIN tags t ON ktr.tag_id = t.id
+			JOIN rule_knowledge_relations rkr ON knowledge.id = rkr.knowledge_id
+		`).
+		Where(`rkr.rule_name = ? AND t.id IN ?`, ruleName, tagIds).
 		Group(`knowledge.id`).
 		Having("COUNT(DISTINCT t.id) = ?", len(tagIds)).
 		First(&modelKnowledge).Error
@@ -336,7 +342,7 @@ func (s *Storage) SearchKnowledge(keyword string, tags []string, limit, offset i
 	searchClause := s.db.
 		Table("knowledge").
 		Preload("Tags").
-		Select(`knowledge.id, rule_name, description, title`).
+		Select(`knowledge.id, description, title`).
 		Joins("LEFT JOIN knowledge_tag_relations ON knowledge_tag_relations.knowledge_id = knowledge.id LEFT JOIN tags ON tags.id = knowledge_tag_relations.tag_id")
 
 	countClause := s.db.
@@ -346,7 +352,7 @@ func (s *Storage) SearchKnowledge(keyword string, tags []string, limit, offset i
 	if len(keyword) > 0 {
 		likeClause := "%%" + keyword + "%%"
 		searchClause = searchClause.
-			Select(`knowledge.id, rule_name, SUBSTRING(content, LOCATE(?, content), 50) AS content, description, title`, keyword).
+			Select(`knowledge.id,SUBSTRING(content, LOCATE(?, content), 50) AS content, description, title`, keyword).
 			Where("title LIKE ? OR description LIKE ? OR MATCH(content) AGAINST(? IN NATURAL LANGUAGE MODE)", likeClause, likeClause, keyword)
 		countClause = countClause.
 			Where("title LIKE ? OR description LIKE ? OR MATCH(content) AGAINST(? IN NATURAL LANGUAGE MODE)", likeClause, likeClause, keyword)
@@ -379,4 +385,81 @@ func (s *Storage) SearchKnowledge(keyword string, tags []string, limit, offset i
 // 更新知识库内容
 func (s *Storage) UpdateKnowledgeContent(knowledge *Knowledge, newContent string) error {
 	return s.db.Model(knowledge).Updates(map[string]interface{}{"content": newContent}).Error
+}
+
+type RuleKnowledgeRelation struct {
+	KnowledgeID uint64 `gorm:"primaryKey;autoIncrement:false"`
+	RuleName    string `gorm:"primaryKey;size:255"`
+	RuleDBType  string `gorm:"primaryKey;size:255"`
+}
+
+func (RuleKnowledgeRelation) TableName() string {
+	return "rule_knowledge_relations"
+}
+
+type CustomRuleKnowledgeRelation struct {
+	KnowledgeID  uint64 `gorm:"primaryKey;autoIncrement:false"`
+	CustomRuleID uint64 `gorm:"primaryKey;autoIncrement:false"`
+}
+
+func (CustomRuleKnowledgeRelation) TableName() string {
+	return "custom_rule_knowledge_relations"
+}
+
+// get rule knowledge relations
+func (s *Storage) GetRuleKnowledgeRelationByKnowledgeID(knowledgeID uint) (*RuleKnowledgeRelation, error) {
+	var relation *RuleKnowledgeRelation
+	err := s.db.Where("knowledge_id = ?", knowledgeID).First(&relation).Error
+	if err != nil {
+		return nil, err
+	}
+	return relation, nil
+}
+
+// 创建规则和知识库的关联
+func (s *Storage) CreateRuleKnowledgeRelation(knowledgeId uint64, ruleName string, ruleDBType string) error {
+	if knowledgeId == 0 || ruleName == "" || ruleDBType == "" {
+		return nil
+	}
+	return s.db.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "knowledge_id"}, {Name: "rule_name"}, {Name: "rule_db_type"}},
+		DoNothing: true, // 如果存在则不插入也不更新
+	}).Create(&RuleKnowledgeRelation{
+		KnowledgeID: knowledgeId,
+		RuleName:    ruleName,
+		RuleDBType:  ruleDBType,
+	}).Error
+}
+
+// 创建自定义规则和知识库的关联
+func (s *Storage) CreateCustomRuleKnowledgeRelation(knowledgeId uint64, customRule *CustomRule) error {
+	if knowledgeId == 0 || customRule == nil {
+		return nil
+	}
+	return s.db.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "knowledge_id"}, {Name: "custom_rule_id"}},
+		DoNothing: true, // 如果存在则不插入也不更新
+	}).Create(&CustomRuleKnowledgeRelation{
+		KnowledgeID:  knowledgeId,
+		CustomRuleID: uint64(customRule.ID),
+	}).Error
+}
+
+// 根据上下文获取对应语言的知识
+func (m MultiLanguageKnowledge) GetKnowledgeByLang(lang language.Tag) *Knowledge {
+	var defaultLangKnowledge *Knowledge
+	for _, k := range m {
+		for _, tag := range k.Tags {
+			if tag.Name == TypeTag(lang.String()) {
+				return k
+			}
+			if tag.Name == PredefineTagChinese {
+				defaultLangKnowledge = k
+			}
+		}
+	}
+	if defaultLangKnowledge != nil {
+		return defaultLangKnowledge
+	}
+	return &Knowledge{}
 }
