@@ -30,7 +30,8 @@ type KnowledgeWithFilter struct {
 
 // BaseRuleWrapper 作为模板方法的基类
 type BaseRuleWrapper struct {
-	predefineTags map[model.TypeTag]*model.Tag
+	predefineTags           map[model.TypeTag]*model.Tag
+	ruleKnowledgeContentMap map[string]string
 }
 
 // ToModelKnowledge 是模板方法，包含通用逻辑
@@ -57,7 +58,6 @@ func (brw *BaseRuleWrapper) ToModelKnowledge(rule KnowledgeInfoProvider) ([]*Kno
 
 		// 创建知识对象
 		knowledge := &model.Knowledge{
-			RuleName:    rule.GetRuleName(),
 			Title:       rule.GetTitle(lang),
 			Description: rule.GetDescription(lang),
 			Content:     rule.GetContent(lang),
@@ -75,7 +75,6 @@ func (brw *BaseRuleWrapper) ToModelKnowledge(rule KnowledgeInfoProvider) ([]*Kno
 
 // KnowledgeInfoProvider 作为策略接口，提供不同规则的获取方式
 type KnowledgeInfoProvider interface {
-	GetRuleName() string
 	GetTitle(lang language.Tag) string
 	GetDescription(lang language.Tag) string
 	GetDBType() model.TypeTag
@@ -108,10 +107,11 @@ func (rw *RuleWrapper) GetDBType() model.TypeTag {
 }
 
 func (rw *RuleWrapper) GetContent(lang language.Tag) string {
-	if rw.rule.Knowledge == nil {
+	if lang != language.Chinese {
 		return ""
 	}
-	return rw.rule.Knowledge.I18nContent.GetStrInLang(lang)
+	// TODO 目前都是中文
+	return rw.ruleKnowledgeContentMap[rw.GetRuleName()]
 }
 
 func (rw *RuleWrapper) GetRequiredTags(predefineTags map[model.TypeTag]*model.Tag, langTag model.TypeTag) ([]*model.Tag, error) {
@@ -171,10 +171,10 @@ func (crw *CustomRuleWrapper) GetRuleName() string {
 }
 
 func (crw *CustomRuleWrapper) GetContent(lang language.Tag) string {
-	if crw.rule.Knowledge == nil {
-		return ""
+	if len(crw.rule.Knowledge) > 0 {
+		return crw.rule.Knowledge.GetKnowledgeByLang(lang).Content
 	}
-	return crw.rule.Knowledge.I18nContent.GetStrInLang(lang)
+	return ""
 }
 
 func (crw *CustomRuleWrapper) GetRequiredTags(predefineTags map[model.TypeTag]*model.Tag, langTag model.TypeTag) ([]*model.Tag, error) {
@@ -198,20 +198,4 @@ func (crw *CustomRuleWrapper) GetRequiredTags(predefineTags map[model.TypeTag]*m
 
 func (crw *CustomRuleWrapper) AddExtraTags(tagMap map[model.TypeTag]*model.Tag, predefineTags map[model.TypeTag]*model.Tag) {
 	// 自定义规则没有额外的标签
-}
-
-// 统一的知识获取方法
-func getKnowledgeWithTags(rule KnowledgeInfoProvider, predefineTags map[model.TypeTag]*model.Tag) ([]*KnowledgeWithFilter, error) {
-	baseWrapper := &BaseRuleWrapper{predefineTags: predefineTags}
-	return baseWrapper.ToModelKnowledge(rule)
-}
-
-// 将默认规则转换为知识
-func getDefaultRuleKnowledgeWithTags(rule *model.Rule, predefineTags map[model.TypeTag]*model.Tag) ([]*KnowledgeWithFilter, error) {
-	return getKnowledgeWithTags(&RuleWrapper{rule: rule}, predefineTags)
-}
-
-// 将自定义规则转换为知识
-func getCustomRuleKnowledgeWithTags(rule *model.CustomRule, predefineTags map[model.TypeTag]*model.Tag) ([]*KnowledgeWithFilter, error) {
-	return getKnowledgeWithTags(&CustomRuleWrapper{rule: rule}, predefineTags)
 }
