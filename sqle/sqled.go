@@ -118,8 +118,8 @@ func Run(options *config.SqleOptions) error {
 		if err := s.CreateDefaultTemplateIfNotExist(model.ProjectIdForGlobalRuleTemplate, driver.GetPluginManager().GetAllRules()); err != nil {
 			return fmt.Errorf("create default template failed while auto migrating table: %v", err)
 		}
-		if err := knowledge_base.MigrateKnowledgeFromRules(rules); err != nil {
-			return fmt.Errorf("MigrateKnowledgeFromRules failed : %v", err)
+		if err := knowledge_base.LoadKnowledge(rules); err != nil {
+			return fmt.Errorf("LoadKnowledge failed : %v", err)
 		}
 	}
 	{
