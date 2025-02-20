@@ -138,10 +138,12 @@ func (rw *RuleWrapper) GetRequiredTags(predefineTags map[model.TypeTag]*model.Ta
 }
 
 func (rw *RuleWrapper) AddExtraTags(tagMap map[model.TypeTag]*model.Tag, predefineTags map[model.TypeTag]*model.Tag) {
-	if ruleTags, ok := model.GetTagMapDefaultRuleKnowledge()[rw.rule.Name]; ok {
-		for _, tagName := range ruleTags {
-			if tag := predefineTags[tagName]; tag != nil {
-				tagMap[tagName] = tag
+	if ruleTagsSlice, ok := model.GetTagMapDefaultRuleKnowledge()[rw.rule.Name]; ok {
+		for _, ruleTags := range ruleTagsSlice {
+			for _, tagName := range ruleTags {
+				if tag := predefineTags[tagName]; tag != nil {
+					tagMap[tagName] = tag
+				}
 			}
 		}
 	}
