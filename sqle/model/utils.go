@@ -309,7 +309,7 @@ func (s *Storage) CreateRulesIfNotExist(rulesMap map[string][]*Rule) error {
 			// rule will be created or update if:
 			// 1. rule not exist;
 			if !exist {
-				err := errors.New(errors.ConnectStorageError, s.db.Omit("Categories").Save(rule).Error)
+				err := errors.New(errors.ConnectStorageError, s.db.Omit("Categories", "Knowledge").Save(rule).Error)
 				if err != nil {
 					return err
 				}
@@ -329,16 +329,8 @@ func (s *Storage) CreateRulesIfNotExist(rulesMap map[string][]*Rule) error {
 				isParamSame := reflect.DeepEqual(existRuleParam, pluginRuleParam)
 
 				if !isI18nInfoSame || !isRuleLevelSame || !isParamSame || !isHasAuditPowerSame || !isHasRewritePowerSame {
-					if existedRule.Knowledge != nil && existedRule.Knowledge.I18nContent != nil {
-						for lang, content := range existedRule.Knowledge.I18nContent {
-							if content != "" {
-								// 知识库是可以在页面上编辑的，而插件里只是默认内容，以页面上编辑后的内容为准
-								rule.Knowledge.I18nContent.SetStrInLang(lang, content)
-							}
-						}
-					}
 					// 保存规则
-					err := errors.New(errors.ConnectStorageError, s.db.Omit("Categories").Save(rule).Error)
+					err := errors.New(errors.ConnectStorageError, s.db.Omit("Categories", "Knowledge").Save(rule).Error)
 					if err != nil {
 						return err
 					}

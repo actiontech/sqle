@@ -5,6 +5,6 @@ package knowledge_base
 
 import "github.com/actiontech/sqle/sqle/model"
 
-func MigrateKnowledgeFromRules(rulesMap map[string][]*model.Rule) error{
+func LoadKnowledge(rulesMap map[string][]*model.Rule) error {
 	return nil
 }
