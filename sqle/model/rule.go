@@ -465,6 +465,13 @@ func (s *Storage) GetAllRules() ([]*Rule, error) {
 }
 
 func (s *Storage) DeleteCascadeRule(name, dbType string) error {
+	/* 
+		1. 删除rule_template_rule表中rule_name和db_type等于name和dbType的记录
+		2. 删除rule表中rule_name和db_type等于name和dbType的记录
+		3. 删除rule_knowledge_relations表中rule_name和db_type等于name和dbType的记录
+		4. 删除audit_rule_category_rels表中rule_name和db_type等于name和dbType的记录
+		5. 不删除knowledge表中的记录，因为knowledge表中的记录不与规则强绑定，后续允许存在脱离规则的知识，且删除规则时，需要保留客户积累的知识
+	*/
 	err := s.db.Exec(`delete u,t,k,c
 					from rules u 
 					left join rule_template_rule t on u.name = t.rule_name and u.db_type = t.db_type 
