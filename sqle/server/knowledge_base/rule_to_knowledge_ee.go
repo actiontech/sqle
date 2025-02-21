@@ -6,6 +6,7 @@ package knowledge_base
 import (
 	"strings"
 
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/model"
 	"golang.org/x/text/language"
 )
@@ -107,11 +108,21 @@ func (rw *RuleWrapper) GetDBType() model.TypeTag {
 }
 
 func (rw *RuleWrapper) GetContent(lang language.Tag) string {
-	if lang != language.Chinese {
+	if rw.rule.DBType == driverV2.DriverTypeMySQL {
+		// TODO 目前都是中文
+		if lang != language.Chinese {
+			return ""
+		}
+		return rw.ruleKnowledgeContentMap[rw.GetRuleName()]
+	}
+	if rw.rule.Knowledge == nil {
 		return ""
 	}
-	// TODO 目前都是中文
-	return rw.ruleKnowledgeContentMap[rw.GetRuleName()]
+	knowledge := rw.rule.Knowledge.GetKnowledgeByLang(lang)
+	if knowledge == nil {
+		return ""
+	}
+	return knowledge.Content
 }
 
 func (rw *RuleWrapper) GetRequiredTags(predefineTags map[model.TypeTag]*model.Tag, langTag model.TypeTag) ([]*model.Tag, error) {
@@ -138,6 +149,10 @@ func (rw *RuleWrapper) GetRequiredTags(predefineTags map[model.TypeTag]*model.Ta
 }
 
 func (rw *RuleWrapper) AddExtraTags(tagMap map[model.TypeTag]*model.Tag, predefineTags map[model.TypeTag]*model.Tag) {
+	// TODO 目前仅MySQL支持的知识库包含内容，虽然相同的规则名称可以打上相同的标签，但是其他同名不同数据库类型的规则的知识库没有内容，打上标签会导致搜索出来的结果内容是空的，体验不好，所以暂时不打上标签
+	if rw.rule.DBType != driverV2.DriverTypeMySQL {
+		return
+	}
 	if ruleTagsSlice, ok := model.GetTagMapDefaultRuleKnowledge()[rw.rule.Name]; ok {
 		for _, ruleTags := range ruleTagsSlice {
 			for _, tagName := range ruleTags {

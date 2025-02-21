@@ -4,15 +4,49 @@
 package knowledge_base
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/actiontech/sqle/sqle/config"
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	"github.com/actiontech/sqle/sqle/driver/mysql/rule/ai"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/license"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 )
+
+func CheckKnowledgeBaseLicense() error {
+	dmsLicense, err := getDMSLicense()
+	if err != nil {
+		log.Logger().Errorf("get dms license failed: %v", err)
+		return err
+	}
+	support, err := dmsLicense.CheckSupportKnowledgeBase()
+	if err != nil {
+		log.Logger().Errorf("check support knowledge base failed: %v", err)
+		return err
+	}
+	if !support {
+		return fmt.Errorf("license not support knowledge base")
+	}
+	return nil
+}
+
+func getDMSLicense() (*license.License, error) {
+	reply, err := dms.GetLicense(context.TODO(), config.GetOptions().SqleOptions.DMSServerAddress)
+	if err != nil {
+		log.Logger().Errorf("get license failed: %v", err)
+		return nil, err
+	}
+	dmsLicense, err := license.GetDMSLicense(reply.Content)
+	if err != nil {
+		log.Logger().Errorf("get dms license failed: %v", err)
+		return nil, err
+	}
+	return dmsLicense, nil
+}
 
 // 迁移规则知识库到知识库，并且关联标签
 func LoadKnowledge(rulesMap map[string][]*model.Rule) error {
@@ -23,28 +57,38 @@ func LoadKnowledge(rulesMap map[string][]*model.Rule) error {
 		log.Logger().Errorf("get or create predefined tags failed: %v", err)
 		return err
 	}
-	defaultRuleKnowledgeMap, err := rule.GetDefaultRulesKnowledge()
+	mysqlRuleKnowledgeMap, err := rule.GetDefaultRulesKnowledge()
 	if err != nil {
 		return fmt.Errorf("get default rules knowledge failed: %v", err)
 	}
-	if license.CheckKnowledgeBaseLicense(config.GetOptions().SqleOptions.KnowledgeBaseTempLicense) == nil {
-		// 获取AI规则的知识
-		aiRuleKnowledge, err := ai.GetAIRulesKnowledge()
-		if err != nil {
-			panic(fmt.Errorf("get ai rules knowledge failed: %v", err))
+	// 加载购买License后的AI规则的知识
+	if dmsLicense, err := getDMSLicense(); err == nil {
+		// 仅初始化支持的数据库类型的知识库
+		if support, err := dmsLicense.CheckSupportKnowledgeBase(); err == nil && support {
+			for _, dbType := range dmsLicense.GetKnowledgeBaseDBTypes() {
+				if dbType == driverV2.DriverTypeMySQL { // TODO 后续会增加其他知识库
+					// 获取AI规则的知识
+					aiRuleKnowledge, err := ai.GetAIRulesKnowledge()
+					if err != nil {
+						return fmt.Errorf("get ai rules knowledge failed: %v", err)
+					}
+					for ruleName, knowledgeContent := range aiRuleKnowledge {
+						mysqlRuleKnowledgeMap[ruleName] = knowledgeContent
+					}
+				}
+			}
 		}
-		for ruleName, knowledgeContent := range aiRuleKnowledge {
-			defaultRuleKnowledgeMap[ruleName] = knowledgeContent
-		}
+	} else {
+		log.Logger().Errorf("init knowledge failed, get dms license failed: %v", err)
 	}
-
+	// load rule knowledge
 	for _, rules := range rulesMap {
 		for _, rule := range rules {
 
 			warpedRule := &RuleWrapper{
 				BaseRuleWrapper: BaseRuleWrapper{
 					predefineTags:           predefineTags,
-					ruleKnowledgeContentMap: defaultRuleKnowledgeMap,
+					ruleKnowledgeContentMap: mysqlRuleKnowledgeMap,
 				},
 				rule: rule,
 			}
