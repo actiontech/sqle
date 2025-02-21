@@ -41,7 +41,6 @@ type SqleOptions struct {
 	Service                   SeviceOpts         `yaml:"service"`
 	OptimizationConfig        OptimizationConfig `yaml:"optimization_config"`
 	SQLRewritingConfig        SQLRewritingConfig `yaml:"sql_rewriting_config"`
-	KnowledgeBaseTempLicense  string             `yaml:"knowledge_base_temp_license"`
 }
 
 type SeviceOpts struct {
