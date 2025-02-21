@@ -70,7 +70,7 @@ func LoadKnowledge(rulesMap map[string][]*model.Rule) error {
 					// 获取AI规则的知识
 					aiRuleKnowledge, err := ai.GetAIRulesKnowledge()
 					if err != nil {
-						panic(fmt.Errorf("get ai rules knowledge failed: %v", err))
+						return fmt.Errorf("get ai rules knowledge failed: %v", err)
 					}
 					for ruleName, knowledgeContent := range aiRuleKnowledge {
 						mysqlRuleKnowledgeMap[ruleName] = knowledgeContent
