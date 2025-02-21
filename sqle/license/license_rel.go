@@ -322,18 +322,6 @@ func (l *License) CheckCanCreateInstance(dbType string, usage LimitOfEachType) e
 	return fmt.Errorf("instance count reaches the limitation")
 }
 
-func CheckKnowledgeBaseLicense(content string) error {
-	licenseContent := &LicenseContent{}
-	err := licenseContent.DecodeDMSLicense(content)
-	if err != nil {
-		return err
-	}
-	license := &License{
-		LicenseContent: *licenseContent,
-	}
-	return license.CheckSupportKnowledgeBase()
-}
-
 // 检查License是否支持知识库
 func (l *License) CheckSupportKnowledgeBase() error {
 	if len(l.Permission.KnowledgeBaseDBTypes) == 0 {
