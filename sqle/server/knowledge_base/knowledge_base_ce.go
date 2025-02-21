@@ -3,8 +3,16 @@
 
 package knowledge_base
 
-import "github.com/actiontech/sqle/sqle/model"
+import (
+	"fmt"
+
+	"github.com/actiontech/sqle/sqle/model"
+)
 
 func LoadKnowledge(rulesMap map[string][]*model.Rule) error {
 	return nil
+}
+
+func CheckKnowledgeBaseLicense() error {
+	return fmt.Errorf("license not support knowledge base")
 }
