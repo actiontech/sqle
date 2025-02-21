@@ -6,6 +6,7 @@ package knowledge_base
 import (
 	"strings"
 
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/model"
 	"golang.org/x/text/language"
 )
@@ -107,11 +108,14 @@ func (rw *RuleWrapper) GetDBType() model.TypeTag {
 }
 
 func (rw *RuleWrapper) GetContent(lang language.Tag) string {
-	if lang != language.Chinese {
-		return ""
+	if rw.rule.DBType == driverV2.DriverTypeMySQL {
+		// TODO 目前都是中文
+		if lang != language.Chinese {
+			return ""
+		}
+		return rw.ruleKnowledgeContentMap[rw.GetRuleName()]
 	}
-	// TODO 目前都是中文
-	return rw.ruleKnowledgeContentMap[rw.GetRuleName()]
+	return rw.rule.I18nRuleInfo.GetRuleInfoByLangTag(lang).Knowledge.Content
 }
 
 func (rw *RuleWrapper) GetRequiredTags(predefineTags map[model.TypeTag]*model.Tag, langTag model.TypeTag) ([]*model.Tag, error) {

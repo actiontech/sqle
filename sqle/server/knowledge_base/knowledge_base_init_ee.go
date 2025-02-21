@@ -23,7 +23,15 @@ func CheckKnowledgeBaseLicense() error {
 		log.Logger().Errorf("get dms license failed: %v", err)
 		return err
 	}
-	return dmsLicense.CheckSupportKnowledgeBase()
+	support, err := dmsLicense.CheckSupportKnowledgeBase()
+	if err != nil {
+		log.Logger().Errorf("check support knowledge base failed: %v", err)
+		return err
+	}
+	if !support {
+		return fmt.Errorf("license not support knowledge base")
+	}
+	return nil
 }
 
 func getDMSLicense() (*license.License, error) {
@@ -49,14 +57,14 @@ func LoadKnowledge(rulesMap map[string][]*model.Rule) error {
 		log.Logger().Errorf("get or create predefined tags failed: %v", err)
 		return err
 	}
-	defaultRuleKnowledgeMap, err := rule.GetDefaultRulesKnowledge()
+	mysqlRuleKnowledgeMap, err := rule.GetDefaultRulesKnowledge()
 	if err != nil {
 		return fmt.Errorf("get default rules knowledge failed: %v", err)
 	}
 	// 加载购买License后的AI规则的知识
 	if dmsLicense, err := getDMSLicense(); err == nil {
 		// 仅初始化支持的数据库类型的知识库
-		if dmsLicense.CheckSupportKnowledgeBase() == nil {
+		if support, err := dmsLicense.CheckSupportKnowledgeBase(); err == nil && support {
 			for _, dbType := range dmsLicense.GetKnowledgeBaseDBTypes() {
 				if dbType == driverV2.DriverTypeMySQL { // TODO 后续会增加其他知识库
 					// 获取AI规则的知识
@@ -65,7 +73,7 @@ func LoadKnowledge(rulesMap map[string][]*model.Rule) error {
 						panic(fmt.Errorf("get ai rules knowledge failed: %v", err))
 					}
 					for ruleName, knowledgeContent := range aiRuleKnowledge {
-						defaultRuleKnowledgeMap[ruleName] = knowledgeContent
+						mysqlRuleKnowledgeMap[ruleName] = knowledgeContent
 					}
 				}
 			}
@@ -80,7 +88,7 @@ func LoadKnowledge(rulesMap map[string][]*model.Rule) error {
 			warpedRule := &RuleWrapper{
 				BaseRuleWrapper: BaseRuleWrapper{
 					predefineTags:           predefineTags,
-					ruleKnowledgeContentMap: defaultRuleKnowledgeMap,
+					ruleKnowledgeContentMap: mysqlRuleKnowledgeMap,
 				},
 				rule: rule,
 			}

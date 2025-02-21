@@ -323,11 +323,11 @@ func (l *License) CheckCanCreateInstance(dbType string, usage LimitOfEachType) e
 }
 
 // 检查License是否支持知识库
-func (l *License) CheckSupportKnowledgeBase() error {
+func (l *License) CheckSupportKnowledgeBase() (bool, error) {
 	if len(l.Permission.KnowledgeBaseDBTypes) == 0 {
-		return fmt.Errorf("knowledge base is not supported")
+		return false, fmt.Errorf("knowledge base is not supported")
 	}
-	return nil
+	return true, nil
 }
 
 // 获取License中支持的知识库数据库类型
@@ -338,7 +338,7 @@ func (l *License) GetKnowledgeBaseDBTypes() []string {
 func GetDMSLicense(content string) (*License, error) {
 	licenseContent := &LicenseContent{}
 	err := licenseContent.DecodeDMSLicense(content)
-	if err!= nil {
+	if err != nil {
 		return nil, err
 	}
 	license := &License{
