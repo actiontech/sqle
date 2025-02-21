@@ -3,10 +3,9 @@ package server
 import (
 	"fmt"
 
-	"github.com/actiontech/sqle/sqle/config"
 	"github.com/actiontech/sqle/sqle/driver"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
-	"github.com/actiontech/sqle/sqle/license"
+	svcKnowledgeBase "github.com/actiontech/sqle/sqle/server/knowledge_base"
 	optimization "github.com/actiontech/sqle/sqle/server/optimization/rule"
 )
 
@@ -65,7 +64,7 @@ type knowledgeBaseChecker struct {
 }
 
 func (s knowledgeBaseChecker) CheckIsSupport() bool {
-	if license.CheckKnowledgeBaseLicense(config.GetOptions().SqleOptions.KnowledgeBaseTempLicense) != nil {
+	if svcKnowledgeBase.CheckKnowledgeBaseLicense() != nil {
 		return false
 	}
 	return true
