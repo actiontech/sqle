@@ -36,7 +36,7 @@ func getKnowledgeBaseList(c echo.Context) error {
 	})
 }
 
-func convertToKnowledgeBaseListRes(knowledgeList []model.Knowledge) []*KnowledgeBase {
+func convertToKnowledgeBaseListRes(knowledgeList []knowledge_base.KnowledgeWithRuleName) []*KnowledgeBase {
 	knowledgeRes := make([]*KnowledgeBase, 0, len(knowledgeList))
 	for _, knowledge := range knowledgeList {
 		knowledgeRes = append(knowledgeRes, &KnowledgeBase{

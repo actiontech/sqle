@@ -73,9 +73,11 @@ func NewKnowledgeBaseTagManager(storage *model.Storage) *KnowledgeBaseTagManager
 
 func (k *KnowledgeBaseTagManager) GetPreDefinedTags() map[model.TypeTag]struct{} {
 	defaultTagNameMap := make(map[model.TypeTag]struct{})
-	for _, tagNames := range model.GetTagMapDefaultRuleKnowledge() {
-		for _, tagName := range tagNames {
-			defaultTagNameMap[tagName] = struct{}{}
+	for _, tagNamesSlice := range model.GetTagMapDefaultRuleKnowledge() {
+		for _, tagNames := range tagNamesSlice {
+			for _, tagName := range tagNames {
+				defaultTagNameMap[tagName] = struct{}{}
+			}
 		}
 	}
 	return defaultTagNameMap

@@ -5,96 +5,12 @@ package knowledge_base
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/actiontech/sqle/sqle/config"
-	"github.com/actiontech/sqle/sqle/driver/mysql/rule/ai"
-	"github.com/actiontech/sqle/sqle/license"
 	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"golang.org/x/text/language"
 )
-
-// 迁移规则知识库到知识库，并且关联标签
-func MigrateKnowledgeFromRules(rulesMap map[string] /* DBType */ []*model.Rule) error {
-	if license.CheckKnowledgeBaseLicense(config.GetOptions().SqleOptions.KnowledgeBaseTempLicense) == nil {
-		// 获取所有规则的知识
-		defaultAIRuleKnowledge, err := ai.GetAIRulesKnowledge()
-		if err != nil {
-			panic(fmt.Errorf("get ai rules knowledge failed: %v", err))
-		}
-		// 初始化规则的知识
-		for dbType, ruleList := range rulesMap {
-			for idx, rule := range ruleList {
-				if knowledge, exist := defaultAIRuleKnowledge[rule.Name]; exist {
-					rulesMap[dbType][idx].Knowledge.I18nContent[language.Chinese] = knowledge
-				}
-			}
-		}
-	}
-	predefineTags, err := NewTagService(model.GetStorage()).GetOrCreatePredefinedTags()
-	if err != nil {
-		log.Logger().Errorf("get or create predefined tags failed: %v", err)
-		return err
-	}
-	err = createKnowledgeWithTag(rulesMap, predefineTags)
-	if err != nil {
-		log.Logger().Errorf("create knowledge failed: %v", err)
-		return err
-	}
-	return nil
-}
-
-// 根据规则创建知识库并关联标签
-func createKnowledgeWithTag(rulesMap map[string][]*model.Rule, predefineTags map[model.TypeTag]*model.Tag) error {
-	storage := model.GetStorage()
-
-	// 处理默认规则
-	for _, rules := range rulesMap {
-		if err := processRules(storage, rules, predefineTags, getDefaultRuleKnowledgeWithTags); err != nil {
-			return err
-		}
-	}
-
-	// 处理自定义规则
-	customRules, err := storage.GetAllCustomRules()
-	if err != nil {
-		return fmt.Errorf("failed to get custom rules: %w", err)
-	}
-	return processRules(storage, customRules, predefineTags, getCustomRuleKnowledgeWithTags)
-}
-
-// 使用泛型来处理不同类型的规则
-func processRules[T any](
-	storage *model.Storage,
-	rules []T,
-	predefineTags map[model.TypeTag]*model.Tag,
-	getKnowledgeWithTags func(T, map[model.TypeTag]*model.Tag) ([]*KnowledgeWithFilter, error),
-) error {
-	for _, rule := range rules {
-		knowledgeWithTags, err := getKnowledgeWithTags(rule, predefineTags)
-		if err != nil {
-			return fmt.Errorf("failed to get knowledge for rule: %w", err)
-		}
-		for _, item := range knowledgeWithTags {
-			if _, err := storage.CreateKnowledgeWithTags(item.knowledge, item.tagMap, item.filterTags); err != nil {
-				return fmt.Errorf("failed to create knowledge: %w", err)
-			}
-		}
-	}
-	return nil
-}
-
-// 初始化一条自定义规则的知识
-func InitCustomRuleKnowledge(rule *model.CustomRule) error {
-	predefineTags, err := NewTagService(model.GetStorage()).GetOrCreatePredefinedTags()
-	if err != nil {
-		log.Logger().Errorf("get or create predefined tags failed: %v", err)
-		return err
-	}
-	return processRules(model.GetStorage(), []*model.CustomRule{rule}, predefineTags, getCustomRuleKnowledgeWithTags)
-}
 
 // 获取所有知识库标签
 func GetKnowledgeBaseTags() ([]*model.Tag, error) {
@@ -206,8 +122,13 @@ func getKnowledgeDefaultTag(ctx context.Context, dbType string, ruleType model.T
 	return []*model.Tag{langTag, dbTag, knowledgePredefineTag}, nil
 }
 
+type KnowledgeWithRuleName struct {
+	*model.Knowledge
+	RuleName string
+}
+
 // 搜索知识列表
-func SearchKnowledgeList(ctx context.Context, keyword string, tags []string, limit, offset int) ([]model.Knowledge, int64, error) {
+func SearchKnowledgeList(ctx context.Context, keyword string, tags []string, limit, offset int) ([]KnowledgeWithRuleName, int64, error) {
 	s := model.GetStorage()
 	// 根据语言和数据库版本过滤
 	tags = append(tags, locale.Bundle.GetLangTagFromCtx(ctx).String())
@@ -266,5 +187,21 @@ func SearchKnowledgeList(ctx context.Context, keyword string, tags []string, lim
 			knowledge[idx].Tags = append(knowledge[idx].Tags, newTag)
 		}
 	}
-	return knowledge, count, nil
+	knowledgeWithRuleName := make([]KnowledgeWithRuleName, 0, len(knowledge))
+
+	for idx, _ := range knowledge {
+		var ruleName string
+		relation, err := s.GetRuleKnowledgeRelationByKnowledgeID(knowledge[idx].ID)
+		if err != nil {
+			ruleName = ""
+		} else {
+			ruleName = relation.RuleName
+		}
+
+		knowledgeWithRuleName = append(knowledgeWithRuleName, KnowledgeWithRuleName{
+			Knowledge: &knowledge[idx],
+			RuleName:  ruleName,
+		})
+	}
+	return knowledgeWithRuleName, count, nil
 }

@@ -15,7 +15,7 @@ var f embed.FS
 
 const defaultKnowledgeRootDir = "default_knowledge_ee"
 
-func getDefaultRulesKnowledge() (map[string]string, error) {
+func GetDefaultRulesKnowledge() (map[string]string, error) {
 	res := make(map[string]string, 0)
 	dir, err := f.ReadDir(defaultKnowledgeRootDir)
 	if err != nil {

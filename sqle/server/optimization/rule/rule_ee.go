@@ -19,7 +19,7 @@ var f embed.FS
 
 const defaultKnowledgeRootDir = "default_knowledge_ee"
 
-func getDefaultRulesKnowledge() (map[string]string, error) {
+func GetDefaultRulesKnowledge() (map[string]string, error) {
 	res := make(map[string]string, 0)
 	dir, err := f.ReadDir(defaultKnowledgeRootDir)
 	if err != nil {
@@ -105,7 +105,7 @@ func initOptimizationRule() {
 	OptimizationRuleMap["Oracle"] = OracleOptimizationRuleHandler
 
 	// SQL优化规则知识库
-	defaultRulesKnowledge, err := getDefaultRulesKnowledge()
+	defaultRulesKnowledge, err := GetDefaultRulesKnowledge()
 	if err != nil {
 		log.NewEntry().Errorf("get default rules knowledge failed: %v", err)
 		return
