@@ -115,7 +115,14 @@ func (rw *RuleWrapper) GetContent(lang language.Tag) string {
 		}
 		return rw.ruleKnowledgeContentMap[rw.GetRuleName()]
 	}
-	return rw.rule.I18nRuleInfo.GetRuleInfoByLangTag(lang).Knowledge.Content
+	if rw.rule.Knowledge == nil {
+		return ""
+	}
+	knowledge := rw.rule.Knowledge.GetKnowledgeByLang(lang)
+	if knowledge == nil {
+		return ""
+	}
+	return knowledge.Content
 }
 
 func (rw *RuleWrapper) GetRequiredTags(predefineTags map[model.TypeTag]*model.Tag, langTag model.TypeTag) ([]*model.Tag, error) {
