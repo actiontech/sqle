@@ -3,6 +3,6 @@
 
 package rule
 
-func getDefaultRulesKnowledge() (map[string]string, error) {
+func GetDefaultRulesKnowledge() (map[string]string, error) {
 	return nil, nil
 }

@@ -28,19 +28,22 @@ type RuleTemplate struct {
 }
 
 func GenerateRuleByDriverRule(dr *driverV2.Rule, dbType string) *Rule {
+	multiLanguageKnowledge := make(MultiLanguageKnowledge, 0, len(dr.I18nRuleInfo))
 	r := &Rule{
-		Name:   dr.Name,
-		Level:  string(dr.Level),
-		DBType: dbType,
-		Params: dr.Params,
-		Knowledge: &RuleKnowledge{
-			I18nContent: make(i18nPkg.I18nStr, len(dr.I18nRuleInfo)),
-		},
+		Name:         dr.Name,
+		Level:        string(dr.Level),
+		DBType:       dbType,
+		Params:       dr.Params,
+		Knowledge:    multiLanguageKnowledge,
 		I18nRuleInfo: make(driverV2.I18nRuleInfo, len(dr.I18nRuleInfo)),
 		AllowOffline: dr.AllowOffline,
 	}
 	for lang, v := range dr.I18nRuleInfo {
-		r.Knowledge.I18nContent[lang] = v.Knowledge.Content
+		r.Knowledge = append(r.Knowledge, &Knowledge{
+			Title:       v.Desc,
+			Content:     v.Knowledge.Content,
+			Description: v.Annotation,
+		})
 		r.I18nRuleInfo[lang] = &driverV2.RuleInfo{
 			Desc:       v.Desc,
 			Annotation: v.Annotation,
@@ -93,17 +96,16 @@ func (r *RuleKnowledge) GetContentByLangTag(lang language.Tag) string {
 }
 
 type Rule struct {
-	Name            string                `json:"name" gorm:"primary_key; not null;type:varchar(255)"`
-	DBType          string                `json:"db_type" gorm:"primary_key; not null; default:\"mysql\";type:varchar(255)"`
-	Level           string                `json:"level" example:"error" gorm:"type:varchar(255)"` // notice, warn, error
-	Params          params.Params         `json:"params" gorm:"type:json"`
-	KnowledgeId     uint                  `json:"knowledge_id"`
-	Knowledge       *RuleKnowledge        `json:"knowledge" gorm:"foreignkey:KnowledgeId"`
-	HasAuditPower   bool                  `json:"has_audit_power" gorm:"type:bool" example:"true"`
-	HasRewritePower bool                  `json:"has_rewrite_power" gorm:"type:bool" example:"true"`
-	I18nRuleInfo    driverV2.I18nRuleInfo `json:"i18n_rule_info" gorm:"type:json"`
-	Categories      []*AuditRuleCategory  `gorm:"many2many:audit_rule_category_rels;joinForeignKey:RuleName,RuleDBType;joinReferences:CategoryId"`
-	AllowOffline    bool                  `json:"allow_offline" gorm:"-"`
+	Name            string                 `json:"name" gorm:"primary_key; not null;type:varchar(255)"`
+	DBType          string                 `json:"db_type" gorm:"primary_key; not null; default:\"mysql\";type:varchar(255)"`
+	Level           string                 `json:"level" example:"error" gorm:"type:varchar(255)"` // notice, warn, error
+	Params          params.Params          `json:"params" gorm:"type:json"`
+	HasAuditPower   bool                   `json:"has_audit_power" gorm:"type:bool" example:"true"`
+	HasRewritePower bool                   `json:"has_rewrite_power" gorm:"type:bool" example:"true"`
+	I18nRuleInfo    driverV2.I18nRuleInfo  `json:"i18n_rule_info" gorm:"type:json"`
+	Categories      []*AuditRuleCategory   `gorm:"many2many:audit_rule_category_rels;joinForeignKey:RuleName,RuleDBType;joinReferences:CategoryId"`
+	AllowOffline    bool                   `json:"allow_offline" gorm:"-"`
+	Knowledge       MultiLanguageKnowledge `gorm:"many2many:rule_knowledge_relations" json:"rules"` // 规则和知识的关系
 }
 
 func (r Rule) TableName() string {
@@ -463,10 +465,17 @@ func (s *Storage) GetAllRules() ([]*Rule, error) {
 }
 
 func (s *Storage) DeleteCascadeRule(name, dbType string) error {
+	/* 
+		1. 删除rule_template_rule表中rule_name和db_type等于name和dbType的记录
+		2. 删除rule表中rule_name和db_type等于name和dbType的记录
+		3. 删除rule_knowledge_relations表中rule_name和db_type等于name和dbType的记录
+		4. 删除audit_rule_category_rels表中rule_name和db_type等于name和dbType的记录
+		5. 不删除knowledge表中的记录，因为knowledge表中的记录不与规则强绑定，后续允许存在脱离规则的知识，且删除规则时，需要保留客户积累的知识
+	*/
 	err := s.db.Exec(`delete u,t,k,c
 					from rules u 
 					left join rule_template_rule t on u.name = t.rule_name and u.db_type = t.db_type 
-					left join rule_knowledge k on u.knowledge_id = k.id
+					left join rule_knowledge_relations k on u.name = k.rule_name AND u.db_type = k.rule_db_type
 					left join audit_rule_category_rels c on u.name = c.rule_name and u.db_type = c.rule_db_type
 					where u.name = ? AND u.db_type = ?`, name, dbType).Error
 	return err
@@ -594,16 +603,15 @@ type CustomRule struct {
 	Model
 	RuleId string `json:"rule_id" gorm:"index:unique; not null; type:varchar(255)"`
 
-	Desc        string               `json:"desc" gorm:"not null; type:varchar(255)"`
-	Annotation  string               `json:"annotation" gorm:"type:varchar(1024)"`
-	DBType      string               `json:"db_type" gorm:"not null; default:\"mysql\"; type:varchar(255)"`
-	Level       string               `json:"level" example:"error" gorm:"type:varchar(255)"` // notice, warn, error
-	Typ         string               `json:"type" gorm:"column:type; not null; type:varchar(255)"`
-	RuleScript  string               `json:"rule_script" gorm:"type:text"`
-	ScriptType  string               `json:"script_type" gorm:"not null; default:\"regular\"; type:varchar(255)"`
-	KnowledgeId uint                 `json:"knowledge_id"`
-	Knowledge   *RuleKnowledge       `json:"knowledge" gorm:"foreignkey:KnowledgeId"`
-	Categories  []*AuditRuleCategory `json:"categories" gorm:"many2many:custom_rule_category_rels;foreignKey:RuleId;joinForeignKey:CustomRuleId;joinReferences:CategoryId"`
+	Desc       string                 `json:"desc" gorm:"not null; type:varchar(255)"`
+	Annotation string                 `json:"annotation" gorm:"type:varchar(1024)"`
+	DBType     string                 `json:"db_type" gorm:"not null; default:\"mysql\"; type:varchar(255)"`
+	Level      string                 `json:"level" example:"error" gorm:"type:varchar(255)"` // notice, warn, error
+	Typ        string                 `json:"type" gorm:"column:type; not null; type:varchar(255)"`
+	RuleScript string                 `json:"rule_script" gorm:"type:text"`
+	ScriptType string                 `json:"script_type" gorm:"not null; default:\"regular\"; type:varchar(255)"`
+	Categories []*AuditRuleCategory   `json:"categories" gorm:"many2many:custom_rule_category_rels;foreignKey:RuleId;joinForeignKey:CustomRuleId;joinReferences:CategoryId"`
+	Knowledge  MultiLanguageKnowledge `gorm:"many2many:custom_rule_knowledge_relations" json:"custom_rules"` // 自定义规则和知识的关系
 }
 
 func (s *Storage) GetCustomRuleByRuleId(ruleId string) (*CustomRule, bool, error) {
