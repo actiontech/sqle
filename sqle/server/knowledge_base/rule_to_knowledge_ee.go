@@ -149,6 +149,10 @@ func (rw *RuleWrapper) GetRequiredTags(predefineTags map[model.TypeTag]*model.Ta
 }
 
 func (rw *RuleWrapper) AddExtraTags(tagMap map[model.TypeTag]*model.Tag, predefineTags map[model.TypeTag]*model.Tag) {
+	// TODO 目前仅MySQL支持的知识库包含内容，虽然相同的规则名称可以打上相同的标签，但是其他同名不同数据库类型的规则的知识库没有内容，打上标签会导致搜索出来的结果内容是空的，体验不好，所以暂时不打上标签
+	if rw.rule.DBType != driverV2.DriverTypeMySQL {
+		return
+	}
 	if ruleTagsSlice, ok := model.GetTagMapDefaultRuleKnowledge()[rw.rule.Name]; ok {
 		for _, ruleTags := range ruleTagsSlice {
 			for _, tagName := range ruleTags {
