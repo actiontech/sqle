@@ -68,15 +68,9 @@ func GetAffectedRowNum(ctx context.Context, originSql string, conn *executor.Exe
 	// 2. SELECT COUNT(1) FROM test LIMIT 10,10 类型的SQL结果集为空
 	// 已上两种情况,使用子查询 select count(*) from (输入的sql) as t的方式来获取影响行数
 	if cannotConvert {
-		// 将select语句中的查询字段替换为数字1
-		// https://github.com/actiontech/sqle/issues/2175
-		newSql, err := useIntReplaceSelectFields(node)
-		if err != nil {
-			log.NewEntry().Errorf("replace select fields failed, err: %v", err)
-			newSql = originSql
-		}
+		// 不能转换时，无法获取select 字段存在重名的sql影响行数 https://github.com/actiontech/sqle/issues/2867
 		// 移除后缀分号，避免sql语法错误
-		trimSuffix := strings.TrimRight(newSql, ";")
+		trimSuffix := strings.TrimRight(originSql, ";")
 		affectedRowSql = fmt.Sprintf("select count(*) from (%s) as t", trimSuffix)
 	} else {
 		sqlBuilder := new(strings.Builder)
@@ -104,8 +98,8 @@ func GetAffectedRowNum(ctx context.Context, originSql string, conn *executor.Exe
 
 	epRecords, err := explainRecordFunc(affectedRowSql)
 	if err != nil {
-		log.NewEntry().Errorf("get execution plan failed, sqle: %v, error: %v", originSql, err)
-		return 0, err
+		log.NewEntry().Errorf("get execution plan failed, sql: %v, error: %v", originSql, err)
+		return 0, fmt.Errorf("get affected rows sql execution plan failed, affected rows sql statement: %s, error: %v,", affectedRowSql, err)
 	}
 
 	var notUseIndex bool
@@ -130,7 +124,7 @@ func GetAffectedRowNum(ctx context.Context, originSql string, conn *executor.Exe
 
 	_, row, err := conn.Db.QueryWithContext(ctx, affectedRowSql)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("get affected rows failed, sql statement: %s, error: %v", affectedRowSql, err)
 	}
 
 	// 如果下发的 SELECT COUNT(1) 的SQL，返回的结果集为空, 则返回0
@@ -150,25 +144,6 @@ func GetAffectedRowNum(ctx context.Context, originSql string, conn *executor.Exe
 	}
 
 	return affectCount, nil
-}
-
-func useIntReplaceSelectFields(node ast.StmtNode) (string, error) {
-	stmt, ok := node.(*ast.SelectStmt)
-	if !ok {
-		return "", errors.New("pass parameter is not select node")
-	}
-	newValue := &driver.ValueExpr{}
-	newValue.SetInt64(1)
-	selectFields := &ast.SelectField{Expr: newValue}
-	stmt.Fields.Fields = []*ast.SelectField{selectFields}
-
-	sqlBuilder := new(strings.Builder)
-	err := stmt.Restore(format.NewRestoreCtx(format.DefaultRestoreFlags, sqlBuilder))
-	if err != nil {
-		return "", err
-	}
-	affectRowSql := sqlBuilder.String()
-	return affectRowSql, nil
 }
 
 func getSelectNodeFromDelete(stmt *ast.DeleteStmt) *ast.SelectStmt {
