@@ -501,6 +501,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1Router.POST("/audit_files", v1.DirectAuditFiles)
 		v2Router.POST("/audit_files", v2.DirectAuditFiles)
 		v1Router.GET("/sql_analysis", v1.DirectGetSQLAnalysis)
+		v1Router.GET("/sql_parse", v1.DirectParseSQL)
+
 		// 企业公告
 		v1Router.GET("/company_notice", v1.GetCompanyNotice)
 		// 系统功能开关

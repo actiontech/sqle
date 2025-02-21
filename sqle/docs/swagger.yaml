@@ -1357,6 +1357,19 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.DirectParseSQLRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.ParseSQLResData'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
   v1.DriversResV1:
     properties:
       driver_name_list:
@@ -1411,6 +1424,13 @@ definitions:
         type: string
       perform_improve_per:
         type: number
+    type: object
+  v1.ExtractTable:
+    properties:
+      schema_name:
+        type: string
+      table_name:
+        type: string
     type: object
   v1.FeishuConfigurationV1:
     properties:
@@ -3670,6 +3690,17 @@ definitions:
         type: object
       message:
         example: ok
+        type: string
+    type: object
+  v1.ParseSQLResData:
+    properties:
+      extract_table:
+        items:
+          $ref: '#/definitions/v1.ExtractTable'
+        type: array
+      sql:
+        type: string
+      sql_type:
         type: string
     type: object
   v1.PartialSyncAuditPlanSQLsReqV1:
@@ -12359,6 +12390,31 @@ paths:
       summary: 直接审核SQL
       tags:
       - sql_audit
+  /v1/sql_parse:
+    get:
+      description: parse sql
+      operationId: parseSQL
+      parameters:
+      - description: instance type
+        in: query
+        name: instance_type
+        required: true
+        type: string
+      - description: sql
+        in: query
+        name: sql
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.DirectParseSQLRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 解析SQL
+      tags:
+      - sql_parse
   /v1/statistic/instances/sql_average_execution_time:
     get:
       description: get average execution time of sql
