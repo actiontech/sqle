@@ -29,7 +29,8 @@ var (
 
 const (
 	// must be 16 byte
-	cipherKey = "ActionTech--SQLE"
+	cipherKey    = "ActionTech--SQLE"
+	cipherKeyDMS = "ActionTech---DMS"
 
 	// must be 16 byte
 	cipherText = "a1b2c3d4e5f6g7h8"
@@ -53,6 +54,7 @@ type LicensePermission struct {
 	Version                    string          // SQLE version
 	UserCount                  int             // The number of user
 	NumberOfInstanceOfEachType LimitOfEachType // Instance limit
+	KnowledgeBaseDBTypes       []string        // Knowledge base database type
 }
 
 type ClusterHardwareSign struct {
@@ -64,6 +66,7 @@ type LicenseContent struct {
 	Permission           LicensePermission
 	HardwareSign         string
 	ClusterHardwareSigns []ClusterHardwareSign // v2.2303.0 版本引入
+	LicenseId            string
 }
 type LicenseStatus struct {
 	WorkDurationHour int // 实际的运行时间，加密存在许可证内容里
@@ -194,6 +197,50 @@ func (l *LicenseContent) Decode(license string) error {
 	return nil
 }
 
+func (l *LicenseContent) DecodeDMSLicense(license string) error {
+	block, err := aes.NewCipher([]byte(cipherKeyDMS))
+	if nil != err {
+		return err
+	}
+	decrypter := cipher.NewCFBDecrypter(block, []byte(cipherText))
+
+	options := strings.Split(license, DELIMITER)
+	if len(options) < 4 {
+		return ErrInvalidLicense
+	}
+	l.LicenseId = options[0]
+
+	permissionStr, err := decode(options[2], decrypter)
+	if nil != err {
+		return err
+	}
+	permission := &LicensePermission{}
+	err = json.Unmarshal([]byte(permissionStr), &permission)
+	if nil != err {
+		return err
+	}
+	hardwareSign, err := decode(options[3], decrypter)
+	if nil != err {
+		return err
+	}
+	if len(options) >= 5 {
+		clusterHardwareSigns := []ClusterHardwareSign{}
+		clusterHardwareSignStr, err := decode(options[4], decrypter)
+		if nil != err {
+			return err
+		}
+		err = json.Unmarshal([]byte(clusterHardwareSignStr), &clusterHardwareSigns)
+		if err != nil {
+			return err
+		}
+		l.ClusterHardwareSigns = clusterHardwareSigns
+	}
+
+	l.Permission = *permission
+	l.HardwareSign = hardwareSign
+	return nil
+}
+
 func encode(str string, encrypter cipher.Stream) (string, error) {
 	encrypted := make([]byte, len(str))
 	encrypter.XORKeyStream(encrypted, []byte(str))
@@ -273,4 +320,41 @@ func (l *License) CheckCanCreateInstance(dbType string, usage LimitOfEachType) e
 		return nil
 	}
 	return fmt.Errorf("instance count reaches the limitation")
+}
+
+func CheckKnowledgeBaseLicense(content string) error {
+	licenseContent := &LicenseContent{}
+	err := licenseContent.DecodeDMSLicense(content)
+	if err != nil {
+		return err
+	}
+	license := &License{
+		LicenseContent: *licenseContent,
+	}
+	return license.CheckSupportKnowledgeBase()
+}
+
+// 检查License是否支持知识库
+func (l *License) CheckSupportKnowledgeBase() error {
+	if len(l.Permission.KnowledgeBaseDBTypes) == 0 {
+		return fmt.Errorf("knowledge base is not supported")
+	}
+	return nil
+}
+
+// 获取License中支持的知识库数据库类型
+func (l *License) GetKnowledgeBaseDBTypes() []string {
+	return l.Permission.KnowledgeBaseDBTypes
+}
+
+func GetDMSLicense(content string) (*License, error) {
+	licenseContent := &LicenseContent{}
+	err := licenseContent.DecodeDMSLicense(content)
+	if err!= nil {
+		return nil, err
+	}
+	license := &License{
+		LicenseContent: *licenseContent,
+	}
+	return license, nil
 }
