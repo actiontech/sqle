@@ -8,8 +8,6 @@ import (
 	"net/http"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
-	"github.com/actiontech/sqle/sqle/config"
-	"github.com/actiontech/sqle/sqle/license"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server/knowledge_base"
 	"github.com/labstack/echo/v4"
@@ -17,7 +15,7 @@ import (
 
 // 获取知识库列表
 func getKnowledgeBaseList(c echo.Context) error {
-	if err := license.CheckKnowledgeBaseLicense(config.GetOptions().SqleOptions.KnowledgeBaseTempLicense); err != nil {
+	if err := knowledge_base.CheckKnowledgeBaseLicense(); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	var req GetKnowledgeBaseListReq
@@ -72,7 +70,7 @@ func convertToTagRes(tags []*model.Tag) []*Tag {
 
 // 获取知识库标签列表
 func getKnowledgeBaseTagList(c echo.Context) error {
-	if err := license.CheckKnowledgeBaseLicense(config.GetOptions().SqleOptions.KnowledgeBaseTempLicense); err != nil {
+	if err := knowledge_base.CheckKnowledgeBaseLicense(); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	tags, err := knowledge_base.GetKnowledgeBaseTags()
@@ -90,7 +88,7 @@ func getKnowledgeBaseTagList(c echo.Context) error {
 }
 
 func getKnowledgeGraph(c echo.Context) error {
-	if err := license.CheckKnowledgeBaseLicense(config.GetOptions().SqleOptions.KnowledgeBaseTempLicense); err != nil {
+	if err := knowledge_base.CheckKnowledgeBaseLicense(); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	knowledgeGraph, err := knowledge_base.GetGraph()
