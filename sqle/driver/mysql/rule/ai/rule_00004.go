@@ -34,6 +34,7 @@ func init() {
 			Params:       []*rulepkg.SourceParam{},
 			Knowledge:    driverV2.RuleKnowledge{},
 			AllowOffline: true,
+			Version:      2,
 		},
 		Message: plocale.Rule00004Message,
 		Func:    RuleSQLE00004,
