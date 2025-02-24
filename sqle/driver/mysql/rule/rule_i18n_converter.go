@@ -33,6 +33,7 @@ type SourceRule struct {
 	Params       []*SourceParam
 	Knowledge    driverV2.RuleKnowledge
 	AllowOffline bool
+	Version      uint32
 }
 
 type SourceHandler struct {
@@ -71,6 +72,7 @@ func ConvertSourceRule(bundle *i18nPkg.Bundle, sr *SourceRule) *driverV2.Rule {
 		Params:       make(params.Params, 0, len(sr.Params)),
 		I18nRuleInfo: genAllI18nRuleInfo(bundle, sr),
 		AllowOffline: sr.AllowOffline,
+		Version:      sr.Version,
 	}
 	for _, v := range sr.Params {
 		r.Params = append(r.Params, &params.Param{

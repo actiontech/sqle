@@ -175,6 +175,7 @@ func ConvertI18nRuleFromProtoToDriver(rule *protoV2.Rule, isI18n bool) (*Rule, e
 		Level:        RuleLevel(rule.Level),
 		Params:       ps,
 		I18nRuleInfo: make(I18nRuleInfo, len(rule.I18NRuleInfo)),
+		Version:      rule.Version,
 	}
 	for langTag, ruleInfo := range rule.I18NRuleInfo {
 		tag, err := language.Parse(langTag)
@@ -235,6 +236,7 @@ func ConvertI18nRuleFromDriverToProto(rule *Rule) *protoV2.Rule {
 			Content: rule.I18nRuleInfo[i18nPkg.DefaultLang].Knowledge.Content,
 		},
 		I18NRuleInfo: make(map[string]*protoV2.I18NRuleInfo, len(rule.I18nRuleInfo)),
+		Version:      rule.Version,
 	}
 	for langTag, ruleInfo := range rule.I18nRuleInfo {
 		pRule.I18NRuleInfo[langTag.String()] = ConvertI18nRuleInfoFromDriverToProto(ruleInfo)
