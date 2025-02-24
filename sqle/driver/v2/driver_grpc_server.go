@@ -40,6 +40,7 @@ type Rule struct {
 	Params       params.Params
 	I18nRuleInfo I18nRuleInfo
 	AllowOffline bool
+	Version      uint32
 }
 
 type I18nRuleInfo map[language.Tag]*RuleInfo
