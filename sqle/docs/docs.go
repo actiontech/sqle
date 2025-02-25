@@ -1286,7 +1286,10 @@ var doc = `{
                 "operationId": "GetDatabaseDriverLogos",
                 "parameters": [
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
                         "description": "MySQL,Oracle",
                         "name": "db_types",
                         "in": "query",
@@ -1464,6 +1467,38 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetKnowledgeBaseTagListRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/knowledge_bases/{id}/document": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get knowledge base document",
+                "tags": [
+                    "knowledge_base"
+                ],
+                "summary": "获取知识库文章详情",
+                "operationId": "getKnowledgeBaseDocument",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "knowledge base id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetKnowledgeBaseDocumentRes"
                         }
                     }
                 }
@@ -14618,6 +14653,23 @@ var doc = `{
                 }
             }
         },
+        "v1.GetKnowledgeBaseDocumentRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.KnowledgeDocument"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetKnowledgeBaseListRes": {
             "type": "object",
             "properties": {
@@ -16431,6 +16483,20 @@ var doc = `{
                 }
             }
         },
+        "v1.KnowledgeDocument": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "modules": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.Module"
+                    }
+                }
+            }
+        },
         "v1.LicenseItem": {
             "type": "object",
             "properties": {
@@ -16517,6 +16583,41 @@ var doc = `{
                 "maintenance_stop_time": {
                     "type": "object",
                     "$ref": "#/definitions/v1.TimeResV1"
+                }
+            }
+        },
+        "v1.Module": {
+            "type": "object",
+            "properties": {
+                "children": {
+                    "description": "子模块",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.Module"
+                    }
+                },
+                "content": {
+                    "description": "模块内容",
+                    "type": "object"
+                },
+                "indent": {
+                    "description": "缩进",
+                    "type": "integer"
+                },
+                "order": {
+                    "description": "模块在当前层级下的次序",
+                    "type": "integer"
+                },
+                "tags": {
+                    "description": "标签",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.Tag"
+                    }
+                },
+                "type": {
+                    "description": "模块类型：heading、markdown、comparison",
+                    "type": "string"
                 }
             }
         },

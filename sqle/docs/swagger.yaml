@@ -2082,6 +2082,18 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetKnowledgeBaseDocumentRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.KnowledgeDocument'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetKnowledgeBaseListRes:
     properties:
       code:
@@ -3334,6 +3346,15 @@ definitions:
         description: 标题
         type: string
     type: object
+  v1.KnowledgeDocument:
+    properties:
+      id:
+        type: string
+      modules:
+        items:
+          $ref: '#/definitions/v1.Module'
+        type: array
+    type: object
   v1.LicenseItem:
     properties:
       description:
@@ -3392,6 +3413,31 @@ definitions:
       maintenance_stop_time:
         $ref: '#/definitions/v1.TimeResV1'
         type: object
+    type: object
+  v1.Module:
+    properties:
+      children:
+        description: 子模块
+        items:
+          $ref: '#/definitions/v1.Module'
+        type: array
+      content:
+        description: 模块内容
+        type: object
+      indent:
+        description: 缩进
+        type: integer
+      order:
+        description: 模块在当前层级下的次序
+        type: integer
+      tags:
+        description: 标签
+        items:
+          $ref: '#/definitions/v1.Tag'
+        type: array
+      type:
+        description: 模块类型：heading、markdown、comparison
+        type: string
     type: object
   v1.ModuleRedDot:
     properties:
@@ -7308,9 +7354,11 @@ paths:
       parameters:
       - description: MySQL,Oracle
         in: query
+        items:
+          type: string
         name: db_types
         required: true
-        type: string
+        type: array
       responses:
         "200":
           description: OK
@@ -7396,6 +7444,26 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取知识库列表
+      tags:
+      - knowledge_base
+  /v1/knowledge_bases/{id}/document:
+    get:
+      description: get knowledge base document
+      operationId: getKnowledgeBaseDocument
+      parameters:
+      - description: knowledge base id
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetKnowledgeBaseDocumentRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取知识库文章详情
       tags:
       - knowledge_base
   /v1/knowledge_bases/graph:

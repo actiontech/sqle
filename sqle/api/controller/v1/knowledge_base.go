@@ -86,9 +86,9 @@ type GetKnowledgeGraphResp struct {
 
 // NodeResponse represents a node in the API response
 type NodeResponse struct {
-	ID     string      `json:"id"`
-	Name   string      `json:"name"`
-	Weight uint64      `json:"weight"`
+	ID     string `json:"id"`
+	Name   string `json:"name"`
+	Weight uint64 `json:"weight"`
 }
 
 // EdgeResponse represents an edge in the API response
@@ -103,4 +103,55 @@ type EdgeResponse struct {
 type GraphResponse struct {
 	Nodes []*NodeResponse `json:"nodes"` // 节点集合
 	Edges []*EdgeResponse `json:"edges"` // 边集合
+}
+
+// Document
+type KnowledgeDocument struct {
+	ID      string   `json:"id"`
+	Modules []Module `json:"modules"`
+}
+
+type Module struct {
+	Type     string      `json:"type"`     // 模块类型：heading、markdown、comparison
+	Content  interface{} `json:"content"`  // 模块内容
+	Tags     []*Tag      `json:"tags"`     // 标签
+	Indent   int         `json:"indent"`   // 缩进
+	Order    int         `json:"order"`    // 模块在当前层级下的次序
+	Children []Module    `json:"children"` // 子模块
+}
+
+// 对比模块
+type ModuleComparison struct {
+	Before   string `json:"before"`   // 对比前的内容
+	After    string `json:"after"`    // 对比后的内容
+	Language string `json:"language"` // 代码语言
+}
+
+// 标题模块
+type ModuleHeading struct {
+	Level   int    `json:"level,omitempty"` // 标题级别
+	Content string `json:"content"`         // 标题内容
+}
+
+// Markdown模块
+type ModuleMarkdown struct {
+	Content string `json:"content"` // Markdown内容
+}
+
+// 获取知识库文章详情
+// @Summary 获取知识库文章详情
+// @Description get knowledge base document
+// @Id getKnowledgeBaseDocument
+// @Tags knowledge_base
+// @Param id path uint true "knowledge base id"
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetKnowledgeBaseDocumentRes
+// @router /v1/knowledge_bases/{id}/document [get]
+func GetKnowledgeBaseDocument(c echo.Context) error {
+	return getKnowledgeBaseDocument(c)
+}
+
+type GetKnowledgeBaseDocumentRes struct {
+	controller.BaseRes
+	Data *KnowledgeDocument `json:"data"`
 }
