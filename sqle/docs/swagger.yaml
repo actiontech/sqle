@@ -954,7 +954,7 @@ definitions:
       rule_template_name:
         type: string
       rule_version:
-        type: string
+        type: integer
     type: object
   v1.CreateRollbackWorkflowReq:
     properties:
@@ -1003,7 +1003,7 @@ definitions:
       rule_template_name:
         type: string
       rule_version:
-        type: string
+        type: integer
     type: object
   v1.CreateSQLAuditRecordResV1:
     properties:
@@ -1929,6 +1929,29 @@ definitions:
       message:
         example: ok
         type: string
+    type: object
+  v1.GetDriverRuleVersionTipsResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.GetDriverRuleVersionTipsV1'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetDriverRuleVersionTipsV1:
+    properties:
+      db_type:
+        example: mysql
+        type: string
+      rule_versions:
+        items:
+          type: integer
+        type: array
     type: object
   v1.GetDriversResV1:
     properties:
@@ -3658,7 +3681,7 @@ definitions:
           $ref: '#/definitions/v1.RuleResV1'
         type: array
       rule_version:
-        type: string
+        type: integer
     type: object
   v1.ParseProjectRuleTemplateFileResV1:
     properties:
@@ -3946,7 +3969,7 @@ definitions:
       rule_template_name:
         type: string
       rule_version:
-        type: string
+        type: integer
     type: object
   v1.RuleReqV1:
     properties:
@@ -4023,7 +4046,7 @@ definitions:
       rule_template_name:
         type: string
       rule_version:
-        type: string
+        type: integer
     type: object
   v1.RuleTemplateResV1:
     properties:
@@ -4034,7 +4057,7 @@ definitions:
       rule_template_name:
         type: string
       rule_version:
-        type: string
+        type: integer
     type: object
   v1.RuleTemplateTipResV1:
     properties:
@@ -4047,7 +4070,7 @@ definitions:
       rule_template_name:
         type: string
       rule_version:
-        type: string
+        type: integer
     type: object
   v1.RuleTips:
     properties:
@@ -7308,9 +7331,11 @@ paths:
       parameters:
       - description: MySQL,Oracle
         in: query
+        items:
+          type: string
         name: db_types
         required: true
-        type: string
+        type: array
       responses:
         "200":
           description: OK
@@ -12275,7 +12300,7 @@ paths:
       - description: filter rule version
         in: query
         name: filter_rule_version
-        type: string
+        type: integer
       - description: filter tags
         in: query
         name: tags
@@ -12302,6 +12327,20 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取规则分类统计信息
+      tags:
+      - rule_template
+  /v1/rules_version_tips:
+    get:
+      description: get the rule versions contained in plugins
+      operationId: GetDriverRuleVersionTips
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetDriverRuleVersionTipsResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取插件包含的规则版本
       tags:
       - rule_template
   /v1/sql_analysis:
