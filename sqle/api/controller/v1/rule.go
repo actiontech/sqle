@@ -15,6 +15,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/dms"
+	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
@@ -631,6 +632,39 @@ func GetRules(c echo.Context) error {
 	return c.JSON(http.StatusOK, &GetRulesResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    ruleRes,
+	})
+}
+
+type GetDriverRuleVersionTipsResV1 struct {
+	controller.BaseRes
+	Data []GetDriverRuleVersionTipsV1 `json:"data"`
+}
+
+type GetDriverRuleVersionTipsV1 struct {
+	DBType       string   `json:"db_type" example:"mysql"`
+	RuleVersions []uint32 `json:"rule_versions"`
+}
+
+// @Summary 获取插件包含的规则版本
+// @Description get the rule versions contained in plugins
+// @Id GetDriverRuleVersionTips
+// @Tags rule_template
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetDriverRuleVersionTipsResV1
+// @router /v1/rules_version_tips [get]
+func GetDriverRuleVersionTips(c echo.Context) error {
+	metas := driver.GetPluginManager().AllDriverMetas()
+	data := make([]GetDriverRuleVersionTipsV1, 0, len(metas))
+	for _, v := range metas {
+		data = append(data, GetDriverRuleVersionTipsV1{
+			DBType:       v.PluginName,
+			RuleVersions: v.RuleVersionIncluded,
+		})
+	}
+
+	return c.JSON(http.StatusOK, &GetDriverRuleVersionTipsResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    data,
 	})
 }
 

@@ -1286,7 +1286,10 @@ var doc = `{
                 "operationId": "GetDatabaseDriverLogos",
                 "parameters": [
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
                         "description": "MySQL,Oracle",
                         "name": "db_types",
                         "in": "query",
@@ -8882,7 +8885,7 @@ var doc = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
+                        "type": "integer",
                         "description": "filter rule version",
                         "name": "filter_rule_version",
                         "in": "query"
@@ -8922,6 +8925,29 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetRuleCategoryStatisticResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/rules_version_tips": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get the rule versions contained in plugins",
+                "tags": [
+                    "rule_template"
+                ],
+                "summary": "获取插件包含的规则版本",
+                "operationId": "GetDriverRuleVersionTips",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetDriverRuleVersionTipsResV1"
                         }
                     }
                 }
@@ -12969,7 +12995,7 @@ var doc = `{
                     "type": "string"
                 },
                 "rule_version": {
-                    "type": "string"
+                    "type": "integer"
                 }
             }
         },
@@ -13043,7 +13069,7 @@ var doc = `{
                     "type": "string"
                 },
                 "rule_version": {
-                    "type": "string"
+                    "type": "integer"
                 }
             }
         },
@@ -14396,6 +14422,40 @@ var doc = `{
                 "message": {
                     "type": "string",
                     "example": "ok"
+                }
+            }
+        },
+        "v1.GetDriverRuleVersionTipsResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.GetDriverRuleVersionTipsV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetDriverRuleVersionTipsV1": {
+            "type": "object",
+            "properties": {
+                "db_type": {
+                    "type": "string",
+                    "example": "mysql"
+                },
+                "rule_versions": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
                 }
             }
         },
@@ -16913,7 +16973,7 @@ var doc = `{
                     }
                 },
                 "rule_version": {
-                    "type": "string"
+                    "type": "integer"
                 }
             }
         },
@@ -17325,7 +17385,7 @@ var doc = `{
                     "type": "string"
                 },
                 "rule_version": {
-                    "type": "string"
+                    "type": "integer"
                 }
             }
         },
@@ -17438,7 +17498,7 @@ var doc = `{
                     "type": "string"
                 },
                 "rule_version": {
-                    "type": "string"
+                    "type": "integer"
                 }
             }
         },
@@ -17455,7 +17515,7 @@ var doc = `{
                     "type": "string"
                 },
                 "rule_version": {
-                    "type": "string"
+                    "type": "integer"
                 }
             }
         },
@@ -17475,7 +17535,7 @@ var doc = `{
                     "type": "string"
                 },
                 "rule_version": {
-                    "type": "string"
+                    "type": "integer"
                 }
             }
         },
