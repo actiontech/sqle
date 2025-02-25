@@ -23,3 +23,7 @@ func getKnowledgeBaseTagList(c echo.Context) error {
 func getKnowledgeGraph(c echo.Context) error {
 	return ErrCommunityEditionDoesNotSupportKnowledgeBase
 }
+
+func getKnowledgeBaseDocument(c echo.Context) error {
+	return ErrCommunityEditionDoesNotSupportKnowledgeBase
+}
