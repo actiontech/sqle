@@ -74,6 +74,9 @@ func ConvertSourceRule(bundle *i18nPkg.Bundle, sr *SourceRule) *driverV2.Rule {
 		AllowOffline: sr.AllowOffline,
 		Version:      sr.Version,
 	}
+	if r.Version == driverV2.RuleVersionUnknown { // 正确标记旧插件规则的版本
+		r.Version = 1
+	}
 	for _, v := range sr.Params {
 		r.Params = append(r.Params, &params.Param{
 			Key:      v.Key,
