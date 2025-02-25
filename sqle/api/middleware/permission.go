@@ -10,26 +10,6 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// AdminUserAllowed is a `echo` middleware, only allow admin user to access next.
-func AdminUserAllowed() echo.MiddlewareFunc {
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			uid, err := dmsJWT.GetUserUidStrFromContextWithOldJwt(c)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusForbidden)
-			}
-			up, err := dms.NewUserPermission(uid, "700300" /*TODO 支持不传空间 */)
-			if err != nil {
-				return echo.NewHTTPError(http.StatusForbidden)
-			}
-			if up.IsAdmin() {
-				return next(c)
-			}
-			return echo.NewHTTPError(http.StatusForbidden)
-		}
-	}
-}
-
 func OpGlobalAllowed() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
@@ -37,15 +17,13 @@ func OpGlobalAllowed() echo.MiddlewareFunc {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusForbidden)
 			}
-			up, err := dms.NewUserPermission(uid, "700300" /*TODO 支持不传空间 */)
+			up, err := dms.NewUserPermission(uid, "")
 			if err != nil {
 				return echo.NewHTTPError(http.StatusForbidden)
 			}
-
 			if up.CanOpGlobal() {
 				return next(c)
 			}
-
 			return echo.NewHTTPError(http.StatusForbidden)
 		}
 	}
@@ -58,7 +36,13 @@ func OpProjectAllowed() echo.MiddlewareFunc {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusForbidden)
 			}
-			up, err := dms.NewUserPermission(uid, "700300" /*TODO 支持不传空间 */)
+
+			projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
+
+			up, err := dms.NewUserPermission(uid, projectUid)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusForbidden)
 			}
@@ -79,15 +63,13 @@ func ViewGlobalAllowed() echo.MiddlewareFunc {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusForbidden)
 			}
-			up, err := dms.NewUserPermission(uid, "700300" /*TODO 支持不传空间 */)
+			up, err := dms.NewUserPermission(uid, "")
 			if err != nil {
 				return echo.NewHTTPError(http.StatusForbidden)
 			}
-
 			if up.CanViewGlobal() {
 				return next(c)
 			}
-
 			return echo.NewHTTPError(http.StatusForbidden)
 		}
 	}
@@ -100,7 +82,12 @@ func ViewProjectAllowed() echo.MiddlewareFunc {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusForbidden)
 			}
-			up, err := dms.NewUserPermission(uid, "700300" /*TODO 支持不传空间 */)
+			projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+			if err != nil {
+				return controller.JSONBaseErrorReq(c, err)
+			}
+
+			up, err := dms.NewUserPermission(uid, projectUid)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusForbidden)
 			}
