@@ -2,6 +2,7 @@ package driverV2
 
 import (
 	"fmt"
+	"math"
 	"math/rand"
 	"time"
 
@@ -14,6 +15,9 @@ import (
 const (
 	// grpc error code
 	GrpcErrSQLIsNotSupported = 1000
+
+	RuleVersionUnknown = 0
+	RuleVersionLatest  = math.MaxUint32
 )
 
 const (
@@ -90,6 +94,7 @@ type DriverMetas struct {
 	Logo                     []byte
 	DatabaseAdditionalParams params.Params
 	Rules                    []*Rule
+	RuleVersionIncluded      []uint32
 	EnabledOptionalModule    []OptionalModule
 }
 
@@ -176,6 +181,9 @@ func ConvertI18nRuleFromProtoToDriver(rule *protoV2.Rule, isI18n bool) (*Rule, e
 		Params:       ps,
 		I18nRuleInfo: make(I18nRuleInfo, len(rule.I18NRuleInfo)),
 		Version:      rule.Version,
+	}
+	if dRule.Version == RuleVersionUnknown { // 正确标记旧插件规则的版本
+		dRule.Version = 1
 	}
 	for langTag, ruleInfo := range rule.I18NRuleInfo {
 		tag, err := language.Parse(langTag)

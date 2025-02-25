@@ -46,6 +46,7 @@ func convertRuleFromV1ToV2(rule *driverV1.Rule) *driverV2.Rule {
 				Knowledge:  driverV2.RuleKnowledge{},
 			},
 		},
+		Version: 1,
 	}
 }
 
@@ -78,6 +79,7 @@ func (d *PluginProcessorV1) GetDriverMetas() (*driverV2.DriverMetas, error) {
 		PluginName:               name,
 		DatabaseDefaultPort:      0,
 		Rules:                    rulesV2,
+		RuleVersionIncluded:      []uint32{1},
 		DatabaseAdditionalParams: params,
 		EnabledOptionalModule:    m,
 	}
