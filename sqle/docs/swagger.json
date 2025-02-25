@@ -16582,11 +16582,8 @@
                 },
                 "content": {
                     "description": "模块内容",
-                    "type": "object"
-                },
-                "indent": {
-                    "description": "缩进",
-                    "type": "integer"
+                    "type": "object",
+                    "$ref": "#/definitions/v1.ModuleContent"
                 },
                 "order": {
                     "description": "模块在当前层级下的次序",
@@ -16600,7 +16597,72 @@
                     }
                 },
                 "type": {
-                    "description": "模块类型：heading、markdown、comparison",
+                    "description": "模块类型",
+                    "type": "string",
+                    "enum": [
+                        "comparison",
+                        "heading",
+                        "markdown"
+                    ]
+                }
+            }
+        },
+        "v1.ModuleComparison": {
+            "type": "object",
+            "properties": {
+                "after": {
+                    "description": "对比后的内容",
+                    "type": "string"
+                },
+                "before": {
+                    "description": "对比前的内容",
+                    "type": "string"
+                },
+                "description": {
+                    "description": "说明",
+                    "type": "string"
+                },
+                "language": {
+                    "description": "代码语言",
+                    "type": "string"
+                }
+            }
+        },
+        "v1.ModuleContent": {
+            "type": "object",
+            "properties": {
+                "comparison": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.ModuleComparison"
+                },
+                "heading": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.ModuleHeading"
+                },
+                "markdown": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.ModuleMarkdown"
+                }
+            }
+        },
+        "v1.ModuleHeading": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "description": "标题内容",
+                    "type": "string"
+                },
+                "level": {
+                    "description": "标题级别",
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.ModuleMarkdown": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "description": "Markdown内容",
                     "type": "string"
                 }
             }

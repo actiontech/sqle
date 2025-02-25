@@ -112,19 +112,26 @@ type KnowledgeDocument struct {
 }
 
 type Module struct {
-	Type     string      `json:"type"`     // 模块类型：heading、markdown、comparison
-	Content  interface{} `json:"content"`  // 模块内容
-	Tags     []*Tag      `json:"tags"`     // 标签
-	Indent   int         `json:"indent"`   // 缩进
-	Order    int         `json:"order"`    // 模块在当前层级下的次序
-	Children []Module    `json:"children"` // 子模块
+	Type     string        `json:"type" enums:"comparison,heading,markdown"` // 模块类型
+	Content  ModuleContent `json:"content"`                                  // 模块内容
+	Tags     []*Tag        `json:"tags"`                                     // 标签
+	Order    int           `json:"order"`                                    // 模块在当前层级下的次序
+	Children []Module      `json:"children"`                                 // 子模块
+}
+
+// ModuleContent 模块内容
+type ModuleContent struct {
+	Heading    *ModuleHeading    `json:"heading,omitempty"`
+	Markdown   *ModuleMarkdown   `json:"markdown,omitempty"`
+	Comparison *ModuleComparison `json:"comparison,omitempty"`
 }
 
 // 对比模块
 type ModuleComparison struct {
-	Before   string `json:"before"`   // 对比前的内容
-	After    string `json:"after"`    // 对比后的内容
-	Language string `json:"language"` // 代码语言
+	Before      string `json:"before"`      // 对比前的内容
+	After       string `json:"after"`       // 对比后的内容
+	Description string `json:"description"` // 说明
+	Language    string `json:"language"`    // 代码语言
 }
 
 // 标题模块
