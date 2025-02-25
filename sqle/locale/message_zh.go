@@ -12,6 +12,7 @@ var (
 	RuleTemplateDesc           = &i18n.Message{ID: "RuleTemplateDesc", Other: "规则模板描述"}
 	RuleTemplateInstType       = &i18n.Message{ID: "RuleTemplateInstType", Other: "数据源类型"}
 	RuleTemplateRuleName       = &i18n.Message{ID: "RuleTemplateRuleName", Other: "规则名"}
+	RuleTemplateRuleVersion    = &i18n.Message{ID: "RuleTemplateRuleVersion", Other: "规则版本"}
 	RuleTemplateRuleDesc       = &i18n.Message{ID: "RuleTemplateRuleDesc", Other: "规则描述"}
 	RuleTemplateRuleAnnotation = &i18n.Message{ID: "RuleTemplateRuleAnnotation", Other: "规则注解"}
 	RuleTemplateRuleLevel      = &i18n.Message{ID: "RuleTemplateRuleLevel", Other: "规则等级"}
