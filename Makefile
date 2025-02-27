@@ -175,10 +175,10 @@ docker_install:
 	$(DOCKER) run -v $(shell pwd):/universe --rm $(GO_COMPILER_IMAGE) sh -c "git config --global --add safe.directory /universe && cd /universe && make install $(MAKEFLAGS)"
 
 docker_install_sqled:
-	$(DOCKER) run -v $(shell pwd):/universe --rm $(GO_COMPILER_IMAGE) sh -c "cd /universe && make install_sqled $(MAKEFLAGS)"
+	$(DOCKER) run -v $(shell pwd):/universe --rm $(GO_COMPILER_IMAGE) sh -c "git config --global --add safe.directory /universe && cd /universe && make install_sqled $(MAKEFLAGS)"
 
 docker_install_scannerd:
-	$(DOCKER) run -v $(shell pwd):/universe --rm $(GO_COMPILER_IMAGE) sh -c "cd /universe && make install_scannerd $(MAKEFLAGS)"
+	$(DOCKER) run -v $(shell pwd):/universe --rm $(GO_COMPILER_IMAGE) sh -c "git config --global --add safe.directory /universe && cd /universe && make install_scannerd $(MAKEFLAGS)"
 
 
 docker_rpm: docker_install
