@@ -2,7 +2,6 @@ package driverV2
 
 import (
 	"fmt"
-	"math"
 	"math/rand"
 	"time"
 
@@ -17,7 +16,6 @@ const (
 	GrpcErrSQLIsNotSupported = 1000
 
 	RuleVersionUnknown = 0
-	RuleVersionLatest  = math.MaxUint32
 )
 
 const (
@@ -36,6 +34,7 @@ const (
 	DriverTypeOceanBase      = "OceanBase For MySQL"
 	DriverTypeTDSQLForInnoDB = "TDSQL For InnoDB"
 	DriverTypeTBase          = "TBase"
+	DriverTypeHANA           = "HANA"
 )
 
 type DriverNotSupportedError struct {
@@ -170,7 +169,7 @@ func ConvertI18nAuditResultFromDriverToProto(ar *AuditResult) *protoV2.AuditResu
 	return par
 }
 
-func ConvertI18nRuleFromProtoToDriver(rule *protoV2.Rule, isI18n bool) (*Rule, error) {
+func ConvertI18nRuleFromProtoToDriver(rule *protoV2.Rule, dbtype string, isI18n bool) (*Rule, error) {
 	ps, err := ConvertProtoParamToParam(rule.Params)
 	if err != nil {
 		return nil, err
@@ -183,7 +182,7 @@ func ConvertI18nRuleFromProtoToDriver(rule *protoV2.Rule, isI18n bool) (*Rule, e
 		Version:      rule.Version,
 	}
 	if dRule.Version == RuleVersionUnknown { // 正确标记旧插件规则的版本
-		dRule.Version = 1
+		dRule.Version = GetDriverTypeDefaultRuleVersion(dbtype)
 	}
 	for langTag, ruleInfo := range rule.I18NRuleInfo {
 		tag, err := language.Parse(langTag)
@@ -491,4 +490,14 @@ func ConvertProtoDatabaseDiffReqToDriver(infos []*protoV2.DatabasDiffSchemaInfo)
 		}
 	}
 	return dbInfoReq
+}
+
+func GetDriverTypeDefaultRuleVersion(dbType string) uint32 {
+	switch dbType {
+	case DriverTypeTBase, DriverTypeHANA:
+		// 这两个插件规则是直接基于知识库开发的，基于知识库的规则版本统一为 2
+		return 2
+	default:
+		return 1
+	}
 }

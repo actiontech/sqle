@@ -48,11 +48,11 @@ type SourceHandler struct {
 }
 
 // GenerateI18nRuleHandlers 根据规则初始化时定义的 SourceHandler 生成支持多语言的 RuleHandler
-func GenerateI18nRuleHandlers(bundle *i18nPkg.Bundle, shs []*SourceHandler) []RuleHandler {
+func GenerateI18nRuleHandlers(bundle *i18nPkg.Bundle, shs []*SourceHandler, dbType string) []RuleHandler {
 	rhs := make([]RuleHandler, len(shs))
 	for k, v := range shs {
 		rhs[k] = RuleHandler{
-			Rule:                            *ConvertSourceRule(bundle, &v.Rule),
+			Rule:                            *ConvertSourceRule(bundle, &v.Rule, dbType),
 			Message:                         v.Message,
 			Func:                            v.Func,
 			NotAllowOfflineStmts:            v.NotAllowOfflineStmts,
@@ -64,7 +64,7 @@ func GenerateI18nRuleHandlers(bundle *i18nPkg.Bundle, shs []*SourceHandler) []Ru
 }
 
 // ConvertSourceRule 将规则初始化时定义的 SourceRule 转换成 driverV2.Rule
-func ConvertSourceRule(bundle *i18nPkg.Bundle, sr *SourceRule) *driverV2.Rule {
+func ConvertSourceRule(bundle *i18nPkg.Bundle, sr *SourceRule, dbType string) *driverV2.Rule {
 	r := &driverV2.Rule{
 		Name:         sr.Name,
 		Level:        sr.Level,
@@ -75,7 +75,7 @@ func ConvertSourceRule(bundle *i18nPkg.Bundle, sr *SourceRule) *driverV2.Rule {
 		Version:      sr.Version,
 	}
 	if r.Version == driverV2.RuleVersionUnknown { // 正确标记旧插件规则的版本
-		r.Version = 1
+		r.Version = driverV2.GetDriverTypeDefaultRuleVersion(dbType)
 	}
 	for _, v := range sr.Params {
 		r.Params = append(r.Params, &params.Param{

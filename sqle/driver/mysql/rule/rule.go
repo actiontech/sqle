@@ -239,7 +239,7 @@ type RuleHandler struct {
 }
 
 func init() {
-	RuleHandlers = GenerateI18nRuleHandlers(plocale.Bundle, sourceRuleHandlers)
+	RuleHandlers = GenerateI18nRuleHandlers(plocale.Bundle, sourceRuleHandlers, driverV2.DriverTypeMySQL)
 	defaultRulesKnowledge, err := GetDefaultRulesKnowledge()
 	if err != nil {
 		panic(fmt.Errorf("get default rules knowledge failed: %v", err))
