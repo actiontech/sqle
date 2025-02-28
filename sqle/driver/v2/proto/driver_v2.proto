@@ -204,9 +204,9 @@ message AuditResult {
   string message = 1; // 不支持国际化时，sqle从此取值
   string level = 2;
   string rule_name = 3;
-	bool  execution_failed = 4;
-  string  error_info = 5;
-  map<string, I18nAuditResultInfo> i18nAuditResultInfo = 6; // 支持国际化时，sqle从此取值，必须包含默认语言
+  map<string, I18nAuditResultInfo> i18nAuditResultInfo = 4; // 支持国际化时，sqle从此取值，必须包含默认语言
+	bool execution_failed = 5;
+  string error_info = 6;
 }
 
 message AuditResults {
