@@ -22,7 +22,7 @@ type RuleTemplate struct {
 	Name           string                   `json:"name" gorm:"type:varchar(255)"`
 	Desc           string                   `json:"desc" gorm:"type:varchar(255)"`
 	DBType         string                   `json:"db_type" gorm:"type:varchar(255)"`
-	RuleVersion    string                   `json:"rule_version" gorm:"type:varchar(255);not null;default:''"`
+	RuleVersion    uint32                   `json:"rule_version" gorm:"not null;default:1"`
 	RuleList       []RuleTemplateRule       `json:"rule_list" gorm:"foreignkey:rule_template_id;association_foreignkey:id"`
 	CustomRuleList []RuleTemplateCustomRule `json:"custom_rule_list" gorm:"foreignkey:rule_template_id;association_foreignkey:id"`
 }
@@ -37,6 +37,7 @@ func GenerateRuleByDriverRule(dr *driverV2.Rule, dbType string) *Rule {
 		Knowledge:    multiLanguageKnowledge,
 		I18nRuleInfo: make(driverV2.I18nRuleInfo, len(dr.I18nRuleInfo)),
 		AllowOffline: dr.AllowOffline,
+		Version:      dr.Version,
 	}
 	for lang, v := range dr.I18nRuleInfo {
 		r.Knowledge = append(r.Knowledge, &Knowledge{
@@ -106,6 +107,7 @@ type Rule struct {
 	Categories      []*AuditRuleCategory   `gorm:"many2many:audit_rule_category_rels;joinForeignKey:RuleName,RuleDBType;joinReferences:CategoryId"`
 	AllowOffline    bool                   `json:"allow_offline" gorm:"-"`
 	Knowledge       MultiLanguageKnowledge `gorm:"many2many:rule_knowledge_relations" json:"rules"` // 规则和知识的关系
+	Version         uint32                 `json:"version" gorm:"not null;default:1"`
 }
 
 func (r Rule) TableName() string {
@@ -465,7 +467,7 @@ func (s *Storage) GetAllRules() ([]*Rule, error) {
 }
 
 func (s *Storage) DeleteCascadeRule(name, dbType string) error {
-	/* 
+	/*
 		1. 删除rule_template_rule表中rule_name和db_type等于name和dbType的记录
 		2. 删除rule表中rule_name和db_type等于name和dbType的记录
 		3. 删除rule_knowledge_relations表中rule_name和db_type等于name和dbType的记录

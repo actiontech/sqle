@@ -3,15 +3,13 @@ package model
 import (
 	"fmt"
 	"strings"
-
-	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 )
 
 type RuleTemplateDetail struct {
 	Name        string `json:"name"`
 	Desc        string `json:"desc"`
 	DBType      string `json:"db_type"`
-	RuleVersion string `json:"rule_version"`
+	RuleVersion uint32 `json:"rule_version"`
 
 	// InstanceIds   RowList `json:"instance_ids"`
 	// InstanceNames RowList `json:"instance_names"`
@@ -67,13 +65,10 @@ func (s *Storage) GetRulesByReq(data map[string]interface{}) (
 			db = db.Where("rules.name in (?)", strings.Split(namesStr, ","))
 		}
 	}
-	if data["filter_db_type"] == driverV2.DriverTypeMySQL {
-		if data["filter_rule_version"] == "v2" {
-			db.Where("rules.name like 'SQLE%'") //新规则的特征
-		} else if data["filter_rule_names"] == "" && data["filter_global_rule_template_name"] == "" {
-			db.Where("rules.name not like 'SQLE%'")
-		}
+	if version, ok := data["filter_rule_version"].(uint32); ok && version != 0 {
+		db.Where("rules.version = ?", version)
 	}
+
 	if data["fuzzy_keyword_rule"] != "" {
 		// todo i18n use json syntax to query?
 		db = db.Where("rules.`i18n_rule_info` like ?", fmt.Sprintf("%%%s%%", data["fuzzy_keyword_rule"]))

@@ -13,6 +13,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 	"github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
@@ -318,6 +319,7 @@ func (s *Storage) CreateRulesIfNotExist(rulesMap map[string][]*Rule) error {
 				isI18nInfoSame := reflect.DeepEqual(existedRule.I18nRuleInfo, rule.I18nRuleInfo)
 				isHasAuditPowerSame := existedRule.HasAuditPower == rule.HasAuditPower
 				isHasRewritePowerSame := existedRule.HasRewritePower == rule.HasRewritePower
+				isRuleVersionSame := existedRule.Version == rule.Version
 				existRuleParam, err := existedRule.Params.Value()
 				if err != nil {
 					return err
@@ -328,7 +330,7 @@ func (s *Storage) CreateRulesIfNotExist(rulesMap map[string][]*Rule) error {
 				}
 				isParamSame := reflect.DeepEqual(existRuleParam, pluginRuleParam)
 
-				if !isI18nInfoSame || !isRuleLevelSame || !isParamSame || !isHasAuditPowerSame || !isHasRewritePowerSame {
+				if !isI18nInfoSame || !isRuleLevelSame || !isParamSame || !isHasAuditPowerSame || !isHasRewritePowerSame || !isRuleVersionSame {
 					// 保存规则
 					err := errors.New(errors.ConnectStorageError, s.db.Omit("Categories", "Knowledge").Save(rule).Error)
 					if err != nil {
@@ -347,7 +349,7 @@ func (s *Storage) CreateRulesIfNotExist(rulesMap map[string][]*Rule) error {
 			// 持久化规则分类信息
 			categoryError := s.UpdateRuleCategoryRels(rule, existedRule)
 			if categoryError != nil {
-				return categoryError
+				return fmt.Errorf("update rule category rels err: %w", categoryError)
 			}
 		}
 	}
@@ -514,65 +516,50 @@ func (s *Storage) CreateDefaultWorkflowTemplateIfNotExist() error {
 	}
 	return nil
 }
+
 func (s *Storage) CreateDefaultTemplateIfNotExist(projectId ProjectUID, rules map[string][]*driverV2.Rule) error {
-	const newRuleTmpSuffix = driverV2.DriverTypeMySQL + "(V2Rules)"
 	for dbType, dbRules := range rules {
-		if dbType != driverV2.DriverTypeMySQL {
-			continue
+		versionRules := make(map[uint32][]*driverV2.Rule)
+		for _, dbRule := range dbRules {
+			versionRules[dbRule.Version] = append(versionRules[dbRule.Version], dbRule)
 		}
-		var ruleListOld, ruleListNew []*driverV2.Rule
-		for _, rule := range dbRules {
-			if strings.HasPrefix(rule.Name, "SQLE") {
-				// new rule
-				ruleListNew = append(ruleListNew, rule)
-			} else {
-				ruleListOld = append(ruleListOld, rule)
+
+		for version, perVersionRules := range versionRules {
+			templateName := s.GetRuleTemplateName(dbType, version)
+			exist, err := s.IsRuleTemplateExistFromAnyProject(projectId, templateName)
+			if err != nil {
+				return xerrors.Wrap(err, "get rule template failed")
 			}
-		}
-		if len(ruleListNew) > 0 {
-			rules[driverV2.DriverTypeMySQL] = ruleListOld
-			rules[newRuleTmpSuffix] = ruleListNew
-		}
-	}
-
-	for dbType, r := range rules {
-		templateName := s.GetDefaultRuleTemplateName(dbType)
-		exist, err := s.IsRuleTemplateExistFromAnyProject(projectId, templateName)
-		if err != nil {
-			return xerrors.Wrap(err, "get rule template failed")
-		}
-		if exist {
-			continue
-		}
-
-		t := &RuleTemplate{
-			ProjectId: projectId,
-			Name:      templateName,
-			DBType:    dbType,
-		}
-		if dbType == newRuleTmpSuffix {
-			t.DBType, t.RuleVersion = driverV2.DriverTypeMySQL, "v2"
-		}
-		if err := s.Save(t); err != nil {
-			return err
-		}
-
-		ruleList := make([]RuleTemplateRule, 0, len(r))
-		for _, rule := range r {
-			if rule.Level != driverV2.RuleLevelError {
+			if exist {
 				continue
 			}
-			modelRule := GenerateRuleByDriverRule(rule, dbType)
-			ruleList = append(ruleList, RuleTemplateRule{
-				RuleTemplateId: t.ID,
-				RuleName:       modelRule.Name,
-				RuleLevel:      modelRule.Level,
-				RuleParams:     modelRule.Params,
-				RuleDBType:     t.DBType,
-			})
-		}
-		if err := s.UpdateRuleTemplateRules(t, ruleList...); err != nil {
-			return xerrors.Wrap(err, "update rule template rules failed")
+			t := &RuleTemplate{
+				ProjectId:   projectId,
+				Name:        templateName,
+				DBType:      dbType,
+				RuleVersion: version,
+			}
+			if err := s.Save(t); err != nil {
+				return err
+			}
+
+			ruleList := make([]RuleTemplateRule, 0, len(perVersionRules))
+			for _, r := range perVersionRules {
+				if r.Level != driverV2.RuleLevelError {
+					continue
+				}
+				modelRule := GenerateRuleByDriverRule(r, dbType)
+				ruleList = append(ruleList, RuleTemplateRule{
+					RuleTemplateId: t.ID,
+					RuleName:       modelRule.Name,
+					RuleLevel:      modelRule.Level,
+					RuleParams:     modelRule.Params,
+					RuleDBType:     modelRule.DBType,
+				})
+			}
+			if err := s.UpdateRuleTemplateRules(t, ruleList...); err != nil {
+				return xerrors.Wrap(err, "update rule template rules failed")
+			}
 		}
 	}
 
@@ -701,7 +688,7 @@ func (s *Storage) UpdateRuleCategoryRels(rule, existedRule *Rule) error {
 		if !existed {
 			// 创建规则与新增的标签分类的关联关系
 			auditRuleCategoryRel := AuditRuleCategoryRel{CategoryId: newCategory.ID, RuleName: rule.Name, RuleDBType: rule.DBType}
-			err = s.db.Create(&auditRuleCategoryRel).Error
+			err = s.db.Save(&auditRuleCategoryRel).Error
 			if err != nil {
 				return err
 			}
@@ -745,7 +732,18 @@ var ruleNameToPerformanceCostId = map[string] /*ruleId*/ string /*auditPerforman
 }
 
 func (s *Storage) GetDefaultRuleTemplateName(dbType string) string {
-	return fmt.Sprintf("default_%v", dbType)
+	metas := driver.GetPluginManager().GetDriverMetasOfPlugin(dbType)
+	var latestVersion uint32
+	for _, v := range metas.RuleVersionIncluded {
+		if v > latestVersion {
+			latestVersion = v
+		}
+	}
+	return s.GetRuleTemplateName(dbType, latestVersion)
+}
+
+func (s *Storage) GetRuleTemplateName(dbType string, version uint32) string {
+	return fmt.Sprintf("default_%v_V%dRules", dbType, version)
 }
 
 func (s *Storage) CreateDefaultReportPushConfigIfNotExist(projectUId string) error {
