@@ -343,7 +343,7 @@ func performSQLRewriting(l *logrus.Entry, ctx context.Context, params *SQLRewrit
 	} else {
 		// 定义要发送的参数
 		req := &CallRewriteSQLRequest{
-			DBType:                  dbType,
+			DBType:                  ConvertSqleDbTypeToRuleRefactor(dbType),
 			Rules:                   rules,
 			OriginalSql:             originalSQL,
 			ProgressiveRewrittenSQL: params.SQL.Content,
@@ -488,4 +488,14 @@ func findResolvedRules(originalRules []string, newAuditResults []model.AuditResu
 	}
 
 	return resolved
+}
+
+// ConvertSqleDbTypeToRuleRefactor 将sqle的数据库类型转换为重写模型的数据库类型(重写模型使用知识库rule refactor的数据库类型)
+func ConvertSqleDbTypeToRuleRefactor(dbtype string) string {
+	if dbtype == "OceanBase For MySQL" {
+		return "OBforMySQL"
+	} else if dbtype == "OceanBase For Oracle" {
+		return "OBforOracle"
+	}
+	return dbtype
 }
