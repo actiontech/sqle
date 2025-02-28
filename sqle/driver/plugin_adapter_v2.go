@@ -87,6 +87,8 @@ func (d *PluginProcessorV2) GetDriverMetas() (*driverV2.DriverMetas, error) {
 	}
 
 	rules := make([]*driverV2.Rule, 0, len(result.Rules))
+	ruleVersionIncludedMap := make(map[uint32]struct{})
+	var ruleVersinIncluded []uint32
 	for _, r := range result.Rules {
 		if len(r.I18NRuleInfo) > 0 {
 			if _, exist := r.I18NRuleInfo[i18nPkg.DefaultLang.String()]; !exist {
@@ -94,11 +96,15 @@ func (d *PluginProcessorV2) GetDriverMetas() (*driverV2.DriverMetas, error) {
 				return nil, fmt.Errorf("client rule: %s not support language: %s", r.Name, i18nPkg.DefaultLang.String())
 			}
 		}
-		dr, err := driverV2.ConvertI18nRuleFromProtoToDriver(r, isI18n)
+		dr, err := driverV2.ConvertI18nRuleFromProtoToDriver(r, result.PluginName, isI18n)
 		if err != nil {
 			return nil, err
 		}
 		rules = append(rules, dr)
+		if _, exist := ruleVersionIncludedMap[dr.Version]; !exist {
+			ruleVersionIncludedMap[dr.Version] = struct{}{}
+			ruleVersinIncluded = append(ruleVersinIncluded, dr.Version)
+		}
 	}
 
 	ps, err := driverV2.ConvertProtoParamToParam(result.DatabaseAdditionalParams)
@@ -111,6 +117,7 @@ func (d *PluginProcessorV2) GetDriverMetas() (*driverV2.DriverMetas, error) {
 		Logo:                     result.Logo,
 		DatabaseAdditionalParams: ps,
 		Rules:                    rules,
+		RuleVersionIncluded:      ruleVersinIncluded,
 		EnabledOptionalModule:    ms,
 	}
 	d.meta = meta

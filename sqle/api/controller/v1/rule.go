@@ -10,10 +10,12 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/dms"
+	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
@@ -29,7 +31,7 @@ type CreateRuleTemplateReqV1 struct {
 	Name        string      `json:"rule_template_name" valid:"required,name"`
 	Desc        string      `json:"desc"`
 	DBType      string      `json:"db_type" valid:"required"`
-	RuleVersion string      `json:"rule_version"`
+	RuleVersion uint32      `json:"rule_version"`
 	RuleList    []RuleReqV1 `json:"rule_list" form:"rule_list" valid:"required,dive,required"`
 }
 
@@ -62,6 +64,9 @@ func checkAndGenerateRules(rulesReq []RuleReqV1, template *model.RuleTemplate) (
 	templateRules := make([]model.RuleTemplateRule, 0, len(rulesReq))
 	for _, r := range rulesReq {
 		rule := rules[r.Name]
+		if rule.Version != template.RuleVersion {
+			return nil, fmt.Errorf("rule version of %s is not matched with the rule template", r.Name)
+		}
 		params := rule.Params
 
 		// check request params is equal rule params.
@@ -85,10 +90,11 @@ func checkAndGenerateRules(rulesReq []RuleReqV1, template *model.RuleTemplate) (
 			}
 		}
 		templateRules = append(templateRules, model.NewRuleTemplateRule(template, &model.Rule{
-			Name:   r.Name,
-			Level:  r.Level,
-			DBType: template.DBType,
-			Params: params,
+			Name:    r.Name,
+			Level:   r.Level,
+			DBType:  template.DBType,
+			Params:  params,
+			Version: template.RuleVersion,
 		}))
 	}
 	return templateRules, nil
@@ -278,7 +284,7 @@ type RuleTemplateDetailResV1 struct {
 	Name        string      `json:"rule_template_name"`
 	Desc        string      `json:"desc"`
 	DBType      string      `json:"db_type"`
-	RuleVersion string      `json:"rule_version"`
+	RuleVersion uint32      `json:"rule_version"`
 	RuleList    []RuleResV1 `json:"rule_list,omitempty"`
 }
 
@@ -405,7 +411,7 @@ type RuleTemplateResV1 struct {
 	Name        string `json:"rule_template_name"`
 	Desc        string `json:"desc"`
 	DBType      string `json:"db_type"`
-	RuleVersion string `json:"rule_version"`
+	RuleVersion uint32 `json:"rule_version"`
 }
 
 // @Summary 全局规则模板列表
@@ -469,7 +475,7 @@ type GetRulesReqV1 struct {
 	FilterDBType                 string `json:"filter_db_type" query:"filter_db_type"`
 	FilterGlobalRuleTemplateName string `json:"filter_global_rule_template_name" query:"filter_global_rule_template_name"`
 	FilterRuleNames              string `json:"filter_rule_names" query:"filter_rule_names"`
-	FilterRuleVersion            string `json:"filter_rule_version" query:"filter_rule_version"`
+	FilterRuleVersion            uint32 `json:"filter_rule_version" query:"filter_rule_version"`
 	FuzzyKeywordRule             string `json:"fuzzy_keyword_rule" query:"fuzzy_keyword_rule"`
 	Tags                         string `json:"tags" query:"tags"`
 }
@@ -584,7 +590,7 @@ func convertRulesToRes(ctx context.Context, rules interface{}) []RuleResV1 {
 // @Param fuzzy_keyword_rule query string false "fuzzy rule,keyword for desc and annotation"
 // @Param filter_global_rule_template_name query string false "filter global rule template name"
 // @Param filter_rule_names query string false "filter rule name list"
-// @Param filter_rule_version query string false "filter rule version"
+// @Param filter_rule_version query uint32 false "filter rule version"
 // @Param tags query string false "filter tags"
 // @Success 200 {object} v1.GetRulesResV1
 // @router /v1/rules [get]
@@ -626,6 +632,39 @@ func GetRules(c echo.Context) error {
 	return c.JSON(http.StatusOK, &GetRulesResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    ruleRes,
+	})
+}
+
+type GetDriverRuleVersionTipsResV1 struct {
+	controller.BaseRes
+	Data []GetDriverRuleVersionTipsV1 `json:"data"`
+}
+
+type GetDriverRuleVersionTipsV1 struct {
+	DBType       string   `json:"db_type" example:"mysql"`
+	RuleVersions []uint32 `json:"rule_versions"`
+}
+
+// @Summary 获取插件包含的规则版本
+// @Description get the rule versions contained in plugins
+// @Id GetDriverRuleVersionTips
+// @Tags rule_template
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.GetDriverRuleVersionTipsResV1
+// @router /v1/rules_version_tips [get]
+func GetDriverRuleVersionTips(c echo.Context) error {
+	metas := driver.GetPluginManager().AllDriverMetas()
+	data := make([]GetDriverRuleVersionTipsV1, 0, len(metas))
+	for _, v := range metas {
+		data = append(data, GetDriverRuleVersionTipsV1{
+			DBType:       v.PluginName,
+			RuleVersions: v.RuleVersionIncluded,
+		})
+	}
+
+	return c.JSON(http.StatusOK, &GetDriverRuleVersionTipsResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    data,
 	})
 }
 
@@ -682,7 +721,7 @@ type RuleTemplateTipResV1 struct {
 	ID                    string `json:"rule_template_id"`
 	Name                  string `json:"rule_template_name"`
 	DBType                string `json:"db_type"`
-	RuleVersion           string `json:"rule_version"`
+	RuleVersion           uint32 `json:"rule_version"`
 	IsDefaultRuleTemplate bool   `json:"is_default_rule_template"`
 }
 
@@ -815,7 +854,7 @@ type CreateProjectRuleTemplateReqV1 struct {
 	Name        string      `json:"rule_template_name" valid:"required,name"`
 	Desc        string      `json:"desc"`
 	DBType      string      `json:"db_type" valid:"required"`
-	RuleVersion string      `json:"rule_version"`
+	RuleVersion uint32      `json:"rule_version"`
 	RuleList    []RuleReqV1 `json:"rule_list" form:"rule_list" valid:"required,dive,required"`
 }
 
@@ -983,7 +1022,7 @@ type RuleProjectTemplateDetailResV1 struct {
 	Name        string      `json:"rule_template_name"`
 	Desc        string      `json:"desc"`
 	DBType      string      `json:"db_type"`
-	RuleVersion string      `json:"rule_version"`
+	RuleVersion uint32      `json:"rule_version"`
 	RuleList    []RuleResV1 `json:"rule_list,omitempty"`
 }
 
@@ -1304,7 +1343,7 @@ type ParseProjectRuleTemplateFileResDataV1 struct {
 	Name        string      `json:"name"`
 	Desc        string      `json:"desc"`
 	DBType      string      `json:"db_type"`
-	RuleVersion string      `json:"rule_version"`
+	RuleVersion uint32      `json:"rule_version"`
 	RuleList    []RuleResV1 `json:"rule_list"`
 }
 
@@ -1349,19 +1388,8 @@ var ErrRule = e.New("rule has error")
 
 func checkRuleList(file *ParseProjectRuleTemplateFileResDataV1) (*RuleTemplateExportErr, error) {
 	ruleNameList := make([]string, 0, len(file.RuleList))
-	var hasNewRule, hasOldRule bool
 	for _, rule := range file.RuleList {
 		ruleNameList = append(ruleNameList, rule.Name)
-		if file.DBType == driverV2.DriverTypeMySQL {
-			hasNewRule = hasNewRule || strings.HasPrefix(rule.Name, "SQLE")
-			hasOldRule = hasOldRule || !strings.HasPrefix(rule.Name, "SQLE")
-			if hasOldRule && hasNewRule {
-				return nil, fmt.Errorf("cannot import rule template that contains both old and new rules")
-			}
-			if hasNewRule {
-				file.RuleVersion = "v2"
-			}
-		}
 	}
 
 	s := model.GetStorage()
@@ -1372,6 +1400,7 @@ func checkRuleList(file *ParseProjectRuleTemplateFileResDataV1) (*RuleTemplateEx
 
 	ruleTemplateExport := new(RuleTemplateExportErr)
 	ruleTemplateExport.Name = file.Name
+	ruleTemplateExport.RuleVersion = file.RuleVersion
 	ruleTemplateExport.DBType = file.DBType
 	ruleTemplateExport.Desc = file.Desc
 	ruleTemplateExport.RuleList = make([]RuleTemplateResErr, len(file.RuleList))
@@ -1456,10 +1485,15 @@ func parseRuleTemplate(c echo.Context, fileType ExportType) (*ParseProjectRuleTe
 			}
 
 			// 因为wps保存csv文件时会自动填充短的列的个数,所以使用 >= 符号作比较,避免解析csv文件错误
-			if len(rule) >= 3 && index == 1 {
+			if len(rule) >= 4 && index == 1 {
+				v, err := strconv.Atoi(rule[1])
+				if err != nil {
+					return nil, fmt.Errorf("parse rule version err: %w", err)
+				}
 				resp.Name = rule[0]
-				resp.Desc = rule[1]
-				resp.DBType = rule[2]
+				resp.RuleVersion = uint32(v)
+				resp.Desc = rule[2]
+				resp.DBType = rule[3]
 				index++
 				continue
 			}
@@ -1529,6 +1563,7 @@ func parseRuleTemplate(c echo.Context, fileType ExportType) (*ParseProjectRuleTe
 			return nil, fmt.Errorf("the file format is incorrect. Please check the uploaded file, error: %v", err)
 		}
 		resp.Name = ruleTemplateExport.Name
+		resp.RuleVersion = ruleTemplateExport.RuleVersion
 		resp.Desc = ruleTemplateExport.Desc
 		resp.DBType = ruleTemplateExport.DBType
 		err = ruleTemplateExportToParseDataV1(ruleTemplateExport, resp)
@@ -1571,6 +1606,7 @@ func parseRuleCategory(csvRule []string) map[string][]string {
 
 func ruleTemplateExportToParseDataV1(ruleTemplateExport *RuleTemplateExport, parseResData *ParseProjectRuleTemplateFileResDataV1) error {
 	parseResData.Name = ruleTemplateExport.Name
+	parseResData.RuleVersion = ruleTemplateExport.RuleVersion
 	parseResData.Desc = ruleTemplateExport.Desc
 	parseResData.DBType = ruleTemplateExport.DBType
 	for _, rule := range ruleTemplateExport.RuleList {
@@ -1671,7 +1707,7 @@ func ExportRuleTemplateFile(c echo.Context) error {
 func exportTemplateFile(c echo.Context, exportType ExportType, templateFile interface{}, templateName string) error {
 	switch exportType {
 	case CsvExportType:
-		var name, desc, dbType string
+		var name, ruleVersion, desc, dbType string
 		var columnNameList []string
 		var columnContentList [][]string
 
@@ -1714,6 +1750,7 @@ func exportTemplateFile(c echo.Context, exportType ExportType, templateFile inte
 
 		if ruleTemplateExport, ok := templateFile.(*RuleTemplateExport); ok {
 			name = ruleTemplateExport.Name
+			ruleVersion = fmt.Sprint(ruleTemplateExport.RuleVersion)
 			desc = ruleTemplateExport.Desc
 			dbType = ruleTemplateExport.DBType
 			columnNameList = defaultColumnNameList
@@ -1727,6 +1764,7 @@ func exportTemplateFile(c echo.Context, exportType ExportType, templateFile inte
 			}
 		} else if ruleTemplateExportErr, ok := templateFile.(*RuleTemplateExportErr); ok {
 			name = ruleTemplateExportErr.Name
+			ruleVersion = fmt.Sprint(ruleTemplateExportErr.RuleVersion)
 			desc = ruleTemplateExportErr.Desc
 			dbType = ruleTemplateExportErr.DBType
 			columnNameList = append(defaultColumnNameList, locale.Bundle.LocalizeMsgByCtx(ctx, locale.RuleTemplateRuleErr))
@@ -1752,9 +1790,10 @@ func exportTemplateFile(c echo.Context, exportType ExportType, templateFile inte
 		writer := csv.NewWriter(buf)
 		err := writer.WriteAll([][]string{{
 			locale.Bundle.LocalizeMsgByCtx(ctx, locale.RuleTemplateName),
+			locale.Bundle.LocalizeMsgByCtx(ctx, locale.RuleTemplateRuleVersion),
 			locale.Bundle.LocalizeMsgByCtx(ctx, locale.RuleTemplateDesc),
 			locale.Bundle.LocalizeMsgByCtx(ctx, locale.RuleTemplateInstType),
-		}, {name, desc, dbType}})
+		}, {name, ruleVersion, desc, dbType}})
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -1828,9 +1867,10 @@ type RuleTemplateExport struct {
 }
 
 type RuleTemplate struct {
-	Name   string
-	Desc   string
-	DBType string `json:"db_type"`
+	Name        string
+	RuleVersion uint32
+	Desc        string
+	DBType      string `json:"db_type"`
 }
 
 type RuleTemplateRes struct {
@@ -1880,9 +1920,10 @@ func getRuleTemplateFile(ctx context.Context, projectID string, ruleTemplateName
 
 	resp := &RuleTemplateExport{
 		RuleTemplate: RuleTemplate{
-			Name:   template.Name,
-			Desc:   template.Desc,
-			DBType: template.DBType,
+			Name:        template.Name,
+			RuleVersion: template.RuleVersion,
+			Desc:        template.Desc,
+			DBType:      template.DBType,
 		},
 		RuleList: []RuleTemplateRes{},
 	}

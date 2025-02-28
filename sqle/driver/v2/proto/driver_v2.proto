@@ -119,6 +119,7 @@ message Rule {
   string annotation = 6; // 不支持国际化时，sqle从此取值
   Knowledge knowledge = 7; // 不支持国际化时，sqle从此取值
   map<string, I18nRuleInfo> i18nRuleInfo = 8; // 支持国际化时，sqle从此取值，必须包含默认语言
+  uint32 version = 9; // 规则版本，一个插件程序可以包含多个版本的规则
 }
 
 message I18nRuleInfo {
