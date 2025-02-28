@@ -1286,7 +1286,10 @@ var doc = `{
                 "operationId": "GetDatabaseDriverLogos",
                 "parameters": [
                     {
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
                         "description": "MySQL,Oracle",
                         "name": "db_types",
                         "in": "query",
@@ -1436,6 +1439,14 @@ var doc = `{
                 ],
                 "summary": "获取知识库知识图谱",
                 "operationId": "getKnowledgeGraph",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "filter by rule name",
+                        "name": "filter_by_rule_name",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
