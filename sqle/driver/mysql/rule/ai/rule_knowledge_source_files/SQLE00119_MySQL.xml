@@ -10,6 +10,7 @@
         <原理说明 数据库版本="MySQL 版本大于等于5.7" 检查方式="不连库审核" 适用关键词="SELECT、INSERT ...SELECT、DELETE、UPDATE、UNION、WITH">
             <示例>
             示例表结构:
+```sql
             create database db_mysql;
             use db_mysql;
 
@@ -37,17 +38,21 @@
             insert into customers values (10,'lily10',1,'shanghai',40);
 
       
+```
             原理说明：
             1. GROUP BY 不加ORDER BY ，会导致结果无序或者非预期的排序；特别是在MySQL8.0版本之前，如果未显示指定排序规则，会出现隐式排序，不确定性的排序结果通常无法满足业务预期。
             2. 建议加上 ORDER BY ，将按照指定的字段排序，更好地符合预期。
 
             反例：
+```sql
             select age from customers group by age;
 
+```
             反例说明：
             SQL 中使用GROUP BY ，但是没有显式指定ORDER BY 子句。
 
             反例验证： 
+```sql
             (mysql:8.4.0:db_mysql)select age from customers group by age order by age asc;
             +-----+
             | age |
@@ -59,13 +64,17 @@
             3 rows in set (0.00 sec)
             
 
+```
             正例：
+```sql
             select age from customers group by age order by age desc;
 
+```
             正例说明：
             SQL 中使用GROUP BY ，并且显式使用 ORDER BY 对指定的字段排序，符合预期。
 
             正例验证：
+```sql
             (mysql:8.4.0:db_mysql)select age from customers group by age order by age desc;
             +-----+
             | age |
@@ -76,6 +85,7 @@
             +-----+
             3 rows in set (0.00 sec)
         
+```
             结论：
             1. GROUP BY 语句建议加上ORDER BY 子句，按照指定的字段排序，增强结果的可读性。
          

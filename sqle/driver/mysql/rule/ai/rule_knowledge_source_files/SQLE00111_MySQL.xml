@@ -10,6 +10,7 @@
         <场景 名称="WHERE 过滤条件字段有表达式匹配" 数据库版本="MySQL 8.0" 检查方式="连库审核" 适用关键词="WHERE" 适用句型="SELECT、INSERT、UPDATE、DELETE">
             <示例>
                 前置：
+```sql
                 -- 主表1
                 CREATE TABLE customers (
                     id int, -- 编号
@@ -36,6 +37,7 @@
                         from tmp where a &lt; 4000001
                 ) table tmp;
         
+```
                 原理说明：
                 1. 在数据库中，对字段做表达式操作可能会导致不走索引，原因是表达式操作可能会破坏索引值的有序性。
                 2. 索引通常是基于字段的值建立的 B 树结构，用于快速定位和检索数据。当对索引字段应用表达式时，会导致索引值的计算和比较变得复杂，无法直接使用索引进行快速定位。
@@ -43,11 +45,13 @@
         
                 反例：
                 SQL1：  where 条件中有对字段的表达式匹配。
+```sql
                 select count(*) from customers where age - 20 = 20;
                 update customers set mark = 'age - 20 = 20' where age - 20 = 20;
                 delete from customers where age - 20 = 20;
 
         
+```
                 反例说明：
                 1. 示例中的 SQL，是对age 字段做表达式匹配。
                 2. 在对WHERE 条件中的字段做表达式匹配时，优化器由于使用不了合适的索引，会走错误的执行计划，导致执行时间变长，性能变差。
@@ -55,6 +59,7 @@
         
                 反例验证：
                 SQL1: 执行时间480毫秒。
+```sql
                 (mysql:8.0.31-cluster)select count(*) from customers where age - 20 = 20;
                 +----------+
                 | count(*) |
@@ -73,17 +78,21 @@
                 
                 1 row in set (0.00 sec)
 
+```
                 正例：
                 SQL1：  where 条件中有对字段的表达式匹配，变更为非表达式匹配。
+```sql
                 select count(*) from customers where age = 40;
                 update customers set mark = 'age - 20 = 20' where age = 40;
                 delete from customers where age = 40;
 
+```
                 正例说明：
                 1. 对 SQL1 可以建立表达式索引 或者对 SQL1 可以特别处理。因其可以拆解为非表达式，只需更改SQL 语句即可走正确的执行计划。
 
                 正例验证：
                 SQL1: 执行时间大幅缩短。
+```sql
                 (mysql:8.0.31-cluster)select count(*) from customers where age = 40;
                 +----------+
                 | count(*) |
@@ -93,7 +102,9 @@
                 1 row in set (0.02 sec)
                 
 
+```
                 执行计划显式成本也大幅降低，优化器选择了最优的执行计划。
+```sql
                 (mysql:8.0.31-cluster)explain format=tree select count(*) from customers where age = 40\G
                 *************************** 1. row ***************************
                 EXPLAIN: -&gt; Aggregate: count(0) (cost=72060.59 rows=1)
@@ -101,6 +112,7 @@
                 
                 1 row in set (0.00 sec)
         
+```
                 结论：
                 1. WHERE 条件中的字段使用表达式匹配，会造成优化器选择了错误的执行计划，大幅降低查询性能。
                 2. 字段有表达式匹配可以直接修改为非表达式匹配；如果无法直接修改，直接建立表达式索引即可。

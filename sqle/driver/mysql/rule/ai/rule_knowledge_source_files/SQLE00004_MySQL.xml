@@ -12,10 +12,12 @@
         <示例>              
             原理说明：
             1. AUTO_INCREMENT默认起始值由系统参数auto_increment_offset来决定，默认为1，允许用户在创建表时针对某个表单独定义起始值。   
+```sql
                 CREATE TABLE t1 (            
                     id INT AUTO_INCREMENT PRIMARY KEY,            
                     c1 INT            
                 )AUTO_INCREMENT = 3;      
+```
                注：AUTO_INCREMENT默认设置为0或者1，新增表记录的起始值都会从1开始。
             2. 如果AUTO_INCREMENT起始值设置过高,会导致以下问题:            
               1. 起始值之前的序号空间浪费,产生数据空洞,对于需要连续序号的业务场景不友好。
@@ -26,6 +28,7 @@
               2. 同时，如当前表的自增列数据已经存在，即通过show create table t1可以查看当前auto_increment的值；在当前情况下，变更auto_increment_offset值，则根据公式auto_increment_offset + N × auto_increment_increment序列值后，会取第一个大于当前表里的最大值，作为新增记录的起始值。
 
             反例:
+```sql
             CREATE TABLE t1 (
               id INT AUTO_INCREMENT PRIMARY KEY,
               c1 INT
@@ -37,12 +40,14 @@
             ) AUTO_INCREMENT=2147483647;
             set @@auto_increment_offset = 100; ##注意该参数是对于所有未指定自增起始值的表都生效。
     
+```
             反例说明:
             1. 示例SQL使用AUTO_INCREMENT定义自增主键,但起始值均不为1。
             2. 第二个SQL将起始值设为INT上限,新增记录极易溢出报错。
     
             反例验证:
             1. t1表验证:
+```sql
             mysql&gt; INSERT INTO t1 (c1) VALUES (10);
             Query OK, 1 row affected (0.01 sec)
     
@@ -54,28 +59,34 @@
             +-----+------+
             1 row in set (0.00 sec)
     
+```
             可见t1表第一条记录的id为100,1-99的序号空间被浪费。
     
             2. t2表验证:
+```sql
             mysql&gt; INSERT INTO t2 (c1) VALUES (20);  
             Query OK, 1 row affected (0.00 sec)
     
             mysql&gt; INSERT INTO t2 (c1) VALUES (30);
             ERROR 1062 (23000): Duplicate entry '2147483647' for key 't2.PRIMARY'
     
+```
             可见t2表只能插入一条记录,再次插入就报主键冲突,因为id已经达到上限值。
             
             正例:
+```sql
             CREATE TABLE t1 (
               id INT AUTO_INCREMENT PRIMARY KEY, 
               c1 INT
             );
     
+```
             正例说明:
             1. 示例SQL使用默认的AUTO_INCREMENT=1,新增记录的id会从1开始自增,不会产生空洞。
             2. 使用默认的起始值,可支持插入大量记录而不会轻易溢出。
     
             正例验证:
+```sql
             mysql&gt; INSERT INTO t1 (c1) VALUES (10), (20), (30);
             Query OK, 3 rows affected (0.01 sec)
             Records: 3  Duplicates: 0  Warnings: 0
@@ -90,6 +101,7 @@
             +----+------+
             3 rows in set (0.00 sec)
     
+```
             可见,使用默认的AUTO_INCREMENT=0,新增记录的id按序生成,从1开始无间断自增。
         </示例>
         <检查流程描述>

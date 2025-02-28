@@ -19,18 +19,21 @@
           5. 所以不存在 timestamp 类型消耗空间大的说法，本规则不适用。
 
           示例：
+```sql
           create table t1(id int,
           log_date date,
           log_timestamp timestamp(6),
           log_datetime datetime(6)
           );
 
+```
           示例说明：
           1. 表 t1 有两个字段，分别是date和 timestamp。
           2. 需要给表 t1 插入一条记录，看看两个字段的存储数据有什么不同。
 
           示例验证： 插入示例时间，结果显示date 类型 只到天；timestamp、datetime 类型都可以显示到微秒。
 
+```sql
           (mysql:8.3.0:db_mysql)insert into t1 values (1,'2024-12-02 10:22:22.983332','2024-12-02 10:22:22.983332','2024-12-02 10:22:22.983332');
           Query OK, 1 row affected, 1 warning (0.04 sec)
           
@@ -43,6 +46,7 @@
           1 row in set (0.00 sec)
 
 
+```
            结论：
            1. 对于日期类型的字段，可以根据需要存储的日期粒度，来决定数据类型；如果只需要到天，那么选择date；如果需要精确到微秒，那么选择timestamp 或者 datetime。    
   

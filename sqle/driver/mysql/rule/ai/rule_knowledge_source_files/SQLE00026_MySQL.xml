@@ -19,6 +19,7 @@
             比如对于非自增主键字段，定义此字段为 char(M),然后使用lpad函数填充字段值。
 
             示例：
+```sql
             CREATE TABLE orders(
                 id BIGINT, -- 编号
                 sub_id INT(10) zerofill, -- 子编号
@@ -26,8 +27,10 @@
             );
             alter table orders modify id bigint(20) zerofill;
 
+```
             示例验证：
 
+```sql
             --模拟写入数据
             (mysql:8.0.18)insert into orders values(1,10),(2,10000);
 
@@ -71,6 +74,7 @@
             +----------------------+------------+
             1 row in set (0.00 sec)
             
+```
             </示例>
             <检查流程描述>
             1. 对于"CREATE TABLE..."语句， 如果存在INT、INTEGER、TINYINT、SMALLINT、MEDIUMINT、BIGINT类型的字段，并且为其指定长度，并且不包含关键词：zerofill，则报告违反规则。

@@ -10,6 +10,7 @@
     <原理说明 适用关键词="WHERE、ON" 数据库版本="MySQL 8.0" 检查方式="连库审核" 适用句型="SELECT、UPDATE、DELETE、INSERT...SELECT、UNION、WITH">
       <示例>
         前置：
+```sql
         -- 主表1
         CREATE TABLE customers (
             c_id int, -- 编号
@@ -47,16 +48,20 @@
 
         insert into orders (c_id,log_date) select c_id,current_date from customers ;
 
+```
         原理说明：
         1. 对于过滤字段数据类型不匹配的场景，数据库内部会隐式进行逐行数据类型转换，造成优化器生成了错误的执行计划，最终导致数据库性能变差，TPS降低。
         2. 隐式数据类型转换发生在以下场景：
            1. 单表查询的where 过滤条件中。
            2. 多表关联的join操作下的ON条件。
            3. 多表关联的join，如果关联键一样，可以使用Using 关键词，否则使用on 或者 where. 比如：
+```sql
               select * from tb1 join tb2 using(id);
 
+```
         示例:
         SQL1： 单表查询，where 条件中，有数据类型不匹配的过滤。
+```sql
         select count(*) from customers where log_date = current_date;
 
         SQL2: 多表关联，JOIN 条件中，有数据类型不匹配的关联。
@@ -65,10 +70,12 @@
         SQL3： 多表关联，相同关联键使用Using关键词。
         select * from customers join orders using(c_id);
 
+```
         注：在隐式数据类型转换发生的场景中，其他句型与SELECT句型语法相同，都是判断where过滤条件或者ON条件，因此省略相似的示例。
 
         示例验证：
 
+```sql
         -- 查看SQL 1的执行时间以及执行计划。 从warnings 信息中可以看到不能使用合适的执行计划原因是发生了隐式数据类型转换：due to type or collation conversion
         (mysql:8.0.31-cluster) select count(*) from customers where log_date = current_date;
         +----------+
@@ -131,11 +138,13 @@
         Message: /* select#1 */ select count(0) AS `count(*)` from `db_mysql`.`customers` `a` join `db_mysql`.`orders` `b` where (cast(`db_mysql`.`a`.`c_id` as double) = cast(`db_mysql`.`b`.`c_id` as double))
         2 rows in set (0.00 sec)
         
+```
         示例结论：
           1. 两条示例SQL 的执行时间都很长；同时执行计划的警告信息中出现了数据类型隐式转换。
           2. 解决这个问题的根本办法是修改相关字段为合适的数据类型。
 
         解决方案： 修改表字段数据类型。
+```sql
         alter table customers modify log_date date;
         alter table orders modify c_id int;
 
@@ -156,30 +165,37 @@
         +----------+
         1 row in set (2.82 sec)
      
+```
       </示例>
       <检查流程描述>          
           1. 对于所有DML语句，解析SQL语句，获取所有的WHERE条件和ON条件字段，
             1. 如果左侧和右侧都是列字段，则登录数据库，获取列字段的类型，检查左右的字段类型是否一致，若不一致，则报告违反规则。
                 对应的SQL 为： 假设左侧表为customers,右侧表为orders，字段都是c_id,以下SQL 返回结果为1，则代表违反规则。
+```sql
                 SELECT CASE WHEN
                 (SELECT DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'customers' AND COLUMN_NAME = 'c_id') =
                 (SELECT DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'orders' AND COLUMN_NAME = 'c_id')
                 THEN 0 ELSE 1 END AS result;
     
+```
             2. 如果左侧为列字段，右侧为常量，则登录数据库，获取列字段的类型，检查右侧的常量类型是否与列字段类型一致，若不一致，则报告违反规则； 
                 对应的SQL 为：假设左侧表名为customers,字段为age，常量类型为VARCHAR。以下SQL 返回结果为1，则代表违反规则。
+```sql
                 select case when data_type_name = 'VARCHAR' then 0 else 1 end as result from table_columns  where table_name='customers' and column_name='AGE';
     
+```
             3. 如果左侧为常量，右侧为列字段，则登录数据库，获取列字段的类型，检查左侧的常量类型是否与列字段类型一致，若不一致，则报告违反规则。
             4. 如果左右都是常量，则检查左右的常量类型是否一致，若不一致，则报告违反规则。   
         2. 对于所有DML语句，解析SQL语句，获取Using的条件字段， 
            1. 登录数据库，获取Using字段在关联表的数据类型；
            2. Using使用的字段在两张关联表内的数据类型不一致，则报告违反规则。     
            对应的SQL为:假设使用USING关键字的字段为c_id,关联的两个表分别为customers和orders,以下SQL返回结果为1,则代表违反规则。
+```sql
             SELECT CASE WHEN
             (SELECT DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'customers' AND COLUMN_NAME = 'c_id') =
             (SELECT DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'orders' AND COLUMN_NAME = 'c_id')
             THEN 0 ELSE 1 END AS result;
+```
       </检查流程描述>
       <知识文档>
           1. WHERE 条件优化官方文档：https://dev.mysql.com/doc/refman/5.7/en/where-optimization.html

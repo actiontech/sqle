@@ -13,9 +13,12 @@
     <原理说明 数据库版本="MySQL 5.7.25" 检查方式="不连库审核">
       <示例>
       原理说明：
+```sql
       MySQL数据类型默认值处理机制在官方文档中有着明确的定义。其中，显式默认值通过DEFAULT子句指定，要求为常量，以确保数据的确定性。对于NOT NULL约束的字段，设置默认值可有效防止数据插入时因缺少值而导致错误。需要注意的是，BLOB、TEXT、GEOMETRY和JSON等类型不支持默认值设置。
   
+```
       示例：
+```sql
       CREATE TABLE `tb_text` (
         `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '主键',
         `a` tinytext,
@@ -29,7 +32,9 @@
       ALTER TABLE tb_text modify column c geometry not null;
 
 
+```
       示例验证：       
+```sql
       mysql&gt; insert into tb_text (a, b, c, d) values ('aaa', 'bbb','','');
       Query OK, 1 row affected (0.00 sec)
 
@@ -45,6 +50,7 @@
       ERROR 1364 (HY000): Field 'd' doesn't have a default value
       mysql&gt; insert into tb_text (a, b, c, d) values ('aaa', 'bbb',NULL,NULL);
       ERROR 1048 (23000): Column 'd' cannot be null
+```
       </示例>
      
       <检查流程描述>.

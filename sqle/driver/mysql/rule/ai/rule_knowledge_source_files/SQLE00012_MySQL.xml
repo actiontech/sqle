@@ -12,14 +12,18 @@
     <原理说明 数据库版本="MySQL 5.7.25" 检查方式="不连库审核" 适用句型="CREATE TABLE、ALTER TABLE">
       <示例>
       原理说明：
+```sql
       MySQL使用二进制来存储浮点型十进制数据（FLOAT，DOUBLE）；在十进制转化为二进制数据时，不可避免地会造成精度丢失，造成计算结果差异。虽然DECIMAL类型可以保证精度，但在某些场景下，如跨系统的精度计算，使用BIGINT代替DECIMAL会更有利于保证业务数据精度。例如：用分来表示金额，1元在数据库中整型表示为100。
 
+```
       示例：
+```sql
       CREATE TABLE products (
           id INT PRIMARY KEY,
           price DECIMAL(10, 2)
       );
       ALTER TABLE products ADD price2 DECIMAL(10, 2);    
+```
       </示例>
       <检查流程描述>
       1. 对于"CREATE TABLE..."语句，如果存在DECIMAL类型字段，则报告违反规则。

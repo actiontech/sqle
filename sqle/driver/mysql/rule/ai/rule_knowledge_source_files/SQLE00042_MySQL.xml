@@ -13,11 +13,13 @@
    <场景 名称="创建临时表" 数据库版本="MySQL" 检查方式="不连库审核" 适用关键词="TEMPORARY" 适用句型="CREATE">
     <示例>  
       示例：
+```sql
       CREATE TEMPORARY TABLE tmp_order_his(
           id BIGINT,
           name varchar(64) DEFAULT ''
       );
 
+```
       示例说明：
       数据库中创建临时表，需要在CREATE TABLE句子中指定参数TEMPORARY。临时表通常在会话结束后，自动被删除，也可选择在当前事务结束后删除。 
       从业务实践角度出发，采用固定前缀，可以提高代码的可读性、可维护性。另外，如存储过程或者事务内批量维护临时表时，可以更容易筛选临时表。
@@ -35,11 +37,14 @@
    <场景 名称="重命名临时表" 数据库版本="MySQL" 检查方式="不连库审核" 适用句型="ALTER">
     <示例>  
       示例：
+```sql
       ALTER TABLE order_his RENAME TO tmp_order_his;
 
+```
       示例说明：与【创建临时表】场景一致。
 
       示例验证：
+```sql
       -- 创建临时表
       mysql&gt; CREATE TEMPORARY TABLE tmp_order_his(id BIGINT, name varchar(64) DEFAULT '' );
       Query OK, 0 rows affected (0.01 sec)
@@ -84,6 +89,7 @@
       mysql&gt; select * from tm_123;
       ERROR 1146 (42S02): Table 'test.tm_123' doesn't exist      
 
+```
       限制：由于临时表是属于session级别的，RENAME句子要对临时表进行重命名，需要在同一个session内进行，否则会提示表不存在。
     </示例>
     <检查流程描述>

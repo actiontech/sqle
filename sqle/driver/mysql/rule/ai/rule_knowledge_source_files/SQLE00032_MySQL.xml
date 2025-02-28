@@ -13,8 +13,10 @@
    <场景 名称="数据库对象名初始化" 数据库版本="MySQL" 检查方式="不连库审核" 适用关键词="DATABASE" 适用句型="CREATE">
     <示例>  
       示例：
+```sql
       CREATE DATABASE TEST_DB;
       
+```
       示例说明：      
       数据库系统默认的SQL模式下（即ANSI_QUOTES禁用），数据库对象名定义允许使用字符：ASCII: 【0-9,a-z,A-Z$_】以及Extended:【U+0080 .. U+FFFF】，且允许数字开头但不能由全数字组成。
 

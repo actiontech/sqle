@@ -10,9 +10,11 @@
         <场景 名称="初始化表结构定义" 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="CREATE TABLE、ALTER TABLE">
             <示例>  
             前置：
+```sql
             create database db_mysql;
             use db_mysql;
 
+```
             原理说明：
             1. 建表时字段属性为 NOT NULL 但是不设置默认值，后期在执行INSERT、REPLACE 时，如果不指定该字段，均会报错。
                比如下面两条语句：  没有显式指定字段 age, 字段age 如果有默认值，则不会报错；如果没有默认值，则会报错。    
@@ -20,6 +22,7 @@
                2. replace into customers(id,name,sex,city) values (2,'lily',0,'shanghai');
 
             反例：       
+```sql
             CREATE TABLE customers(
             id INT NOT NULL default 0, -- 序号
             name VARCHAR(32) DEFAULT '',-- 姓名
@@ -32,11 +35,15 @@
             alter table customers modify age int not null;
             alter table customers change age age int not null;
 
+```
             反例验证：
+```sql
             (mysql:8.0.31-cluster)insert into customers(id,name,sex,city) values (1,'lucy',0,'beijing');
             ERROR 1364 (HY000): Field 'age' doesn't have a default value
 
+```
             正例： 
+```sql
             CREATE TABLE customers(
                 id INT NOT NULL default 0, -- 序号
                 name VARCHAR(32) DEFAULT '',-- 姓名
@@ -49,7 +56,9 @@
             alter table customers modify age int not null default 0;
             alter table customers change age age int not null default 0;
 
+```
             正例验证： 字段age 添加默认值后，插入成功，字段age 被隐式插入默认值0.
+```sql
             (mysql:8.0.31-cluster)insert into customers(id,name,sex,city) values (1,'lucy',0,'beijing');
             Query OK, 1 row affected (0.02 sec)
             
@@ -61,6 +70,7 @@
             +----+------+-----+---------+-----+
             1 row in set (0.00 sec)
 
+```
             结论：
             1. 在创建表时，字段显式定义为NOT NULL时，则需显式指定默认值，否则后续插入语句 INSERT 或者 REPLACE 都会报错。
             2. 解决方法为：重新创建表或者使用ALTER TABLE 来添加字段默认值。

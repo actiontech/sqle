@@ -17,6 +17,7 @@
         2. 不同的字符集支持的字符范围不同，如果使用非标准的字符集，可能导致字符无法编码或者编码补全导致的乱码，最终出现应用写入数据失败或者查询结果显示乱码，影响数据库服务可用性。
        
         示例：
+```sql
         CREATE DATABASE mydatabase
           DEFAULT CHARACTER SET utf8mb4
           DEFAULT COLLATE utf8mb4_general_ci;
@@ -30,10 +31,14 @@
           CONVERT TO CHARACTER SET utf8mb4
           COLLATE utf8mb4_general_ci;
 
+```
         示例验证：
+```sql
         -- 进行表使用不同的字符集的实验
         -- 字符集为UTF8MB4
+```
         1. 创建表c1，字符集为UTF8MB4。
+```sql
         (mysql:8.4.0:db_mysql)create table c1(c1 varchar(100)) charset utf8mb4;
         Query OK, 0 rows affected (0.03 sec)
         
@@ -49,7 +54,9 @@
         1 row in set (0.00 sec)
         
         -- 字符集为 KOI8R
+```
         1. 创建表 c2，字符集为 KOI8R，同样的插入语句执行失败。
+```sql
         (mysql:8.4.0:db_mysql)create table c2(c1 varchar(100)) charset KOI8R;
         Query OK, 0 rows affected (0.03 sec)
 
@@ -57,9 +64,11 @@
         ERROR 1366 (HY000): Incorrect string value: '\xCE\x91\xCE\xB1\xEF\xBC...' for column 'c1' at row 
 
         -- 字符集采用默认字符集，即与库定义的字符集相同。
+```
         示例3 验证：
         1. 创建表c3，默认字符集，应该和示例1一样的效果。同样的插入语句，插入成功。
 
+```sql
         (mysql:8.4.0:db_mysql)create table c3(c1 varchar(100));
         Query OK, 0 rows affected (0.03 sec)
 
@@ -74,7 +83,9 @@
         +-----------------+
         1 row in set (0.00 sec)
 
+```
         2. 查看默认的库字符集
+```sql
         (mysql:8.4.0:db_mysql) show create database test;
         +----------+--------------------------------------------------------------------------------------------------------------------------------+
         | Database | Create Database                                                                                                                |
@@ -84,6 +95,7 @@
         1 row in set (0.00 sec)
         
 
+```
         总结：
         1. MySQL 支持库、表、列等级别的字符集指定。在建表时最好指定统一的字符集，不同的字符集支持的字符范围不同，选择不当，可能会导致数据插入失败、业务不同库感知数据不匹配等。
               

@@ -10,6 +10,7 @@
         <场景 名称="对值全为NULL的字段特殊处理" 数据库版本="MySQL 8.0" 检查方式="连库审核" 适用句型="SELECT、UPDATE、DELETE、INSERT...SELECT、UNION、WITH">
             <示例>
         前置：
+```sql
         create database db_mysql;
         use db_mysql;
         CREATE TABLE customers(
@@ -28,10 +29,13 @@
         INSERT INTO customers(`name`,sex,city,age)  VALUES  ('小刘',0,'上海',NULL);
               
 
+```
         反例:
+```sql
         -- 对年龄字段求和、求计数。
         select sum(age) as sum_age,count(age) as count_age from customers;
         
+```
         注：其他句型与SELECT句型语法相同，都是指SELECT子句中sum和count计算null值的情况，因此省略相似的示例。
 
         反例说明：
@@ -39,6 +43,7 @@
         2. 由于年龄字段age 的值全为NULL，所以此条SQL 最终结果不正确，需要修改SQL。
 
         反例验证：
+```sql
         (mysql:8.0.31-cluster)select sum(age) as sum_age,count(age) as count_age from customers;
         +---------+-----------+
         | sum_age | count_age |
@@ -49,15 +54,19 @@
 
 
 
+```
         正例:
+```sql
         -- 也对年龄字段求和、求计数。
         select sum(ifnull(age,0)) as sum_age,count(ifnull(age,0)) as count_age from customers;
 
+```
         正例说明：
         1. 由于年龄字段值全为NULL，需要特殊处理，否则计算出来的结果就是错误的。
         2. 可以使用ifnull函数对值为NULL的字段特殊处理。
 
         正例验证：
+```sql
         (mysql:8.0.31-cluster)select sum(ifnull(age,0)) as sum_age,count(ifnull(age,0)) as count_age from customers;
         +---------+-----------+
         | sum_age | count_age |
@@ -68,19 +77,24 @@
     
         
         
+```
         结论：
         1. 字段全为NULL的场景下，需要进行特殊处理，否则检索的结果就是错误的。比如使用函数ifnull。
         2. 验证某个字段是否全为NULL的方法，执行下面语句：比如检查字段age，如果结果为0，代表字段age 值全为NULL。
+```sql
         select (select count(*) from customers)-(select count(*) from customers where age is null) result;
 
     
+```
             </示例>
             <检查流程描述>
         1. 对于所有DML语句，检查语句中是否包含sum或者count关键词，如果存在，则进一步检查。
         2. 登录数据库。
         3. 检查语句中sum或者count包含的字段值是否全为NULL，如果是，报告违反规则。
         4. 验证某个字段是否全为NULL的方法，执行下面语句：比如检查字段age，如果结果为0，代表字段age 值全为NULL。
+```sql
         select (select count(*) from customers)-(select count(*) from customers where age is null) result;
+```
             </检查流程描述>
             <知识文档>
           1. SUM、COUNT 函数文档： https://dev.mysql.com/doc/refman/8.0/en/aggregate-functions.html#function_sum

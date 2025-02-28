@@ -10,6 +10,7 @@
       <场景 名称="获取指定条数的数据查询" 数据库版本="MySQL 8.0" 检查方式="不连库审核" 适用句型="SELECT">
         <示例>
         前置：
+```sql
         create database db_mysql;
         use db_mysql;
         CREATE TABLE customers(
@@ -30,15 +31,19 @@
         ('小娜',1,'深圳',25),('小五',0,'深圳',23);
               
 
+```
         反例:
+```sql
         -- 查询最新的两条记录
         select * from customers limit 2;
 
+```
         反例说明：
         1. 示例SQL 没有使用ORDER BY 子句，默认是按照表的主键升序排序的；
         2. 如果需要按照非主键字段排序或者需要按照主键来降序排序。比如查询最新的两条记录，很显然这条SQL 就无法完成目标。
 
         反例验证：
+```sql
         -- 不加ORDER BY 子句， SQL 执行的结果默认按照主键排序，
         (mysql:8.0.31-cluster)select * from customers limit 2;
         +----+--------+-----+--------+-----+
@@ -67,15 +72,19 @@
 
 
 
+```
         正例：
+```sql
         -- 获取最新的两条记录，按照主键来降序输出
         select  * from customers order by id desc limit 2;
 
+```
         正例说明：
         1. 跟反例不同的是，正例的SQL 加了order by 子句；
         2. 加了 order by 子句后，就可以一直获取最新的两条记录，而避免查询结果的不确定性。
 
         正例验证：
+```sql
         (mysql:8.0.31-cluster) select  * from customers order by id desc limit 2;
         +----+------+-----+----------+-----+
         | id | name | sex | city     | age |
@@ -103,6 +112,7 @@
         2 rows in set (0.01 sec)
         
         
+```
         结论：
         1. 在需要进行部分输出的查询中，建议加上order by 子句来一并完成查询。
         2. 不加 order by 子句的部分输出查询语句，会导致执行结果偏差。

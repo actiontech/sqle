@@ -16,18 +16,21 @@
               3. 所以此规则不适用于MySQL数据库。自增序列的使用参考规则 SQLE00052。
 
               示例：
+```sql
 
               create table t1(
                 id tinyint auto_increment primary key, -- 序号，主键
                 c1 int -- 一般字段
               );
 
+```
               示例说明：
               1. 表t1 有一个自增字段 id，是tinyint类型，最大值为127；
               2. 当 id 值为127时，自增字段的值就等于tinyint的最大值127了；再次插入将会报错。
 
               示例验证：
               插入一条记录，默认从ID从1开始
+```sql
               (mysql:8.3.0:db_mysql)insert into t1(c1) select 10;
               Query OK, 1 row affected (0.01 sec)
               Records: 1  Duplicates: 0  Warnings: 0
@@ -40,7 +43,9 @@
               +----+------+
               1 row in set (0.00 sec)
 
+```
               给ID指定值为126，下次加1.
+```sql
               (mysql:8.3.0:db_mysql)insert into t1 select 126,10;
               Query OK, 1 row affected (0.01 sec)
               Records: 1  Duplicates: 0  Warnings: 0
@@ -50,7 +55,9 @@
               Query OK, 1 row affected (0.01 sec)
               Records: 1  Duplicates: 0  Warnings: 0
 
+```
               自增字段到达最大值，无法继续。
+```sql
               (mysql:8.3.0:db_mysql)insert into t1(c1) select 100;
               ERROR 1062 (23000): Duplicate entry '127' for key 't1.PRIMARY'
               (mysql:8.3.0:db_mysql)select * from t1;
@@ -63,6 +70,7 @@
               +-----+------+
               3 rows in set (0.00 sec)
   
+```
               结论：
               1. MySQL 的自增字段无法设置循环，当到达字段定义的自增字段最大值时，不再增长，也不在重新从1开始。
               2. 此规则不适用于MySQL。

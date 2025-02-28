@@ -15,6 +15,7 @@
     <原理说明 数据库版本="MySQL 5.7.25" 检查方式="不连库审核" 适用句型="CREATE TABLE,ALTER TABLE">
       <示例>
       前置：
+```sql
       --表结构
       CREATE TABLE test_char (
           id INT PRIMARY KEY,
@@ -22,6 +23,7 @@
           varchar_col VARCHAR(30)
       );
 
+```
       原理说明：
       VARCHAR是变长的(Variable-length)字符存储，CHAR是定长的(Fixed-length)字符存储。CHAR的最大长度是255，VARCHAR是65535，单位是字符（characters）。
 
@@ -30,13 +32,16 @@
       CHAR适合存储很短的字符串，例如CHAR存储只有一个个字符的列（或者固定长度的列，如只有Y或N的列）只要一个字节；而VARCHAR则需要两个字节。在这个场景下，CHAR字段有利于节约磁盘空间。但在存储较长字段时，char填充空格可能导致浪费存储空间，这意味着要从磁盘读写更多数据，耗费更多资源，查询时删除空格也会损耗一些CPU资源。
 
       反例：
+```sql
       CREATE TABLE employee (
           id INT PRIMARY KEY,
           name CHAR(50),
           department CHAR(30)
       );
 
+```
       反例验证：
+```sql
       mysql&gt; SHOW CREATE TABLE employee\G
       *************************** 1. row ***************************
             Table: employee
@@ -55,14 +60,18 @@
       |           50 |                  30 |
       +--------------+---------------------+
 
+```
       正例：
+```sql
       CREATE TABLE employee_improved (
           id INT PRIMARY KEY,
           name VARCHAR(50),
           department VARCHAR(30)
       );
 
+```
       正例验证：
+```sql
       mysql&gt; SHOW CREATE TABLE employee_improved\G
       *************************** 1. row ***************************
             Table: employee_improved
@@ -81,6 +90,7 @@
       |            8 |                   2 |
       +--------------+---------------------+
 
+```
       结论：
       使用VARCHAR代替长度大于20的CHAR类型可以节省存储空间，特别是在存储变长数据时。如验证结果所示，VARCHAR只存储实际数据长度，而CHAR会用空格填充到固定长度，可能造成存储空间的浪费。此外，对于较小的字段，VARCHAR的检索效率通常也更高。
       </示例>

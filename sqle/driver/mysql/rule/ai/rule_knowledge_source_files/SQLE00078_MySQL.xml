@@ -10,6 +10,7 @@
   <原理说明 数据库版本="MySQL 5.7.25" 检查方式="不连库审核">
     <示例>
       前置：
+```sql
       CREATE TABLE t2 (
           id INT(11) NOT NULL,
           name VARCHAR(32) DEFAULT NULL,
@@ -21,17 +22,21 @@
 
       INSERT INTO t2 VALUES(1,'t1','a',12),(2,'2t','a3',23),(3,'t3','a4',24),(4,'4t','a2',NULL);
 
+```
       示例：
+```sql
       SELECT COUNT(1) FROM t2;###全表聚合统计
       SELECT name,COUNT(1) as cn FROM t2 GROUP BY name;###配合group by进行聚合统计
       SELECT name,AVG(score) as avgscore FROM t2 GROUP BY name;###配合group by进行聚合统计的分类
       SELECT name,AVG(score) as avgscore FROM t2 GROUP BY name having AVG(score)&gt; 0;###配合having子句进行聚合统计的筛选
 
+```
       示例说明：
       聚合函数通常搭配SELECT句型、GROUP BY、HAVING子句进行使用。常用聚合函数，如COUNT、SUM、AVG、MIN、MAX等。其中SUM、AVG这四类函数是数值型统计，没有特别说明，基本会忽略NULL值的字段，容易造成统计不精确。引用官方文档说明：Unless otherwise stated, aggregate functions ignore NULL values. 
 
       示例验证：
       统计全量数据条数与Score为非NULL的数据条数
+```sql
       mysql&gt; select count(1) from t2;
       +----------+
       | count(1) |
@@ -48,7 +53,9 @@
       +----------+
       1 row in set (0.00 sec)          
 
+```
       计算全量平均值，正确的值应该是14.75。
+```sql
       mysql&gt; select avg(score) as avgs from t2;
       +-----------+
       | avgs      |
@@ -57,7 +64,9 @@
       +-----------+
       1 row in set (0.00 sec)      
 
+```
       计算非NULL的平均值
+```sql
       mysql&gt; select avg(score) as avgs from t2 where score is not null;
       +-----------+
       | avgs      |
@@ -66,6 +75,7 @@
       +-----------+
       1 row in set (0.00 sec)  
       
+```
       解决方案：
       1）调整业务SQL：select avg(coalesce(score,0)) as avgs from t2;
       2）处理表数据的NULL值：UPDATE t2 set score =0 where score is null;

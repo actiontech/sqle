@@ -15,6 +15,7 @@
                 3. 很明显 BIGINT UNSIGNED 比 BIGINT 取值范围大，不容易发生存储溢出的问题。
 
                 示例：
+```sql
                 create table customers(
                     id bigint not null primary key,
                     name varchar(32) default '' not null, -- 序号
@@ -22,7 +23,9 @@
                     age int default 0 -- 年龄
                 );
 
+```
                 示例验证：
+```sql
                 -- 插入ID 为pow(2,63)的记录，插入失败，反馈是列定义溢出。
                 (mysql:8.3.0:db_mysql)insert into customers values (9.223372036854776e18,'小张',0,20);
                 ERROR 1264 (22003): Out of range value for column 'id' at row 1
@@ -44,21 +47,28 @@
                 +---------------------+--------+------+------+
                 1 row in set (0.00 sec)
                 
+```
                 结论：
                 1. 主键最好是定义为BIGINT UNSIGNED ，比BIGINT 支持的数据范围要大，很难发生插入溢出的错误。
                 2. BIGINT UNSIGNED 定义为主键有两种方式：
                    1. 创建表时主键字段预定义：
+```sql
                     create table customers(
                         id bigint unsigned not null primary key,
                         name varchar(32) default '' not null, -- 序号
                         sex int default 0, -- 性别
                         age int default 0 -- 年龄
                     );
+```
                    2. 创建表后修改主键字段定义：
+```sql
                     alter table customers modify id bigint unsigned not null;
+```
                     或者使用
+```sql
                     alter table customers change id id bigint unsigned not null;
 
+```
             </示例>
             <检查流程描述>
                 1. 对于"CREATE TABLE..."语句，如果主键字段类型为bigint，且没有定义为 UNSIGNED，则报告违反规则。

@@ -22,13 +22,16 @@
       当不存在主键时，由于无法使用主键索引，因此可能导致读写SQL执行效率下降；在对无主键的表进行更新或删除时，容易引起主从延迟，业务响应变慢等故障；另外，常用的运维工具也需要表存在主键，如在线DDL工具Ghost。
 
       示例：
+```sql
       CREATE TABLE no_primary_key (
         id INT,
         name VARCHAR(50)
       );
       ALTER TABLE no_primary_key drop PRIMARY KEY;
 
+```
       示例验证：
+```sql
       -- 创建一个没有主键的表
       CREATE TABLE no_primary_key (
         id INT,
@@ -90,6 +93,7 @@
       1 row in set, 1 warning (0.00 sec)
       -- 结果应显示 type: const，表示使用了主键索引
 
+```
       结论：
       通过示例验证，我们可以看到没有主键的表在添加主键后，能够显著提高表的结构质量。主键不仅能提高查询性能，还能保证数据的唯一性和完整性。因此，在设计表结构时，应始终添加适当的主键。主键的存在可以防止重复数据的插入，提高查询效率，并为数据库优化提供更多可能性。
       </示例>

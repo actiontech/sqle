@@ -11,6 +11,7 @@
         <原理说明 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="DELETE、UPDATE">
             <示例>
                 前置：
+```sql
                 create table customers(
                     id bigint not null primary key,
                     name varchar(32) default '' not null, -- 序号
@@ -30,6 +31,7 @@
                 insert into customers values (100000012,'小非',0,52);
                 insert into customers values (100000031,'小海',0,37);
 
+```
                 原理说明：
                 1. 在 MySQL 数据库里，DELETE、UPDATE 操作可以在后面跟LIMIT 子句，类似 SELECT 语句；
                 2. 其意思是可以指删除或者更新LIMIT 子句执行的记录，而不是所有匹配的记录；
@@ -37,15 +39,18 @@
 
 
                 示例：      
+```sql
                 update customers set age = 100  limit 1;
                 delete from customers limit 1;
 
     
+```
                 示例说明：
                 1. 示例SQL 是加了 LIMIT 的更新操作，会更新或者删除表 customers 匹配记录的第一行，默认主键排序。
 
                 示例验证： 两条SQL 类似，只验证update 语句即可。
                 -- 表 customers 的记录：
+```sql
                 (mysql:8.3.0:db_mysql)select * from customers;
                 +-----------+--------+------+------+
                 | id        | name   | sex  | age  |
@@ -114,6 +119,7 @@
                 
                 
 
+```
                 结论：
                 1. DELETE 、 UPDATE 句子加上LIMIT 子句在MySQL 里不会有不及预期的效果， 此规则不适用于MySQL数据库。
 

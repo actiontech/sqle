@@ -10,9 +10,11 @@
         <场景 名称="定义主键与自增属性" 适用句型="CREATE TABLE、ALTER TABLE" 数据库版本="MySQL 所有版本" 检查方式="不连库审核">
             <示例>
                 前置：
+```sql
                 create database db_mysql;
                 use db_mysql;
                 
+```
                 原理说明：
                 1. MySQL的InnoDB引擎使用聚簇索引存储数据，其中数据和主键直接存储在一起。主键的顺序性和大小直接影响磁盘空间的利用率和数据插入效率。
                 2. 主键设计的优劣不仅影响表的存储空间和二级索引的大小，还影响表的更新效率。
@@ -21,6 +23,7 @@
        
                 示例：
 
+```sql
                 -- 非自增主键表
                 create table customers_no_auto_increment(
                     id char(36) primary key,
@@ -34,7 +37,9 @@
                 ALTER TABLE customers ADD primary key(id);
                 ALTER TABLE t2 MODIFY id int not null primary key;
                 
+```
                 示例验证：
+```sql
                 -- 通过对比插入200W 条记录，来验证两表分别占用的磁盘空间以及插入性能。
                 -- 设计自增主键的表customers_auto_increment
                 create table customers_auto_increment(
@@ -84,7 +89,9 @@
                 
                 DELIMITER ;
 
+```
                 1. 自增主键表 customers_auto_increment
+```sql
                 -- 调用插数据存储过程：时间43秒多
 
                 (mysql:8.3.0:db_mysql)call sp_insert_customers('customers_auto_increment');
@@ -111,7 +118,9 @@
                 1 row in set (1.06 sec)
 
                 
+```
                 2. 非自增主键表 customers_no_auto_increment
+```sql
                 -- 调用插数据存储过程： 时间1分2秒多
                 (mysql:8.3.0:db_mysql)call sp_insert_customers('customers_no_auto_increment');
                 +--------------------------------------+---------+----------+----------+
@@ -137,6 +146,7 @@
                 1 row in set (1.38 sec)
 
 
+```
                 结论：
                 1. 自增主键的表占用空间小、插入速度快， 推荐表主键使用自增主键。
                 2. 自增主键可以在建表时直接定义；也可以在建表后使用 ALTER TABLE 来添加。
@@ -162,6 +172,7 @@
                 与场景【定义主键与自增属性】一致。
 
                 前置：
+```sql
                 create table customers(
                     id int not null auto_increment,
                     name varchar(32) default '' not null, -- 序号
@@ -170,9 +181,12 @@
                     index idx_customers_id(id)
                 );
 
+```
                 示例：
+```sql
                 ALTER TABLE customers ADD primary key(id);
                 
+```
             </示例>
             <检查流程描述>
             1. 对于"ALTER TABLE..."语句，当前操作的字段是主键，登录数据库，获取操作表的表结构，若当前操作的字段属性未包含AUTO_INCREMENT，则报告违反规则。

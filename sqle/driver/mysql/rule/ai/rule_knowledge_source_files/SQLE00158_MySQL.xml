@@ -22,22 +22,29 @@
             2. 当MySQL 实例初始化时，参数 lower_case_table_names 设置为1 后，所有的对表的操作都是不区分大小写的。
 
             示例1：
+```sql
             create table TabC (C1 int, c2 int);
             create table tabc (c1 int,C2 int);
+```
             示例2：
+```sql
             insert into tabc (c1,c2) values (1,2);
             insert into tabc (c1,C2) values (1,2);
           
+```
             示例3：
+```sql
             select table_name,column_name from information_schema.columns where table_name='TabC';
             select table_name,column_name from information_schema.columns where table_name='tabc';
 
+```
             示例说明：
             1. 建立两张表TabC、tabc； 在MySQL 中，第一张表建立成功，第二张表将会建立失败；
             2. 插入数据也不区分字段大小写；
             3. 不区分大小写，从元数据里找出对应的表名或者列名。
 
             示例验证： 三个示例相互关联，所以一起验证。
+```sql
             (mysql:8.3.0:db_mysql)select @@lower_case_table_names;
             +--------------------------+
             | @@lower_case_table_names |
@@ -91,6 +98,7 @@
             +------------+-------------+
             2 rows in set (0.00 sec)
 
+```
             结论：
             1. 在MySQL里，表、数据库、字段等都在推荐的参数lower_case_table_names = 1下，不区分大小写建立、比对等。
             2. 所以对象需要全部大写的规则不适用于MySQL。

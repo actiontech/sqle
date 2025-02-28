@@ -11,6 +11,7 @@
       <示例>
           前置：
           示例表结构:
+```sql
           create database db_mysql;
           use db_mysql;
 
@@ -24,6 +25,7 @@
             PRIMARY KEY (id) -- 主键
           );
 
+```
           原理说明：
           1. 视图的设计初衷是为了简化查询、封装复杂的逻辑。但正是因为这个设计，所以会导致如下问题：
             1. 性能问题： 比如嵌套视图。 一个视图定义里存在对另外一个视图的调用，这样对优化器来讲，就不容易生成最佳的执行计划；或者视图本身的定义里包含的SQL 不够优化，也会导致视图本身执行效率大打折扣。
@@ -32,11 +34,13 @@
 
 
           示例：
+```sql
           create view v1 as (select id,cname,sex,age from customers where age in (select distinct age from customers));
           create view v2 as (select id,cname,sex,age from customers);
 
           SQL1：select count(*) from v1 join v2 on v1.id = v2.id  where v2.age in (select distinct age from customers);
           
+```
           问题场景：
           1. 表customers增加新列address后，相关的视图需要即时更新，否则会导致业务查询视图获取不到新增列的数据。
           2. 若cname发生重命名，视图也需要重建，否则会导致业务查询视图报错。

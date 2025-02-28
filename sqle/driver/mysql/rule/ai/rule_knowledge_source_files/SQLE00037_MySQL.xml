@@ -13,6 +13,7 @@
         <场景 名称="初始表结构定义" 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="CREATE TABLE">
             <示例>
                 前置:
+```sql
                 create database db_mysql;
                 use db_mysql;
                 create table customers(
@@ -71,6 +72,7 @@
                 SELECT TRUNCATE(other_index_size*16/1024,2) 'INDEX MB'  FROM information_schema.innodb_tablestats  WHERE NAME='db_mysql/customers';
 
 
+```
                 原理说明：
                 1. 给表设计索引的目的是为了加快带合适过滤条件读、更新等的性能，减少这部分操作的IO成本、CPU成本等；
                 2. 一般来讲，业务表上索引的个数不能超过一定的个数。索引个数的增加，会增加对表的更新成本，造成更新变慢，影响整体TPS数量。 
@@ -79,12 +81,16 @@
                 示例：
 
                 创建多于阈值的索引：
+```sql
                 create index idx_mark5_customers on customers(mark5);
 
+```
                 或者使用
+```sql
                 alter table customers add key idx_mark5_customers (mark5);
                 alter table customers add index idx_mark5_customers (mark5);
 
+```
                 示例说明：
                 1. 由于表customers 已经有5个二级索引， 为了验证多余索引的影响，多加了一个索引 idx_mark5_customers。
                 2. 只需要验证索引 idx_mark5_customers 创建之后的影响。
@@ -94,6 +100,7 @@
 
                 示例验证：
 
+```sql
                 -- 执行插入数据的存储过程： 时间1分钟9秒多。(存储过程里面会先清空表数据，所以这个步骤是用来测试原来有5个索引的场景下的更新性能。)
                 (mysql:8.3.0:db_mysql)call sp_insert_customers;
                 +--------------------+---------+----------+----------+
@@ -155,7 +162,9 @@
                 +----------+
                 1 row in set (1.09 sec)
 
+```
                 查询新加索引后索引的总大小： 312 MB， 比原先5个二级索引多了快60MB磁盘空间。
+```sql
                 (mysql:8.3.0:db_mysql)SELECT TRUNCATE(other_index_size*16/1024,2) 'INDEX MB'  FROM information_schema.innodb_tablestats  WHERE NAME='db_mysql/customers';
                 +----------+
                 | INDEX MB |
@@ -165,6 +174,7 @@
                 1 row in set (0.00 sec)
                 
 
+```
                 结论：
                 1. 对于表的索引来讲，索引个数越多，对应的过滤列的查询和更新都能提升性能；
                 2. 但是对没有过滤列的更新来讲，性能随着索引的个数增加而降低；并且占用磁盘空间也会越来越大；进而消耗更多的资源，影响数据库整体的TPS。
@@ -185,11 +195,15 @@
         <场景 名称="创建索引" 数据库版本="MySQL 所有版本" 检查方式="连库审核" 适用句型="ALTER TABLE、CREATE INDEX">
             <示例>
                 示例：
+```sql
                 create index idx_mark5_customers on customers(mark5);
+```
                 或者使用
+```sql
                 alter table customers add key idx_mark5_customers (mark5);
                 alter table customers add index idx_mark5_customers (mark5);
                 
+```
                 示例验证：与【初始表结构定义】场景一致
                 原理说明：与【初始表结构定义】场景一致
                 结论：与【初始表结构定义】场景一致

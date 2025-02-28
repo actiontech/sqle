@@ -11,6 +11,7 @@
             <示例>
             
                 前置： 
+```sql
                 create table customers(
                     id smallint auto_increment primary key, -- 主键字段 id 为 自增字段，默认起始值为1，步长也为1.
                     name varchar(32) default '' not null, -- 序号
@@ -18,9 +19,12 @@
                     age int default 0 -- 年龄 
                     );
 
+```
                 插入示例数据，后面验证要用到
+```sql
                 insert into customers(name,sex,age) select '小季',0,20 from dual;
 
+```
                 原理说明：
                 1. MySQL 的自增字段是字段的属性，用于生成唯一的数字序号；主要用途是生成表的主键序号，可以确保每次生成不重复的值，避免由于并发插入导致的冲突；
                 2. 自增字段由数据库统一来管理，并且一次可以缓存批量的序号值，所以可以减少应用到数据库端的网络开销，提高性能。
@@ -28,14 +32,17 @@
         
     
                 示例: 
+```sql
                 -- 修改系统参数 auto_increment_increment，并且修改其值为30000，也就是自增字段的步长为 30000.
                 set @@auto_increment_increment=30000;
 
+```
                 示例说明：
                 1. 设置自增字段的步长为30000，对于表customers 的自增字段id来讲，步长不是1，而是30000； 
                 2. 这个场景下，自增字段的序号值就非常浪费；比如表customers来讲，自增字段id 类型是mediumint，只能运行当前设置下，生成两个序号，第三次就溢出了。
 
                 示例验证：
+```sql
                 -- 执行插入语句： 可以成功插入2次，第3次报错。
                 (mysql:8.3.0:db_mysql)insert into customers(name,sex,age) select '小季',0,20 from dual;
                 Query OK, 1 row affected (0.03 sec)
@@ -71,7 +78,9 @@
                 ) ENGINE=InnoDB AUTO_INCREMENT=32767 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
                 1 row in set (0.00 sec)                
 
+```
                 示例优化：
+```sql
                 -- 修改系统参数 auto_increment_increment 为 默认 1，重新插入测试数据
                 (mysql:8.3.0:db_mysql)set @@auto_increment_increment=default;
                 Query OK, 0 rows affected (0.01 sec)
@@ -117,6 +126,7 @@
                 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
                 1 row in set (0.00 sec)
                 
+```
                 结论：
                 1. MySQL 的自增字段和标准的序列一样，主要是为了给主键生成全局唯一的序号，由服务器来生成，存放在内存里；序列的如果设置大于1，会造成序号浪费和引起使用跳号。
                 2. 在数据库设计中，建议将自增字段的步长设置为1。这种设置有助于保证主键和其他自增字段的连续性，避免不必要的数据间隔和数字资源的浪费。这不仅简化了数据库的管理和维护，而且也提高了系统的可预测性和稳定性。在处理大量数据插入或高并发场景时，连续的主键值还能减少潜在的冲突和错误。

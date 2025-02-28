@@ -13,6 +13,7 @@
   <场景 名称="嵌套子查询" 数据库版本="MySQL 5.7、MySQL 8.0" 检查方式="不连库审核" 适用句型="SELECT、UPDATE、DELETE、INSERT、UNION、WITH">
     <示例>
       前置：
+```sql
       CREATE TABLE st1 (
           id bigint,
           name VARCHAR(32),
@@ -33,7 +34,9 @@
       INSERT INTO st_class VALUES(1,'class1');
       INSERT INTO st_class SELECT CID + (SELECT count(1) from st_class),'class2' from st_class;###执行多次，模拟13W左右数据；
 
+```
       反例：
+```sql
       SELECT count(1) cn FROM st1
       WHERE grade &gt; (
           SELECT MAX(subquery_outer_avg)
@@ -56,9 +59,11 @@
               ) subquery_outer
           ) subquery_outermost
       );
+```
       注：其他句型与SELECT句型语法相同，都是指WHERE子句中包含SELECT的情况，因此省略相似的示例。
 
       正例：
+```sql
       SELECT count(1) cn
       FROM st1
       CROSS JOIN (
@@ -72,9 +77,11 @@
         )avg_grades
       WHERE st1.grade &gt; avg_grades.avg_grade;
 
+```
       结论：
       数据库系统中，在一条SQL语句中，每嵌套一层的子查询原则上都会对父查询的结果进行处理，增加了不必要的处理步骤和额外的资源开销，在大数据量的情况下，其执行效率比较低下。另外，过多的子查询嵌套，在SQL的阅读、可维护性对用户来说都是较大的考验。可以使用JOIN连接或者CTE临时表的方式进行优化，当前正例采用临时表来计算查询的结果，减少子查询嵌套的层数，提供查询的可读性和性能。
       嵌套子查询指的是在DML语句中嵌套了一个SELECT子句，以SELECT句型为例，通常有如下几种情况：
+```sql
       -- SELECT子句的FROM子句中嵌套了SELECT子查询
       SELECT ... FROM (SELECT ...) AS subquery
       -- WHERE子句中嵌套了SELECT子查询
@@ -90,6 +97,7 @@
       -- JOIN条件中嵌套了SELECT子查询
       SELECT ... FROM table1 JOIN table2 ON table1.column = (SELECT ...)
 
+```
     </示例>
     <检查流程描述>
     1. 对于所有DML语句，

@@ -10,10 +10,13 @@
         <原理说明 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="ALTER TABLE、DROP">
             <示例>
                 前置：
+```sql
                 create database if not exists db_mysql;
                 use db_mysql;
 
+```
                 示例表结构：
+```sql
                 create table t1(
                   id int primary key,
                   c1 int default 0,
@@ -26,6 +29,7 @@
                   partition p_max values less than (maxvalue)
                 );
 
+```
                 原理说明： 
                 1. 在MySQL 中，DROP 动作属于DDL，一旦执行，无法回滚，属于高危操作。除了DROP 掉索引外，其他如表、列、分区、约束的DROP操作应严格控制，以避免意外或误操作带来的严重后果。
                   1. DROP操作直接删除表、列或分区后，所有相关数据将永久丢失，无法回滚。
@@ -40,6 +44,7 @@
                   5. 删除CHECK 约束。
 
                 示例：
+```sql
                 alter table t1 drop c2; ##删除字段
                 alter table t1 drop partition p0; ##删除表分区
                 alter table t1 drop constraint t1_check_global; ##删除约束
@@ -51,12 +56,14 @@
                 drop trigger t1_trigger; ##删除触发器
                 drop event t1_event; ##删除事件
 
+```
                 示例说明：
                 1. 示例中的SQL 删除表t1的 列、分区、约束、字段默认值。
                 2. 这些都是不能回滚的，应该禁止操作，或者在管理员的指导下操作。
 
                 示例验证： 验证删除字段默认值的SQL，其他类似。
                 删除字段默认值的SQL，包含在事务块里，经过验证，无法回滚。
+```sql
                 (mysql:8.4.0:db_mysql)begin;
                 Query OK, 0 rows affected (0.00 sec)
                 
@@ -83,6 +90,7 @@
                  PARTITION p_max VALUES LESS THAN MAXVALUE ENGINE = InnoDB) */
                 1 row in set (0.00 sec)
                                 
+```
                 总结：
                 1. 除了索引外，其他对于字段、约束、字段默认值、约束定义等都禁止删除。因为删除动作本身在当前数据库里是无法回滚。
       

@@ -11,6 +11,7 @@
             <示例>
       
               前置：
+```sql
               create database db_mysql;
               use db_mysql;
     
@@ -34,10 +35,12 @@
                 union all 
                 select a+1,concat('小王',a),floor(rand()*2),'上海',ceil(rand()*20)+20 from tmp where a &lt; 100000) 
                 select * from tmp;
+```
               原理说明：
               1. 这类DML 语句，MySQL 暂时不支持；可以考虑变为语义相同的其他MySQL 支持的语句。比如可以使用主键来过滤行数。
 
               反例：
+```sql
               select name,city,age from customers where id in (select id from customers limit 2);
               select name,city,age from customers where id = ALL (select id from customers limit 2);
               select name,city,age from customers where id = SOME (select id from customers limit 2);
@@ -51,27 +54,34 @@
               delete from customers where id = ANY (select id from customers limit 2);
               delete from customers where id = SOME (select id from customers limit 2);
 
+```
               反例说明：
               1. select、update、delete 语句 不支持 子查询有LIMIT 的更新，MySQL 不支持这样的语法，直接执行会报错。
 
               反例验证： 执行这类SQL 直接报错
+```sql
               (mysql:8.3.0:db_mysql)update customers set city='北京' where id in (select * from customers limit 2);
               ERROR 1235 (42000): This version of MySQL doesn't yet support 'LIMIT IN/ALL/ANY/SOME subquery'
 
+```
               正例：
+```sql
               select a.name,a.city,a.age from customers a join (select id from customers limit 2) b using(id);
               update customers a,customers b set a.city='北京' where a.id = b.id and b.id &lt; 3;
               delete a, b from customers a join customers b where a.id = b.id and b.id &lt; 
 
+```
               正例说明：
               1. 由于MySQL 不支持子查询有LIMIT 子句的更新，需要消除LIMIT 子句，变为其他可以识别的语义相同的语句。
               2. 正例里LIMIT 子句转换为 INNER JOIN 的多表更新、多表删除。
 
               正例验证：修改后的SQL，可以正确执行。
+```sql
               (mysql:8.3.0:db_mysql)update customers a,customers b set a.city='北京' where a.id = b.id and b.id &lt; 3;
               Query OK, 2 rows affected (0.03 sec)
               Rows matched: 2  Changed: 2  Warnings: 0
 
+```
               结论：
               1. 对于SELECT、UPDATE、DELETE 语句，MySQL 不支持其包含子查询里有 LIMIT 的语句，会报告错误。
               2. 这类语句可以更改为语义相同的语句，比如依据主键过滤。

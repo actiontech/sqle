@@ -10,6 +10,7 @@
   <原理说明 句型="CREATE TABLE" 数据库版本="MySQL 5.7、MySQL 8.0" 检查方式="不连库审核" 适用关键词="COMMENT">
     <示例>
       SQL语句：
+```sql
       create table if not exists 
       customers (
         id BIGINT, -- 序号
@@ -20,8 +21,10 @@
         PRIMARY KEY (id) -- 主键
       ) COMMENT='客户';
 
+```
       示例验证：
       1、查看执行计划。
+```sql
         mysql&gt; show create table customers;
         +-------+--------------------------------------+
         | Table | Create Table                   |
@@ -37,9 +40,12 @@
         +-------+--------------------------------------+
         1 row in set (0.00 sec)
 
+```
       其他方案：
+```sql
       ALTER TABLE customers COMMENT = '客户表'; ##若没有定义表注释，可单独追加。
 
+```
       结论：
       对于某些行业，表结构、字段可能需要遵守特定的标准和规范，缺少注释可能导致合规性风险。
       在自动生成文档的情况下，缺少注释可能会导致生成的文档缺少表结构的现实意义。

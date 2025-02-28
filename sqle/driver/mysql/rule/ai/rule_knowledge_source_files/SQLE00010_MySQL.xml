@@ -12,19 +12,24 @@
     <原理说明 数据库版本="MySQL 5.7.25" 检查方式="不连库审核" 适用句型="ALTER TABLE">
       <示例>
       前置：
+```sql
       --表结构
       CREATE TABLE test_table (
         id INT PRIMARY KEY,
         name VARCHAR(50)
       );
 
+```
       原理说明：
       在MySQL中，默认使用主键作为聚簇索引，删除主键将影响表数据结构和性能，属于高开销操作。另外，如果业务中使用了主键，删除主键可能导致业务逻辑阻塞、异常等问题。
 
       示例：
+```sql
       ALTER TABLE test_table DROP PRIMARY KEY;
 
+```
       示例验证：
+```sql
       mysql&gt; ALTER TABLE test_table DROP PRIMARY KEY;
       Query OK, 0 rows affected (0.05 sec)
       Records: 0  Duplicates: 0  Warnings: 0
@@ -46,11 +51,13 @@
       mysql&gt; SELECT * FROM test_table WHERE id = 1;
       -- 此查询可能会变慢，因为没有主键索引
 
+```
       结论：
       删除主键是一个高风险操作，会导致表结构发生重大变化。在MySQL InnoDB存储引擎中，主键通常作为聚簇索引，删除主键可能会导致性能下降、数据重组织，以及潜在的业务逻辑问题。因此，除非有特殊的业务需求和充分的评估，否则应避免删除主键。
 
       &lt;引用&gt;
       Dropping a primary key：
+```sql
       ALTER TABLE tbl_name DROP PRIMARY KEY, ALGORITHM=COPY;
 
       Only ALGORITHM=COPY supports dropping a primary key without adding a new one in the same ALTER TABLE statement.
@@ -59,6 +66,7 @@
 
       https://dev.mysql.com/doc/refman/5.7/en/innodb-online-ddl-operations.html
       &lt;/引用&gt;
+```
       </示例>
       <检查流程描述>
       1. 对于 "ALTER TABLE..." 语句，如果包含 "DROP PRIMARY KEY" 操作，则报告违反规则。

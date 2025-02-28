@@ -13,6 +13,7 @@
       <场景 名称="主键列过多" 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="CREATE TABLE、ALTER TABLE">
         <示例>
             前置：
+```sql
             create database if not exists db_mysql;
             use db_mysql;
 
@@ -27,16 +28,19 @@
             ) table tmp;
 
 
+```
             原理说明：
             1. MySQL的默认引擎是InnoDB. InnoDB 的数据以B+树的方式存储，叶子节点存放的是行数据，非叶子节点存放的是主键。
             2. InnoDB 支持辅助索引。 辅助索引也是B+树的方式存储。 不同的是，辅助索引的叶子节点存储的是索引键的值和主键、非叶子节点存放的是索引键。
             3. 基于以上两点，主键包含的列数越多，辅助索引占用的空间就越大，对其更新也就越慢。
 
             反例：
+```sql
             create table t1(id1 bigint,id2 bigint,id3 char(36),r1 int,r2 int,r3 int);
             alter table t1 add primary key (id1,id2,id3);
             create index idx_r1_t1 on t1(r1);
 
+```
             反例说明:
             1. 表t1 有联合主键,主键包含的列数为3个。
             2. 表t1 有一个辅助索引，基于列r1。
@@ -44,6 +48,7 @@
             反例验证：
             1. 插入100W 行数据，记录插入时间： 26.96秒。
 
+```sql
             (mysql:8.4.0:db_mysql) insert into t1 
             -&gt;             with recursive tmp(a,b,c,d,e,f) as 
             -&gt;          (
@@ -56,7 +61,9 @@
             Records: 1000001  Duplicates: 0  Warnings: 0
 
 
+```
             2. 查看辅助索引的大小： 91 MB.
+```sql
             (mysql:8.4.0:db_mysql)select sys.format_bytes(index_length) from information_schema.tables where table_name='t1';
             +--------------------------------+
             | sys.format_bytes(index_length) |
@@ -67,17 +74,21 @@
 
 
 
+```
             正例：
+```sql
             create table t2(id1 bigint,id2 bigint,id3 char(36),r1 int,r2 int,r3 int);
             alter table t2 add primary key (id1,id2);            
             create index idx_r1_t2 on t2(r1);
 
+```
             正例说明:
             1. 表t2 和反例的表t1 结构一样，只是主键包含的列数比表t1少。
             2. 表t2 也有一个辅助索引，基于列r1。
 
             正例验证：
             1. 也插入100W 行数据，记录插入时间: 22.74秒，比表t1的时间短。
+```sql
             (mysql:8.4.0:db_mysql)            insert into t2
             -&gt;            with recursive tmp(a,b,c,d,e,f) as 
             -&gt;            (
@@ -90,7 +101,9 @@
             Records: 1000001  Duplicates: 0  Warnings: 0
         
             
+```
             2. 查看辅助索引的大小： 50.64 MB，比表t1的辅助索引要小的多。
+```sql
             (mysql:8.4.0:db_mysql)select sys.format_bytes(index_length) from information_schema.tables where table_name='t2';
             +--------------------------------+
             | sys.format_bytes(index_length) |
@@ -99,6 +112,7 @@
             +--------------------------------+
             1 row in set (0.01 sec)
 
+```
             结论：
             1. 主键包含的字段数量不能太多。 由于InnoDB 特殊的表存储方式，主键包含的字段数量越多，二级索引就越占用磁盘空间，对表的更新性能也会降低。
             2. 一般建议主键包含的字段不超过两个。

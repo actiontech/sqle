@@ -10,6 +10,7 @@
       <场景 名称="多表关联 OR 过滤" 数据库版本="MySQL 所有版本" 检查方式="连库审核" 适用句型="SELECT、INSERT">
         <示例>
             前置:
+```sql
             create database db_mysql;
             use db_mysql;
   
@@ -55,17 +56,22 @@
             create index idx_name_customers2 on customers2(name);
 
 
+```
             原理说明：
             1. 两表或者多表关联时，关联条件或者WHERE 条件中不能对多表不同列采用OR的形式；
             2. OR 关联条件过滤，即使有索引，也无法命中；或者是可以命中索引，但是内部又根据两个索引生成一个临时的索引；效率都不高。
             3. 优化方式是把 OR 展开成UNION 或者UNION ALL的方式。这样 OR 操作的前后两个条件都可以正确使用索引了。
 
             反例：
+```sql
             select count(*) from customers1 a join customers2 b on ( a.id = b.id or a.name=b.name );
+```
             或者
+```sql
             select count(*) from customers1 a ,customers2 b where a.id = b.id or a.name = b.name;
 
 
+```
             反例说明：
             1. 表 customers1 和表 customers2 关联，关联条件是两表的id 列和两表的 name 列；
             2. 列id 是等值匹配；列 name 也是等值匹配；两个匹配是OR 关系；
@@ -73,6 +79,7 @@
       
             反例验证： 
 
+```sql
             -- SQL 执行时间接近6秒。
             (mysql:8.3.0:db_mysql)select count(*) from customers1 a join customers2 b on ( a.id = b.id or a.name=b.name );
             +----------+
@@ -97,19 +104,25 @@
             
           
 
+```
             正例：
+```sql
             select count(*) from customers1 a join customers2 b on  a.id = b.id
             union
             select count(*) from customers1 a join customers2 b on  a.name = b.name;
+```
             或者
+```sql
             select count(*) from customers1 a , customers2 b where  a.id = b.id
             union
             select count(*) from customers1 a , customers2 b where  a.name = b.name;
 
+```
             正例说明：
             1. 关联条件OR被转换为对两个字段的单独关联，并且使用UNION。 这样，两个索引就都能被正确使用了。
 
             正例验证： 优化后，执行时间降低到接近2秒，性能提升明显。
+```sql
             (mysql:8.3.0:db_mysql)select count(*) from customers1 a join customers2 b on  a.id = b.id  
              union
              select count(*) from customers1 a join customers2 b on  a.name = b.name;
@@ -122,7 +135,9 @@
             
             
 
+```
             执行计划： 优化后的SQL，语句中涉及到的索引都能最优使用，性能大幅提升。
+```sql
             (mysql:8.3.0:db_mysql)explain  select count(*) from customers1 a join customers2 b on  a.id = b.id             union             select count(*) from customers1 a join customers2 b on  a.name = b.name;
             +----+--------------+------------+------------+--------+---------------------+---------------------+---------+-----------------+--------+----------+--------------------------+
             | id | select_type  | table      | partitions | type   | possible_keys       | key                 | key_len | ref             | rows   | filtered | Extra                    |
@@ -135,6 +150,7 @@
             +----+--------------+------------+------------+--------+---------------------+---------------------+---------+-----------------+--------+----------+--------------------------+
             5 rows in set, 1 warning (0.00 sec)
 
+```
             结论：
             1. 在关联条件中使用OR 来匹配字段，虽然可以使用索引，但是没有最优化的方式使用索引，需要拆开OR条件，改为UNION 的方式。
             2. 在去掉 OR 操作符后， 查询能正确使用所有可能得索引，SQL 整体得到最佳优化状态。

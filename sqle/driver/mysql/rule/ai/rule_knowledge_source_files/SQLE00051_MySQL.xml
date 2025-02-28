@@ -18,6 +18,7 @@
                 3. 对于业务数据来讲，使用自增主键则失去了业务本身主键的可读性，建议使用跟业务相关的主键。
 
                 示例：
+```sql
                 create table customers(
                     id int auto_increment primary key,
                     name varchar(32) default '' not null, -- 序号
@@ -27,8 +28,10 @@
                 ALTER TABLE customers ADD primary key(id) auto_increment;
                 ALTER TABLE t2 MODIFY id int not null auto_increment primary key;
 
+```
                 示例说明：
                 1. 假设数据库实例A已经有10条记录。
+```sql
                     insert into customers values (1,'小季',0,20);
                     insert into customers values (2,'小李',0,30);
                     insert into customers values (3,'小徐',0,40);
@@ -39,12 +42,14 @@
                     insert into customers values (8,'小强',0,40);
                     insert into customers values (9,'小非',0,52);
                     insert into customers values (10,'小海',0,37);
+```
                 2. 后续需要拆分数据库实例A的数据到三台数据库实例B、C、D；数据库和应用间部署中间件，中间件里处理后台数据的物理分布。
                 3. 目前10条数据，无法有效的平滑拆分到后台三个新节点上。
                 4. 如果表的主键不是自增主键，而是预先按照后台3个节点拆分的预期分布，那就非常好拆分了；而且主键是中间件或者应用来生成的，可以保证全局唯一性。
                     比如如下示例，可以按照主键最末一个数字来拆分；
                     1 拆分到 实例B； 2 拆分到实例C；3 拆分到实例D。
 
+```sql
                     create table customers(
                         id int  primary key,
                         name varchar(32) default '' not null, -- 序号
@@ -65,6 +70,7 @@
                     insert into customers values (100000031,'小海',0,37);
      
 
+```
                 示例验证：由于验证需要搭建一整套新架构，省略；原理部分已经在示例说明里讲到了。
 
                 结论：
@@ -87,6 +93,7 @@
                 与场景【定义主键与自增属性】一致。
 
                 前置：
+```sql
                 create table customers(
                     id int not null auto_increment,
                     name varchar(32) default '' not null, -- 序号
@@ -95,9 +102,12 @@
                     index idx_customers_id(id)
                 );
 
+```
                 示例：
+```sql
                 ALTER TABLE customers ADD primary key(id);
                 
+```
             </示例>
             <检查流程描述>
             1. 对于"ALTER TABLE..."语句，当前操作的字段是主键，登录数据库，获取操作表的表结构，若当前操作的字段属性包含AUTO_INCREMENT，则报告违反规则。

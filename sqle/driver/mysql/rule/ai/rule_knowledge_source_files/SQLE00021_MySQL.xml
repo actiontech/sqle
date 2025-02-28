@@ -14,13 +14,16 @@
       表字段应该明确指定NOT NULL约束，以避免存储NULL值并简化后续SQL查询。
 
       反例：
+```sql
       CREATE TABLE employees (
         id INT,
         name VARCHAR(50),
         salary DECIMAL(10,2)
       );
 
+```
       反例验证：
+```sql
       mysql&gt; DESC employees;
       +--------+---------------+------+-----+---------+-------+
       | Field  | Type          | Null | Key | Default | Extra |
@@ -31,14 +34,18 @@
       +--------+---------------+------+-----+---------+-------+
       3 rows in set (0.00 sec)
 
+```
       正例：
+```sql
       CREATE TABLE employees (
         id INT NOT NULL,
         name VARCHAR(50) NOT NULL,
         salary DECIMAL(10,2) NOT NULL
       );
 
+```
       正例验证：
+```sql
       mysql&gt; DESC employees;
       +--------+---------------+------+-----+---------+-------+
       | Field  | Type          | Null | Key | Default | Extra |
@@ -48,6 +55,7 @@
       | salary | decimal(10,2) | NO   |     | NULL    |       |
       +--------+---------------+------+-----+---------+-------+
       3 rows in set (0.00 sec)
+```
       </示例>
       <检查流程描述>
       1. 对于 "CREATE TABLE..." 语句，检查表定义中的每个字段是否明确指定了 NOT NULL 约束，如果存在任何字段未指定 NOT NULL 约束，则报告违反规则。

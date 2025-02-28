@@ -10,6 +10,7 @@
         <场景 名称="初始化表结构" 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="CREATE TABLE、ALTER TABLE">
             <示例>
                 示例：
+```sql
                 CREATE TABLE customers (
                     id int, -- 编号
                     name VARCHAR(50), -- 姓名
@@ -20,6 +21,7 @@
                     primary key (id) -- 主键
                 );
 
+```
                 原理说明:
                 1. 可以把索引看成基于原表的一张小表，目的就是为了减少对原表的访问，减少对系统资源的消耗。
                 2. 对表的查询语句中，如果对应的字段不加索引，那么对优化器来讲，只会走全表扫描，如果全表扫的数据量很大，就会严重影响查询性能。 
@@ -29,6 +31,7 @@
                    3. CREATE INDEX指定表以及索引字段。              
 
                 示例验证：
+```sql
                 -- 生成初始样例数据 （基于MySQL 8.0 版本）
                 set @@cte_max_recursion_depth=2000000;
                 insert into customers 
@@ -40,11 +43,15 @@
                 ) table tmp;
                 
     
+```
                 案例SQL： 
+```sql
                 select count(*) from customers where age = 40;
     
+```
                 实验对比：
                 
+```sql
                 -- 查看执行结果和执行计划，执行时间为110毫秒。
                 (mysql:8.0.31-cluster)select count(*) from customers where age = 40;
                 +----------+
@@ -87,6 +94,7 @@
                 1 row in set (0.00 sec)
                 
     
+```
                 示例结论：
                   1. 给SQL 语句中过滤字段加上索引后，查询效率成倍的增长。
                   2. 务必要检查 SQL 语句中的过滤字段是否加上索引。
@@ -99,6 +107,7 @@
                 1. create index idx_age_customers on customers(age);  ##添加索引
                 2. alter table customers add index idx_age_customers(age);##添加索引 
                 3. 调整建表语句：
+```sql
                     CREATE table  customers (
                         id int, -- 编号
                         name VARCHAR(50), -- 姓名
@@ -110,6 +119,7 @@
                         primary key (id) -- 主键
                     );            
 
+```
             </示例>
             <检查流程描述>
             1. 对于"CREATE TABLE..."语句，如果不存在除主键外的二级索引定义， 则报告违反规则。

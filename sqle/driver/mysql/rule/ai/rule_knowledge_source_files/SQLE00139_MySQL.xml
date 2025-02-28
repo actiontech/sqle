@@ -14,6 +14,7 @@
       <场景 名称="未使用索引" 数据库版本="MySQL 所有版本" 检查方式="连库审核" 适用句型="SELECT、UPDATE、DELETE">
         <示例>
           前置:
+```sql
           use db_mysql;
           CREATE TABLE customers(
           id INT AUTO_INCREMENT NOT NULL, -- 序号
@@ -65,12 +66,15 @@
           -- 更改年龄字段的值分布。
           update customers set age=ceil(rand()*20)+30 ;
 
+```
           示例：
+```sql
           select count(*) from customers where age = 34;
           update customers set log_date=now() where age = 34;
           delete from customers where age = 34;
 
   
+```
           示例说明：
           1. SQL 语句涉及到的大表空间占用大于 5GB。
           2. SQL 语句的过滤字段没有索引。
@@ -80,6 +84,7 @@
   
           示例验证：
             
+```sql
             -- 表记录数451 W 条。
             (mysql:8.0.31-cluster)select count(*) from customers;
             +----------+
@@ -123,12 +128,16 @@
            1 row in set, 1 warning (0.00 sec)
            
                      
+```
           解决方案:
+```sql
           -- 创建索引
             create index idx_age_customers on customers (age);
   
+```
           方案验证：
 
+```sql
             -- 给字段age 加索引。
             (mysql:8.0.31-cluster)create index idx_age_customers on customers (age);
             Query OK, 0 rows affected (47.20 sec)
@@ -155,6 +164,7 @@
             1 row in set, 1 warning (0.00 sec)
             
   
+```
         </示例>
         <检查流程描述>
         1. 对于"select..."语句，

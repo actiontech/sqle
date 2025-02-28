@@ -11,27 +11,34 @@
         <原理说明 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="CREATE TABLE、ALTER TABLE">
             <示例>     
                 前置：
+```sql
                 create database db_mysql;
                 use db_mysql;           
 
+```
                 原理说明：
                 1. MySQL 默认引擎 InnoDB 可以索引NULL字段, 此规则不适用.
                 2. 官网描述如下:
+```sql
                     If neither NULL nor NOT NULL is specified, the column is treated as though NULL had been specified.
                     In MySQL 5.7/8.0/8.4, only the InnoDB, MyISAM, and MEMORY storage engines support indexes on columns that can have NULL values. In other cases, you must declare indexed columns as NOT NULL or an error results.
                                     
+```
                 示例：
+```sql
                 create table t1(
                     a int primary key, 
                     c1 varchar(100) ,
                     key idx_c1(c1) -- 二级索引
                 );
 
+```
                 示例说明：
                 1. 表t1 有两个字段，分别为主键和非主键字段；其中非主键字段c1 在定义的时候，没有定义 NOT NULL 约束，默认为NULL。
 
                 示例验证:
                 -- 先插入样例数据：
+```sql
                 insert into t1 values (1,'ob');
                 insert into t1 values (2,null);
                 insert into t1 values (3,'actionsky');
@@ -51,7 +58,9 @@
                 insert into t1 values (17,'学生');
                 insert into t1 values (18,NULL);
 
+```
                 查询非NULL记录,可以精确走索引(执行计划rows结果)
+```sql
                 (mysql:8.3.0:db_mysql)select * from  t1 where c1 is not  null limit 1;
                 +---+--------------------------------------+
                 | a | c1                                   |
@@ -68,7 +77,9 @@
                 +----+-------------+-------+------------+-------+---------------+--------+---------+------+------+----------+--------------------------+
                 1 row in set, 1 warning (0.00 sec)
 
+```
                 查询 NULL记录也可以精确走索引(执行计划rows结果)
+```sql
                 (mysql:8.3.0:db_mysql)select * from  t1 where c1 is   null limit 1;
                 +---+------+
                 | a | c1   |
@@ -84,6 +95,7 @@
                 +----+-------------+-------+------------+------+---------------+--------+---------+-------+------+----------+--------------------------+
                 1 row in set, 1 warning (0.00 sec)
 
+```
                 结论:
                 1. 索引列即使有NULL 定义, 也可以精确查找,不存在不对应的场景,此规则不适用.
 

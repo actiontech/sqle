@@ -16,12 +16,14 @@
     <原理说明 名称="SQL语句占位符数量限制" 数据库版本="MySQL 5.7.25" 检查方式="不连库审核" 适用句型="SELECT、INSERT...SELECT、UPDATE、DELETE、UNION ALL、WITH">
       <示例>
       前置：
+```sql
       --表结构
       CREATE TABLE test_table (id INT PRIMARY KEY, col1 INT, col2 INT, ..., col101 INT);
 
       -- 插入一些测试数据
       INSERT INTO test_table (id, col1, col2, ..., col101) VALUES (1, 1, 2, ..., 101);
 
+```
       原理说明：
       在使用驱动程序连接MySQL执行SQL时，通常会用到prepareStatement方法来处理SQL：将待执行的相同的SQL语句抽象为一个模板，以达到减少解析次数，提高执行效率，增加SQL安全性的目的。
 
@@ -34,10 +36,13 @@
       4. 可能触发MySQL的限制：虽然MySQL的最大限制是65535个占位符，但在实际使用中，远远达不到这个数量就可能遇到性能问题。
 
       示例：
+```sql
       prepare stmt from "SELECT * FROM test_table WHERE col1 = ? AND col2 = ? AND col3 = ? ... AND col101 = ?";
       -- 假设这里有101个占位符
 
+```
       示例验证：
+```sql
       -- 准备带有大量占位符的语句
       SET @sql = CONCAT('SELECT * FROM test_table WHERE ', 
                         CONCAT_WS(' AND ', 
@@ -59,6 +64,7 @@
       DEALLOCATE PREPARE stmt;
       DROP TABLE test_table;
 
+```
       结论：
       过度使用绑定变量会增加查询的复杂度，从而降低查询性能。同时还会增加维护成本。因此，建议限制SQL语句中绑定变量的数量，以保持查询的简洁性和可维护性。
       </示例>

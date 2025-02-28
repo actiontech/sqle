@@ -13,6 +13,7 @@
         <原理说明 数据库版本="&gt;= MySQL 5.5 " 检查方式="连库审核" 适用关键词="ALTER TABLE">
             <示例>
             示例表结构:
+```sql
             create database db_mysql;
             use db_mysql;
   
@@ -36,6 +37,7 @@
               select a+1,concat('小王',a),floor(rand()*2),'上海',ceil(rand()*20)+20 from tmp where a &lt; 1000000) 
               select * from tmp;
 
+```
             原理说明：            
             在MySQL数据库中，在ALTER TABLE语法中提到，ALTER TABLE 操作从性能和存储空间方面可以采用三种不同的算法处理：COPY、INPLACE 和 INSTANT。在选择算法时，MySQL会根据操作的具体需求和数据库的当前版本自动选择最优的处理方法。在MySQL 8.0.12之前，INSTANT 算法不可用，因此MySQL会首选 INPLACE 算法。如果 INPLACE 也不支持特定的DDL操作，MySQL会回退到使用 COPY 算法。从MySQL 8.0.12开始，MySQL会尝试使用 INSTANT 算法，如果不支持则考虑 INPLACE，最后才考虑使用 COPY。哪些DDL操作适合什么算法，可以通过online DDL文档中的操作分类去查阅。
 
@@ -67,20 +69,27 @@
             
 
             示例：
+```sql
             alter table customers change age age int;
+```
             或者
+```sql
             alter table customers modify age int;
 
+```
             示例说明：
             1. 示例中更改表customers 的字段 age 字段类型从smallint 更改为 int。
             2. 不建议直接执行。
 
             示例验证：开启一个SESSION 执行以下语句， 耗时大约27秒。
+```sql
             (mysql:8.0.31-cluster)alter table customers change age age int;
             Query OK, 1000000 rows affected (26.95 sec)
             Records: 1000000  Duplicates: 0  Warnings: 0
 
+```
             开启另外一个SESSION： 不影响读，影响写，写入操作延迟到大约25秒。
+```sql
             (mysql:8.0.31-cluster)select * from customers limit 1;
             +----+----------------+-----+--------+-----+
             | id | name           | sex | city   | age |
@@ -95,6 +104,7 @@
             Rows matched: 1  Changed: 1  Warnings: 0
 
 
+```
             结论：
             1. 禁止修改大表的字段类型。
             2. 如果实在有这个需求，可以使用第三方工具比如percona-toolkit、gh-ost 工具来更改表字典类型。

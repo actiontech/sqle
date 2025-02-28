@@ -13,14 +13,17 @@
         <场景 名称="表结构定义" 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="CREATE TABLE、ALTER TABLE">
             <示例>  
             前置：
+```sql
             create database db_mysql;
             use db_mysql;
 
+```
             原理说明：
             1. 在数据库表结构定义中，字段应设置为 timestamp或datetime 类型，并使用 ON UPDATE CURRENT_TIMESTAMP 来确保字段值在每次数据变更时自动更新。
             2. 这样的设计可以自动记录每次数据变更发生的时间，有助于数据追踪和问题分析
 
             反例：
+```sql
             CREATE TABLE customers(
                 id INT NOT NULL, -- 序号
                 name VARCHAR(32) DEFAULT '',-- 姓名
@@ -32,12 +35,14 @@
                 PRIMARY KEY (id) -- 主键
             );
             
+```
             反例说明：
             1. 建表语句中未定义规则中约定的update_time字段。即使存在类似字段如update_time1、update_time2，但都未指定时间字段关键词 ON UPDATE CURRENT_TIMESTAMP。
             2. 最终这个几个字段的值不会随着其他字段的值更新而自动更新，除非显式更新这几个字段的值。
     
             反例验证：
             
+```sql
             -- 插入模拟数据 3 条：字段 update_time1、update_time2 都没有显式指定插入数据，使用默认值。
             insert into customers(id,name,sex,city,age) values (1,'lily1',1,'shanghai',20);
             insert into customers(id,name,sex,city,age) values (2,'lily2',0,'shanghai',30);
@@ -69,7 +74,9 @@
             +----+--------+-----+---------+-----+--------------+---------------------
             3 rows in set (0.00 sec)
 
+```
             正例：
+```sql
             CREATE TABLE customers(
                 id INT NOT NULL, -- 序号
                 name VARCHAR(32) DEFAULT '',-- 姓名
@@ -81,11 +88,13 @@
                 PRIMARY KEY (id) -- 主键
             );
 
+```
             正例说明：
             1. 建表时根据业务需要，包含字段update_time且为 timestamp类型，且显式指定了时间字段关键词 ON UPDATE CURRENT_TIMESTAMP。
             2. 后续对表进行更新时，这些字段就会在每次变更后，更新为当时的时间戳，有助于问题排查定位。
 
             正例验证：
+```sql
             -- 插入模拟数据 3 条：字段 update_time、update_time2都没有显式指定插入数据，使用默认值。
             insert into customers(id,name,sex,city,age) values (1,'lily1',1,'shanghai',20);
             insert into customers(id,name,sex,city,age) values (2,'lily2',0,'shanghai',30);
@@ -120,15 +129,18 @@
             +----+--------+-----+---------+-----+---------------------+---------------------
             3 rows in set (0.00 sec)
 
+```
             结论：
             在设计数据库时，对于需要追踪修改历史表，则应定义一个字段类型为 datetime 或 timestamp的更新时间字段，且应设置 ON UPDATE CURRENT_TIMESTAMP 属性。此属性保证字段值在每次数据行更新时自动设置为当前时间戳，无需手动操作，提高数据的精确性和维护的有效性。这种自动更新机制特别适用于错误追踪和数据审计场景，帮助管理员准确判断数据的最后修改时间，从而提高问题解决的效率。
 
             其他示例：
+```sql
             alter table customers add update_time timestamp  NOT NULL ON UPDATE CURRENT_TIMESTAMP;
             alter table customers modify update_time datetime on update current_timestamp;
             alter table customers change update_time update_time datetime on update current_timestamp;
 
 
+```
             </示例>
             <检查流程描述>
             1. 对于"CREATE TABLE..."语句，检查以下条件，如果有任意一个条件不满足，则报告违反规则：

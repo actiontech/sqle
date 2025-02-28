@@ -13,6 +13,7 @@
   <场景 名称="未限定数据量查询" 数据库版本="MySQL 所有版本" 检查方式="连库审核" 适用句型="SELECT、INSERT... SELECT、UPDATE、DELETE、UNION、WITH">
   <示例>
         前置：
+```sql
         -- 表1
         create table customers(
           ID INT primary key,
@@ -31,24 +32,30 @@
             select a1+1,concat('小王',a1),floor(rand()*2),ceil(rand()*20)+20 from tmp where a1 &lt; 200000) 
             select * from tmp;
 
+```
           原理说明：
           1. SELECT 操作一次返回的结果集太多，增加I/O负载和网络传输负载，导致资源严重浪费，影响整体TPS。
           2. 需要限制输出的结果集。比如使用 limit子句、区分度好的条件字段来过滤等。
 
           反例：
+```sql
           select * from customers;
 
+```
           注：其他句型与SELECT句型语法相同，都是指SQL语句中包含SELECT的情况，因此省略相似的示例。
 
           反例验证:
           1. 执行示例SQL：查询所有记录，总耗时 140 毫秒。
+```sql
           (mysql:8.4.0:db_mysql)select * from customers;
           ##省略结果集部分##
           200000 rows in set (0.14 sec)
 
         
+```
           3. 查看执行计划。
 
+```sql
           (mysql:8.4.0:db_mysql)explain select * from customers\G
           *************************** 1. row ***************************
                      id: 1
@@ -72,22 +79,28 @@
              Message: /* select#1 */ select `test`.`customers`.`ID` AS `ID`,`test`.`customers`.`cname` AS `cname`,`test`.`customers`.`sex` AS `sex`,`test`.`customers`.`age` AS `age` from `test`.`customers`
              1 row in set (0.00 sec)                    
     
+```
           正例：
+```sql
           select * from customers where id &lt; 900;
           
+```
           正例说明：
           1. 示例SQL输出行数都小于1000行，非常少。
           2. 正例 SQL 需要更改业务逻辑，与业务端联动修改，即要求用户通过增加过滤条件来限定返回行数。
 
           正例验证：
           1. 执行示例SQL：由于结果集变少，瞬间出结果。
+```sql
           (mysql:8.4.0:db_mysql)select * from customers where id &lt; 900;
           ...
           899 rows in set (0.00 sec)
 
           
+```
           2. 查看执行计划：可以看到，走主键扫，输出行数和成本都大幅降低。
 
+```sql
           (mysql:8.4.0:db_mysql)explain select * from customers where id &lt; 900\G
           *************************** 1. row ***************************
                         id: 1
@@ -111,6 +124,7 @@
              Message: /* select#1 */ select `test`.`customers`.`ID` AS `ID`,`test`.`customers`.`cname` AS `cname`,`test`.`customers`.`sex` AS `sex`,`test`.`customers`.`age` AS `age` from `test`.`customers` where (`test`.`customers`.`ID` &lt; 900)
              1 row in set (0.00 sec)          
       
+```
           总结：
           1.  SELECT 返回的记录数太多，会严重消耗系统资源、使得查询结果变慢，需要限制在一定范围内。
 
@@ -128,6 +142,7 @@
     <场景 名称="限定数据量查询" 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用关键词="LIMIT" 适用句型="SELECT、INSERT... SELECT、UPDATE、DELETE、UNION、WITH">
       <示例>
         前置：
+```sql
         -- 表1
         create table customers(
           ID INT primary key,
@@ -136,12 +151,15 @@
           age int default 0 -- 年龄
         );
 
+```
         原理说明：
         与场景【未限定数据量查询】一致。
 
         示例：
+```sql
         select  * from customers limit 50000;
 
+```
         解决方案：
         通过限定数据返回的关键词limit来调整数据行数，这样即使表记录数在后续持续增长，也不会影响当前SQL一次性返回的结果，严格控制每次查询返回的结果行数。
 

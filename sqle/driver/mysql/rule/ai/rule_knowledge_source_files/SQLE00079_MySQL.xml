@@ -10,6 +10,7 @@
  <原理说明 名称="别名相同的表、列" 数据库版本="MySQL 5.7、MySQL 8.0" 检查方式="不连库审核" 适用句型="SELECT、UNION ALL、WITH">
     <示例>
       前置：
+```sql
       CREATE TABLE t1 (
         id int,
         r1 int
@@ -22,6 +23,7 @@
       insert into t1 values (1,2);
       insert into t2 values (1,2);
 
+```
       原理说明：
       1. 从数据库执行层面看，对别名与真实表名、列名相同是不做限制的，对实际执行效果没有影响。数据库中别名的使用，有以下几方面的好处。
         1. 表名、列名特别长、表达式等，采用别名可以更方便地阅读。
@@ -35,17 +37,17 @@
         3. 所以为了保持代码的清晰性和可维护性，应该为数据库、表和列使用不同且具有明确含义的名称和别名。
 
       反例：
-      SQL1:  select t1.id id, t1.r1 r1 ,t2.id id,t2.r1 r1 from t1 inner join t2 on t1.id = t2.id;
-      SQL2:  select t1.id id, t1.r1 r1 ,t2.id id,t2.r1 r1 from t1 t2 inner join t2 t1 on t1.id = t2.id;
-      SQL3:  WITH CTE_TMP (a,b,c,d) as (select t1.id id, t1.r1 r1 ,t2.id id,t2.r1 r1 from t1 t2 inner join t2 t1 on t1.id = t2.id) select a id,b r1, c id, d r1 from CTE_TMP;
+      SQL1:  `select t1.id id, t1.r1 r1 ,t2.id id,t2.r1 r1 from t1 inner join t2 on t1.id = t2.id;`
+      SQL2:  `select t1.id id, t1.r1 r1 ,t2.id id,t2.r1 r1 from t1 t2 inner join t2 t1 on t1.id = t2.id;`
+      SQL3:  `WITH CTE_TMP (a,b,c,d) as (select t1.id id, t1.r1 r1 ,t2.id id,t2.r1 r1 from t1 t2 inner join t2 t1 on t1.id = t2.id) select a id,b r1, c id, d r1 from CTE_TMP;`
 
       反例说明：
       1. 两条SQL ，都是表t1和表t2内联。但是SQL1 的别名和每张表的真实名字一样； SQL2 的别名除了和真实的字段名一样外，表的别名还相反了，这样导致查询的结果无法分辨来自哪张表，可读性非常差。
 
       正例：
-      SQL1: select t1.id t1_id, t1.r1 t1_r1 ,t2.id t2_id,t2.r1 t2_r1 from t1 inner join t2 on t1.id = t2.id;
-      SQL2: select a.id t1_id, a.r1 t1_r1 ,b.id t2_id,b.r1 t2_r1 from t1 a inner join t2 as b on a.id = b.id;
-      SQL3: WITH CTE_TMP (t1_id,t1_r1,t2_id,t2_r1) as (select a.id t1_id, a.r1 t1_r1 ,b.id t2_id,b.r1 t2_r1 from t1 a inner join t2 as b on a.id = b.id) select t1_id,t1_r1,t2_id,t2_r1 from CTE_TMP;
+      SQL1: `select t1.id t1_id, t1.r1 t1_r1 ,t2.id t2_id,t2.r1 t2_r1 from t1 inner join t2 on t1.id = t2.id;`
+      SQL2: `select a.id t1_id, a.r1 t1_r1 ,b.id t2_id,b.r1 t2_r1 from t1 a inner join t2 as b on a.id = b.id;`
+      SQL3: `WITH CTE_TMP (t1_id,t1_r1,t2_id,t2_r1) as (select a.id t1_id, a.r1 t1_r1 ,b.id t2_id,b.r1 t2_r1 from t1 a inner join t2 as b on a.id = b.id) select t1_id,t1_r1,t2_id,t2_r1 from CTE_TMP;`
 
       正例说明：
       1. 示例中的SQL 别名非常清晰，很容易就能看懂SQL 的语义。

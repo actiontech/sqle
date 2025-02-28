@@ -10,9 +10,11 @@
     <场景 名称="使用分区表" 数据库版本="MySQL 所有版本 " 检查方式="不连库审核" 适用句型="CREATE TABLE、ALTER TABLE">
       <示例>
           前置：
+```sql
           create database db_mysql;
           use db_mysql;
 
+```
           原理说明：
           1. 分区表指的是按照分区方式对特定的字段进行划分，分区之间数据不共享，后台表现为每个分区有独立的表空间，对外表现为一张表。
           2. 分区表的优势有：
@@ -33,6 +35,7 @@
               5. 某张分片表损坏不影响其他分片表的正常运行。
 
           反例： 
+```sql
           CREATE TABLE customers(
           id INT NOT NULL, -- 序号
           name VARCHAR(32) DEFAULT '',-- 姓名
@@ -66,6 +69,7 @@
           SQL3:   delete  from customers where id &lt; 10000;
           SQL4:   create unique index udx_name_customers on customers (name);
 
+```
           反例说明：
           1. 表customers 是分区表，按照主键ID+1000做RANGE分区，分区数目为6个。
           2. 给表 customers 插入100W条记录。
@@ -74,6 +78,7 @@
 
           反例验证： 
           1. 验证SQL1 的执行计划， 执行计划显式，扫描了全部分区；过滤条件的范围应该局限在分区p0里才对。
+```sql
           (mysql:8.4.0:db_mysql)explain select count(*) from customers where id &lt; 10000;
             +----+-------------+-----------+-------------------+-------+---------------+---------+---------+------+-------+----------+--------------------------+
             | id | select_type | table     | partitions        | type  | possible_keys | key     | key_len | ref  | rows  | filtered | Extra                    |
@@ -82,13 +87,17 @@
             +----+-------------+-----------+-------------------+-------+---------------+---------+---------+------+-------+----------+--------------------------+
             1 row in set, 1 warning (0.00 sec)
 
+```
           2. 验证 SQL4: 执行报错，索引必须包含主键
+```sql
             (mysql:8.4.0:db_mysql)create unique index udx_name_customers on customers (name);
             ERROR 1503 (HY000): A UNIQUE INDEX must include all columns in the tables partitioning function (prefixed columns are not considered).
 
 
+```
           正例： 物理分表
           
+```sql
           CREATE TABLE customers0(
             id INT NOT NULL, -- 序号
             name VARCHAR(32) DEFAULT '',-- 姓名
@@ -138,7 +147,9 @@
             PRIMARY KEY (id) -- 主键
             );
 
+```
             插入模拟数据：
+```sql
             insert into customers0 select * from customers partition(p0);
             insert into customers1 select * from customers partition(p1);
             insert into customers2 select * from customers partition(p2);
@@ -150,15 +161,19 @@
             SQL2：  update customers0 set city='北京' where id &lt; 10000;
             SQL3:   delete  from customers0 where id &lt; 10000;    
             
+```
             给物理分表创建唯一索引的脚本:  
+```sql
             for i in `seq 0 5`;do mysql --login-path=admin_user -D db_mysql -e "create unique index udx_name_customers on customers$i (name);";done;
 
+```
             正例说明：
             1. 分区表转换为同样功能的物理表，并且插入了相同的数据。
             2. 同样的SQL1、SQL2、SQL3，由于确定了数据范围，只需要查询物理分表 customers0 即可。
 
             正例验证：
             1. 同样只验证SQL1 的执行计划，此时执行计划的只扫单表，避免了跨分区表扫描。
+```sql
             (mysql:8.4.0:db_mysql)explain select count(*) from customers0 where id &lt; 10000;
             +----+-------------+------------+------------+-------+---------------+---------+---------+------+-------+----------+--------------------------+
             | id | select_type | table      | partitions | type  | possible_keys | key     | key_len | ref  | rows  | filtered | Extra                    |
@@ -167,10 +182,14 @@
             +----+-------------+------------+------------+-------+---------------+---------+---------+------+-------+----------+--------------------------+
             1 row in set, 1 warning (0.01 sec)
 
+```
             2. 给物理分表创建唯一索引，正常执行：
+```sql
             [root@ytt-pc scripts]# for i in `seq 0 5`;do mysql --login-path=admin_user -D db_mysql -e "create unique index udx_name_customers on customers$i (name);";done;
 
+```
             3. 查看创建的唯一索引：
+```sql
             (mysql:8.4.0:information_schema)select table_name,column_name,index_name from statistics where index_name='udx_name_customers';
             +------------+-------------+--------------------+
             | TABLE_NAME | COLUMN_NAME | INDEX_NAME         |
@@ -184,6 +203,7 @@
             +------------+-------------+--------------------+
             6 rows in set (0.00 sec)
 
+```
             结论：
             1. 分区表虽然有很多优点，但是会有诸如分区裁剪失败、锁粒度放大、无全局索引、非分区键无法创建唯一索引等问题。
             2. 建议使用物理分表来代替分区表。

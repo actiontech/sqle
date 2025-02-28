@@ -20,6 +20,7 @@
           3. 不同的字符集会导致SQL 检索时的索引失效，参见规则SQLE00015、SQLE000179。
 
           示例SQL：
+```sql
           CREATE TABLE customers(
             id INT NOT NULL, -- 序号
             name VARCHAR(32) character set latin1,-- 姓名
@@ -29,12 +30,14 @@
             PRIMARY KEY (id) -- 主键
           ) charset utf8mb4;
 
+```
           示例说明：
           1. 表customers 编码为utf8mb4，字段 name的编码为 latin1、字段city的编码为gb2312，和表不统一。
           2. 此类编码不一致会导致插入字段name、city 需要单独处理，否则直接报错无法插入。
           3. 在插入成功后，查询字段name和city 的值会乱码，因为客户端的编码只允许一种，任何和客户端编码不兼容则会乱码。
 
           示例验证：
+```sql
           -- 不进行编码转换插入报错。
           (mysql:8.0.31-cluster)insert into customers values (1,'小王',1,'上海',20);
             ERROR 1366 (HY000): Incorrect string value: '\xE4\xB8\x8A\xE6\xB5\xB7' for column 'city' at row 1
@@ -53,7 +56,9 @@
           1 row in set (0.00 sec)
                     
 
+```
           解决方案：
+```sql
           -- 主表
           CREATE TABLE customers(
             id INT NOT NULL, -- 序号
@@ -65,6 +70,7 @@
           ) charset utf8mb4;
 
 
+```
           结论：
           1. 建表时，字段编码需要与表编码一致，否则会出现乱码问题。
           2. 字段编码和表编码不一致时，也会导致后期对字段进行过滤查询时，命中不到索引的问题。
@@ -84,6 +90,7 @@
           原理说明：与【显示指定表的字符集编码】场景一致。
           
           示例：
+```sql
           CREATE TABLE customers(
             id INT NOT NULL, -- 序号
             name VARCHAR(32) character set latin1,-- 姓名
@@ -96,6 +103,7 @@
           alter table customers modify city varchar(32) character set gb2312;
 
 
+```
           示例说明：与【显示指定表的字符集编码】场景一致。
           
           结论：与【显示指定表的字符集编码】场景一致。

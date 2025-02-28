@@ -10,6 +10,7 @@
     <原理说明 数据库版本="MySQL 5.7、MySQL 8.0" 检查方式="不连库审核" 适用句型="INSERT ... SELECT、INSERT ... WITH">
      <示例>
      前置:
+```sql
       CREATE TABLE customers (
       id INT PRIMARY KEY,
       name VARCHAR(50),
@@ -22,6 +23,7 @@
 
       INSERT INTO customers VALUES (1, 'John', 100), (2, 'Jane', 200), (3, 'Bob', 300);
 
+```
       原理说明：
       在MySQL的默认事务隔离级别REPEATABLE READ下,执行INSERT...SELECT语句时,会对SELECT查询涉及的源表加SHARED_READ锁(意向共享锁IS)。当一个事务持有SHARED_READ锁(IS锁)时,其他事务可以继续获取SHARED_READ锁(IS锁)或SHARED_READ锁(S锁),但无法获取EXCLUSIVE锁(X锁)。
 
@@ -30,14 +32,17 @@
       需要注意的是,SHARED_READ锁(IS锁)允许其他事务继续读取数据,因此INSERT...SELECT语句对源表的影响主要体现在阻塞写访问上。
 
       示例:
+```sql
       INSERT INTO customers_mark
       SELECT mark1 FROM customers ORDER BY mark1 DESC LIMIT 1;
       INSERT INTO customers_mark
       WITH tmp AS (SELECT mark1 FROM customers ORDER BY mark1 LIMIT 1)
       SELECT * FROM tmp; ##仅适用于MySQL 8.0版本
       
+```
       示例验证:
       Session 1:
+```sql
       mysql&gt; START TRANSACTION;
       mysql&gt; INSERT INTO customers_mark
       SELECT mark1 FROM customers ORDER BY mark1 DESC LIMIT 1;
@@ -52,20 +57,27 @@
       | TABLE | test | customers | SHARED_READ | TRANSACTION | GRANTED |
       +-------------+--------------------+----------------+--------------+---------------+-------------+
 
+```
       Session 2:
+```sql
       mysql&gt; UPDATE customers SET name = 'John Updated2' WHERE id = 1;
 
+```
       Session 1:
       
+```sql
       mysql&gt; ROLLBACK; -- 释放锁
       Query OK, 0 rows affected (0.01 sec)      
 
+```
       Session 2:
+```sql
       mysql&gt; UPDATE customers SET name = 'John Updated2' WHERE id = 1;
       Query OK, 1 row affected (8.28 sec)
       Rows matched: 1  Changed: 1  Warnings: 0
       
 
+```
       结论:
       当INSERT...SELECT语句使用WITH子句时,同样会对源表(customers)加SHARED_READ锁(IS锁)。这可能会阻塞其他事务对源表的写访问,导致并发性能问题。
 

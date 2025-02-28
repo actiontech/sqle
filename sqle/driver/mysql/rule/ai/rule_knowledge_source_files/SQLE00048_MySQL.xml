@@ -13,6 +13,7 @@
    <场景 名称="数据库对象名初始化" 数据库版本="MySQL" 检查方式="不连库审核" 适用关键词="DATABASE、TABLE、VIEW、INDEX、USER、COLUMN、EVENT" 适用句型="CREATE、ALTER">
     <示例>  
       示例：
+```sql
       CREATE DATABASE test;
       CREATE TABLE order_his(
          id BIGINT UNSIGNED AUTO_INCREMENT,
@@ -26,6 +27,7 @@
       CREATE USER 'test'@'localhost' REQUIRE NONE;###创建用户
       CREATE EVENT ename ON SCHEDULE EVERY 10 SECOND DO DELETE FROM order_his; ###创建一个事件每10秒清空表数据,默认event_scheduler是未启用。
      
+```
       示例说明：      
       数据库系统默认的SQL模式下（即ANSI_QUOTES禁用），数据库对象名定义允许使用字符：ASCII: 【0-9,a-z,A-Z$_】以及Extended:【U+0080 .. U+FFFF】，且允许数字开头但不能由全数字组成。从业务实践角度出发，遵循良好的命名约定和避免特殊字符的使用，可以提高代码的可读性、可维护性，并减少潜在的兼容性和语法问题。数据库对象通常会在各个应用程序中引用，不同应用程序使用的开发语言不同，对象名使用了如【-、$】等特殊字符，可能会导致无法兼容默认的应用设置，增加了应用程序的开发兼容成本。
       引用知识文档1：Certain objects within MySQL, including database, table, index, column, alias, view, stored procedure, partition, tablespace, and other object names are known as identifiers. Database, table, and column names cannot end with space characters.
@@ -47,6 +49,7 @@
    <场景 名称="数据库对象重命名" 数据库版本="MySQL" 检查方式="不连库审核" 适用关键词="TABLE、USER、COLUMN、INDEX、EVENT" 适用句型="ALTER、RENAME">
     <示例>  
       示例：
+```sql
       ALTER TABLE order_his RENAME TO order_his2; ###表重命名
       ALTER TABLE order_his2 RENAME INDEX name TO uniq_name;###重命名索引 
       RENAME TABLE order_his2 TO order_his; ###表重命名
@@ -54,6 +57,7 @@
       ALTER EVENT ename RENAME TO newname;###重命名事件
       RENAME USER 'user1'@'localhost' TO 'user2'@'127.0.0.1';###用户重命名
      
+```
       示例说明：与【数据库对象名初始化】场景一致。
     </示例>
     <检查流程描述>

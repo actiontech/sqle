@@ -10,6 +10,7 @@
     <场景 名称="更改隔离级别" 数据库版本="MySQL 所有版本 " 检查方式="不连库审核" 适用句型="SET">
       <示例>
           前置：
+```sql
           create database if not exists db_mysql;
           use db_mysql;
           create table customers(
@@ -31,6 +32,7 @@
           insert into customers values (9,'小非',0,52);
           insert into customers values (10,'小海',0,37);
 
+```
           原理说明：
           1. 不可重复读：是指在一个事务内多次读取同一数据集合，在这个事务还没有结束时，如果另一个事务恰好修改了该数据集合的数据，那么第一个事务再次读取的数据就和第一次读取的数据不一致。重点在于对同一条记录的读取结果前后不同。
             1. 比如事务 A 读取了一条记录，事务 B 随后更新了这条记录并提交，当事务 A 再次读取该记录时，得到了不同的值。
@@ -45,10 +47,10 @@
           5.由于RR级别的间隙锁每次锁的范围太大，很容易导致事务超时、TPS减小、死锁等；所以强烈建议使用RC隔离级别。
                     
           反例SQL：
-          SQL1： SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;
-          SQL2:  SET GLOBAL transaction_isolation = 'REPEATABLE-READ';
-          SQL3： SET SESSION transaction_isolation = 'REPEATABLE-READ';
-          SQL4:  SET transaction_isolation = 'REPEATABLE-READ';
+          SQL1： `SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;`
+          SQL2:  `SET GLOBAL transaction_isolation = 'REPEATABLE-READ';`
+          SQL3： `SET SESSION transaction_isolation = 'REPEATABLE-READ';`
+          SQL4:  `SET transaction_isolation = 'REPEATABLE-READ';`
 
           
           反例说明：
@@ -60,10 +62,13 @@
           反例验证：
           1. SESSION 1、SESSION 2 两个隔离级别都设置为 RR。
           SESSION 1、SESSION 2 都操作如下：
+```sql
           (mysql:8.4.0:db_mysql)SET transaction_isolation = 'REPEATABLE-READ';
           Query OK, 0 rows affected (0.00 sec)
 
+```
           2. SESSION 1 修改表记录：
+```sql
 
           (mysql:8.4.0:db_mysql)begin;
           Query OK, 0 rows affected (0.00 sec)
@@ -73,29 +78,36 @@
           Rows matched: 1  Changed: 1  Warnings: 0
           
 
+```
           3. SESSION 2 修改另外一条记录： 此时，update 语句执行卡住直到事务超时;或者等待SESSION 1提交或者回滚完成。
+```sql
           (mysql:8.4.0:db_mysql)begin;
           Query OK, 0 rows affected (0.00 sec)
 
           (mysql:8.4.0:db_mysql)update customers set name='小里' where id = 4;
           ERROR 1205 (HY000): Lock wait timeout exceeded; try restarting transaction
           
+```
           4. SESSION 1 提交：
+```sql
           (mysql:8.4.0:db_mysql)commit;
           Query OK, 0 rows affected (0.01 sec)
 
 
+```
           5. SESSION 2 重新更新： 很快就完成。
+```sql
           (mysql:8.4.0:db_mysql)update customers set name='小里' where id = 4;
           Query OK, 1 row affected (0.00 sec)
           Rows matched: 1  Changed: 1  Warnings: 0
 
 
+```
           正例SQL：
-          SQL1： SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
-          SQL2:  SET GLOBAL transaction_isolation = 'READ-COMMITTED';
-          SQL3： SET SESSION transaction_isolation = 'READ-COMMITTED';
-          SQL4:  SET transaction_isolation = 'READ-COMMITTED';
+          SQL1： `SET TRANSACTION ISOLATION LEVEL READ COMMITTED;`
+          SQL2:  `SET GLOBAL transaction_isolation = 'READ-COMMITTED';`
+          SQL3： `SET SESSION transaction_isolation = 'READ-COMMITTED';`
+          SQL4:  `SET transaction_isolation = 'READ-COMMITTED';`
 
           正例说明：
           1. 正例设置事务的隔离级别为RC。
@@ -106,10 +118,13 @@
           正例验证：
           1. SESSION 1、SESSION 2 两个隔离级别都设置为 RC。
           SESSION 1、SESSION 2 都操作如下：
+```sql
           (mysql:8.4.0:db_mysql)SET transaction_isolation = 'READ-COMMITTED';
           Query OK, 0 rows affected (0.00 sec)
 
+```
           2. SESSION 1 修改表记录：
+```sql
 
           (mysql:8.4.0:db_mysql)begin;
           Query OK, 0 rows affected (0.00 sec)
@@ -119,7 +134,9 @@
           Rows matched: 1  Changed: 1  Warnings: 0
           
 
+```
           3. SESSION 2 修改另外一条记录： 此时，update 语句成功执行，不会卡。
+```sql
           (mysql:8.4.0:db_mysql)begin;
           Query OK, 0 rows affected (0.00 sec)
 
@@ -127,6 +144,7 @@
           Query OK, 1 row affected (0.00 sec)
           Rows matched: 1  Changed: 1  Warnings: 0
           
+```
           结论：
           1. 使用RC 隔离级别虽然避免不了幻读，但是可以避免RR级别的间隙锁带来的锁放大问题，从而提升数据库整体的TPS。
           2. 幻读的场景几率比较少，如果可以忽略幻读，建议使用RC。

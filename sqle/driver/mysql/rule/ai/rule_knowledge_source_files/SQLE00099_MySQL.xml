@@ -10,6 +10,7 @@
         <原理说明 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="SELECT、INSERT... SELECT、UPDATE、DELETE、UNION、WITH">
             <示例>
             示例表结构:
+```sql
             create database db_mysql;
             use db_mysql;
 
@@ -36,15 +37,19 @@
 
     
 
+```
           原理说明：
           1. SELECT FOR UPDATE 会对查询结果集中每行数据都添加排他锁，其他线程对该记录的更新与删除操作都会阻塞，在高并发下，容易造成数据库大量锁等待，影响数据库查询性能。
           2. 如非必要，直接 SELECT 即可，MySQL 会读取最近提交的版本，不会对当前业务数据造成阻塞。
 
           示例：
+```sql
           select * from customers where id &lt; 5 for update;
 
+```
           示例验证：
           开启一个 SESSION 1 执行 SELECT FOR UPDATE，不提交。
+```sql
             (mysql:8.0.31-cluster)begin;
             Query OK, 0 rows affected (0.00 sec)
 
@@ -60,15 +65,19 @@
             4 rows in set (0.00 sec)
 
 
+```
           再开启一个新的 SESSION 2：
+```sql
             (mysql:8.0.31-cluster)update customers set age = 20 where id = 3;
             ERROR 1205 (HY000): Lock wait timeout exceeded; try restarting transaction
           
+```
           此时因为 SESSION 1未提交，所以这条语句一直卡，直到事务锁超时终止。
 
           在SESSION 1 里查看目前的数据锁有哪些： 
           1. 线程 59 是 SESSION 1、线程 60 是 SESSION 2。
           2. 可以看到，线程 60 在等待 id 为 3的锁， 线程 59 持有的锁中包含 id 为 3 的记录。
+```sql
             (mysql:8.0.31-cluster)select * from data_locks;
             +--------+----------------------------------------+-----------------------+-----------+----------+---------------+-------------+----------------+-------------------+------------+-----------------------+-----------+---------------+-------------+-----------+
             | ENGINE | ENGINE_LOCK_ID                         | ENGINE_TRANSACTION_ID | THREAD_ID | EVENT_ID | OBJECT_SCHEMA | OBJECT_NAME | PARTITION_NAME | SUBPARTITION_NAME | INDEX_NAME | OBJECT_INSTANCE_BEGIN | LOCK_TYPE | LOCK_MODE     | LOCK_STATUS | LOCK_DATA |
@@ -85,7 +94,9 @@
             8 rows in set (0.00 sec)
           
 
+```
           SESSION 1 提交：
+```sql
            (mysql:8.0.31-cluster)commit;
             Query OK, 0 rows affected (0.00 sec)
           
@@ -94,6 +105,7 @@
             Query OK, 0 rows affected (0.00 sec)
             Rows matched: 1  Changed: 0  Warnings: 0
          
+```
           结论：
           1. SELECT FOR UPDATE 由于操作期间阻塞结果集，所以不适合大并发的业务。
           2. 除非必要，否则都直接 SELECT 即可。

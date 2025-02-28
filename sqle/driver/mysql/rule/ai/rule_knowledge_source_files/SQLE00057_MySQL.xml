@@ -13,6 +13,7 @@
       <原理说明 句型="CREATE TABLE" 数据库版本="MySQL 5.7、MySQL 8.0" 检查方式="连库审核">
         <示例>
           表定义：
+```sql
           create table if not exists 
           customers (
             id BIGINT, -- 序号
@@ -23,19 +24,26 @@
             PRIMARY KEY (id) -- 主键
           ) engine innodb;
     
+```
           原理说明：
           1. MySQL 从5.7 开始，默认存储引擎已经为InnoDB。 InnoDB 是MySQL 数据库中唯一一个支持事务、MVCC、行级锁、聚簇索引的引擎。
           2. 其他非InnoDB 引擎，比如MyISAM、BDB、CSV、ARCHIVE 等都不具备事务安全性，不推荐线上使用。
           3. 有三种方法来使用InnoDB 引擎。
              1. 在建表的时候指定 engine [=] innodb 关键词。比如:
+```sql
                 create table t1(id int primary key, r1 int) engine  innodb;
+```
              2. 建表完后更改表引擎为 innodb: 通过 alter table 实现。
+```sql
                 alter table t1 engine innodb;
+```
              3. 设置系统参数:default_storage_engine 为InnoDB，后续建表可以不用指定engine [=] innodb 关键词。
+```sql
                 (mysql:8.0.31-cluster)set global default_storage_engine=innodb;
                 Query OK, 0 rows affected (0.00 sec)
 
         
+```
         </示例>
         <检查流程描述>
         1. 检查 CREATE TABLE 句子末尾是否包含 ENGINE 关键词，如果没有，则进入下一步检查。

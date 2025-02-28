@@ -10,9 +10,11 @@
       <场景 名称="浮点数举例" 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="CREATE TABLE、ALTER TABLE">
         <示例>
             前置：
+```sql
             create database if not exists db_mysql;
             use db_mysql;
 
+```
             原理：
             1. 不建议使用非精确浮点类型，比如float、double。 非精确浮点数会造成精度丢失，具体原因如下：
               1. float 类型的精度可能会受到 CPU 架构的影响。在不同的 CPU 架构中，浮点数的运算和表示可能会有一些差异，这可能导致 float 类型的精度在不同的 CPU 上有所不同。
@@ -28,20 +30,27 @@
             
             反例：
             SQL1:
+```sql
             CREATE TABLE t1 (i INT, d1 DOUBLE, d2 DOUBLE);
+```
             或者：
+```sql
             ALTER TABLE T1 MODIFY d1 double, modify d2 double;
             alter table t1 change d1 d1 double, change d2 d2 double;
 
+```
             SQL2:
+```sql
             create table t11(num float(53));
 
+```
             反例说明：
             1. SQL1 中创建表t1，表t1的两个字段d1、d2 都是非精确浮点数double类型；模拟插入一些数据，然后对两个字段d1、d2 求和，并且打印出两个字段求和值不一样的记录，确认统计结果的准确性。
             2. SQL2 中创建表t11，若插入值100.000000000000000000002，由于精度不准确，所以结果也可能不准确。
 
             反例验证： 
             1. 验证SQL1示例，先模拟数据。
+```sql
             (mysql:8.4.0:db_mysql)INSERT INTO t1 VALUES (1, 101.40, 21.40), (1, -80.00, 0.00),
             (2, 0.00, 0.00), (2, -13.20, 0.00), (2, 59.60, 46.40),
             (2, 30.40, 30.40), (3, 37.00, 7.40), (3, -29.60, 0.00),
@@ -53,7 +62,9 @@
             Records: 16  Duplicates: 0  Warnings: 0
 
 
+```
             2. 验证SQL1示例，查询结果显式有6条记录符合，其实是不正确的
+```sql
             (mysql:8.4.0:db_mysql)SELECT i, SUM(d1) AS a, SUM(d2) AS b FROM t1 GROUP BY i HAVING a &lt;&gt; b;
             +------+--------------------+------+
             | i    | a                  | b    |
@@ -67,7 +78,9 @@
             +------+--------------------+------+
             6 rows in set (0.00 sec)
             
+```
             3. 验证SQL2示例， 插入的结果精度丢失了。
+```sql
             (mysql:8.4.0:db_mysql)insert into t11 values ('100.000000000000000000002');
             Query OK, 1 row affected (0.01 sec)
             
@@ -80,16 +93,23 @@
             1 row in set (0.00 sec)
                        
 
+```
             正例：
             SQL1:
+```sql
             CREATE TABLE t2 (i INT, d1 decimal(64,30), d2 decimal(64,30));
+```
             或者：
+```sql
             ALTER TABLE T2 MODIFY d1 decimal(64,30), modify d2 decimal(64,30);
             alter table t2 change d1 d1 decimal(64,30), change d2 d2 decimal(64,30);
 
+```
             SQL2:
+```sql
             create table t21(num decimal(64,30));
             
+```
             正例说明：
             1. SQL1 中创建表t1，表t1的两个字段d1、d2 都是精确浮点数decimal类型;模拟插入一些数据，然后对两个字段d1、d2 求和，并且打印出两个字段求和值不一样的记录，确认统计结果的准确性。
             2. SQL2 中创建表t21，并且插入值100.000000000000000000002。
@@ -98,6 +118,7 @@
             正例验证：
             示例SQL1：使用与反例中相同的数据模拟。
             1. 执行SQL1， 对表t2求和，结果就是非常准确的。
+```sql
             (mysql:8.4.0:db_mysql)SELECT i, SUM(d1) AS a, SUM(d2) AS b FROM t2 GROUP BY i HAVING a &lt;&gt; b;
             +------+------------------------------------+----------------------------------+
             | i    | a                                  | b                                |
@@ -106,7 +127,9 @@
             +------+------------------------------------+----------------------------------+
             1 row in set (0.00 sec)
             
+```
             2. 执行SQL2， 插入的值，精度也是准确的。
+```sql
             (mysql:8.4.0:db_mysql)insert into t21 values ('100.000000000000000000002');
             Query OK, 1 row affected (0.01 sec)
             
@@ -118,6 +141,7 @@
             +------------------------------------+
             1 row in set (0.00 sec)
 
+```
             结论：
             1. 对于精度要求准确的类型，比如金钱等，不能使用非精确浮点数FLOAT、DOUBLE；需要使用精确浮点数DECIMAL、NUMERIC 来确保更高的精度不丢失。
             

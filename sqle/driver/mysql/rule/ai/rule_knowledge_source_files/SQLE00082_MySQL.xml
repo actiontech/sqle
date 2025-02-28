@@ -10,6 +10,7 @@
         <场景 名称="临时表文件存储消除" 数据库版本="MySQL 8.0" 检查方式="连库审核" 适用句型="SELECT、INSERT...SELECT、UNION、UPDATE、DELETE、WITH">
             <示例>
             前置:
+```sql
             create database db_mysql;
             use db_mysql;
   
@@ -46,7 +47,9 @@
             analyze table customers_records;
       
             
+```
           示例： 
+```sql
           -- 由于临时文件排序和临时表相关性非常大，所以其他 SQL 参考规则 00084。这里只举两个例子，来说明文件排序。
           -- SQL 1 求最小 age，由于对age 进行窗口展开，所以势必有临时表产生，并且伴随着文件排序。
           SQL 1： select age from (select age,row_number() over (partition by age order by age desc) gn from customers ) T where gn=1 limit 1;
@@ -56,6 +59,7 @@
           SQL2： select count(*) from (select age from customers group by age order by name desc) T;
      
   
+```
           示例说明：
           1. 所谓运行态的临时表指的就是在SQL 运行中生成，在SQL 运行结束后立即销毁的表。
           2. 当产生这些运行态临时表的时候，往往伴随着临时数据的排序，临时数据过大时，还会导致这部分数据迁移到磁盘上，从而导致磁盘排序，SQL 性能往往效率很差。
@@ -70,6 +74,7 @@
              2. 如果实在无法避免临时表排序，可以想办法增加系统资源来更快地进行文件排序。   
   
           示例验证：
+```sql
           SQL 1: select age from (select age,row_number() over (partition by age order by age desc) gn from customers ) T where gn=1 order by age limit 1;
           -- 求最小 age，由于对age 进行窗口展开，所以势必有临时表产生。
           -- 查看执行计划：using_temporary_table 开关为 true, 代表有临时表产生，并且注意临时表的排序成本为 4988304, 已经非常高了。
@@ -257,7 +262,9 @@
           }
           1 row in set, 1 warning (0.00 sec)
           
+```
           执行下SQL 2： 总时间为33.76 秒。
+```sql
           (mysql:8.0.31-cluster)select count(*) from (select age from customers group by age order by name desc) T;
             +----------+
             | count(*) |
@@ -337,8 +344,10 @@
               }
               1 row in set, 1 warning (0.00 sec)
 
+```
         执行优化后的 SQL 2：总时间由33.76 秒降低为0秒。
         
+```sql
             (mysql:8.0.31-cluster)select count(*) from (select age from customers group by age) T;
             +----------+
             | count(*) |
@@ -347,6 +356,7 @@
             +----------+
             1 row in set (0.00 sec)
 
+```
           结论：
             1. SQL 的执行中产生了不必要的临时表排序，并且伴随着临时表过大而溢出到磁盘上，极其浪费系统资源，所以要想办法来使得SQL 避免生成临时表。
             2. 此类 SQL 优化的方式可以分为好几种。比如 直接添加索引、或者根据SQL 语义来修改SQL 使其避免临时表的生成。

@@ -10,6 +10,7 @@
         <场景 名称="更改表主键" 数据库版本="MySQL 所有版本" 检查方式="连库审核" 适用句型="UPDATE">
             <示例>
                 前置：
+```sql
                 create database db_mysql;
                 use db_mysql;
     
@@ -36,6 +37,7 @@
                   select * from tmp;
 
 
+```
                 原理说明：
                 1. 在 MySQL 中， 默认的引擎是InnoDB. InnoDB 表的主键存放在聚簇索引结构上的叶子节点上，并以每个页块16KB的大小按序容纳这些值，最终这些数据页被按照主键的顺序依次排列，多个数据页以双向链表的形式存储。
                 2. 频繁更改主键，也就是需要更改数据页中的主键值分布，需要把更新的值更新到合适的数据页；会引起数据页的频繁合并分裂，非常消耗资源。
@@ -43,30 +45,38 @@
 
         
                 反例：
+```sql
                 update customers set id = 100000000000 + id;
 
+```
                 反例说明：
                 1. 语句用来更新主键，全部更新，每行记录加上 100000000000。
                 2. 记录时间，用来和正例的执行时间做对比。
                 
                 反例验证： 执行时间23.28秒。
+```sql
                 (mysql:8.3.0:db_mysql)update customers set id = 100000000000 + id;
                 Query OK, 100000 rows affected (23.28 sec)
                 Rows matched: 100000  Changed: 100000  Warnings: 0
             
 
+```
                 正例：
+```sql
                 update customers set customer_no = 100000000000 + customer_no;
 
+```
                 正例说明：
                 1. 语句用来更新二级索引，这个二级索引和主键的值是相同的，更新后的值也是相同的。
                 2. 记录时间，用来和反例的执行时间做对比。
 
                 正例验证： 执行时间11.41秒，比更新主键节省了一倍的时间
+```sql
                 (mysql:8.3.0:db_mysql)update customers set customer_no = 100000000000 + customer_no;
                 Query OK, 100000 rows affected (11.41 sec)
                 Rows matched: 100000  Changed: 100000  Warnings: 0
 
+```
                 结论：
                 1. MySQL 主键的顺序也就是在数据页在磁盘上存储的顺序；
                 2. 对主键频繁更新会造成数据页的频繁分裂、合并，极大的耗费资源；

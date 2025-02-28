@@ -13,6 +13,7 @@
         <场景 名称="对表多次查询" 数据库版本=" MySQL 所有版本" 检查方式="不连库审核" 适用句型="SELECT、INSERT...SELECT、UNION、UPDATE、DELETE、WITH">
             <示例>
                 前置：
+```sql
                 create database db_mysql;
                 use db_mysql;
 
@@ -39,6 +40,7 @@
                 -- 预先定义索引
                 create index idx_age_customers on customers(age);
 
+```
                 原理说明：
                 1. 分两种场景。
                 1. 场景1： 单表多次被显式关联；
@@ -47,6 +49,7 @@
                 
                 反例：
                 SQL1:
+```sql
                 select count(*) from (
                     select * from customers where age &lt; 41 
                     union  
@@ -57,7 +60,9 @@
                     select * from customers where age &lt; 32
                     ) T;
 
+```
                 SQL2:
+```sql
                 select  count(*)  from customers a 
                 left join (select * from customers where age &lt; 41 limit 100) b using(id) 
                 left join (select * from customers where age &lt; 41 limit 100 ) c using(id)
@@ -65,12 +70,14 @@
                 where a.age &lt; 41; 
                 
 
+```
                 反例说明：
                 1. SQL1 对表 customers 根据 字段age 的几个range来求union ，最终求取符合记录的条数。这里对表customers 有多次无效扫描，可以优化。
                 2. SQL2 对表 customers 根据一个子表进行左外连接，但是过滤条件有非NULL约束，也是可以减少对表customers 的关联次数，最终得以优化。 
 
                 反例验证：
                 执行SQL1，时间1分钟5秒多。
+```sql
                 (mysql:8.3.0:db_mysql)select count(*) from (select * from customers where age &lt; 41 union  select * from customers where age &lt; 40 union select * from customers where age &lt; 39 union select * from customers where age &lt; 32) T;
                 +----------+
                 | count(*) |
@@ -79,7 +86,9 @@
                 +----------+
                 1 row in set (1 min 5.74 sec)
 
+```
                 查看执行计划： 表 customers 被查询了 4 次。
+```sql
                 (mysql:8.3.0:db_mysql)explain select count(*) from (select * from customers where age &lt; 41 union  select * from customers where age &lt; 40 unioon select * from customers where age &lt; 39 union select * from customers where age &lt; 32) T;
                 +----+--------------+----------------+------------+------+---------------+------+---------+------+---------+----------+-----------------+
                 | id | select_type  | table          | partitions | type | possible_keys | key  | key_len | ref  | rows    | filtered | Extra           |
@@ -94,7 +103,9 @@
                 6 rows in set, 1 warning (0.00 sec)
 
 
+```
                 执行SQL2， 时间34秒多。
+```sql
                 (mysql:8.3.0:db_mysql) select  count(*)  from customers a 
                 left join (select * from customers where age &lt; 41 limit 100) b using(id) 
                 left join (select * from customers where age &lt; 41 limit 100 ) c using(id)
@@ -107,7 +118,9 @@
                 +----------+
                 1 row in set (34.16 sec)            
 
+```
                 查看执行计划：  表 customers 被join 了3 次, 被扫了 4次。
+```sql
                 (mysql:8.3.0:db_mysql)explain   select  count(*)  from customers a    
                 left join (select * from customers where age &lt; 41 limit 100) b using(id)  
                 left join (select * from customers where age &lt; 41 limit 100 ) c using(id)   
@@ -127,6 +140,7 @@
                 7 rows in set, 1 warning (0.00 sec)
             
 
+```
                 正例：
                 SQL1 和 SQL2 都可以优化为： select count(*) from customers where age &lt; 41;
 
@@ -134,6 +148,7 @@
                 1. 反例的 SQL1 和SQL 2里对表customers 多次无效的扫描和关联，都可以被优化为单次有效的扫描。
 
                 正例验证：
+```sql
                 -- SQL 1 和 SQL2 优化后的执行时间降低至1秒。
                 (mysql:8.3.0:db_mysql)select count(*) from customers where age &lt; 41;
                 +----------+
@@ -154,6 +169,7 @@
                 1 row in set, 1 warning (0.01 sec)
 
 
+```
                 结论：
                 1. 对表多次扫描，相当于对磁盘上的数据块多次扫描，这样会导致SQL 整体的 TPS下降， 最终影响整个数据库的性能。
                 2. 优化目标就是把对表的多次扫描转换为对表的单次扫描或者想办法尽量减少对表的扫描次数。

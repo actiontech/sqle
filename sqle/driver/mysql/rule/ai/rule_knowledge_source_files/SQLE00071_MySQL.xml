@@ -10,6 +10,7 @@
     <场景 名称="删除表字段" 数据库版本="大于等于 MySQL 5.7 " 检查方式="不连库审核" 适用句型="ALTER TABLE">
       <示例>
           前置：
+```sql
           create database db_mysql;
           use db_mysql;
 
@@ -38,6 +39,7 @@
           
 
 
+```
           原理说明：
           从以下三个角度，描述删除列是一个高风险的操作：
           1. 业务逻辑依赖： 大多数业务应用都是围绕数据库设计构建的。删除字段可能影响到依赖这些字段的查询、报表、数据写入和数据更新功能。
@@ -46,13 +48,16 @@
 
 
           示例：
+```sql
           alter table customers drop age;
 
+```
           示例说明：
           1. 此示例删除表 customers 的字段 age。
 
           示例验证： 
           1. 对更新业务的影响
+```sql
             -- 删除字段 AGE
             (mysql:8.3.0:db_mysql)alter table customers drop age;
             Query OK, 0 rows affected (0.03 sec)
@@ -72,17 +77,22 @@
             ERROR 1054 (42S22): Unknown column 'age' in 'where clause'
 
 
+```
           2. 对导入业务的影响
+```sql
             -- 导入业务同样会报错：由于导入的数据文件里列和表真实的列对不上，直接报错。
             (mysql:8.3.0:db_mysql)load data infile '/var/lib/mysql-files/customers.csv' into table customers;
             ERROR 1262 (01000): Row 1 was truncated; it contained more data than there were input columns
           
 
+```
           3. 对查询业务的影响
+```sql
           -- 对查询业务同样报错，被删除的字段已经不存在
           (mysql:8.3.0:db_mysql)select * from customers where age = 20;
           ERROR 1054 (42S22): Unknown column 'age' in 'where clause'
 
+```
           结论：
           1. 禁止对表字段进行删除，此为高危操作。删除后，将会影响所有包含包含被删除字段的业务正确性。
 

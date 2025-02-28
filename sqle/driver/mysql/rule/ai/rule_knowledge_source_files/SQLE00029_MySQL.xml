@@ -10,10 +10,13 @@
     <场景 名称="创建存储过程" 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="CREATE PROCEDURE">
       <示例>
           前置：
+```sql
           create database db_mysql;
           use db_mysql;
 
+```
           表结构：
+```sql
           create table customers(
               id int not null primary key, -- 主键
               name varchar(32) default '' not null, -- 名字
@@ -21,11 +24,13 @@
               age int default 0 -- 年龄
           );
 
+```
           原理说明：
           1. 存储过程是非标准化的，每种数据库的语法和实现都不一样。比如对于MySQL来讲，如果存储过程内部使用了MySQL 特有的函数、特有的语法结构等，后期移植到其他的数据库，就得全部重新编写，增加数据迁移的难度。
           2. 对于存储过程内部代码的调试，不同的数据库使用的工具、方法都不一样。如果有多种数据库需要采用同样功能的存储过程，会存在一定的学习成本。
           反例：
           存储过程代码：
+```sql
           delimiter ||
           create procedure sp_insert_customers()
           begin
@@ -40,6 +45,7 @@
           ||
           delimiter ;
 
+```
           反例说明：
           1. 存储过程 sp_insert_customers 给表 customers 里插入10条记录。
           2. 其中有两个MySQL 特有的语法：
@@ -50,6 +56,7 @@
           4. 这些处理逻辑完全可以上推到应用提前处理好。
 
           反例验证：
+```sql
           (mysql:8.4.0-debug:db_mysql)call sp_insert_customers;
           Query OK, 1 row affected (0.38 sec)
           
@@ -70,9 +77,12 @@
           +----+---------+------+------+
           10 rows in set (0.00 sec)          
 
+```
           正例：
+```sql
           insert into customers values (0,'小季0',0,35),(1,'小季1',0,57),(2,'小季2',1,31),(3,'小季3',1,29),(4,'小季4',0,30),(5,'小季5',0,53),(6,'小季6',1,55),(7,'小季7',1,36),(8,'小季8',1,27),(9,'小季1',1,57);
           
+```
           正例说明：
           1. 使用 SQL 语句替代 存储过程。
           2. 这样的好处是 SQL 语句只负责插入数据，具体的逻辑由应用负责；
@@ -80,6 +90,7 @@
           4. 由于只有简单插入语句，没有复杂的逻辑，所以不存在调试的问题，错误会直接指出。比如哪行插入失败，直接更改对应的SQL即可。
 
           正例验证：
+```sql
           (mysql:8.4.0-debug:db_mysql)delete from customers;
           Query OK, 10 rows affected (0.04 sec)
 
@@ -87,6 +98,7 @@
           Query OK, 10 rows affected (0.04 sec)
           Records: 10  Duplicates: 0  Warnings: 0
 
+```
           结论：
           1. 存储过程具有语法特殊化、移植非标准化、调试难等问题。
           2. 所以生产环境应该禁止使用存储过程，而是用标准的SQL来对表进行更新等操作。
