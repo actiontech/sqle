@@ -8,8 +8,8 @@ package sqlrewriting
 // TODO: 当SQLE使用 新规则ID后，可以去除这个映射
 /*
 SQLE现有OBMySQL规则(基于sqle-ob-mysql-plugin仓库 99972e712b2a165a43155ecade6b3d0fa33ab3b0统计): 150
-OB MySQL映射规则: 114
-OB MySQL未映射规则: 36
+OB MySQL映射规则: 113
+OB MySQL未映射规则: 37
 // 以下是未映射规则
 {
 	Name:   "dml_enable_explain_pre_check",
@@ -154,6 +154,10 @@ OB MySQL未映射规则: 36
 {
 	Name:   "should_not_use_database_oceanbase_and_test",
 	CH:     "禁止使用或操作 oceanbase 库和 test 库",
+},
+{
+	Name:   "dml_check_aggregate",
+	CH:     "不建议使用聚合函数",
 },
 */
 // 以下是映射规则
@@ -707,11 +711,6 @@ var OBMySQLRuleIdConvert = []ruleIdConvert{
 		Name:   "dml_check_insert_select",
 		CH:     "不建议使用INSERT ... SELECT",
 		RuleId: "00089",
-	},
-	{
-		Name:   "dml_check_aggregate",
-		CH:     "不建议使用聚合函数",
-		RuleId: "00078",
 	},
 	{
 		Name:   "ddl_check_column_not_null",
