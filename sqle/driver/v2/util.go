@@ -14,6 +14,8 @@ import (
 const (
 	// grpc error code
 	GrpcErrSQLIsNotSupported = 1000
+
+	RuleVersionUnknown = 0
 )
 
 const (
@@ -32,6 +34,7 @@ const (
 	DriverTypeOceanBase      = "OceanBase For MySQL"
 	DriverTypeTDSQLForInnoDB = "TDSQL For InnoDB"
 	DriverTypeTBase          = "TBase"
+	DriverTypeHANA           = "HANA"
 )
 
 type DriverNotSupportedError struct {
@@ -90,6 +93,7 @@ type DriverMetas struct {
 	Logo                     []byte
 	DatabaseAdditionalParams params.Params
 	Rules                    []*Rule
+	RuleVersionIncluded      []uint32
 	EnabledOptionalModule    []OptionalModule
 }
 
@@ -165,7 +169,7 @@ func ConvertI18nAuditResultFromDriverToProto(ar *AuditResult) *protoV2.AuditResu
 	return par
 }
 
-func ConvertI18nRuleFromProtoToDriver(rule *protoV2.Rule, isI18n bool) (*Rule, error) {
+func ConvertI18nRuleFromProtoToDriver(rule *protoV2.Rule, dbtype string, isI18n bool) (*Rule, error) {
 	ps, err := ConvertProtoParamToParam(rule.Params)
 	if err != nil {
 		return nil, err
@@ -175,6 +179,10 @@ func ConvertI18nRuleFromProtoToDriver(rule *protoV2.Rule, isI18n bool) (*Rule, e
 		Level:        RuleLevel(rule.Level),
 		Params:       ps,
 		I18nRuleInfo: make(I18nRuleInfo, len(rule.I18NRuleInfo)),
+		Version:      rule.Version,
+	}
+	if dRule.Version == RuleVersionUnknown { // 正确标记旧插件规则的版本
+		dRule.Version = GetDriverTypeDefaultRuleVersion(dbtype)
 	}
 	for langTag, ruleInfo := range rule.I18NRuleInfo {
 		tag, err := language.Parse(langTag)
@@ -235,6 +243,7 @@ func ConvertI18nRuleFromDriverToProto(rule *Rule) *protoV2.Rule {
 			Content: rule.I18nRuleInfo[i18nPkg.DefaultLang].Knowledge.Content,
 		},
 		I18NRuleInfo: make(map[string]*protoV2.I18NRuleInfo, len(rule.I18nRuleInfo)),
+		Version:      rule.Version,
 	}
 	for langTag, ruleInfo := range rule.I18nRuleInfo {
 		pRule.I18NRuleInfo[langTag.String()] = ConvertI18nRuleInfoFromDriverToProto(ruleInfo)
@@ -481,4 +490,14 @@ func ConvertProtoDatabaseDiffReqToDriver(infos []*protoV2.DatabasDiffSchemaInfo)
 		}
 	}
 	return dbInfoReq
+}
+
+func GetDriverTypeDefaultRuleVersion(dbType string) uint32 {
+	switch dbType {
+	case DriverTypeTBase, DriverTypeHANA:
+		// 这两个插件规则是直接基于知识库开发的，基于知识库的规则版本统一为 2
+		return 2
+	default:
+		return 1
+	}
 }

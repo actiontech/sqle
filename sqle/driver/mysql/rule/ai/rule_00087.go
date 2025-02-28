@@ -43,6 +43,7 @@ func init() {
 			}},
 			Knowledge:    driverV2.RuleKnowledge{},
 			AllowOffline: false,
+			Version:      2,
 		},
 		Message: plocale.Rule00087Message,
 		Func:    RuleSQLE00087,

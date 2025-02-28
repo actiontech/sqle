@@ -614,6 +614,7 @@ func (p *PluginProcessor) GetDriverMetas() (*driverV2.DriverMetas, error) {
 		DatabaseDefaultPort:      3306,
 		Logo:                     logo,
 		Rules:                    rulepkg.AllRules,
+		RuleVersionIncluded:      []uint32{1, 2},
 		DatabaseAdditionalParams: params.Params{},
 		EnabledOptionalModule: []driverV2.OptionalModule{
 			driverV2.OptionalModuleQuery,

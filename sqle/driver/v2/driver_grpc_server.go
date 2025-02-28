@@ -40,6 +40,7 @@ type Rule struct {
 	Params       params.Params
 	I18nRuleInfo I18nRuleInfo
 	AllowOffline bool
+	Version      uint32
 }
 
 type I18nRuleInfo map[language.Tag]*RuleInfo
@@ -183,7 +184,7 @@ func (d *DriverGrpcServer) Metas(ctx context.Context, req *protoV2.Empty) (*prot
 func (d *DriverGrpcServer) Init(ctx context.Context, req *protoV2.InitRequest) (*protoV2.InitResponse, error) {
 	var rules = make([]*Rule, 0, len(req.GetRules()))
 	for _, rule := range req.GetRules() {
-		dr, err := ConvertI18nRuleFromProtoToDriver(rule, d.Meta.IsOptionalModuleEnabled(OptionalModuleI18n))
+		dr, err := ConvertI18nRuleFromProtoToDriver(rule, d.Meta.PluginName, d.Meta.IsOptionalModuleEnabled(OptionalModuleI18n))
 		if err != nil {
 			return nil, err
 		}
