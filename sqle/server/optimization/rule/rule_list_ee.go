@@ -15,15 +15,15 @@ type SourceOptimizationRuleHandler struct {
 	RuleCode string
 }
 
-var MySQLOptimizationRuleHandler = generateOptimizationRuleHandlers(mySQLOptimizationRuleHandlerSource)
+var MySQLOptimizationRuleHandler = generateOptimizationRuleHandlers(mySQLOptimizationRuleHandlerSource, driverV2.DriverTypeMySQL)
 
-var OracleOptimizationRuleHandler = generateOptimizationRuleHandlers(oracleOptimizationRuleHandlerSource)
+var OracleOptimizationRuleHandler = generateOptimizationRuleHandlers(oracleOptimizationRuleHandlerSource, driverV2.DriverTypeOracle)
 
-func generateOptimizationRuleHandlers(sources []SourceOptimizationRuleHandler) []OptimizationRuleHandler {
+func generateOptimizationRuleHandlers(sources []SourceOptimizationRuleHandler, dbType string) []OptimizationRuleHandler {
 	result := make([]OptimizationRuleHandler, len(sources))
 	for k, v := range sources {
 		result[k] = OptimizationRuleHandler{
-			Rule:     *rulepkg.ConvertSourceRule(plocale.Bundle, &v.Rule),
+			Rule:     *rulepkg.ConvertSourceRule(plocale.Bundle, &v.Rule, dbType),
 			RuleCode: v.RuleCode,
 		}
 	}
