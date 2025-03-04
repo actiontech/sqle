@@ -149,6 +149,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1Router.PATCH("/configurations/coding", v1.UpdateCodingConfigurationV1, sqleMiddleware.OpGlobalAllowed())
 		v1Router.GET("/configurations/coding", v1.GetCodingConfigurationV1, sqleMiddleware.ViewGlobalAllowed())
 		v1Router.POST("/configurations/coding/test", v1.TestCodingConfigV1, sqleMiddleware.OpGlobalAllowed())
+		v1Router.POST("/configurations/git/test", v1.TestGitConnection)
 
 		// statistic
 		v1Router.GET("/statistic/instances/type_percent", v1.GetInstancesTypePercentV1, sqleMiddleware.ViewGlobalAllowed())

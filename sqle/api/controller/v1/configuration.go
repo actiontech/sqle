@@ -1,6 +1,8 @@
 package v1
 
 import (
+	"fmt"
+	"github.com/actiontech/sqle/sqle/errors"
 	"net/http"
 	"strconv"
 
@@ -414,6 +416,36 @@ type TestCodingConfigurationReqV1 struct {
 // @router /v1/configurations/coding/test [post]
 func TestCodingConfigV1(c echo.Context) error {
 	return testCodingAuditConfigV1(c)
+}
+
+// TestGitConnection
+// @Summary 测试Git联通性
+// @Description test git connection
+// @Accept json
+// @Id TestGitConnection
+// @Tags configuration
+// @Security ApiKeyAuth
+// @Param req body v1.TestGitConnectionReqV1 true "test git configuration req"
+// @Success 200 {object} v1.TestGitConnectionResV1
+// @router /configurations/git/test [post]
+func TestGitConnection(c echo.Context) error {
+	// TODO: Test Git Connection
+	req := new(TestGitConnectionReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return controller.JSONBaseErrorReq(c, errors.New(-1, fmt.Errorf("need to be implemented")))
+}
+
+type TestGitConnectionReqV1 struct {
+	GitHttpUrl      string `json:"git_http_url" form:"git_http_url" valid:"required"`
+	GitUserName     string `json:"git_user_name" form:"git_user_name" valid:"required"`
+	GitUserPassword string `json:"git_user_password" form:"git_user_password" valid:"required"`
+}
+
+type TestGitConnectionResV1 struct {
+	controller.BaseRes
+	Data TestGitConnectionResDataV1 `json:"data"`
 }
 
 type ScheduleTaskDefaultOption struct {
