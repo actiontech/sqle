@@ -6,6 +6,7 @@ After=network.target
 WantedBy=multi-user.target
 
 [Service]
+Environment=
 User=
 LimitNOFILE=65535
 LimitNPROC=65535
