@@ -6573,7 +6573,7 @@ paths:
       consumes:
       - application/json
       description: test git connection
-      operationId: TestGitConnection
+      operationId: TestGitConnectionV1
       parameters:
       - description: test git configuration req
         in: body
