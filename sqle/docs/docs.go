@@ -40,7 +40,7 @@ var doc = `{
                     "configuration"
                 ],
                 "summary": "测试Git联通性",
-                "operationId": "TestGitConnection",
+                "operationId": "TestGitConnectionV1",
                 "parameters": [
                     {
                         "description": "test git configuration req",
