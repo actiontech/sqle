@@ -13,6 +13,7 @@
 <场景 名称="多行写入" 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="INSERT、REPLACE">
   <示例>
   前置：
+```sql
       -- 主表1
       CREATE TABLE customers (
         id int primary key, -- 序号
@@ -32,6 +33,7 @@
       );
 
 
+```
       原理说明：
       1. 大批量的DML操作会导致大量的redo数据生成，这可能会影响redo、undo日志的写入性能，并在恢复操作时增加时间成本。
       2. 大批量的插入操作会增加脏页的数量，这可能会导致检查点操作变得更频繁，增加了后台I/O负载。
@@ -43,21 +45,26 @@
 
       示例：
       SQL1:
+```sql
       insert into customers values (1,'小王',1,'北京',30),...,(N,'小李',0,'深圳',99);
       replace into customers values (1,'小王',1,'北京',30),...,(N,'小李',0,'深圳',99);
       
+```
       SQL2:
+```sql
       INSERT INTO customers(id,cname,sex,city,age) SELECT ID + (SELECT count(1) from customers),a.cname,a.sex,a.city,a.age FROM customers a; 
       insert into customers_insert with cte1 (a,b,c,d,e) as (select * from customers limit 1000) select * from cte1;
       replace customers_insert select * from customers limit 1000 offset 200;
      
 
+```
       示例说明：
       1. 示例都是一次性给表插入多条记录
       2. 若实际表记录数大于100行，则批量写入的数据会超过该规则限制。
 
       示例验证： 为了演示方便，验证SQL1 的第一条
       1. 先给表customers 插入一些样例数据，2000 条，使用如下脚本来生成插入语句：
+```sql
       [root@ytt-pc scripts]# cat generate_values
       #!/bin/bash
       
@@ -87,10 +94,14 @@
       
       echo "$SQL"
 
+```
       2. 调用脚本生成插入SQL：
+```sql
       [root@ytt-pc scripts]# sh generate_values &gt; /var/lib/mysql-files/customers_2000.values;
       
+```
       3. 连接MySQL 客户端，执行插入语句：一次性插入2000行，花费 70毫秒。
+```sql
       (mysql:8.4.0:db_mysql)\. /var/lib/mysql-files/customers_2000.values
       Query OK, 2000 rows affected (0.07 sec)
       Records: 2000  Duplicates: 0  Warnings: 0
@@ -104,7 +115,9 @@
       1 row in set (0.01 sec)
       
       
+```
       4. 修改脚本的ROWS=100,再次生成插入SQL，并且执行。执行时间仅为10毫秒。
+```sql
       -- 先清空表记录
       (mysql:8.4.0:db_mysql)truncate table customers;
       Query OK, 0 rows affected (0.06 sec)
@@ -128,6 +141,7 @@
       1 row in set (0.00 sec)
 
 
+```
       总结：
       1. 大数据量插入，一次最好控制插入的行数在100 以内；过大的插入行会导致插入时间变长、持续占用资源，进而影响其他业务正常运行；大量的行插入也会导致拍错困难、异常后恢复慢等问题。
       2. 必须大数据插入的优化建议：
@@ -150,9 +164,11 @@
 <示例>
     前置：与 【多行写入】一致
     示例：
+```sql
     INSERT INTO customers(`name`,sex,city,age) SELECT a.name,a.sex,a.city,a.age FROM customers a -- 若实际表记录数大于100行，则会批量写入数据会超过该规则限制。
     REPLACE INTO customers(`name`,sex,city,age) SELECT a.name,a.sex,a.city,a.age FROM customers a -- 若实际表记录数大于100行，则会批量写入数据会超过该规则限制。
 
+```
     原理说明： 与 【多行写入】 一致    
 </示例>
 <检查流程描述>

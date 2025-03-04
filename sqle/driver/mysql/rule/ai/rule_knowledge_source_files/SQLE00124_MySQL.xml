@@ -10,6 +10,7 @@
     <场景 名称="快速清空表数据" 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="DELETE">
       <示例>
         前置:
+```sql
         create database db_mysql;
         use db_mysql;
         CREATE TABLE customers(
@@ -56,11 +57,14 @@
 
         call sp_generate_data_customers(10000000); -- 存储过程调用，正反例示例都需要先执行
 
+```
         反例：
+```sql
         delete from customers;
         delete from customers where 1=1;
         delete from customers where true;
 
+```
         反例说明：
         1. delete 不带 where 条件触发。
         2. delete 带 where 条件但是条件为 where 1=1 或者 where true 等恒真条件也触发。
@@ -68,6 +72,7 @@
         2. delete 对比 truncate table 操作， 会造成日志的写入放大（比如binlog，redo log 等）。
 
         示例验证：
+```sql
         (mysql:8.0.18)select count(*) from customers;
         +----------+
         | count(*) |
@@ -120,14 +125,18 @@
 
 
 
+```
         正例：
+```sql
         truncate table customers;
 
+```
         正例说明：
         1. truncate table 操作原理是先对表进行删除，再创建和原表一样结构的空表，所以速度很快，适合大表数据库的快速删除。
         2. truncate table 和表记录数关系不大，对于超级大表的速度则受限于底层磁盘文件系统的性能。
 
         示例验证：
+```sql
 
         (mysql:8.0.18)select count(*) from customers;
         +----------+
@@ -161,6 +170,7 @@
 
         
 
+```
       </示例>
       <检查流程描述>
       1. 对于"DELETE..."语句，检查句子 没有WHERE 条件或者 where 条件恒为真（比如 where 1=1 或者 where True），则报告违反规则。

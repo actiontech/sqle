@@ -13,6 +13,7 @@
   <原理说明 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="SELECT、INSERT ...SELECT、UNION ALL">
     <示例>
         前置：
+```sql
         CREATE TABLE customers (
             id INT primary key, -- 主键 ID
             name VARCHAR(50), -- 姓名
@@ -35,6 +36,7 @@
               from tmp where a &lt; 1000001
         ) table tmp;      
 
+```
         原理说明：
         1. 在 MySQL 中，当 LIMIT子句中的偏移量 offset 很大时，可能会导致性能问题，主要包括以下几个方面：
           1. 查询耗时增加：随着偏移量的增大，查询需要扫描更多的数据行，然后抛弃前面的行，只返回后面的部分结果。这会导致大量的磁盘 I/O 操作和数据传输，从而增加查询的响应时间。
@@ -53,15 +55,20 @@
     
         反例：
         SQL1:
+```sql
         SELECT * FROM customers ORDER BY age,id LIMIT 5 OFFSET 50000;
+```
         或者这样写：
+```sql
         SELECT * FROM customers ORDER BY age,id LIMIT 50000,5;
 
+```
         反例说明：
         1. 示例 SQL 使用 LIMIT 查询，但是OFFSET 偏移量太大。
 
         反例验证：
         1. 执行SQL：执行时间 820 毫秒。
+```sql
         (mysql:8.4.0:db_mysql)SELECT * FROM customers ORDER BY age,id LIMIT 50000,5;
         +--------+-------+-----------+------+----------+---------+--------+
         | id     | name  | city      | age  | country  | zipcode | income |
@@ -75,7 +82,9 @@
         5 rows in set (0.82 sec)
         
         
+```
         2. 查看执行计划： 走全表扫，并且还有文件排序。
+```sql
         (mysql:8.4.0:db_mysql)explain  SELECT * FROM customers ORDER BY age,id LIMIT 50000,5;
         +----+-------------+-----------+------------+------+---------------+------+---------+------+--------+----------+----------------+
         | id | select_type | table     | partitions | type | possible_keys | key  | key_len | ref  | rows   | filtered | Extra          |
@@ -85,16 +94,20 @@
         1 row in set, 1 warning (0.00 sec)
         
         
+```
         正例：
 
         SQL 1:
+```sql
         with tmp(id) as 
         (
           SELECT  id FROM customers ORDER BY age,id LIMIT 50000,5
           ) 
         select * from customers a, tmp b where a.id= b.id;
 
+```
         或者写成：
+```sql
         with tmp(id) as 
         (
           SELECT  id FROM customers ORDER BY age,id LIMIT 5 offset 50000
@@ -102,11 +115,13 @@
         select * from customers a, tmp b where a.id= b.id;
   
 
+```
         正例说明：
         1. 示例 SQL1 使用WITH 表达式来找出主键ID，完了使用主键ID来直接扫主键取数据，性能要好很多。      
 
         正例验证： 
         1. 执行 SQL1： 时间从820毫秒降低到0毫秒。
+```sql
         (mysql:8.4.0:db_mysql)with tmp(id) as (SELECT  id FROM customers ORDER BY age,id LIMIT 50000,5) select * from customers a, tmp b where a.id= b.id;
         +--------+-------+-----------+------+----------+---------+--------+--------+
         | id     | name  | city      | age  | country  | zipcode | income | id     |
@@ -119,7 +134,9 @@
         +--------+-------+-----------+------+----------+---------+--------+--------+
         5 rows in set (0.00 sec)
 
+```
         2. 查看执行计划，查询语句能正确利用上所有索引。
+```sql
         (mysql:8.4.0:db_mysql)explain with tmp(id) as (SELECT  id FROM customers ORDER BY age,id LIMIT 50000,5) select * from customers a, tmp b where a.id = b.id;
         +----+-------------+------------+------------+--------+---------------+-------------------+---------+------+-------+----------+-------------+
         | id | select_type | table      | partitions | type   | possible_keys | key               | key_len | ref  | rows  | filtered | Extra       |
@@ -130,6 +147,7 @@
         +----+-------------+------------+------------+--------+---------------+-------------------+---------+------+-------+----------+-------------+
 
                 
+```
         结论:
         1. 数据库中使用大偏移量查询时，优化器可能会走不正确的执行计划，导致查询变慢。
         2. 可以在数据库端定位到具体主键值，完了使用主键的范围查找来加快查询。

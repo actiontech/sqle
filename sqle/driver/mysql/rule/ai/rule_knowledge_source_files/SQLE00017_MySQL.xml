@@ -12,6 +12,7 @@
     <原理说明 数据库版本="MySQL 5.7.25" 检查方式="不连库审核" 适用句型="CREATE TABLE、ALTER TABLE">
       <示例>
 前置：
+```sql
 --表结构
 CREATE TABLE `t_long` (
   `id` int(11) DEFAULT NULL,
@@ -23,6 +24,7 @@ CREATE TABLE `t_short` (
   `col1` varchar(8090)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+```
 原理说明：
 一、在原理上：大字段的存储会消耗大量磁盘空间
 
@@ -47,6 +49,7 @@ CREATE TABLE `t_short` (
 6. 大字段可能无法作为WHERE条件索引，导致相关查询很慢
 
 示例：
+```sql
 # 写入样例数据
 #!/bin/bash
 for ((i=1;i&lt;=48849;i++));
@@ -97,7 +100,9 @@ Create Table: CREATE TABLE `t_short` (
       0        Compressed BLOB page
       0        Other type of page
 ===============================================
+```
 Additional information:
+```sql
 Undo page type: 0 insert, 0 update, 0 other
 Undo page state: 0 active, 0 cached, 0 to_free, 0 to_purge, 0 prepared, 0 other
 
@@ -120,10 +125,13 @@ File::t_short.ibd
       0        Compressed BLOB page
       0        Other type of page
 ===============================================
+```
 Additional information:
+```sql
 Undo page type: 0 insert, 0 update, 0 other
 Undo page state: 0 active, 0 cached, 0 to_free, 0 to_purge, 0 prepared, 0 other
 
+```
 示例验证：
 通过示例可以看出，使用BLOB或TEXT类型会导致数据占用更多的磁盘空间。t_long表的ibd文件大小是t_short表的两倍，而且t_long表使用了大量的BLOB页面来存储数据。
 

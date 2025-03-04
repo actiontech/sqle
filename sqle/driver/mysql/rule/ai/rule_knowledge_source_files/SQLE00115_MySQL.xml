@@ -10,6 +10,7 @@
   <场景 名称="WHERE条件中使用标量子查询" 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="SELECT、UPDATE、DELETE、INSERT... SELECT、UNION ALL、WITH">
     <示例>
       前置：
+```sql
       -- 员工表
       create table employee(
         id int primary key,
@@ -42,6 +43,7 @@
   
 
 
+```
       原理说明：
       1. 标量子查询是返回单一值的子查询，通常用于查询中某个表达式的计算结果。这种子查询返回一个值（单行单列），可用作其他查询条件的输入。
       2. 避免使用标量子查询的主要原因包括：
@@ -51,17 +53,24 @@
       
       反例：
       SQL1:
+```sql
       SELECT id, salary FROM employee WHERE salary &gt;= (SELECT salary FROM employee order by salary desc limit 1);
       
+```
       SQL2：
+```sql
       insert into tmp_employee SELECT * from employee WHERE salary &gt;= (SELECT salary FROM employee order by salary desc limit 1);
     
+```
       SQL3:
+```sql
       SELECT id, salary FROM employee WHERE salary &gt;= (SELECT MAX(salary) FROM employee);
       union all
       SELECT id, salary FROM employee WHERE salary = (SELECT MIN(salary) FROM employee);
 
+```
       SQL4:
+```sql
       WITH cte_tmp(a,b) as 
       (
         SELECT id, salary FROM employee WHERE salary &gt;= (SELECT MAX(salary) FROM employee);
@@ -70,18 +79,24 @@
   
       ) select * from cte_tmp;
 
+```
       SQL5:
+```sql
       delete from employee where salary = (select max(salary) from employee);
 
+```
       SQL6：
+```sql
       update employee set age = 200 where salary = (select max(salary) from employee);
       
 
+```
       反例说明：
       1. 示例中的SQL 都是在WHERE 条件中使用标量子查询，不可取。
 
       反例验证：
       1. 由于SQL 都很类似，验证SQL1的执行计划： 虽然已经很优化，但是表employee 被扫描了多次，应该减少这种多余的扫描。
+```sql
       (mysql:8.4.0:db_mysql)explain SELECT id, salary FROM employee WHERE salary &gt;= (SELECT salary FROM employee order by salary desc limit 1);
       +----+-------------+----------+------------+-------+---------------------+---------------------+---------+------+------+----------+----------------------------------+
       | id | select_type | table    | partitions | type  | possible_keys       | key                 | key_len | ref  | rows | filtered | Extra                            |
@@ -92,19 +107,27 @@
       2 rows in set, 1 warning (0.00 sec)
   
 
+```
       正例：
       SQL1:
+```sql
       SELECT a.id, a.salary FROM employee a, (SELECT MAX(salary) salary FROM employee) b where a.salary = b.salary;
       
+```
       SQL2：
+```sql
       insert into tmp_employee SELECT a.* FROM employee a, (SELECT MAX(salary) salary FROM employee) b where a.salary = b.salary;
       
+```
       SQL3:
+```sql
       SELECT a.id, a.salary FROM employee a, (SELECT MAX(salary) salary FROM employee) b where a.salary = b.salary
       union all
       SELECT a.id, a.salary FROM employee a, (SELECT MIN(salary) salary FROM employee) b where a.salary = b.salary;
 
+```
       SQL4:
+```sql
       WITH cte_tmp(a,b) as 
       (
         SELECT a.id, a.salary FROM employee a, (SELECT MAX(salary) salary FROM employee) b where a.salary = b.salary
@@ -113,12 +136,17 @@
   
       ) select * from cte_tmp;
 
+```
       SQL5:
+```sql
       delete from employee using employee join (select max(salary) salary from employee2) b where employee.salary = b.salary;
 
+```
       SQL6:
+```sql
       UPDATE employee, (select max(salary) salary from employee2) b  SET employee.age = 200 where employee.salary = b.salary;
       
+```
       正例说明：
       1. 标量子查询都转化为JOIN。
 
@@ -126,6 +154,7 @@
   
       1. 同样查看SQL1的执行计划：表 EMPLOYEE 扫描次数减少，实际上只有一次。
 
+```sql
       (mysql:8.4.0:db_mysql)explain SELECT a.id, a.salary FROM employee a, (SELECT MAX(salary) salary FROM employee) b where a.salary = b.salary;
       +----+-------------+------------+------------+--------+---------------------+---------------------+---------+-------+------+----------+------------------------------+
       | id | select_type | table      | partitions | type   | possible_keys       | key                 | key_len | ref   | rows | filtered | Extra                        |
@@ -137,6 +166,7 @@
       3 rows in set, 1 warning (0.00 sec)
 
 
+```
       总结：
       1. 对标量子查询的调用一般会产生重复的执行过程，耗费大量的资源。
       2. 要相近办法取消标量子查询，转换为JOIN等写法，来使得引用的表自适应匹配数据库多样的表联接算法。
@@ -158,12 +188,18 @@
       
       反例：
       SQL1:
+```sql
       insert into tmp_employee values (2000000,'小刘',1,88,(SELECT MAX(salary) FROM employee));
+```
       SQL2:
+```sql
       select id,(select count(*) from employee) as cnt from employee WHERE salary = 20000;
+```
       SQL3:
+```sql
       with cte_tmp(a,b) as (select id,(select count(*) from employee) as cnt from employee WHERE salary = 20000) select * from cte_tmp;
 
+```
       反例说明：
       1. SQL1使用标量子查询充当VALUES 子句的常量来插入，不可取。
       2. SQL2 使用标量子查询来充当投影列，也不可取。
@@ -171,13 +207,19 @@
 
       正例：
       SQL1:
+```sql
       insert into tmp_employee values (2000000,'小刘',1,88,20000);
+```
       SQL2:
+```sql
       select id,1000000 as cnt from employee WHERE salary = 20000;
+```
       SQL3:
+```sql
       with cte_tmp(a,b) as (select id,1000000 as cnt from employee WHERE salary = 20000) select * from cte_tmp;
 
 
+```
       正例说明：
       1. SQL1 把标量子查询的结果计算出来，再使用VALUES插入，建议操作。
       2. SQL2、SQL3也是把标量子查询的结果计算出来，再直接使用常量操作，建议使用。
@@ -201,15 +243,19 @@
       与【数据获取中使用标量子查询】一致
 
       反例：
+```sql
       update employee set salary = (select max(salary) from employee) where id = 10846 ;
 
+```
       反例说明：
       与【数据获取中使用标量子查询】一致
 
       正例：
+```sql
       
       update employee set salary = 20000 where id = 10846 ;
 
+```
       正例说明：
       1. 对表 employee 的多次访问，使用变量赋值，变为访问一次即可。
 

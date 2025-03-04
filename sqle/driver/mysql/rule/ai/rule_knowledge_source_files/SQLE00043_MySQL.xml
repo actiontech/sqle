@@ -13,6 +13,7 @@
   <场景 名称="定义表结构" 数据库版本="MySQL" 检查方式="不连库审核" 适用句型="CREATE TABLE">
     <示例>
       示例：
+```sql
       create table if NOT EXISTS
         t2 (
           id BIGINT UNSIGNED AUTO_INCREMENT,
@@ -29,6 +30,7 @@
           PRIMARY KEY (id)
         );
       
+```
       示例说明：
       数据库系统中，常用的索引通常是PRIMARY KEY、UNIQUE、INDEX，默认是以B-trees存储的。一个表中存在多个索引，优化器会选择一个匹配到行数最少的索引，因此索引越多，会增加索引存储空间，增加优化器选择索引的成本。
       引用知识文档1：Although it can be tempting to create an indexes for every possible column used in a query, unnecessary indexes waste space and waste time for MySQL to determine which indexes to use. Indexes also add to the cost of inserts, updates, and deletes because each index must be updated. 
@@ -48,6 +50,7 @@
   <场景 名称="表更表结构" 数据库版本="MySQL" 检查方式="连库审核" 适用句型="ALTER TABLE、CREATE INDEX">
     <示例>  
       前置：
+```sql
       create table if NOT EXISTS
         t2 (
           id BIGINT UNSIGNED AUTO_INCREMENT,
@@ -62,10 +65,13 @@
           INDEX idx_multi_col4(cid,type),
           PRIMARY KEY (id)
         );
+```
       示例：
+```sql
       alter table t2 add index idx_t2_col(gid);
       create index idx_t1_column2 on t1(cid);
 
+```
       示例说明：与【定义表结构】场景一致。
     </示例>
     <检查流程描述>

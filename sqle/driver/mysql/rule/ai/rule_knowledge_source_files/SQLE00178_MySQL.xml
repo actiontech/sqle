@@ -10,6 +10,7 @@
     <原理说明 数据库版本="MySQL 8.0" 检查方式="不连库审核" 适用句型="SELECT、INSERT、UPDATE、DELETE">
       <示例>
             示例表结构:
+```sql
             create database db_mysql;
             use db_mysql;
   
@@ -32,12 +33,14 @@
               select a+1,concat('小王',a),floor(rand()*2),'上海',ceil(rand()*20)+20 from tmp where a &lt; 15000000) 
               select * from tmp;
 
+```
            原理说明：
            1. 有排序的SQL 语句必须有WHERE 条件匹配，否则会全表扫描或者全索引扫描。
            2. 或者是SQL 语句中包含有WHERE 1=1 或者 WHERE True 这样的恒真条件，但是没有其他的过滤字段，一样的原理。
            3. 此类语句包含 ORDER BY 、GROUP BY、DISTINCT 等子句。
 
            示例：
+```sql
            -- 以下这些SQL 都是无过滤条件的排序语句
            select age from customers order by age;
            select age from customers group by age order by age desc;
@@ -47,7 +50,9 @@
            select * from customers where True order by age;
 
 
+```
            示例验证：
+```sql
            -- 由于这些SQL 类似，选取第一个SQL 来进行验证，执行时间9秒多。此时 列 age 没有索引，此时优化器走全表扫。
            (mysql:8.0.31-cluster)explain analyze select age from customers order by age;
            +-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
@@ -61,7 +66,9 @@
            
            
 
+```
            示例优化：
+```sql
            -- 给列age 加索引
            (mysql:8.0.31-cluster)create index idx_age_customers on customers(age);
             Query OK, 0 rows affected (48.89 sec)
@@ -94,6 +101,7 @@
 
 
         
+```
             结论：
             1. 对于这类排序无WHERE 条件或者 WHERE 条件恒真的 SQL 语句，从数据库角度来讲，优化的点无非就是并行扫数据页或者索引页，但是随着数据量的增加，性能也会越来越差。
             2. 所以只有从业务层面修改SQL 语句，让其获取更少的数据才能做到根本优化。

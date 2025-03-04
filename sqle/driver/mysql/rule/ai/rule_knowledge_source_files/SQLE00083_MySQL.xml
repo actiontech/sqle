@@ -10,6 +10,7 @@
   <场景 名称="数据小范围查询" 数据库版本="&gt;=MySQL 8.0.13" 检查方式="连库审核" 适用句型="SELECT、INSERT...SELECT、UNION、UPDATE、DELETE、WITH">
     <示例>
       前置:
+```sql
       create database db_mysql;
       use db_mysql;
       CREATE TABLE customers(
@@ -34,14 +35,20 @@
       analyze table customers;
 
       
+```
       Skip index scan 复现对应SQL：
+```sql
       select sex,age from customers where age &lt; 22; ## 获取年龄在小于22岁的性别和具体年龄。
+```
       或者
+```sql
       select count(*) from customers where age &lt; 22; ## 获取年龄在小于22岁的客户总数。
 
 
+```
       Skip index scan 发生场景验证：
       查看对应SQL的执行计划。      
+```sql
       mysql [8.0.31] desc select sex,age from customers where age &lt; 22;
       +----+-------------+-----------+------------+-------+-----------------------+-----------------------+---------+------+------+----------+----------------------------------------+
       | id | select_type | table     | partitions | type  | possible_keys         | key                   | key_len | ref  | rows | filtered | Extra       
@@ -50,6 +57,7 @@
       +----+-------------+-----------+------------+-------+-----------------------+-----------------------+---------+------+------+----------+----------------------------------------+
       1 row in set, 1 warning (0.00 sec)      
 
+```
       Skip index scan 具体说明：
       1. Skip index scan的本意是在表中联合索引不合理的场景下，数据库做的一个被动优化；
       2. 业务SQL被数据库优化器隐式修改了查询条件，不符合索引设计的基本准则，进而导致数据库端处理了本该业务过滤的请求，导致性能不及预期;
@@ -60,9 +68,11 @@
         D. 业务SQL的条件为范围，而非等值。
       4. 由于Skip index scan 只对SELECT 语句有效，类 SELECT 语句系列的语句 INSERT SELECT 也同样适用此规则。
          比如如下语句：
+```sql
          insert  into customers_sub select sex,age from customers where age &lt; 22; 
       
 
+```
       Skip index scan 如何消除：
       1. 调整idx_sex_age_customers里的字段顺序，SQL本身不用改变。
       2. alter table customers drop key idx_sex_age_customers;
@@ -72,6 +82,7 @@
       消除 Skip index scan 场景验证：
       查看执行计划，Extra 一栏中没有 Using index for skip scan ，替换为 Using index，代表 优化器在选执行计划时已经屏蔽了 Skip index scan 策略。 
 
+```sql
       mysql [8.0.31] desc select sex,age from customers where age &lt; 22;
       +----+-------------+-----------+------------+-------+-----------------------+-----------------------+---------+------+------+----------+--------------------------+
       | id | select_type | table     | partitions | type  | possible_keys         | key                   | key_len | ref  | rows | filtered | Extra       
@@ -81,6 +92,7 @@
       1 row in set, 1 warning (0.00 sec)
 
 
+```
       消除 Skip index scan 场景说明：
       1. 重新调整联合索引，使得数据库优化器 不选用 Skip index scan 策略来被动优化业务SQL；
       2. 如若这类业务SQL 频繁请求，则需要根据SQL来反推索引设计，使索引符合最左、最小、选择性好的列前置，而不是相反。

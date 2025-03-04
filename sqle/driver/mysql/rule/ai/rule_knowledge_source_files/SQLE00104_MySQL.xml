@@ -10,6 +10,7 @@
         <场景 名称="对多个列指定不同的排序方向" 数据库版本="MySQL 8.0" 检查方式="连库审核" 适用句型="SELECT、INSERT">
             <示例>
             示例表结构:
+```sql
             create database db_mysql;
             use db_mysql;
 
@@ -22,7 +23,9 @@
             PRIMARY KEY (id) -- 主键
             );
 
+```
             示例索引：
+```sql
             create index idx_name_age_customers on customers(name,age);
             create index idx_age_customers on customers(age);
 
@@ -35,16 +38,20 @@
             select a+1,concat('小王',a),floor(rand()*2),'上海',ceil(rand()*20)+20 from tmp where a &lt; 5000000) 
             select * from tmp;
 
+```
           反例：
+```sql
           select * from customers order by name,age desc  limit 1;
           select * from customers order by name desc,age asc  limit 1;
           select * from customers order by name,age desc;
 
+```
           反例说明：
           1. 对多个字段进行排序时，如果排序方向不统一，将无法使用到已有的索引，导致性能变差。
           2. 示例中 使用order by name,age desc 或者使用 order by name desc,age asc 等都使用不了原有的索引idx_name_age_customers，因为原有索引本身是一种顺序建立的。
 
           反例验证： 执行时间有3秒多，太长了。
+```sql
           (mysql:8.0.31-cluster)select * from customers order by name,age desc limit 1;
           +----+---------+-----+--------+-----+
           | id | name    | sex | city   | age |
@@ -54,7 +61,9 @@
           1 row in set (3.18 sec)
           
          
+```
           执行计划：全表扫，没有使用到索引idx_name_age_customers.
+```sql
           (mysql:8.0.31-cluster)explain select * from customers order by name,age desc limit 1;
           +----+-------------+-----------+------------+------+---------------+------+---------+------+---------+----------+----------------+
           | id | select_type | table     | partitions | type | possible_keys | key  | key_len | ref  | rows    | filtered | Extra          |
@@ -65,30 +74,40 @@
           
 
 
+```
           正例： MySQL 8.0 以上版本可以建立新索引
 
           对于 order by name, age desc 建立索引：
+```sql
           create index idx_name_age_customers_2 on customers(name,age desc);
 
+```
           或者针对 order by name desc,age asc 建立索引：
+```sql
           create index idx_name_age_customers_2 on customers(name desc,age asc);
 
 
+```
           或者MySQL 8.0 以下版本只能修改SQL 语句，避免对不同字段排序不一致，优化效果一致。
+```sql
           select * from customers order by name,age  limit 1;
           select * from customers order by name desc,age desc  limit 1;
           select * from customers order by name,age ;
 
 
+```
           正例说明：
           1. 新建索引或者修改SQL，可以修正原来SQL 语句命中不了索引的问题。
 
           正例验证：新建多字段乱序索引
+```sql
           (mysql:8.0.31-cluster)create index idx_name_age_customers_2 on customers(name,age desc);
           Query OK, 0 rows affected (33.41 sec)
           Records: 0  Duplicates: 0  Warnings: 0
 
+```
           建立新索引后，再次执行SQL语句，结果秒出
+```sql
           (mysql:8.0.31-cluster)select * from customers order by name,age desc limit 1;
             +----+---------+-----+--------+-----+
             | id | name    | sex | city   | age |
@@ -99,7 +118,9 @@
 
           
           
+```
           执行计划： 走新建的索引 idx_name_age_customers_2
+```sql
           (mysql:8.0.31-cluster)explain select * from customers order by name,age desc limit 1;
           +----+-------------+-----------+------------+-------+---------------+--------------------------+---------+------+------+----------+-------+
           | id | select_type | table     | partitions | type  | possible_keys | key                      | key_len | ref  | rows | filtered | Extra |
@@ -110,6 +131,7 @@
           
 
 
+```
           结论：
           1. 使用多字段乱序排序，性能很差，执行时间长。
           2. 可以针对多字段乱序排序建立新索引或者修改SQL 语句改成多字段一致排序的方式，性能大幅提升。

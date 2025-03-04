@@ -11,6 +11,7 @@
       <原理说明 数据库版本="MySQL 所有版本" 检查方式="不连库审核">
         <示例>
           示例表结构:
+```sql
           create database db_mysql;
           use db_mysql;
 
@@ -33,15 +34,20 @@
             select a+1,concat('小王',a),floor(rand()*2),'上海',ceil(rand()*20)+20 from tmp where a &lt; 5000000) 
             select * from tmp;   
             
+```
           原理说明：
           1. MySQL 创建索引不支持 online 或者 concurrently 关键词，索引是否在线创建由MySQL内部判断。
           2. 可以参考规则SQLE00059、SQLE00163：在线DDL 与 并行在线DDL。
           3. MySQL 有自己的索引创建方式，都统一归类到在线DDL范畴里。
              比如给表customers 创建基于字段age的索引:
+```sql
              create index idx_age_customers on customers(age) algorithm=inplace lock=none;
 
+```
              或者使用alter table 来建立同样的索引：
+```sql
              alter table customers add key idx_age_customers (age), algorithm=inplace,lock=none;
+```
           4. 还有一种方式是基于第三方工具来在线创建索引。
              1. 比如Percona-tookit 里的pt-online-schema-change，使用触发器的方式来在线创建索引；
              2. 又比如工具GH-OST 工具，使用模拟MySQL 从库的方式来在线创建索引。

@@ -12,6 +12,7 @@
       <示例>
       
           示例表结构:
+```sql
           create database db_mysql;
           use db_mysql;
 
@@ -34,6 +35,7 @@
             select a+1,concat('小王',a),floor(rand()*2),'上海',ceil(rand()*20)+20 from tmp where a &lt; 5000000) 
             select * from tmp;   
 
+```
         原理说明：
           1. 此规则不适用MySQL。
           2. MySQL 在 8.0.27 之前，创建索引是单线程的；
@@ -42,10 +44,14 @@
           5. 针对以上，除非参数 innodb_ddl_threads 被手动设置为1，否则默认都是多线程创建索引。
           6. MySQL 有自己的索引创建方式，都统一归类到在线DDL范畴里。
              比如给表customers 创建基于字段age的索引:
+```sql
              create index idx_age_customers on customers(age) algorithm=inplace lock=none;
 
+```
              或者使用alter table 来建立同样的索引：
+```sql
              alter table customers add key idx_age_customers (age), algorithm=inplace,lock=none;
+```
           7. 还有一种方式是基于第三方工具来在线创建索引。
              1. 比如Percona-tookit 里的pt-online-schema-change，使用触发器的方式来在线创建索引；
              2. 又比如工具GH-OST 工具，使用模拟MySQL 从库的方式来在线创建索引。
@@ -53,6 +59,7 @@
           
         示例：
         单线程创建索引，耗时20秒。
+```sql
         (mysql:8.0.31-cluster)select @@innodb_ddl_threads;
         +----------------------+
         | @@innodb_ddl_threads |
@@ -86,6 +93,7 @@
 
 
 
+```
       </示例> 
         <知识文档>
           1. 创建索引官方文档： https://dev.mysql.com/doc/refman/8.0/en/create-index.html

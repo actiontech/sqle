@@ -13,6 +13,7 @@
         <场景 名称="避免SELECT 语句中的ORDER BY 子句" 数据库版本="MySQL 8.0" 检查方式="连库审核" 适用句型="SELECT、INSERT">
             <示例>
             示例表结构:
+```sql
             create database db_mysql;
             use db_mysql;
 
@@ -25,7 +26,9 @@
             PRIMARY KEY (id) -- 主键
             );
 
+```
             示例索引：
+```sql
             create index idx_age_customers on customers(age);
 
             -- 插入模拟数据 500W 条。
@@ -37,14 +40,18 @@
             select a+1,concat('小王',a),floor(rand()*2),'上海',ceil(rand()*20)+20 from tmp where a &lt; 5000000) 
             select * from tmp;
 
+```
           反例：
+```sql
           select * from customers order by age desc;
           select * from customers order by age asc;          
 
+```
           反例说明：
           1. 排序操作对数据库来讲，资源消耗较大，建议放到业务端来处理。
 
           反例验证： 由于SQL 语句返回很多记录，所以使用explain analyze 打印实际执行的时间与执行计划。执行时间很长，达到6秒多。
+```sql
           (mysql:8.0.31-cluster)explain analyze select * from customers order by age desc\G
           *************************** 1. row ***************************
           EXPLAIN: -&gt; Sort: customers.age DESC (cost=510766.63 rows=4988304) (actual time=4882.614..5335.973 rows=5000000 loops=1)
@@ -52,19 +59,24 @@
           
           1 row in set (6.02 sec)
           
+```
           正例：
+```sql
           select * from customers;
 
+```
           正例说明：
           1. 取消order by 子句，减少了数据库端排序的耗时，可以让数据库腾出资源来处理其他的请求。
          
           正例验证： 取消 order by 子句，执行时间仅需2.71秒。 
+```sql
           (mysql:8.0.31-cluster)explain analyze select * from customers \G
           *************************** 1. row ***************************
           EXPLAIN: -&gt;  Table scan on customers (cost=510766.63 rows=4988304) (actual time=0.036..2100.546 rows=5000000 loops=1)
           
           1 row in set (2.71 sec)
           
+```
           结论：
           1. 把排序子句从数据库挪到业务端，可以减少数据库端的排序开销。
           2. 限定本次查询的记录数范围，降低排序操作给数据库带来的负荷，提高SQL查询效率。

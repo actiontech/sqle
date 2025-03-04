@@ -10,6 +10,7 @@
         <场景 名称="非法使用NULL" 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="SELECT、UPDATE、DELETE、UNION、INSERT...SELECT、WITH">
             <示例>
             前置：
+```sql
             create table t1(
                 id int primary key, -- 主键
                 last_update datetime, -- 更新时间
@@ -24,34 +25,38 @@
             insert into t1 values (4,'2021-12-28 13:24:31','来自上海，有20岁','是个小伙伴');
             insert into t1 values (5,'2020-06-18 15:14:50','来自上海，有20岁','是个小伙伴');
 
+```
             原理说明：
             1. 使用 `IN(NULL)` 或 `NOT IN(NULL)` 会导致查询条件永远为假，从而使得查询无法返回任何结果。这不仅影响查询逻辑和结果的准确性，还可能导致性能问题和不必要的资源消耗。
             2. 对于字段的非空判断上，只有IS NULL或者 IS NOT NULL 才可能进行值过滤。
      
             反例：
-            SQL1: select * from t1 where mark1 in (null);
-            SQL2: select * from t1 where mark1 not in (null);
+            SQL1: `select * from t1 where mark1 in (null);`
+            SQL2: `select * from t1 where mark1 not in (null);`
 
             反例说明：
             1. SQL1 求取字段mark1 是NULL的记录，也就是id = 2的这条。
             2. SQL2 求取字段mark1 非NULL的记录，也就是除了id = 2 的这条的其他所有记录。
             
             反例验证： SQL1和SQL2 查询结果都为空
+```sql
             (mysql:8.3.0:db_mysql)select * from t1 where mark1 in (null);
             Empty set (0.00 sec)
 
             (mysql:8.3.0:db_mysql)select * from t1 where mark1 not in (null);
             Empty set (0.00 sec)
 
+```
             正例：
-            SQL1： select * from t1 where mark1 is null;
-            SQL2： select * from t1 where mark1 is not null;
+            SQL1： `select * from t1 where mark1 is null;`
+            SQL2： `select * from t1 where mark1 is not null;`
             
             正例说明：
             1. SQL1 求取字段mark1 是NULL的记录，也就是id = 2的这条。
             2. SQL2 求取字段mark1 非NULL的记录，也就是除了id = 2 的这条的其他所有记录。
 
             正例验证：
+```sql
             (mysql:8.3.0:db_mysql)select * from t1 where mark1 is null;
             +----+---------------------+-------+-----------------+
             | id | last_update         | mark1 | mark2           |
@@ -72,6 +77,7 @@
             4 rows in set (0.00 sec)
             
 
+```
             结论：
             1. 求取NULL和非NULL的记录，需要使用IS NULL或者IS NOT NULL，而不是使用IN (NULL) 或者 NOT IN (NULL)。
             2. NULL 的匹配不同于普通的字符串或者数据，这里需要格外注意。

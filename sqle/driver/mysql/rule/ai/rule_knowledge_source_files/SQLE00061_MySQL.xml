@@ -10,32 +10,41 @@
     <场景 名称="创建表" 数据库版本="MySQL 所有版本 " 检查方式="不连库审核" 适用句型="CREATE TABLE">
       <示例>
           前置：
+```sql
           create database db_mysql;
           use db_mysql;
 
+```
           原理说明：
           1. 创建表加上if not exists 关键词，重复创建表不会报错；不加的话，如果表已经存在，则会直接报错。
           2. 如果建表语句存在脚本语言中，加上 if not exists 子句会减少脚本的代码量。
 
           反例SQL：
+```sql
           create table t1( id int primary key ,last_updated timestamp);
 
+```
           反例说明：
           1. 标准创建表t1的语法，如表存在，则报错。
 
           反例验证： 创建表直接报错
+```sql
           (mysql:8.4.0:db_mysql)create table t1( id int primary key ,last_updated timestamp);
           ERROR 1050 (42S01): Table 't1' already exists
 
 
+```
           正例SQL：
+```sql
           create table if not exists t1( id int primary key ,last_updated timestamp);
 
+```
           正例说明：
           1. 创建新表时，需要加 if not exists 子句，否则表存在时，则报错。 
           2. if not exists 子句减少了比如脚本代码中的错误处理量。
 
           正例验证： 正常创建，不报错，只报警告
+```sql
           (mysql:8.4.0:db_mysql)create table if not exists t1( id int primary key ,last_updated timestamp);
           Query OK, 0 rows affected, 1 warning (0.01 sec)
           
@@ -47,6 +56,7 @@
           +-------+------+---------------------------+
           1 row in set (0.00 sec)
           
+```
           结论：
           1. 创建表时，必须加if not exists 子句，否则表存在时，直接报错。
           2. 加上 if not exists 子句后，创建表不报错，只报警告，不影响语句正常执行。

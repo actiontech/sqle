@@ -14,6 +14,7 @@
             <示例>
               前置：
               示例表结构:
+```sql
               create database db_mysql;
               use db_mysql;
     
@@ -40,6 +41,7 @@
                 select a+1,concat('小王',a),floor(rand()*2),'上海',ceil(rand()*20)+20 from tmp where a &lt; 1000000) 
                 select * from tmp;
 
+```
               原理说明：
               1. MySQL 提供了很多内置函数。 大部分函数都经过了优化处理，使用起来非常高效。然而在某些场景下，使用某些函数可能使得性能不如预期，大打折扣。
                 1. 这类函数比如数学计算函数：计算对数、指数、正弦值、随机数等；
@@ -52,10 +54,10 @@
               5. 使用内置函数还有一个需要考虑的点就是：如果后期有底层数据库的迁移业务，比如从 MySQL 迁移到 Oracle 等。那么使用内置函数的场景都需要做目标数据库适配，增加了代码量。
 
               反例：
-              SQL1：select json_array(id,name,age) result from customers group by result;
-              SQL2：select group_concat(name) as name_list,age from customers group by age;
-              SQL3：select concat_ws(',',id,name,sex,city,age) as row_list from customers limit 2;
-              SQL4：select count(*) from customers where find_in_set('小王1',name) ;
+              SQL1：`select json_array(id,name,age) result from customers group by result;`
+              SQL2：`select group_concat(name) as name_list,age from customers group by age;`
+              SQL3：`select concat_ws(',',id,name,sex,city,age) as row_list from customers limit 2;`
+              SQL4：`select count(*) from customers where find_in_set('小王1',name) ;`
 
               反例说明：
               1. SQL1 表示把字段id、name、age 一起来组成数组样式输出，并且按照这个数组来分组。
@@ -66,6 +68,7 @@
 
               反例验证： SQL1、SQL2、SQL3 同一种类型，只验证任意一个即可；SQL4 单独验证。
               SQL1： 由于使用JSON_ARRAY 来输出数组格式，并且以数组为基准分组，效率很差，执行时间51秒多。
+```sql
               (mysql:8.4.0:db_mysql)explain analyze select json_array(id,name,age) result from customers group by result\G
               *************************** 1. row ***************************
               EXPLAIN: - Table scan on temporary  (cost=201525..213991 rows=997088) (actual time=47881..49475 rows=1e+6 loops=1)
@@ -112,11 +115,12 @@
               1 row in set (0.00 sec)
               
 
+```
               正例：
-              SQL1： select  id,name,age from customers;
-              SQL2： select name,age from customers;
-              SQL3： select id,name,sex,city,age as row_list from customers limit 2;
-              SQL4： select count(*) from customers where name='小王1';         
+              SQL1： `select  id,name,age from customers;`
+              SQL2： `select name,age from customers;`
+              SQL3： `select id,name,sex,city,age as row_list from customers limit 2;`
+              SQL4： `select count(*) from customers where name='小王1';`         
 
               正例说明：
               1. SQL1、SQL2、SQL3 都是把内置函数上推到应用来做，数据库只输出原始数据。
@@ -124,6 +128,7 @@
 
               正例验证：
               SQL1： 执行时间从51秒到5秒，时间正常。
+```sql
               (mysql:8.4.0:db_mysql)explain analyze select  id,name,age from customers\G
               *************************** 1. row ***************************
               EXPLAIN: -&gt; Table scan on customers  (cost=100510 rows=997088) (actual time=12.1..4846 rows=1e+6 loops=1)
@@ -150,6 +155,7 @@
               1 row in set, 1 warning (0.00 sec)
               
 
+```
               结论：
               1. 不推荐在SQL 中使用内置函数。 内置函数会导致可读性差、可移植性差、性能差等。
               2. 应该有两个优化方向：

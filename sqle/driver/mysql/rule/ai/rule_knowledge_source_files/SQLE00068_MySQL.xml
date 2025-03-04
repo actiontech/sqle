@@ -11,6 +11,7 @@
             <示例>
 
                 示例：
+```sql
                 CREATE TABLE customers(
                   id INT AUTO_INCREMENT NOT NULL, -- 序号
                   name VARCHAR(32) DEFAULT 'lucy',-- 姓名
@@ -22,6 +23,7 @@
                 ) charset utf8mb4;
 
 
+```
                 原理说明：
                 1. MySQL 中可以精确到微秒级别的时间类型有两种，分别是 DATETIME和 TIMESTAMP，两个都可以存储时间数据。
                 2. TIMESTAMP 支持的时间范围从 1970-01-01 00:00:01.000000 到 2038-01-19 03:14:07.999999。使用TIMESTMAP 来存储时间，会遇到经典的2038问题。
@@ -31,6 +33,7 @@
 
                 示例验证： 
 
+```sql
                 -- 插入一条正常的记录
                 (mysql:8.0.31-cluster) insert into customers values (1,'lily',0,'shanghai',20,now());
                 Query OK, 1 row affected (0.03 sec)
@@ -62,6 +65,7 @@
                 ERROR 1292 (22007): Incorrect datetime value: '2038-01-19 03:14:08' for column 'update_time1' at row 1
 
 
+```
                 结论：
                 1. 使用timestamp的字段会遇到经典的2038问题，禁止使用。
                 2. 使用timestamp的字段会自动发生时区转换，禁止使用。
@@ -71,6 +75,7 @@
 
                 解决方案验证：
                 1. 验证时区问题：修改为datetime后，不会发生自动时区转换
+```sql
                 (mysql:8.0.31-cluster)alter table customers modify update_time1 datetime default null on update current_timestamp;
                 Query OK, 1 row affected (0.48 sec)
                 Records: 1  Duplicates: 0  Warnings: 0
@@ -103,7 +108,9 @@
                 +----+------+-----+----------+-----+---------------------+
                 1 row in set (0.00 sec)
 
+```
                 2. 超过timestamp 的上限时间插入： 可以正常插入
+```sql
                 (mysql:8.0.31-cluster)insert into customers values (2,'lily',0,'shanghai',20,'2038-01-19 03:14:08');
                 Query OK, 1 row affected (0.07 sec)
                 
@@ -117,6 +124,7 @@
                 2 rows in set (0.00 sec)
                 
 
+```
             </示例>
             <检查流程描述>
             1. 对于"CREATE TABLE..."语句，检查SQL语句，如果句子中存在  TIMESTAMP 关键词，报告违反规则。

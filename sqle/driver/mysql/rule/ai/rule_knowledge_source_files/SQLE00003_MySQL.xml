@@ -25,6 +25,7 @@
       MySQL对NULL如何判断的参数：innodb_stats_method，https://dev.mysql.com/doc/refman/8.0/en/innodb-parameters.html#sysvar_innodb_stats_method
 
       反例：
+```sql
       CREATE TABLE person (
         id INT PRIMARY KEY,
         name VARCHAR(50),
@@ -32,7 +33,9 @@
         INDEX idx_age (age)
       );
 
+```
       反例验证：
+```sql
       mysql&gt; INSERT INTO person VALUES (1, 'Alice', NULL), (2, 'Bob', 25), (3, 'Charlie', NULL);
       Query OK, 3 rows affected (0.02 sec)
       Records: 3  Duplicates: 0  Warnings: 0
@@ -68,7 +71,9 @@
 
       -- 这里我们可以看到，尽管有唯一索引，但是由于age字段允许NULL值，导致出现了重复数据
 
+```
       正例：
+```sql
       CREATE TABLE person (
         id INT PRIMARY KEY,
         name VARCHAR(50),
@@ -76,7 +81,9 @@
         INDEX idx_age (age)
       );
 
+```
       正例验证：
+```sql
       mysql&gt; INSERT INTO person VALUES (1, 'Alice', 0), (2, 'Bob', 25), (3, 'Charlie', 0);
       Query OK, 3 rows affected (0.02 sec)
       Records: 3  Duplicates: 0  Warnings: 0
@@ -109,6 +116,7 @@
 
       -- 这里我们可以看到，由于age字段不允许NULL值，唯一索引能够正常工作，防止了重复数据的插入
 
+```
       结论：
       为索引字段添加非空约束并设置合理的默认值可以避免NULL值带来的问题，如统计函数的不一致性、执行计划的不稳定性以及潜在的主从延迟问题。这样可以提高查询性能和数据一致性。
       </示例>
@@ -130,9 +138,11 @@
       原理说明：与场景【初始化表结构定义】一致
 
       示例：
+```sql
       ALTER TABLE person ADD INDEX idx_person_age(age);
       CREATE INDEX idx_person_age on person(age);
       
+```
       </示例>
       <检查流程描述>
       1. 对于 "CREATE INDEX..." 语句：

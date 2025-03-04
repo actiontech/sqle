@@ -15,6 +15,7 @@
             2. 此规则不适用于MySQL。MySQL 外键表在创建后，会隐式的直接给外键字段创建索引。
             
             示例：
+```sql
            
             CREATE TABLE parent (
                 id INT NOT NULL,
@@ -29,11 +30,13 @@
                     ON DELETE CASCADE
             ) ENGINE=INNODB;
 
+```
             示例说明：
             1. 表parent是父表；表child是子表，其中parent_id是子表的外键，引用了父表的主键。
             2. 表child的外键字段parent_id 没有创建索引，MySQL 会自动创建索引。
 
             示例验证：两表创建成功后，查看子表定义：使用 show index from child或者show create table 均可
+```sql
                 (mysql:8.3.0:db_mysql)show index from child\G
                 *************************** 1. row ***************************
                         Table: child
@@ -53,6 +56,7 @@
                 Expression: NULL
                 1 row in set (0.00 sec)
 
+```
             结论：
             1. MySQL 的外键约束在创建时会自动创建索引，不需要人为干预。此规则不适用于MySQL。
 

@@ -91,7 +91,11 @@ func getKnowledgeGraph(c echo.Context) error {
 	if err := knowledge_base.CheckKnowledgeBaseLicense(); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	knowledgeGraph, err := knowledge_base.GetGraph()
+	var req GetKnowledgeGraphReq
+	if err := controller.BindAndValidateReq(c, &req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	knowledgeGraph, err := knowledge_base.GetGraph(req.FilterByRuleName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

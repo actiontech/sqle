@@ -10,6 +10,7 @@
   <场景 名称="子查询场景" 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="SELECT、UPDATE、INSERT、INSERT ... SELECT、UNION ALL">
     <示例>
         前置：
+```sql
           create database if not exists db_mysql;
           use db_mysql;
 
@@ -59,6 +60,7 @@
           FROM (SELECT 1000 + t*1000 + (r % 1000) a FROM (SELECT 0 t UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9) A, (SELECT 0 r UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9) B) TMP;
 
 
+```
           原理说明：
           1. 可读性差： 复杂的子查询可能会使 SQL 语句变得难以理解和维护，尤其是多层嵌套的子查询。
           2. 性能角度：
@@ -68,12 +70,15 @@
 
           反例：
           SQL1：
+```sql
           -- 查询所有选了课程名为 '课程500' 的，并且最终分数大于80分的学生名字
           SELECT a.name FROM student a WHERE a.id IN (
               SELECT student_id FROM sc, course c WHERE sc.course_id = c.id
                 AND sc.score &gt; 80 AND c.name = '课程500');
 
+```
           SQL2:
+```sql
           -- 查询所有课程成绩大于80分的学生数量
           SELECT COUNT(*) FROM student a WHERE EXISTS (
               SELECT 1 FROM sc WHERE sc.student_id = a.id AND sc.score &gt; 80);
@@ -83,15 +88,19 @@
           UPDATE sc SET score = 90 WHERE student_id IN (
               SELECT id FROM student);
 
+```
           SQL4:
+```sql
           -- 删除所有不存在学生的错误选课记录
           DELETE FROM sc WHERE student_id not IN (
               SELECT id FROM student);
 
+```
           反例说明：
           示例中使用子查询对于数据量大的情况下，容易使用临时表（Start temporary），占用更多IO资源，影响SQL响应效率。
 
           反例验证： 
+```sql
           -- 通过执行计划可以看到，子查询的方式使用了临时表。临时表的数据量随着业务模型的改变而不可控，随时有可能因为临时表BUFFER 不足而写到磁盘上，应该避免。
           (mysql:8.4.0:db_mysql)explain SELECT a.name FROM student a WHERE a.id IN (               SELECT student_id FROM sc, course c WHERE sc.course_id = c.id                 AND sc.score &gt; 80 AND c.name = '课程500');
           +----+-------------+-------+------------+------+----------------+----------------+---------+--------------------+------+----------+------------------------------+
@@ -104,12 +113,16 @@
           3 rows in set, 1 warning (0.00 sec)
 
 
+```
           正例：
           SQL1：
+```sql
           -- 查询所有选了课程名为 '课程500' 的，并且最终分数大于80分的学生名字
           SELECT a.name FROM student a JOIN sc ON a.id = sc.student_id JOIN course c ON sc.course_id = c.id WHERE sc.score &gt; 80 AND c.name = '课程500';
 
+```
           SQL2:
+```sql
           -- 查询所有课程成绩大于80分的学生数量
           SELECT COUNT(DISTINCT a.id) FROM student a JOIN sc ON a.id = sc.student_id WHERE sc.score &gt; 80;
 
@@ -117,14 +130,18 @@
           -- 更新所有学生的分数为90
           UPDATE sc JOIN student ON sc.student_id = student.id SET sc.score = 90;
 
+```
           SQL4:
+```sql
           -- 删除所有不存在学生的错误选课记录
           DELETE sc FROM sc LEFT JOIN student ON sc.student_id = student.id WHERE student.id IS NULL;
 
+```
           正例说明：
           JOIN操作通常比子查询更直观，逻辑清晰，便于理解和维护。优化器对JOIN的优化通常更好，未来如果表的索引优化，性能会有显著提升。JOIN语句在添加更多条件或表时更容易扩展。
 
           正例验证：
+```sql
           -- 通过执行计划观测：临时表消失，充分利用表索引，效率可以保证。
           (mysql:8.4.0:db_mysql)explain SELECT a.name FROM student a JOIN sc ON a.id = sc.student_id JOIN course c ON sc.course_id = c.id WHERE sc.score &gt; 80 AND c.name = '课程500';
           +----+-------------+-------+------------+------+----------------+----------------+---------+--------------------+------+----------+-------------+
@@ -136,6 +153,7 @@
           +----+-------------+-------+------------+------+----------------+----------------+---------+--------------------+------+----------+-------------+
           3 rows in set, 1 warning (0.00 sec)
 
+```
           总结：
           1. 子查询会产生临时表，临时表大小不可控，极易迁移到磁盘，极大的降低查询性能。
           2. 子查询应该修改为多表关联的方式。数据库有多重表关联算法可以对查询进行最优的处理。

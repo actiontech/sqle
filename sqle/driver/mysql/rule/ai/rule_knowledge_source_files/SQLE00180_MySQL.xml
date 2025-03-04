@@ -13,6 +13,7 @@
         <场景 名称="存在子查询的数据查询操作" 数据库版本="MySQL 8.0" 检查方式="连库审核" 适用句型="SELECT、UPDATE、DELETE、UNION、WITH、INSERT ... SELECT">
             <示例>
                 前置：
+```sql
                 use db_mysql;
                 CREATE TABLE customers (
                     id int, -- 编号
@@ -34,14 +35,17 @@
                       from tmp where a &lt; 1000001
                 ) table tmp;
 
+```
                 原理说明：
                 1. filter 和 filtered 在MySQL中是一个意思。
                 2. 官方文档中 filtered 列表示：
+```sql
                    The filtered column indicates an estimated percentage of table rows that are filtered by the table condition. 
                    The maximum value is 100, which means no filtering of rows occurred. 
                    Values decreasing from 100 indicate increasing amounts of filtering. 
                    rows shows the estimated number of rows examined and rows × filtered shows the number of rows  that are joined with the following table. 
                    For example, if rows is 1000 and filtered is 50.00 (50%), the number of rows to be joined with the following table is 1000 × 50% = 500.
+```
                    翻译过来就是：
                    1. filtered 列是表根据条件筛选行的百分比值，最大值为100，这意味着没有对其进行筛选。
                    2. 从100开始递减的值表示过滤量的增加。rows显示检查的估计行数，rows × filtered 显示表连接的行数。
@@ -50,9 +54,11 @@
                 4. 如果单纯从执行计划中出现filtered的个数来讲，个数越少越好。 所以本规则的目的是想办法减少SQL 执行计划中的filtered 个数。
     
                 反例:
+```sql
                 select count(*) from customers tb_outer where name in  (select name from customers tb_inner where name='lily75');
                 select count(*) from customers tb_outer where exists (select 1 from customers tb_inner where tb_inner.name = tb_outer.name and tb_inner.name='lily75');
 
+```
                 注：其他句型与SELECT句型语法相同，都是指SQL语句中包含SELECT的情况，因此省略相似的示例。
 
                 反例说明:
@@ -60,6 +66,7 @@
                 2. 如果 filter 对应的字段 NDV 值较低，就需要想办法减少执行计划中出现 filter 关键词的个数。
         
                 示例验证：
+```sql
                 -- 执行示例SQL，执行时间为0.52秒。
                 (mysql:8.3.0:db_mysql)select count(*) from customers tb_outer where name in  (select name from customers tb_inner where name='lily75');
                 +----------+
@@ -86,13 +93,17 @@
                 
                 1 row in set (0.00 sec)
     
+```
                 正例：
+```sql
                 select count(*) from customers tb_outer where id in  (select id from customers tb_inner where name='lily75');   
     
+```
                 正例说明：
                 1. 由于name 字段的NDV比较低，所以选择使用主键字段id来过滤，主键字段的NDV值最高，性能最好，可以直接减少执行计划中的 filter 关键词。
 
                 示例验证：
+```sql
                 -- 执行示例SQL，执行时间由0.52秒降低到0.31秒。
                 (mysql:8.3.0:db_mysql)select count(*) from customers tb_outer where id in  (select id from customers tb_inner where name='lily75');
                 +----------+
@@ -113,10 +124,13 @@
                 
                 1 row in set (0.00 sec)
                 
+```
                 示例结论：
                 1. 由于使用了选择性更好的主键字段来代替普通字段，从而使得执行计划减少了 filter 关键词的个数。
                 2. 如果需要进一步优化此SQL，请参考其他规则。比如过滤字段建索引或者更改SQL 语句。比如示例SQL 可以进一步优化为以下：
+```sql
                     select count(id) from customers where name='lily75'; 
+```
                 3. 由于MySQL 8.0 之前的版本不支持explain format=tree 的输出，所以此规则仅在版本大于 MySQL 8.0 生效。
 
             </示例>

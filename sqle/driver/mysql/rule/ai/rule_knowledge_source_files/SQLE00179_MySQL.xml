@@ -11,6 +11,7 @@
         <场景 名称="SQL 执行过程中避免内部数据类型转换" 数据库版本="MySQL 8.0" 检查方式="连库审核" 适用句型="SELECT、UPDATE、DELETE">
             <示例>
                 前置：
+```sql
                 use db_mysql;
                 CREATE TABLE customers (
                     id int, -- 编号
@@ -37,11 +38,14 @@
                 ) table tmp;
                 
     
+```
                 反例：
+```sql
                 select count(*) from customers where log_date = now();
                 update customers set name='lily175' where log_date = now();
                 delete from customers where log_date = now()
 
+```
                 反例说明:
                   1. 执行计划中出现 due to type or collation conversion 代表字段在匹配的过程中发生了隐式转换。
                   2. 隐式转换出现后，字段上即使有合适的索引，也不会被优化器使用，取而代之的是使用全表扫。
@@ -49,6 +53,7 @@
     
                 示例验证：
 
+```sql
                    -- 实际执行示例SQL，执行时间为93毫秒。
                    (mysql:8.0.31-cluster)select count(*) from customers where log_date=now();
                    +----------+
@@ -94,16 +99,20 @@
                                    
                 
     
+```
                 正例：
+```sql
                 select count(*) from customers where log_date = concat(now(),'');
                 update customers set name='lily175' where log_date = concat(now(),'');
                 delete from customers where log_date = concat(now(),'');
     
+```
                 正例说明：
                   1. 过滤条件显式转换为和字段 log_date 一样的字符类型，可避免优化器内部隐式转换数据类型，从而能正确的使用字段log_date上的索引。
                   2. 可以查看正例SQL 的执行计划，并立即打印 show warnings信息，发现关键词 due to type or collation conversion on field 消失。
 
                 示例验证：
+```sql
                 -- 实际执行示例SQL，执行时间由93毫秒降低到0毫秒。
                 (mysql:8.0.31-cluster)select count(*) from customers where log_date=concat(now(),'');
                 +----------+
@@ -140,6 +149,7 @@
                 
     
     
+```
                 示例结论：
                   1. 在 MySQL 执行计划中如果出现了 due to type or collation conversion on field 关键词，代表过滤字段出现隐式类型转换，必须要消除这个隐患，修改SQL 语句过滤条件。
                

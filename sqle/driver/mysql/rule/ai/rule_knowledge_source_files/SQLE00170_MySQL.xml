@@ -11,6 +11,7 @@
             <示例>
               前置：
               -- 示例表结构:
+```sql
               CREATE TABLE customers(
                 id int NOT NULL, -- 序号
                 name VARCHAR(32) DEFAULT '',-- 姓名
@@ -22,28 +23,36 @@
 
               insert into customers values (1,'小旭',0,'中华人民共和国北京市',48);
 
+```
               原理：
               1. 表的字段数据类型长度可以修改为比之前的长。修改为更长的数据类型，可以让此字段存储比原来更多的数据；
               2. 也可以修改为比原来的短。但是需要注意的是：不能比当前字段里存储的值长度短，否则会报错。因为字段的长度要能存放当前的所有数据才可以。
 
               示例：
+```sql
               alter table customers modify city varchar(4);
+```
               或者
+```sql
               alter table customers change city city varchar(4);
 
+```
               示例说明：
               1. 修改表 customers 的字段 city 长度变为 4.
 
               示例验证：
               修改比字段city 里存放的值还小的长度，直接报错。
+```sql
               (mysql:8.3.0:db_mysql)alter table customers modify city varchar(4);
               ERROR 1265 (01000): Data truncated for column 'city' at row 1              
 
+```
               结论：
               1. 不能修改字段的数据类型比字段里存放的值长度小，否则会报错。
 
               解决方法：
               1. 如果非要把字段的长度变小，可以先查询需要修改的字段值的长度是否允许变更再执行DDL。
+```sql
               (mysql:8.3.0:db_mysql)select max(char_length(city)) "max_city_length" from customers;
               +-----------------+
               | max_city_length |
@@ -71,6 +80,7 @@
               +-------+-------------+------+-----+---------+-------+
               5 rows in set (0.00 sec)
               
+```
             </示例>
             <检查流程描述>
               1. 对于"ALTER TABLE... modify ..."语句：

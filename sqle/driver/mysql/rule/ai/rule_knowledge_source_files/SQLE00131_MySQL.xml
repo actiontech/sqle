@@ -10,6 +10,7 @@
       <场景 名称="随机查询" 数据库版本="MySQL 8.0" 检查方式="不连库审核" 适用关键词="ORDER BY">
         <示例>
               示例表结构:
+```sql
               create database db_mysql;
               use db_mysql;
     
@@ -32,13 +33,17 @@
                 select a+1,concat('小王',a),floor(rand()*2),'上海',ceil(rand()*20)+20 from tmp where a &lt; 5000000) 
                 select * from tmp;
 
+```
           反例：
+```sql
           select * from customers order by rand() limit 5;
+```
           反例说明：
           1. 随机检索出表的5行，可以使用order by rand()。
           2. 但是order by rand() 根据随机数来排序，而随机数每行都要计算一次，完后收集排序，效率非常差。
 
           反例验证： 使用order by rand() 随机检索5条记录，时间接近5秒，性能太差了。
+```sql
           (mysql:8.0.31-cluster)select * from customers order by rand() limit 5;
             +---------+---------------+-----+--------+-----+
             | id      | name          | sex | city   | age |
@@ -51,7 +56,9 @@
             +---------+---------------+-----+--------+-----+
             5 rows in set (4.92 sec)
          
+```
           执行计划：全表扫，并且使用了临时表和文件排序
+```sql
           (mysql:8.0.31-cluster)explain select * from customers order by rand() limit 5\G
           *************************** 1. row ***************************
                     id: 1
@@ -70,7 +77,9 @@
 
 
 
+```
           正例： MySQL 8.0 以上版本使用WITH 表达式
+```sql
           with tmp(a) as (
             select ceil(5000000*rand()) 
             union all 
@@ -84,7 +93,9 @@
             ) 
           select b.* from tmp a join customers b on a.a = b.id;
 
+```
           或者MySQL 8.0 以下版本使用非WITH 表达式，效果一致。
+```sql
           select * from (
             select ceil(5000000*rand()) a
             union all 
@@ -99,10 +110,12 @@
             a join customers b on a.a = b.id;
 
 
+```
           正例说明：
           1. 避免order by rand()，使用主表和基于主键的随机通用表达式来检索随机数。
           2. 性能远超 order by rand()，避免了随机数排序。
           正例验证：结果秒出。
+```sql
           (mysql:8.0.31-cluster)with tmp(a) as (
                 -&gt; select ceil(5000000*rand()) 
                 -&gt; union all 
@@ -125,7 +138,9 @@
             +---------+---------------+-----+--------+-----+
             5 rows in set (0.00 sec)
           
+```
           执行计划： 走主键，消除了临时表和排序
+```sql
           (mysql:8.0.31-cluster)explain 
            -&gt;   with tmp(a) as (
               -&gt; select ceil(5000000*rand()) 
@@ -152,6 +167,7 @@
         7 rows in set, 1 warning (0.00 sec)
 
 
+```
           结论：
           1. 使用 order by rand() 来检索随机行，性能很差，执行时间长。
           2. 可以使用生成随机主键的方式，结合原表做关联检索随机行，性能大幅提升。

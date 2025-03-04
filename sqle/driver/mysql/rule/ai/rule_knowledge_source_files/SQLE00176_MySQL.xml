@@ -10,6 +10,7 @@
   <场景 名称="使用HINT来改变查询计划" 数据库版本="MySQL 版本大于 5.7" 检查方式="不连库审核" 适用句型="SELECT、INSERT、UPDATE、DELETE、REPLACE">
     <示例>
         示例表结构:
+```sql
         create database db_mysql;
         use db_mysql;
 
@@ -48,6 +49,7 @@
         insert into customers_small select * from customers limit 1000;
 
 
+```
         原理说明：
         1. MySQL 的优化器会根据表的物理设计、表的数据分布、查询的业务形态、表以及索引的统计信息等数据来生成最优的执行计划。
         2. 如果表的增删改比较频繁而导致表、索引的统计信息更新不够及时，优化器则会生成不够优化的执行计划。此时就需要使用HINT来告诉优化器走合适的索引、合适的表连接顺序、合适的表连接算法等优化策略。
@@ -59,14 +61,18 @@
           5. SESSION 变量指定类： SET_VAR
         4. 使用方法如下：
           1. 通用写法：
+```sql
             SELECT /*+ ... */ ...
             INSERT /*+ ... */ ...
             REPLACE /*+ ... */ ...
             UPDATE /*+ ... */ ...
             DELETE /*+ ... */ ...
+```
           2. 兼容老版本写法：
+```sql
             FROM ... USE/FORCE/IGNORE [INDEX/KEY] FOR [JOIN/ORDER BY/GROUP BY]
             
+```
         5. 一般，HINT属于临时性指定SQL 的优化方式，不可标准化使用；标准化使用HINT会导致如下问题：
           1. SQL 的优化方式受限。优化器可能会强制按照HINT的方式来执行而放弃最优的执行计划。
           2. SQL 的写法不够标准化。 每种数据库的HINT写法不一样，名字也不一样，后期数据库迁移会导致迁移工作量非标准化，增加工作量。
@@ -75,36 +81,56 @@
 
         反例：
         SQL1：
+```sql
         select /*+ index (customers idx_sex_customers) */ * from customers where age = 20;
+```
         或者
+```sql
         select age from customers force index for group by(idx_sex_customers) group by age;
+```
         或者
+```sql
         select age from customers force index for order by(idx_sex_customers) order by  age;
+```
         或者
+```sql
         select count(*) from customers a join customers_small b ignore index for join(primary) where a.id = b.id;
 
+```
         SQL2：
+```sql
         select /*+ join_order(a,b) */ count(*) from customers a join customers_small b where a.id = b.id;
+```
         或者
+```sql
         select straight_join count(*) from customers a join customers_small b where a.id = b.id;
 
+```
         SQL3：
+```sql
         select /*+ set_var(max_execution_time=1) */ * from customers order by name desc limit 1;
 
+```
         SQL4：
+```sql
         update customers force index (idx_sex_customers) set sex = 1 where age = 20;
 
 
+```
         SQL5：
+```sql
         delete /*+ index(customers idx_sex_customers) */ from customers where age = 20;
 
+```
         SQL6：
+```sql
         insert /*+ index(customers idx_sex_customers) */ into customers values (9999999,'xiaozhangxiaowangxiaofeng',0,'shanghai',90);
         replace /*+ index(customers idx_sex_customers) */ into customers values(9999999,'xiaozhangxiaowangxiaofeng',0,'shanghai',90);
 
 
 
 
+```
         反例说明：
         1. 示例中的SQL 全部使用HINT来给影响优化器生成最优的执行计划，不可取。
         2. 其中SQL1 提示用错误的索引:其中包括GROUP BY、ORDER BY、关联条件、单表过滤；SQL2 提示使用错误的连接顺序；SQL3 提示使用错误的连接耗时。
@@ -114,6 +140,7 @@
         1. 验证三个典型的SQL1、SQL2、SQL3，一个是控制访问路径的，也就是索引的访问；第二个是控制表连接顺序的；第三个是控制执行时长的；
           第一个：
           1. 带INDEX的HINT，导致优化器生成错误的执行计划
+```sql
           (mysql:8.4.0:db_mysql)explain select /*+ index (customers idx_sex_customers) */ * from customers where age = 20;
           +----+-------------+-----------+------------+------+---------------+------+---------+------+--------+----------+-------------+
           | id | select_type | table     | partitions | type | possible_keys | key  | key_len | ref  | rows   | filtered | Extra       |
@@ -122,12 +149,16 @@
           +----+-------------+-----------+------------+------+---------------+------+---------+------+--------+----------+-------------+
           1 row in set, 1 warning (0.00 sec)
 
+```
           2. 执行时间： 1.22 秒。
+```sql
           (mysql:8.4.0:db_mysql)select /*+ index (customers idx_sex_customers) */ * from customers where age = 20;
           Empty set (1.22 sec)
 
+```
           第二个：
           1. 执行计划：改变了两表连接顺序
+```sql
           (mysql:8.4.0:db_mysql)explain select /*+ join_order(a,b) */ count(*) from customers a join customers_small b where a.id = b.id;
           +----+-------------+-------+------------+--------+---------------+-------------------+---------+---------------+--------+----------+-------------+
           | id | select_type | table | partitions | type   | possible_keys | key               | key_len | ref           | rows   | filtered | Extra       |
@@ -137,7 +168,9 @@
           +----+-------------+-------+------------+--------+---------------+-------------------+---------+---------------+--------+----------+-------------+
           2 rows in set, 1 warning (0.00 sec)
           
+```
           2. 执行时间：耗时6秒。
+```sql
           (mysql:8.4.0:db_mysql)select /*+ join_order(a,b) */ count(*) from customers a join customers_small b where a.id = b.id;
           +----------+
           | count(*) |
@@ -147,49 +180,73 @@
           1 row in set (6.02 sec)
 
 
+```
           第三个： 
           1. 使用set_var来控制执行时长，超过1毫秒提前终止执行。
+```sql
           (mysql:8.4.0:db_mysql)select /*+ set_var(max_execution_time=1) */ * from customers order by name desc limit 1;
           ERROR 3024 (HY000): Query execution was interrupted, maximum statement execution time exceeded
 
         
+```
         正例：
         SQL1：
+```sql
         select * from customers where age = 20;
+```
         或者
+```sql
         select age from customers  group by age;
+```
         或者
+```sql
         select age from customers  order by  age;
 
+```
         SQL2：
+```sql
         select  count(*) from customers a join customers_small b where a.id = b.id;
 
+```
         SQL3：
+```sql
         select  * from customers order by name desc limit 1;
 
+```
         SQL4：
+```sql
         update customers  set sex = 1 where age = 20;
 
+```
         SQL5：
+```sql
         delete from customers where age = 20;
 
+```
         SQL6：
+```sql
         insert  into customers values (9999999,'xiaozhangxiaowangxiaofeng',0,'shanghai',90);
+```
         或者
+```sql
         replace  into customers values(9999999,'xiaozhangxiaowangxiaofeng',0,'shanghai',90);
 
 
 
+```
         正例说明：
         1. 正常SQL，不带HINT；让优化器自己选择最优的执行计划执行。
 
         正例验证：同样验证SQL1、SQL2、SQL3。
         1. SQL1：
           1. 执行对应SQL：执行时间只有10毫秒
+```sql
           (mysql:8.4.0:db_mysql)select * from customers where age = 20;
           Empty set (0.01 sec)
 
+```
           2. 不带HINT 的SQL 走索引idx_age_customers，走最优的执行计划。
+```sql
           (mysql:8.4.0:db_mysql)explain select * from customers where age = 20;
           +----+-------------+-----------+------------+------+-------------------+-------------------+---------+-------+------+----------+-------+
           | id | select_type | table     | partitions | type | possible_keys     | key               | key_len | ref   | rows | filtered | Extra |
@@ -198,7 +255,9 @@
           +----+-------------+-----------+------------+------+-------------------+-------------------+---------+-------+------+----------+-------+
           1 row in set, 1 warning (0.01 sec)
 
+```
         2. SQL2: 执行时间只有10毫秒，执行计划也走了最正确的表连接顺序。
+```sql
         (mysql:8.4.0:db_mysql)select  count(*) from customers a join customers_small b where a.id = b.id;
         +----------+
         | count(*) |
@@ -216,7 +275,9 @@
         +----+-------------+-------+------------+--------+---------------+---------+---------+---------------+------+----------+-------------+
         2 rows in set, 1 warning (0.00 sec)
         
+```
         3. SQL3： SQL 正常执行，不会提前终止。
+```sql
         (mysql:8.4.0:db_mysql)select  * from customers order by name desc limit 1;
         +---------+--------------+-----+--------+-----+
         | id      | name         | sex | city   | age |
@@ -225,6 +286,7 @@
         +---------+--------------+-----+--------+-----+
         1 row in set (1.67 sec)
 
+```
         结论：
         1. 不建议SQL 语句添加 HINT，有可能会导致错误的执行计划，增加SQL 的查询耗时，消耗更多的资源；并且由于加HINT 是非标操作，后期数据库移植复杂度增加，项目时间不可控。
     </示例>

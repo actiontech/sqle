@@ -12,6 +12,7 @@
     <场景 名称="自定义函数使用" 数据库版本="MySQL 5.7.25" 检查方式="不连库审核" 适用句型="CREATE FUNCTION">
       <示例>
       前置：
+```sql
       -- 创建测试数据库和表
       CREATE DATABASE test_db;
       USE test_db;
@@ -22,10 +23,12 @@
       );
       INSERT INTO users VALUES (1, 'John', 30), (2, 'Alice', 25);
 
+```
       原理说明：
       自定义函数和存储过程维护较困难，主要因为它们的逻辑封装在数据库中，不易于版本控制和代码审查。依赖性高是指一旦函数逻辑改变，可能会影响到所有调用该函数的SQL语句。跨库使用困难是因为函数定义存储在特定数据库中，无法直接在其他数据库中使用。此外，自定义函数在使用时还有一些限制，如无法使用事务相关语句、无法直接产生输出，以及无法在函数体内使用USE语句切换数据库。
 
       反例：
+```sql
       DELIMITER //
       CREATE FUNCTION get_user_age(user_id INT) RETURNS INT
       BEGIN
@@ -38,7 +41,9 @@
       -- 使用自定义函数
       SELECT id, name, get_user_age(id) AS age FROM users;
 
+```
       反例验证：
+```sql
       mysql&gt; DELIMITER //
       mysql&gt; CREATE FUNCTION get_user_age(user_id INT) RETURNS INT
       -&gt; BEGIN
@@ -58,7 +63,9 @@
       +----+-------+------+
       2 rows in set (0.01 sec)
 
+```
       正例：
+```sql
       -- 不使用自定义函数，直接在查询中获取用户年龄
       SELECT id, name, age FROM users;
 
@@ -71,7 +78,9 @@
             END AS age_category
       FROM users u;
 
+```
       正例验证：
+```sql
       mysql&gt; SELECT id, name, age FROM users;
       +----+-------+------+
       | id | name  | age  |
@@ -95,6 +104,7 @@
       |  2 | Alice | Adult        |
       +----+-------+--------------+
       2 rows in set (0.00 sec)
+```
       </示例>
       <检查流程描述>
 1. 对于 "CREATE FUNCTION ..." 语句，直接报告违反规则。

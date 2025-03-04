@@ -13,6 +13,7 @@
    <场景 名称="创建索引" 数据库版本="MySQL" 检查方式="不连库审核" 适用关键词="UNIQUE" 适用句型="CREATE、ALTER">
     <示例>  
       示例：
+```sql
       CREATE TABLE order_his(
           id BIGINT,
           name varchar(64) DEFAULT '',
@@ -21,6 +22,7 @@
       CREATE UNIQUE INDEX IDX_UK_ORDER_HIS_NAME ON order_his (name);
       ALTER TABLE order_his ADD UNIQUE INDEX IDX_UK_ORDER_HIS_NAME(id);
 
+```
       示例说明：
       数据库系统默认的SQL模式下（即ANSI_QUOTES禁用），数据库对象名定义允许使用字符：ASCII: 【0-9,a-z,A-Z$_】以及Extended:【U+0080 .. U+FFFF】，且允许数字开头但不能由全数字组成。索引的命名也遵从数据库对象命名规范。
       从业务实践角度出发，遵循指定格式且避免特殊字符的使用，可以提高代码的可读性、可维护性，并减少潜在的兼容性和语法问题。
@@ -41,8 +43,10 @@
    <场景 名称="重命名索引" 数据库版本="MySQL" 检查方式="连库审核" 适用关键词="INDEX" 适用句型="ALTER">
     <示例>  
       示例：
+```sql
       ALTER TABLE order_his RENAME INDEX name TO IDX_UK_ORDER_HIS_NAME;
 
+```
       示例说明：与【创建索引】场景一致。
     </示例>
     <检查流程描述>

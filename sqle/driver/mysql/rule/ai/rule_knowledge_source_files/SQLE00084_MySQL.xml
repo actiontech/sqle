@@ -9,26 +9,33 @@
   <规则场景>
     <场景 名称="不建议使用显式临时表" 数据库版本="MySQL 8.0" 检查方式="不连库审核" 适用句型="CREATE">
         前置:
+```sql
         create database db_mysql;
         use db_mysql;
 
+```
         原理说明：
         1. 显式的临时表是会话级别，数据不同，会造成严重的多SESSION 重复创建的临时表、表数据不一致的问题。
         2. MySQL 可以在一个SESSION 创建同样的临时表和磁盘表，会造成代码混乱、出错的概率。
         3. MySQL 的临时表在同一个SQL 执行过程中仅允许打开一次，多次打开会报错，索引应该避免显式临时表的使用，使用磁盘表代替。
 
         示例：
+```sql
         create temporary table t1(id int primary key, r1 int);
 
+```
         示例验证：
         1. SESSION 1 验证显式创建的临时表
+```sql
         (mysql:8.4.0:db_mysql)create temporary table t1(id int primary key, r1 int);
         Query OK, 0 rows affected (0.00 sec)
 
         (mysql:8.4.0:db_mysql)insert into t1 values (1,100);
         Query OK, 1 row affected (0.01 sec)
 
+```
         2. SESSION 1 创建同名磁盘表，无报错，可以正常创建，但是无法正常插入数据，并且查询出来的数据是临时表的数据。
+```sql
         (mysql:8.4.0:db_mysql)create table t1(c1 varchar(2000));
         Query OK, 0 rows affected (0.22 sec)
 
@@ -43,11 +50,15 @@
         +----+------+
         1 row in set (0.00 sec)
 
+```
         3. SESSION 1 里 对临时表的多次关联会直接报错：不允许多次打开临时表。
+```sql
         (mysql:8.4.0:db_mysql)select * from t1 a ,t1 b;
         ERROR 1137 (HY000): Can't reopen table: 'a'
 
+```
         4. 如果要插入磁盘表t1，必须开启一个新的SESSION 2，SESSION 2 可以给磁盘表t1插入数据。
+```sql
         (mysql:8.4.0:db_mysql)insert into t1 values ('mysql');
         Query OK, 1 row affected (0.04 sec)
 
@@ -59,6 +70,7 @@
         +-------+
         1 row in set (0.00 sec)
 
+```
         总结：
         1. MySQL的显式临时表不建议创建和使用，有以下几个原因：
           1. 只对本SESSION 有效，其他SESSION 访问不了。
@@ -75,6 +87,7 @@
     <场景 名称="内部临时表优化示例" 数据库版本="MySQL 8.0" 检查方式="连库审核" 适用句型="SELECT、INSERT...SELECT、UNION、UPDATE、DELETE、WITH">
       <示例>
           前置:
+```sql
           create database db_mysql;
           use db_mysql;
 
@@ -111,7 +124,9 @@
           analyze table customers_records;
     
           
+```
         示例：
+```sql
         -- SQL1， 从视图中求最大的age，由于视图本身的算法是temptable，所以势必有临时表产生。
         select * from v_s_age order by age desc limit 1;
 
@@ -133,6 +148,7 @@
 
 
 
+```
         示例说明：
         1. 所谓运行态临时表就是指的是在SQL 运行期间产生的临时表，SQL 执行完后立即销毁。当产生这些运行态临时表的时候，SQL 性能往往效率很差。 我们要做的就是尽可能的避免产生这种运行态的临时表。
         2. MySQL 8.0 目前在如下场景中会用到临时表：
@@ -148,6 +164,7 @@
            2. SQL 本身无法进行优化的，得和开发沟通，调整业务SQL本身的逻辑。
 
         示例验证：
+```sql
         SQL 1: select * from v_s_age order by age desc limit 1;
         -- 这条SQL 的目的是求取表customers 中age 最大的记录，由于使用了 temptable 算法的视图，所以必然会产生临时表。
         -- 查看优化前的部分执行计划：执行计划中 using_temporary_table 开关为 true，代表使用了临时表，总成本为4.75.
@@ -551,6 +568,7 @@
         1 row in set, 1 warning (0.00 sec)
 
 
+```
         结论：
           1. SQL 的执行中产生了不必要的临时表，由于临时表的生成、数据载入、释放等都需要浪费系统资源，所以要避免生成临时表的SQL 语句。
           2. 此类 SQL 优化的方式可以分为好几种。比如 直接添加索引、或者根据SQL 语义来修改SQL 使其避免临时表的生成。

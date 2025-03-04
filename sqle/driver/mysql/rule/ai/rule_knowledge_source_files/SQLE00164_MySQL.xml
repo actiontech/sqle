@@ -11,6 +11,7 @@
       <原理说明 名称="使用并行查询" 数据库版本="MySQL所有版本">
       <示例>
           前置：示例表结构
+```sql
           create database db_mysql;
           use db_mysql;
 
@@ -34,6 +35,7 @@
             select * from tmp;
       
 
+```
           原理说明：
           使用并行查询的缺点主要有以下几点：
           1. 硬件和软件要求高：并行查询需要支持多个 CPU 或服务器的硬件和软件环境，这可能需要更高的成本和复杂的配置。
@@ -45,13 +47,16 @@
 
 
           示例：
+```sql
           select count(*),age from customers group by age;
 
+```
           示例说明：
           1. 从客户表里求取每个年龄的分组个数。
 
           示例验证： 
           1. 执行时间 5秒。
+```sql
           (mysql:8.4.0:db_mysql)select count(*),age from customers group by age;
           +----------+-----+
           | count(*) | age |
@@ -79,8 +84,10 @@
           +----------+-----+
           20 rows in set (4.98 sec)
 
+```
           2. 查看执行计划：全表扫customers的成本为50913
           
+```sql
           (mysql:8.4.0:db_mysql)explain format=tree select count(*),age from customers group by age;
           +-------------------------------------------------------------------------------------------------------------------------------------+
           | EXPLAIN                                                                                                                             |
@@ -92,8 +99,10 @@
           +-------------------------------------------------------------------------------------------------------------------------------------+
           1 row in set (0.01 sec)
           
+```
           3. 修改 DDL 参数，关闭并行DDL。
           
+```sql
           (mysql:8.4.0:db_mysql)set innodb_ddl_threads=1;
           Query OK, 0 rows affected (0.00 sec)
           
@@ -107,8 +116,10 @@
           +------------------------+---------+
           3 rows in set (0.01 sec)
 
+```
           4. 再次执行，时间没有变化。
           
+```sql
           (mysql:8.4.0:db_mysql)select count(*),age from customers group by age;
           +----------+-----+
           | count(*) | age |
@@ -136,7 +147,9 @@
           +----------+-----+
           20 rows in set (5.14 sec)
           
+```
           5. 查看执行计划： 还是老样子。
+```sql
           (mysql:8.4.0:db_mysql)explain format=tree select count(*),age from customers group by age;
           +-------------------------------------------------------------------------------------------------------------------------------------+
           | EXPLAIN                                                                                                                             |
@@ -151,6 +164,7 @@
           (mysql:8.4.0:db_mysql)
                    
 
+```
           总结：
           1. MySQL 里查询表并不能使用并行，并行只存在于DDL 操作。 所以此规则不适用于MySQL数据库。
                

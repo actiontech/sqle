@@ -10,6 +10,7 @@
         <场景 名称="查询表记录" 数据库版本="大于等于 MySQL 5.7 " 检查方式="不连库审核" 适用句型="SELECT">
             <示例>
             前置：
+```sql
             create database db_mysql;
             use db_mysql;
   
@@ -34,6 +35,7 @@
               select a+1,concat('小王',a),floor(rand()*2),'上海',ceil(rand()*20)+20 from tmp where a &lt; 1000000) 
               select * from tmp;
         
+```
             原理说明：
             1. 如果表中有很多字段，而业务只需要很少的几个字段，那么使用SELECT * 会导致不必要的数据传输、不必要的数据处理，影响查询的性能；如果查询的字段不完全包含在索引列中，还会造成不必要的回表扫描。
             2. 如果对表删除、添加、改字段名等操作导致SELECT * 的列表发生变化，原先映射好的应用程序代码需要联代修改，增加应用代码的处理量；如果应用端不处理，可能会导致查询错误。
@@ -41,16 +43,19 @@
             3. 可读性问题。 SELECT * 比 SELECT 具体字段名 可读性差。
 
             反例：
+```sql
             select * from customers;
             select * from customers where 1=1;
             select * from customers where age = 25;
 
+```
             反例说明：
             1. 示例中的select * 语句可读性差、造成不必要的回表等，降低查询性能。
             2. 输出不必要的数据量。
 
             反例验证： 
             1. 验证SQL 的执行计划，对比输出信息。SELECT * 走索引idx_age_customers，但是EXTRA输出里是NULL，需要回表扫磁盘数据。
+```sql
             (mysql:8.3.0:db_mysql)explain  select * from customers where age=25;
             +----+-------------+-----------+------------+------+-------------------+-------------------+---------+-------+-------+----------+-------+
             | id | select_type | table     | partitions | type | possible_keys     | key               | key_len | ref   | rows  | filtered | Extra |
@@ -59,7 +64,9 @@
             +----+-------------+-----------+------------+------+-------------------+-------------------+---------+-------+-------+----------+-------+
             1 row in set, 1 warning (0.00 sec)
 
+```
             2.验证 select * 执行时间与数据输出大小：执行时间1.2秒、输出2.5MB的数据。
+```sql
             (mysql:8.3.0:db_mysql)tee select_all.txt
             Logging to file 'select_all.txt'
             (mysql:8.3.0:db_mysql)select * from customers where age = 25;
@@ -72,17 +79,21 @@
             [root@ytt-pc scripts]# du -sh select_all.txt 
             2.5M	select_all.txt
 
+```
             正例：
+```sql
             select age from customers;
             select age from customers where 1=1;
             select age from customers where age = 25;
 
+```
             正例说明：
             1. 只查询出需要的列，减少了多余列的查询，可以走字段 age 的全索引扫，避免回表;
             2. 输出更少的数据量。
 
             正例验证：
             1. 同样验证SQL 的执行计划，对比输出信息。SELECT age 走索引idx_age_customers，但是EXTRA输出里是 Using index ，代表Covering index，也就是覆盖索引扫描，不用回表扫磁盘数据。
+```sql
             (mysql:8.3.0:db_mysql)explain  select age from customers where age=25;
             +----+-------------+-----------+------------+------+-------------------+-------------------+---------+-------+-------+----------+-------------+
             | id | select_type | table     | partitions | type | possible_keys     | key               | key_len | ref   | rows  | filtered | Extra       |
@@ -91,7 +102,9 @@
             +----+-------------+-----------+------------+------+-------------------+-------------------+---------+-------+-------+----------+-------------+
             1 row in set, 1 warning (0.00 sec)
 
+```
             2.验证 select age 实际的执行时间与输出数据量：执行时间0.02秒、输出数据392K。比SELECT * 要优化很多。
+```sql
             (mysql:8.3.0:db_mysql)tee select_age.txt
             Logging to file 'select_age.txt'
             (mysql:8.3.0:db_mysql)select age from customers where age = 25;
@@ -107,6 +120,7 @@
 
 
 
+```
             总结：
             1. select *  会导致回表扫，性能差，可读性差，建议只select  需要的列。
 

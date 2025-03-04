@@ -10,6 +10,7 @@
       <原理 关键词="GROUP BY" 数据库版本="MySQL 所有版本" 检查方式="不连库检查" 适用句型="SELECT">
         <示例>
           示例:
+```sql
           create database db_mysql;
           use db_mysql;
           CREATE TABLE customers(
@@ -30,10 +31,13 @@
         ('小娜',1,'深圳',25),('小五',0,'深圳',23);
                 
 
+```
           示例SQL：
+```sql
           select city,age,count(*) as cnt from customers group by 1;
 
   
+```
           原理说明：
        
           1. 如果sql_mode 设置为only_full_group_by，则此规则失效。 此规则在 MySQL 8.0 下默认失效。
@@ -44,6 +48,7 @@
           3. group by后面指定字段顺序，当一条SQL比较复杂时，增加用户对分组目标的理解难度。
   
           示例验证：
+```sql
           -- 关闭only_full_group_by。（MySQL 8.0 默认开启）
           (mysql:8.0.31-cluster)set sql_mode='';
           Query OK, 0 rows affected (0.00 sec)
@@ -73,12 +78,16 @@
           4 rows in set (0.00 sec)
           
   
+```
           解决方案：
           1. 使用显式指定的字段名字来分组
+```sql
           select age,city,count(*) cnt from customers group by city;
+```
           2. 设置sql_mode='only_full_group_by'
 
           解决方案验证：
+```sql
           -- 1. 更改投影列的顺序也不影响查询结果。
           (mysql:8.0.31-cluster)select age,city,count(*) cnt from customers group by city;
             +-----+--------+-----+
@@ -109,6 +118,7 @@
             ERROR 1055 (42000): Expression #2 of SELECT list is not in GROUP BY clause and contains nonaggregated column 'db_mysql.customers.age' which is not functionally dependent on columns in GROUP BY clause; this is incompatible with sql_mode=only_full_group_by
                     
   
+```
         </示例>
         <检查流程描述>
         1. 对于"SELECT..."语句，

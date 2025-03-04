@@ -10,6 +10,7 @@
     <原理说明 关键词="WHERE" 数据库版本="MySQL 5.7.25" 检查方式="不连库审核" 适用句型="SELECT、INSERT、UPDATE、DELETE">
       <示例>
         前置：
+```sql
         CREATE TABLE customers(
           id INT(11) NOT NULL,##序号
           name VARCHAR(32) DEFAULT '',##姓名
@@ -33,6 +34,7 @@
         INSERT INTO orders VALUES(1,1,2000);
         INSERT INTO orders SELECT id + (SELECT count(1) FROM orders),2,3000+ (SELECT count(1) FROM orders) FROM orders;##执行5次；
 
+```
         原理说明：
         1. 负向查询是指在查询条件中使用了否定操作符（如NOT、!=、&lt;&gt;、&lt;、&gt;等）或IN、OR、UNION等操作符的查询。这些查询操作可能会导致数据库无法使用索引，从而影响查询性能。
         2. 为了避免负向查询导致的索引失效，可以考虑以下几种方法：
@@ -42,19 +44,24 @@
           4. 优化查询语句：可以通过优化查询语句的结构和逻辑，减少负向查询的使用，从而提高查询性能。
 
         反例：
+```sql
         SELECT * FROM customers WHERE city NOT LIKE 'hang%';
         SELECT * FROM customers WHERE NOT(city  LIKE 'hang%');
         SELECT * FROM orders WHERE amount NOT BETWEEN 1000 AND 2000;
         SELECT c.* FROM customers c WHERE NOT EXISTS(SELECT * FROM orders o WHERE o.c_id=c.id);
         SELECT c.* FROM customers c WHERE id NOT IN (SELECT c_id FROM orders);
 
+```
         注：下述3种示例，在当前表数据量比较小的时候，全表扫描速度优于索引键扫描，因此直接不走索引。
+```sql
         SELECT * FROM customers WHERE city !='hangzhou';
         SELECT * FROM customers WHERE city &lt;&gt;'hangzhou';
         SELECT * FROM customers WHERE city NOT IN ('hangzhou','shanghai');
 
+```
         示例验证：
         1、查看执行计划。
+```sql
         mysql&gt; explain SELECT * FROM customers WHERE city NOT LIKE 'hang%';
         +----+-------------+-----------+------------+------+---------------+------+---------+------+------+----------+-------------+
         | id | select_type | table     | partitions | type | possible_keys | key  | key_len | ref  | rows | filtered | Extra       |
@@ -63,14 +70,18 @@
         +----+-------------+-----------+------------+------+---------------+------+---------+------+------+----------+-------------+
         1 row in set, 1 warning (0.00 sec)
 
+```
         正例：
+```sql
         SELECT * FROM customers WHERE city LIKE 'hang%' = 0;##针对NOT LIKE示例使用反向条件优化
         SELECT * FROM customers WHERE city &lt;&gt;'';##针对IS NOT NULL示例优化
         SELECT * FROM orders WHERE amount&lt;1000 OR amount&gt;2000;##代替NOT BETWEEN
         SELECT c.* FROM customers c LEFT JOIN orders o ON c.id = o.c_id WHERE o.c_id IS NULL;##通过连接查询代替子查询提高效率
 
+```
         示例验证：
         1、查看执行计划。
+```sql
         mysql&gt; explain SELECT * FROM customers WHERE city LIKE 'hang%' = 0;
         +----+-------------+-----------+------------+------+---------------+------+---------+------+------+----------+-------------+
         | id | select_type | table     | partitions | type | possible_keys | key  | key_len | ref  | rows | filtered | Extra       |
@@ -79,6 +90,7 @@
         +----+-------------+-----------+------------+------+---------------+------+---------+------+------+----------+-------------+
         1 row in set, 1 warning (0.00 sec)
 
+```
         结论：
         数据库系统中，一条SQL语句执行时出现全表扫描，通常有如下几个情况：
         1）是一张小表，如表记录低于10行或者字段个数较少，当全表扫描比通过索引键查询更快时，优化器会选择全表扫描。

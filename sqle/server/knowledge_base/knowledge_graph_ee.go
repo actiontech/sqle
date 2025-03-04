@@ -108,15 +108,15 @@ func NewGraphBuilder(storage *model.Storage) *GraphBuilder {
 // - Edges represent relationships between tags based on knowledge base connections
 // - Node weights increase based on tag occurrence frequency
 // - Edge weights increase when the same connection appears multiple times
-func GetGraph() (*Graph, error) {
+func GetGraph(ruleName string) (*Graph, error) {
 	builder := NewGraphBuilder(model.GetStorage())
-	return builder.Build()
+	return builder.Build(ruleName)
 }
 
 // Build constructs the complete knowledge graph.
-func (b *GraphBuilder) Build() (*Graph, error) {
+func (b *GraphBuilder) Build(ruleName string) (*Graph, error) {
 	// Fetch all required data
-	tagData, err := b.fetchTagData()
+	tagData, err := b.fetchTagData(ruleName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch tag data: %w", err)
 	}
@@ -146,7 +146,7 @@ type graphData struct {
 }
 
 // fetchTagData retrieves all necessary data from storage
-func (b *GraphBuilder) fetchTagData() (*tagData, error) {
+func (b *GraphBuilder) fetchTagData(ruleName string) (*tagData, error) {
 	// Get knowledge base predefined tag
 	fatherTag, err := b.storage.GetTagByName(model.PredefineTagKnowledgeBase)
 	if err != nil {
@@ -162,11 +162,14 @@ func (b *GraphBuilder) fetchTagData() (*tagData, error) {
 	}
 
 	// Get knowledge-tag relations
-
-	knowledgeTagSets := model.GetTagMapDefaultRuleKnowledge()
+	var knowledgeTagSets map[string][][]model.TypeTag
+	knowledgeTagSets = model.GetTagMapDefaultRuleKnowledge()
 	if err != nil {
 		log.Logger().Errorf("failed to get knowledge base tag relations: %v", err)
 		return nil, err
+	}
+	if ruleName != "" {
+		knowledgeTagSets = map[string][][]model.TypeTag{ruleName: knowledgeTagSets[ruleName]}
 	}
 
 	return &tagData{
@@ -208,105 +211,105 @@ func (b *GraphBuilder) transformData(data *tagData) (*graphData, error) {
 
 func GetObjectNodesMap() map[model.TypeTag]*model.Tag {
 	return map[model.TypeTag]*model.Tag{
-		model.TABLE:     nil,
-		model.INDEX:     nil,
-		model.COLUMN:    nil,
-		model.VIEW:      nil,
-		model.DATABASE:  nil,
-		model.SCHEMA:    nil,
-		model.PROCEDURE: nil,
-		model.FUNCTION:  nil,
-		model.TRIGGER:   nil,
-		model.USER:      nil,
-		model.ROLE:      nil,
-		model.EVENT:     nil,
-		model.PARTITION: nil,
-		model.SEQUENCE:  nil,
-		model.KEY:       nil,
-		model.ROW:       nil,
-		model.VALUES:    nil,
-		model.STATEMENT: nil,
+		model.TABLE:       nil,
+		model.INDEX:       nil,
+		model.COLUMN:      nil,
+		model.VIEW:        nil,
+		model.DATABASE:    nil,
+		model.SCHEMA:      nil,
+		model.PROCEDURE:   nil,
+		model.FUNCTION:    nil,
+		model.TRIGGER:     nil,
+		model.USER:        nil,
+		model.ROLE:        nil,
+		model.EVENT:       nil,
+		model.PARTITION:   nil,
+		model.SEQUENCE:    nil,
+		model.KEY:         nil,
+		model.ROW:         nil,
+		model.VALUES:      nil,
+		model.STATEMENT:   nil,
 		model.TRANSACTION: nil,
-		model.SUBQUERY:  nil,
+		model.SUBQUERY:    nil,
 	}
 }
 
 func GetObjectDescribeNodesMap() map[model.TypeTag]*model.Tag {
 	return map[model.TypeTag]*model.Tag{
-		model.UNIQUE:     nil,
-		model.PRIMARY:    nil,
-		model.FOREIGN:    nil,
-		model.ENUM:       nil,
-		model.VARCHAR:    nil,
-		model.CHAR:       nil,
-		model.DECIMAL:    nil,
-		model.BLOB:       nil,
-		model.INT:        nil,
-		model.NOT_NULL:   nil,
-		model.NULL:       nil,
-		model.EXISTS:     nil,
-		model.COMMENT:    nil,
-		model.CHARSET:    nil,
-		model.COLLATION:  nil,
-		model.ENGINE:     nil,
-		model.MODIFY:     nil,
-		model.LENGTH:     nil,
-		model.CONSTRAINT: nil,
-		model.TIMESTAMP:  nil,
-		model.RAND:       nil,
-		model.FLOAT:      nil,
-		model.BIGINT:     nil,
-		model.IS:         nil,
+		model.UNIQUE:         nil,
+		model.PRIMARY:        nil,
+		model.FOREIGN:        nil,
+		model.ENUM:           nil,
+		model.VARCHAR:        nil,
+		model.CHAR:           nil,
+		model.DECIMAL:        nil,
+		model.BLOB:           nil,
+		model.INT:            nil,
+		model.NOT_NULL:       nil,
+		model.NULL:           nil,
+		model.EXISTS:         nil,
+		model.COMMENT:        nil,
+		model.CHARSET:        nil,
+		model.COLLATION:      nil,
+		model.ENGINE:         nil,
+		model.MODIFY:         nil,
+		model.LENGTH:         nil,
+		model.CONSTRAINT:     nil,
+		model.TIMESTAMP:      nil,
+		model.RAND:           nil,
+		model.FLOAT:          nil,
+		model.BIGINT:         nil,
+		model.IS:             nil,
 		model.AUTO_INCREMENT: nil,
-		model.NOT:        nil,
-		model.LEVEL:      nil,
-		model.GLOBAL:     nil,
+		model.NOT:            nil,
+		model.LEVEL:          nil,
+		model.GLOBAL:         nil,
 	}
 }
 
 func GetManipulateNodesMap() map[model.TypeTag]*model.Tag {
 	return map[model.TypeTag]*model.Tag{
-		model.SELECT:      nil,
-		model.INSERT:      nil,
-		model.UPDATE:      nil,
-		model.DELETE:      nil,
-		model.CREATE:      nil,
-		model.ALTER:       nil,
-		model.DROP:        nil,
-		model.RENAME:      nil,
-		model.ADD:         nil,
-		model.SET:         nil,
-		model.LIMIT:       nil,
-		model.IN:          nil,
-		model.AS:          nil,
-		model.WHERE:       nil,
-		model.FROM:        nil,
-		model.CONSTRAINT:  nil,
-		model.ON:          nil,
-		model.ORDER:       nil,
-		model.GROUP:       nil,
-		model.HAVING:      nil,
-		model.OR:          nil,
-		model.SUBQUERY:    nil,
-		model.UNION:       nil,
-		model.JOIN:        nil,
-		model.OFFSET:      nil,
-		model.BY:          nil,
-		model.TO:          nil,
-		model.IF:          nil,
-		model.HINT:        nil,
-		model.EXPLAIN:     nil,
-		model.COUNT:       nil,
-		model.ISOLATION:   nil,
-		model.PRIVILEGE:   nil,
-		model.TEMPORARY:   nil,
-		model.FOR:         nil,
-		model.LIKE:        nil,
-		model.EACH:        nil,
-		model.INTO:        nil,
-		model.TRUNCATE:    nil,
-		model.GRANT:       nil,
-		model.REFERENCES:  nil,
+		model.SELECT:     nil,
+		model.INSERT:     nil,
+		model.UPDATE:     nil,
+		model.DELETE:     nil,
+		model.CREATE:     nil,
+		model.ALTER:      nil,
+		model.DROP:       nil,
+		model.RENAME:     nil,
+		model.ADD:        nil,
+		model.SET:        nil,
+		model.LIMIT:      nil,
+		model.IN:         nil,
+		model.AS:         nil,
+		model.WHERE:      nil,
+		model.FROM:       nil,
+		model.CONSTRAINT: nil,
+		model.ON:         nil,
+		model.ORDER:      nil,
+		model.GROUP:      nil,
+		model.HAVING:     nil,
+		model.OR:         nil,
+		model.SUBQUERY:   nil,
+		model.UNION:      nil,
+		model.JOIN:       nil,
+		model.OFFSET:     nil,
+		model.BY:         nil,
+		model.TO:         nil,
+		model.IF:         nil,
+		model.HINT:       nil,
+		model.EXPLAIN:    nil,
+		model.COUNT:      nil,
+		model.ISOLATION:  nil,
+		model.PRIVILEGE:  nil,
+		model.TEMPORARY:  nil,
+		model.FOR:        nil,
+		model.LIKE:       nil,
+		model.EACH:       nil,
+		model.INTO:       nil,
+		model.TRUNCATE:   nil,
+		model.GRANT:      nil,
+		model.REFERENCES: nil,
 	}
 }
 
@@ -326,8 +329,17 @@ func (b *GraphBuilder) constructGraph(data *graphData) (*Graph, error) {
 			Name:   string(tag.Name),
 			Weight: data.tagCountMap[tag.ID], // Weight starts from 1 and increases with occurrences
 		}
-		graph.AddNode(node)
 		nodeMap[tag.ID] = node
+	}
+	// Add nodes based on knowledge-tag relationships
+	for _, tagSets := range data.knowledgeTagSets {
+		for _, tagSet := range tagSets {
+			for _, tagName := range tagSet {
+				if tag, exist := data.tagMap[tagName]; exist {
+					graph.AddNode(nodeMap[tag.ID])
+				}
+			}
+		}
 	}
 
 	// Add edges based on knowledge-tag relationships

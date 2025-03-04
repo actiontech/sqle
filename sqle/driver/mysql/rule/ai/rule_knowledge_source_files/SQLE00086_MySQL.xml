@@ -10,6 +10,7 @@
   <场景 名称="模糊检索的SQL操作" 数据库版本="MySQL 5.7、MySQL 8.0" 检查方式="不连库审核" 适用关键词="LIKE、NOT LIKE" 适用句型="SELECT、INSERT、UPDATE、DELETE、UNION ALL、WITH">
     <示例>
       前置：
+```sql
       CREATE TABLE t2 (
           id INT(11) NOT NULL,
           name VARCHAR(32) DEFAULT NULL,
@@ -21,7 +22,9 @@
 
       INSERT INTO t2 VALUES(1,'t1','a','a1'),(2,'2t','a3','a2'),(3,'t3','a4','a3'),(4,'4t','a2','a4');
 
+```
       反例：
+```sql
       SELECT * FROM t2 WHERE name LIKE '%t'; ###（以当前SQL作为示例验证）
       SELECT * FROM t2 WHERE name LIKE '%t%';   
       INSERT INTO t2 SELECT id,name,type,addr FROM t2 WHERE name LIKE '%t';
@@ -31,11 +34,13 @@
       DELETE FROM t2 WHERE name LIKE '%t';
       DELETE FROM t2 WHERE name LIKE '%t%';  
 
+```
       反例说明：
       数据库中一条SELECT查询语句使用后缀匹配或者子字符串匹配查询很有可能会出现无法使用索引，通过全表扫描来查找数据，如果目标表的数据量比较大的时候，查询效率比较低下，耗时很长，最终会出现慢SQL。如果事务隔离级别是RR时，会出现表锁，影响其他业务访问。引用文档：For a BTREE index, an interval might be usable for conditions combined with AND, where each condition compares a key part with a constant value using =, ..., BETWEEN, or LIKE 'pattern' (where 'pattern' does not start with a wildcard). An interval can be used as long as it is possible to determine a single key tuple containing all rows that match the condition.
 
       示例验证：（以LIKE和后缀匹配为例）
       1、查看执行计划。
+```sql
       mysql&gt; explain SELECT * FROM t2 WHERE name LIKE '%t';
       +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-------------+
       | id | select_type | table | partitions | type | possible_keys | key  | key_len | ref  | rows | filtered | Extra       |
@@ -44,7 +49,9 @@
       +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-------------+
       1 row in set, 1 warning (0.00 sec)
 
+```
       正例：
+```sql
       SELECT * FROM t2 WHERE REVERSE(name) LIKE REVERSE('%t'); ###（以当前SQL作为示例验证）
       SELECT * FROM t2 WHERE LOCATE('t',name,length(name))&gt;=0;
       INSERT INTO t2 SELECT id,name,type,addr FROM t2 WHERE name LIKE REVERSE('%t'); 
@@ -56,12 +63,14 @@
 
       ALTER TABLE t2 ADD INDEX idx_t2_func REVERSE(name);
 
+```
       正例说明：
       数据库中一条SELECT查询语句使用后缀匹配时，可采用函数对条件字段以及条件值进行SQL改造，在执行前创建条件字段函数的索引（如REVERSE(name)），则会按照函数索引先找到主键，再通过主键查找数据。本优化存在版本限制，如创建函数索引，则需要MySQL8.0.13版本及之后版本。
       特例：当查询的目标表结构的字段都是有索引，则数据库会通过全索引查找来代替全表扫描。
 
       示例验证：
       1、查看执行计划。
+```sql
       mysql&gt; explain SELECT * FROM t2 WHERE REVERSE(name) LIKE REVERSE('%t');
       +----+-------------+-------+------------+-------+---------------+-------------+---------+------+------+----------+--------------------------+
       | id | select_type | table | partitions | type  | possible_keys | key         | key_len | ref  | rows | filtered | Extra                    |
@@ -69,6 +78,7 @@
       |  1 | SIMPLE      | t2    | NULL       | index | NULL          | idx_t2_func | 131     | NULL |    4 |   100.00 | Using where; Using index |
       +----+-------------+-------+------------+-------+---------------+-------------+---------+------+------+----------+--------------------------+
       1 row in set, 1 warning (0.00 sec)      
+```
     </示例>
     <检查流程描述>
     1. 对于"SELECT..."语句，检查SQL语句， 如果下面任意一项为真，则报告违反规则。

@@ -16,6 +16,7 @@
    <场景 名称="数据库对象名初始化" 数据库版本="MySQL" 检查方式="不连库审核" 适用关键词="DATABASE、TABLE、VIEW、INDEX、USER、COLUMN、EVENT" 适用句型="CREATE、ALTER">
     <示例>  
       示例：
+```sql
       CREATE DATABASE test;
       CREATE TABLE order_his(
          id BIGINT UNSIGNED AUTO_INCREMENT,
@@ -29,6 +30,7 @@
       CREATE USER 'test'@'localhost' REQUIRE NONE;###创建用户
       CREATE EVENT ename ON SCHEDULE EVERY 10 SECOND DO DELETE FROM order_his; ###创建一个事件每10秒清空表数据,默认event_scheduler是未启用。
      
+```
       示例说明：      
       数据库系统中，常用数据库对象包含数据库、表、索引、字段列、别名、视图、存储过程、分区、表空间等。其中数据库、表、列名不能以空格结尾。
       数据库系统中，除了以下特例外，对象名默认长度限制为64个字符。在当超过64个字节长度后，系统直接报错。
@@ -52,6 +54,7 @@
    <场景 名称="数据库对象重命名" 数据库版本="MySQL" 检查方式="不连库审核" 适用关键词="TABLE、USER、COLUMN、INDEX、EVENT" 适用句型="ALTER、RENAME">
     <示例>  
       示例：
+```sql
       ALTER TABLE order_his RENAME TO order_his2; ###表重命名
       ALTER TABLE order_his RENAME INDEX name TO uniq_name;###重命名索引 
       RENAME TABLE order_his2 TO order_his; ###表重命名
@@ -59,6 +62,7 @@
       RENAME USER 'test'@'localhost' TO 'test2'@'localhost';###重命名用户
       ALTER EVENT ename RENAME TO newname;###重命名事件
      
+```
       示例说明：与【数据库对象名初始化】场景一致。
     </示例>
     <检查流程描述>

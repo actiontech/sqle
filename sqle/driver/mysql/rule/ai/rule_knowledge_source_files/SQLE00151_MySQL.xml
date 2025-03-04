@@ -11,6 +11,7 @@
             <示例>
 
               错误示例：
+```sql
               -- 表使用系统表空间。
               CREATE TABLE customers (
                id INT, -- 编号
@@ -36,6 +37,7 @@
                 -- 更改为系统表空间
                 alter table customers tablespace innodb_system;
 
+```
                原理说明：
                 1. MySQL 有系统表空间，用来存放系统对象的元数据等。在磁盘上表现为数据目录下的ibdata1,...,ibdataN等一系列文件。
                 2. 禁止在系统表空间上创建用户表。有三个原因：
@@ -46,6 +48,7 @@
 
                 解决方案：
                 1. CREATE TABLE 时，不带tablespace 关键词，即可使用单表空间
+```sql
                 CREATE TABLE customers (
                     id int, -- 编号
                     name VARCHAR(50), -- 姓名
@@ -56,10 +59,13 @@
                     primary key (id) -- 主键
                     );
                     
+```
                 2. 对已经使用系统表空间的表，更改为单表空间。
+```sql
                 alter table customers tablespace innodb_file_per_table;
 
                 
+```
             </示例>
             <检查流程描述>
             1. 对于 "CREATE TABLE..."语句，检查语句是否存在关键词 tablespace innodb_system，如果存在， 则报告违反规则。

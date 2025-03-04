@@ -11,6 +11,7 @@
     <场景 名称="表结构初始定义" 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="CREATE TABLE、ALTER TABLE">
       <示例>
         示例表结构:
+```sql
         create database db_mysql;
         use db_mysql;
 
@@ -36,6 +37,7 @@
           select a+1,concat('小王',a),floor(rand()*2),'上海',ceil(rand()*20)+20 from tmp where a &lt; 15000000) 
           select * from tmp;
 
+```
         原理说明：
         1.  一个联合索引可以覆盖按照最左列创建的单列索引或联合索引，所以不需要为最左列单独设计索引。
         2.  单个字段的冗余索引会导致额外的运维成本。比如表批量插入或者批量更新会连带更新索引数据，冗余索引降低了更新的效率，增加了更新的时间，最终导致数据库整体TPS一并降低。
@@ -43,6 +45,7 @@
 
         示例: 冗余索引创建与删除后批量插入前后性能对比。
 
+```sql
         -- 有冗余索引： 批量插入1500W行，时间为3分钟28秒。
         (mysql:8.0.31-cluster)        insert into customers  
             -         with recursive tmp (a,b,c,d,e) as (
@@ -69,6 +72,7 @@
         Query OK, 15000000 rows affected (2 min 53.67 sec)
         Records: 15000000  Duplicates: 0  Warnings: 0
 
+```
         结论：
         1. 同样的插入语句，有冗余索引比无冗余索引插入时间多了35秒。
         2. 可见，无冗余索引对表插入性能来讲，更加优化。
@@ -92,6 +96,7 @@
     <场景 名称="在线添加索引" 数据库版本="MySQL 所有版本" 检查方式="连库审核" 适用句型="ALTER TABLE、CREATE INDEX">
       <示例>
       前置:
+```sql
       create database db_mysql;
       use db_mysql;
 
@@ -107,12 +112,17 @@
       );
 
 
+```
       示例：
+```sql
       alter table customer add key idx_name_customers (name);
 
+```
       或者：
+```sql
       create index idx_name_customers on customers(name);
 
+```
       原理说明：与【表结构初始定义】一致
               
       </示例>

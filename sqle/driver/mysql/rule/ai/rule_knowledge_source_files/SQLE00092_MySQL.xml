@@ -11,6 +11,7 @@
             <示例>
                 
                 前置：
+```sql
                 create table customers(
                     id bigint not null primary key,
                     name varchar(32) default '' not null, -- 序号
@@ -30,6 +31,7 @@
                 insert into customers values (100000023,'小非',0,52);
                 insert into customers values (100000031,'小海',0,37);
 
+```
                 原理说明：
                 1. 在 MySQL 数据库里，DELETE、UPDATE 操作可以在后面跟LIMIT 子句，类似 SELECT 语句；
                 2. 其意思是可以指删除或者更新LIMIT 子句执行的记录，而不是所有匹配的记录；
@@ -41,9 +43,11 @@
 
 
                 示例：
+```sql
                 delete from custommers;
                 update customers set age = 100;
 
+```
                 反例说明：
                 1. 两条SQL，一条是DELETE 语句，删除所有记录；另外一条是UPDATE 语句，更新所有年龄；
                 2. 这两条SQL 都没有带 LIMIT 子句，如果删错数据或者更新错数据，并且已经提交，那么想回退的话，只能找到备份集整个回退；
@@ -51,6 +55,7 @@
             
 
                 反例验证： 执行语句后，发现删除错了，需要重新找回数据。
+```sql
                 (mysql:8.3.0:db_mysql)delete from customers;
                 Query OK, 10 rows affected (0.00 sec)
 
@@ -71,13 +76,17 @@
                 3 rows in set (0.00 sec)
 
 
+```
                 正例：
+```sql
                 delete from customers limit 1;
                 update customers set age = 100 limit 1;
+```
                 正例说明：
                 1. 两条SQL 语句都加了 LIMIT 子句，即使删除或者更新错了，只需要找回LIMIT 指定数目的记录。
 
                 正例验证： 执行完后，发现删除错了，需要重新找回数据
+```sql
                 (mysql:8.3.0:db_mysql)delete from customers limit 1;
                 Query OK, 1 row affected (0.01 sec)
 
@@ -86,6 +95,7 @@
                 Query OK, 1 row affected (0.01 sec)
             
                               
+```
                 结论：
                 1. DELETE 、 UPDATE 句子需要加上 LIMIT 子句执行，可以避免删错数据的代价，比如恢复数据时间短。
                 2. DELETE 、 UPDATE 句子执行时间和表记录数相关；记录数越大，其执行越长，也越影响总体的事务TPS。

@@ -14,6 +14,7 @@
     <示例>
           前置：
   
+```sql
           -- 主表
           CREATE TABLE customers(
             id INT NOT NULL, -- 序号
@@ -24,8 +25,10 @@
             PRIMARY KEY (id) -- 主键
           );
   
+```
           示例：对name、age 列建立索引。
           SQL1：使用ALTER TABLE ADD INDEX/KEY 
+```sql
           alter table customers add index idx_age_customers(age);
           alter table customers add index idx_name_customers(name);
           
@@ -33,6 +36,7 @@
           create index idx_age_customers on customers(age);
           create index idx_name_customers on customers(name);          
       
+```
           原理说明：
           1. 索引字段区分度 selectivity 是用来计算索引是否高效的基础。区分度的计算公式为： 
              selectivity = count(distinct field1)/count(*)。具体解释如下：
@@ -48,6 +52,7 @@
  
 
         示例验证：
+```sql
         -- 数据种类少，但是分布均匀。
         -- 批量造数据语句，插入500W行数据，基于MySQL 8.0 版本。
         set @@cte_max_recursion_depth=10000000;
@@ -106,6 +111,7 @@
 
     
 
+```
         结论：
         1. 当索引字段的数据分布集中在某个值时，即使数据种类比较多，当业务SQL在集中度高的数据范围中搜索数据时，SQL的执行效率仍然比较低下。
         2. 在对字段建立索引的时候，需要预先检查索引的区分度；建议对于区分度较高的字段建立索引；区分度不高的字段放弃建立索引；
@@ -133,13 +139,15 @@
         原理说明：与【表结构初始定义】场景一致
 
         示例：以下有两条SQL，条件都是根据name、age 字段检索，需要决定对哪个字段建立索引。
-        SQL1: select * from customers where  name = '小王22222333' and age &lt; 50;
+        SQL1: `select * from customers where  name = '小王22222333' and age &lt; 50;`
 
         SQL2: 
+```sql
         select * from customers where name = '小王22222333' and age &lt; 50
         union all 
         select * from customers where name = '小王1' and age &lt; 50;
 
+```
         注：其他句型与SELECT句型语法相同，都是指SELECT子句中where条件，因此省略相似的示例。
 
         示例说明：
@@ -152,6 +160,7 @@
         3. 索引字段的数据区分度的计算，见【表结构初始定义】场景的【原理说明】。
  
         示例验证：
+```sql
         -- 对name 、age 列分别建立索引
         (mysql:8.0.31-cluster)create index idx_name_customers on customers(name);
         Query OK, 0 rows affected (2 min 9.00 sec)
@@ -178,6 +187,7 @@
         drop index idx_age_customers on customers;
 
 
+```
         结论：
         1. 根据SELECT 语句来反推索引的过程中，需要计算那个字段的区分度最佳，才能针对性建立索引。
         2. 不能盲目的每个字段都建立索引，否则区分度低的字段建立索引对查询提升不大，还会降低表更新的性能。

@@ -13,9 +13,11 @@
       <场景 名称="给用户授权" 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="GRANT">
         <示例>
           前置：预先创建两个用户user1、user2
+```sql
           create user user1 identified by 'Root123@aB';
           create user user2 identified by 'Root123@aB';
 
+```
           原理说明：
           1. 管理授权权限的时候要格外注意，不能授予过高的权限，否则会有严重的安全风险。
           2. 应该遵循最小化权限的原则，确保每个用户、每个角色都只分配可以匹配其工作范围的最小权限。
@@ -26,16 +28,17 @@
           2. 业务要求user2 对数据库db_mysql里的所有表具有只读权限，同样不能创建表，修改表，删除表，并且user2也不能把自己的权限授予给其他用户。
 
           反例： 
-          SQL1: grant all on *.* to user1;
-          SQL2: grant select,update,delete,insert,alter,create,drop on db_mysql.* to user1 with grant option;
+          SQL1: `grant all on *.* to user1;`
+          SQL2: `grant select,update,delete,insert,alter,create,drop on db_mysql.* to user1 with grant option;`
 
-          SQL3: grant super on *.* to user2 with grant option;
+          SQL3: `grant super on *.* to user2 with grant option;`
 
           反例说明：
           1. 反例的几条SQL 都不满足业务要求，应禁止执行。
 
           反例验证： 只验证USER1即可，原理一样。
           1. 授予过高的权限给USER1
+```sql
           (mysql:8.4.0:db_mysql)grant select,update,delete,insert,alter ,create,drop  on db_mysql.* to user1 with grant option;
           Query OK, 0 rows affected (0.01 sec)
           
@@ -49,7 +52,9 @@
           2 rows in set (0.00 sec)
           
 
+```
           2. 使用USER1登录数据库，没有满足预期，拥有需求外的其他权限，比如可以创建表，这个显然是不可以的。
+```sql
           [root@ytt-pc scripts]# mysql -uuser1 -pRoot123@aB -D db_mysql -h 127.1
           ...
           (mysql:8.4.0:db_mysql)show tables;
@@ -74,9 +79,10 @@
           +-----------------+
           1 row in set (0.00 sec)
 
+```
           正例：
-          SQL1: grant update,delete,insert on db_mysql.* to user1;
-          SQL2: grant select on db_mysql.* to user2;   
+          SQL1: `grant update,delete,insert on db_mysql.* to user1;`
+          SQL2: `grant select on db_mysql.* to user2;`   
           
           正例说明：
           1. SQL1 是赋予USER1的正确的、最小适配权限。
@@ -84,6 +90,7 @@
 
           正例验证：
           1. 先删掉user1,user2，重新创建。
+```sql
           (mysql:8.4.0:db_mysql)drop user user1,user2;
           Query OK, 0 rows affected (0.01 sec)
 
@@ -94,14 +101,18 @@
           Query OK, 0 rows affected (0.02 sec)
                    
                    
+```
           2. 给user1、user2 授予合适的、正确的权限。
+```sql
           (mysql:8.4.0:db_mysql)grant update,delete,insert on db_mysql.* to user1;
           Query OK, 0 rows affected (0.01 sec)
 
           (mysql:8.4.0:db_mysql)grant select on db_mysql.* to user2; 
           Query OK, 0 rows affected (0.02 sec)
 
+```
           3. 查看user1、user2 分配的权限：目前权限分配正确。
+```sql
           (mysql:8.4.0:db_mysql)show grants for user1;
           +-------------------------------------------------------------+
           | Grants for user1@%                                          |
@@ -120,6 +131,7 @@
           +---------------------------------------------+
           2 rows in set (0.01 sec)
       
+```
           结论：
           1. 权限分配应该遵循最小化的权限策略，不能授予超出其工作范围的额外权限，否则会有很大的安全风险。
           2. 应该定期审计、检查各个用户的权限，发现有不当权限的用户，应该尽快的收回。

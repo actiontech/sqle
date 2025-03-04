@@ -14,6 +14,7 @@
   <场景 名称="联合查询" 数据库版本="MySQL 5.7、MySQL 8.0" 检查方式="不连库审核" 适用句型="SELECT">
     <示例>
       前置：
+```sql
       CREATE TABLE st1 (
           id bigint,
           name VARCHAR(32),
@@ -43,9 +44,12 @@
       );
       INSERT INTO st_dp VALUES(1,'HR');
 
+```
       示例：
+```sql
       SELECT a.id,a.name,b.post,c.addr,d.dp_name FROM st1 a JOIN st_ps b ON a.pid=b.id JOIN st_addr c ON a.addr_id=c.id JOIN st_dp d ON a.dp_id=d.id;
 
+```
       示例说明：
       数据库系统中，在一条SQL语句中，关联过多的表可能会对数据库性能和查询效率产生影响。
       1）性能下降，数据库需要执行更多的表连接、数据匹配操作。
@@ -69,6 +73,7 @@
   <场景 名称="联合多表进行数据插入、更新、删除等变更操作" 数据库版本="MySQL 5.7、MySQL 8.0" 检查方式="不连库审核" 适用句型="INSERT、UPDATE、DELETE">
     <示例>
       前置：
+```sql
       CREATE TABLE st1 (
           id bigint,
           name VARCHAR(32),
@@ -107,12 +112,15 @@
           grade NUMERIC
       );
 
+```
       示例：
+```sql
       INSERT INTO st_detail(id,name,post,addr,dp_name,grade)
       SELECT a.id,a.name,b.post,c.addr,d.dp_name,a.grade FROM st1 a JOIN st_ps b ON a.pid=b.id JOIN st_addr c ON a.addr_id=c.id JOIN st_dp d ON a.dp_id=d.id;
       UPDATE st1 JOIN st_ps b ON st1.pid=b.id JOIN st_addr c ON st1.pid=c.id JOIN st_dp d ON st1.pid=d.id set grade= grade+10;
       DELETE st1 FROM st1 JOIN st_ps b ON st1.pid=b.id JOIN st_addr c ON st1.pid=c.id JOIN st_dp d ON st1.pid=d.id WHERE b.id =2;
 
+```
       示例说明：
       与【联合查询】场景一致。
 

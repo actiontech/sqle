@@ -10,6 +10,7 @@
         <场景 名称="函数或者表达式排序" 数据库版本="MySQL 8.0" 检查方式="连库审核" 适用句型="SELECT、INSERT">
             <示例>
             预先定义结构:
+```sql
             create database db_mysql;
             use db_mysql;
 
@@ -22,7 +23,9 @@
             PRIMARY KEY (id) -- 主键
             );
 
+```
             预先定义索引：
+```sql
             create index idx_age_customers on customers(age);
 
 
@@ -35,17 +38,21 @@
             select a+1,concat('小王',a),floor(rand()*2),'上海',ceil(rand()*20)+20 from tmp where a &lt; 5000000) 
             select * from tmp;
 
+```
           示例：
+```sql
           select age from customers order by mod(age,10) limit 5;
           select age from customers order by age-20 limit 5;
           select age from customers where age &lt; 50 order by mod(age,10) limit 5;
 
 
+```
           示例说明：
           1. 使用函数或者表达式排序，由于每行都需要计算一次表达式或者函数的值，完了使用结果进行排序。
           2. 在没有WHERE 条件或者WHERE 条件返回的结果集较大时，即使有索引，也使用不了索引的有序性，性能较差。
 
           示例验证： 几条SQL 都类似，验证第一条即可。 使用函数排序，时间接近2秒。
+```sql
           (mysql:8.0.31-cluster)select age from customers order by mod(age,10) limit 5;
           +-----+
           | age |
@@ -59,7 +66,9 @@
           5 rows in set (1.89 sec)
           
           
+```
           查看执行计划： 走了全索引扫描，但是依然需要排序。
+```sql
           (mysql:8.0.31-cluster) explain select age from customers order by mod(age,10) limit 5\G
           *************************** 1. row ***************************
                      id: 1
@@ -76,16 +85,20 @@
                   Extra: Using index; Using filesort
           1 row in set, 1 warning (0.00 sec)
           
+```
           示例优化：可以有几种优化方案
           1. 创建一个表达式或者函数索引，SQL 语句不变，这样就可以利用新索引的有序性。
           2. 修改业务SQL，使用非表达式或者函数排序，这样可以使用表原来的索引，避免建立新索引。
 
           优化方案验证：由于两种优化方案类似，只验证第一种，直接在表上建立新索引即可。
+```sql
           (mysql:8.0.31-cluster)create index idx_mod_age_10 on customers((mod(age,10)));
             Query OK, 0 rows affected (29.78 sec)
             Records: 0  Duplicates: 0  Warnings: 0
           
+```
           重新执行示例SQL： 结果秒出。
+```sql
           (mysql:8.0.31-cluster)select age from customers order by mod(age,10) limit 5;
             +-----+
             | age |
@@ -99,6 +112,7 @@
             5 rows in set (0.00 sec)
 
 
+```
           结论：
           1. 使用带有表达式或者函数来排序，虽然可以命中索引，但是使用不了索引的有序性，而排序是数据库里最耗时的操作。
           2. 可以使用建立函数索引或者更改业务SQL 来避免这种排序，使用索引的有序性。

@@ -10,6 +10,7 @@
         <场景 名称="父表有外键删除和父表无外键删除的性能对比" 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="CREATE TABLE、ALTER TABLE">
             <示例>
                 前置：
+```sql
                 -- 如果没有数据库,,提前创建.
                 create database db_mysql;
                 use db_mysql;
@@ -86,7 +87,9 @@
                 3 rows in set (0.00 sec)                
 
 
+```
                 示例：
+```sql
                 -- 有外键表的删除
                 delete from customers;
 
@@ -102,6 +105,7 @@
                 Query OK, 3000001 rows affected (33.19 sec)
 
 
+```
                 示例说明:
                 1. 对有外键表的删除，删除主表记录需要删除对应外键表的记录。
                 2. 原则上对主表引用的外键表越多，主表记录删除的时间越长。
@@ -116,11 +120,15 @@
 
 
                 解决方案： 
+```sql
                 -- 以表customers_fk1为例，其他子表同样的方法。
+```
                 1. alter table customers_fk1 drop foreign key fk1_id_customers; -- 删除外键。
                 2. 调整建表语句：
+```sql
                 create table customers_fk1 (id int); -- 引用表 customers 的 id 字段。     
       
+```
             </示例>
             <检查流程描述>
                 1. 检查CREATE TABLE 语句或者 ALTER TABLE 语句,查看有无外键表,有的话, 则报告违反规则。

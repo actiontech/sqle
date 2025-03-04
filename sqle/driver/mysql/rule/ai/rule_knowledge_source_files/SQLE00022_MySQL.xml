@@ -14,6 +14,7 @@
         <示例>
           前置：
   
+```sql
           -- 主表
           CREATE TABLE customers(
             id INT NOT NULL, -- 序号
@@ -29,6 +30,7 @@
           create index idx_age_customers on customers(age);      
       
       
+```
           原理说明：
           1. 倾斜度低的索引能够高效筛选出符合条件的数据；相反，倾斜度高的索引筛选符合条件的数据效率则比较低效。
           2. 倾斜度计算公式： ((select COUNT(*)::float  FROM t2 GROUP BY name ORDER BY record_count DESC LIMIT 1)/count(ALL))
@@ -36,9 +38,11 @@
               2. 比如原先表有100条记录，字段c1的值分布为： 1,2,3,4,5,6,7,8,9,10，每个值都分布很平均，都为0.1，也就是10%； 
               3. 业务在某一刻有所变更，字段c1的某一个值比如8，数据分布从原来的0.1变为0.7，这样会导致这个字段的倾斜度变低，不适合用来继续做索引，需要选择其他的字段来建立新的索引。
               4. 这个公式具体表现在生产应该为：比如需要计算表t1的字段id的倾斜度，
+```sql
               select (
                   select count(*)::float as record_count from (select id from t1 limit 50000) group by id order by record_count desc limit 1
               )/ (select count(1)ttl from (select * from t1 limit 50000));
+```
           3. 当索引字段倾斜度越低，检索速度越快，索引倾斜度高，则说明重复的数据比较多，检索的时候需要访问更多的记录才能够找到所有目标数据。
           4. 当索引字段倾斜度高到无限趋近于1的时候，基本等同于全表扫描了，此时检索效率肯定是慢的；
           5. 同理，当索引倾斜度小到无限接近0的时候，基本等同于常量扫描，此时检索效率最高。比如主键或者唯一索引。
@@ -47,12 +51,17 @@
               所以对于优化器来讲，统计信息的更新及时与否影响着执行计划的正确性选择。
 
         示例：对age 列建立索引。
+```sql
         alter table customers add index idx_age_customers(age);
         alter table customers add key idx_age_customers(age);
+```
         或者
+```sql
         create index idx_age_customers on customers(age);
 
+```
         示例验证：
+```sql
         -- 模拟数据倾斜度高的示例验证，为了演示方便，直接加hint来验证
         -- 批量造数据语句，插入500W行数据，基于MySQL 8.0 版本。
         set @@cte_max_recursion_depth=10000000;
@@ -133,6 +142,7 @@
         1 row in set (1 min 30.13 sec)
 
 
+```
         结论：
         1. 当索引字段的数据分布集中在某个值时，即使数据种类比较多，当业务SQL在集中度高的数据范围中搜索数据时，SQL的执行效率仍然比较低下。
         2. 在对字段建立索引的时候，需要预先检查索引的倾斜度；建议对于倾斜度较低的字段建立索引；倾斜度高的字段放弃建立索引；
@@ -146,8 +156,10 @@
         2. 将本次新增索引涉及的字段放到集合A中
         3. 计算集合A中的每个字段的倾斜度，如果倾斜度大于规则变量值，则报告违反规则。
             倾斜度计算需要在线进行，公式： select  (
+```sql
             Select count(*)::float as record_count from (select column_name from table_name limit 50000) group by column_name order by record_count desc limit 1
             )/ (select count(1) ttl from (select * from table_name limit 50000));
+```
     2. 对于ALTER TABLE ... ADD KEY/INDEX ... 语句，执行与上述同样检查。
     </检查流程描述>
     <知识文档>
@@ -162,13 +174,15 @@
         原理说明：与【表结构初始定义】场景一致
 
         示例：以下有两条SQL，条件都是根据name、age 字段检索，需要决定对哪个字段建立索引。
-        SQL1: select * from customers where  name = '小王22222333' and age &lt; 50;
+        SQL1: `select * from customers where  name = '小王22222333' and age &lt; 50;`
 
         SQL2: 
+```sql
         select * from customers where name = '小王22222333' and age &lt; 50
         union all 
         select * from customers where name = '小王1' and age &lt; 50;
 
+```
         示例说明：
         1. 针对示例SQL，一般会想到如下几个索引：
         1. 根据name 列建立索引；
@@ -191,8 +205,10 @@
         3. 连接数据库，根据集合A的字段，将存在索引的字段放到集合B中
         3. 计算集合B中的每个字段的倾斜度，如果倾斜度大于则变量值，则报告违反规则。
             倾斜度计算需要在线进行，公式： select  (
+```sql
                 Select count(*) as record_count from (select column_name from table_name limit 50000) group by column_name order by record_count desc limit 1
                 )/ (select count(1)ttl from (select * from table_name limit 50000));
+```
     </检查流程描述>
     <知识文档>
         1. 创建索引官方文档：https://dev.mysql.com/doc/refman/8.0/en/create-index.html

@@ -12,9 +12,11 @@
     <原理说明 数据库版本="MySQL 5.7.25" 检查方式="不连库审核">
     <示例>
       原理说明：
+```sql
       MySQL表中，单表只支持一个主键；当建表语句里注明多个主键字段时，语句将无法执行并报错。
       mysql&gt; create table c (a int(11) not null auto_increment, b int(11) not null auto_increment);
       ERROR 1075 (42000): Incorrect table definition; there can be only one auto column and it must be defined as a key
+```
     </示例>
     <检查流程描述>
     1. 对于"CREATE TABLE..."语句，若存在超过1个字段包含auto_increment，则报告违反规则。

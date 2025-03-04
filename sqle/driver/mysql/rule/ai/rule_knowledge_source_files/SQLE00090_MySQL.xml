@@ -10,6 +10,7 @@
   <原理说明 关键词="UNION" 数据库版本="MySQL 5.7、MySQL 8.0" 检查方式="不连库审核" 适用句型="SELECT、UPDATE、DELETE、INSERT ... 、WITH">
     <示例>
       前置：
+```sql
       CREATE TABLE customers(
         id INT(11) NOT NULL,##序号
         name VARCHAR(32) DEFAULT '',##姓名
@@ -40,7 +41,9 @@
       INSERT INTO suppliers VALUES(1,'action','shanghai');
       INSERT INTO suppliers SELECT id + (SELECT count(1) FROM suppliers),'action','shanghai' FROM suppliers; ##执行2次
 
+```
       反例：
+```sql
       SELECT name,city FROM customers UNION SELECT name,city FROM suppliers; 
 
       insert into customers_insert select * from customers union  select * from customers;
@@ -51,11 +54,13 @@
 
       delete from  customers_insert  where id in (select id from customers union  select id from customers);
 
+```
       反例说明：
       1. 这些SQL 都包含有UNION 子句，UNION 子句会隐式排序，不推荐使用。
 
       示例验证：
       1、查看执行计划。      
+```sql
       mysql&gt; explain SELECT name,city FROM customers UNION SELECT name,city FROM suppliers;
       +----+--------------+------------+------------+------+---------------+------+---------+------+------+----------+-----------------+
       | id | select_type  | table      | partitions | type | possible_keys | key  | key_len | ref  | rows | filtered | Extra           |
@@ -66,7 +71,9 @@
       +----+--------------+------------+------------+------+---------------+------+---------+------+------+----------+-----------------+
       3 rows in set, 1 warning (0.00 sec)
 
+```
       正例：
+```sql
       SELECT name,city FROM customers UNION ALL SELECT name,city FROM suppliers;
 
       insert into customers_insert select * from customers union  all select * from customers;
@@ -77,12 +84,14 @@
 
       delete from  customers_insert  where id in (select id from customers union all select id from customers);
 
+```
       正例说明：
       1. 把反例的UNION 子句，改为推荐的UNION ALL 子句，避免隐式排序。
 
 
       示例验证：
       1. 查看执行计划。
+```sql
       mysql&gt; explain SELECT name,city FROM customers UNION ALL SELECT name,city FROM suppliers;
       +----+-------------+-----------+------------+------+---------------+------+---------+------+------+----------+-------+
       | id | select_type | table     | partitions | type | possible_keys | key  | key_len | ref  | rows | filtered | Extra |
@@ -92,6 +101,7 @@
       +----+-------------+-----------+------------+------+---------------+------+---------+------+------+----------+-------+
       2 rows in set, 1 warning (0.00 sec)
 
+```
       结论：
       1. 在MySQL 数据库中，UNION ALL 和 UNION 是用于合并查询结果集的操作符。UNION ALL仅进行了查询结果集的合并操作；UNION 会在合并查询结果集之后，自动去除重复的行，确保结果集中的每一行都是唯一的。因此，从正反例的执行计划结果得出，UNION ALL 避免了去重的开销，其的性能优于比UNION。在实际应用中，需结合业务要求，如果要求的查询结果是统一唯一性的，可以继续采用UNION操作；如果是需要统计真实的记录数，则应该采用UNION ALL操作。
       2. 注意：在使用UNION ALL或者UNION过程中，所有参与合并操作的SELECT子句的字段数应该相同、且字段类型应相同。

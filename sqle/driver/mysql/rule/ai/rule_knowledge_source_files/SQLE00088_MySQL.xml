@@ -10,6 +10,7 @@
   <场景 名称="插入表数据必须指定列" 数据库版本="MySQL 5.7、MySQL 8.0" 检查方式="不连库审核" 适用关键词="" 适用句型="INSERT">
     <示例>
       前置：
+```sql
       CREATE TABLE t1 (
           id INT(11) NOT NULL,
           name VARCHAR(32) DEFAULT NULL,
@@ -17,17 +18,22 @@
           KEY idx_cid_temp (cid) USING BTREE
       );
 
+```
       反例：
+```sql
       INSERT INTO t1() VALUES (1,'1','a');
       INSERT INTO t1 SELECT 3,cid,name FROM t1;
 
+```
       反例说明：
       在执行写入数据操作前，未指定列时，无法快速了解写入的内容是更新到对应的列上；执行操作后，发现本次操作不符合预期，提交错误信息并影响后续业务，需要对数据进行清理。
       
       正例：
+```sql
       INSERT INTO t1(id,name) VALUES (1,'a');
       INSERT INTO t1(id,name,cid) SELECT id,name,cid from t1;
 
+```
       正例说明：
       在执行写入数据操作前，指定列后，可快速检查数据是否更新到对应列上，避免插入结果与业务预期不符。
     </示例>

@@ -10,6 +10,7 @@
   <场景 名称="创建表结构" 数据库版本="MySQL 5.7、MySQL 8.0" 检查方式="不连库审核" 适用关键词="COMMENT" 适用句型="CREATE TABLE">
     <示例>
       正例：
+```sql
       create table if not exists 
       t1(
         id bigint unsigned auto_increment comment '编号',
@@ -19,11 +20,13 @@
         primary key(id)
       );
 
+```
       正例说明：
       数据库中进行表结构定义的时候，可以在字段注释中增加该字段的用途。此时，在表关联、数据引用等场景下，用户可以通过字段注释快速选择到目标字段。
 
       示例验证：
       1、查看执行计划。
+```sql
         mysql&gt; show create table t1;
         +-------+--------------------------------------+
         | Table | Create Table                   |
@@ -38,7 +41,9 @@
         +-------+--------------------------------------+
         1 row in set (0.00 sec)
 
+```
       反例：
+```sql
       create table if not exists 
       t1(
         id bigint unsigned auto_increment,
@@ -48,6 +53,7 @@
         primary key(id)
       );
 
+```
       反例说明：
       数据库中进行表结构定义的时候，未定义字段的注释。此时，在表关联、数据引用等场景下，用户只能结合字段存放的数据来判断其用途，增加了选择目标字段的成本。
     </示例>
@@ -63,16 +69,19 @@
   <场景 名称="修改表结构变更列" 数据库版本="MySQL 5.7、MySQL 8.0" 检查方式="不连库审核" 适用关键词="COMMENT" 适用句型="ALTER TABLE">
       <示例>
         正例：
+```sql
         alter table t1 add column addr varchar(128) comment '地址';
         alter table t1 change column addr addr varchar(256) comment '地址';
         alter table t1 modify addr varchar(256) comment '地址';
 
+```
         正例说明：
         数据库中进行表结构定义的时候，可以在字段注释中增加该字段的用途。此时，在表关联、数据引用等场景下，用户可以通过字段注释快速选择到目标字段。
 
         示例验证：与【创建表结构】场景一致。
 
         反例：
+```sql
         alter table t1 add column addr varchar(128);
         alter table t1 change column addr addr varchar(64);
         alter table t1 modify addr varchar(128);
@@ -83,6 +92,7 @@
         alter table t1 change column addr addr varchar(64) comment ' ';
         alter table t1 modify addr varchar(128) comment ' ';
 
+```
         反例说明：
         数据库中进行表结构定义的时候，未定义字段的注释。此时，在表关联、数据引用等场景下，用户只能结合字段存放的数据来判断其用途，增加了选择目标字段的成本。
 

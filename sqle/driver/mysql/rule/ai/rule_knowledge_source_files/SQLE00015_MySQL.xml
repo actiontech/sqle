@@ -15,6 +15,7 @@
       当两个表使用不同的排序规则时，在进行联接操作时可能会导致索引失效，从而引发全表扫描。这是因为MySQL需要在运行时进行字符集转换，这可能会阻止使用索引。
 
       反例：
+```sql
       CREATE TABLE `table_a` (
         `id` int(11) NOT NULL AUTO_INCREMENT,
         `col_1` varchar(50) DEFAULT NULL,
@@ -32,7 +33,9 @@
         KEY `table_b_col_2_index` (`col_2`)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE = utf8mb4_general_ci;
 
+```
       反例验证：
+```sql
       -- 创建示例表
       -- 插入模拟数据到table_a
       mysql&gt; INSERT INTO `table_a` (`col_1`, `col_2`) VALUES ('aaa', 'abc'), ('bbb', 'def'), ('ccc', 'ghi'), ('ddd', 'jkl'), ('eee', 'mno');
@@ -65,11 +68,15 @@
 
       # 注意这里的警告信息，表明由于排序规则的不一致，无法使用索引进行连接操作
 
+```
       正例：
+```sql
       -- 确保两个表使用相同的排序规则
       ALTER TABLE `table_b` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
 
+```
       正例验证：
+```sql
       -- 变更表的排序规则
       mysql&gt; ALTER TABLE `table_b` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
       Query OK, 0 rows affected (0.XX sec)
@@ -84,6 +91,7 @@
       +----+-------------+-------+------------+------+---------------------+---------------------+---------+--------------+------+----------+---------------------------------------+
       2 rows in set, 1 warning (0.00 sec)
 
+```
       </示例>
       <检查流程描述>
       1. 对于 CREATE TABLE 语句：

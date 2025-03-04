@@ -15,17 +15,22 @@
           ENUM值属于MySQL在SQL标准上的扩展，无法明确其他数据库系统的支持情况，因此移植性较差。
           https://dev.mysql.com/doc/refman/5.7/en/extensions-to-ansi.html
           同时，在对ENUM字段的值进行修改或增加时，通常均需要对整个表进行重建，代价较大。
+```sql
           For example, adding a member to a SET column that has 8 members changes the required storage per value from 1 byte to 2 bytes; this requires a table copy. Adding members in the middle of the list causes renumbering of existing members, which requires a table copy.
           https://dev.mysql.com/doc/refman/5.7/en/innodb-online-ddl-operations.html
           ENUM的字段，无法通过字面值进行排序；在插入的时候，必须带上引号，否则会出现不可预期的问题。
+```
           任何不在枚举的范围的值插入都会报错，一般用tinyint替代ENUM比较合适。另外，ENUM的字段值默认区分大小写。
 
           示例：
+```sql
           CREATE TABLE t1(
           a int primary key auto_increment,
           b enum('A','3','2','1') default '3');
 
+```
           示例验证：
+```sql
           -- 写入值时可支持集合的序号、具体值写入，容易混淆。
           mysql&gt; create table t1(
           a int primary key auto_increment,
@@ -70,6 +75,7 @@
           +----------+------+
           5 rows in set (0.01 sec)
       
+```
       </示例>
       <检查流程描述>
       1. 对于 "CREATE TABLE..." 语句，检查是否含有 ENUM 或 SET 类型的字段，如果有则报告违反规则。

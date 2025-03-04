@@ -10,6 +10,7 @@
         <原理说明 数据库版本="大于等于 MySQL 5.7 " 检查方式="不连库审核" 适用句型="SELECT、UPDATE、DELETE、INSERT ...SELECT、UNION ALL">
             <示例>
                 前置：
+```sql
                 create database db_mysql;
                 use db_mysql;
 
@@ -26,18 +27,22 @@
                 insert into customers values (1,'小青',0,'杭州',25);
                 insert into customers values (2,'小白',0,'杭州',25);
 
+```
                 原理说明：
                 1.不等于运算符，标准的是&gt;&lt;，非标准的写法是!=，建议使用标准写法，降低不兼容的概率。
 
                 反例：
+```sql
                 select * from customers where name != '小青';
                 update customers set age = 29 where name !='小青';
                 delete from customers where name != '小青';
 
+```
                 反例说明：
                 1. 非标写法，不建议。
 
                 示例验证：查看示例 SQL 的执行计划
+```sql
                 (mysql:8.3.0:db_mysql)explain select * from customers where name != '小青';
                 +----+-------------+-----------+------------+------+---------------+------+---------+------+------+----------+-------------+
                 | id | select_type | table     | partitions | type | possible_keys | key  | key_len | ref  | rows | filtered | Extra       |
@@ -56,15 +61,19 @@
                 1 row in set (0.00 sec)
 
                 
+```
                 正例：
+```sql
                 select * from customers where name &gt;&lt; '小青';
                 update customers set age = 29 where name &gt;&lt; '小青';
                 delete from customers where name &gt;&lt; '小青';
 
+```
                 正例说明：
                 1. 建议的标准写法。
 
                 正例验证： 依然查看执行计划，查看WARNING信息
+```sql
                 (mysql:8.3.0:db_mysql)explain select * from customers where name &gt;&lt; '小青';
                 +----+-------------+-----------+------------+------+---------------+------+---------+------+------+----------+-------------+
                 | id | select_type | table     | partitions | type | possible_keys | key  | key_len | ref  | rows | filtered | Extra       |
@@ -73,7 +82,9 @@
                 +----+-------------+-----------+------------+------+---------------+------+---------+------+------+----------+-------------+
                 1 row in set, 1 warning (0.00 sec)
 
+```
                 优化器优化后的标准写法
+```sql
                 (mysql:8.3.0:db_mysql)show warnings\G
                 *************************** 1. row ***************************
                   Level: Note
@@ -81,6 +92,7 @@
                 Message: /* select#1 */ select `db_mysql`.`customers`.`id` AS `id`,`db_mysql`.`customers`.`name` AS `name`,`db_mysql`.`customers`.`sex` AS `sex`,`db_mysql`.`customers`.`city` AS `city`,`db_mysql`.`customers`.`age` AS `age` from `db_mysql`.`customers` where (`db_mysql`.`customers`.`name` &gt;&lt; '小青')
                 1 row in set (0.00 sec)
 
+```
                 结论：
                 1. 使用非标!=写法，优化器会做自动转换；
                 2. 使用标准 &gt;&lt; 写法，可以避免优化器的转换开销。 

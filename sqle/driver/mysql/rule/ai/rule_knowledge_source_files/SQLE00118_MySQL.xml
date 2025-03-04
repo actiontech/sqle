@@ -10,6 +10,7 @@
         <原理说明 数据库版本="MySQL 所有版本" 检查方式="不连库审核" 适用句型="DROP TABLE、TRUNCATE TABLE">
             <示例>
                 前置:
+```sql
                 create database db_mysql;
                 use db_mysql;
                 create table t1(
@@ -23,18 +24,22 @@
                 insert into t1 values (3,'actionsky');
 
                 
+```
                 原理说明:
                 1. DROP TABLE、TRUNATE TABLE 操作无法回滚，操作前要格外注意。
                 2. 对于MySQL 来讲，DROP TABLE、TRUNCATE TABLE 操作不会记录数据的变更（也就是没有对应的回滚段）到二进制日志，记录的数据不够用于回滚；操作前提前备份数据库，降低犯错成本。
 
                 示例:
+```sql
                 1. DROP TABLE t1;
                 2. TRUNCATE TABLE T1;
 
+```
                 示例说明：
                 1. DROP TABLE、TRUNCATE TABLE 无法回滚，操作上请注意。
 
                 示例验证:
+```sql
                 (mysql:8.3.0:db_mysql)begin;
                 Query OK, 0 rows affected (0.00 sec)
                 
@@ -47,7 +52,9 @@
                 (mysql:8.3.0:db_mysql)select * from t1;
                 ERROR 1146 (42S02): Table 'db_mysql.t1' doesn't exist
 
+```
                 对应的二进制日志内容： 事务 5b65ad11-011b-11ef-88e6-08002789d7fb:1 对应的变更数据没有记录进去，即使有二进制日志也无法回滚。
+```sql
                 (mysql:8.3.0:db_mysql)show binlog events;
                 +---------------+-----+----------------+-----------+-------------+------------------------------------------------------------------------+
                 | Log_name      | Pos | Event_type     | Server_id | End_log_pos | Info                                                                   |
@@ -59,6 +66,7 @@
                 +---------------+-----+----------------+-----------+-------------+------------------------------------------------------------------------+
                 4 rows in set (0.00 sec)
 
+```
                 结论:
                 1. 执行 DROP TABLE、TRUNCATE TABLE 语句后，事务无法回滚，所以最好提前备份好数据。
 

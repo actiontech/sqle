@@ -13,9 +13,11 @@
         <场景 名称="初始化表结构定义" 数据库版本="大于等于 MySQL 5.7 " 检查方式="不连库审核" 适用句型="CREATE TABLE">
             <示例>
                 前置：
+```sql
                 create database db_mysql;
                 use db_mysql;
 
+```
                 原理说明：
                 1. 表定义字段为varchar时，如果明确该字段会作为索引存在，则需要严格限制字符个数，不能超过 767。 原因如下：
                    1. MySQL的字段最大支持的索引字节数是3072。
@@ -24,6 +26,7 @@
                 2. 针对varchar字段建立索引时，是按照字符定义长度来计算理论存储空间的；但是如果存储的值一样的话，给 字段 varchar(100)和 varchar(200) 来建立索引，真实的存储空间是一样的。
 
                 示例：
+```sql
                 -- 表结构1，mark1 字段 200个字符
                 CREATE TABLE customers1(
                   id INT NOT NULL, -- 序号
@@ -49,7 +52,9 @@
                 );
                        
 
+```
                 示例验证：
+```sql
                 -- 对比不同varchar长度，相同数据的索引长度
 
                 -- 表customers1 生成初始样例数据.
@@ -69,6 +74,7 @@
                 2 rows in set (0.00 sec)
 
 
+```
                 结论：
                 1. VARCHAR字段的定义大小和索引的大小不对应，索引字段是以VARCHAR 字段的实际存储来分布的。 
                 2. 在MySQL 5.7 和MySQL8.0 下均测试完成，索引已经按照实际存储的值来定义，并非按照定义的字符个数存储;
@@ -88,6 +94,7 @@
         <场景 名称="添加索引" 数据库版本="大于等于 MySQL 5.7 " 检查方式="连库审核" 适用句型="ALTER TABLE、CREATE INDEX">
             <示例>
                 前置：
+```sql
                 create database db_mysql;
                 use db_mysql;
 
@@ -101,13 +108,16 @@
                   PRIMARY KEY (id) -- 主键
                 );
 
+```
                 原理说明：与【初始化表结构定义】场景一致
 
                 示例SQL：
+```sql
                 alter table customers add index idx_name_customers(name);
                 create index idx_name_customers on customers(name);
                 
 
+```
                 示例验证：与【初始化表结构定义】场景一致
 
 

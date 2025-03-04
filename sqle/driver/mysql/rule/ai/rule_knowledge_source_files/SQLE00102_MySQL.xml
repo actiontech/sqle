@@ -11,6 +11,7 @@
             <示例>
                 前置：
                 示例表结构:
+```sql
                 create database db_mysql;
                 use db_mysql;
     
@@ -40,6 +41,7 @@
                 select a+1,concat('小王',a),floor(rand()*2),'上海',ceil(rand()*20)+20 from tmp where a &lt; 1000000) 
                 select * from tmp;
 
+```
                 原理说明：
                 1. UPDATE、DELETE 加 ORDER BY 子句，可以根据 ORDER BY 指定的字段来进行排序更新、删除，一般是和 LIMIT 一起使用。
                 2. 加 ORDER BY 子句会造成不必要的排序开销，浪费资源，严重影响性能。
@@ -47,12 +49,15 @@
                   2. 对于UPDATE和DELETE操作，数据库需要记录事务日志。排序操作可能导致这些命令处理更多的数据，从而增加了事务日志的大小，对I/O性能造成影响。
 
                 反例：      
+```sql
                 update customers set city = '北京' order by age;
                 delete from customers order by age;
                 update customers set city = '北京'  where id in (select c_id from orders order by id desc);
                 delete from customers where id in (select c_id from orders order by id desc);
     
+```
                 反例验证： 
+```sql
                 -- 两条SQL 类似，只验证 update 语句即可;为了不重新插入数据，把语句包在一个事务块里。 更新语句执行时间12.37秒。
                 
                 (mysql:8.4.0:db_mysql)begin;
@@ -65,13 +70,17 @@
                 (mysql:8.4.0:db_mysql)rollback;
                 Query OK, 0 rows affected (7.66 sec)
                 
+```
                 正例：
+```sql
                 update customers set city = '北京';
                 delete from customers;
                 update customers set city = '北京'  where id in (select c_id from orders);
                 delete from customers where id in (select c_id from orders);
 
+```
                 正例验证： 同样，为了简化验证流程，把语句包在事务块里。可以看到，取消了 ORDER BY 子句的更新只花了8秒。
+```sql
                 (mysql:8.4.0:db_mysql)begin;
                 Query OK, 0 rows affected (0.00 sec)
 
@@ -82,6 +91,7 @@
                 (mysql:8.4.0:db_mysql)rollback;
                 Query OK, 0 rows affected (6.59 sec)
 
+```
                 结论：
                 1. DELETE、UPDATE 语句加上 ORDER BY 子句，造成额外的排序；排序在数据库中的耗时最大，最消耗资源，所以应该禁止UPDATE、DELETE 语句加上 ORDER BY 子句。
 

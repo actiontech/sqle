@@ -10,6 +10,7 @@
     <场景 名称="使用触发器" 数据库版本="MySQL 所有版本 " 检查方式="不连库审核" 适用句型="CREATE TRIGGER">
       <示例>
           前置：
+```sql
           create database db_mysql;
           use db_mysql;
           -- 表结构：
@@ -21,12 +22,14 @@
               mark1 varchar(200) -- 备注1
           );
 
+```
           原理说明：
           1. 触发器本身是对表进行DML时的每行级联更改；而且触发器里可以包含很复杂的逻辑，这样会导致数据库端处理其不擅长的计算业务，降低整体的TPS。
           2. 触发器里面封装了一定逻辑，所以从原理上来讲，可以把触发器看成一个特殊的存储过程，其缺点可以参考规则SQLE00029。
           3. 触发器里的逻辑如果没有处理好，就会导致原来的DML操作性能下降，进而影响其他事务的执行效率。比如执行时间过长、等锁时间过程、容易出现死锁等。
 
           反例SQL：
+```sql
           delimiter ||
           CREATE TRIGGER ins_check BEFORE INSERT ON customers
           FOR EACH ROW
@@ -40,12 +43,14 @@
           ||
           delimiter ;
 
+```
           反例说明：
           1. 此示例给表 customers 上创建一个前置insert 触发器，对字段age 进行判断，临界值为18岁，把对应的信息写入到字段mark1中。
 
 
           反例验证： 
           插入10W条记录，耗时25秒。
+```sql
           (mysql:8.4.0-debug:db_mysql)set cte_max_recursion_depth=1000000000;
           Query OK, 0 rows affected (0.00 sec)
 
@@ -54,13 +59,17 @@
           Records: 100000  Duplicates: 0  Warnings: 0
           
           
+```
           正例：
+```sql
           drop trigger ins_check;
 
+```
           正例说明：
           1. 删掉触发器，把触发器的逻辑从数据库中移除，应用端来实现。
 
           正例验证： 插入耗时18秒，比有触发器的插入时间短。
+```sql
           (mysql:8.4.0-debug:db_mysql)drop trigger ins_check;
           Query OK, 0 rows affected (0.02 sec)
 
@@ -71,6 +80,7 @@
           Query OK, 100000 rows affected (18.88 sec)
           Records: 100000  Duplicates: 0  Warnings: 0
 
+```
           总结：
           1. 触发器会增加DML的耗时，特别是触发器里面逻辑很复杂的场景，进而影响整体的TPS。
           2. 触发器的语法每个数据库不一样，如果后期涉及到数据库迁移，改写工总量巨大。

@@ -13,6 +13,7 @@
     <原理说明 数据库版本="MySQL 8.0" 检查方式="连库审核" 适用句型="SELECT">
       <示例>
             示例表结构:
+```sql
             create database db_mysql;
             use db_mysql;
   
@@ -35,6 +36,7 @@
               select a+1,concat('小王',a),floor(rand()*2),'上海',ceil(rand()*20)+20 from tmp where a &lt; 15000000) 
               select * from tmp;
 
+```
            原理说明：
            1. 索引的目的是为了加速带过滤条件或者排序的DML语句。
            2. 但是索引本身在数据量大的时候，也需要部分过滤才能性能最佳；
@@ -42,12 +44,15 @@
            4. 对于这种场景，从数据库端已经无法进行优化，需要在业务层来进行过滤；也就是说业务层需要修改检索逻辑。比如减少获取记录数、添加索引列的过滤条件等。
 
            示例：
+```sql
            -- 以下这两条SQL，都是针对列name 的全索引扫描，由于没有过滤条件，只能利用索引的有序性消除额外的排序。
            select name from customers order by name desc;
            select name from customers group by name order by name desc;
            select distinct name from customers;
 
+```
            示例验证：
+```sql
            -- 这两条SQL 执行时会获取很多记录，所以只列出执行计划。
            -- 表总行数为1500W行，执行计划走的全索引扫描，扫描行数接近全表行数。 
            (mysql:8.0.31-cluster)explain select name from customers order by name desc;
@@ -58,7 +63,9 @@
             +----+-------------+-----------+------------+-------+---------------+--------------------+---------+------+----------+----------+----------------------------------+
             1 row in set, 1 warning (0.00 sec)
 
+```
            示例优化：
+```sql
            -- 修改SQL 语句，减少输出行数
            select name from customers order by name desc limit 1;
            select name from customers group by name order by name desc limit 1;
@@ -76,6 +83,7 @@
             +----+-------------+-----------+------------+-------+---------------+--------------------+---------+------+------+----------+----------------------------------+
             1 row in set, 1 warning (0.00 sec)
         
+```
             结论：
             1. 对于这类全索引扫描的SQL 语句，从数据库角度来讲，优化的点无非就是数据库内部并行对索引进行扫描，但是随着数据量的增加，性能也会越来越差。
             2. 所以只有从业务层面修改SQL 语句，让其获取更少的数据才能做到根本优化。

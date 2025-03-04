@@ -13,6 +13,7 @@
     <场景 名称="联合查询" 数据库版本="大于等于 MySQL 5.7" 检查方式="不连库审核" 适用句型="SELECT、UPDATE、DELETE、INSERT ... SELECT、UNION、WITH">
       <示例>
           前置：
+```sql
           create database if not exists db_mysql;
           use db_mysql;
 
@@ -129,6 +130,7 @@
               update_time datetime DEFAULT current_timestamp ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
             );
 
+```
           原理说明：
           1. 数据库系统中，在一条SQL语句中，关联过多的表可能会对数据库性能和查询效率产生影响。
           2. 表关联过多，会导致查询、更新性能下降，数据库需要执行更多的表连接、数据匹配操作。
@@ -141,6 +143,7 @@
 
           示例：
           SQL1：
+```sql
           select a.id,a.name,c.name,hr.is_health,sc.score,t.name from student a, sc, course c ,health_archives ha, health_report hr, teacher t
           where  a.id = sc.student_id 
           and sc.course_id = c.id
@@ -163,7 +166,9 @@
           and c.name='课程911'
           and hr.is_health='强壮';
 
+```
           SQL3:
+```sql
           delete a from student a
           inner join sc
           inner join course c 
@@ -191,6 +196,7 @@
           and c.name='课程911'
           and hr.is_health='强壮';
 
+```
           示例说明：
           1. 示例SQL1 是查询所有选了课程名为 '课程911'的、并且最终分数大于80分、并且健康程度是强壮的学生ID、学生名字、健康程度、分数。
           2. 示例SQL2 是更新所有选了课程名为 '课程911'的、并且最终分数大于80分、并且健康程度是强壮的学生对应的更新时间。
@@ -200,6 +206,7 @@
           
 
           示例验证：由于以上示例SQL 的逻辑一样，所以只验证SQL1 即可，执行时间5.68秒。
+```sql
           (mysql:8.4.0:db_mysql)         select a.id,a.name,c.name,hr.is_health,sc.score,t.name from student a, sc, course c ,health_archives ha, health_report hr, teacher t
               -&gt;           where  a.id = sc.student_id 
               -&gt;           and sc.course_id = c.id
@@ -216,20 +223,26 @@
           +------+----------------+-----------+-----------+-------+------------+
           1 row in set (5.68 sec)
 
+```
           示例优化：
           1. 比如我们可以采用表冗余的方式，把健康信息列冗余到学生表里，这样表的关联个数就能减少到两个。由于各种句型相似，此处只写SELECT 句型的优化结果。
           
           优化步骤：
           1. 冗余健康档案表、更新健康档案表、删除字段 health_report_id。
+```sql
           alter table health_archives add is_health varchar(10) default '100%'comment '健康程度';
           update health_archives ha, health_report hr set ha.is_health = hr.is_health where ha.health_report_id = hr.id;
           alter table health_archives drop health_report_id;
 
+```
           2. 更新学生表，加入健康字段、更新健康字段值。
+```sql
           alter table student add is_health varchar(10) default '100%'comment '健康程度';
           update student a, health_archives ha set a.is_health = ha.is_health where a.id = ha.student_id;
 
+```
           3. 减少表关联个数后的SQL1：表关联个数由6个减少到4个。
+```sql
           select a.id,a.name,c.name,a.is_health,sc.score,t.name from student a, sc, course c , teacher t
           where  a.id = sc.student_id 
           and sc.course_id = c.id
@@ -238,7 +251,9 @@
           and c.name='课程911'
           and a.is_health='强壮';
 
+```
           最终执行结果： 由之前6表关联的5.68秒减少到4.66秒。
+```sql
           (mysql:8.4.0:db_mysql)          select a.id,a.name,c.name,a.is_health,sc.score,t.name from student a, sc, course c , teacher t
               -&gt;           where  a.id = sc.student_id 
               -&gt;           and sc.course_id = c.id
@@ -253,12 +268,16 @@
           +------+----------------+-----------+-----------+-------+------------+
           1 row in set (4.66 sec)
 
+```
           4.再次冗余课程表，加入老师名字、更新老师名字值、把老师ID删除。
+```sql
           alter table course add teacher_name varchar(20) comment '老师名字';
           update course c, teacher t set c.teacher_name = t.name where c.teacher_id = t.id;
           alter table course drop teacher_id;
 
+```
           5. 表关联个数最终减少到3个：
+```sql
           select a.id,a.name,c.name,a.is_health,sc.score,c.teacher_name from student a, sc, course c 
           where  a.id = sc.student_id 
           and sc.course_id = c.id
@@ -266,7 +285,9 @@
           and c.name='课程911'
           and a.is_health='强壮';
 
+```
           执行时间由4.66秒降低到4.19秒。
+```sql
           (mysql:8.4.0:db_mysql)          select a.id,a.name,c.name,a.is_health,sc.score,c.teacher_name from student a, sc, course c 
               -&gt;         where  a.id = sc.student_id 
               -&gt;          and sc.course_id = c.id
@@ -280,9 +301,13 @@
           +------+----------------+-----------+-----------+-------+--------------+
           1 row in set (4.19 sec)
           
+```
           6. 表关联个数下降后，给其中一张表加入合适的索引，
+```sql
           create index idx_course_id on sc(course_id);
+```
           再次执行，时间由4.19秒，降低到10毫秒。
+```sql
           (mysql:8.4.0:db_mysql)          select a.id,a.name,c.name,a.is_health,sc.score,c.teacher_name from student a, sc, course c 
               -&gt;         where  a.id = sc.student_id 
               -&gt;          and sc.course_id = c.id
@@ -296,6 +321,7 @@
           +------+----------------+-----------+-----------+-------+--------------+
           1 row in set (0.01 sec)
 
+```
           总结：
           1. 表关联个数太多，会导致优化器生成复杂的执行计划、数据资源的严重消耗，最终影响到整体的TPS严重下降。
           2. 想尽办法减少表关联个数：

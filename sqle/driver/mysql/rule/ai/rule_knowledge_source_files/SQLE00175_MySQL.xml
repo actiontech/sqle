@@ -11,6 +11,7 @@
       <场景 名称="复合查询条件" 数据库版本="MySQL 所有版本" 检查方式="连库审核" 适用句型="SELECT、UPDATE、DELETE">
         <示例>
           前置:
+```sql
         
           CREATE TABLE customers(
           id INT NOT NULL, -- 序号
@@ -41,12 +42,15 @@
           analyze table customers;
       
 
+```
           示例：
+```sql
           select count(*) from customers where name = 'lily10' and age = 47;
           update customers set mark='test' where name = 'lily10' and age = 47;
           delete from customers where name = 'lily10' and age = 47;
 
   
+```
           原理说明：
           1. SQL 语句执行计划中出现 INDEX_MERGE 表示 MySQL 优化器根据过滤条件匹配的两个或者多个索引对应的rowid
              进行合并的一种算法。
@@ -56,6 +60,7 @@
   
           示例验证：
             
+```sql
             -- 执行示例SQL，执行计划显示使用了 index_merge 算法，其扫描行数为 1773.
             (mysql:8.0.31-cluster)explain select count(*) from customers where name = 'lily10' and age = 47\G
             *************************** 1. row ***************************
@@ -98,6 +103,7 @@
             1 row in set, 1 warning (0.00 sec)
             
           
+```
             示例说明：
             1. 表customers 有三个索引。idx_name_customers 适合针对name 列的过滤；idx_age_customers 适合针对 age 列的过滤；idx_name_age_customers 适合针对name 和 age 列的联合过滤。
             2. 在此示例中，联合索引idx_name_age_customers 才是最适合此SQL 语句的。

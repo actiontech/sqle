@@ -10,6 +10,7 @@
     <场景 名称="修改表、字段名称" 数据库版本="大于等于 MySQL 5.7 " 检查方式="不连库审核" 适用句型="ALTER TABLE">
       <示例>
           前置：
+```sql
           create database db_mysql;
           use db_mysql;
 
@@ -23,6 +24,7 @@
             PRIMARY KEY (id) -- 主键
           );
 
+```
           原理说明：
           1. 业务中断风险： 如果在线上环境中直接执行RENAME或CHANGE命令更改表名或列名，所有引用了原名的SQL语句（如查询、更新、删除等）将无法找到对应的表或列，从而导致这些操作失败并抛出错误，影响用户体验。
           2. 数据一致性问题： 更改表名或列名后，如果业务应用层没有同步更新，可能会出现数据不一致的情况。例如，一些业务逻辑可能依然在尝试访问旧的表名或列名，而这些操作不会被正确地执行。
@@ -34,19 +36,24 @@
           示例：
 
           修改表名：
+```sql
           alter table customers rename to customers_new;
           rename table customers to customers_new;
 
+```
           修改列名：
+```sql
           alter table customers rename column id to id_no;
           alter table customers change id id_new int;
   
 
+```
           示例说明：
           1. 此示例修改表customers 的表名、字段名。
 
           示例验证： 修改表名、修改字段名都会造成业务中断，只验证一种即可。
           1. 表和字段没改名之前的业务：都很正常。
+```sql
           (mysql:8.3.0:db_mysql)insert into customers values (1,'小贾',0,'深圳',33);
           Query OK, 1 row affected (0.04 sec)
 
@@ -65,7 +72,9 @@
           (mysql:8.3.0:db_mysql)delete from customers;
           Query OK, 1 row affected (0.04 sec)
 
+```
           2. 改名之后，原先的业务没有及时变更，直接报错中断
+```sql
           (mysql:8.3.0:db_mysql)alter table customers rename to customers_new;
           Query OK, 0 rows affected (0.04 sec)
 
@@ -82,6 +91,7 @@
           ERROR 1146 (42S02): Table 'db_mysql.customers' doesn't exist
 
 
+```
           结论：
           1. 禁止对表名、表字段改名操作，此为高危操作，将会影响所有包含包含被改名表、被改名字段的业务正确性。
 

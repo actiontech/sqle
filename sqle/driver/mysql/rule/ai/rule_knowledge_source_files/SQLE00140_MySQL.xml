@@ -10,8 +10,10 @@
         <原理说明 数据库版本="MySQL 所有版本 " 检查方式="不连库审核" 适用关键词="TABLE、VIEW、PROCEDURE、FUNCTION、SEQUENCE、TRIGGER、EVENT、INDEX">
             <示例>    
             前置：
+```sql
             CREATE DATABASE private;  
 
+```
             原理说明：
             1. MySQL 数据库等价于模式，所以在MySQL里，这条规则的意思是说需要指定数据库名。
             2. 每张表都属于一个数据库，不带 数据库名的表，属于当前的数据库，也就是USE 数据库名；操作后的数据库环境下。
@@ -20,6 +22,7 @@
           
             反例：
       
+```sql
             -- 表操作
             SELECT COUNT(*) FROM t1;
             CREATE TABLE t1 (id INT PRIMARY KEY, c1 TEXT);
@@ -79,11 +82,13 @@
             DROP INDEX idx_t1_id ON t1;
             
       
+```
             反例说明：
             1. 示例 SQL 未指定数据库名，只能在默认的数据库下操作，依赖 USE 语句结果，可能导致SQL语句执行错误或者未在预期的 数据库下进行查询或变更。
       
             反例验证： 示例都类似，仅验证表操作的select 语句即可。
             1. 不带 数据库的表操作，依赖USE 数据库的环境。示例中，不带数据库名，会导致查询出错。
+```sql
             (mysql:8.4.0:db_mysql)select count(*) from t1;
             ERROR 1146 (42S02): Table 'db_mysql.t1' doesn't exist
             
@@ -95,7 +100,9 @@
             +------------+
             1 row in set (0.00 sec)
 
+```
             2. 切换数据库： 再次查询，结果正常。
+```sql
             (mysql:8.4.0:db_mysql)use private;
             Reading table information for completion of table and column names
             You can turn off this feature to get a quicker startup with -A
@@ -110,7 +117,9 @@
             1 row in set (0.00 sec)
 
             
+```
             正例：
+```sql
             -- 表操作
             SELECT COUNT(*) FROM private.t1;
             CREATE TABLE private.t1 (id INT PRIMARY KEY, c1 TEXT);
@@ -169,11 +178,13 @@
             CREATE INDEX private.idx_t1_id ON private.t1(id);
             DROP INDEX private.idx_t1_id ON private.t1;            
       
+```
             正例说明：
             1. 示例SQL 都是对表t1进行操作，并指定数据库名，这样后期的操作，不与USE 数据库环境相关。
             
             正例验证： 
             1. 带有 数据库名的表操作，不依赖当前数据库的选择。
+```sql
             (mysql:8.4.0:db_mysql)select count(*) from private.t1;
             +----------+
             | count(*) |
@@ -191,6 +202,7 @@
             1 row in set (0.00 sec)
             
       
+```
             结论：
             1. 对表创建、修改、查询、更新、删除等操作时，建议带上对象的数据库名称。
             2. 不带数据库名称的SQL 访问的表USE 操作环境，有可能会造成歧义。比如示例中不带数据库名的表，当USE 另外一个数据后，对表t1操作的结果都不一样。

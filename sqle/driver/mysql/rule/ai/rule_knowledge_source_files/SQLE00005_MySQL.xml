@@ -13,6 +13,7 @@
         <原理说明 关键词="CREATE TABLE、ALTER TABLE、CREATE INDEX" 数据库版本="MySQL 所有版本" 检查方式="不连库审核">
             <示例>
                 前置:
+```sql
                 create database db_mysql;
                 use db_mysql;
 
@@ -66,16 +67,20 @@
                 WHERE NAME='db_mysql/customers';
 
 
+```
                 原理说明：
                 1. 复合索引的目的是为了提升复合字段匹配的速度。 
                 2. 除了要满足复合索引的最左列选择度高外，还要想办法减少其中包含的列个数，比如 3 个字段列。
                 3. 列数不能无限制增加，列数越多，占用磁盘空间越大；每次对表更新时就需要消耗更多的资源来处理索引的数据分布；
                 4. 复合索引一般用于二级索引，也可以用于主键。比如：
+```sql
                 create table table1(c1 int,c2 int,c3 int,c4 int, primary key (c1,c2,c3));
 
+```
                 示例：
                 -- 创建两个索引：
                 -- 索引1：
+```sql
                 create index idx_com1 on customers(name,age,mark1);
                 -- 或者使用
                 alter table customers add key idx_com1 (name,age,mark1);
@@ -87,6 +92,7 @@
                 alter table customers add key idx_com2 (name,age,mark1,mark4,mark5);
                 alter table customers add index idx_com2 (name,age,mark1,mark4,mark5);
 
+```
                 示例说明：
                 创建完索引，分两个步骤来验证：
                 第一，验证两个索引对表更新的性能影响。（也就是判断是否会增加索引维护的开销；插入、删除、更新都属于维护索引导致性能低下的示例，这里验证一个例子即可。）
@@ -94,6 +100,7 @@
 
                 示例验证：
                 -- 创建索引1：
+```sql
                 (mysql:8.3.0:db_mysql)create index idx_com1 on customers(name,age,mark1);
                 Query OK, 0 rows affected (0.02 sec)
                 Records: 0  Duplicates: 0  Warnings: 0
@@ -175,6 +182,7 @@
                 +----------+
                 1 row in set (0.00 sec)
 
+```
                 结论：
                 1. 对于复合索引来讲，其中包含的列数越多，占用磁盘空间越大；对基表的更新性能就越差；进而消耗更多的资源，影响数据库整体的TPS。
                 2. 根据实际业务的查询模式，决定哪些字段组合是最常用的。避免将很少用于查询条件的字段加入索引。

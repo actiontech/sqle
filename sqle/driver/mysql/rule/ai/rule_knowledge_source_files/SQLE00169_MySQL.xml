@@ -12,6 +12,7 @@
             <示例>
               前置：
               示例表结构:
+```sql
               create database db_mysql;
               use db_mysql;
     
@@ -35,20 +36,24 @@
                 select a+1,concat('小王',a),floor(rand()*2),'上海',ceil(rand()*20)+20 from tmp where a &lt; 2000000) 
                 select * from tmp;
 
+```
               原理说明：
               1. 在目前官方支持的MySQL版本中（大于等于 MySQL 5.7），给表添加带默认值的列只会更新数据字典数据，不会导致全表被锁。此规则不适用。
               2. ONLINE DDL 请参考规则：SQLE00059
 
               示例：
+```sql
               alter table customers add mark1 varchar(100) default 'test';
               alter table customers add mark2 varchar(100) default 'test' not null;
 
+```
               示例说明：
               1. 给表 customers 添加两个列，一个列mark1 有默认值，可以为NULL；另外一个列 mark2，有默认值，不为NULL。
 
 
               示例验证：
               1. 当前MySQL 版本：8.3.0
+```sql
               (mysql:8.3.0:db_mysql)select version();
               +-----------+
               | version() |
@@ -57,7 +62,9 @@
               +-----------+
               1 row in set (0.00 sec)
               
+```
               2.表 customers 记录数200W
+```sql
               (mysql:8.3.0:db_mysql)select count(*) from customers;
               +----------+
               | count(*) |
@@ -67,17 +74,22 @@
               1 row in set (0.58 sec)
               
 
+```
               3. 给表customers 添加列 mark1，默认值为 'test': 瞬间执行完成。
+```sql
               (mysql:8.3.0:db_mysql)alter table customers add mark1 varchar(100) default 'test';
               Query OK, 0 rows affected (0.11 sec)
               Records: 0  Duplicates: 0  Warnings: 0
               
 
+```
               4. 给表customers 添加列 mark2，默认值为 'test'，并且不为NULL： 瞬间完成。
+```sql
               (mysql:8.3.0:db_mysql)alter table customers add mark2 varchar(100) default 'test' not null;
               Query OK, 0 rows affected (0.04 sec)
               Records: 0  Duplicates: 0  Warnings: 0
               
+```
               结论：
               1. 在目前官方支持的MySQL版本中（大于等于 MySQL 5.7），给表添加带默认值的列只会更新数据字典数据，不会导致全表被锁。此规则不适用。
       
