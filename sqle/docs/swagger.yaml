@@ -4704,6 +4704,38 @@ definitions:
         - phone
         type: string
     type: object
+  v1.TestGitConnectionReqV1:
+    properties:
+      git_http_url:
+        type: string
+      git_user_name:
+        type: string
+      git_user_password:
+        type: string
+    type: object
+  v1.TestGitConnectionResDataV1:
+    properties:
+      branches:
+        items:
+          type: string
+        type: array
+      error_message:
+        type: string
+      is_connected_success:
+        type: boolean
+    type: object
+  v1.TestGitConnectionResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.TestGitConnectionResDataV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.TestWechatConfigResDataV1:
     properties:
       error_message:
@@ -6536,6 +6568,29 @@ info:
   title: Sqle API Docs
   version: "1.0"
 paths:
+  /configurations/git/test:
+    post:
+      consumes:
+      - application/json
+      description: test git connection
+      operationId: TestGitConnection
+      parameters:
+      - description: test git configuration req
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/v1.TestGitConnectionReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.TestGitConnectionResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 测试Git联通性
+      tags:
+      - configuration
   /v1/audit_files:
     post:
       description: Direct audit sql from SQL files and MyBatis files
@@ -9626,7 +9681,8 @@ paths:
         4. file[input_zip_file]: it is ZIP file that sql will be parsed from xml or sql file inside it.
         5. formData[git_http_url]:the url which scheme is http(s) and end with .git.
         6. formData[git_user_name]:The name of the user who owns the repository read access.
-        7. formData[git_user_password]:The password corresponding to git_user_name.
+        7. formData[git_branch_name]:The name of the repository branch.
+        8. formData[git_user_password]:The password corresponding to git_user_name.
       operationId: CreateSQLAuditRecordV1
       parameters:
       - description: project name
@@ -9673,6 +9729,10 @@ paths:
       - description: the name of user to clone the repository
         in: formData
         name: git_user_name
+        type: string
+      - description: the name of repository branch
+        in: formData
+        name: git_branch_name
         type: string
       - description: the password corresponding to git_user_name
         in: formData
