@@ -5,6 +5,11 @@ package v1
 
 import (
 	e "errors"
+	goGit "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
+	goGitTransport "github.com/go-git/go-git/v5/plumbing/transport/http"
+	"net/http"
+	"os"
 
 	"github.com/actiontech/sqle/sqle/errors"
 
@@ -69,4 +74,60 @@ func testCodingAuditConfigV1(c echo.Context) error {
 
 func getScheduledTaskDefaultOptionV1(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportScheduledNotify)
+}
+
+func testGitConnectionV1(c echo.Context) error {
+	request := new(TestGitConnectionReqV1)
+	if err := controller.BindAndValidateReq(c, request); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	directory, err := os.MkdirTemp("./", "git-repo-")
+	defer os.RemoveAll(directory)
+	cloneOpts := &goGit.CloneOptions{
+		URL: request.GitHttpUrl,
+	}
+	// public repository do not require an user name and password
+	userName := c.FormValue(GitUserName)
+	password := c.FormValue(GitPassword)
+	if userName != "" {
+		cloneOpts.Auth = &goGitTransport.BasicAuth{
+			Username: userName,
+			Password: password,
+		}
+	}
+	repository, err := goGit.PlainCloneContext(c.Request().Context(), directory, false, cloneOpts)
+	if err != nil {
+		return c.JSON(http.StatusOK, &TestGitConnectionResV1{
+			BaseRes: controller.NewBaseReq(nil),
+			Data: TestGitConnectionResDataV1{
+				IsConnectedSuccess: false,
+				ErrorMessage:       err.Error(),
+			},
+		})
+	}
+	references, err := repository.References()
+	if err != nil {
+		return c.JSON(http.StatusOK, &TestGitConnectionResV1{
+			BaseRes: controller.NewBaseReq(nil),
+			Data: TestGitConnectionResDataV1{
+				IsConnectedSuccess: false,
+				ErrorMessage:       err.Error(),
+			},
+		})
+	}
+	branches := make([]string, 0)
+	err = references.ForEach(func(ref *plumbing.Reference) error {
+		if ref.Type() == plumbing.HashReference {
+			branches = append(branches, ref.Name().Short())
+		}
+		return nil
+	})
+
+	return c.JSON(http.StatusOK, &TestGitConnectionResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: TestGitConnectionResDataV1{
+			IsConnectedSuccess: true,
+			Branches:           branches,
+		},
+	})
 }

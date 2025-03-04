@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	e "errors"
 	"fmt"
+	"github.com/go-git/go-git/v5/plumbing"
 	"io"
 	"io/fs"
 	"net/http"
@@ -63,7 +64,8 @@ var maxZipFileSize int64 = 1024 * 1024 * 10
 // @Description 4. file[input_zip_file]: it is ZIP file that sql will be parsed from xml or sql file inside it.
 // @Description 5. formData[git_http_url]:the url which scheme is http(s) and end with .git.
 // @Description 6. formData[git_user_name]:The name of the user who owns the repository read access.
-// @Description 7. formData[git_user_password]:The password corresponding to git_user_name.
+// @Description 7. formData[git_branch_name]:The name of the repository branch.
+// @Description 8. formData[git_user_password]:The password corresponding to git_user_name.
 // @Accept mpfd
 // @Produce json
 // @Tags sql_audit_record
@@ -79,6 +81,7 @@ var maxZipFileSize int64 = 1024 * 1024 * 10
 // @Param input_zip_file formData file false "input ZIP file"
 // @Param git_http_url formData string false "git repository url"
 // @Param git_user_name formData string false "the name of user to clone the repository"
+// @Param git_branch_name formData string false "the name of repository branch"
 // @Param git_user_password formData string false "the password corresponding to git_user_name"
 // @Success 200 {object} v1.CreateSQLAuditRecordResV1
 // @router /v1/projects/{project_name}/sql_audit_records [post]
@@ -186,6 +189,12 @@ func CreateSQLAuditRecord(c echo.Context) error {
 			},
 		},
 	})
+}
+
+type TestGitConnectionResDataV1 struct {
+	IsConnectedSuccess bool     `json:"is_connected_success"`
+	Branches           []string `json:"branches"`
+	ErrorMessage       string   `json:"error_message,omitempty"`
 }
 
 type getSQLFromFileResp struct {
@@ -457,9 +466,23 @@ func getSqlsFromGit(c echo.Context) (sqlsFromSQLFiles, sqlsFromJavaFiles []SQLsF
 		}
 	}
 	// clone from git
-	_, err = goGit.PlainCloneContext(c.Request().Context(), dir, false, cloneOpts)
+	repository, err := goGit.PlainCloneContext(c.Request().Context(), dir, false, cloneOpts)
 	if err != nil {
 		return nil, nil, nil, false, err
+	}
+	workTree, err := repository.Worktree()
+	if err != nil {
+		return nil, nil, nil, false, err
+	}
+	branch := c.FormValue(GitBranchName)
+	if branch != "" {
+		err = workTree.Checkout(&goGit.CheckoutOptions{
+			Branch: plumbing.NewRemoteReferenceName("", branch),
+			Create: false,
+		})
+		if err != nil {
+			return nil, nil, nil, false, err
+		}
 	}
 	l := log.NewEntry().WithField("function", "getSqlsFromGit")
 	var xmlContents []xmlParser.XmlFile
