@@ -72,7 +72,7 @@ func ExtractNodes(node *XMLNode, targetTag string) []ProcessedNode {
 
 	// 递归处理节点
 	var processNode func(node XMLNode, level int)
-	/* 
+	/*
 		在提取子节点时，需要对原始XML文件的内容进行一些处理，以确保生成的Markdown文档的排版和显示正确。
 		具体来说，我们需要对原始XML文件中的内容进行以下处理：
 		1. 跳过检查流程描述，这部分内容不需要在Markdown文档中显示，因此可以跳过。
@@ -85,10 +85,9 @@ func ExtractNodes(node *XMLNode, targetTag string) []ProcessedNode {
 			return
 		}
 		if node.Content != "" || len(node.Children) > 0 {
-			trimmedContent := removeMinIndent(node.Content)
 			nodes = append(nodes, ProcessedNode{
 				Title:   node.XMLName.Local,
-				Content: trimmedContent,
+				Content: removeMinIndent(node.Content),
 				Level:   level,
 			})
 		}
@@ -107,6 +106,7 @@ func ExtractNodes(node *XMLNode, targetTag string) []ProcessedNode {
 			}
 		}
 		if len(labels) > 0 {
+			// 添加标签，标签格式：```label [label1,label2]```
 			nodes = append(nodes, ProcessedNode{
 				Content: fmt.Sprintf("```label [%s]```", strings.Join(labels, ",")),
 			})
@@ -138,11 +138,11 @@ func ExtractNodes(node *XMLNode, targetTag string) []ProcessedNode {
 	return nodes
 }
 
-/* 
-	在Markdown中，当行首缩进较多时，Markdown会将其视为代码块。
-	这可能会导致在某些情况下，行首的缩进被误认为是代码块的一部分，从而影响文档的排版和显示。
-	为了解决这个问题，我们可以使用正则表达式来去除行首的最小缩进。
-	这样，即使行首缩进不一致，Markdown也能正确地解析和渲染文档。
+/*
+在Markdown中，当行首缩进较多时，Markdown会将其视为代码块。
+这可能会导致在某些情况下，行首的缩进被误认为是代码块的一部分，从而影响文档的排版和显示。
+为了解决这个问题，我们可以使用正则表达式来去除行首的最小缩进。
+这样，即使行首缩进不一致，Markdown也能正确地解析和渲染文档。
 */
 func removeMinIndent(input string) string {
 	// 分割成行
