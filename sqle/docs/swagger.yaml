@@ -7427,6 +7427,11 @@ paths:
     get:
       description: get knowledge graph
       operationId: getKnowledgeGraph
+      parameters:
+      - description: filter by rule name
+        in: query
+        name: filter_by_rule_name
+        type: string
       responses:
         "200":
           description: OK
