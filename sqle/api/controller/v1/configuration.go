@@ -1,8 +1,6 @@
 package v1
 
 import (
-	"fmt"
-	"github.com/actiontech/sqle/sqle/errors"
 	"net/http"
 	"strconv"
 
@@ -418,23 +416,18 @@ func TestCodingConfigV1(c echo.Context) error {
 	return testCodingAuditConfigV1(c)
 }
 
-// TestGitConnection
+// TestGitConnectionV1
 // @Summary 测试Git联通性
 // @Description test git connection
 // @Accept json
-// @Id TestGitConnection
+// @Id TestGitConnectionV1
 // @Tags configuration
 // @Security ApiKeyAuth
 // @Param req body v1.TestGitConnectionReqV1 true "test git configuration req"
 // @Success 200 {object} v1.TestGitConnectionResV1
 // @router /configurations/git/test [post]
-func TestGitConnection(c echo.Context) error {
-	// TODO: Test Git Connection
-	req := new(TestGitConnectionReqV1)
-	if err := controller.BindAndValidateReq(c, req); err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	return controller.JSONBaseErrorReq(c, errors.New(-1, fmt.Errorf("need to be implemented")))
+func TestGitConnectionV1(c echo.Context) error {
+	return testGitConnectionV1(c)
 }
 
 type TestGitConnectionReqV1 struct {
