@@ -50,7 +50,17 @@ func GetAffectedRowNum(ctx context.Context, originSql string, conn *executor.Exe
 		// 包含子查询的insert语句，insert into t1 (name) select name from t2
 		isSelectInsert := stmt.Select != nil && stmt.Lists == nil
 		if isSelectInsert {
-			newNode = getSelectNodeFromSelect(stmt.Select.(*ast.SelectStmt))
+			if selectStmt, ok := stmt.Select.(*ast.SelectStmt); ok {
+				newNode = getSelectNodeFromSelect(selectStmt)
+			}
+			// union语句，无法转换为select count语句
+			if unionStmt, ok := stmt.Select.(*ast.UnionStmt); ok {
+				cannotConvert = true
+				originSql, err = restoreToSqlWithFlag(format.DefaultRestoreFlags, unionStmt)
+				if err != nil {
+					return 0, err
+				}
+			}
 		} else if isCommonInsert {
 			return int64(len(stmt.Lists)), nil
 		} else {
@@ -73,6 +83,10 @@ func GetAffectedRowNum(ctx context.Context, originSql string, conn *executor.Exe
 		trimSuffix := strings.TrimRight(originSql, ";")
 		affectedRowSql = fmt.Sprintf("select count(*) from (%s) as t", trimSuffix)
 	} else {
+		if newNode == nil {
+			log.NewEntry().Errorf("get select node from %v failed", originSql)
+			return 0, fmt.Errorf("get select node from %v failed", originSql)
+		}
 		sqlBuilder := new(strings.Builder)
 		err = newNode.Restore(format.NewRestoreCtx(format.DefaultRestoreFlags, sqlBuilder))
 		if err != nil {
