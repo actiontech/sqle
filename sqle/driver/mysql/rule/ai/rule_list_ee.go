@@ -7,7 +7,9 @@ import (
 	"embed"
 	"encoding/xml"
 	"fmt"
+	"math"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -70,17 +72,45 @@ func ExtractNodes(node *XMLNode, targetTag string) []ProcessedNode {
 
 	// 递归处理节点
 	var processNode func(node XMLNode, level int)
+	/* 
+		在提取子节点时，需要对原始XML文件的内容进行一些处理，以确保生成的Markdown文档的排版和显示正确。
+		具体来说，我们需要对原始XML文件中的内容进行以下处理：
+		1. 跳过检查流程描述，这部分内容不需要在Markdown文档中显示，因此可以跳过。
+		2. 将行首的缩进转换为Markdown的代码块缩进，以确保生成的Markdown文档的代码块显示正确。
+		3. 将规则场景的名称添加到场景标题中，将其他属性添加到标签中。
+	*/
 	processNode = func(node XMLNode, level int) {
-		// 如果节点有内容，添加到结果中
-		content := node.Content
-		if content != "" || len(node.Children) > 0 {
+		// 跳过检查流程描述
+		if node.XMLName.Local == "检查流程描述" {
+			return
+		}
+		if node.Content != "" || len(node.Children) > 0 {
+			trimmedContent := removeMinIndent(node.Content)
 			nodes = append(nodes, ProcessedNode{
 				Title:   node.XMLName.Local,
-				Content: content,
+				Content: trimmedContent,
 				Level:   level,
 			})
 		}
-
+		labels := []string{}
+		for _, attr := range node.Attrs {
+			// 名称的属性，添加到场景标题中
+			if attr.Name.Local == "名称" {
+				for idx := range nodes {
+					if nodes[idx].Title == "场景" {
+						nodes[idx].Title = fmt.Sprintf("%s:%s", nodes[idx].Title, attr.Value)
+					}
+				}
+			} else {
+				// 其他属性，添加到标签中
+				labels = append(labels, fmt.Sprintf("%s:%s", attr.Name.Local, attr.Value))
+			}
+		}
+		if len(labels) > 0 {
+			nodes = append(nodes, ProcessedNode{
+				Content: fmt.Sprintf("```label [%s]```", strings.Join(labels, ",")),
+			})
+		}
 		// 处理子节点
 		for _, child := range node.Children {
 			processNode(child, level+1)
@@ -108,21 +138,72 @@ func ExtractNodes(node *XMLNode, targetTag string) []ProcessedNode {
 	return nodes
 }
 
+/* 
+	在Markdown中，当行首缩进较多时，Markdown会将其视为代码块。
+	这可能会导致在某些情况下，行首的缩进被误认为是代码块的一部分，从而影响文档的排版和显示。
+	为了解决这个问题，我们可以使用正则表达式来去除行首的最小缩进。
+	这样，即使行首缩进不一致，Markdown也能正确地解析和渲染文档。
+*/
+func removeMinIndent(input string) string {
+	// 分割成行
+	lines := strings.Split(input, "\n")
+
+	// 查找最小缩进（忽略零缩进的行）
+	minIndent := math.MaxInt32
+	re := regexp.MustCompile(`^( +)`)
+
+	for _, line := range lines {
+		// 忽略空行
+		if len(strings.TrimSpace(line)) == 0 {
+			continue
+		}
+
+		// 使用正则查找行首空格
+		matches := re.FindStringSubmatch(line)
+		if matches != nil {
+			leadingSpaces := len(matches[1])
+			// 更新最小缩进: 忽略零缩进的行
+			if leadingSpaces > 0 && leadingSpaces < minIndent {
+				minIndent = leadingSpaces
+			}
+		}
+	}
+
+	// 如果没有找到有效的缩进或全部是零缩进
+	if minIndent == math.MaxInt32 {
+		return input
+	}
+
+	// 去除每行的最小缩进
+	indentRegex := regexp.MustCompile(fmt.Sprintf(`^( {%d})`, minIndent))
+	processedLines := make([]string, len(lines))
+
+	for i, line := range lines {
+		if len(strings.TrimSpace(line)) == 0 || !strings.HasPrefix(line, " ") {
+			// 保持空行和无缩进行不变
+			processedLines[i] = line
+		} else {
+			// 移除最小缩进
+			processedLines[i] = indentRegex.ReplaceAllString(line, "")
+		}
+	}
+
+	return strings.Join(processedLines, "\n")
+}
+
 // GenerateMarkdown 根据节点列表生成Markdown文档
 func GenerateMarkdown(nodes []ProcessedNode) string {
 	var builder strings.Builder
-
 	for _, node := range nodes {
-		if node.Title == "检查流程描述" {
-			continue
-		}
 		// 生成标题
-		prefix := strings.Repeat("#", node.Level)
-		builder.WriteString(fmt.Sprintf("%s %s\n", prefix, node.Title))
+		if node.Title != "" {
+			prefix := strings.Repeat("#", node.Level+1)
+			builder.WriteString(fmt.Sprintf("%s %s\n", prefix, node.Title))
+		}
 
 		// 添加内容（如果有）
 		if node.Content != "" {
-			builder.WriteString(node.Content + "\n\n")
+			builder.WriteString(node.Content + "\n")
 		}
 	}
 
