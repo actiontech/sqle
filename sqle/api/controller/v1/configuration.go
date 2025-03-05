@@ -425,7 +425,7 @@ func TestCodingConfigV1(c echo.Context) error {
 // @Security ApiKeyAuth
 // @Param req body v1.TestGitConnectionReqV1 true "test git configuration req"
 // @Success 200 {object} v1.TestGitConnectionResV1
-// @router /configurations/git/test [post]
+// @router /v1/configurations/git/test [post]
 func TestGitConnectionV1(c echo.Context) error {
 	return testGitConnectionV1(c)
 }

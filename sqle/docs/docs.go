@@ -25,43 +25,6 @@ var doc = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/configurations/git/test": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "test git connection",
-                "consumes": [
-                    "application/json"
-                ],
-                "tags": [
-                    "configuration"
-                ],
-                "summary": "测试Git联通性",
-                "operationId": "TestGitConnectionV1",
-                "parameters": [
-                    {
-                        "description": "test git configuration req",
-                        "name": "req",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.TestGitConnectionReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.TestGitConnectionResV1"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/audit_files": {
             "post": {
                 "security": [
@@ -509,6 +472,43 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.TestFeishuConfigResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/configurations/git/test": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "test git connection",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "测试Git联通性",
+                "operationId": "TestGitConnectionV1",
+                "parameters": [
+                    {
+                        "description": "test git configuration req",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.TestGitConnectionReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.TestGitConnectionResV1"
                         }
                     }
                 }
