@@ -122,6 +122,10 @@ func testGitConnectionV1(c echo.Context) error {
 		}
 		return nil
 	})
+	// 如果仓库有至少两个分支，则删除第一个分支，第一个分支名会是默认分支名的缩写，无法根据这个名称checkout代码
+	if len(branches) >= 2 {
+		branches = branches[1:]
+	}
 
 	return c.JSON(http.StatusOK, &TestGitConnectionResV1{
 		BaseRes: controller.NewBaseReq(nil),
