@@ -6568,29 +6568,6 @@ info:
   title: Sqle API Docs
   version: "1.0"
 paths:
-  /configurations/git/test:
-    post:
-      consumes:
-      - application/json
-      description: test git connection
-      operationId: TestGitConnectionV1
-      parameters:
-      - description: test git configuration req
-        in: body
-        name: req
-        required: true
-        schema:
-          $ref: '#/definitions/v1.TestGitConnectionReqV1'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.TestGitConnectionResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 测试Git联通性
-      tags:
-      - configuration
   /v1/audit_files:
     post:
       description: Direct audit sql from SQL files and MyBatis files
@@ -6869,6 +6846,29 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 测试飞书审批配置
+      tags:
+      - configuration
+  /v1/configurations/git/test:
+    post:
+      consumes:
+      - application/json
+      description: test git connection
+      operationId: TestGitConnectionV1
+      parameters:
+      - description: test git configuration req
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/v1.TestGitConnectionReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.TestGitConnectionResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 测试Git联通性
       tags:
       - configuration
   /v1/configurations/license:
