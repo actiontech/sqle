@@ -1,3 +1,6 @@
+//go:build !trial
+// +build !trial
+
 package ai
 
 import (
