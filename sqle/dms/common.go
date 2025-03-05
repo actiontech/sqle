@@ -201,6 +201,7 @@ func GetProjects() ([]string, error) {
 	return projectIds, nil
 }
 
+// TODO 这里没有考虑到sqled开启https的情况
 func RegisterAsDMSTarget(sqleConfig *config.SqleOptions) error {
 	controller.InitDMSServerAddress(sqleConfig.DMSServerAddress)
 	InitDMSServerAddress(sqleConfig.DMSServerAddress)
