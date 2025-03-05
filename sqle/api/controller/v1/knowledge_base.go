@@ -72,11 +72,17 @@ func GetKnowledgeBaseTagList(c echo.Context) error {
 // @Description get knowledge graph
 // @Id getKnowledgeGraph
 // @Tags knowledge_base
+// @Param filter_by_rule_name query string false "filter by rule name"
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.GetKnowledgeGraphResp
 // @router /v1/knowledge_bases/graph [get]
 func GetKnowledgeGraph(c echo.Context) error {
 	return getKnowledgeGraph(c)
+}
+
+// 获取知识图谱请求
+type GetKnowledgeGraphReq struct {
+	FilterByRuleName string `json:"filter_by_rule_name" query:"filter_by_rule_name"` // 根据规则名称过滤
 }
 
 type GetKnowledgeGraphResp struct {
