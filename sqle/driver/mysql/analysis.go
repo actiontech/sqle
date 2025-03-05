@@ -310,7 +310,12 @@ func (i *MysqlDriverImpl) ExtractSchemaTableList(sql string) ([]SchemaTable, err
 	case *ast.InsertStmt:
 		getMultiTables(stmt.Table.TableRefs)
 		if stmt.Select != nil {
-			getMultiTables(stmt.Select.(*ast.SelectStmt).From.TableRefs)
+			// TODO：INSERT INTO SQLE00115_t1_tmp_employee (id, cname, sex, age, salary) SELECT 4000002, '小张', 0, 25, (SELECT AVG(salary) FROM SQLE00115_t1_employee) 对于这条SQL，解析器无法解析子查询为一个Select语句，而是认为是一个文本
+			if selectStmt, ok := stmt.Select.(*ast.SelectStmt); ok {
+				if selectStmt.From != nil{
+					getMultiTables(selectStmt.From.TableRefs)
+				}
+			}
 		}
 	case *ast.DeleteStmt:
 		getMultiTables(stmt.TableRefs.TableRefs)
