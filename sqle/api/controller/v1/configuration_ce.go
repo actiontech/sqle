@@ -7,6 +7,7 @@ import (
 	e "errors"
 	goGit "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/storer"
 	goGitTransport "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"net/http"
 	"os"
@@ -115,18 +116,7 @@ func testGitConnectionV1(c echo.Context) error {
 			},
 		})
 	}
-	branches := make([]string, 0)
-	err = references.ForEach(func(ref *plumbing.Reference) error {
-		if ref.Type() == plumbing.HashReference {
-			branches = append(branches, ref.Name().Short())
-		}
-		return nil
-	})
-	// 如果仓库有至少两个分支，则删除第一个分支，第一个分支名会是默认分支名的缩写，无法根据这个名称checkout代码
-	if len(branches) >= 2 {
-		branches = branches[1:]
-	}
-
+	branches, err := getBranches(references)
 	return c.JSON(http.StatusOK, &TestGitConnectionResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data: TestGitConnectionResDataV1{
@@ -134,4 +124,36 @@ func testGitConnectionV1(c echo.Context) error {
 			Branches:           branches,
 		},
 	})
+}
+
+func getBranches(references storer.ReferenceIter) ([]string, error) {
+	branches := make([]string, 0)
+	err := references.ForEach(func(ref *plumbing.Reference) error {
+		if ref.Type() == plumbing.HashReference {
+			branches = append(branches, ref.Name().Short())
+		}
+		return nil
+	})
+	if err != nil {
+		return branches, err
+	}
+	if len(branches) < 2 {
+		return branches, nil
+	}
+	// 第一个元素确认了默认分支名，需要把可以checkout的默认分支提到第一个元素
+	defaultBranch := "origin/" + branches[0]
+	defaultBranchIndex := -1
+	for i, branch := range branches {
+		if branch == defaultBranch {
+			defaultBranchIndex = i
+			break
+		}
+	}
+	resultBranches := make([]string, len(branches)-1)
+	// 将默认分支提到第一个元素
+	resultBranches = append(branches[:0], append([]string{branches[defaultBranchIndex]}, branches[1:defaultBranchIndex]...)...)
+	if defaultBranchIndex+1 < len(branches)-1 {
+		resultBranches = append(resultBranches, branches[defaultBranchIndex+1:]...)
+	}
+	return resultBranches, nil
 }
