@@ -84,7 +84,7 @@ func GetAffectedRowNum(ctx context.Context, originSql string, conn *executor.Exe
 		affectedRowSql = fmt.Sprintf("select count(*) from (%s) as t", trimSuffix)
 	} else {
 		if newNode == nil {
-			log.NewEntry().Errorf("get select node from %v failed", originSql)
+			log.NewEntry().Errorf("in GetAffectedRowNum, when getting select node from %v failed", originSql)
 			return 0, fmt.Errorf("get select node from %v failed", originSql)
 		}
 		sqlBuilder := new(strings.Builder)
