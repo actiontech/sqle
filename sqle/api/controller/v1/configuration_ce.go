@@ -149,7 +149,7 @@ func getBranches(references storer.ReferenceIter) ([]string, error) {
 			break
 		}
 	}
-	resultBranches := make([]string, len(branches)-1)
+	resultBranches := make([]string, 0)
 	// 将默认分支提到第一个元素
 	resultBranches = append(branches[:0], append([]string{branches[defaultBranchIndex]}, branches[1:defaultBranchIndex]...)...)
 	if defaultBranchIndex+1 < len(branches)-1 {
