@@ -79,7 +79,6 @@ func testGitConnectionV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	repository, _, cleanup, err := utils.CloneGitRepository(c.Request().Context(), request.GitHttpUrl, request.GitUserName, request.GitUserPassword)
-	defer cleanup()
 	if err != nil {
 		return c.JSON(http.StatusOK, &TestGitConnectionResV1{
 			BaseRes: controller.NewBaseReq(nil),
@@ -89,6 +88,12 @@ func testGitConnectionV1(c echo.Context) error {
 			},
 		})
 	}
+	defer func() {
+		err = cleanup()
+		if err != nil {
+			c.Logger().Errorf("cleanup git repository failed, err: %v", err)
+		}
+	}()
 	references, err := repository.References()
 	if err != nil {
 		return c.JSON(http.StatusOK, &TestGitConnectionResV1{
