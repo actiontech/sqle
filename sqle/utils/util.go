@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	sqleErrors "github.com/actiontech/sqle/sqle/errors"
 	goGit "github.com/go-git/go-git/v5"
 	goGitTransport "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"io"
@@ -458,7 +459,10 @@ func IntersectionStringSlice(slice1, slice2 []string) []string {
 	return intersection
 }
 
-func CloneGitRepository(context context.Context, directory, url, username, password string) (*goGit.Repository, error) {
+func CloneGitRepository(ctx context.Context, directory, url, username, password string) (*goGit.Repository, error) {
+	if !IsGitHttpURL(url) {
+		return nil, sqleErrors.New(sqleErrors.DataInvalid, fmt.Errorf("url is not a git url"))
+	}
 	cloneOpts := &goGit.CloneOptions{
 		URL: url,
 	}
@@ -468,7 +472,7 @@ func CloneGitRepository(context context.Context, directory, url, username, passw
 			Password: password,
 		}
 	}
-	repository, err := goGit.PlainCloneContext(context, directory, false, cloneOpts)
+	repository, err := goGit.PlainCloneContext(ctx, directory, false, cloneOpts)
 	if err != nil {
 		return nil, err
 	}
