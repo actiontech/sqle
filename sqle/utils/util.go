@@ -2,12 +2,15 @@ package utils
 
 import (
 	"bytes"
+	"context"
 	"crypto/md5"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	goGit "github.com/go-git/go-git/v5"
+	goGitTransport "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"io"
 	"math"
 	"net/url"
@@ -453,4 +456,21 @@ func IntersectionStringSlice(slice1, slice2 []string) []string {
 		}
 	}
 	return intersection
+}
+
+func CloneGitRepository(context context.Context, directory, url, username, password string) (*goGit.Repository, error) {
+	cloneOpts := &goGit.CloneOptions{
+		URL: url,
+	}
+	if username != "" {
+		cloneOpts.Auth = &goGitTransport.BasicAuth{
+			Username: username,
+			Password: password,
+		}
+	}
+	repository, err := goGit.PlainCloneContext(context, directory, false, cloneOpts)
+	if err != nil {
+		return nil, err
+	}
+	return repository, nil
 }

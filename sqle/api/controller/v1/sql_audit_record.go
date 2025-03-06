@@ -28,8 +28,6 @@ import (
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/utils"
 	goGit "github.com/go-git/go-git/v5"
-	goGitTransport "github.com/go-git/go-git/v5/plumbing/transport/http"
-
 	"github.com/labstack/echo/v4"
 )
 
@@ -442,31 +440,21 @@ func parseXMLsWithFilePath(xmlContents []xmlParser.XmlFile) ([]SQLFromXML, error
 
 // todo 此处跳过了不支持的编码格式文件
 func getSqlsFromGit(c echo.Context) (sqlsFromSQLFiles, sqlsFromJavaFiles []SQLsFromSQLFile, sqlsFromXMLs []SQLFromXML, exist bool, err error) {
-	// make a temp dir and clean up befor return
-	dir, err := os.MkdirTemp("./", "git-repo-")
 	if err != nil {
 		return nil, nil, nil, false, err
 	}
-	defer os.RemoveAll(dir)
 	// read http url from form and check if it's a git url
 	url := c.FormValue(GitHttpURL)
 	if !utils.IsGitHttpURL(url) {
 		return nil, nil, nil, false, errors.New(errors.DataInvalid, fmt.Errorf("url is not a git url"))
 	}
-	cloneOpts := &goGit.CloneOptions{
-		URL: url,
-	}
 	// public repository do not require an user name and password
 	userName := c.FormValue(GitUserName)
 	password := c.FormValue(GitPassword)
-	if userName != "" {
-		cloneOpts.Auth = &goGitTransport.BasicAuth{
-			Username: userName,
-			Password: password,
-		}
-	}
+	directory, err := os.MkdirTemp("./", "git-repo-")
+	defer os.RemoveAll(directory)
 	// clone from git
-	repository, err := goGit.PlainCloneContext(c.Request().Context(), dir, false, cloneOpts)
+	repository, err := utils.CloneGitRepository(c.Request().Context(), directory, url, userName, password)
 	if err != nil {
 		return nil, nil, nil, false, err
 	}
@@ -487,8 +475,8 @@ func getSqlsFromGit(c echo.Context) (sqlsFromSQLFiles, sqlsFromJavaFiles []SQLsF
 	l := log.NewEntry().WithField("function", "getSqlsFromGit")
 	var xmlContents []xmlParser.XmlFile
 	// traverse the repository, parse and put SQL into sqlBuffer
-	err = filepath.Walk(dir, func(path string, info fs.FileInfo, err error) error {
-		gitPath := strings.TrimPrefix(path, strings.TrimPrefix(dir, "./"))
+	err = filepath.Walk(directory, func(path string, info fs.FileInfo, err error) error {
+		gitPath := strings.TrimPrefix(path, strings.TrimPrefix(directory, "./"))
 		if !info.IsDir() {
 			var sqlBuffer strings.Builder
 			switch {
