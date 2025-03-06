@@ -440,9 +440,6 @@ func parseXMLsWithFilePath(xmlContents []xmlParser.XmlFile) ([]SQLFromXML, error
 
 // todo 此处跳过了不支持的编码格式文件
 func getSqlsFromGit(c echo.Context) (sqlsFromSQLFiles, sqlsFromJavaFiles []SQLsFromSQLFile, sqlsFromXMLs []SQLFromXML, exist bool, err error) {
-	if err != nil {
-		return nil, nil, nil, false, err
-	}
 	// read http url from form and check if it's a git url
 	url := c.FormValue(GitHttpURL)
 	if !utils.IsGitHttpURL(url) {
