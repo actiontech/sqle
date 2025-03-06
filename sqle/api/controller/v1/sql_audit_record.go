@@ -446,10 +446,8 @@ func getSqlsFromGit(c echo.Context) (sqlsFromSQLFiles, sqlsFromJavaFiles []SQLsF
 		return nil, nil, nil, false, err
 	}
 	defer func() {
-		if err != nil {
-			err = cleanup()
-			c.Logger().Errorf("cleanup git repository failed, err: %v", err)
-		}
+		cleanupError := cleanup()
+		c.Logger().Errorf("cleanup git repository failed, err: %v", cleanupError)
 	}()
 	workTree, err := repository.Worktree()
 	if err != nil {

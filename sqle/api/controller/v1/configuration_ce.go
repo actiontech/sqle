@@ -89,9 +89,9 @@ func testGitConnectionV1(c echo.Context) error {
 		})
 	}
 	defer func() {
-		err = cleanup()
-		if err != nil {
-			c.Logger().Errorf("cleanup git repository failed, err: %v", err)
+		cleanupError := cleanup()
+		if cleanupError != nil {
+			c.Logger().Errorf("cleanup git repository failed, err: %v", cleanupError)
 		}
 	}()
 	references, err := repository.References()
