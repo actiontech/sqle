@@ -445,10 +445,9 @@ func getSqlsFromGit(c echo.Context) (sqlsFromSQLFiles, sqlsFromJavaFiles []SQLsF
 	if !utils.IsGitHttpURL(url) {
 		return nil, nil, nil, false, errors.New(errors.DataInvalid, fmt.Errorf("url is not a git url"))
 	}
-	directory, err := os.MkdirTemp("./", "git-repo-")
-	defer os.RemoveAll(directory)
 	// clone from git
-	repository, err := utils.CloneGitRepository(c.Request().Context(), directory, c.FormValue(GitHttpURL), c.FormValue(GitUserName), c.FormValue(GitPassword))
+	repository, directory, cleanup, err := utils.CloneGitRepository(c.Request().Context(), c.FormValue(GitHttpURL), c.FormValue(GitUserName), c.FormValue(GitPassword))
+	defer cleanup()
 	if err != nil {
 		return nil, nil, nil, false, err
 	}
