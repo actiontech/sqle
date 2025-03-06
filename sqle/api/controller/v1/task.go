@@ -111,6 +111,7 @@ const (
 	InputZipFileName        = "input_zip_file"
 	InputFileFromGit        = "input_file_from_git"
 	GitHttpURL              = "git_http_url"
+	GitBranchName           = "git_branch_name"
 	GitUserName             = "git_user_name"
 	GitPassword             = "git_user_password"
 	ZIPFileExtension        = ".zip"

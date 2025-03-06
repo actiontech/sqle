@@ -461,6 +461,43 @@
                 }
             }
         },
+        "/v1/configurations/git/test": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "test git connection",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "测试Git联通性",
+                "operationId": "TestGitConnectionV1",
+                "parameters": [
+                    {
+                        "description": "test git configuration req",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.TestGitConnectionReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.TestGitConnectionResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/configurations/license": {
             "get": {
                 "security": [
@@ -4799,7 +4836,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "SQL audit\n1. formData[sql]: sql content;\n2. file[input_sql_file]: it is a sql file;\n3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.\n4. file[input_zip_file]: it is ZIP file that sql will be parsed from xml or sql file inside it.\n5. formData[git_http_url]:the url which scheme is http(s) and end with .git.\n6. formData[git_user_name]:The name of the user who owns the repository read access.\n7. formData[git_user_password]:The password corresponding to git_user_name.",
+                "description": "SQL audit\n1. formData[sql]: sql content;\n2. file[input_sql_file]: it is a sql file;\n3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.\n4. file[input_zip_file]: it is ZIP file that sql will be parsed from xml or sql file inside it.\n5. formData[git_http_url]:the url which scheme is http(s) and end with .git.\n6. formData[git_user_name]:The name of the user who owns the repository read access.\n7. formData[git_branch_name]:The name of the repository branch.\n8. formData[git_user_password]:The password corresponding to git_user_name.",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -4877,6 +4914,12 @@
                         "type": "string",
                         "description": "the name of user to clone the repository",
                         "name": "git_user_name",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "the name of repository branch",
+                        "name": "git_branch_name",
                         "in": "formData"
                     },
                     {
@@ -18466,6 +18509,54 @@
                         "email",
                         "phone"
                     ]
+                }
+            }
+        },
+        "v1.TestGitConnectionReqV1": {
+            "type": "object",
+            "properties": {
+                "git_http_url": {
+                    "type": "string"
+                },
+                "git_user_name": {
+                    "type": "string"
+                },
+                "git_user_password": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.TestGitConnectionResDataV1": {
+            "type": "object",
+            "properties": {
+                "branches": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "error_message": {
+                    "type": "string"
+                },
+                "is_connected_success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "v1.TestGitConnectionResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TestGitConnectionResDataV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
