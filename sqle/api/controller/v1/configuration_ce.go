@@ -5,14 +5,12 @@ package v1
 
 import (
 	e "errors"
-	goGit "github.com/go-git/go-git/v5"
+	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/storer"
-	goGitTransport "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"net/http"
 	"os"
-
-	"github.com/actiontech/sqle/sqle/errors"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/labstack/echo/v4"
@@ -84,19 +82,7 @@ func testGitConnectionV1(c echo.Context) error {
 	}
 	directory, err := os.MkdirTemp("./", "git-repo-")
 	defer os.RemoveAll(directory)
-	cloneOpts := &goGit.CloneOptions{
-		URL: request.GitHttpUrl,
-	}
-	// public repository do not require an user name and password
-	userName := c.FormValue(GitUserName)
-	password := c.FormValue(GitPassword)
-	if userName != "" {
-		cloneOpts.Auth = &goGitTransport.BasicAuth{
-			Username: userName,
-			Password: password,
-		}
-	}
-	repository, err := goGit.PlainCloneContext(c.Request().Context(), directory, false, cloneOpts)
+	repository, err := utils.CloneGitRepository(c.Request().Context(), directory, request.GitHttpUrl, request.GitUserName, request.GitUserPassword)
 	if err != nil {
 		return c.JSON(http.StatusOK, &TestGitConnectionResV1{
 			BaseRes: controller.NewBaseReq(nil),
@@ -148,6 +134,9 @@ func getBranches(references storer.ReferenceIter) ([]string, error) {
 			defaultBranchIndex = i
 			break
 		}
+	}
+	if defaultBranchIndex == -1 {
+		return branches, nil
 	}
 	resultBranches := make([]string, 0)
 	// 将默认分支提到第一个元素
