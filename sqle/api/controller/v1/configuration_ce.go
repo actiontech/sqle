@@ -5,15 +5,13 @@ package v1
 
 import (
 	e "errors"
+	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/storer"
-	"net/http"
-	"os"
-
-	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/labstack/echo/v4"
+	"net/http"
 )
 
 var (
@@ -80,9 +78,8 @@ func testGitConnectionV1(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, request); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	directory, err := os.MkdirTemp("./", "git-repo-")
-	defer os.RemoveAll(directory)
-	repository, err := utils.CloneGitRepository(c.Request().Context(), directory, request.GitHttpUrl, request.GitUserName, request.GitUserPassword)
+	repository, _, cleanup, err := utils.CloneGitRepository(c.Request().Context(), request.GitHttpUrl, request.GitUserName, request.GitUserPassword)
+	defer cleanup()
 	if err != nil {
 		return c.JSON(http.StatusOK, &TestGitConnectionResV1{
 			BaseRes: controller.NewBaseReq(nil),
@@ -138,11 +135,9 @@ func getBranches(references storer.ReferenceIter) ([]string, error) {
 	if defaultBranchIndex == -1 {
 		return branches, nil
 	}
-	resultBranches := make([]string, 0)
-	// 将默认分支提到第一个元素
-	resultBranches = append(branches[:0], append([]string{branches[defaultBranchIndex]}, branches[1:defaultBranchIndex]...)...)
-	if defaultBranchIndex+1 < len(branches)-1 {
-		resultBranches = append(resultBranches, branches[defaultBranchIndex+1:]...)
-	}
-	return resultBranches, nil
+	//1. 根据第一个元素，找到其余元素中的默认分支
+	//2. 如果找到，将找到的默认分支名移到第一个元素，并且删除原来的第一个元素。
+	branches[0], branches[defaultBranchIndex] = branches[defaultBranchIndex], branches[0]
+	branches = append(branches[:defaultBranchIndex], branches[defaultBranchIndex+1:]...)
+	return branches, nil
 }
