@@ -48,8 +48,7 @@ type Config struct {
 }
 
 func (c *Context) CutKeyDefaultNameSpace(key string) string {
-	afterKey, _ := strings.CutPrefix(key, c.DefaultNamespace+".")
-	return afterKey
+	return strings.TrimPrefix(key, c.DefaultNamespace+".")
 }
 
 type ConfigFn func() func(*Config)

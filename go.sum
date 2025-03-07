@@ -50,8 +50,8 @@ github.com/actiontech/dms v0.0.0-20241223063204-661bd1bf229b h1:ROmTjEcA8/yVI2oh
 github.com/actiontech/dms v0.0.0-20241223063204-661bd1bf229b/go.mod h1:Jm+tDoBYmX8R8zqgPJRq1NwZXdxO/F+HxVRJVF65WXA=
 github.com/actiontech/java-sql-extractor v0.0.0-20231103015812-cdd5fc040f62 h1:JM7WnLzlvXOGE90KKd+aigi+qUDS+U5dLwQMNpTKZxE=
 github.com/actiontech/java-sql-extractor v0.0.0-20231103015812-cdd5fc040f62/go.mod h1:adDZHhAf2LRMx2h0JzofPXn12x2XlyQjVE116KXquwo=
-github.com/actiontech/mybatis-mapper-2-sql v0.5.1-0.20250307033457-1b5cae28383c h1:nCB33pHYQ0SER9vull7QoSrkboWt9CC6yYrbrt6sCPU=
-github.com/actiontech/mybatis-mapper-2-sql v0.5.1-0.20250307033457-1b5cae28383c/go.mod h1:NJIap8vov24C8eFE9j4JUkT/8+nCMiC8vyjaYKBiJMs=
+github.com/actiontech/mybatis-mapper-2-sql v0.5.1-0.20250307064901-aabaceee2249 h1:BjbL364Bl45WMARnEqZrT7Pd0rMhd4vvnQbMvxX3iQw=
+github.com/actiontech/mybatis-mapper-2-sql v0.5.1-0.20250307064901-aabaceee2249/go.mod h1:NJIap8vov24C8eFE9j4JUkT/8+nCMiC8vyjaYKBiJMs=
 github.com/agiledragon/gomonkey v2.0.2+incompatible h1:eXKi9/piiC3cjJD1658mEE2o3NjkJ5vDLgYjCQu0Xlw=
 github.com/agiledragon/gomonkey v2.0.2+incompatible/go.mod h1:2NGfXu1a80LLr2cmWXGBDaHEjb1idR6+FVlX5T3D9hw=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
