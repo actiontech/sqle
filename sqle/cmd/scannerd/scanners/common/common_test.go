@@ -111,3 +111,26 @@ func TestClearComments(t *testing.T) {
 		}
 	}
 }
+
+func TestClearLineComments(t *testing.T) {
+	testCases := []struct {
+		input    string
+		expected string
+	}{
+		{
+			"SELECT -- id,\n -- name,\n id, name FROM table;",
+			"SELECT id, name FROM table",
+		},
+		{
+			"SELECT -- id,\n -- name,\n -- age,\n id, name, age FROM table;",
+			"SELECT id, name, age FROM table",
+		},
+	}
+
+	for _, tc := range testCases {
+		actual := clearComments(tc.input)
+		if actual != tc.expected {
+			t.Errorf("Expected %s, got %s", tc.expected, actual)
+		}
+	}
+}
