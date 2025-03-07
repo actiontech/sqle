@@ -1,6 +1,9 @@
 package v1
 
 import (
+	"github.com/actiontech/sqle/sqle/utils"
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/storer"
 	"net/http"
 	"strconv"
 
@@ -428,6 +431,80 @@ func TestCodingConfigV1(c echo.Context) error {
 // @router /v1/configurations/git/test [post]
 func TestGitConnectionV1(c echo.Context) error {
 	return testGitConnectionV1(c)
+}
+
+func testGitConnectionV1(c echo.Context) error {
+	request := new(TestGitConnectionReqV1)
+	if err := controller.BindAndValidateReq(c, request); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	repository, _, cleanup, err := utils.CloneGitRepository(c.Request().Context(), request.GitHttpUrl, request.GitUserName, request.GitUserPassword)
+	if err != nil {
+		return c.JSON(http.StatusOK, &TestGitConnectionResV1{
+			BaseRes: controller.NewBaseReq(nil),
+			Data: TestGitConnectionResDataV1{
+				IsConnectedSuccess: false,
+				ErrorMessage:       err.Error(),
+			},
+		})
+	}
+	defer func() {
+		cleanupError := cleanup()
+		if cleanupError != nil {
+			c.Logger().Errorf("cleanup git repository failed, err: %v", cleanupError)
+		}
+	}()
+	references, err := repository.References()
+	if err != nil {
+		return c.JSON(http.StatusOK, &TestGitConnectionResV1{
+			BaseRes: controller.NewBaseReq(nil),
+			Data: TestGitConnectionResDataV1{
+				IsConnectedSuccess: false,
+				ErrorMessage:       err.Error(),
+			},
+		})
+	}
+	branches, err := getBranches(references)
+	return c.JSON(http.StatusOK, &TestGitConnectionResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: TestGitConnectionResDataV1{
+			IsConnectedSuccess: true,
+			Branches:           branches,
+		},
+	})
+}
+
+func getBranches(references storer.ReferenceIter) ([]string, error) {
+	branches := make([]string, 0)
+	err := references.ForEach(func(ref *plumbing.Reference) error {
+		if ref.Type() == plumbing.HashReference {
+			branches = append(branches, ref.Name().Short())
+		}
+		return nil
+	})
+	if err != nil {
+		return branches, err
+	}
+	if len(branches) < 2 {
+		return branches, nil
+	}
+	// 第一个元素确认了默认分支名，需要把可以checkout的默认分支提到第一个元素
+	defaultBranch := "origin/" + branches[0]
+	defaultBranchIndex := -1
+	for i, branch := range branches {
+		if branch == defaultBranch {
+			defaultBranchIndex = i
+			break
+		}
+	}
+	if defaultBranchIndex == -1 {
+		return branches, nil
+	}
+	//1. 根据第一个元素，找到其余元素中的默认分支
+	//2. 如果找到，将找到的默认分支名移到第一个元素，并且删除原来的第一个元素。
+	branches[0], branches[defaultBranchIndex] = branches[defaultBranchIndex], branches[0]
+	branches = append(branches[:defaultBranchIndex], branches[defaultBranchIndex+1:]...)
+	return branches, nil
 }
 
 type TestGitConnectionReqV1 struct {
