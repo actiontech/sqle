@@ -416,6 +416,31 @@ func TestCodingConfigV1(c echo.Context) error {
 	return testCodingAuditConfigV1(c)
 }
 
+// TestGitConnectionV1
+// @Summary 测试Git联通性
+// @Description test git connection
+// @Accept json
+// @Id TestGitConnectionV1
+// @Tags configuration
+// @Security ApiKeyAuth
+// @Param req body v1.TestGitConnectionReqV1 true "test git configuration req"
+// @Success 200 {object} v1.TestGitConnectionResV1
+// @router /v1/configurations/git/test [post]
+func TestGitConnectionV1(c echo.Context) error {
+	return testGitConnectionV1(c)
+}
+
+type TestGitConnectionReqV1 struct {
+	GitHttpUrl      string `json:"git_http_url" form:"git_http_url" valid:"required"`
+	GitUserName     string `json:"git_user_name" form:"git_user_name" valid:"required"`
+	GitUserPassword string `json:"git_user_password" form:"git_user_password" valid:"required"`
+}
+
+type TestGitConnectionResV1 struct {
+	controller.BaseRes
+	Data TestGitConnectionResDataV1 `json:"data"`
+}
+
 type ScheduleTaskDefaultOption struct {
 	DefaultSelector string `json:"default_selector" enums:"wechat,feishu"`
 }

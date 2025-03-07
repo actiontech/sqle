@@ -111,6 +111,7 @@ const (
 	InputZipFileName        = "input_zip_file"
 	InputFileFromGit        = "input_file_from_git"
 	GitHttpURL              = "git_http_url"
+	GitBranchName           = "git_branch_name"
 	GitUserName             = "git_user_name"
 	GitPassword             = "git_user_password"
 	ZIPFileExtension        = ".zip"
@@ -1225,6 +1226,7 @@ func DownloadAuditFile(c echo.Context) error {
 
 }
 
+// TODO 这里没有考虑到sqled开启https的情况
 // TODO 和DMS一起抽离出一个工具函数
 func ReverseToSqle(c echo.Context, rewriteUrlPath, targetHost string) (err error) {
 	// c.Request().URL.Path = rewriteUrlPath
