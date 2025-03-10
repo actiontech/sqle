@@ -1,9 +1,7 @@
 package v1
 
 import (
-	"bytes"
 	"context"
-	"encoding/csv"
 	"fmt"
 	"mime"
 	"net/http"
@@ -1544,7 +1542,6 @@ func spliceAuditResults(ctx context.Context, auditResults []model.AuditResult) s
 // @router /v1/projects/{project_name}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/export [get]
 func ExportAuditPlanReportV1(c echo.Context) error {
 	s := model.GetStorage()
-	buff := new(bytes.Buffer)
 	reportIdStr := c.Param("audit_plan_report_id")
 	auditPlanName := c.Param("audit_plan_name")
 	projectName := c.Param("project_name")
@@ -1553,8 +1550,6 @@ func ExportAuditPlanReportV1(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	csvWriter := csv.NewWriter(buff)
-	buff.WriteString("\xEF\xBB\xBF") // 写入UTF-8 BOM
 	reportInfo, exist, err := s.GetReportWithAuditPlanByReportID(reportId)
 	if !exist {
 		return controller.JSONBaseErrorReq(c, fmt.Errorf("not found audit report"))
@@ -1578,18 +1573,19 @@ func ExportAuditPlanReportV1(c echo.Context) error {
 		{locale.Bundle.LocalizeMsgByCtx(ctx, locale.APExportDbType), reportInfo.AuditPlan.DBType},
 		{locale.Bundle.LocalizeMsgByCtx(ctx, locale.APExportDatabase), reportInfo.AuditPlan.InstanceDatabase},
 	}
-	err = csvWriter.WriteAll(baseInfo)
+	csvBuilder := utils.NewCSVBuilder()
+	err = csvBuilder.WriteRows(baseInfo)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	// Add a split line between report information and sql audit information
-	err = csvWriter.Write([]string{})
+	err = csvBuilder.WriteRow([]string{})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	err = csvWriter.Write([]string{
+	err = csvBuilder.WriteRow([]string{
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.APExportNumber), // 编号
 		"SQL",
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.APExportAuditResult), // 审核结果
@@ -1603,17 +1599,15 @@ func ExportAuditPlanReportV1(c echo.Context) error {
 		sqlInfo = append(sqlInfo, []string{strconv.Itoa(idx + 1), sql.SQL, spliceAuditResults(ctx, sql.AuditResults)})
 	}
 
-	err = csvWriter.WriteAll(sqlInfo)
+	err = csvBuilder.WriteRows(sqlInfo)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
-	csvWriter.Flush()
 
 	fileName := fmt.Sprintf("audit_plan_report_%s_%s.csv", auditPlanName, time.Now().Format("20060102150405"))
 	c.Response().Header().Set(echo.HeaderContentDisposition, mime.FormatMediaType("attachment", map[string]string{
 		"filename": fileName,
 	}))
 
-	return c.Blob(http.StatusOK, "text/csv", buff.Bytes())
+	return c.Blob(http.StatusOK, "text/csv", csvBuilder.FlushAndGetBuffer().Bytes())
 }
