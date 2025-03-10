@@ -1,9 +1,7 @@
 package v1
 
 import (
-	"bytes"
 	"context"
-	"encoding/csv"
 	"fmt"
 	"mime"
 	"mime/multipart"
@@ -488,10 +486,8 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	buff := &bytes.Buffer{}
-	buff.WriteString("\xEF\xBB\xBF") // 写入UTF-8 BOM
-	cw := csv.NewWriter(buff)
-	err = cw.Write([]string{"序号", "SQL", "SQL审核状态", "SQL审核结果", "SQL执行状态", "SQL执行结果", "SQL对应的回滚语句", "SQL描述"})
+	csvBuilder := utils.NewCSVBuilder()
+	err = csvBuilder.WriteHeader([]string{"序号", "SQL", "SQL审核状态", "SQL审核结果", "SQL执行状态", "SQL执行结果", "SQL对应的回滚语句", "SQL描述"})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.WriteDataToTheFileError, err))
 	}
@@ -501,7 +497,7 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 			AuditStatus:  td.AuditStatus,
 		}
 		taskSql.ExecStatus = td.ExecStatus
-		err := cw.Write([]string{
+		err := csvBuilder.WriteRow([]string{
 			strconv.FormatUint(uint64(td.Number), 10),
 			td.ExecSQL,
 			taskSql.GetAuditStatusDesc(),
@@ -515,11 +511,10 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, errors.New(errors.WriteDataToTheFileError, err))
 		}
 	}
-	cw.Flush()
 	fileName := fmt.Sprintf("SQL审核报告_%v_%v.csv", task.InstanceName(), taskId)
 	c.Response().Header().Set(echo.HeaderContentDisposition,
 		mime.FormatMediaType("attachment", map[string]string{"filename": fileName}))
-	return c.Blob(http.StatusOK, "text/csv", buff.Bytes())
+	return c.Blob(http.StatusOK, "text/csv", csvBuilder.FlushAndGetBuffer().Bytes())
 }
 
 // @Summary 下载指定扫描任务的SQL文件
