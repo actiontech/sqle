@@ -4,9 +4,7 @@
 package v1
 
 import (
-	"bytes"
 	"context"
-	"encoding/csv"
 	e "errors"
 	"fmt"
 	"github.com/actiontech/sqle/sqle/common"
@@ -239,11 +237,8 @@ func exportSqlManagesV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	buff := new(bytes.Buffer)
-	buff.WriteString("\xEF\xBB\xBF") // 写入UTF-8 BOM
-	csvWriter := csv.NewWriter(buff)
-
-	err = csvWriter.WriteAll([][]string{
+	csvBuilder := utils.NewCSVBuilder()
+	err = csvBuilder.WriteRows([][]string{
 		{locale.Bundle.LocalizeMsgByCtx(ctx, locale.SMExportTotalSQLCount), strconv.FormatUint(sqlManageResp.SqlManageTotalNum, 10)},         // SQL总数
 		{locale.Bundle.LocalizeMsgByCtx(ctx, locale.SMExportProblemSQLCount), strconv.FormatUint(sqlManageResp.SqlManageBadNum, 10)},         // 问题SQL数
 		{locale.Bundle.LocalizeMsgByCtx(ctx, locale.SMExportOptimizedSQLCount), strconv.FormatUint(sqlManageResp.SqlManageOptimizedNum, 10)}, // 已优化SQL数
@@ -252,7 +247,7 @@ func exportSqlManagesV1(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	if err := csvWriter.Write([]string{
+	if err := csvBuilder.WriteRow([]string{
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.SMExportSQLFingerprint), // "SQL指纹",
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.SMExportSQL),            // "SQL",
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.SMExportSource),         // "来源",
@@ -300,14 +295,12 @@ func exportSqlManagesV1(c echo.Context) error {
 			sqlManage.Remark.String,
 		)
 
-		if err := csvWriter.Write(newRow); err != nil {
+		if err := csvBuilder.WriteRow(newRow); err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
 
-	csvWriter.Flush()
-
-	if err := csvWriter.Error(); err != nil {
+	if err := csvBuilder.Error(); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
@@ -316,7 +309,7 @@ func exportSqlManagesV1(c echo.Context) error {
 		"filename": fileName,
 	}))
 
-	return c.Blob(http.StatusOK, "text/csv", buff.Bytes())
+	return c.Blob(http.StatusOK, "text/csv", csvBuilder.FlushAndGetBuffer().Bytes())
 }
 
 func getSqlManageRuleTips(c echo.Context) error {

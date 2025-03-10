@@ -4,10 +4,8 @@
 package v1
 
 import (
-	"bytes"
 	"context"
 	"database/sql"
-	"encoding/csv"
 	"fmt"
 	"mime"
 	"net/http"
@@ -80,10 +78,8 @@ func exportWorkflowV1(c echo.Context) error {
 	}
 
 	ctx := c.Request().Context()
-	buff := new(bytes.Buffer)
-	buff.WriteString("\xEF\xBB\xBF") // 写入UTF-8 BOM
-	csvWriter := csv.NewWriter(buff)
-	if err := csvWriter.Write([]string{
+	csvBuilder := utils.NewCSVBuilder()
+	if err := csvBuilder.WriteHeader([]string{
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportWorkflowNumber),      // "工单编号",
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportWorkflowName),        // "工单名称",
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportWorkflowDescription), // "工单描述",
@@ -159,20 +155,18 @@ func exportWorkflowV1(c echo.Context) error {
 			}
 			exportWorkflowRecord = append(exportWorkflowRecord, getAuditAndExecuteList(ctx, workflow, instanceRecord)...)
 
-			if err := csvWriter.Write(exportWorkflowRecord); err != nil {
+			if err := csvBuilder.WriteRow(exportWorkflowRecord); err != nil {
 				return controller.JSONBaseErrorReq(c, err)
 			}
 		}
 	}
-
-	csvWriter.Flush()
 
 	fileName := fmt.Sprintf("%s_workflow.csv", time.Now().Format("20060102150405"))
 	c.Response().Header().Set(echo.HeaderContentDisposition, mime.FormatMediaType("attachment", map[string]string{
 		"filename": fileName,
 	}))
 
-	return c.Blob(http.StatusOK, "text/csv", buff.Bytes())
+	return c.Blob(http.StatusOK, "text/csv", csvBuilder.FlushAndGetBuffer().Bytes())
 }
 
 var workflowStepStateMap = map[string]*i18n.Message{
