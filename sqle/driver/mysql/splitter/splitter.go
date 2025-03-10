@@ -164,6 +164,9 @@ func (s *splitter) skipBeginEndBlock(token *parser.Token) *parser.Token {
 	}
 	for len(blockStack) > 0 {
 		token = s.scanner.NextToken()
+		if token.Ident() == DefaultDelimiterString {
+			return token
+		}
 		for _, block := range allBlocks {
 			if block.MatchBegin(token) {
 				blockStack = append(blockStack, block)
