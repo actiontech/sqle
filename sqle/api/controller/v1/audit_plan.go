@@ -1,9 +1,7 @@
 package v1
 
 import (
-	"bytes"
 	"context"
-	"encoding/csv"
 	"fmt"
 	"mime"
 	"net"
@@ -1539,7 +1537,6 @@ func spliceAuditResults(auditResults []model.AuditResult) string {
 // @router /v1/projects/{project_name}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/export [get]
 func ExportAuditPlanReportV1(c echo.Context) error {
 	s := model.GetStorage()
-	buff := new(bytes.Buffer)
 	reportIdStr := c.Param("audit_plan_report_id")
 	auditPlanName := c.Param("audit_plan_name")
 	projectName := c.Param("project_name")
@@ -1548,8 +1545,6 @@ func ExportAuditPlanReportV1(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	csvWriter := csv.NewWriter(buff)
-	buff.WriteString("\xEF\xBB\xBF") // 写入UTF-8 BOM
 	reportInfo, exist, err := s.GetReportWithAuditPlanByReportID(reportId)
 	if !exist {
 		return controller.JSONBaseErrorReq(c, fmt.Errorf("not found audit report"))
@@ -1572,18 +1567,19 @@ func ExportAuditPlanReportV1(c echo.Context) error {
 		{"数据库类型", reportInfo.AuditPlan.DBType},
 		{"审核的数据库", reportInfo.AuditPlan.InstanceDatabase},
 	}
-	err = csvWriter.WriteAll(baseInfo)
+	csvBuilder := utils.NewCSVBuilder()
+	err = csvBuilder.WriteRows(baseInfo)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	// Add a split line between report information and sql audit information
-	err = csvWriter.Write([]string{})
+	err = csvBuilder.WriteRow([]string{})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	err = csvWriter.Write([]string{"编号", "SQL", "审核结果"})
+	err = csvBuilder.WriteRow([]string{"编号", "SQL", "审核结果"})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1593,17 +1589,16 @@ func ExportAuditPlanReportV1(c echo.Context) error {
 		sqlInfo = append(sqlInfo, []string{strconv.Itoa(idx + 1), sql.SQL, spliceAuditResults(sql.AuditResults)})
 	}
 
-	err = csvWriter.WriteAll(sqlInfo)
+	err = csvBuilder.WriteRows(sqlInfo)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	csvWriter.Flush()
 
 	fileName := fmt.Sprintf("扫描任务报告_%s_%s.csv", auditPlanName, time.Now().Format("20060102150405"))
 	c.Response().Header().Set(echo.HeaderContentDisposition, mime.FormatMediaType("attachment", map[string]string{
 		"filename": fileName,
 	}))
 
-	return c.Blob(http.StatusOK, "text/csv", buff.Bytes())
+	return c.Blob(http.StatusOK, "text/csv", csvBuilder.FlushAndGetBuffer().Bytes())
 }
