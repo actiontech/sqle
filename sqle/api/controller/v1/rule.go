@@ -22,6 +22,7 @@ import (
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/labstack/echo/v4"
 )
 
@@ -1784,11 +1785,8 @@ func exportTemplateFile(c echo.Context, exportType ExportType, templateFile inte
 			return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("template file is invalid")))
 		}
 
-		buf := new(bytes.Buffer)
-		buf.WriteString("\xEF\xBB\xBF") // 写入UTF-8 BOM
-
-		writer := csv.NewWriter(buf)
-		err := writer.WriteAll([][]string{{
+		csvBuilder := utils.NewCSVBuilder()
+		err := csvBuilder.WriteRows([][]string{{
 			locale.Bundle.LocalizeMsgByCtx(ctx, locale.RuleTemplateName),
 			locale.Bundle.LocalizeMsgByCtx(ctx, locale.RuleTemplateRuleVersion),
 			locale.Bundle.LocalizeMsgByCtx(ctx, locale.RuleTemplateDesc),
@@ -1798,17 +1796,17 @@ func exportTemplateFile(c echo.Context, exportType ExportType, templateFile inte
 			return controller.JSONBaseErrorReq(c, err)
 		}
 
-		if err = writer.Write(columnNameList); err != nil {
+		if err = csvBuilder.WriteRow(columnNameList); err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 
-		if err := writer.WriteAll(columnContentList); err != nil {
+		if err := csvBuilder.WriteRows(columnContentList); err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 
 		c.Response().Header().Set(echo.HeaderContentDisposition,
 			mime.FormatMediaType("attachment", map[string]string{"filename": fmt.Sprintf("RuleTemplate-%v.csv", templateName)}))
-		return c.Blob(http.StatusOK, "text/plain;charset=utf-8", buf.Bytes())
+		return c.Blob(http.StatusOK, "text/plain;charset=utf-8", csvBuilder.FlushAndGetBuffer().Bytes())
 	case JsonExportType:
 		buf, err := json.Marshal(templateFile)
 		if err != nil {
