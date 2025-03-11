@@ -18062,8 +18062,7 @@ var doc = `{
                     "$ref": "#/definitions/v1.SqlAnalysisChart"
                 },
                 "message": {
-                    "type": "string",
-                    "example": "ok"
+                    "type": "string"
                 }
             }
         },

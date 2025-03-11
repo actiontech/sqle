@@ -313,7 +313,8 @@ type SqlManageAnalysisChartReq struct {
 
 type SqlManageAnalysisChartResp struct {
 	controller.BaseRes
-	Data *SqlAnalysisChart `json:"data"`
+	Data    *SqlAnalysisChart `json:"data"`
+	Message string            `json:"message"`
 }
 
 // GetSqlManageSqlAnalysisChartV1
