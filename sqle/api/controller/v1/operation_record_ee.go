@@ -6,7 +6,6 @@ package v1
 import (
 	"bytes"
 	"context"
-	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -446,10 +445,7 @@ func exportOperationRecordList(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	buff := new(bytes.Buffer)
-	buff.WriteString("\xEF\xBB\xBF") // 写入UTF-8 BOM，为了兼容 windows 系统
-
-	csvWriter := csv.NewWriter(buff)
+	csvBuilder := utils.NewCSVBuilder()
 
 	csvColumnNameList := []string{
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.OprOperationTime),        //"操作时间",
@@ -459,7 +455,7 @@ func exportOperationRecordList(c echo.Context) error {
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.OprOperationContent),     //"操作内容",
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.OprOperationStatus),      //"状态",
 	}
-	err = csvWriter.Write(csvColumnNameList)
+	err = csvBuilder.WriteHeader(csvColumnNameList)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -473,18 +469,16 @@ func exportOperationRecordList(c echo.Context) error {
 			record.GetOperationContentByLangTag(locale.Bundle.GetLangTagFromCtx(ctx)),
 			locale.Bundle.LocalizeMsgByCtx(ctx, operationRecordStatusMap[record.OperationStatus]),
 		}
-		err = csvWriter.Write(csvLine)
+		err = csvBuilder.WriteRow(csvLine)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
-
-	csvWriter.Flush()
 
 	fileName := fmt.Sprintf("%s_operation_record.csv", time.Now().Format("20060102150405"))
 	c.Response().Header().Set(echo.HeaderContentDisposition, mime.FormatMediaType("attachment", map[string]string{
 		"filename": fileName,
 	}))
 
-	return c.Blob(http.StatusOK, "text/csv", buff.Bytes())
+	return c.Blob(http.StatusOK, "text/csv", csvBuilder.FlushAndGetBuffer().Bytes())
 }
