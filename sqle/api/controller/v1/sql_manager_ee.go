@@ -419,19 +419,7 @@ func getSqlManageSqlAnalysisChartV1(c echo.Context) error {
 		}
 	}
 	chartPoints, err := getSqlAnalysisChart(sqlManageId, *request.MetricName, request.LatestPointEnabled, startTime, endTime)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	xInfo := locale.Bundle.LocalizeMsgByCtx(c.Request().Context(), plocale.AnalysisChartXTime)
-	yInfo := locale.Bundle.LocalizeMsgByCtx(c.Request().Context(), plocale.AnalysisChartYCost)
-	return c.JSON(http.StatusOK, &SqlManageAnalysisChartResp{
-		BaseRes: controller.NewBaseReq(nil),
-		Data: &SqlAnalysisChart{
-			Points: &chartPoints,
-			XInfo:  &xInfo,
-			YInfo:  &yInfo,
-		},
-	})
+	return c.JSON(http.StatusOK, convertToSqlManageAnalysisChartResp(c.Request().Context(), chartPoints, err))
 }
 
 func getSqlAnalysisChart(sqlManageId string, metricName string, latestPointEnabled bool, startTime time.Time, endTime time.Time) ([]ChartPoint, error) {
@@ -456,6 +444,24 @@ func getSqlAnalysisChart(sqlManageId string, metricName string, latestPointEnabl
 		return chartPoints, nil
 	}
 	return chartPoints, nil
+}
+
+func convertToSqlManageAnalysisChartResp(ctx context.Context, chartPoints []ChartPoint, err error) SqlManageAnalysisChartResp {
+	xInfo := locale.Bundle.LocalizeMsgByCtx(ctx, plocale.AnalysisChartXTime)
+	yInfo := locale.Bundle.LocalizeMsgByCtx(ctx, plocale.AnalysisChartYCost)
+	message := err.Error()
+	if e.Is(err, driverV2.ErrSQLIsNotSupported) {
+		message = locale.Bundle.LocalizeMsgByCtx(ctx, plocale.SQLCostChartOnlySupportDML)
+	}
+	return SqlManageAnalysisChartResp{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: &SqlAnalysisChart{
+			Points: &chartPoints,
+			XInfo:  &xInfo,
+			YInfo:  &yInfo,
+		},
+		Message: message,
+	}
 }
 
 // 根据时间分片查询
