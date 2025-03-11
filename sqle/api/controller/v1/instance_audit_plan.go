@@ -1,9 +1,7 @@
 package v1
 
 import (
-	"bytes"
 	"context"
-	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -1310,30 +1308,29 @@ func GetInstanceAuditPlanSQLExport(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	buff := new(bytes.Buffer)
-	buff.WriteString("\xEF\xBB\xBF") // 写入UTF-8 BOM
-	csvWriter := csv.NewWriter(buff)
-	toWrite := make([]string, len(head))
+	csvBuilder := utils.NewCSVBuilder()
+
+	csvHeader := make([]string, len(head))
 	for col, h := range head {
-		toWrite[col] = locale.Bundle.LocalizeMsgByCtx(c.Request().Context(), h.Desc)
+		csvHeader[col] = locale.Bundle.LocalizeMsgByCtx(c.Request().Context(), h.Desc)
 	}
-	if err = csvWriter.Write(toWrite); err != nil {
+	if err = csvBuilder.WriteHeader(csvHeader); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	for _, rowMap := range rows {
+		csvRow := make([]string, len(head))
 		for col, h := range head {
-			toWrite[col] = utils.TruncateAndMarkForExcelCell(rowMap[h.Name])
+			csvRow[col] = rowMap[h.Name]
 		}
-		if err = csvWriter.Write(toWrite); err != nil {
+		if err = csvBuilder.WriteRow(csvRow); err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
-	csvWriter.Flush()
 
 	fileName := fmt.Sprintf("sql_export_%s_%s.csv", ap.Type, time.Now().Format("20060102150405"))
 	c.Response().Header().Set(echo.HeaderContentDisposition, mime.FormatMediaType("attachment", map[string]string{"filename": fileName}))
 
-	return c.Blob(http.StatusOK, "text/csv", buff.Bytes())
+	return c.Blob(http.StatusOK, "text/csv", csvBuilder.FlushAndGetBuffer().Bytes())
 }
 
 func ConvertFilterTipsToRes(fts []auditplan.FilterTip) []FilterTip {
