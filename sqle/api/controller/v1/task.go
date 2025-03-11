@@ -2,9 +2,7 @@ package v1
 
 import (
 	"archive/zip"
-	"bytes"
 	"context"
-	"encoding/csv"
 	e "errors"
 	"fmt"
 	"mime"
@@ -618,10 +616,8 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 	}
 
 	ctx := c.Request().Context()
-	buff := &bytes.Buffer{}
-	buff.WriteString("\xEF\xBB\xBF") // 写入UTF-8 BOM
-	cw := csv.NewWriter(buff)
-	err = cw.Write([]string{
+	csvBuilder := utils.NewCSVBuilder()
+	err = csvBuilder.WriteHeader([]string{
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.TaskSQLReportIndex),       // "序号",
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.TaskSQLReportSQL),         // "SQL",
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.TaskSQLReportAuditStatus), // "SQL审核状态",
@@ -644,7 +640,7 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 			AuditStatus:  td.AuditStatus,
 		}
 		taskSql.ExecStatus = td.ExecStatus
-		err := cw.Write([]string{
+		err := csvBuilder.WriteRow([]string{
 			strconv.FormatUint(uint64(td.Number), 10),
 			td.ExecSQL,
 			taskSql.GetAuditStatusDesc(ctx),
@@ -658,11 +654,10 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, errors.New(errors.WriteDataToTheFileError, err))
 		}
 	}
-	cw.Flush()
 	fileName := fmt.Sprintf("SQL_audit_report_%v_%v.csv", task.InstanceName(), taskId)
 	c.Response().Header().Set(echo.HeaderContentDisposition,
 		mime.FormatMediaType("attachment", map[string]string{"filename": fileName}))
-	return c.Blob(http.StatusOK, "text/csv", buff.Bytes())
+	return c.Blob(http.StatusOK, "text/csv", csvBuilder.FlushAndGetBuffer().Bytes())
 }
 
 // @Summary 下载指定扫描任务的SQL文件
