@@ -4719,6 +4719,21 @@ end;`,
 	}
 }
 
+func TestBeginDelimiter(t *testing.T) {
+	for _, sql := range []string{
+		`
+BEGIN;
+delimiter %%
+BEGIN%%`,
+	} {
+		runSingleRuleInspectCase(
+			rulepkg.RuleHandlerMap[rulepkg.DDLCheckCreateProcedure].Rule, t, "",
+			DefaultMysqlInspect(), sql,
+			newTestResult(),
+			newTestResult())
+	}
+}
+
 // todo(@wy): move to auto test
 func TestWhitelist(t *testing.T) {
 	//	for _, sql := range []string{
