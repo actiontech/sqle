@@ -9,6 +9,7 @@ type DynPerformanceSQLArea struct {
 	CPUTime        int64  `json:"cpu_time"`
 	DiskReads      int64  `json:"disk_reads"`
 	BufferGets     int64  `json:"buffer_gets"`
+	UserName       string `json:"username"`
 }
 
 // Note:
@@ -17,22 +18,28 @@ type DynPerformanceSQLArea struct {
 // So I get the original cpu_time (microseconds) and convert it to seconds within the SQLE code logic.
 const (
 	DynPerformanceViewSQLAreaTpl = `
-	SELECT * FROM (
-		SELECT
-			sql_fulltext,
-			executions,
-			elapsed_time,
-			user_io_wait_time,
-			cpu_time,
- 			disk_reads,
-			buffer_gets
-		FROM
-			V$SQLAREA
-		WHERE
-			EXECUTIONS > 0
-		ORDER BY %v DESC
-	) WHERE rownum <= %v
-	`
+SELECT * FROM (
+    SELECT
+        s.sql_fulltext,
+        s.executions,
+        s.elapsed_time,
+        s.user_io_wait_time,
+        s.cpu_time,
+        s.disk_reads,
+        s.buffer_gets,
+        u.username
+    FROM
+        V$SQLAREA s
+    JOIN
+        DBA_USERS u ON s.parsing_user_id = u.user_id
+    WHERE
+        s.EXECUTIONS > 0
+        %v
+    ORDER BY %v DESC
+)
+WHERE
+    rownum <= %v
+`
 	DynPerformanceViewSQLAreaColumnExecutions     = "executions"
 	DynPerformanceViewSQLAreaColumnElapsedTime    = "elapsed_time"
 	DynPerformanceViewSQLAreaColumnCPUTime        = "cpu_time"
