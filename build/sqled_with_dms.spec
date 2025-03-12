@@ -101,6 +101,7 @@ if [ $? -eq 0 ]; then
     -e "s|User=|User=actiontech-universe|g" \
     -e "s|ExecStart=|ExecStart=/bin/sh -c 'exec $RPM_INSTALL_PREFIX\/bin\/sqled --config $RPM_INSTALL_PREFIX\/etc\/config.yaml --pidfile=$RPM_INSTALL_PREFIX\/sqled.pid >>$RPM_INSTALL_PREFIX\/std.log 2>\&1'|g" \
     -e "s|WorkingDirectory=|WorkingDirectory=$RPM_INSTALL_PREFIX|g" \
+    -e "s|Environment=|Environment=SQLE_JAVA_HOME=$RPM_INSTALL_PREFIX\/jdk|g" \
     $RPM_INSTALL_PREFIX/scripts/sqled.systemd > /lib/systemd/system/sqled.service
     sed -e "s|PIDFile=|PIDFile=$RPM_INSTALL_PREFIX\/dms.pid|g" \
     -e "s|User=|User=actiontech-universe|g" \
@@ -159,19 +160,6 @@ cut_over_lock_timeout_seconds=3
 max_lag_millis=1500
 heartbeat_interval_millis=100
 EOF
-
-# 检查 .bashrc 文件是否存在
-if [ -f ~/.bashrc ]; then
-    if grep -q "^export SQLE_JAVA_HOME=" ~/.bashrc; then
-        # 如果 SQLE_JAVA_HOME 已经存在,则更新其值
-        sed -i "s|^export SQLE_JAVA_HOME=.*|export SQLE_JAVA_HOME=$RPM_INSTALL_PREFIX/jdk|" ~/.bashrc
-    else
-        echo "export SQLE_JAVA_HOME=$RPM_INSTALL_PREFIX/jdk" >> ~/.bashrc
-    fi
-else
-    echo "warn: .bashrc file not found."
-fi
-source ~/.bashrc
 
 #chown
 chown -R %{user_name}: $RPM_INSTALL_PREFIX
