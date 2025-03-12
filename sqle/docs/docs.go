@@ -17867,6 +17867,9 @@ var doc = `{
         "v1.SqlAnalysisChart": {
             "type": "object",
             "properties": {
+                "message": {
+                    "type": "string"
+                },
                 "points": {
                     "type": "array",
                     "items": {
@@ -18062,7 +18065,8 @@ var doc = `{
                     "$ref": "#/definitions/v1.SqlAnalysisChart"
                 },
                 "message": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
