@@ -21,7 +21,7 @@ func TestSplitSqlText(t *testing.T) {
 	}{
 		{"splitter_test_1.sql", 14},
 		{"splitter_test_2.sql", 14},
-		{"splitter_test_3.sql", 4},
+		{"splitter_test_3.sql", 6},
 		{"splitter_test_skip_quoted_delimiter.sql", 18},
 	}
 	for _, testCase := range testCases {
