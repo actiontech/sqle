@@ -17867,6 +17867,9 @@ var doc = `{
         "v1.SqlAnalysisChart": {
             "type": "object",
             "properties": {
+                "message": {
+                    "type": "string"
+                },
                 "points": {
                     "type": "array",
                     "items": {

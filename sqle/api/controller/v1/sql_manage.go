@@ -263,9 +263,10 @@ type SqlAnalysis struct {
 }
 
 type SqlAnalysisChart struct {
-	Points *[]ChartPoint `json:"points"`
-	XInfo  *string       `json:"x_info"`
-	YInfo  *string       `json:"y_info"`
+	Points  *[]ChartPoint `json:"points"`
+	XInfo   *string       `json:"x_info"`
+	YInfo   *string       `json:"y_info"`
+	Message string        `json:"message"`
 }
 
 type ChartPoint struct {

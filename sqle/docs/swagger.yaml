@@ -4260,6 +4260,8 @@ definitions:
     type: object
   v1.SqlAnalysisChart:
     properties:
+      message:
+        type: string
       points:
         items:
           $ref: '#/definitions/v1.ChartPoint'

@@ -12,8 +12,9 @@ var (
 	FunctionIndexAdviceFormatAll = &i18n.Message{ID: "FunctionIndexAdviceFormatAll", Other: "索引建议 | SQL使用了函数作为查询条件，在MySQL5.7以上的版本，可以在虚拟列上创建索引，在MySQL8.0.13以上的版本，可以创建函数索引，建议根据MySQL版本对表%s添加合适的索引，参考列：%s"}
 	JoinIndexAdviceFormat        = &i18n.Message{ID: "JoinIndexAdviceFormat", Other: "索引建议 | SQL中字段%s为被驱动表%s上的关联字段，建议对表%s添加单列索引，参考列：%s"}
 
-	AdvisorIndexTypeComposite = &i18n.Message{ID: "AdvisorIndexTypeComposite", Other: "复合"}
-	AdvisorIndexTypeSingle    = &i18n.Message{ID: "AdvisorIndexTypeSingle", Other: "单列"}
+	AdvisorIndexTypeComposite  = &i18n.Message{ID: "AdvisorIndexTypeComposite", Other: "复合"}
+	AdvisorIndexTypeSingle     = &i18n.Message{ID: "AdvisorIndexTypeSingle", Other: "单列"}
+	SQLCostChartOnlySupportDML = &i18n.Message{ID: "SQLCostChartOnlySupportDML", Other: "该SQL不是DML，无需分析SQL执行计划代价趋势"}
 )
 
 // analysis
