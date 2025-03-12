@@ -355,7 +355,8 @@ func (at *TaskWrapper) filterSqlManageQueue(sqlList []*model.SQLManageQueue) (ma
 			return nil, nil, err
 		}
 		metrics := LoadMetrics(value, []string{MetricNameEndpoints})
-		matchedID, isInBlacklist := FilterSQLsByBlackList(metrics.Get(MetricNameEndpoints).StringArray(), sql.SqlText, sql.SqlFingerprint, instName, blacklist)
+		dbUser := metrics.Get(MetricNameDBUser).String()
+		matchedID, isInBlacklist := FilterSQLsByBlackList(metrics.Get(MetricNameEndpoints).StringArray(), sql.SqlText, sql.SqlFingerprint, instName, dbUser, blacklist)
 		if isInBlacklist {
 			matchedCount[matchedID]++
 			continue
@@ -367,7 +368,7 @@ func (at *TaskWrapper) filterSqlManageQueue(sqlList []*model.SQLManageQueue) (ma
 	return matchedCount, SqlQueueList, nil
 }
 
-func FilterSQLsByBlackList(endpoint []string, sqlText, sqlFp, instName string, blacklist []*model.BlackListAuditPlanSQL) (uint, bool) {
+func FilterSQLsByBlackList(endpoint []string, sqlText, sqlFp, instName, dbUser string, blacklist []*model.BlackListAuditPlanSQL) (uint, bool) {
 	if len(blacklist) == 0 {
 		return 0, false
 	}
@@ -393,7 +394,12 @@ func FilterSQLsByBlackList(endpoint []string, sqlText, sqlFp, instName string, b
 	if isInstNameInBlackList {
 		return matchedID, true
 	}
-
+	if dbUser != "" {
+		matchedID, isDbUserInBlackList := filter.IsDbUserInBlackList(dbUser)
+		if isDbUserInBlackList {
+			return matchedID, true
+		}
+	}
 	return 0, false
 }
 
@@ -441,18 +447,24 @@ func ConvertToBlackFilter(blackList []*model.BlackListAuditPlanSQL) *BlackFilter
 				ID:       filter.ID,
 				InstName: filter.FilterContent,
 			})
+		case model.FilterTypeDbUser:
+			blackFilter.BlackDbUserList = append(blackFilter.BlackDbUserList, BlackDbUser{
+				ID:         filter.ID,
+				DbUserName: filter.FilterContent,
+			})
 		}
 	}
 	return &blackFilter
 }
 
 type BlackFilter struct {
-	BlackSqlList  []BlackSqlList
-	BlackFpList   []BlackFpList
-	BlackIpList   []BlackIpList
-	BlackHostList []BlackHostList
-	BlackCidrList []BlackCidrList
-	BlackInstList []BlackInstList
+	BlackSqlList    []BlackSqlList
+	BlackFpList     []BlackFpList
+	BlackIpList     []BlackIpList
+	BlackHostList   []BlackHostList
+	BlackCidrList   []BlackCidrList
+	BlackInstList   []BlackInstList
+	BlackDbUserList []BlackDbUser
 }
 
 type BlackSqlList struct {
@@ -483,6 +495,11 @@ type BlackCidrList struct {
 type BlackInstList struct {
 	ID       uint
 	InstName string
+}
+
+type BlackDbUser struct {
+	ID         uint
+	DbUserName string
 }
 
 func (f BlackFilter) IsSqlInBlackList(checkSql string) (uint, bool) {
@@ -538,6 +555,15 @@ func (f BlackFilter) HasEndpointInBlackList(checkIps []string) (uint, bool) {
 		}
 	}
 
+	return 0, false
+}
+
+func (f BlackFilter) IsDbUserInBlackList(checkDbUser string) (uint, bool) {
+	for _, blackDbUser := range f.BlackDbUserList {
+		if blackDbUser.DbUserName == checkDbUser {
+			return blackDbUser.ID, true
+		}
+	}
 	return 0, false
 }
 
