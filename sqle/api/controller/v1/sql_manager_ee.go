@@ -456,11 +456,11 @@ func convertToSqlManageAnalysisChartResp(ctx context.Context, chartPoints []Char
 	return SqlManageAnalysisChartResp{
 		BaseRes: controller.NewBaseReq(nil),
 		Data: &SqlAnalysisChart{
-			Points: &chartPoints,
-			XInfo:  &xInfo,
-			YInfo:  &yInfo,
+			Points:  &chartPoints,
+			XInfo:   &xInfo,
+			YInfo:   &yInfo,
+			Message: message,
 		},
-		Message: message,
 	}
 }
 
