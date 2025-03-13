@@ -587,8 +587,8 @@ func (d *DriverGrpcServer) GetDatabaseObjectDDL(ctx context.Context, req *protoV
 	if err != nil {
 		return &protoV2.DatabaseSchemaObjectResponse{}, err
 	}
-	dbInfoReq := make([]*DatabasSchemaInfo, len(req.DatabasSchemaInfo))
-	for i, dbSchema := range req.DatabasSchemaInfo {
+	dbInfoReq := make([]*DatabaseSchemaInfo, len(req.DatabaseSchemaInfo))
+	for i, dbSchema := range req.DatabaseSchemaInfo {
 		dbObjs := make([]*DatabaseObject, len(dbSchema.DatabaseObject))
 		for j, dbObj := range dbSchema.DatabaseObject {
 			dbObjs[j] = &DatabaseObject{
@@ -596,7 +596,7 @@ func (d *DriverGrpcServer) GetDatabaseObjectDDL(ctx context.Context, req *protoV
 				ObjectType: dbObj.ObjectType,
 			}
 		}
-		dbInfoReq[i] = &DatabasSchemaInfo{
+		dbInfoReq[i] = &DatabaseSchemaInfo{
 			SchemaName:      dbSchema.SchemaName,
 			DatabaseObjects: dbObjs,
 		}
