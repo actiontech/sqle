@@ -91,7 +91,7 @@ type Driver interface {
 	ExtractTableFromSQL(ctx context.Context, sql string) ([]*Table, error)
 	EstimateSQLAffectRows(ctx context.Context, sql string) (*EstimatedAffectRows, error)
 	KillProcess(ctx context.Context) (*KillProcessInfo, error)
-	GetDatabaseObjectDDL(ctx context.Context, objInfos []*DatabasSchemaInfo) ([]*DatabaseSchemaObjectResult, error)
+	GetDatabaseObjectDDL(ctx context.Context, objInfos []*DatabaseSchemaInfo) ([]*DatabaseSchemaObjectResult, error)
 	GetDatabaseDiffModifySQL(ctx context.Context, calibratedDSN *DSN, objInfos []*DatabasCompareSchemaInfo) ([]*DatabaseDiffModifySQLResult, error)
 
 	Backup(ctx context.Context, req *BackupReq) (*BackupRes, error)
@@ -424,7 +424,7 @@ type RuleKnowledge struct {
 	Content string
 }
 
-type DatabasSchemaInfo struct {
+type DatabaseSchemaInfo struct {
 	SchemaName      string
 	DatabaseObjects []*DatabaseObject
 }

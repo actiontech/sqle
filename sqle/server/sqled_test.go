@@ -114,7 +114,7 @@ func (d *mockDriver) EstimateSQLAffectRows(ctx context.Context, sql string) (*dr
 	return nil, nil
 }
 
-func (d *mockDriver) GetDatabaseObjectDDL(ctx context.Context, objInfos []*driverV2.DatabasSchemaInfo) ([]*driverV2.DatabaseSchemaObjectResult, error) {
+func (d *mockDriver) GetDatabaseObjectDDL(ctx context.Context, objInfos []*driverV2.DatabaseSchemaInfo) ([]*driverV2.DatabaseSchemaObjectResult, error) {
 	return nil, nil
 }
 
