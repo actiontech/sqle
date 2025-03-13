@@ -182,14 +182,14 @@ func (i *MysqlDriverImpl) GetDatabaseDiffModifySQL(ctx context.Context, calibrat
 		return nil, err
 	}
 	defer compareConn.Db.Close()
-	compareSchemaInfos := make([]*driverV2.DatabasSchemaInfo, len(objInfos))
-	baseSchemaInfos := make([]*driverV2.DatabasSchemaInfo, len(objInfos))
+	compareSchemaInfos := make([]*driverV2.DatabaseSchemaInfo, len(objInfos))
+	baseSchemaInfos := make([]*driverV2.DatabaseSchemaInfo, len(objInfos))
 	for i, objInfo := range objInfos {
-		compareSchemaInfos[i] = &driverV2.DatabasSchemaInfo{
+		compareSchemaInfos[i] = &driverV2.DatabaseSchemaInfo{
 			SchemaName:      objInfo.ComparedSchemaName,
 			DatabaseObjects: objInfo.DatabaseObjects,
 		}
-		baseSchemaInfos[i] = &driverV2.DatabasSchemaInfo{
+		baseSchemaInfos[i] = &driverV2.DatabaseSchemaInfo{
 			SchemaName:      objInfo.BaseSchemaName,
 			DatabaseObjects: objInfo.DatabaseObjects,
 		}
@@ -280,16 +280,16 @@ func (i *MysqlDriverImpl) GetDatabaseDiffModifySQL(ctx context.Context, calibrat
 	return dbDiffSQLs, nil
 }
 
-func (i *MysqlDriverImpl) GetDatabaseObjectDDL(ctx context.Context, objInfos []*driverV2.DatabasSchemaInfo) ([]*driverV2.DatabaseSchemaObjectResult, error) {
+func (i *MysqlDriverImpl) GetDatabaseObjectDDL(ctx context.Context, objInfos []*driverV2.DatabaseSchemaInfo) ([]*driverV2.DatabaseSchemaObjectResult, error) {
 	conn, err := i.getDbConn()
 	if err != nil {
 		return nil, err
 	}
 	// 复制切片以避免修改原始数据
-	databasSchemaInfo := make([]*driverV2.DatabasSchemaInfo, len(objInfos))
-	copy(databasSchemaInfo, objInfos)
+	databaseSchemaInfo := make([]*driverV2.DatabaseSchemaInfo, len(objInfos))
+	copy(databaseSchemaInfo, objInfos)
 	// 未指定schema时默认获取全量
-	if len(databasSchemaInfo) == 0 {
+	if len(databaseSchemaInfo) == 0 {
 		schemas, err := conn.ShowDatabases(true)
 		if err != nil {
 			return nil, err
@@ -299,7 +299,7 @@ func (i *MysqlDriverImpl) GetDatabaseObjectDDL(ctx context.Context, objInfos []*
 			if err != nil {
 				return nil, err
 			}
-			databasSchemaInfo = append(databasSchemaInfo, &driverV2.DatabasSchemaInfo{
+			databaseSchemaInfo = append(databaseSchemaInfo, &driverV2.DatabaseSchemaInfo{
 				SchemaName:      schema,
 				DatabaseObjects: schemaObjs,
 			})
@@ -307,7 +307,7 @@ func (i *MysqlDriverImpl) GetDatabaseObjectDDL(ctx context.Context, objInfos []*
 		}
 	} else {
 		// 未指定schema对象（表、视图、存储过程等）时默认获取全量
-		for _, objInfo := range databasSchemaInfo {
+		for _, objInfo := range databaseSchemaInfo {
 			if len(objInfo.DatabaseObjects) == 0 {
 				schemaObjs, err := getAllSchemaObjects(conn, objInfo.SchemaName)
 				if err != nil {
@@ -318,8 +318,8 @@ func (i *MysqlDriverImpl) GetDatabaseObjectDDL(ctx context.Context, objInfos []*
 		}
 	}
 
-	res := make([]*driverV2.DatabaseSchemaObjectResult, 0, len(databasSchemaInfo))
-	for _, objInfo := range databasSchemaInfo {
+	res := make([]*driverV2.DatabaseSchemaObjectResult, 0, len(databaseSchemaInfo))
+	for _, objInfo := range databaseSchemaInfo {
 		err = conn.UseSchema(objInfo.SchemaName)
 		if err != nil {
 			return nil, fmt.Errorf("use schema fail, error: %v", err)
