@@ -425,10 +425,10 @@ message KillProcessResponse {
 
 message DatabaseObjectInfoRequest {
   Session session = 1;
-  repeated DatabasSchemaInfo databasSchemaInfo = 2;
+  repeated DatabaseSchemaInfo databaseSchemaInfo = 2;
 }
 
-message DatabasSchemaInfo {
+message DatabaseSchemaInfo {
 	string schemaName = 1;
 	repeated DatabaseObject databaseObject = 2;
 }
