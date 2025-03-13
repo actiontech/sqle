@@ -81,3 +81,8 @@ BEGIN
     -- 输出结果
     SELECT v_sum AS total_sum;
 END;
+
+BEGIN;
+
+delimiter %%
+BEGIN%%
