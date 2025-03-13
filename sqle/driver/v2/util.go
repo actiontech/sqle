@@ -455,7 +455,7 @@ func RandStr(length int) string {
 }
 
 func ConvertDatabasSchemaInfoToProto(infos []*DatabasCompareSchemaInfo) []*protoV2.DatabasDiffSchemaInfo {
-	dbInfoReq := make([]*protoV2.DatabasDiffSchemaInfo, 0, len(infos))
+	dbInfoReq := make([]*protoV2.DatabasDiffSchemaInfo, len(infos))
 	for i, dbSchema := range infos {
 		dbObjs := make([]*protoV2.DatabaseObject, len(dbSchema.DatabaseObjects))
 		for j, dbObj := range dbSchema.DatabaseObjects {
