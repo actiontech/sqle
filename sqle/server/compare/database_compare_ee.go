@@ -178,7 +178,7 @@ func compareSchema(base, compared *driverV2.DatabaseSchemaObjectResult) *SchemaO
 	for objName, baseObj := range baseObjMap {
 		if comparedObj, exists := comparedObjMap[objName]; exists {
 			// 比对数据源中也存在相同的对象，则进行 DDL 对比
-			diffObj := compareObjects(baseObj, comparedObj)
+			diffObj := compareObjects(base.SchemaName, compared.SchemaName, baseObj, comparedObj)
 			updateDiffObjectMap(diffObjectMap, baseObj.DatabaseObject.ObjectType, diffObj)
 		} else {
 			// 比对数据源中不存在该对象
@@ -234,13 +234,18 @@ func compareSchema(base, compared *driverV2.DatabaseSchemaObjectResult) *SchemaO
 }
 
 // 比较两个对象的 DDL，如果相同则返回对比一致，否则返回对比有差异
-func compareObjects(baseObj, comparedObj *driverV2.DatabaseObjectDDL) *DatabaseDiffObject {
+func compareObjects(baseSchemaName, comparedSchemaName string, baseObj, comparedObj *driverV2.DatabaseObjectDDL) *DatabaseDiffObject {
 	diffObject := &DatabaseDiffObject{
 		ObjectType: baseObj.DatabaseObject.ObjectType,
 	}
 	var comparedResult string
-	if baseObj.ObjectDDL == comparedObj.ObjectDDL {
-		// DDL相同
+	// 去除可能影响ddl对比的字符
+	baseReplacer := strings.NewReplacer(baseSchemaName, "", "(", "", ")", "", ",", "", " ", "", "\t", "")
+	compareReplacer := strings.NewReplacer(comparedSchemaName, "", "(", "", ")", "", ",", "", " ", "", "\t", "")
+	// 格式化DDL按行切分行后进行对比，可有效防止因字段顺序不一致引起的比对差异
+	baseDDLLines := removeEmptyStrings(strings.Split(baseReplacer.Replace(baseObj.ObjectDDL), "\n"))
+	comparedDDLLines := removeEmptyStrings(strings.Split(compareReplacer.Replace(comparedObj.ObjectDDL), "\n"))
+	if areSlicesEqualIgnoreOrder(baseDDLLines, comparedDDLLines) {
 		comparedResult = DatabaseStructSame
 	} else {
 		// DDL不同，增加不一致计数
@@ -256,6 +261,43 @@ func compareObjects(baseObj, comparedObj *driverV2.DatabaseObjectDDL) *DatabaseD
 	}
 
 	return diffObject
+}
+
+func removeEmptyStrings(slice []string) []string {
+	var result []string
+	for _, str := range slice {
+		if str != "" {
+			result = append(result, str)
+		}
+	}
+	return result
+}
+
+// 判断两个字符串切片是否包含相同的元素（忽略顺序）
+func areSlicesEqualIgnoreOrder(a, b []string) bool {
+	// 如果长度不同，直接返回 false
+	if len(a) != len(b) {
+		return false
+	}
+
+	// 使用 map 统计每个元素的出现次数
+	countMap := make(map[string]int, len(a))
+
+	// 统计切片 a 中元素的出现次数
+	for _, v := range a {
+		countMap[v]++
+	}
+
+	// 统计切片 b 中元素的出现次数，并与 map 中的值进行比较
+	for _, v := range b {
+		countMap[v]--
+		if countMap[v] < 0 {
+			return false
+		}
+	}
+
+	// 如果所有元素的计数都为 0，说明两个切片包含相同的元素
+	return true
 }
 
 // 将比较结果更新到 diffObjectMap 中，并根据对象类型进行聚合
