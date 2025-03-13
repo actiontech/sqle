@@ -346,7 +346,7 @@ func (p *PluginImplV1) EstimateSQLAffectRows(ctx context.Context, sql string) (*
 	return nil, NewErrPluginAPINotImplement(driverV2.OptionalModuleEstimateSQLAffectRows)
 }
 
-func (s *PluginImplV1) GetDatabaseObjectDDL(ctx context.Context, objInfos []*driverV2.DatabasSchemaInfo) ([]*driverV2.DatabaseSchemaObjectResult, error) {
+func (s *PluginImplV1) GetDatabaseObjectDDL(ctx context.Context, objInfos []*driverV2.DatabaseSchemaInfo) ([]*driverV2.DatabaseSchemaObjectResult, error) {
 	return nil, fmt.Errorf("unimplement this method")
 }
 

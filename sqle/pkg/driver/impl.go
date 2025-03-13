@@ -298,7 +298,7 @@ func (p *DriverImpl) KillProcess(ctx context.Context) (*driverV2.KillProcessInfo
 	return &driverV2.KillProcessInfo{}, nil
 }
 
-func (p *DriverImpl) GetDatabaseObjectDDL(ctx context.Context, objInfos []*driverV2.DatabasSchemaInfo) ([]*driverV2.DatabaseSchemaObjectResult, error) {
+func (p *DriverImpl) GetDatabaseObjectDDL(ctx context.Context, objInfos []*driverV2.DatabaseSchemaInfo) ([]*driverV2.DatabaseSchemaObjectResult, error) {
 	return []*driverV2.DatabaseSchemaObjectResult{}, nil
 }
 

@@ -637,10 +637,10 @@ func (s *dbDriverResult) RowsAffected() (int64, error) {
 	return s.rowsAffected, nil
 }
 
-func (s *PluginImplV2) GetDatabaseObjectDDL(ctx context.Context, objInfos []*driverV2.DatabasSchemaInfo) ([]*driverV2.DatabaseSchemaObjectResult, error) {
+func (s *PluginImplV2) GetDatabaseObjectDDL(ctx context.Context, objInfos []*driverV2.DatabaseSchemaInfo) ([]*driverV2.DatabaseSchemaObjectResult, error) {
 	api := "GetDatabaseObjectDDL"
 	s.preLog(api)
-	dbInfoReq := make([]*protoV2.DatabasSchemaInfo, len(objInfos))
+	dbInfoReq := make([]*protoV2.DatabaseSchemaInfo, len(objInfos))
 	for i, dbSchema := range objInfos {
 		dbObjs := make([]*protoV2.DatabaseObject, len(dbSchema.DatabaseObjects))
 		for j, dbObj := range dbSchema.DatabaseObjects {
@@ -649,14 +649,14 @@ func (s *PluginImplV2) GetDatabaseObjectDDL(ctx context.Context, objInfos []*dri
 				ObjectType: dbObj.ObjectType,
 			}
 		}
-		dbInfoReq[i] = &protoV2.DatabasSchemaInfo{
+		dbInfoReq[i] = &protoV2.DatabaseSchemaInfo{
 			SchemaName:     dbSchema.SchemaName,
 			DatabaseObject: dbObjs,
 		}
 	}
 	resp, err := s.client.GetDatabaseObjectDDL(ctx, &protoV2.DatabaseObjectInfoRequest{
-		Session:           s.Session,
-		DatabasSchemaInfo: dbInfoReq,
+		Session:            s.Session,
+		DatabaseSchemaInfo: dbInfoReq,
 	})
 	s.afterLog(api, err)
 	if err != nil {
