@@ -158,12 +158,18 @@ func (s *splitter) matchSql(sql string) bool {
 }
 
 func (s *splitter) skipBeginEndBlock(token *parser.Token) *parser.Token {
+	tokenIndex := 0
 	var blockStack []Block
 	if token.TokenType() == parser.Begin {
 		blockStack = append(blockStack, BeginEndBlock{})
 	}
+	// 如果BEGIN后面就是分隔符，那么就直接return
 	for len(blockStack) > 0 {
 		token = s.scanner.NextToken()
+		tokenIndex++
+		if s.isBeginQuit(token, tokenIndex) {
+			return token
+		}
 		for _, block := range allBlocks {
 			if block.MatchBegin(token) {
 				blockStack = append(blockStack, block)
@@ -198,6 +204,14 @@ func (s *splitter) skipBeginEndBlock(token *parser.Token) *parser.Token {
 		}
 	}
 	return token
+}
+
+// isBeginQuit 判断BEGIN语句跟的是否就是结束符
+func (s *splitter) isBeginQuit(token *parser.Token, tokenIndex int) bool {
+	if token.Ident() == s.delimiter.DelimiterStr && tokenIndex == 1 {
+		return true
+	}
+	return false
 }
 
 // ref:https://dev.mysql.com/doc/refman/8.4/en/flow-control-statements.html
