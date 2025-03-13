@@ -239,12 +239,9 @@ func compareObjects(baseSchemaName, comparedSchemaName string, baseObj, compared
 		ObjectType: baseObj.DatabaseObject.ObjectType,
 	}
 	var comparedResult string
-	// 去除可能影响ddl对比的字符
-	baseReplacer := strings.NewReplacer(baseSchemaName, "", "(", "", ")", "", ",", "", " ", "", "\t", "")
-	compareReplacer := strings.NewReplacer(comparedSchemaName, "", "(", "", ")", "", ",", "", " ", "", "\t", "")
 	// 格式化DDL按行切分行后进行对比，可有效防止因字段顺序不一致引起的比对差异
-	baseDDLLines := removeEmptyStrings(strings.Split(baseReplacer.Replace(baseObj.ObjectDDL), "\n"))
-	comparedDDLLines := removeEmptyStrings(strings.Split(compareReplacer.Replace(comparedObj.ObjectDDL), "\n"))
+	baseDDLLines := ignoreExtraneousCharacters(strings.Split(baseObj.ObjectDDL, "\n"), baseSchemaName)
+	comparedDDLLines := ignoreExtraneousCharacters(strings.Split(comparedObj.ObjectDDL, "\n"), comparedSchemaName)
 	if areSlicesEqualIgnoreOrder(baseDDLLines, comparedDDLLines) {
 		comparedResult = DatabaseStructSame
 	} else {
@@ -263,9 +260,15 @@ func compareObjects(baseSchemaName, comparedSchemaName string, baseObj, compared
 	return diffObject
 }
 
-func removeEmptyStrings(slice []string) []string {
+// 去除可能影响ddl对比的字符
+func ignoreExtraneousCharacters(slice []string, replacerStr string) []string {
 	var result []string
+	replacer := strings.NewReplacer(replacerStr, "", "(", "", ")", "", " ", "", "\t", "")
 	for _, str := range slice {
+		// 替换掉影响的字符或字符串
+		str = replacer.Replace(str)
+		// 去掉两端逗号
+		str = strings.Trim(str, ",")
 		if str != "" {
 			result = append(result, str)
 		}
