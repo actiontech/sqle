@@ -48,14 +48,14 @@ const (
 )
 
 func (c *Compared) ExecDatabaseCompare(context context.Context, l *logrus.Entry) ([]*SchemaObject, error) {
-	baseInfos := make([]*driverV2.DatabasSchemaInfo, len(c.ObjInfos))
-	comparedInfos := make([]*driverV2.DatabasSchemaInfo, len(c.ObjInfos))
+	baseInfos := make([]*driverV2.DatabaseSchemaInfo, len(c.ObjInfos))
+	comparedInfos := make([]*driverV2.DatabaseSchemaInfo, len(c.ObjInfos))
 	if len(c.ObjInfos) > 0 {
 		for i, objInfo := range c.ObjInfos {
-			baseInfos[i] = &driverV2.DatabasSchemaInfo{
+			baseInfos[i] = &driverV2.DatabaseSchemaInfo{
 				SchemaName: objInfo.BaseSchemaName,
 			}
-			comparedInfos[i] = &driverV2.DatabasSchemaInfo{
+			comparedInfos[i] = &driverV2.DatabaseSchemaInfo{
 				SchemaName: objInfo.ComparedSchemaName,
 			}
 		}
@@ -348,12 +348,12 @@ func GetDatabaseObjectDDL(c context.Context, l *logrus.Entry, instance *model.In
 		return nil, err
 	}
 	defer p.Close(c)
-	baseInfos := make([]*driverV2.DatabasSchemaInfo, 0, 1)
+	baseInfos := make([]*driverV2.DatabaseSchemaInfo, 0, 1)
 	dbObj := &driverV2.DatabaseObject{
 		ObjectName: objectName,
 		ObjectType: objectType,
 	}
-	baseInfos = append(baseInfos, &driverV2.DatabasSchemaInfo{
+	baseInfos = append(baseInfos, &driverV2.DatabaseSchemaInfo{
 		SchemaName:      schemaName,
 		DatabaseObjects: []*driverV2.DatabaseObject{dbObj},
 	})

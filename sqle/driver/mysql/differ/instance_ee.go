@@ -15,7 +15,7 @@ import (
 // called with no args, all non-system schemas will be returned. Or pass one or
 // more schema names as args to filter the result to just those schemas.
 // Note that the ordering of the resulting slice is not guaranteed.
-func Schemas(ignoreSysDatabase bool, conn *executor.Executor, schemaInfos []*driverV2.DatabasSchemaInfo) ([]*Schema, error) {
+func Schemas(ignoreSysDatabase bool, conn *executor.Executor, schemaInfos []*driverV2.DatabaseSchemaInfo) ([]*Schema, error) {
 
 	type rawSchema struct {
 		Name      string `json:"schema_name"`
@@ -115,7 +115,7 @@ func Schemas(ignoreSysDatabase bool, conn *executor.Executor, schemaInfos []*dri
 	return schemas, nil
 }
 
-func getObjetNamesBySchema(schemaName string, objectType string, schemaInfos []*driverV2.DatabasSchemaInfo) []string {
+func getObjetNamesBySchema(schemaName string, objectType string, schemaInfos []*driverV2.DatabaseSchemaInfo) []string {
 	objectNames := make([]string, 0)
 	for _, schemaInfo := range schemaInfos {
 		if schemaInfo.SchemaName == schemaName {
