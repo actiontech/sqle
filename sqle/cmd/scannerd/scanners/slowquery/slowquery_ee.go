@@ -234,14 +234,16 @@ func (sq *SlowQuery) Upload(ctx context.Context, sqls []scanners.SQL, errorMessa
 				sqlReq.Endpoints = append(sqlReq.Endpoints, sql.Endpoint)
 			}
 		} else {
+			queryTime := sql.QueryTime
+			rowExamined := sql.RowExamined
 			sqlReq := &scanner.AuditPlanSQLReq{
 				Fingerprint:          processedFingerPrint,
 				LastReceiveText:      processedRawText,
 				LastReceiveTimestamp: now.Format(time.RFC3339),
 				Counter:              "1",
-				QueryTimeAvg:         &sql.QueryTime,
-				QueryTimeMax:         &sql.QueryTime,
-				RowExaminedAvg:       &sql.RowExamined,
+				QueryTimeAvg:         &queryTime,
+				QueryTimeMax:         &queryTime,
+				RowExaminedAvg:       &rowExamined,
 				FirstQueryAt:         sql.QueryAt,
 				DBUser:               sql.DBUser,
 				Schema:               sql.Schema,
