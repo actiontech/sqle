@@ -12,6 +12,7 @@ import (
 
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
+	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/go-sql-driver/mysql"
 	"github.com/sirupsen/logrus"
 )
@@ -786,7 +787,10 @@ type TableIndexesInfo struct {
 
 // When using keywords as view names, you need to pay attention to wrapping them in quotation marks
 func (c *Executor) GetTableIndexesInfo(schema, tableName string) ([]*TableIndexesInfo, error) {
-	records, err := c.Db.Query(fmt.Sprintf("SHOW INDEX FROM %s.%s", schema, tableName))
+	records, err := c.Db.Query(fmt.Sprintf("SHOW INDEX FROM %s.%s",
+		utils.SupplementalQuotationMarks(schema),
+		utils.SupplementalQuotationMarks(tableName),
+	))
 	if err != nil {
 		return nil, err
 	}
