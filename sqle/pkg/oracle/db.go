@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -52,8 +53,20 @@ func (o *DB) Close() error {
 	return o.db.Close()
 }
 
-func (o *DB) QueryTopSQLs(ctx context.Context, topN int, orderBy string) ([]*DynPerformanceSQLArea, error) {
-	query := fmt.Sprintf(DynPerformanceViewSQLAreaTpl, orderBy, topN)
+func (o *DB) QueryTopSQLs(ctx context.Context, topN int, notInUsers []string, orderBy string) ([]*DynPerformanceSQLArea, error) {
+	// if notInUsers is empty, notInUsersStr will be empty
+	// if notInUsers is not empty, notInUsersStr will be formatted as "AND u.username NOT IN ('user1', 'user2')"
+	var notInUsersStr string
+	if len(notInUsers) > 0 {
+		var notInUsersFormatted []string
+		var notInUserSqlTpl = `AND u.username NOT IN (%v)`
+		for _, user := range notInUsers {
+			notInUsersFormatted = append(notInUsersFormatted, fmt.Sprintf("'%s'", user))
+		}
+		notInUsersStr = strings.Join(notInUsersFormatted, ",")
+		notInUsersStr = fmt.Sprintf(notInUserSqlTpl, notInUsersStr)
+	}
+	query := fmt.Sprintf(DynPerformanceViewSQLAreaTpl, notInUsersStr, orderBy, topN)
 	rows, err := o.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to query %s", query)
@@ -63,7 +76,7 @@ func (o *DB) QueryTopSQLs(ctx context.Context, topN int, orderBy string) ([]*Dyn
 	var ret []*DynPerformanceSQLArea
 	for rows.Next() {
 		res := DynPerformanceSQLArea{}
-		err = rows.Scan(&res.SQLFullText, &res.Executions, &res.ElapsedTime, &res.UserIOWaitTime, &res.CPUTime, &res.DiskReads, &res.BufferGets)
+		err = rows.Scan(&res.SQLFullText, &res.Executions, &res.ElapsedTime, &res.UserIOWaitTime, &res.CPUTime, &res.DiskReads, &res.BufferGets, &res.UserName)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to scan %s", query)
 		}

@@ -63,6 +63,7 @@ func (at *OracleTopSQLTaskV2) Metrics() []string {
 		MetricNameCPUTimeTotal,
 		MetricNameDiskReadTotal,
 		MetricNameBufferGetCounter,
+		MetricNameDBUser,
 	}
 }
 
@@ -73,21 +74,22 @@ func (at *OracleTopSQLTaskV2) mergeSQL(originSQL, mergedSQL *SQLV2) {
 	// counter
 	originSQL.Info.SetInt(MetricNameCounter, mergedSQL.Info.Get(MetricNameCounter).Int())
 
-	// // MetricNameQueryTimeTotal
+	// MetricNameQueryTimeTotal
 	originSQL.Info.SetFloat(MetricNameQueryTimeTotal, mergedSQL.Info.Get(MetricNameQueryTimeTotal).Float())
 
-	// // MetricNameUserIOWaitTimeTotal
+	// MetricNameUserIOWaitTimeTotal
 	originSQL.Info.SetFloat(MetricNameUserIOWaitTimeTotal, mergedSQL.Info.Get(MetricNameUserIOWaitTimeTotal).Float())
 
-	// // MetricNameCPUTimeTotal
+	// MetricNameCPUTimeTotal
 	originSQL.Info.SetFloat(MetricNameCPUTimeTotal, mergedSQL.Info.Get(MetricNameCPUTimeTotal).Float())
 
-	// // MetricNameDiskReadTotal
+	// MetricNameDiskReadTotal
 	originSQL.Info.SetInt(MetricNameDiskReadTotal, mergedSQL.Info.Get(MetricNameDiskReadTotal).Int())
 
 	// MetricNameBufferGetCounter
 	originSQL.Info.SetInt(MetricNameBufferGetCounter, mergedSQL.Info.Get(MetricNameBufferGetCounter).Int())
-	return
+	// MetricNameDBUser
+	originSQL.Info.SetString(MetricNameDBUser, mergedSQL.Info.Get(MetricNameDBUser).String())
 }
 
 func (at *OracleTopSQLTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) ([]*SQLV2, error) {
@@ -124,8 +126,19 @@ func (at *OracleTopSQLTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, pe
 
 	ctx, cancel = context.WithCancel(context.Background())
 	defer cancel()
-
-	sqls, err := db.QueryTopSQLs(ctx, ap.Params.GetParam("top_n").Int(), ap.Params.GetParam("order_by_column").String())
+	// get db user blacklist
+	dbUserBlacklists, err := model.GetStorage().
+		GetBlacklistByProjectIDAndFilterType(model.ProjectUID(ap.ProjectId), model.FilterTypeDbUser)
+	if err != nil {
+		return nil, fmt.Errorf("get blacklist fail, error: %v", err)
+	}
+	// convert to string slice
+	notInUser := make([]string, 0, len(dbUserBlacklists))
+	for _, blacklist := range dbUserBlacklists {
+		notInUser = append(notInUser, blacklist.FilterContent)
+	}
+	// filter db user by
+	sqls, err := db.QueryTopSQLs(ctx, ap.Params.GetParam("top_n").Int(), notInUser, ap.Params.GetParam("order_by_column").String())
 	if err != nil {
 		return nil, fmt.Errorf("query top sql fail, error: %v", err)
 	}
@@ -150,6 +163,7 @@ func (at *OracleTopSQLTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, pe
 		info.SetFloat(MetricNameCPUTimeTotal, float64(sql.CPUTime))
 		info.SetInt(MetricNameDiskReadTotal, sql.DiskReads)
 		info.SetInt(MetricNameBufferGetCounter, sql.BufferGets)
+		info.SetString(MetricNameDBUser, sql.UserName)
 		sqlV2.GenSQLId()
 		err = at.AggregateSQL(cache, sqlV2)
 		if err != nil {
@@ -216,6 +230,10 @@ func (at *OracleTopSQLTaskV2) Head(ap *AuditPlan) []Head {
 			Name: MetricNameUserIOWaitTimeTotal,
 			Desc: locale.ApMetricNameUserIOWaitTimeTotal,
 		},
+		{
+			Name: MetricNameDBUser,
+			Desc: locale.ApMetricNameDBUser,
+		},
 	}
 }
 
@@ -243,6 +261,7 @@ func (at *OracleTopSQLTaskV2) GetSQLData(ctx context.Context, ap *AuditPlan, per
 			MetricNameUserIOWaitTimeTotal: fmt.Sprintf("%v", utils.Round(info.Get(MetricNameUserIOWaitTimeTotal).Float()/1000, 3)),
 			model.AuditResultName:         sql.AuditResult.GetAuditJsonStrByLangTag(locale.Bundle.GetLangTagFromCtx(ctx)),
 			model.AuditStatus:             sql.AuditStatus,
+			MetricNameDBUser:              info.Get(MetricNameDBUser).String(),
 		})
 	}
 	return rows, count, nil
