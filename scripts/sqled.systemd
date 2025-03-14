@@ -16,4 +16,4 @@ WorkingDirectory=
 ExecStart=
 RestartSec=5
 Restart=on-failure
-KillMode=process
+KillMode=control-group
