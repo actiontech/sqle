@@ -1,0 +1,29 @@
+on:
+    pull_request:
+      types: [opened, reopened, ready_for_review, review_requested, synchronize]
+    issue_comment:
+  jobs:
+    pr_agent_job:
+      if: ${{ github.event.sender.type != 'Bot' }}
+      runs-on: ubuntu-latest
+      permissions:
+        issues: write
+        pull-requests: write
+        contents: write
+      name: Run pr agent on every pull request, respond to user comments
+      steps:
+        - name: PR Agent action step
+          id: pragent
+          uses: qodo-ai/pr-agent@main
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            github_action_config.pr_actions: '["opened", "reopened", "ready_for_review", "review_requested", "synchronize"]'
+            OPENAI_API_VERSION: "2024-07-01-preview"
+            github_action_config.auto_review: "true"
+            github_action_config.auto_describe: "true"
+            github_action_config.auto_improve: "true"
+            OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
+            OPENAI.API_TYPE: "azure"
+            OPENAI.API_BASE: ${{ secrets.OPENAI_API_BASE }}
+            AZURE_API_VERSION: "2024-07-01-preview"
+            OPENAI.DEPLOYMENT_ID: ${{ secrets.DEPLOYMENT_ID }}
