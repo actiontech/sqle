@@ -1,0 +1,66 @@
+[config]
+model="o1-mini"
+response_language="zh-CN"
+verbosity_level=2
+
+[pr_reviewer] # /review #
+# enable/disable features
+# general options
+extra_instructions = """
+- Please describe the issue_content,issue_header field in Chinese.
+
+- In Golang code, using db.Query() and using stmt, err := db.Prepare() followed by stmt.Query() have the same effect. For example, db.Query(\"SELECT * FROM tb1 WHERE a = ? AND b = ?\", aa, bb) also uses parameter passing with ? placeholders. Please do not flag such cases as SQL injection risks.
+- During review, if a specific type of code issue is encountered, please do not overlook this issue in subsequent reviews and continue to provide suggestions for all code blocks exhibiting the problem. 
+"""
+final_update_message = true
+# review labels
+enable_review_labels_security=false
+enable_review_labels_effort=false
+# specific configurations for incremental review (/review -i)
+enable_intro_text=false
+enable_help_text=false
+
+[pr_description] # /describe #
+publish_labels = false
+add_original_user_description = true
+generate_ai_title = false
+use_bullet_points = true
+extra_instructions = "Please describe all the contents of the Description field in Chinese."
+enable_pr_type = false
+
+[pr_code_suggestions] # /improve #
+extra_instructions = """
+- Please describe all the contents of the Suggestions field in Chinese.
+- Please describe in Chinese why these code modification suggestions are being provided.
+- When a new commit is submitted, please re-review all code changes and update the persistent review.
+- When reviewing, if identical issues are found in multiple code blocks, please offer recommendations for each instance.
+
+- In Golang code, using db.Query() and using stmt, err := db.Prepare() followed by stmt.Query() have the same effect. Please do not suggest replacing db.Query() with db.Prepare() in code review suggestions.
+
+These issues require special attention, and should be highlighted in review suggestions along with explanations of their severity:
+# Things about panic #
+- Nil pointer dereferences.
+- Array or slice out-of-bounds access.
+- Invalid type assertions.
+- Operations on nil or closed channels.
+- Division by zero.
+- Concurrent map access without proper synchronization.
+- Use of uninitialized variables.
+- Improper use of defer functions.
+- Any other conditions that could trigger a panic.
+
+- Failure to close an opened file leads to a file descriptor leak. This is a crucial issue that the AI should prioritize during code reviews to prevent resource exhaustion.
+- Network connection leaks
+- Database connection leaks
+- Memory leaks
+- Other system resource leaks
+
+- Make certain that all the reviewer's questions have received corresponding suggestions.
+"""
+
+[github_app]
+# settings for "pull_request" event with "synchronize" action - used to detect and handle push triggers for new commits
+handle_push_trigger = true
+
+[litellm]
+drop_params = true
