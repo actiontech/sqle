@@ -16,6 +16,7 @@ const (
 	TypeDB2SchemaMeta            = "db2_schema_meta"
 	TypeTDSQLSlowLog             = "tdsql_for_innodb_slow_log"
 	TypeTDSQLSchemaMeta          = "tdsql_for_innodb_schema_meta"
+	TypeTDMySQLDistributedLock   = "tdsql_for_innodb_distributed_lock"
 	TypeDmTopSQL                 = "dm_top_sql"
 	TypePostgreSQLTopSQL         = "postgresql_top_sql"
 	TypePostgreSQLSchemaMeta     = "Postgresql_schema_meta"
@@ -70,6 +71,11 @@ var EEMetaBuilderList = []MetaBuilder{
 		Type:          TypeTDSQLSchemaMeta,
 		Desc:          locale.ApMetaSchemaMeta,
 		TaskHandlerFn: NewTDMySQLSchemaMetaTaskV2Fn(),
+	},
+	{
+		Type:          TypeTDMySQLDistributedLock,
+		Desc:          locale.ApMetaDistributedLock,
+		TaskHandlerFn: NewTDMySQLDistributedLockTaskV2Fn(),
 	},
 	{
 		Type:          TypePostgreSQLSchemaMeta,
