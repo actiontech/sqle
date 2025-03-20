@@ -473,10 +473,10 @@ func (at *ObForMysqlTopSQLTaskV2) Head(ap *AuditPlan) []Head {
 				Desc: locale.ApMetricNameCounter,
 			}, {
 				Name: MetricNameQueryTimeAvg,
-				Desc: locale.ApMetricNameQueryTimeAvg,
+				Desc: locale.ApMetricNameQueryTimeAvgMS,
 			}, {
 				Name: MetricNameQueryTimeMax,
-				Desc: locale.ApMetricNameQueryTimeMax,
+				Desc: locale.ApMetricNameQueryTimeMaxMS,
 			}, {
 				Name: MetricNameFirstQueryAt,
 				Desc: locale.ApMetricNameFirstQueryAt,

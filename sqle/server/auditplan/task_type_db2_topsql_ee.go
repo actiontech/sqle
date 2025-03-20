@@ -349,11 +349,11 @@ func (at *DB2TopSQLTaskV2) Head(ap *AuditPlan) []Head {
 		},
 		{
 			Name: MetricNameQueryTimeTotal,
-			Desc: locale.ApMetricNameQueryTimeTotal,
+			Desc: locale.ApMetricNameQueryTimeTotalMS,
 		},
 		{
 			Name: MetricNameQueryTimeAvg,
-			Desc: locale.ApMetricNameQueryTimeAvg,
+			Desc: locale.ApMetricNameQueryTimeAvgMS,
 		},
 		{
 			Name: MetricNameCounter,
