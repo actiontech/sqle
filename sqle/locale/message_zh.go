@@ -306,20 +306,23 @@ var (
 	ApQueryTimeMax   = &i18n.Message{ID: "ApQueryTimeMax", Other: "最长执行时间"}
 	ApRowExaminedAvg = &i18n.Message{ID: "ApRowExaminedAvg", Other: "平均扫描行数"}
 
+	ApDatabase                          = &i18n.Message{ID: "ApDatabase", Other: "数据库"}
 	ApMetricNameLockType                = &i18n.Message{ID: "ApMetricNameLockType", Other: "锁类型"}
 	ApMetricNameLockMode                = &i18n.Message{ID: "ApMetricNameLockMode", Other: "锁模式"}
 	ApMetricEngine                      = &i18n.Message{ID: "ApMetricEngine", Other: "引擎"}
 	ApMetricNameTable                   = &i18n.Message{ID: "ApMetricNameTable", Other: "表名"}
-	ApMetricNameIndexName               = &i18n.Message{ID: "ApMetricNameIndexName", Other: "索引名"}
+	ApMetricNameGrantedLockId           = &i18n.Message{ID: "ApMetricNameGrantedLockId", Other: "持有锁ID"}
+	ApMetricNameWaitingLockId           = &i18n.Message{ID: "ApMetricNameWaitingLockId", Other: "等待锁ID"}
 	ApMetricNameGrantedLockTrxId        = &i18n.Message{ID: "ApMetricNameGrantedLockTrxId", Other: "持有锁事务ID"}
 	ApMetricNameWaitingLockTrxId        = &i18n.Message{ID: "ApMetricNameWaitingLockTrxId", Other: "等待锁事务ID"}
-	ApMetricNameTrxStarted              = &i18n.Message{ID: "ApMetricNameTransactionStarted", Other: "事务开始时间"}
-	ApMetricNameTrxWaitStarted          = &i18n.Message{ID: "ApMetricNameTrxWaitStarted", Other: "事务开始等待时间"}
+	ApMetricNameTrxStarted              = &i18n.Message{ID: "ApMetricNameTransactionStarted", Other: "持有锁事务开始时间"}
+	ApMetricNameTrxWaitStarted          = &i18n.Message{ID: "ApMetricNameTrxWaitStarted", Other: "等待锁事务开始时间"}
 	ApMetricNameGrantedLockConnectionId = &i18n.Message{ID: "ApMetricNameGrantedLockConnectionId", Other: "持有锁连接ID"}
 	ApMetricNameWaitingLockConnectionId = &i18n.Message{ID: "ApMetricNameWaitingLockConnectionId", Other: "等待锁连接ID"}
 	ApMetricNameGrantedLockSql          = &i18n.Message{ID: "ApMetricNameGrantedLockSql", Other: "持有锁SQL"}
 	ApMetricNameWaitingLockSql          = &i18n.Message{ID: "ApMetricNameWaitingLockSql", Other: "等待锁SQL"}
 	ApMetricNameDBUser                  = &i18n.Message{ID: "ApMetricNameDBUser", Other: "用户"}
+	ApMetricNameHost                    = &i18n.Message{ID: "ApMetricNameHost", Other: "主机"}
 	ApMetricNameMetaName                = &i18n.Message{ID: "ApMetricNameMetaName", Other: "对象名称"}
 	ApMetricNameMetaType                = &i18n.Message{ID: "ApMetricNameMetaType", Other: "对象类型"}
 	ApMetricNameQueryTimeTotal          = &i18n.Message{ID: "ApMetricNameQueryTimeTotal", Other: "总执行时间(ms)"}
