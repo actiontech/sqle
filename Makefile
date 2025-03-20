@@ -228,3 +228,6 @@ help:
 go_mod_vendor:
 	go mod vendor
 	modvendor -copy="**/*.c **/*.h" -v	
+
+test-pr:
+	echo "test"
