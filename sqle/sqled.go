@@ -171,7 +171,7 @@ func validateConfig(options *config.SqleOptions) error {
 	return nil
 }
 
-func NotifySignal(exitChan chan struct{}, net *gracenet.Net) error {
+func NotifySignal(exitChan chan struct{}, net *gracenet.Net) {
 	killChan := make(chan os.Signal, 1)
 	// os.Kill is like kill -9 which kills a process immediately, can't be caught
 	signal.Notify(killChan, os.Interrupt, syscall.SIGTERM, syscall.SIGUSR2 /*graceful-shutdown*/)
@@ -180,7 +180,6 @@ func NotifySignal(exitChan chan struct{}, net *gracenet.Net) error {
 	case syscall.SIGUSR2:
 		if pid, err := net.StartProcess(); nil != err {
 			log.Logger().Infof("Graceful restarted by signal SIGUSR2, but failed: %v", err)
-			return err
 		} else {
 			log.Logger().Infof("Graceful restarted, new pid is %v", pid)
 		}
@@ -190,5 +189,4 @@ func NotifySignal(exitChan chan struct{}, net *gracenet.Net) error {
 	}
 
 	close(exitChan)
-	return nil
 }
