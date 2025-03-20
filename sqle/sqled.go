@@ -150,7 +150,7 @@ func Run(options *config.SqleOptions) error {
 	jm.Start()
 	defer jm.Stop()
 
-	api.StartApi(net, exitChan, options, sqleSwaggerYaml)
+	go api.StartApi(net, exitChan, options, sqleSwaggerYaml)
 
 	// Wait for exit signal from NotifySignal goroutine
 	<-exitChan
