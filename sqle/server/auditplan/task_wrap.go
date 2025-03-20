@@ -244,7 +244,6 @@ func (at *TaskWrapper) extractSQL() {
 	}
 	if len(sqls) == 0 {
 		at.logger.Info("extract sql list is empty, skip")
-		return
 	}
 	if at.ap.Type == TypeTDMySQLDistributedLock {
 		err = at.pushSQLToDataLock(sqls)
@@ -325,16 +324,29 @@ func (at *TaskWrapper) pushSQLToManagerSQLQueue(sqlList []*model.SQLManageQueue,
 }
 
 func (at *TaskWrapper) pushSQLToDataLock(sqlList []*SQLV2) error {
-	if len(sqlList) == 0 {
-		return nil
-	}
 	dataLocks := make([]*model.DataLock, 0, len(sqlList))
 	for _, sql := range sqlList {
+		instanceAuditPlanId, err := strconv.ParseUint(sql.SourceId, 10, 64)
+		if err != nil {
+			log.Logger().Errorf("parse sql source id failed, error : %v", err)
+			continue
+		}
+		auditPlanId, err := strconv.ParseUint(sql.AuditPlanId, 10, 64)
+		if err != nil {
+			log.Logger().Errorf("parse sql audit plan id failed, error : %v", err)
+			continue
+		}
 		dataLocks = append(dataLocks, &model.DataLock{
+			GrantedLockId:           sql.Info.Get(MetricNameGrantedLockId).String(),
+			WaitingLockId:           sql.Info.Get(MetricNameWaitingLockId).String(),
 			Engine:                  sql.Info.Get(MetricNameEngine).String(),
-			Schema:                  sql.SchemaName,
+			AuditPlanId:             auditPlanId,
+			InstanceAuditPlanId:     instanceAuditPlanId,
+			DatabaseName:            sql.SchemaName,
+			DbUser:                  sql.Info.Get(MetricNameDBUser).String(),
+			Host:                    sql.Info.Get(MetricNameHost).String(),
 			ObjectName:              sql.Info.Get(MetricNameObjectName).String(),
-			IndexName:               sql.Info.Get(MetricNameIndexName).String(),
+			IndexType:               sql.Info.Get(MetricNameIndexType).String(),
 			LockType:                sql.Info.Get(MetricNameLockType).String(),
 			LockMode:                sql.Info.Get(MetricNameLockMode).String(),
 			GrantedLockConnectionId: sql.Info.Get(MetricNameGrantedLockConnectionId).Int(),
@@ -343,8 +355,8 @@ func (at *TaskWrapper) pushSQLToDataLock(sqlList []*SQLV2) error {
 			WaitingLockSql:          sql.Info.Get(MetricNameWaitingLockSql).String(),
 			GrantedLockTrxId:        sql.Info.Get(MetricNameGrantedLockTrxId).Int(),
 			WaitingLockTrxId:        sql.Info.Get(MetricNameWaitingLockTrxId).Int(),
-			TrxStarted:              sql.Info.Get(MetricNameTrxStarted).Time(),
-			TrxWaitStarted:          sql.Info.Get(MetricNameTrxWaitStarted).Time(),
+			TrxStarted:              sql.Info.Get(MetricNameGrantedLockTrxStarted).Time(),
+			TrxWaitStarted:          sql.Info.Get(MetricNameWaitingLockTrxWaitStarted).Time(),
 		})
 	}
 	return at.persist.PushSQLToDataLock(dataLocks)

@@ -221,10 +221,16 @@ func (o SQLManageRecord) GetFingerprintMD5() string {
 
 type DataLock struct {
 	Model
+	AuditPlanId             uint64     `json:"audit_plan_id" gorm:"type:bigint unsigned;not null"`
+	InstanceAuditPlanId     uint64     `json:"instance_audit_plan_id" gorm:"type:bigint unsigned;not null"`
 	Engine                  string     `json:"engine" gorm:"type:varchar(255);not null"`
-	Schema                  string     `json:"database_name" gorm:"type:varchar(255)"`
+	DbUser                  string     `json:"db_user" gorm:"type:varchar(255)"`
+	Host                    string     `json:"host" gorm:"type:varchar(255)"`
+	DatabaseName            string     `json:"database_name" gorm:"type:varchar(255)"`
 	ObjectName              string     `json:"object_name" gorm:"type:varchar(255)"`
-	IndexName               string     `json:"index_name" gorm:"type:varchar(255)"`
+	IndexType               string     `json:"index_type" gorm:"type:varchar(255)"`
+	GrantedLockId           string     `json:"granted_lock_id" gorm:"type:varchar(255);not null"`
+	WaitingLockId           string     `json:"waiting_lock_id" gorm:"type:varchar(255);not null"`
 	LockType                string     `json:"lock_type" gorm:"type:varchar(255);not null"`
 	LockMode                string     `json:"lock_mode" gorm:"type:varchar(255);not null"`
 	GrantedLockConnectionId int64      `json:"granted_lock_connection_id" gorm:"type:bigint"`
@@ -237,6 +243,45 @@ type DataLock struct {
 	TrxWaitStarted          *time.Time `json:"trx_wait_started" gorm:"type:datetime"`
 }
 
+const (
+	LockType   = "lock_type"
+	ObjectName = "object_name"
+	Database   = "database_name"
+)
+
+func (s *Storage) SelectDistinctLockType(auditPlanId uint, instanceAuditPlanId uint) ([]string, error) {
+	var lockTypes []string
+	err := s.db.Model(&DataLock{}).Distinct("lock_type").
+		Where("audit_plan_id = ? AND instance_audit_plan_id = ?", auditPlanId, instanceAuditPlanId).
+		Find(&lockTypes).Error
+	if err != nil {
+		return lockTypes, err
+	}
+	return lockTypes, nil
+}
+
+func (s *Storage) SelectDistinctDatabase(auditPlanId uint, instanceAuditPlanId uint) ([]string, error) {
+	var schemas []string
+	err := s.db.Model(&DataLock{}).Distinct("database_name").
+		Where("audit_plan_id = ? AND instance_audit_plan_id = ?", auditPlanId, instanceAuditPlanId).
+		Find(&schemas).Error
+	if err != nil {
+		return schemas, err
+	}
+	return schemas, nil
+}
+
+func (s *Storage) SelectDistinctObjectName(auditPlanId uint, instanceAuditPlanId uint) ([]string, error) {
+	var objectNames []string
+	err := s.db.Model(&DataLock{}).Distinct("object_name").
+		Where("audit_plan_id = ? AND instance_audit_plan_id = ?", auditPlanId, instanceAuditPlanId).
+		Find(&objectNames).Error
+	if err != nil {
+		return objectNames, err
+	}
+	return objectNames, nil
+}
+
 func (s *Storage) PushSQLToDataLock(dataLocks []*DataLock) error {
 	// 新增前删除，保证数据的实时性
 	s.db.Exec("DELETE FROM data_locks")
@@ -246,18 +291,41 @@ func (s *Storage) PushSQLToDataLock(dataLocks []*DataLock) error {
 	return s.db.Create(dataLocks).Error
 }
 
-func (s *Storage) GetDataLockList(limit, offset int) ([]*DataLock, error) {
+func (s *Storage) GetDataLockList(filters map[string]string, limit, offset int, auditPlanId uint, instanceAuditPlanId uint) ([]*DataLock, error) {
 	dataLocks := []*DataLock{}
-	err := s.db.Limit(limit).Offset(offset).Find(&dataLocks).Error
+	query := s.db.Model(&DataLock{}).Limit(limit).
+		Where("audit_plan_id = ? AND instance_audit_plan_id = ?", auditPlanId, instanceAuditPlanId).
+		Offset(offset)
+	if filters[LockType] != "" {
+		query = query.Where("lock_type = ?", filters[LockType])
+	}
+	if filters[ObjectName] != "" {
+		query = query.Where("object_name = ?", filters[ObjectName])
+	}
+	if filters[Database] != "" {
+		query = query.Where("database_name = ?", filters[Database])
+	}
+
+	err := query.Find(&dataLocks).Error
 	if err != nil {
 		return nil, err
 	}
 	return dataLocks, nil
 }
 
-func (s *Storage) CountDataLock() (int64, error) {
+func (s *Storage) CountDataLock(filters map[string]string, auditPlanId uint, instanceAuditPlanId uint) (int64, error) {
 	var count int64
-	err := s.db.Model(&DataLock{}).Count(&count).Error
+	query := s.db.Model(&DataLock{}).Where("audit_plan_id = ? AND instance_audit_plan_id = ?", auditPlanId, instanceAuditPlanId)
+	if filters[LockType] != "" {
+		query = query.Where("lock_type = ?", filters[LockType])
+	}
+	if filters[ObjectName] != "" {
+		query = query.Where("object_name = ?", filters[ObjectName])
+	}
+	if filters[Database] != "" {
+		query = query.Where("database_name = ?", filters[Database])
+	}
+	err := query.Count(&count).Error
 	if err != nil {
 		return count, err
 	}
