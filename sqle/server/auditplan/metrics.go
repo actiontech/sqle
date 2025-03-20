@@ -38,6 +38,23 @@ const MetricNameDiskReadAvg = "disk_read_avg"
 const MetricNameBufferReadAvg = "buffer_read_avg"
 const MetricNameExplainCost = "explain_cost"
 
+// Lock
+const MetricNameLockType string = "lock_type"
+const MetricNameLockMode string = "lock_mode"
+const MetricNameLockStatus string = "lock_status"
+const MetricNameTrxStarted string = "trx_started"
+const MetricNameTrxWaitStarted string = "trx_wait_started"
+const MetricNameEngine string = "engine"
+const MetricNameTable string = "table_name"
+const MetricNameIndexName string = "index_name"
+const MetricNameObjectName string = "object_name"
+const MetricNameGrantedLockSql string = "granted_lock_sql"
+const MetricNameWaitingLockSql string = "waiting_lock_sql"
+const MetricNameGrantedLockConnectionId string = "granted_lock_connection_id"
+const MetricNameWaitingLockConnectionId string = "waiting_lock_connection_id"
+const MetricNameGrantedLockTrxId string = "granted_lock_trx_id"
+const MetricNameWaitingLockTrxId string = "waiting_lock_trx_id"
+
 var ALLMetric = map[string]MetricType{
 	MetricNameCounter:                   MetricTypeInt,    // MySQL slow log
 	MetricNameLastReceiveTimestamp:      MetricTypeString, // MySQL slow log
@@ -68,6 +85,12 @@ var ALLMetric = map[string]MetricType{
 
 	MetricNameLastQueryAt:   MetricTypeString, // OB MySQL TOP SQL
 	MetricNameIoWaitTimeAvg: MetricTypeFloat,  // OB MySQL TOP SQL
+
+	MetricNameLockType:   MetricTypeString, // Lock
+	MetricNameLockMode:   MetricTypeString, // Lock
+	MetricNameLockStatus: MetricTypeString, // Lock
+	MetricNameEngine:     MetricTypeString, // Lock
+	MetricNameTable:      MetricTypeString, // Lock
 }
 
 func LoadMetrics(info map[string]interface{}, metrics []string) Metrics {

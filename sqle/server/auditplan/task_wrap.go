@@ -246,15 +246,18 @@ func (at *TaskWrapper) extractSQL() {
 		at.logger.Info("extract sql list is empty, skip")
 		return
 	}
-	// 转换类型
-	sqlQueues := make([]*model.SQLManageQueue, 0, len(sqls))
-	for _, sql := range sqls {
-		sqlQueues = append(sqlQueues, ConvertSQLV2ToMangerSQLQueue(sql))
-	}
-
-	err = at.pushSQLToManagerSQLQueue(sqlQueues, at.ap)
-	if err != nil {
-		at.logger.Errorf("push sql to manager sql queue failed, error : %v", err)
+	if at.ap.Type == TypeTDMySQLDistributedLock {
+		err = at.pushSQLToDataLock(sqls)
+	} else {
+		// 转换类型
+		sqlQueues := make([]*model.SQLManageQueue, 0, len(sqls))
+		for _, sql := range sqls {
+			sqlQueues = append(sqlQueues, ConvertSQLV2ToMangerSQLQueue(sql))
+		}
+		err = at.pushSQLToManagerSQLQueue(sqlQueues, at.ap)
+		if err != nil {
+			at.logger.Errorf("push sql to manager sql queue failed, error : %v", err)
+		}
 	}
 }
 
@@ -319,6 +322,32 @@ func (at *TaskWrapper) pushSQLToManagerSQLQueue(sqlList []*model.SQLManageQueue,
 	}
 
 	return nil
+}
+
+func (at *TaskWrapper) pushSQLToDataLock(sqlList []*SQLV2) error {
+	if len(sqlList) == 0 {
+		return nil
+	}
+	dataLocks := make([]*model.DataLock, 0, len(sqlList))
+	for _, sql := range sqlList {
+		dataLocks = append(dataLocks, &model.DataLock{
+			Engine:                  sql.Info.Get(MetricNameEngine).String(),
+			Schema:                  sql.SchemaName,
+			ObjectName:              sql.Info.Get(MetricNameObjectName).String(),
+			IndexName:               sql.Info.Get(MetricNameIndexName).String(),
+			LockType:                sql.Info.Get(MetricNameLockType).String(),
+			LockMode:                sql.Info.Get(MetricNameLockMode).String(),
+			GrantedLockConnectionId: sql.Info.Get(MetricNameGrantedLockConnectionId).Int(),
+			WaitingLockConnectionId: sql.Info.Get(MetricNameWaitingLockConnectionId).Int(),
+			GrantedLockSql:          sql.Info.Get(MetricNameGrantedLockSql).String(),
+			WaitingLockSql:          sql.Info.Get(MetricNameWaitingLockSql).String(),
+			GrantedLockTrxId:        sql.Info.Get(MetricNameGrantedLockTrxId).Int(),
+			WaitingLockTrxId:        sql.Info.Get(MetricNameWaitingLockTrxId).Int(),
+			TrxStarted:              sql.Info.Get(MetricNameTrxStarted).Time(),
+			TrxWaitStarted:          sql.Info.Get(MetricNameTrxWaitStarted).Time(),
+		})
+	}
+	return at.persist.PushSQLToDataLock(dataLocks)
 }
 
 func (at *TaskWrapper) filterSqlManageQueue(sqlList []*model.SQLManageQueue) (map[uint]uint, []*model.SQLManageQueue, error) {

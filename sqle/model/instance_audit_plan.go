@@ -219,6 +219,51 @@ func (o SQLManageRecord) GetFingerprintMD5() string {
 	return utils.Md5String(string(sqlIdentityJSON))
 }
 
+type DataLock struct {
+	Model
+	Engine                  string     `json:"engine" gorm:"type:varchar(255);not null"`
+	Schema                  string     `json:"database_name" gorm:"type:varchar(255)"`
+	ObjectName              string     `json:"object_name" gorm:"type:varchar(255)"`
+	IndexName               string     `json:"index_name" gorm:"type:varchar(255)"`
+	LockType                string     `json:"lock_type" gorm:"type:varchar(255);not null"`
+	LockMode                string     `json:"lock_mode" gorm:"type:varchar(255);not null"`
+	GrantedLockConnectionId int64      `json:"granted_lock_connection_id" gorm:"type:bigint"`
+	WaitingLockConnectionId int64      `json:"waiting_lock_connection_id" gorm:"type:bigint"`
+	GrantedLockTrxId        int64      `json:"granted_lock_trx_id" gorm:"type:bigint"`
+	WaitingLockTrxId        int64      `json:"waiting_lock_trx_id" gorm:"type:bigint"`
+	GrantedLockSql          string     `json:"granted_lock_sql" gorm:"type:longtext"`
+	WaitingLockSql          string     `json:"waiting_lock_sql" gorm:"type:longtext"`
+	TrxStarted              *time.Time `json:"trx_started" gorm:"type:datetime"`
+	TrxWaitStarted          *time.Time `json:"trx_wait_started" gorm:"type:datetime"`
+}
+
+func (s *Storage) PushSQLToDataLock(dataLocks []*DataLock) error {
+	// 新增前删除，保证数据的实时性
+	s.db.Exec("DELETE FROM data_locks")
+	if len(dataLocks) == 0 {
+		return nil
+	}
+	return s.db.Create(dataLocks).Error
+}
+
+func (s *Storage) GetDataLockList(limit, offset int) ([]*DataLock, error) {
+	dataLocks := []*DataLock{}
+	err := s.db.Limit(limit).Offset(offset).Find(&dataLocks).Error
+	if err != nil {
+		return nil, err
+	}
+	return dataLocks, nil
+}
+
+func (s *Storage) CountDataLock() (int64, error) {
+	var count int64
+	err := s.db.Model(&DataLock{}).Count(&count).Error
+	if err != nil {
+		return count, err
+	}
+	return count, nil
+}
+
 func (s *Storage) GetManageSQLBySQLId(sqlId string) (*SQLManageRecord, bool, error) {
 	sql := &SQLManageRecord{}
 
