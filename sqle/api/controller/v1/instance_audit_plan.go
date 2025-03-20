@@ -1152,14 +1152,16 @@ func GetInstanceAuditPlanSQLMeta(c echo.Context) error {
 			Sortable: v.Sortable,
 		})
 	}
-	for _, v := range filter {
-		data.FilterMetaList = append(data.FilterMetaList, FilterMeta{
-			Name:            v.Name,
-			Desc:            locale.Bundle.LocalizeMsgByCtx(ctx, v.Desc),
-			FilterInputType: string(v.FilterInputType),
-			FilterOpType:    string(v.FilterOpType),
-			FilterTips:      ConvertFilterTipsToRes(v.FilterTips),
-		})
+	if apDetail.Type != auditplan.TypeTDMySQLDistributedLock {
+		for _, v := range filter {
+			data.FilterMetaList = append(data.FilterMetaList, FilterMeta{
+				Name:            v.Name,
+				Desc:            locale.Bundle.LocalizeMsgByCtx(ctx, v.Desc),
+				FilterInputType: string(v.FilterInputType),
+				FilterOpType:    string(v.FilterOpType),
+				FilterTips:      ConvertFilterTipsToRes(v.FilterTips),
+			})
+		}
 	}
 
 	return c.JSON(http.StatusOK, &GetAuditPlanSQLMetaResV1{
