@@ -283,14 +283,19 @@ func (s *Storage) SelectDistinctObjectName(auditPlanId uint, instanceAuditPlanId
 }
 
 func (s *Storage) PushSQLToDataLock(dataLocks []*DataLock) error {
-	// 新增前删除，保证数据的实时性
-	if err := s.db.Exec("DELETE FROM data_locks").Error; err != nil {
-		return err
-	}
-	if len(dataLocks) == 0 {
+	err := s.db.Transaction(func(tx *gorm.DB) error {
+		if err := s.db.Exec("DELETE FROM data_locks").Error; err != nil {
+			return err
+		}
+		if len(dataLocks) == 0 {
+			return nil
+		}
+		if err := tx.Create(dataLocks).Error; err != nil {
+			return err
+		}
 		return nil
-	}
-	return s.db.Create(dataLocks).Error
+	})
+	return errors.New(errors.ConnectStorageError, err)
 }
 
 func (s *Storage) GetDataLockList(filters map[string]string, limit, offset int, auditPlanId uint, instanceAuditPlanId uint) ([]*DataLock, error) {
