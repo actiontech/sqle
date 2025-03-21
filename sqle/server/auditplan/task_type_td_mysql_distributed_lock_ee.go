@@ -337,18 +337,7 @@ func (at *TDMySQLDistributedLock) Filters(ctx context.Context, logger *logrus.En
 }
 
 func retrieveFilterTips(filterType string, persist *model.Storage, ap *AuditPlan, logger *logrus.Entry) []FilterTip {
-	filterTypes := make([]string, 0)
-	var err error
-	if filterType == MetricNameLockType {
-		filterTypes, err = persist.SelectDistinctLockType(ap.ID, ap.InstanceAuditPlanId)
-	} else if filterType == MetricNameDatabase {
-		filterTypes, err = persist.SelectDistinctDatabase(ap.ID, ap.InstanceAuditPlanId)
-	} else if filterType == MetricNameObjectName {
-		filterTypes, err = persist.SelectDistinctObjectName(ap.ID, ap.InstanceAuditPlanId)
-	} else {
-		logger.Warnf("retrieve filter tips failed, filter type: %s is not supported", filterType)
-		return []FilterTip{}
-	}
+	filterTypes, err := persist.SelectDistinctColumn(ap.ID, ap.InstanceAuditPlanId, filterType)
 	if err != nil {
 		logger.Warnf("retrieve filter tips failed, err: %v", err)
 		return []FilterTip{}
