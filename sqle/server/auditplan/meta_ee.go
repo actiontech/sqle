@@ -72,6 +72,11 @@ var EEMetaBuilderList = []MetaBuilder{
 		TaskHandlerFn: NewTDMySQLSchemaMetaTaskV2Fn(),
 	},
 	{
+		Type:          TypeTDMySQLDistributedLock,
+		Desc:          locale.ApMetaDistributedLock,
+		TaskHandlerFn: NewTDMySQLDistributedLockTaskV2Fn(),
+	},
+	{
 		Type:          TypePostgreSQLSchemaMeta,
 		Desc:          locale.ApMetaSchemaMeta,
 		TaskHandlerFn: NewPGSchemaMetaTaskV2Fn(),
