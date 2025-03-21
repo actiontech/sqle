@@ -249,9 +249,9 @@ const (
 	Database   = "database_name"
 )
 
-func (s *Storage) SelectDistinctLockType(auditPlanId uint, instanceAuditPlanId uint) ([]string, error) {
+func (s *Storage) SelectDistinctColumn(auditPlanId uint, instanceAuditPlanId uint, column string) ([]string, error) {
 	var lockTypes []string
-	err := s.db.Model(&DataLock{}).Distinct("lock_type").
+	err := s.db.Model(&DataLock{}).Distinct(column).
 		Where("audit_plan_id = ? AND instance_audit_plan_id = ?", auditPlanId, instanceAuditPlanId).
 		Find(&lockTypes).Error
 	if err != nil {
@@ -260,31 +260,9 @@ func (s *Storage) SelectDistinctLockType(auditPlanId uint, instanceAuditPlanId u
 	return lockTypes, nil
 }
 
-func (s *Storage) SelectDistinctDatabase(auditPlanId uint, instanceAuditPlanId uint) ([]string, error) {
-	var schemas []string
-	err := s.db.Model(&DataLock{}).Distinct("database_name").
-		Where("audit_plan_id = ? AND instance_audit_plan_id = ?", auditPlanId, instanceAuditPlanId).
-		Find(&schemas).Error
-	if err != nil {
-		return schemas, err
-	}
-	return schemas, nil
-}
-
-func (s *Storage) SelectDistinctObjectName(auditPlanId uint, instanceAuditPlanId uint) ([]string, error) {
-	var objectNames []string
-	err := s.db.Model(&DataLock{}).Distinct("object_name").
-		Where("audit_plan_id = ? AND instance_audit_plan_id = ?", auditPlanId, instanceAuditPlanId).
-		Find(&objectNames).Error
-	if err != nil {
-		return objectNames, err
-	}
-	return objectNames, nil
-}
-
-func (s *Storage) PushSQLToDataLock(dataLocks []*DataLock) error {
+func (s *Storage) PushSQLToDataLock(dataLocks []*DataLock, auditPlanId uint, instanceAuditPlanId uint) error {
 	err := s.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Exec("DELETE FROM data_locks").Error; err != nil {
+		if err := tx.Exec("DELETE FROM data_locks where audit_plan_id = ? AND instance_audit_plan_id = ?", auditPlanId, instanceAuditPlanId).Error; err != nil {
 			return err
 		}
 		if len(dataLocks) == 0 {
