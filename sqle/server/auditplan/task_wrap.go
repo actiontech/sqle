@@ -246,7 +246,7 @@ func (at *TaskWrapper) extractSQL() {
 		at.logger.Info("extract sql list is empty, skip")
 	}
 	if at.ap.Type == TypeTDMySQLDistributedLock {
-		err = at.pushSQLToDataLock(sqls)
+		err = at.pushSQLToDataLock(sqls, at.ap)
 	} else {
 		// 转换类型
 		sqlQueues := make([]*model.SQLManageQueue, 0, len(sqls))
@@ -323,7 +323,7 @@ func (at *TaskWrapper) pushSQLToManagerSQLQueue(sqlList []*model.SQLManageQueue,
 	return nil
 }
 
-func (at *TaskWrapper) pushSQLToDataLock(sqlList []*SQLV2) error {
+func (at *TaskWrapper) pushSQLToDataLock(sqlList []*SQLV2, auditPlan *AuditPlan) error {
 	dataLocks := make([]*model.DataLock, 0, len(sqlList))
 	for _, sql := range sqlList {
 		instanceAuditPlanId, err := strconv.ParseUint(sql.SourceId, 10, 64)
@@ -359,7 +359,7 @@ func (at *TaskWrapper) pushSQLToDataLock(sqlList []*SQLV2) error {
 			TrxWaitStarted:          sql.Info.Get(MetricNameWaitingLockTrxWaitStarted).Time(),
 		})
 	}
-	return at.persist.PushSQLToDataLock(dataLocks)
+	return at.persist.PushSQLToDataLock(dataLocks, auditPlan.ID, auditPlan.InstanceAuditPlanId)
 }
 
 func (at *TaskWrapper) filterSqlManageQueue(sqlList []*model.SQLManageQueue) (map[uint]uint, []*model.SQLManageQueue, error) {
