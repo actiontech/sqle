@@ -325,8 +325,10 @@ var (
 	ApMetricNameHost                    = &i18n.Message{ID: "ApMetricNameHost", Other: "主机"}
 	ApMetricNameMetaName                = &i18n.Message{ID: "ApMetricNameMetaName", Other: "对象名称"}
 	ApMetricNameMetaType                = &i18n.Message{ID: "ApMetricNameMetaType", Other: "对象类型"}
-	ApMetricNameQueryTimeTotal          = &i18n.Message{ID: "ApMetricNameQueryTimeTotal", Other: "总执行时间(ms)"}
-	ApMetricNameQueryTimeAvg            = &i18n.Message{ID: "ApMetricNameQueryTimeAvg", Other: "平均执行时间(ms)"}
+	ApMetricNameQueryTimeTotal          = &i18n.Message{ID: "ApMetricNameQueryTimeTotal", Other: "总执行时间(s)"}
+	ApMetricNameQueryTimeAvg            = &i18n.Message{ID: "ApMetricNameQueryTimeAvg", Other: "平均执行时间(s)"}
+	ApMetricNameQueryTimeTotalMS     = &i18n.Message{ID: "ApMetricNameQueryTimeTotalMS", Other: "总执行时间(ms)"}
+	ApMetricNameQueryTimeAvgMS       = &i18n.Message{ID: "ApMetricNameQueryTimeAvgMS", Other: "平均执行时间(ms)"}
 	ApMetricNameCounter                 = &i18n.Message{ID: "ApMetricNameCounter", Other: "执行次数"}
 	ApMetricNameCPUTimeAvg              = &i18n.Message{ID: "ApMetricNameCPUTimeAvg", Other: "平均 CPU 时间(μs)"}
 	ApMetricNameLockWaitTimeTotal       = &i18n.Message{ID: "ApMetricNameLockWaitTimeTotal", Other: "锁等待时间(ms)"}
@@ -337,7 +339,8 @@ var (
 	ApMetricNameCPUTimeTotal            = &i18n.Message{ID: "ApMetricNameCPUTimeTotal", Other: "CPU时间占用(s)"}
 	ApMetricNamePhyReadPageTotal        = &i18n.Message{ID: "ApMetricNamePhyReadPageTotal", Other: "物理读页数"}
 	ApMetricNameLogicReadPageTotal      = &i18n.Message{ID: "ApMetricNameLogicReadPageTotal", Other: "逻辑读页数"}
-	ApMetricNameQueryTimeMax            = &i18n.Message{ID: "ApMetricNameQueryTimeMax", Other: "最长执行时间"}
+	ApMetricNameQueryTimeMax            = &i18n.Message{ID: "ApMetricNameQueryTimeMax", Other: "最长执行时间(s)"}
+	ApMetricNameQueryTimeMaxMS          = &i18n.Message{ID: "ApMetricNameQueryTimeMaxMS", Other: "最长执行时间(ms)"}
 	ApMetricNameRowExaminedAvg          = &i18n.Message{ID: "ApMetricNameRowExaminedAvg", Other: "平均扫描行数"}
 	ApMetricNameDiskReadTotal           = &i18n.Message{ID: "ApMetricNameDiskReadTotal", Other: "物理读次数"}
 	ApMetricNameBufferGetCounter        = &i18n.Message{ID: "ApMetricNameBufferGetCounter", Other: "逻辑读次数"}
@@ -347,10 +350,10 @@ var (
 	ApMetricNameDiskReadAvg             = &i18n.Message{ID: "ApMetricNameDiskReadAvg", Other: "平均物理读次数"}
 	ApMetricNameFirstQueryAt            = &i18n.Message{ID: "ApMetricNameFirstQueryAt", Other: "首次执行时间"}
 	ApMetricNameLastQueryAt             = &i18n.Message{ID: "ApMetricNameLastQueryAt", Other: "最后执行时间"}
-	ApMetricNameMaxQueryTime            = &i18n.Message{ID: "ApMetricNameMaxQueryTime", Other: "最长执行时间"}
+	ApMetricNameMaxQueryTime            = &i18n.Message{ID: "ApMetricNameMaxQueryTime", Other: "最长执行时间(s)"}
 
 	ApMetricNameCounterMoreThan        = &i18n.Message{ID: "ApMetricNameCounterMoreThan", Other: "出现次数 > "}
-	ApMetricNameQueryTimeAvgMoreThan   = &i18n.Message{ID: "ApMetricNameQueryTimeAvgMoreThan", Other: "平均执行时间 > "}
+	ApMetricNameQueryTimeAvgMoreThan   = &i18n.Message{ID: "ApMetricNameQueryTimeAvgMoreThan", Other: "平均执行时间(s) > "}
 	ApMetricNameRowExaminedAvgMoreThan = &i18n.Message{ID: "ApMetricNameRowExaminedAvgMoreThan", Other: "平均扫描行数 > "}
 
 	ApMetaCustom                = &i18n.Message{ID: "ApMetaCustom", Other: "自定义"}
