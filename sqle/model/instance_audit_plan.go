@@ -284,7 +284,7 @@ func (s *Storage) SelectDistinctObjectName(auditPlanId uint, instanceAuditPlanId
 
 func (s *Storage) PushSQLToDataLock(dataLocks []*DataLock) error {
 	err := s.db.Transaction(func(tx *gorm.DB) error {
-		if err := s.db.Exec("DELETE FROM data_locks").Error; err != nil {
+		if err := tx.Exec("DELETE FROM data_locks").Error; err != nil {
 			return err
 		}
 		if len(dataLocks) == 0 {
