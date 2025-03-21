@@ -219,6 +219,104 @@ func (o SQLManageRecord) GetFingerprintMD5() string {
 	return utils.Md5String(string(sqlIdentityJSON))
 }
 
+type DataLock struct {
+	Model
+	AuditPlanId             uint64     `json:"audit_plan_id" gorm:"type:bigint unsigned;not null"`
+	InstanceAuditPlanId     uint64     `json:"instance_audit_plan_id" gorm:"type:bigint unsigned;not null"`
+	Engine                  string     `json:"engine" gorm:"type:varchar(255);not null"`
+	DbUser                  string     `json:"db_user" gorm:"type:varchar(255)"`
+	Host                    string     `json:"host" gorm:"type:varchar(255)"`
+	DatabaseName            string     `json:"database_name" gorm:"type:varchar(255)"`
+	ObjectName              string     `json:"object_name" gorm:"type:varchar(255)"`
+	IndexType               string     `json:"index_type" gorm:"type:varchar(255)"`
+	GrantedLockId           string     `json:"granted_lock_id" gorm:"type:varchar(255);not null"`
+	WaitingLockId           string     `json:"waiting_lock_id" gorm:"type:varchar(255);not null"`
+	LockType                string     `json:"lock_type" gorm:"type:varchar(255);not null"`
+	LockMode                string     `json:"lock_mode" gorm:"type:varchar(255);not null"`
+	GrantedLockConnectionId int64      `json:"granted_lock_connection_id" gorm:"type:bigint"`
+	WaitingLockConnectionId int64      `json:"waiting_lock_connection_id" gorm:"type:bigint"`
+	GrantedLockTrxId        int64      `json:"granted_lock_trx_id" gorm:"type:bigint"`
+	WaitingLockTrxId        int64      `json:"waiting_lock_trx_id" gorm:"type:bigint"`
+	GrantedLockSql          string     `json:"granted_lock_sql" gorm:"type:longtext"`
+	WaitingLockSql          string     `json:"waiting_lock_sql" gorm:"type:longtext"`
+	TrxStarted              *time.Time `json:"trx_started" gorm:"type:datetime"`
+	TrxWaitStarted          *time.Time `json:"trx_wait_started" gorm:"type:datetime"`
+}
+
+const (
+	LockType   = "lock_type"
+	ObjectName = "object_name"
+	Database   = "database_name"
+)
+
+func (s *Storage) SelectDistinctColumn(auditPlanId uint, instanceAuditPlanId uint, column string) ([]string, error) {
+	var lockTypes []string
+	err := s.db.Model(&DataLock{}).Distinct(column).
+		Where("audit_plan_id = ? AND instance_audit_plan_id = ?", auditPlanId, instanceAuditPlanId).
+		Find(&lockTypes).Error
+	if err != nil {
+		return lockTypes, err
+	}
+	return lockTypes, nil
+}
+
+func (s *Storage) PushSQLToDataLock(dataLocks []*DataLock, auditPlanId uint, instanceAuditPlanId uint) error {
+	err := s.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("DELETE FROM data_locks where audit_plan_id = ? AND instance_audit_plan_id = ?", auditPlanId, instanceAuditPlanId).Error; err != nil {
+			return err
+		}
+		if len(dataLocks) == 0 {
+			return nil
+		}
+		if err := tx.Create(dataLocks).Error; err != nil {
+			return err
+		}
+		return nil
+	})
+	return errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetDataLockList(filters map[string]string, limit, offset int, auditPlanId uint, instanceAuditPlanId uint) ([]*DataLock, error) {
+	dataLocks := []*DataLock{}
+	query := s.db.Model(&DataLock{}).Limit(limit).
+		Where("audit_plan_id = ? AND instance_audit_plan_id = ?", auditPlanId, instanceAuditPlanId).
+		Offset(offset)
+	if filters[LockType] != "" {
+		query = query.Where("lock_type = ?", filters[LockType])
+	}
+	if filters[ObjectName] != "" {
+		query = query.Where("object_name = ?", filters[ObjectName])
+	}
+	if filters[Database] != "" {
+		query = query.Where("database_name = ?", filters[Database])
+	}
+
+	err := query.Find(&dataLocks).Error
+	if err != nil {
+		return nil, err
+	}
+	return dataLocks, nil
+}
+
+func (s *Storage) CountDataLock(filters map[string]string, auditPlanId uint, instanceAuditPlanId uint) (int64, error) {
+	var count int64
+	query := s.db.Model(&DataLock{}).Where("audit_plan_id = ? AND instance_audit_plan_id = ?", auditPlanId, instanceAuditPlanId)
+	if filters[LockType] != "" {
+		query = query.Where("lock_type = ?", filters[LockType])
+	}
+	if filters[ObjectName] != "" {
+		query = query.Where("object_name = ?", filters[ObjectName])
+	}
+	if filters[Database] != "" {
+		query = query.Where("database_name = ?", filters[Database])
+	}
+	err := query.Count(&count).Error
+	if err != nil {
+		return count, err
+	}
+	return count, nil
+}
+
 func (s *Storage) GetManageSQLBySQLId(sqlId string) (*SQLManageRecord, bool, error) {
 	sql := &SQLManageRecord{}
 

@@ -11,6 +11,7 @@ const MetricNameQueryTimeMax string = "query_time_max"     // 最大执行时间
 const MetricNameRowExaminedAvg string = "row_examined_avg" // 平均扫描行数
 const MetricNameFirstQueryAt string = "first_query_at"
 const MetricNameDBUser string = "db_user"
+const MetricNameHost string = "host"
 const MetricNameEndpoints string = "endpoints"
 const MetricNameStartTimeOfLastScrapedSQL string = "start_time_of_last_scraped_sql" // 抓取sql的开始时间
 
@@ -37,6 +38,26 @@ const MetricNameIoWaitTimeAvg = "io_wait_time_avg"
 const MetricNameDiskReadAvg = "disk_read_avg"
 const MetricNameBufferReadAvg = "buffer_read_avg"
 const MetricNameExplainCost = "explain_cost"
+
+// Lock
+const MetricNameGrantedLockId string = "granted_lock_id"
+const MetricNameWaitingLockId string = "waiting_lock_id"
+const MetricNameDatabase string = "database_name"
+const MetricNameLockType string = "lock_type"
+const MetricNameLockMode string = "lock_mode"
+const MetricNameLockStatus string = "lock_status"
+const MetricNameGrantedLockTrxStarted string = "trx_started"
+const MetricNameWaitingLockTrxWaitStarted string = "trx_wait_started"
+const MetricNameEngine string = "engine"
+const MetricNameTable string = "table_name"
+const MetricNameIndexType string = "index_type"
+const MetricNameObjectName string = "object_name"
+const MetricNameGrantedLockSql string = "granted_lock_sql"
+const MetricNameWaitingLockSql string = "waiting_lock_sql"
+const MetricNameGrantedLockConnectionId string = "granted_lock_connection_id"
+const MetricNameWaitingLockConnectionId string = "waiting_lock_connection_id"
+const MetricNameGrantedLockTrxId string = "granted_lock_trx_id"
+const MetricNameWaitingLockTrxId string = "waiting_lock_trx_id"
 
 var ALLMetric = map[string]MetricType{
 	MetricNameCounter:                   MetricTypeInt,    // MySQL slow log
@@ -68,6 +89,12 @@ var ALLMetric = map[string]MetricType{
 
 	MetricNameLastQueryAt:   MetricTypeString, // OB MySQL TOP SQL
 	MetricNameIoWaitTimeAvg: MetricTypeFloat,  // OB MySQL TOP SQL
+
+	MetricNameLockType:   MetricTypeString, // Lock
+	MetricNameLockMode:   MetricTypeString, // Lock
+	MetricNameLockStatus: MetricTypeString, // Lock
+	MetricNameEngine:     MetricTypeString, // Lock
+	MetricNameTable:      MetricTypeString, // Lock
 }
 
 func LoadMetrics(info map[string]interface{}, metrics []string) Metrics {
