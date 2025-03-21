@@ -284,7 +284,9 @@ func (s *Storage) SelectDistinctObjectName(auditPlanId uint, instanceAuditPlanId
 
 func (s *Storage) PushSQLToDataLock(dataLocks []*DataLock) error {
 	// 新增前删除，保证数据的实时性
-	s.db.Exec("DELETE FROM data_locks")
+	if err := s.db.Exec("DELETE FROM data_locks").Error; err != nil {
+		return err
+	}
 	if len(dataLocks) == 0 {
 		return nil
 	}
