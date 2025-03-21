@@ -1152,7 +1152,6 @@ func GetInstanceAuditPlanSQLMeta(c echo.Context) error {
 			Sortable: v.Sortable,
 		})
 	}
-
 	for _, v := range filter {
 		data.FilterMetaList = append(data.FilterMetaList, FilterMeta{
 			Name:            v.Name,
