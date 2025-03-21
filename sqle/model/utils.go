@@ -182,6 +182,7 @@ var autoMigrateList = []interface{}{
 	&WorkflowVersionStage{},
 	&Tag{},
 	&Knowledge{},
+	&DataLock{},
 }
 
 func (s *Storage) AutoMigrate() error {
