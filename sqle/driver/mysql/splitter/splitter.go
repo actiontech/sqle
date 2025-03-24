@@ -135,7 +135,7 @@ func (s *splitter) formateOriginSql(originSql string) string {
 			originSql = trimmedSql + DefaultDelimiterString
 		}
 	}
-	return originSql
+	return removeSQLComments(originSql)
 }
 
 func (s *splitter) matchSql(sql string) bool {
