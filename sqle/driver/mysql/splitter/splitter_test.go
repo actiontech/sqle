@@ -1283,6 +1283,33 @@ func TestRemoveSQLComments(t *testing.T) {
 			expected: "SELECT name FROM users",
 		},
 		{
+			name: "hint test 1",
+			input: `SELECT /*+ SQL_SMALL_RESULT */  column1 
+FROM small_table 
+GROUP BY column1;`,
+			expected: `SELECT /*+ SQL_SMALL_RESULT */  column1 
+FROM small_table 
+GROUP BY column1;`,
+		},
+		{
+			name: "hint test 2",
+			input: `SELECT /*+ SQL_SMALL_RESULT *//* comment */ column1 
+FROM small_table 
+GROUP BY column1;`,
+			expected: `SELECT /*+ SQL_SMALL_RESULT */ column1 
+FROM small_table 
+GROUP BY column1;`,
+		},
+		{
+			name: "hint test 3",
+			input: `SELECT /* comment *//*+ SQL_SMALL_RESULT */ column1 
+FROM small_table 
+GROUP BY column1;`,
+			expected: `SELECT /*+ SQL_SMALL_RESULT */ column1 
+FROM small_table 
+GROUP BY column1;`,
+		},
+		{
 			name:     "semicolon only after trim",
 			input:    "/* comment */;",
 			expected: "",

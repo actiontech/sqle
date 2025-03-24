@@ -56,11 +56,22 @@ func removeSQLComments(sql string) string {
 				inLineComment = true
 				continue
 			}
-			// 块注释：/* 开始
 			if c == '/' && i+1 < n && runes[i+1] == '*' {
-				inBlockComment = true
-				i++ // 跳过 *
-				continue
+				// 判断是否为 Hint：检查是否有 "+" 符号
+				if i+2 < n && runes[i+2] == '+' {
+					// Hint 不删除，原样输出整个 Hint 注释
+					startIndex := i
+					// 找到 Hint 结束位置
+					endPos := findCommentEnd(runes, i)
+					result = append(result, runes[startIndex:endPos]...)
+					i = endPos - 1
+					continue
+				} else {
+					// 非 Hint 块注释，进入删除状态
+					inBlockComment = true
+					i++ // 跳过 '*'
+					continue
+				}
 			}
 		}
 
@@ -80,4 +91,16 @@ func removeSQLComments(sql string) string {
 		return ""
 	}
 	return string(result)
+}
+
+// findCommentEnd 返回从 pos 开始的块注释结束位置（包括 "*/"），如果没找到则返回 n
+func findCommentEnd(runes []rune, pos int) int {
+	n := len(runes)
+	for pos < n-1 {
+		if runes[pos] == '*' && runes[pos+1] == '/' {
+			return pos + 2
+		}
+		pos++
+	}
+	return n
 }
