@@ -1201,7 +1201,7 @@ func TestRemoveSQLComments(t *testing.T) {
 		{
 			name:     "comment before sql statement",
 			input:    "/* this is comment */SELECT * FROM users WHERE id = 1;",
-			expected: " SELECT * FROM users WHERE id = 1;",
+			expected: "SELECT * FROM users WHERE id = 1;",
 		},
 		{
 			name:     "comments after sql statements 1",
@@ -1274,8 +1274,8 @@ func TestRemoveSQLComments(t *testing.T) {
 		},
 		{
 			name:     "unclosed block comment",
-			input:    "SELECT * FROM users /* unclosed comment",
-			expected: "SELECT * FROM users ",
+			input:    "SELECT * FROM users/* unclosed comment",
+			expected: "SELECT * FROM users",
 		},
 		{
 			name:     "space after block comment",
@@ -1310,9 +1310,19 @@ FROM small_table
 GROUP BY column1;`,
 		},
 		{
-			name:     "semicolon only after trim",
-			input:    "/* comment */;",
-			expected: "",
+			name:     "conditional comments test 1",
+			input:    `/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;`,
+			expected: `/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;`,
+		},
+		{
+			name:     "conditional comments test 2",
+			input:    `SELECT * FROM users /*! WHERE active = 1 */;`,
+			expected: `SELECT * FROM users /*! WHERE active = 1 */;`,
+		},
+		{
+			name:     "conditional comments test 3",
+			input:    `SELECT * FROM/* comments */ users /*! WHERE active = 1 */;`,
+			expected: `SELECT * FROM users /*! WHERE active = 1 */;`,
 		},
 	}
 

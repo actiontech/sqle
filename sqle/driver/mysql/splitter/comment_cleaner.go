@@ -57,17 +57,17 @@ func removeSQLComments(sql string) string {
 				continue
 			}
 			if c == '/' && i+1 < n && runes[i+1] == '*' {
-				// 判断是否为 Hint：检查是否有 "+" 符号
-				if i+2 < n && runes[i+2] == '+' {
-					// Hint 不删除，原样输出整个 Hint 注释
+				// 判断是否为 Hint/条件注释：检查是否有 "+"/"!" 符号
+				if i+2 < n && (runes[i+2] == '+' || runes[i+2] == '!') {
+					// Hint和条件注释 不删除，原样输出整个注释
 					startIndex := i
-					// 找到 Hint 结束位置
+					// 使用辅助函数找 Hint/条件注释 结束位置
 					endPos := findCommentEnd(runes, i)
 					result = append(result, runes[startIndex:endPos]...)
 					i = endPos - 1
 					continue
 				} else {
-					// 非 Hint 块注释，进入删除状态
+					// 非 Hint/条件注释 块注释，进入删除状态
 					inBlockComment = true
 					i++ // 跳过 '*'
 					continue
@@ -86,11 +86,7 @@ func removeSQLComments(sql string) string {
 
 		result = append(result, c)
 	}
-	// 处理dump文件可能存在多行注释结尾有分号问题
-	if strings.TrimSpace(string(result)) == ";" {
-		return ""
-	}
-	return string(result)
+	return strings.TrimSpace(string(result))
 }
 
 // findCommentEnd 返回从 pos 开始的块注释结束位置（包括 "*/"），如果没找到则返回 n
