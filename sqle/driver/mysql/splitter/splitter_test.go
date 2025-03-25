@@ -3,13 +3,14 @@ package splitter
 import (
 	"bytes"
 	"fmt"
+	"os"
+	"strings"
+	"testing"
+
 	"github.com/pingcap/parser/ast"
 	parser_formate "github.com/pingcap/parser/format"
 	_ "github.com/pingcap/tidb/types/parser_driver"
 	"github.com/stretchr/testify/assert"
-	"os"
-	"strings"
-	"testing"
 )
 
 func TestSplitSqlText(t *testing.T) {
@@ -1182,5 +1183,153 @@ func TestGeometryColumnIsNotReserved(t *testing.T) {
 				t.Errorf("expect sql format: %s; actual sql format: %s", c.formatSQL, buf.String())
 			}
 		}
+	}
+}
+
+// 测试清除sql中的注释信息
+func TestRemoveSQLComments(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "empty string",
+			input:    "",
+			expected: "",
+		},
+		{
+			name:     "comment before sql statement",
+			input:    "/* this is comment */SELECT * FROM users WHERE id = 1;",
+			expected: "SELECT * FROM users WHERE id = 1;",
+		},
+		{
+			name:     "comments after sql statements 1",
+			input:    "SELECT * FROM users WHERE id = 1;/* this is comment */",
+			expected: "SELECT * FROM users WHERE id = 1;",
+		},
+		{
+			name:     "comments after sql statements 2",
+			input:    "SELECT * FROM users WHERE id = 1/* this is comment */;",
+			expected: "SELECT * FROM users WHERE id = 1 ;",
+		},
+		{
+			name: "comments are conditions2",
+			input: `SELECT * FROM db1.t11 WHERE t11.c  = '
+-- EXFSYS."RLM$INCRRRSCHACT" definition
+';`,
+			expected: `SELECT * FROM db1.t11 WHERE t11.c  = '
+-- EXFSYS."RLM$INCRRRSCHACT" definition
+';`,
+		},
+		{
+			name:     "comments after sql statements 3",
+			input:    "SELECT * FROM users WHERE id = 1;#",
+			expected: "SELECT * FROM users WHERE id = 1;",
+		},
+		{
+			name:     "no comments",
+			input:    "SELECT * FROM users WHERE id = 1;",
+			expected: "SELECT * FROM users WHERE id = 1;",
+		},
+		{
+			name:     "single line comment with --",
+			input:    "SELECT * FROM users -- this is comment\nWHERE id = 1;",
+			expected: "SELECT * FROM users \nWHERE id = 1;",
+		},
+		{
+			name:     "single line comment with #",
+			input:    "SELECT * FROM users # this is comment\nWHERE id = 1;",
+			expected: "SELECT * FROM users \nWHERE id = 1;",
+		},
+		{
+			name:     "multi line comment",
+			input:    "SELECT * FROM /* this is \n comment */ users WHERE id = 1;",
+			expected: "SELECT * FROM  users WHERE id = 1;",
+		},
+		{
+			name:     "comment in single quotes",
+			input:    "SELECT '-- not a comment' FROM users;",
+			expected: "SELECT '-- not a comment' FROM users;",
+		},
+		{
+			name:     "comment in double quotes",
+			input:    `SELECT "-- not a comment" FROM users;`,
+			expected: `SELECT "-- not a comment" FROM users;`,
+		},
+		{
+			name:     "comment in back quotes",
+			input:    "SELECT `-- not a comment` FROM users;",
+			expected: "SELECT `-- not a comment` FROM users;",
+		},
+		{
+			name:     "mixed quotes and comments",
+			input:    "SELECT `-- not a comment`, '/* not a comment */', \"-- not a comment\" -- real comment\nFROM users;",
+			expected: "SELECT `-- not a comment`, '/* not a comment */', \"-- not a comment\" \nFROM users;",
+		},
+		{
+			name:     "only comment",
+			input:    "-- only comment",
+			expected: "",
+		},
+		{
+			name:     "unclosed block comment",
+			input:    "SELECT * FROM users/* unclosed comment",
+			expected: "SELECT * FROM users",
+		},
+		{
+			name:     "space after block comment",
+			input:    "SELECT/*comment*/name FROM users",
+			expected: "SELECT name FROM users",
+		},
+		{
+			name: "hint test 1",
+			input: `SELECT /*+ SQL_SMALL_RESULT */  column1 
+FROM small_table 
+GROUP BY column1;`,
+			expected: `SELECT /*+ SQL_SMALL_RESULT */  column1 
+FROM small_table 
+GROUP BY column1;`,
+		},
+		{
+			name: "hint test 2",
+			input: `SELECT /*+ SQL_SMALL_RESULT *//* comment */ column1 
+FROM small_table 
+GROUP BY column1;`,
+			expected: `SELECT /*+ SQL_SMALL_RESULT */ column1 
+FROM small_table 
+GROUP BY column1;`,
+		},
+		{
+			name: "hint test 3",
+			input: `SELECT /* comment *//*+ SQL_SMALL_RESULT */ column1 
+FROM small_table 
+GROUP BY column1;`,
+			expected: `SELECT /*+ SQL_SMALL_RESULT */ column1 
+FROM small_table 
+GROUP BY column1;`,
+		},
+		{
+			name:     "conditional comments test 1",
+			input:    `/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;`,
+			expected: `/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;`,
+		},
+		{
+			name:     "conditional comments test 2",
+			input:    `SELECT * FROM users /*! WHERE active = 1 */;`,
+			expected: `SELECT * FROM users /*! WHERE active = 1 */;`,
+		},
+		{
+			name:     "conditional comments test 3",
+			input:    `SELECT * FROM/* comments */ users /*! WHERE active = 1 */;`,
+			expected: `SELECT * FROM users /*! WHERE active = 1 */;`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := removeSQLComments(tt.input)
+			assert.Equal(t, tt.expected, actual)
+		})
 	}
 }
