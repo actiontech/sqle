@@ -125,6 +125,7 @@ func (s *splitter) getNextSql(sqlText string) (*singleSQL, error) {
 // 如果SQL没有分隔符，则返回没有分隔符的SQL
 // 如果分隔符不是默认分隔符，则将其替换为默认分隔符
 // 如果去除分隔符和空白符之后SQL为空字符串，则返回空字符串，空字符串需跳过
+// 如果去除注释信息之后SQL为空字符串，则返回空字符串，空字符串需跳过
 func (s *splitter) formateOriginSql(originSql string) string {
 	if strings.HasSuffix(originSql, s.delimiter.DelimiterStr) {
 		trimmedSql := strings.TrimSuffix(originSql, s.delimiter.DelimiterStr)
@@ -135,7 +136,10 @@ func (s *splitter) formateOriginSql(originSql string) string {
 			originSql = trimmedSql + DefaultDelimiterString
 		}
 	}
-	return removeSQLComments(originSql)
+	if removeSQLComments(originSql) == "" {
+		return ""
+	}
+	return originSql
 }
 
 func (s *splitter) matchSql(sql string) bool {
