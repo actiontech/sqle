@@ -192,6 +192,7 @@ func (pm *pluginManager) Start(pluginDir string, pluginConfigList []config.Plugi
 		log.NewEntry().Warnf("stop residual plugin file path walk error: %v", err)
 	}
 	wg.Wait()
+	jdkPath := getJdkPath()
 
 	// register plugin
 	for _, p := range plugins {
@@ -205,9 +206,8 @@ func (pm *pluginManager) Start(pluginDir string, pluginConfigList []config.Plugi
 				break
 			}
 		}
-
 		if len(cmdArgs) == 0 && strings.HasSuffix(p.Name(), ".jar") {
-			javaPluginCmd := fmt.Sprintf("$SQLE_JAVA_HOME/bin/java -jar %s", cmdBase)
+			javaPluginCmd := fmt.Sprintf("%s/bin/java -jar %s", jdkPath, cmdBase)
 			cmdBase = "sh"
 			cmdArgs = append(cmdArgs, "-c", javaPluginCmd)
 		}
@@ -240,6 +240,12 @@ func (pm *pluginManager) Start(pluginDir string, pluginConfigList []config.Plugi
 
 	}
 	return nil
+}
+
+func getJdkPath() string {
+	nowDir, _ := os.Getwd()
+	jdkPath := nowDir + "/jdk"
+	return jdkPath
 }
 
 func (pm *pluginManager) Stop() {
