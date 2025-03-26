@@ -46,7 +46,7 @@ func Parse(_ context.Context, sqlText string) ([]driverV2.Node, error) {
 func clearComments(sqlText string) string {
 	// 将注释替换为一个空格，防止语句粘连
 	sqlText = regexp.MustCompile(`(?s)/\*.*?\*/`).ReplaceAllString(sqlText, " ")
-	sqlText = regexp.MustCompile(`--.*`).ReplaceAllString(sqlText, " ")
+	// sqlText = regexp.MustCompile(`--.*`).ReplaceAllString(sqlText, " ")
 	// 去除结尾分号后的内容
 	idx := strings.Index(sqlText, ";")
 	if idx >= 0 {

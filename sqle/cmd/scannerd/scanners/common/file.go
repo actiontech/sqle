@@ -14,7 +14,7 @@ import (
 	"github.com/actiontech/sqle/sqle/utils"
 )
 
-func GetSQLFromPath(pathName string, skipErrorQuery, skipErrorFile bool, fileSuffix string) (allSQL []driverV2.Node, err error) {
+func GetSQLFromPath(pathName string, skipErrorQuery, skipErrorFile bool, fileSuffix string, showFileContent bool) (allSQL []driverV2.Node, err error) {
 	if !path.IsAbs(pathName) {
 		pwd, err := os.Getwd()
 		if err != nil {
@@ -32,9 +32,9 @@ func GetSQLFromPath(pathName string, skipErrorQuery, skipErrorFile bool, fileSuf
 		pathJoin := path.Join(pathName, fi.Name())
 
 		if fi.IsDir() {
-			sqlList, err = GetSQLFromPath(pathJoin, skipErrorQuery, skipErrorFile, fileSuffix)
+			sqlList, err = GetSQLFromPath(pathJoin, skipErrorQuery, skipErrorFile, fileSuffix, showFileContent)
 		} else if strings.HasSuffix(fi.Name(), fileSuffix) {
-			sqlList, err = GetSQLFromFile(pathJoin, skipErrorQuery, fileSuffix)
+			sqlList, err = GetSQLFromFile(pathJoin, skipErrorQuery, fileSuffix, showFileContent)
 		}
 
 		if err != nil {
@@ -49,7 +49,7 @@ func GetSQLFromPath(pathName string, skipErrorQuery, skipErrorFile bool, fileSuf
 	return allSQL, err
 }
 
-func GetSQLFromFile(file string, skipErrorQuery bool, fileSuffix string) (r []driverV2.Node, err error) {
+func GetSQLFromFile(file string, skipErrorQuery bool, fileSuffix string, showFileContent bool) (r []driverV2.Node, err error) {
 	content, err := ReadFileContent(file)
 	if err != nil {
 		return nil, err
@@ -64,11 +64,17 @@ func GetSQLFromFile(file string, skipErrorQuery bool, fileSuffix string) (r []dr
 			sqls, err = mybatisParser.ParseXMLQuery(content, mybatisParser.RestoreOriginSql)
 		}
 		if err != nil {
+			if showFileContent {
+				fmt.Printf("failed to parse xml file content: %s", content)
+			}
 			return nil, err
 		}
 		for _, sql := range sqls {
 			n, err := Parse(context.TODO(), sql)
 			if err != nil {
+				if showFileContent {
+					fmt.Printf("failed to parse xml file content: %s", content)
+				}
 				return nil, err
 			}
 			r = append(r, n...)
@@ -76,6 +82,9 @@ func GetSQLFromFile(file string, skipErrorQuery bool, fileSuffix string) (r []dr
 	case utils.SQLFileSuffix:
 		n, err := Parse(context.TODO(), content)
 		if err != nil {
+			if showFileContent {
+				fmt.Printf("failed to parse sql file content: %s", content)
+			}
 			return nil, err
 		}
 		r = append(r, n...)
