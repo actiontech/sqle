@@ -15,38 +15,41 @@ type MyBatis struct {
 	l *logrus.Entry
 	c *scanner.Client
 
-	xmlDir         string
-	skipErrorQuery bool
-	skipErrorXml   bool
-	dbType         string
-	instName       string
-	schemaName     string
+	xmlDir          string
+	skipErrorQuery  bool
+	skipErrorXml    bool
+	dbType          string
+	instName        string
+	schemaName      string
+	showFileContent bool
 }
 
 type Params struct {
-	XMLDir         string
-	SkipErrorQuery bool
-	SkipErrorXml   bool
-	DbType         string
-	InstName       string
-	SchemaName     string
+	XMLDir          string
+	SkipErrorQuery  bool
+	SkipErrorXml    bool
+	DbType          string
+	InstName        string
+	SchemaName      string
+	ShowFileContent bool
 }
 
 func New(params *Params, l *logrus.Entry, c *scanner.Client) (*MyBatis, error) {
 	return &MyBatis{
-		xmlDir:         params.XMLDir,
-		skipErrorQuery: params.SkipErrorQuery,
-		skipErrorXml:   params.SkipErrorXml,
-		dbType:         params.DbType,
-		instName:       params.InstName,
-		schemaName:     params.SchemaName,
-		l:              l,
-		c:              c,
+		xmlDir:          params.XMLDir,
+		skipErrorQuery:  params.SkipErrorQuery,
+		skipErrorXml:    params.SkipErrorXml,
+		dbType:          params.DbType,
+		instName:        params.InstName,
+		schemaName:      params.SchemaName,
+		showFileContent: params.ShowFileContent,
+		l:               l,
+		c:               c,
 	}, nil
 }
 
 func (mb *MyBatis) Run(ctx context.Context) error {
-	sqls, err := common.GetSQLFromPath(mb.xmlDir, mb.skipErrorQuery, mb.skipErrorXml, utils.MybatisFileSuffix)
+	sqls, err := common.GetSQLFromPath(mb.xmlDir, mb.skipErrorQuery, mb.skipErrorXml, utils.MybatisFileSuffix, mb.showFileContent)
 	if err != nil {
 		return err
 	}

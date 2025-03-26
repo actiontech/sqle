@@ -22,6 +22,7 @@ type SQLFile struct {
 	dbType           string
 	instName         string
 	schemaName       string
+	showFileContent  bool
 }
 
 type Params struct {
@@ -31,6 +32,7 @@ type Params struct {
 	DbType           string
 	InstName         string
 	SchemaName       string
+	ShowFileContent  bool
 }
 
 func New(params *Params, l *logrus.Entry, c *scanner.Client) (*SQLFile, error) {
@@ -42,11 +44,12 @@ func New(params *Params, l *logrus.Entry, c *scanner.Client) (*SQLFile, error) {
 		schemaName:       params.SchemaName,
 		l:                l,
 		c:                c,
+		showFileContent:  params.ShowFileContent,
 	}, nil
 }
 
 func (sf *SQLFile) Run(ctx context.Context) error {
-	sqls, err := common.GetSQLFromPath(sf.sqlDir, false, sf.skipErrorSqlFile, utils.SQLFileSuffix)
+	sqls, err := common.GetSQLFromPath(sf.sqlDir, false, sf.skipErrorSqlFile, utils.SQLFileSuffix, sf.showFileContent)
 	if err != nil {
 		return fmt.Errorf("failed to get sql from path: %v", err)
 	}
