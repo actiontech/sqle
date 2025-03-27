@@ -442,9 +442,12 @@ func getSqlAnalysisChart(sqlManageId string, metricName string, latestPointEnabl
 func convertToSqlManageAnalysisChartResp(ctx context.Context, chartPoints []ChartPoint, err error) SqlManageAnalysisChartResp {
 	xInfo := locale.Bundle.LocalizeMsgByCtx(ctx, plocale.AnalysisChartXTime)
 	yInfo := locale.Bundle.LocalizeMsgByCtx(ctx, plocale.AnalysisChartYCost)
-	message := err.Error()
-	if e.Is(err, driverV2.ErrSQLIsNotSupported) {
-		message = locale.Bundle.LocalizeMsgByCtx(ctx, plocale.SQLCostChartOnlySupportDML)
+	message := ""
+	if err != nil {
+		message = err.Error()
+		if e.Is(err, driverV2.ErrSQLIsNotSupported) {
+			message = locale.Bundle.LocalizeMsgByCtx(ctx, plocale.SQLCostChartOnlySupportDML)
+		}
 	}
 	return SqlManageAnalysisChartResp{
 		BaseRes: controller.NewBaseReq(nil),
