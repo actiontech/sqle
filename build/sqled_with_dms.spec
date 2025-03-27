@@ -101,7 +101,6 @@ if [ $? -eq 0 ]; then
     -e "s|User=|User=actiontech-universe|g" \
     -e "s|ExecStart=|ExecStart=/bin/sh -c 'exec $RPM_INSTALL_PREFIX\/bin\/sqled --config $RPM_INSTALL_PREFIX\/etc\/config.yaml --pidfile=$RPM_INSTALL_PREFIX\/sqled.pid >>$RPM_INSTALL_PREFIX\/std.log 2>\&1'|g" \
     -e "s|WorkingDirectory=|WorkingDirectory=$RPM_INSTALL_PREFIX|g" \
-    -e "s|Environment=|Environment=SQLE_JAVA_HOME=$RPM_INSTALL_PREFIX\/jdk|g" \
     $RPM_INSTALL_PREFIX/scripts/sqled.systemd > /lib/systemd/system/sqled.service
     sed -e "s|PIDFile=|PIDFile=$RPM_INSTALL_PREFIX\/dms.pid|g" \
     -e "s|User=|User=actiontech-universe|g" \
