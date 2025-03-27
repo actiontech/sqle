@@ -243,8 +243,12 @@ func (pm *pluginManager) Start(pluginDir string, pluginConfigList []config.Plugi
 }
 
 func getJdkPath() string {
-	nowDir, _ := os.Getwd()
-	jdkPath := nowDir + "/jdk"
+	nowDir, err := os.Getwd()
+	if err != nil {
+		log.NewEntry().Errorf("failed to get directory: %v", err)
+		return ""
+	}
+	jdkPath := filepath.Join(nowDir, "jdk")
 	return jdkPath
 }
 
