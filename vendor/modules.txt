@@ -60,7 +60,7 @@ github.com/actiontech/dms/pkg/dms-common/pkg/aes
 github.com/actiontech/dms/pkg/dms-common/pkg/http
 github.com/actiontech/dms/pkg/dms-common/register
 github.com/actiontech/dms/pkg/params
-# github.com/actiontech/java-sql-extractor v0.0.0-20231103015812-cdd5fc040f62
+# github.com/actiontech/java-sql-extractor v0.0.0-20231120024232-2b8c3c0894a1
 ## explicit; go 1.19
 github.com/actiontech/java-sql-extractor/java_antlr
 github.com/actiontech/java-sql-extractor/parser
