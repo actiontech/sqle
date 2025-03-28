@@ -17,24 +17,26 @@ import (
 )
 
 var (
-	dir            string
-	skipErrorQuery bool
-	skipErrorXml   bool
-	dbTypeXml      string
-	instNameXml    string
-	schemaNameXml  string
+	dir             string
+	skipErrorQuery  bool
+	skipErrorXml    bool
+	dbTypeXml       string
+	instNameXml     string
+	schemaNameXml   string
+	ShowFileContent bool
 
 	mybatisCmd = &cobra.Command{
 		Use:   scannerCmd.TypeMySQLMybatis,
 		Short: "Parse MyBatis XML file",
 		Run: func(cmd *cobra.Command, args []string) {
 			param := &mybatis.Params{
-				XMLDir:         dir,
-				SkipErrorQuery: skipErrorQuery,
-				SkipErrorXml:   skipErrorXml,
-				DbType:         dbTypeXml,
-				InstName:       instNameXml,
-				SchemaName:     schemaNameXml,
+				XMLDir:          dir,
+				SkipErrorQuery:  skipErrorQuery,
+				SkipErrorXml:    skipErrorXml,
+				DbType:          dbTypeXml,
+				InstName:        instNameXml,
+				SchemaName:      schemaNameXml,
+				ShowFileContent: ShowFileContent,
 			}
 			log := logrus.WithField("scanner", "mybatis")
 			client := scanner.NewSQLEClient(time.Second*time.Duration(rootCmdFlags.timeout), rootCmdFlags.host, rootCmdFlags.port).WithToken(rootCmdFlags.token).WithProject(rootCmdFlags.project)
@@ -65,6 +67,7 @@ func init() {
 	mybatisCmd.Flags().StringVarP(mybatis.StringFlagFn[scannerCmd.FlagDbType](&dbTypeXml))
 	mybatisCmd.Flags().StringVarP(mybatis.StringFlagFn[scannerCmd.FlagInstanceName](&instNameXml))
 	mybatisCmd.Flags().StringVarP(mybatis.StringFlagFn[scannerCmd.FlagSchemaName](&schemaNameXml))
+	mybatisCmd.Flags().BoolVarP(mybatis.BoolFlagFn[scannerCmd.FlagShowFileContent](&ShowFileContent))
 
 	for _, requiredFlag := range mybatis.RequiredFlags {
 		_ = mybatisCmd.MarkFlagRequired(requiredFlag)
