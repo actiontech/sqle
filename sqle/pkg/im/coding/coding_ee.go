@@ -64,7 +64,8 @@ func (codingClient *CodingClient) CreateIssue(createIssueRequestBody CreateIssue
 	var createIssueResponse CreateIssueResponseBody
 	err = json.Unmarshal(body, &createIssueResponse)
 	if err != nil || createIssueResponse.Response == nil {
-		return nil, fmt.Errorf("failed to create coding issue, maybe blocked by coding")
+		log.Logger().Errorf("failed to create coding issue, coding response: %v", body)
+		return nil, fmt.Errorf("failed to create coding issue, because blocked by coding security strategy , you need to get help from coding operations")
 	}
 	if createIssueResponse.Response.Error != nil {
 		return nil, errors.New(createIssueResponse.Response.Error.Message)
