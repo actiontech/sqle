@@ -38,6 +38,7 @@ func init() {
 	myBatis.addBoolFlag(FlagSkipErrorQuery, FlagSkipErrorQuerySort, false,
 		"skip the statement that the scanner failed to parse from within the xml file")
 	myBatis.addBoolFlag(FlagSkipErrorXml, FlagSkipErrorXmlSort, false, "skip the xml file that failed to parse")
+	myBatis.addBoolFlag(FlagShowFileContent, FlagShowFileContentSort, false, "show xml file")
 	myBatis.addRequiredFlag(FlagDirectory)
 }
 
@@ -58,5 +59,6 @@ func init() {
 	sqlFile.addStringFlag(FlagDbType, FlagDbTypeSort, EmptyDefaultValue, "database type")
 	sqlFile.addStringFlag(FlagInstanceName, FlagInstanceNameSort, EmptyDefaultValue, "instance name")
 	sqlFile.addStringFlag(FlagSchemaName, FlagSchemaNameSort, EmptyDefaultValue, "schema name")
+	sqlFile.addBoolFlag(FlagShowFileContent, FlagShowFileContentSort, false, "show sql file")
 	sqlFile.addRequiredFlag(FlagDirectory)
 }

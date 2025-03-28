@@ -33,6 +33,7 @@ var (
 				DbType:           dbTypeSqlFile,
 				InstName:         instNameSqlFile,
 				SchemaName:       schemaNameSqlFile,
+				ShowFileContent:  ShowFileContent,
 			}
 			log := logrus.WithField("scanner", "sqlFile")
 			client := scanner.NewSQLEClient(time.Second*time.Duration(rootCmdFlags.timeout), rootCmdFlags.host, rootCmdFlags.port).WithToken(rootCmdFlags.token).WithProject(rootCmdFlags.project)
@@ -62,6 +63,7 @@ func init() {
 	sqlFileCmd.Flags().StringVarP(sqlfile.StringFlagFn[scannerCmd.FlagDbType](&dbTypeSqlFile))
 	sqlFileCmd.Flags().StringVarP(sqlfile.StringFlagFn[scannerCmd.FlagInstanceName](&instNameSqlFile))
 	sqlFileCmd.Flags().StringVarP(sqlfile.StringFlagFn[scannerCmd.FlagSchemaName](&schemaNameSqlFile))
+	sqlFileCmd.Flags().BoolVarP(sqlfile.BoolFlagFn[scannerCmd.FlagShowFileContent](&ShowFileContent))
 
 	for _, requiredFlag := range sqlfile.RequiredFlags {
 		_ = sqlFileCmd.MarkFlagRequired(requiredFlag)

@@ -32,10 +32,12 @@ const (
 	FlagProject     string = "project"
 	FlagProjectSort string = "J"
 	// mybatis
-	FlagSkipErrorQuery     string = "skip-error-query"
-	FlagSkipErrorQuerySort string = "S"
-	FlagSkipErrorXml       string = "skip-error-xml"
-	FlagSkipErrorXmlSort   string = "X"
+	FlagSkipErrorQuery      string = "skip-error-query"
+	FlagSkipErrorQuerySort  string = "S"
+	FlagSkipErrorXml        string = "skip-error-xml"
+	FlagSkipErrorXmlSort    string = "X"
+	FlagShowFileContent     string = "show-file-content"
+	FlagShowFileContentSort string = "L"
 	// sqlfile
 	FlagSkipErrorSqlFile     string = "skip-error-sql-file"
 	FlagSkipErrorSqlFileSort string = "S"
