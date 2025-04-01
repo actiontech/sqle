@@ -3067,7 +3067,7 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "filter by business",
+                        "description": "filter by business // TODO This parameter is deprecated and will be removed soon.",
                         "name": "filter_by_business",
                         "in": "query"
                     },
@@ -3813,7 +3813,7 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "filter by business",
+                        "description": "filter by business // TODO This parameter is deprecated and will be removed soon.",
                         "name": "filter_by_business",
                         "in": "query"
                     },
@@ -5445,7 +5445,7 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "business",
+                        "description": "business // TODO This parameter is deprecated and will be removed soon.",
                         "name": "filter_business",
                         "in": "query"
                     },
@@ -10738,7 +10738,7 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "business",
+                        "description": "business // TODO This parameter is deprecated and will be removed soon.",
                         "name": "filter_business",
                         "in": "query"
                     },
@@ -16245,8 +16245,13 @@ var doc = `{
                     }
                 },
                 "business": {
+                    "description": "TODO This parameter is deprecated and will be removed soon.",
                     "type": "string",
                     "example": "test"
+                },
+                "environment": {
+                    "type": "string",
+                    "example": "prod"
                 },
                 "instance_id": {
                     "type": "string",
@@ -16330,6 +16335,7 @@ var doc = `{
                     }
                 },
                 "business": {
+                    "description": "TODO This parameter is deprecated and will be removed soon.",
                     "type": "string"
                 },
                 "create_time": {
@@ -16337,6 +16343,9 @@ var doc = `{
                     "type": "string"
                 },
                 "creator": {
+                    "type": "string"
+                },
+                "environment": {
                     "type": "string"
                 },
                 "instance_audit_plan_id": {

@@ -438,7 +438,9 @@ type AuditPlanTypeResBase struct {
 }
 
 type GetInstanceAuditPlansReqV1 struct {
+	// TODO This parameter is deprecated and will be removed soon.
 	FilterByBusiness      string `json:"filter_by_business" query:"filter_by_business"`
+	FilterByEnvironmentID uint   `json:"filter_by_environment_id" query:"filter_by_environment_id"`
 	FilterByDBType        string `json:"filter_by_db_type" query:"filter_by_db_type"`
 	FilterByInstanceID    string `json:"filter_by_instance_id" query:"filter_by_instance_id"`
 	FilterByAuditPlanType string `json:"filter_by_audit_plan_type" query:"filter_by_audit_plan_type"`
@@ -456,13 +458,15 @@ type GetInstanceAuditPlansResV1 struct {
 }
 
 type InstanceAuditPlanResV1 struct {
-	InstanceAuditPlanId uint                   `json:"instance_audit_plan_id"`
-	InstanceID          string                 `json:"instance_id"`
-	InstanceName        string                 `json:"instance_name"`
-	Business            string                 `json:"business"`
-	InstanceType        string                 `json:"instance_type"`
-	AuditPlanTypes      []AuditPlanTypeResBase `json:"audit_plan_types"`
-	ActiveStatus        string                 `json:"active_status" enums:"normal,disabled"`
+	InstanceAuditPlanId uint   `json:"instance_audit_plan_id"`
+	InstanceID          string `json:"instance_id"`
+	InstanceName        string `json:"instance_name"`
+	// TODO This parameter is deprecated and will be removed soon.
+	Business       string                 `json:"business"`
+	Environment    string                 `json:"environment"`
+	InstanceType   string                 `json:"instance_type"`
+	AuditPlanTypes []AuditPlanTypeResBase `json:"audit_plan_types"`
+	ActiveStatus   string                 `json:"active_status" enums:"normal,disabled"`
 	// TODO 采集状态
 	CreateTime string `json:"create_time"`
 	Creator    string `json:"creator"`
@@ -475,7 +479,7 @@ type InstanceAuditPlanResV1 struct {
 // @Tags instance_audit_plan
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
-// @Param filter_by_business query string false "filter by business"
+// @Param filter_by_business query string false "filter by business // TODO This parameter is deprecated and will be removed soon."
 // @Param filter_by_db_type query string false "filter by db type"
 // @Param filter_by_instance_id query string false "filter by instance id"
 // @Param filter_by_audit_plan_type query string false "filter instance audit plan type"
@@ -611,7 +615,9 @@ type GetInstanceAuditPlanDetailResV1 struct {
 }
 
 type InstanceAuditPlanDetailResV1 struct {
+	// TODO This parameter is deprecated and will be removed soon.
 	Business     string `json:"business"     example:"test"`
+	Environment  string `json:"environment" example:"prod"`
 	InstanceType string `json:"instance_type" example:"mysql" `
 	InstanceName string `json:"instance_name" example:"test_mysql"`
 	InstanceID   string `json:"instance_id" example:"instance_id"`
