@@ -50,7 +50,7 @@ type SqlManage struct {
 // @Param filter_status query string false "status" Enums(unhandled,solved,ignored,manual_audited,sent)
 // @Param filter_rule_name query string false "rule name"
 // @Param filter_db_type query string false "db type"
-// @Param filter_business query string false "business"
+// @Param filter_business query string false "business // TODO This parameter is deprecated and will be removed soon."
 // @Param filter_priority query string false "priority" Enums(high,low)
 // @Param fuzzy_search_endpoint query string false "fuzzy search endpoint"
 // @Param fuzzy_search_schema_name query string false "fuzzy search schema name"
