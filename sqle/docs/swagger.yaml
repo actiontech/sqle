@@ -3156,7 +3156,11 @@ definitions:
           $ref: '#/definitions/v1.AuditPlanRes'
         type: array
       business:
+        description: TODO This parameter is deprecated and will be removed soon.
         example: test
+        type: string
+      environment:
+        example: prod
         type: string
       instance_id:
         example: instance_id
@@ -3216,11 +3220,14 @@ definitions:
           $ref: '#/definitions/v1.AuditPlanTypeResBase'
         type: array
       business:
+        description: TODO This parameter is deprecated and will be removed soon.
         type: string
       create_time:
         description: TODO 采集状态
         type: string
       creator:
+        type: string
+      environment:
         type: string
       instance_audit_plan_id:
         type: integer
@@ -8514,7 +8521,8 @@ paths:
         name: project_name
         required: true
         type: string
-      - description: filter by business
+      - description: filter by business // TODO This parameter is deprecated and will
+          be removed soon.
         in: query
         name: filter_by_business
         type: string
@@ -9001,7 +9009,8 @@ paths:
         in: query
         name: filter_db_type
         type: string
-      - description: filter by business
+      - description: filter by business // TODO This parameter is deprecated and will
+          be removed soon.
         in: query
         name: filter_by_business
         type: string
@@ -10146,7 +10155,8 @@ paths:
         in: query
         name: filter_assignee
         type: string
-      - description: business
+      - description: business // TODO This parameter is deprecated and will be removed
+          soon.
         in: query
         name: filter_business
         type: string
@@ -13530,7 +13540,8 @@ paths:
         in: query
         name: filter_db_type
         type: string
-      - description: business
+      - description: business // TODO This parameter is deprecated and will be removed
+          soon.
         in: query
         name: filter_business
         type: string
