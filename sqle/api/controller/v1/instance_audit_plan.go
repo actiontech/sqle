@@ -439,13 +439,13 @@ type AuditPlanTypeResBase struct {
 
 type GetInstanceAuditPlansReqV1 struct {
 	// TODO This parameter is deprecated and will be removed soon.
-	FilterByBusiness      string `json:"filter_by_business" query:"filter_by_business"`
-	FilterByEnvironmentID uint   `json:"filter_by_environment_id" query:"filter_by_environment_id"`
-	FilterByDBType        string `json:"filter_by_db_type" query:"filter_by_db_type"`
-	FilterByInstanceID    string `json:"filter_by_instance_id" query:"filter_by_instance_id"`
-	FilterByAuditPlanType string `json:"filter_by_audit_plan_type" query:"filter_by_audit_plan_type"`
-	FilterByActiveStatus  string `json:"filter_by_active_status" query:"filter_by_active_status"`
-	FuzzySearch           string `json:"fuzzy_search" query:"fuzzy_search"`
+	FilterByBusiness       string `json:"filter_by_business" query:"filter_by_business"`
+	FilterByEnvironmentTag string `json:"filter_by_environment_tag" query:"filter_by_environment_tag"`
+	FilterByDBType         string `json:"filter_by_db_type" query:"filter_by_db_type"`
+	FilterByInstanceID     string `json:"filter_by_instance_id" query:"filter_by_instance_id"`
+	FilterByAuditPlanType  string `json:"filter_by_audit_plan_type" query:"filter_by_audit_plan_type"`
+	FilterByActiveStatus   string `json:"filter_by_active_status" query:"filter_by_active_status"`
+	FuzzySearch            string `json:"fuzzy_search" query:"fuzzy_search"`
 
 	PageIndex uint32 `json:"page_index" query:"page_index" valid:"required"`
 	PageSize  uint32 `json:"page_size" query:"page_size" valid:"required"`
@@ -472,6 +472,7 @@ type InstanceAuditPlanResV1 struct {
 	Creator    string `json:"creator"`
 }
 
+// @Deprecated
 // GetInstanceAuditPlans
 // @Summary 获取实例扫描任务列表
 // @Description get instance audit plan info list
@@ -480,6 +481,7 @@ type InstanceAuditPlanResV1 struct {
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
 // @Param filter_by_business query string false "filter by business // TODO This parameter is deprecated and will be removed soon."
+// @Param filter_by_environment_tag query string false "filter by environment tag"
 // @Param filter_by_db_type query string false "filter by db type"
 // @Param filter_by_instance_id query string false "filter by instance id"
 // @Param filter_by_audit_plan_type query string false "filter instance audit plan type"

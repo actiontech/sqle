@@ -33,6 +33,7 @@ type SqlManage struct {
 	Priority             string            `json:"priority"`
 }
 
+// @Deprecated
 // GetSqlManageList
 // @Summary 获取管控sql列表
 // @Description get sql manage list
@@ -51,6 +52,7 @@ type SqlManage struct {
 // @Param filter_rule_name query string false "rule name"
 // @Param filter_db_type query string false "db type"
 // @Param filter_business query string false "business // TODO This parameter is deprecated and will be removed soon."
+// @Param filter_by_environment_tag query string false "filter by environment tag"
 // @Param filter_priority query string false "priority" Enums(high,low)
 // @Param fuzzy_search_endpoint query string false "fuzzy search endpoint"
 // @Param fuzzy_search_schema_name query string false "fuzzy search schema name"
@@ -62,4 +64,33 @@ type SqlManage struct {
 // @Router /v2/projects/{project_name}/sql_manages [get]
 func GetSqlManageList(c echo.Context) error {
 	return getSqlManageList(c)
+}
+
+// ExportSqlManagesV2
+// @Summary 导出SQL管控
+// @Description export sql manage
+// @Id exportSqlManageV2
+// @Tags SqlManage
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Param fuzzy_search_sql_fingerprint query string false "fuzzy search sql fingerprint"
+// @Param filter_assignee query string false "assignee"
+// @Param filter_by_environment_tag query string false "filter by environment tag"
+// @Param filter_priority query string false "priority" Enums(high,low)
+// @Param filter_instance_id query string false "instance id"
+// @Param filter_source query string false "source" Enums(audit_plan,sql_audit_record)
+// @Param filter_audit_level query string false "audit level" Enums(normal,notice,warn,error)
+// @Param filter_last_audit_start_time_from query string false "last audit start time from"
+// @Param filter_last_audit_start_time_to query string false "last audit start time to"
+// @Param filter_status query string false "status" Enums(unhandled,solved,ignored,manual_audited)
+// @Param filter_db_type query string false "db type"
+// @Param filter_rule_name query string false "rule name"
+// @Param fuzzy_search_endpoint query string false "fuzzy search endpoint"
+// @Param fuzzy_search_schema_name query string false "fuzzy search schema name"
+// @Param sort_field query string false "sort field" Enums(first_appear_timestamp,last_receive_timestamp,fp_count)
+// @Param sort_order query string false "sort order" Enums(asc,desc)
+// @Success 200 {file} file "export sql manage"
+// @Router /v2/projects/{project_name}/sql_manages/exports [get]
+func ExportSqlManagesV2(c echo.Context) error {
+	return v1.ExportSqlManagesV1(c)
 }

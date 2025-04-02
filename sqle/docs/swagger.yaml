@@ -8513,6 +8513,7 @@ paths:
       - database_comparison
   /v1/projects/{project_name}/instance_audit_plans:
     get:
+      deprecated: true
       description: get instance audit plan info list
       operationId: getInstanceAuditPlansV1
       parameters:
@@ -8525,6 +8526,10 @@ paths:
           be removed soon.
         in: query
         name: filter_by_business
+        type: string
+      - description: filter by environment tag
+        in: query
+        name: filter_by_environment_tag
         type: string
       - description: filter by db type
         in: query
@@ -8997,6 +9002,7 @@ paths:
       - instance_audit_plan
   /v1/projects/{project_name}/instance_tips:
     get:
+      deprecated: true
       description: get instance tip list
       operationId: getInstanceTipListV1
       parameters:
@@ -10139,6 +10145,7 @@ paths:
       - SqlManage
   /v1/projects/{project_name}/sql_manages/exports:
     get:
+      deprecated: true
       description: export sql manage
       operationId: exportSqlManageV1
       parameters:
@@ -13451,6 +13458,48 @@ paths:
       summary: 增量同步SQL到扫描任务
       tags:
       - audit_plan
+  /v2/projects/{project_name}/instance_tips:
+    get:
+      description: get instance tip list
+      operationId: getInstanceTipListV2
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: filter db type
+        in: query
+        name: filter_db_type
+        type: string
+      - description: filter by environment tag
+        in: query
+        name: filter_by_environment_tag
+        type: string
+      - description: filter workflow template id
+        in: query
+        name: filter_workflow_template_id
+        type: string
+      - description: functional module
+        enum:
+        - create_audit_plan
+        - create_workflow
+        - sql_manage
+        - create_optimization
+        - create_pipeline
+        in: query
+        name: functional_module
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetInstanceTipsResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取实例提示列表
+      tags:
+      - instance
   /v2/projects/{project_name}/instances/{instance_name}/:
     get:
       description: get instance db
@@ -13478,6 +13527,7 @@ paths:
       - instance
   /v2/projects/{project_name}/sql_manages:
     get:
+      deprecated: true
       description: get sql manage list
       operationId: GetSqlManageListV2
       parameters:
@@ -13545,6 +13595,10 @@ paths:
         in: query
         name: filter_business
         type: string
+      - description: filter by environment tag
+        in: query
+        name: filter_by_environment_tag
+        type: string
       - description: priority
         enum:
         - high
@@ -13593,6 +13647,113 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取管控sql列表
+      tags:
+      - SqlManage
+  /v2/projects/{project_name}/sql_manages/exports:
+    get:
+      description: export sql manage
+      operationId: exportSqlManageV2
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: fuzzy search sql fingerprint
+        in: query
+        name: fuzzy_search_sql_fingerprint
+        type: string
+      - description: assignee
+        in: query
+        name: filter_assignee
+        type: string
+      - description: filter by environment tag
+        in: query
+        name: filter_by_environment_tag
+        type: string
+      - description: priority
+        enum:
+        - high
+        - low
+        in: query
+        name: filter_priority
+        type: string
+      - description: instance id
+        in: query
+        name: filter_instance_id
+        type: string
+      - description: source
+        enum:
+        - audit_plan
+        - sql_audit_record
+        in: query
+        name: filter_source
+        type: string
+      - description: audit level
+        enum:
+        - normal
+        - notice
+        - warn
+        - error
+        in: query
+        name: filter_audit_level
+        type: string
+      - description: last audit start time from
+        in: query
+        name: filter_last_audit_start_time_from
+        type: string
+      - description: last audit start time to
+        in: query
+        name: filter_last_audit_start_time_to
+        type: string
+      - description: status
+        enum:
+        - unhandled
+        - solved
+        - ignored
+        - manual_audited
+        in: query
+        name: filter_status
+        type: string
+      - description: db type
+        in: query
+        name: filter_db_type
+        type: string
+      - description: rule name
+        in: query
+        name: filter_rule_name
+        type: string
+      - description: fuzzy search endpoint
+        in: query
+        name: fuzzy_search_endpoint
+        type: string
+      - description: fuzzy search schema name
+        in: query
+        name: fuzzy_search_schema_name
+        type: string
+      - description: sort field
+        enum:
+        - first_appear_timestamp
+        - last_receive_timestamp
+        - fp_count
+        in: query
+        name: sort_field
+        type: string
+      - description: sort order
+        enum:
+        - asc
+        - desc
+        in: query
+        name: sort_order
+        type: string
+      responses:
+        "200":
+          description: export sql manage
+          schema:
+            type: file
+      security:
+      - ApiKeyAuth: []
+      summary: 导出SQL管控
       tags:
       - SqlManage
   /v2/projects/{project_name}/workflows:
@@ -14119,6 +14280,124 @@ paths:
       summary: 获取task相关的SQL执行计划和表元数据
       tags:
       - task
+  /v3/projects/{project_name}/sql_manages:
+    get:
+      description: get sql manage list
+      operationId: GetSqlManageListV3
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: fuzzy search sql fingerprint
+        in: query
+        name: fuzzy_search_sql_fingerprint
+        type: string
+      - description: assignee
+        in: query
+        name: filter_assignee
+        type: string
+      - description: instance id
+        in: query
+        name: filter_instance_id
+        type: string
+      - description: source
+        enum:
+        - audit_plan
+        - sql_audit_record
+        in: query
+        name: filter_source
+        type: string
+      - description: audit level
+        enum:
+        - normal
+        - notice
+        - warn
+        - error
+        in: query
+        name: filter_audit_level
+        type: string
+      - description: last audit start time from
+        in: query
+        name: filter_last_audit_start_time_from
+        type: string
+      - description: last audit start time to
+        in: query
+        name: filter_last_audit_start_time_to
+        type: string
+      - description: status
+        enum:
+        - unhandled
+        - solved
+        - ignored
+        - manual_audited
+        - sent
+        in: query
+        name: filter_status
+        type: string
+      - description: rule name
+        in: query
+        name: filter_rule_name
+        type: string
+      - description: db type
+        in: query
+        name: filter_db_type
+        type: string
+      - description: filter by environment tag
+        in: query
+        name: filter_by_environment_tag
+        type: string
+      - description: priority
+        enum:
+        - high
+        - low
+        in: query
+        name: filter_priority
+        type: string
+      - description: fuzzy search endpoint
+        in: query
+        name: fuzzy_search_endpoint
+        type: string
+      - description: fuzzy search schema name
+        in: query
+        name: fuzzy_search_schema_name
+        type: string
+      - description: sort field
+        enum:
+        - first_appear_timestamp
+        - last_receive_timestamp
+        - fp_count
+        in: query
+        name: sort_field
+        type: string
+      - description: sort order
+        enum:
+        - asc
+        - desc
+        in: query
+        name: sort_order
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        required: true
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v2.GetSqlManageListResp'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取管控sql列表
+      tags:
+      - SqlManage
   /v3/projects/{project_name}/workflows/complete:
     post:
       description: this api will directly change the work order status to finished
