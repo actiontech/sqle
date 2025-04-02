@@ -21,15 +21,15 @@ type GetSqlManageListReq struct {
 	FilterDbType                 *string `query:"filter_db_type" json:"filter_db_type,omitempty"`
 	FilterRuleName               *string `query:"filter_rule_name" json:"filter_rule_name,omitempty"`
 	// TODO This parameter is deprecated and will be removed soon.
-	FilterBusiness               *string `query:"filter_business" json:"filter_business,omitempty"`
-	FilterByEnvironmentID        *uint32  `query:"filter_by_environment_id" json:"filter_by_environment_id,omitempty"`
-	FilterPriority               *string `query:"filter_priority" json:"filter_priority,omitempty" enums:"high,low"`
-	FuzzySearchEndpoint          *string `query:"fuzzy_search_endpoint" json:"fuzzy_search_endpoint,omitempty"`
-	FuzzySearchSchemaName        *string `query:"fuzzy_search_schema_name" json:"fuzzy_search_schema_name,omitempty"`
-	SortField                    *string `query:"sort_field" json:"sort_field,omitempty" valid:"omitempty,oneof=first_appear_timestamp last_receive_timestamp fp_count" enums:"first_appear_timestamp,last_receive_timestamp,fp_count"`
-	SortOrder                    *string `query:"sort_order" json:"sort_order,omitempty" valid:"omitempty,oneof=asc desc" enums:"asc,desc"`
-	PageIndex                    uint32  `query:"page_index" valid:"required" json:"page_index"`
-	PageSize                     uint32  `query:"page_size" valid:"required" json:"page_size"`
+	FilterBusiness         *string `query:"filter_business" json:"filter_business,omitempty"`
+	FilterByEnvironmentTag *string `query:"filter_by_environment_tag" json:"filter_by_environment_tag,omitempty"`
+	FilterPriority         *string `query:"filter_priority" json:"filter_priority,omitempty" enums:"high,low"`
+	FuzzySearchEndpoint    *string `query:"fuzzy_search_endpoint" json:"fuzzy_search_endpoint,omitempty"`
+	FuzzySearchSchemaName  *string `query:"fuzzy_search_schema_name" json:"fuzzy_search_schema_name,omitempty"`
+	SortField              *string `query:"sort_field" json:"sort_field,omitempty" valid:"omitempty,oneof=first_appear_timestamp last_receive_timestamp fp_count" enums:"first_appear_timestamp,last_receive_timestamp,fp_count"`
+	SortOrder              *string `query:"sort_order" json:"sort_order,omitempty" valid:"omitempty,oneof=asc desc" enums:"asc,desc"`
+	PageIndex              uint32  `query:"page_index" valid:"required" json:"page_index"`
+	PageSize               uint32  `query:"page_size" valid:"required" json:"page_size"`
 }
 
 type GetSqlManageListResp struct {
@@ -169,11 +169,11 @@ func BatchUpdateSqlManage(c echo.Context) error {
 }
 
 type ExportSqlManagesReq struct {
-	FuzzySearchSqlFingerprint    *string `query:"fuzzy_search_sql_fingerprint" json:"fuzzy_search_sql_fingerprint,omitempty"`
-	FilterAssignee               *string `query:"filter_assignee" json:"filter_assignee,omitempty"`
+	FuzzySearchSqlFingerprint *string `query:"fuzzy_search_sql_fingerprint" json:"fuzzy_search_sql_fingerprint,omitempty"`
+	FilterAssignee            *string `query:"filter_assignee" json:"filter_assignee,omitempty"`
 	// TODO This parameter is deprecated and will be removed soon.
 	FilterBusiness               *string `query:"filter_business" json:"filter_business,omitempty"`
-	FilterByEnvironmentID        *uint32  `query:"filter_by_environment_id" json:"filter_by_environment_id,omitempty"`
+	FilterByEnvironmentTag       *string `query:"filter_by_environment_tag" json:"filter_by_environment_tag,omitempty"`
 	FilterInstanceID             *string `query:"filter_instance_id" json:"filter_instance_id,omitempty"`
 	FilterSource                 *string `query:"filter_source" json:"filter_source,omitempty"`
 	FilterAuditLevel             *string `query:"filter_audit_level" json:"filter_audit_level,omitempty"`
@@ -189,6 +189,7 @@ type ExportSqlManagesReq struct {
 	SortOrder                    *string `query:"sort_order" json:"sort_order,omitempty" valid:"omitempty,oneof=asc desc" enums:"asc,desc"`
 }
 
+// @Deprecated
 // ExportSqlManagesV1
 // @Summary 导出SQL管控
 // @Description export sql manage
