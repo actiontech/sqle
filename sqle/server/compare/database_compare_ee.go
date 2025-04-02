@@ -99,12 +99,8 @@ func (c *Compared) ExecDatabaseCompare(context context.Context, l *logrus.Entry)
 	// 等待两个调用完成
 	wg.Wait()
 
-	// 若任一调用出错则直接返回错误
-	if baseErr != nil {
-		return nil, baseErr
-	}
-	if comparedErr != nil {
-		return nil, comparedErr
+	if baseErr != nil || comparedErr != nil {
+		return nil, fmt.Errorf("base data source err: %v, compared data source err:  %v", baseErr, comparedErr)
 	}
 	// 数据库对象按名称字典序排序
 	schemaObjects := CompareDDL(baseRes, comparedRes, c.ObjInfos)
