@@ -173,7 +173,7 @@ type ExportSqlManagesReq struct {
 	FilterAssignee            *string `query:"filter_assignee" json:"filter_assignee,omitempty"`
 	// TODO This parameter is deprecated and will be removed soon.
 	FilterBusiness               *string `query:"filter_business" json:"filter_business,omitempty"`
-	FilterByEnvironmentTag       *string `query:"filter_by_environment_tag" json:"filter_by_environment_id,omitempty"`
+	FilterByEnvironmentTag       *string `query:"filter_by_environment_tag" json:"filter_by_environment_tag,omitempty"`
 	FilterInstanceID             *string `query:"filter_instance_id" json:"filter_instance_id,omitempty"`
 	FilterSource                 *string `query:"filter_source" json:"filter_source,omitempty"`
 	FilterAuditLevel             *string `query:"filter_audit_level" json:"filter_audit_level,omitempty"`
