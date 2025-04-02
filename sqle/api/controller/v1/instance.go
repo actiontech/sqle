@@ -340,7 +340,7 @@ type InstanceTipReqV1 struct {
 	FilterDBType string `json:"filter_db_type" query:"filter_db_type"`
 	// TODO This parameter is deprecated and will be removed soon.
 	FilterByBusiness         string `json:"filter_by_business" query:"filter_by_business"`
-	FilterByEnvironmentID    uint   `json:"filter_by_environment_id" query:"filter_by_environment_id"`
+	FilterByEnvironmentTag   string `json:"filter_by_environment_tag" query:"filter_by_environment_tag"`
 	FilterWorkflowTemplateId uint32 `json:"filter_workflow_template_id" query:"filter_workflow_template_id"`
 	FunctionalModule         string `json:"functional_module" query:"functional_module" enums:"create_audit_plan,create_workflow,sql_manage,create_optimization,create_pipeline" valid:"omitempty,oneof=create_audit_plan create_workflow sql_manage create_optimization create_pipeline"`
 }
@@ -362,6 +362,7 @@ type GetInstanceTipsResV1 struct {
 	Data []InstanceTipResV1 `json:"data"`
 }
 
+// @Deprecated
 // GetInstanceTips get instance tip list
 // @Summary 获取实例提示列表
 // @Description get instance tip list
