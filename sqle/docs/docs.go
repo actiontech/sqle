@@ -3057,6 +3057,7 @@ var doc = `{
                 ],
                 "summary": "获取实例扫描任务列表",
                 "operationId": "getInstanceAuditPlansV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -3069,6 +3070,12 @@ var doc = `{
                         "type": "string",
                         "description": "filter by business // TODO This parameter is deprecated and will be removed soon.",
                         "name": "filter_by_business",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter by environment tag",
+                        "name": "filter_by_environment_tag",
                         "in": "query"
                     },
                     {
@@ -3797,6 +3804,7 @@ var doc = `{
                 ],
                 "summary": "获取实例提示列表",
                 "operationId": "getInstanceTipListV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -5423,6 +5431,7 @@ var doc = `{
                 ],
                 "summary": "导出SQL管控",
                 "operationId": "exportSqlManageV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -10599,6 +10608,69 @@ var doc = `{
                 }
             }
         },
+        "/v2/projects/{project_name}/instance_tips": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get instance tip list",
+                "tags": [
+                    "instance"
+                ],
+                "summary": "获取实例提示列表",
+                "operationId": "getInstanceTipListV2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter db type",
+                        "name": "filter_db_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter by environment tag",
+                        "name": "filter_by_environment_tag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter workflow template id",
+                        "name": "filter_workflow_template_id",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "create_audit_plan",
+                            "create_workflow",
+                            "sql_manage",
+                            "create_optimization",
+                            "create_pipeline"
+                        ],
+                        "type": "string",
+                        "description": "functional module",
+                        "name": "functional_module",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetInstanceTipsResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/projects/{project_name}/instances/{instance_name}/": {
             "get": {
                 "security": [
@@ -10651,6 +10723,7 @@ var doc = `{
                 ],
                 "summary": "获取管控sql列表",
                 "operationId": "GetSqlManageListV2",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -10743,6 +10816,12 @@ var doc = `{
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "filter by environment tag",
+                        "name": "filter_by_environment_tag",
+                        "in": "query"
+                    },
+                    {
                         "enum": [
                             "high",
                             "low"
@@ -10805,6 +10884,163 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v2.GetSqlManageListResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/projects/{project_name}/sql_manages/exports": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "export sql manage",
+                "tags": [
+                    "SqlManage"
+                ],
+                "summary": "导出SQL管控",
+                "operationId": "exportSqlManageV2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy search sql fingerprint",
+                        "name": "fuzzy_search_sql_fingerprint",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "assignee",
+                        "name": "filter_assignee",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter by environment tag",
+                        "name": "filter_by_environment_tag",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "high",
+                            "low"
+                        ],
+                        "type": "string",
+                        "description": "priority",
+                        "name": "filter_priority",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance id",
+                        "name": "filter_instance_id",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "audit_plan",
+                            "sql_audit_record"
+                        ],
+                        "type": "string",
+                        "description": "source",
+                        "name": "filter_source",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "normal",
+                            "notice",
+                            "warn",
+                            "error"
+                        ],
+                        "type": "string",
+                        "description": "audit level",
+                        "name": "filter_audit_level",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "last audit start time from",
+                        "name": "filter_last_audit_start_time_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "last audit start time to",
+                        "name": "filter_last_audit_start_time_to",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "unhandled",
+                            "solved",
+                            "ignored",
+                            "manual_audited"
+                        ],
+                        "type": "string",
+                        "description": "status",
+                        "name": "filter_status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "db type",
+                        "name": "filter_db_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "rule name",
+                        "name": "filter_rule_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy search endpoint",
+                        "name": "fuzzy_search_endpoint",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy search schema name",
+                        "name": "fuzzy_search_schema_name",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "first_appear_timestamp",
+                            "last_receive_timestamp",
+                            "fp_count"
+                        ],
+                        "type": "string",
+                        "description": "sort field",
+                        "name": "sort_field",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "description": "sort order",
+                        "name": "sort_order",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "export sql manage",
+                        "schema": {
+                            "type": "file"
                         }
                     }
                 }
@@ -11607,6 +11843,178 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v2.GetTaskAnalysisDataResV2"
+                        }
+                    }
+                }
+            }
+        },
+        "/v3/projects/{project_name}/sql_manages": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get sql manage list",
+                "tags": [
+                    "SqlManage"
+                ],
+                "summary": "获取管控sql列表",
+                "operationId": "GetSqlManageListV3",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy search sql fingerprint",
+                        "name": "fuzzy_search_sql_fingerprint",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "assignee",
+                        "name": "filter_assignee",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance id",
+                        "name": "filter_instance_id",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "audit_plan",
+                            "sql_audit_record"
+                        ],
+                        "type": "string",
+                        "description": "source",
+                        "name": "filter_source",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "normal",
+                            "notice",
+                            "warn",
+                            "error"
+                        ],
+                        "type": "string",
+                        "description": "audit level",
+                        "name": "filter_audit_level",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "last audit start time from",
+                        "name": "filter_last_audit_start_time_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "last audit start time to",
+                        "name": "filter_last_audit_start_time_to",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "unhandled",
+                            "solved",
+                            "ignored",
+                            "manual_audited",
+                            "sent"
+                        ],
+                        "type": "string",
+                        "description": "status",
+                        "name": "filter_status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "rule name",
+                        "name": "filter_rule_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "db type",
+                        "name": "filter_db_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter by environment tag",
+                        "name": "filter_by_environment_tag",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "high",
+                            "low"
+                        ],
+                        "type": "string",
+                        "description": "priority",
+                        "name": "filter_priority",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy search endpoint",
+                        "name": "fuzzy_search_endpoint",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy search schema name",
+                        "name": "fuzzy_search_schema_name",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "first_appear_timestamp",
+                            "last_receive_timestamp",
+                            "fp_count"
+                        ],
+                        "type": "string",
+                        "description": "sort field",
+                        "name": "sort_field",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "description": "sort order",
+                        "name": "sort_order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v2.GetSqlManageListResp"
                         }
                     }
                 }
