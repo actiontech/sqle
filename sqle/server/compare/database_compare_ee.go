@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/actiontech/sqle/sqle/common"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
@@ -61,23 +62,45 @@ func (c *Compared) ExecDatabaseCompare(context context.Context, l *logrus.Entry)
 		}
 	}
 
-	basePlugin, err := common.NewDriverManagerWithoutAudit(l, c.BaseInstance, "")
-	if err != nil {
-		return nil, err
-	}
-	defer basePlugin.Close(context)
-	baseRes, err := basePlugin.GetDatabaseObjectDDL(context, baseInfos)
-	if err != nil {
-		return nil, err
-	}
-	comparedPlugin, err := common.NewDriverManagerWithoutAudit(l, c.ComparedInstance, "")
-	if err != nil {
-		return nil, err
-	}
-	defer comparedPlugin.Close(context)
-	comparedRes, err := comparedPlugin.GetDatabaseObjectDDL(context, comparedInfos)
-	if err != nil {
-		return nil, err
+	var (
+		baseRes     []*driverV2.DatabaseSchemaObjectResult
+		comparedRes []*driverV2.DatabaseSchemaObjectResult
+		baseErr     error
+		comparedErr error
+	)
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	// 并发调用 base 实例
+	go func() {
+		defer wg.Done()
+		basePlugin, err := common.NewDriverManagerWithoutAudit(l, c.BaseInstance, "")
+		if err != nil {
+			baseErr = err
+			return
+		}
+		defer basePlugin.Close(context)
+		baseRes, baseErr = basePlugin.GetDatabaseObjectDDL(context, baseInfos)
+	}()
+
+	// 并发调用 compared 实例
+	go func() {
+		defer wg.Done()
+		comparedPlugin, err := common.NewDriverManagerWithoutAudit(l, c.ComparedInstance, "")
+		if err != nil {
+			comparedErr = err
+			return
+		}
+		defer comparedPlugin.Close(context)
+		comparedRes, comparedErr = comparedPlugin.GetDatabaseObjectDDL(context, comparedInfos)
+	}()
+
+	// 等待两个调用完成
+	wg.Wait()
+
+	if baseErr != nil || comparedErr != nil {
+		return nil, fmt.Errorf("base data source err: %v, compared data source err:  %v", baseErr, comparedErr)
 	}
 	// 数据库对象按名称字典序排序
 	schemaObjects := CompareDDL(baseRes, comparedRes, c.ObjInfos)
@@ -99,7 +122,7 @@ func (c *Compared) ExecDatabaseCompare(context context.Context, l *logrus.Entry)
 		return compI < compJ // 其次按 ComparisonSchemaName 排序
 	})
 
-	return schemaObjects, err
+	return schemaObjects, nil
 }
 
 // 根据对象名称对比基准数据源和对比数据源对象的差异
