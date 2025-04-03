@@ -628,6 +628,50 @@ var doc = `{
                 }
             }
         },
+        "/v1/configurations/ssh_public_key": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get ssh public key",
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "获取SSH公钥",
+                "operationId": "getSSHPublicKey",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.SSHPublicKeyInfo"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "gen ssh key",
+                "tags": [
+                    "configuration"
+                ],
+                "summary": "生成SSH密钥对",
+                "operationId": "genSSHPublicKey",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/configurations/system_variables": {
             "get": {
                 "security": [
@@ -17768,6 +17812,14 @@ var doc = `{
                     }
                 },
                 "sql_statement": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.SSHPublicKeyInfo": {
+            "type": "object",
+            "properties": {
+                "public_key": {
                     "type": "string"
                 }
             }
