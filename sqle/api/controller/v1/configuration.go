@@ -558,18 +558,24 @@ type SSHPublicKeyInfo struct {
 // @Tags configuration
 // @Id getSSHPublicKey
 // @Security ApiKeyAuth
-// @Success 200 {object} v1.SSHPublicKeyInfo
+// @Success 200 {object} v1.SSHPublicKeyInfoV1Rsp
 // @Router /v1/configurations/ssh_key [get]
 func GetSSHPublicKey(c echo.Context) error {
 	storage := model.GetStorage()
 	systemVariables, exists, err := storage.GetSystemVariableByKey(model.SystemVariableSSHPrimaryKey)
 	if err != nil {
-		c.Logger().Errorf("failed to get ssh public key: %v", err)
 		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exists {
+		return c.JSON(http.StatusOK, SSHPublicKeyInfoV1Rsp{
+			BaseRes: controller.NewBaseReq(nil),
+			Data: SSHPublicKeyInfo{
+				PublicKey: "",
+			},
+		})
 	}
 	privateKey, err := ssh.ParseRawPrivateKey([]byte(systemVariables.Value))
 	if err != nil {
-		c.Logger().Errorf("failed to parse SSH private key: %v", err)
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	rsaPrivateKey, ok := privateKey.(*rsa.PrivateKey)
@@ -584,12 +590,7 @@ func GetSSHPublicKey(c echo.Context) error {
 	return c.JSON(http.StatusOK,
 		SSHPublicKeyInfoV1Rsp{
 			Data: SSHPublicKeyInfo{
-				PublicKey: func() string {
-					if !exists {
-						return ""
-					}
-					return publicKeyStr
-				}(),
+				PublicKey: publicKeyStr,
 			},
 		})
 }
