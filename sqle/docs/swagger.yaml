@@ -6949,7 +6949,7 @@ paths:
       summary: 获取生成 sqle license需要的的信息
       tags:
       - configuration
-  /v1/configurations/ssh_public_key:
+  /v1/configurations/ssh_key:
     get:
       description: get ssh public key
       operationId: getSSHPublicKey
@@ -6963,6 +6963,7 @@ paths:
       summary: 获取SSH公钥
       tags:
       - configuration
+  /v1/configurations/ssh_public_key:
     post:
       description: gen ssh key
       operationId: genSSHPublicKey

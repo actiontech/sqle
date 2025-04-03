@@ -628,7 +628,7 @@ var doc = `{
                 }
             }
         },
-        "/v1/configurations/ssh_public_key": {
+        "/v1/configurations/ssh_key": {
             "get": {
                 "security": [
                     {
@@ -649,7 +649,9 @@ var doc = `{
                         }
                     }
                 }
-            },
+            }
+        },
+        "/v1/configurations/ssh_public_key": {
             "post": {
                 "security": [
                     {
