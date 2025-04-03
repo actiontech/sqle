@@ -542,7 +542,7 @@ func ListGtiBranchs(ctx context.Context, url, username, password string) ([]stri
 	branchs := make([]string, 0)
 	for _, ref := range refs {
 		if ref.Name().IsBranch() { // 只获取分支
-			branchs = append(branchs, string(ref.Name().Short()))
+			branchs = append(branchs, ref.Name().Short())
 		}
 	}
 	return branchs, nil
