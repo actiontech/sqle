@@ -543,6 +543,11 @@ func GetScheduledTaskDefaultOptionV1(c echo.Context) error {
 	return getScheduledTaskDefaultOptionV1(c)
 }
 
+type SSHPublicKeyInfoV1Rsp struct {
+	controller.BaseRes
+	Data SSHPublicKeyInfo `json:"data"`
+}
+
 type SSHPublicKeyInfo struct {
 	PublicKey string `json:"public_key"`
 }
@@ -576,14 +581,17 @@ func GetSSHPublicKey(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	return c.JSON(http.StatusOK, &SSHPublicKeyInfo{
-		PublicKey: func() string {
-			if !exists {
-				return ""
-			}
-			return publicKeyStr
-		}(),
-	})
+	return c.JSON(http.StatusOK,
+		SSHPublicKeyInfoV1Rsp{
+			Data: SSHPublicKeyInfo{
+				PublicKey: func() string {
+					if !exists {
+						return ""
+					}
+					return publicKeyStr
+				}(),
+			},
+		})
 }
 
 // GenSSHKey
