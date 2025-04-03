@@ -4202,6 +4202,11 @@ definitions:
       sql_statement:
         type: string
     type: object
+  v1.SSHPublicKeyInfo:
+    properties:
+      public_key:
+        type: string
+    type: object
   v1.ScheduleTaskDefaultOption:
     properties:
       default_selector:
@@ -6949,6 +6954,33 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取生成 sqle license需要的的信息
+      tags:
+      - configuration
+  /v1/configurations/ssh_key:
+    get:
+      description: get ssh public key
+      operationId: getSSHPublicKey
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.SSHPublicKeyInfo'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取SSH公钥
+      tags:
+      - configuration
+    post:
+      description: gen ssh key
+      operationId: genSSHPublicKey
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 生成SSH密钥对
       tags:
       - configuration
   /v1/configurations/system_variables:
