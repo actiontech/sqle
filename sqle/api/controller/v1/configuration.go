@@ -10,15 +10,15 @@ import (
 
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/utils"
+	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/storer"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/driver"
 
 	"github.com/actiontech/sqle/sqle/model"
 
-	goGit "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	goGitTransport "github.com/go-git/go-git/v5/plumbing/transport/http"
 
@@ -450,33 +450,7 @@ func testGitConnectionV1(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, request); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	repository, _, cleanup, err := CloneGitRepository(c.Request().Context(), request.GitHttpUrl, request.GitUserName, request.GitUserPassword, "")
-	if err != nil {
-		return c.JSON(http.StatusOK, &TestGitConnectionResV1{
-			BaseRes: controller.NewBaseReq(nil),
-			Data: TestGitConnectionResDataV1{
-				IsConnectedSuccess: false,
-				ErrorMessage:       err.Error(),
-			},
-		})
-	}
-	defer func() {
-		cleanupError := cleanup()
-		if cleanupError != nil {
-			c.Logger().Errorf("cleanup git repository failed, err: %v", cleanupError)
-		}
-	}()
-	references, err := repository.References()
-	if err != nil {
-		return c.JSON(http.StatusOK, &TestGitConnectionResV1{
-			BaseRes: controller.NewBaseReq(nil),
-			Data: TestGitConnectionResDataV1{
-				IsConnectedSuccess: false,
-				ErrorMessage:       err.Error(),
-			},
-		})
-	}
-	branches, err := getBranches(references)
+	branches, err := ListGitBranches(c.Request().Context(), request.GitHttpUrl, request.GitUserName, request.GitUserPassword)
 	if err != nil {
 		return c.JSON(http.StatusOK, &TestGitConnectionResV1{
 			BaseRes: controller.NewBaseReq(nil),
@@ -495,27 +469,10 @@ func testGitConnectionV1(c echo.Context) error {
 	})
 }
 
-func CloneGitRepository(ctx context.Context, url, username, password, branch string) (repository *goGit.Repository, directory string, cleanup func() error, err error) {
-	// 创建一个临时目录用于存放克隆的仓库
-	directory, err = os.MkdirTemp("./", "git-repo-")
-	if err != nil {
-		return nil, "", nil, err
-	}
-	// 定义清理函数，用于删除临时目录
-	cleanup = func() error {
-		return os.RemoveAll(directory)
-	}
-
-	cloneOpts := &goGit.CloneOptions{
-		URL: url,
-	}
-	// TODO use branch name to clone single branch on the repo
-	// if branch != "" {
-	// cloneOpts.ReferenceName = plumbing.ReferenceName(branch)
-	// }
+func getGitAuthMethod(url, username, password string) (transport.AuthMethod, error) {
 	ep, err := transport.NewEndpoint(url)
 	if err != nil {
-		return nil, "", nil, err
+		return nil, err
 	}
 
 	switch {
@@ -530,10 +487,10 @@ func CloneGitRepository(ctx context.Context, url, username, password, branch str
 		//       github:
 		// 			oauth2/token
 
-		cloneOpts.Auth = &goGitTransport.BasicAuth{
+		return &goGitTransport.BasicAuth{
 			Username: username,
 			Password: password,
-		}
+		}, nil
 	case ep.Protocol == "ssh":
 		// ssh 协议
 		//     	前置条件：
@@ -544,26 +501,78 @@ func CloneGitRepository(ctx context.Context, url, username, password, branch str
 		storage := model.GetStorage()
 		privateKey, exists, err := storage.GetSystemVariableByKey(model.SystemVariableSSHPrimaryKey)
 		if err != nil {
-			return nil, directory, cleanup, err
+			return nil, err
 		}
 		if !exists {
-			return nil, directory, cleanup, errors.New(errors.DataNotExist, fmt.Errorf("git ssh private key not found"))
+			return nil, errors.New(errors.DataNotExist, fmt.Errorf("git ssh private key not found"))
 		}
 		publicKeys, err := sshTransport.NewPublicKeys("git", []byte(privateKey.Value), "")
 		if err != nil {
-			return nil, directory, cleanup, fmt.Errorf("failed to load SSH key: %w", err)
+			return nil, fmt.Errorf("failed to load SSH key: %w", err)
 		}
 		publicKeys.HostKeyCallback = ssh.InsecureIgnoreHostKey()
-		cloneOpts.Auth = publicKeys
+		return publicKeys, nil
 	case ep.Protocol == "git":
 		// git协议
 		// 不需要校验权限
+		return nil, nil
 	// case  IsFile TODO
 	default:
-		return nil, "", cleanup, errors.New(errors.DataInvalid, fmt.Errorf("url is not a git url"))
+		return nil, errors.New(errors.DataInvalid, fmt.Errorf("url is not a git url"))
+	}
+}
+
+func ListGitBranches(ctx context.Context, url, username, password string) ([]string, error) {
+	auth, err := getGitAuthMethod(url, username, password)
+	if err != nil {
+		return nil, err
 	}
 
-	repository, err = goGit.PlainCloneContext(ctx, directory, false, cloneOpts)
+	// 创建远程对象
+	remote := git.NewRemote(nil, &config.RemoteConfig{URLs: []string{url}})
+
+	// 获取远程引用（包括分支和标签）
+	refs, err := remote.List(&git.ListOptions{
+		Auth: auth,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	branchs := make([]string, 0)
+	for _, ref := range refs {
+		if ref.Name().IsBranch() { // 只获取分支
+			branchs = append(branchs, ref.Name().Short())
+		}
+	}
+	return branchs, nil
+}
+
+func CloneGitRepository(ctx context.Context, url, username, password, branch string) (repository *git.Repository, directory string, cleanup func() error, err error) {
+	// 创建一个临时目录用于存放克隆的仓库
+	directory, err = os.MkdirTemp("./", "git-repo-")
+	if err != nil {
+		return nil, "", nil, err
+	}
+	// 定义清理函数，用于删除临时目录
+	cleanup = func() error {
+		return os.RemoveAll(directory)
+	}
+
+	cloneOpts := &git.CloneOptions{
+		URL: url,
+	}
+	if branch != "" {
+		cloneOpts.ReferenceName = plumbing.ReferenceName(branch)
+	}
+
+	auth, err := getGitAuthMethod(url, username, password)
+	if err != nil {
+		return nil, "", cleanup, err
+	}
+	cloneOpts.Auth = auth
+
+	repository, err = git.PlainCloneContext(ctx, directory, false, cloneOpts)
 	if err != nil {
 		return nil, directory, cleanup, err
 	}
@@ -571,43 +580,10 @@ func CloneGitRepository(ctx context.Context, url, username, password, branch str
 	return repository, directory, cleanup, nil
 }
 
-func getBranches(references storer.ReferenceIter) ([]string, error) {
-	branches := make([]string, 0)
-	err := references.ForEach(func(ref *plumbing.Reference) error {
-		if ref.Type() == plumbing.HashReference {
-			branches = append(branches, ref.Name().Short())
-		}
-		return nil
-	})
-	if err != nil {
-		return branches, err
-	}
-	if len(branches) < 2 {
-		return branches, nil
-	}
-	// 第一个元素确认了默认分支名，需要把可以checkout的默认分支提到第一个元素
-	defaultBranch := "origin/" + branches[0]
-	defaultBranchIndex := -1
-	for i, branch := range branches {
-		if branch == defaultBranch {
-			defaultBranchIndex = i
-			break
-		}
-	}
-	if defaultBranchIndex == -1 {
-		return branches, nil
-	}
-	//1. 根据第一个元素，找到其余元素中的默认分支
-	//2. 如果找到，将找到的默认分支名移到第一个元素，并且删除原来的第一个元素。
-	branches[0], branches[defaultBranchIndex] = branches[defaultBranchIndex], branches[0]
-	branches = append(branches[:defaultBranchIndex], branches[defaultBranchIndex+1:]...)
-	return branches, nil
-}
-
 type TestGitConnectionReqV1 struct {
 	GitHttpUrl      string `json:"git_http_url" form:"git_http_url" valid:"required"`
-	GitUserName     string `json:"git_user_name" form:"git_user_name" valid:"required"`
-	GitUserPassword string `json:"git_user_password" form:"git_user_password" valid:"required"`
+	GitUserName     string `json:"git_user_name" form:"git_user_name"`
+	GitUserPassword string `json:"git_user_password" form:"git_user_password"`
 }
 
 type TestGitConnectionResV1 struct {
