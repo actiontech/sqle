@@ -14,8 +14,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-git/go-git/v5/plumbing"
-
 	javaParser "github.com/actiontech/java-sql-extractor/parser"
 	xmlParser "github.com/actiontech/mybatis-mapper-2-sql"
 	"github.com/actiontech/sqle/sqle/api/controller"
@@ -28,7 +26,6 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/utils"
-	goGit "github.com/go-git/go-git/v5"
 	"github.com/labstack/echo/v4"
 )
 
@@ -442,7 +439,7 @@ func parseXMLsWithFilePath(xmlContents []xmlParser.XmlFile) ([]SQLFromXML, error
 // todo 此处跳过了不支持的编码格式文件
 func getSqlsFromGit(c echo.Context) (sqlsFromSQLFiles, sqlsFromJavaFiles []SQLsFromSQLFile, sqlsFromXMLs []SQLFromXML, exist bool, err error) {
 	// clone from git
-	repository, directory, cleanup, err := CloneGitRepository(c.Request().Context(), c.FormValue(GitHttpURL), c.FormValue(GitUserName), c.FormValue(GitPassword), c.FormValue(GitBranchName))
+	_, directory, cleanup, err := CloneGitRepository(c.Request().Context(), c.FormValue(GitHttpURL), c.FormValue(GitUserName), c.FormValue(GitPassword), c.FormValue(GitBranchName))
 	if err != nil {
 		return nil, nil, nil, false, err
 	}
@@ -450,20 +447,6 @@ func getSqlsFromGit(c echo.Context) (sqlsFromSQLFiles, sqlsFromJavaFiles []SQLsF
 		cleanupError := cleanup()
 		c.Logger().Errorf("cleanup git repository failed, err: %v", cleanupError)
 	}()
-	workTree, err := repository.Worktree()
-	if err != nil {
-		return nil, nil, nil, false, err
-	}
-	branch := c.FormValue(GitBranchName)
-	if branch != "" {
-		err = workTree.Checkout(&goGit.CheckoutOptions{
-			Branch: plumbing.NewRemoteReferenceName("", branch),
-			Create: false,
-		})
-		if err != nil {
-			return nil, nil, nil, false, err
-		}
-	}
 	l := log.NewEntry().WithField("function", "getSqlsFromGit")
 	var xmlContents []xmlParser.XmlFile
 	// traverse the repository, parse and put SQL into sqlBuffer

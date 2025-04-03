@@ -645,7 +645,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.SSHPublicKeyInfo"
+                            "$ref": "#/definitions/v1.SSHPublicKeyInfoV1Rsp"
                         }
                     }
                 }
@@ -18238,6 +18238,23 @@ var doc = `{
             "properties": {
                 "public_key": {
                     "type": "string"
+                }
+            }
+        },
+        "v1.SSHPublicKeyInfoV1Rsp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.SSHPublicKeyInfo"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },

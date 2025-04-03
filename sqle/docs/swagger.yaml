@@ -4207,6 +4207,18 @@ definitions:
       public_key:
         type: string
     type: object
+  v1.SSHPublicKeyInfoV1Rsp:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.SSHPublicKeyInfo'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.ScheduleTaskDefaultOption:
     properties:
       default_selector:
@@ -6964,7 +6976,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.SSHPublicKeyInfo'
+            $ref: '#/definitions/v1.SSHPublicKeyInfoV1Rsp'
       security:
       - ApiKeyAuth: []
       summary: 获取SSH公钥
