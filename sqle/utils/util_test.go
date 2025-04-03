@@ -1,7 +1,10 @@
 package utils
 
 import (
+	"context"
+	"fmt"
 	"math/rand"
+	"os"
 	"reflect"
 	"strconv"
 	"testing"
@@ -414,4 +417,53 @@ func TestGenerateRandomString(t *testing.T) {
 
 	// If we've gone through all iterations without finding a duplicate, log a success message.
 	t.Logf("All %d generated strings were unique.", iterations)
+}
+
+// 定义测试仓库地址（请替换为可用的 Git 仓库）
+var (
+	httpRepo  = "http://10.186.18.21/provision/provision.git"    // HTTP 仓库地址（替换为真实地址）
+	httpsRepo = "https://github.com/actiontech/sqle.git"         // HTTPS 仓库地址
+	sshRepo   = "git@10.186.18.21:provision/provision.git"       // SSH 仓库地址
+	gitRepo   = "git://10.186.60.5/sqle/java_for_sqle_audit.git" // GIT 协议地址
+	username  = "yangzhongjiao"
+	password  = "Asd@5582136dsa"
+)
+
+// TestCloneGitRepositoryNew 测试 Git 仓库克隆
+func TestCloneGitRepositoryNew(t *testing.T) {
+	tests := []struct {
+		name     string
+		url      string
+		username string
+		password string
+	}{
+		// {"Clone via HTTP", httpRepo, username, password},
+		// {"Clone via HTTPS", httpsRepo, "", ""},
+		// {"Clone via SSH", sshRepo, "", ""}, // SSH 认证通过私钥
+		{"Clone via GIT", gitRepo, "", ""}, // GIT 协议不需要认证
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo, dir, cleanup, err := CloneGitRepositoryNew(context.TODO(), tt.url, tt.username, tt.password)
+			if err != nil {
+				t.Fatalf("Failed to clone repository: %v", err)
+			}
+
+			// 断言克隆的目录不为空
+			assert.NotEmpty(t, dir, "Cloned directory should not be empty")
+			assert.NotNil(t, repo, "Repository should not be nil")
+
+			// 输出日志
+			fmt.Println("Cloned repository at:", dir)
+
+			// 执行 cleanup
+			if cleanup != nil {
+				err := cleanup()
+				assert.NoError(t, err, "Cleanup should not return an error")
+				_, statErr := os.Stat(dir)
+				assert.True(t, os.IsNotExist(statErr), "Directory should be deleted after cleanup")
+			}
+		})
+	}
 }
