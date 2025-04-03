@@ -1,11 +1,14 @@
 package v1
 
 import (
+	"context"
 	"crypto/rsa"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 
+	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/storer"
@@ -15,6 +18,11 @@ import (
 
 	"github.com/actiontech/sqle/sqle/model"
 
+	goGit "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/transport"
+	goGitTransport "github.com/go-git/go-git/v5/plumbing/transport/http"
+
+	sshTransport "github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/ssh"
 )
@@ -442,7 +450,7 @@ func testGitConnectionV1(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, request); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	repository, _, cleanup, err := utils.CloneGitRepository(c.Request().Context(), request.GitHttpUrl, request.GitUserName, request.GitUserPassword)
+	repository, _, cleanup, err := CloneGitRepository(c.Request().Context(), request.GitHttpUrl, request.GitUserName, request.GitUserPassword, "")
 	if err != nil {
 		return c.JSON(http.StatusOK, &TestGitConnectionResV1{
 			BaseRes: controller.NewBaseReq(nil),
@@ -469,6 +477,15 @@ func testGitConnectionV1(c echo.Context) error {
 		})
 	}
 	branches, err := getBranches(references)
+	if err != nil {
+		return c.JSON(http.StatusOK, &TestGitConnectionResV1{
+			BaseRes: controller.NewBaseReq(nil),
+			Data: TestGitConnectionResDataV1{
+				IsConnectedSuccess: false,
+				ErrorMessage:       err.Error(),
+			},
+		})
+	}
 	return c.JSON(http.StatusOK, &TestGitConnectionResV1{
 		BaseRes: controller.NewBaseReq(nil),
 		Data: TestGitConnectionResDataV1{
@@ -476,6 +493,82 @@ func testGitConnectionV1(c echo.Context) error {
 			Branches:           branches,
 		},
 	})
+}
+
+func CloneGitRepository(ctx context.Context, url, username, password, branch string) (repository *goGit.Repository, directory string, cleanup func() error, err error) {
+	// 创建一个临时目录用于存放克隆的仓库
+	directory, err = os.MkdirTemp("./", "git-repo-")
+	if err != nil {
+		return nil, "", nil, err
+	}
+	// 定义清理函数，用于删除临时目录
+	cleanup = func() error {
+		return os.RemoveAll(directory)
+	}
+
+	cloneOpts := &goGit.CloneOptions{
+		URL: url,
+	}
+	// TODO use branch name to clone single branch on the repo
+	// if branch != "" {
+	// cloneOpts.ReferenceName = plumbing.ReferenceName(branch)
+	// }
+	ep, err := transport.NewEndpoint(url)
+	if err != nil {
+		return nil, "", nil, err
+	}
+
+	switch {
+	case ep.Protocol == "http" || ep.Protocol == "https":
+		// http协议下：
+		//   1. 账号密码登录
+		//       username/password
+		//   2. token 方式
+		//    对于 GitLab/github，用户名可以是任意非空字符串,建议填oauth2
+		//       gitlab：
+		// 			oauth2/token
+		//       github:
+		// 			oauth2/token
+
+		cloneOpts.Auth = &goGitTransport.BasicAuth{
+			Username: username,
+			Password: password,
+		}
+	case ep.Protocol == "ssh":
+		// ssh 协议
+		//     	前置条件：
+		// 			1. 生成密钥
+		// 			2. 查看公钥
+		// 			3. 仓库配置密钥
+		//             不支持该步骤，用户手动执行
+		storage := model.GetStorage()
+		privateKey, exists, err := storage.GetSystemVariableByKey(model.SystemVariableSSHPrimaryKey)
+		if err != nil {
+			return nil, directory, cleanup, err
+		}
+		if !exists {
+			return nil, directory, cleanup, errors.New(errors.DataNotExist, fmt.Errorf("git ssh private key not found"))
+		}
+		publicKeys, err := sshTransport.NewPublicKeys("git", []byte(privateKey.Value), "")
+		if err != nil {
+			return nil, directory, cleanup, fmt.Errorf("failed to load SSH key: %w", err)
+		}
+		publicKeys.HostKeyCallback = ssh.InsecureIgnoreHostKey()
+		cloneOpts.Auth = publicKeys
+	case ep.Protocol == "git":
+		// git协议
+		// 不需要校验权限
+	// case  IsFile TODO
+	default:
+		return nil, "", cleanup, errors.New(errors.DataInvalid, fmt.Errorf("url is not a git url"))
+	}
+
+	repository, err = goGit.PlainCloneContext(ctx, directory, false, cloneOpts)
+	if err != nil {
+		return nil, directory, cleanup, err
+	}
+
+	return repository, directory, cleanup, nil
 }
 
 func getBranches(references storer.ReferenceIter) ([]string, error) {
@@ -558,18 +651,24 @@ type SSHPublicKeyInfo struct {
 // @Tags configuration
 // @Id getSSHPublicKey
 // @Security ApiKeyAuth
-// @Success 200 {object} v1.SSHPublicKeyInfo
+// @Success 200 {object} v1.SSHPublicKeyInfoV1Rsp
 // @Router /v1/configurations/ssh_key [get]
 func GetSSHPublicKey(c echo.Context) error {
 	storage := model.GetStorage()
 	systemVariables, exists, err := storage.GetSystemVariableByKey(model.SystemVariableSSHPrimaryKey)
 	if err != nil {
-		c.Logger().Errorf("failed to get ssh public key: %v", err)
 		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exists {
+		return c.JSON(http.StatusOK, SSHPublicKeyInfoV1Rsp{
+			BaseRes: controller.NewBaseReq(nil),
+			Data: SSHPublicKeyInfo{
+				PublicKey: "",
+			},
+		})
 	}
 	privateKey, err := ssh.ParseRawPrivateKey([]byte(systemVariables.Value))
 	if err != nil {
-		c.Logger().Errorf("failed to parse SSH private key: %v", err)
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	rsaPrivateKey, ok := privateKey.(*rsa.PrivateKey)
@@ -584,12 +683,7 @@ func GetSSHPublicKey(c echo.Context) error {
 	return c.JSON(http.StatusOK,
 		SSHPublicKeyInfoV1Rsp{
 			Data: SSHPublicKeyInfo{
-				PublicKey: func() string {
-					if !exists {
-						return ""
-					}
-					return publicKeyStr
-				}(),
+				PublicKey: publicKeyStr,
 			},
 		})
 }
