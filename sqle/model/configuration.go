@@ -18,6 +18,7 @@ const (
 	SystemVariableSqleUrl                     = "system_variable_sqle_url"
 	SystemVariableOperationRecordExpiredHours = "system_variable_operation_record_expired_hours"
 	SystemVariableCbOperationLogsExpiredHours = "system_variable_cb_operation_logs_expired_hours"
+	SystemVariableSSHPrimaryKey               = "system_variable_ssh_primary_key"
 )
 
 const (
@@ -28,7 +29,7 @@ const (
 // SystemVariable store misc K-V.
 type SystemVariable struct {
 	Key   string `gorm:"primary_key"`
-	Value string `gorm:"not null;type:varchar(255)"`
+	Value string `gorm:"not null;type:text"`
 }
 
 func (s *Storage) PathSaveSystemVariables(systemVariables []SystemVariable) error {
@@ -75,6 +76,23 @@ func (s *Storage) GetAllSystemVariables() (map[string]SystemVariable, error) {
 	}
 
 	return sysVariables, nil
+}
+
+// GetSystemVariableByKey retrieves a system variable by its key.
+// Returns the system variable, a boolean indicating if it was found, and any error that occurred.
+func (s *Storage) GetSystemVariableByKey(key string) (SystemVariable, bool, error) {
+	var systemVariable SystemVariable
+
+	err := s.db.Where("`key` = ?", key).First(&systemVariable).Error
+
+	if err == gorm.ErrRecordNotFound {
+		return systemVariable, false, nil
+	}
+	if err != nil {
+		return systemVariable, false, errors.New(errors.ConnectStorageError, err)
+	}
+
+	return systemVariable, true, nil
 }
 
 func (s *Storage) GetSqleUrl() (string, error) {
