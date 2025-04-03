@@ -450,7 +450,7 @@ func testGitConnectionV1(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, request); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	branches, err := ListGtiBranchs(c.Request().Context(), request.GitHttpUrl, request.GitUserName, request.GitUserPassword)
+	branches, err := ListGitBranches(c.Request().Context(), request.GitHttpUrl, request.GitUserName, request.GitUserPassword)
 	if err != nil {
 		return c.JSON(http.StatusOK, &TestGitConnectionResV1{
 			BaseRes: controller.NewBaseReq(nil),
@@ -522,7 +522,7 @@ func getGitAuthMethod(url, username, password string) (transport.AuthMethod, err
 	}
 }
 
-func ListGtiBranchs(ctx context.Context, url, username, password string) ([]string, error) {
+func ListGitBranches(ctx context.Context, url, username, password string) ([]string, error) {
 	auth, err := getGitAuthMethod(url, username, password)
 	if err != nil {
 		return nil, err
