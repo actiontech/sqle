@@ -657,12 +657,18 @@ func GetSSHPublicKey(c echo.Context) error {
 	storage := model.GetStorage()
 	systemVariables, exists, err := storage.GetSystemVariableByKey(model.SystemVariableSSHPrimaryKey)
 	if err != nil {
-		c.Logger().Errorf("failed to get ssh public key: %v", err)
 		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exists {
+		return c.JSON(http.StatusOK, SSHPublicKeyInfoV1Rsp{
+			BaseRes: controller.NewBaseReq(nil),
+			Data: SSHPublicKeyInfo{
+				PublicKey: "",
+			},
+		})
 	}
 	privateKey, err := ssh.ParseRawPrivateKey([]byte(systemVariables.Value))
 	if err != nil {
-		c.Logger().Errorf("failed to parse SSH private key: %v", err)
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	rsaPrivateKey, ok := privateKey.(*rsa.PrivateKey)
@@ -677,12 +683,7 @@ func GetSSHPublicKey(c echo.Context) error {
 	return c.JSON(http.StatusOK,
 		SSHPublicKeyInfoV1Rsp{
 			Data: SSHPublicKeyInfo{
-				PublicKey: func() string {
-					if !exists {
-						return ""
-					}
-					return publicKeyStr
-				}(),
+				PublicKey: publicKeyStr,
 			},
 		})
 }
@@ -694,7 +695,7 @@ func GetSSHPublicKey(c echo.Context) error {
 // @Id genSSHPublicKey
 // @Security ApiKeyAuth
 // @Success 200 {object} controller.BaseRes
-// @Router /v1/configurations/ssh_public_key [post]
+// @Router /v1/configurations/ssh_key [post]
 func GenSSHKey(c echo.Context) error {
 	storage := model.GetStorage()
 	_, exists, err := storage.GetSystemVariableByKey(model.SystemVariableSSHPrimaryKey)
