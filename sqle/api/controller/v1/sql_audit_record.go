@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	e "errors"
 	"fmt"
-	"github.com/go-git/go-git/v5/plumbing"
 	"io"
 	"io/fs"
 	"net/http"
@@ -14,6 +13,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/go-git/go-git/v5/plumbing"
 
 	javaParser "github.com/actiontech/java-sql-extractor/parser"
 	xmlParser "github.com/actiontech/mybatis-mapper-2-sql"
@@ -441,7 +442,7 @@ func parseXMLsWithFilePath(xmlContents []xmlParser.XmlFile) ([]SQLFromXML, error
 // todo 此处跳过了不支持的编码格式文件
 func getSqlsFromGit(c echo.Context) (sqlsFromSQLFiles, sqlsFromJavaFiles []SQLsFromSQLFile, sqlsFromXMLs []SQLFromXML, exist bool, err error) {
 	// clone from git
-	repository, directory, cleanup, err := utils.CloneGitRepository(c.Request().Context(), c.FormValue(GitHttpURL), c.FormValue(GitUserName), c.FormValue(GitPassword))
+	repository, directory, cleanup, err := CloneGitRepository(c.Request().Context(), c.FormValue(GitHttpURL), c.FormValue(GitUserName), c.FormValue(GitPassword), c.FormValue(GitBranchName))
 	if err != nil {
 		return nil, nil, nil, false, err
 	}

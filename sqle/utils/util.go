@@ -2,7 +2,6 @@ package utils
 
 import (
 	"bytes"
-	"context"
 	"crypto/md5"
 	"crypto/rand"
 	"crypto/rsa"
@@ -15,7 +14,6 @@ import (
 	"io"
 	"math"
 	"net/url"
-	"os"
 	"regexp"
 	"sort"
 	"strconv"
@@ -26,9 +24,6 @@ import (
 	"unicode/utf8"
 	"unsafe"
 
-	sqleErrors "github.com/actiontech/sqle/sqle/errors"
-	goGit "github.com/go-git/go-git/v5"
-	goGitTransport "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"golang.org/x/crypto/ssh"
 
 	"github.com/actiontech/sqle/sqle/log"
@@ -464,37 +459,6 @@ func IntersectionStringSlice(slice1, slice2 []string) []string {
 	}
 	return intersection
 }
-
-func CloneGitRepository(ctx context.Context, url, username, password string) (repository *goGit.Repository, directory string, cleanup func() error, err error) {
-	if !IsGitHttpURL(url) {
-		return nil, "", nil, sqleErrors.New(sqleErrors.DataInvalid, fmt.Errorf("url is not a git url"))
-	}
-	// 创建一个临时目录用于存放克隆的仓库
-	directory, err = os.MkdirTemp("./", "git-repo-")
-	if err != nil {
-		return nil, "", nil, err
-	}
-	// 定义清理函数，用于删除临时目录
-	cleanup = func() error {
-		return os.RemoveAll(directory)
-	}
-	cloneOpts := &goGit.CloneOptions{
-		URL: url,
-	}
-	if username != "" {
-		cloneOpts.Auth = &goGitTransport.BasicAuth{
-			Username: username,
-			Password: password,
-		}
-	}
-	repository, err = goGit.PlainCloneContext(ctx, directory, false, cloneOpts)
-	if err != nil {
-		err = cleanup()
-		return nil, directory, nil, err
-	}
-	return repository, directory, cleanup, nil
-}
-
 func GeneratePublicKeyFromPrivateKey(privateKey *rsa.PrivateKey) (string, error) {
 	publicKey, err := ssh.NewPublicKey(&privateKey.PublicKey)
 	if err != nil {
