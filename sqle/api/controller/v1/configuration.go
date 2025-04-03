@@ -558,7 +558,7 @@ type SSHPublicKeyInfo struct {
 // @Tags configuration
 // @Id getSSHPublicKey
 // @Security ApiKeyAuth
-// @Success 200 {object} v1.SSHPublicKeyInfo
+// @Success 200 {object} v1.SSHPublicKeyInfoV1Rsp
 // @Router /v1/configurations/ssh_key [get]
 func GetSSHPublicKey(c echo.Context) error {
 	storage := model.GetStorage()
