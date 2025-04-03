@@ -559,13 +559,13 @@ func CloneGitRepository(ctx context.Context, url, username, password, branch str
 		// 不需要校验权限
 	// case  IsFile TODO
 	default:
-		return nil, "", nil, errors.New(errors.DataInvalid, fmt.Errorf("url is not a git url"))
+		return nil, "", cleanup, errors.New(errors.DataInvalid, fmt.Errorf("url is not a git url"))
 	}
 
 	repository, err = goGit.PlainCloneContext(ctx, directory, false, cloneOpts)
 	if err != nil {
 		err = cleanup()
-		return nil, directory, nil, err
+		return nil, directory, cleanup, err
 	}
 
 	return repository, directory, cleanup, nil
