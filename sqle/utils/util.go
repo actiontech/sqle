@@ -5,13 +5,13 @@ import (
 	"context"
 	"crypto/md5"
 	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/pem"
 	"errors"
 	"fmt"
-	sqleErrors "github.com/actiontech/sqle/sqle/errors"
-	goGit "github.com/go-git/go-git/v5"
-	goGitTransport "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"io"
 	"math"
 	"net/url"
@@ -25,6 +25,11 @@ import (
 	"unicode"
 	"unicode/utf8"
 	"unsafe"
+
+	sqleErrors "github.com/actiontech/sqle/sqle/errors"
+	goGit "github.com/go-git/go-git/v5"
+	goGitTransport "github.com/go-git/go-git/v5/plumbing/transport/http"
+	"golang.org/x/crypto/ssh"
 
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/bwmarrin/snowflake"
@@ -488,4 +493,35 @@ func CloneGitRepository(ctx context.Context, url, username, password string) (re
 		return nil, directory, nil, err
 	}
 	return repository, directory, cleanup, nil
+}
+
+func GeneratePublicKeyFromPrivateKey(privateKey *rsa.PrivateKey) (string, error) {
+	publicKey, err := ssh.NewPublicKey(&privateKey.PublicKey)
+	if err != nil {
+		return "", err
+	}
+	return string(ssh.MarshalAuthorizedKey(publicKey)), nil
+}
+
+func GenerateSSHKeyPair() (privateKeyStr, publicKeyStr string, err error) {
+	// 1. 生成 4096-bit RSA 私钥
+	privateKey, err := rsa.GenerateKey(rand.Reader, 4096)
+	if err != nil {
+		return "", "", err
+	}
+
+	// 2. 编码私钥为 PEM 格式，与ssh-keygen -N "" 生成的格式保持一致（无密码保护）
+	privateKeyBytes := x509.MarshalPKCS1PrivateKey(privateKey)
+	privatePEM := pem.EncodeToMemory(&pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: privateKeyBytes,
+	})
+
+	// 3. 生成 SSH 公钥，格式：ssh-rsa AAAA...
+	publicKeyStr, err = GeneratePublicKeyFromPrivateKey(privateKey)
+	if err != nil {
+		return "", "", err
+	}
+
+	return string(privatePEM), publicKeyStr, nil
 }
