@@ -5,13 +5,13 @@ import (
 	"context"
 	"crypto/md5"
 	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/pem"
 	"errors"
 	"fmt"
-	sqleErrors "github.com/actiontech/sqle/sqle/errors"
-	goGit "github.com/go-git/go-git/v5"
-	goGitTransport "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"io"
 	"math"
 	"net/url"
@@ -25,6 +25,11 @@ import (
 	"unicode"
 	"unicode/utf8"
 	"unsafe"
+
+	sqleErrors "github.com/actiontech/sqle/sqle/errors"
+	goGit "github.com/go-git/go-git/v5"
+	goGitTransport "github.com/go-git/go-git/v5/plumbing/transport/http"
+	"golang.org/x/crypto/ssh"
 
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/bwmarrin/snowflake"
@@ -461,6 +466,11 @@ func IntersectionStringSlice(slice1, slice2 []string) []string {
 }
 
 func CloneGitRepository(ctx context.Context, url, username, password string) (repository *goGit.Repository, directory string, cleanup func() error, err error) {
+
+	// http 协议
+	// git 协议
+	// ssh 协议
+
 	if !IsGitHttpURL(url) {
 		return nil, "", nil, sqleErrors.New(sqleErrors.DataInvalid, fmt.Errorf("url is not a git url"))
 	}
@@ -476,6 +486,26 @@ func CloneGitRepository(ctx context.Context, url, username, password string) (re
 	cloneOpts := &goGit.CloneOptions{
 		URL: url,
 	}
+	// http协议下：
+	//   1. 账号密码登录
+	//       username/password
+	//       不需要密码的方式
+	//   2. token 方式
+	//       gitlab：
+	//       github:
+
+	// ssh 协议
+	//     	前置条件：
+	// 			1. 生成密钥【用户手动执行】，用什么用户生成？
+	// 		      -	mkdir -p ../keys/ (700权限)
+	// 			  - sudo -u actiontech-universe ssh-keygen -t rsa -b 4096 -f ../keys/id_rsa -N ""
+	// 			2. 查看公钥【用户手动执行】
+	// 			   查看公钥匙内容
+	// 			2. 仓库配置密钥
+	//             TODO 目前不支持该步骤，只能用户手动执行
+	//
+	// git协议
+	//     不需要校验权限
 	if username != "" {
 		cloneOpts.Auth = &goGitTransport.BasicAuth{
 			Username: username,
@@ -488,4 +518,35 @@ func CloneGitRepository(ctx context.Context, url, username, password string) (re
 		return nil, directory, nil, err
 	}
 	return repository, directory, cleanup, nil
+}
+
+func GeneratePublicKeyFromPrivateKey(privateKey *rsa.PrivateKey) (string, error) {
+	publicKey, err := ssh.NewPublicKey(&privateKey.PublicKey)
+	if err != nil {
+		return "", err
+	}
+	return string(ssh.MarshalAuthorizedKey(publicKey)), nil
+}
+
+func GenerateSSHKeyPair() (privateKeyStr, publicKeyStr string, err error) {
+	// 1. 生成 4096-bit RSA 私钥
+	privateKey, err := rsa.GenerateKey(rand.Reader, 4096)
+	if err != nil {
+		return "", "", err
+	}
+
+	// 2. 编码私钥为 PEM 格式，与ssh-keygen -N "" 生成的格式保持一致（无密码保护）
+	privateKeyBytes := x509.MarshalPKCS1PrivateKey(privateKey)
+	privatePEM := pem.EncodeToMemory(&pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: privateKeyBytes,
+	})
+
+	// 3. 生成 SSH 公钥，格式：ssh-rsa AAAA...
+	publicKeyStr, err = GeneratePublicKeyFromPrivateKey(privateKey)
+	if err != nil {
+		return "", "", err
+	}
+
+	return string(privatePEM), publicKeyStr, nil
 }
