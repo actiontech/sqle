@@ -1,11 +1,14 @@
 package v1
 
 import (
+	"crypto/rsa"
+	"fmt"
+	"net/http"
+	"strconv"
+
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/storer"
-	"net/http"
-	"strconv"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/driver"
@@ -13,6 +16,7 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/labstack/echo/v4"
+	"golang.org/x/crypto/ssh"
 )
 
 type GetDingTalkConfigurationResV1 struct {
@@ -537,4 +541,95 @@ type ScheduledTaskDefaultOptionV1Rsp struct {
 // @Router /v1/configurations/workflows/schedule/default_option [get]
 func GetScheduledTaskDefaultOptionV1(c echo.Context) error {
 	return getScheduledTaskDefaultOptionV1(c)
+}
+
+type SSHPublicKeyInfoV1Rsp struct {
+	controller.BaseRes
+	Data SSHPublicKeyInfo `json:"data"`
+}
+
+type SSHPublicKeyInfo struct {
+	PublicKey string `json:"public_key"`
+}
+
+// GetSSHPublicKey
+// @Summary 获取SSH公钥
+// @Description get ssh public key
+// @Tags configuration
+// @Id getSSHPublicKey
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.SSHPublicKeyInfo
+// @Router /v1/configurations/ssh_key [get]
+func GetSSHPublicKey(c echo.Context) error {
+	storage := model.GetStorage()
+	systemVariables, exists, err := storage.GetSystemVariableByKey(model.SystemVariableSSHPrimaryKey)
+	if err != nil {
+		c.Logger().Errorf("failed to get ssh public key: %v", err)
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	privateKey, err := ssh.ParseRawPrivateKey([]byte(systemVariables.Value))
+	if err != nil {
+		c.Logger().Errorf("failed to parse SSH private key: %v", err)
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	rsaPrivateKey, ok := privateKey.(*rsa.PrivateKey)
+	if !ok {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("private key is not an RSA key"))
+	}
+	publicKeyStr, err := utils.GeneratePublicKeyFromPrivateKey(rsaPrivateKey)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.JSON(http.StatusOK,
+		SSHPublicKeyInfoV1Rsp{
+			Data: SSHPublicKeyInfo{
+				PublicKey: func() string {
+					if !exists {
+						return ""
+					}
+					return publicKeyStr
+				}(),
+			},
+		})
+}
+
+// GenSSHKey
+// @Summary 生成SSH密钥对
+// @Description gen ssh key
+// @Tags configuration
+// @Id genSSHPublicKey
+// @Security ApiKeyAuth
+// @Success 200 {object} controller.BaseRes
+// @Router /v1/configurations/ssh_key [post]
+func GenSSHKey(c echo.Context) error {
+	storage := model.GetStorage()
+	_, exists, err := storage.GetSystemVariableByKey(model.SystemVariableSSHPrimaryKey)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	// 如果已存在密钥，则不重新生成
+	if exists {
+		return controller.JSONBaseErrorReq(c, nil)
+	}
+
+	// 生成新的SSH密钥对
+	primaryKey, _, err := utils.GenerateSSHKeyPair()
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	// 保存密钥到系统变量
+	err = storage.PathSaveSystemVariables([]model.SystemVariable{
+		{
+			Key:   model.SystemVariableSSHPrimaryKey,
+			Value: primaryKey,
+		},
+	})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return controller.JSONBaseErrorReq(c, nil)
 }
