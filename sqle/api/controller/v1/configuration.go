@@ -509,9 +509,10 @@ func CloneGitRepository(ctx context.Context, url, username, password, branch str
 	cloneOpts := &goGit.CloneOptions{
 		URL: url,
 	}
-	if branch != "" {
-		cloneOpts.ReferenceName = plumbing.ReferenceName(branch)
-	}
+	// TODO branch name with reference is not working, use branch name to clone the repo
+	// if branch != "" {
+	// cloneOpts.ReferenceName = plumbing.ReferenceName(branch)
+	// }
 	ep, err := transport.NewEndpoint(url)
 	if err != nil {
 		return nil, "", nil, err
