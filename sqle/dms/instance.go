@@ -151,7 +151,7 @@ func GetInstancesInProject(ctx context.Context, projectUid string) ([]*model.Ins
 	})
 }
 
-func GetInstancesInProjectByTypeAndBusiness(ctx context.Context, projectUid, dbType, environmentTag string) ([]*model.Instance, error) {
+func GetInstancesInProjectByTypeAndEnvironmentTag(ctx context.Context, projectUid, dbType, environmentTag string) ([]*model.Instance, error) {
 	return getInstances(ctx, dmsV2.ListDBServiceReq{
 		ProjectUid:             projectUid,
 		FilterByDBType:         dbType,
