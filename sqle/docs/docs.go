@@ -10709,7 +10709,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.GetInstanceTipsResV1"
+                            "$ref": "#/definitions/v2.GetInstanceTipsResV2"
                         }
                     }
                 }
@@ -21140,6 +21140,25 @@ var doc = `{
                 }
             }
         },
+        "v2.GetInstanceTipsResV2": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.InstanceTipResV2"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v2.GetSqlManageListResp": {
             "type": "object",
             "properties": {
@@ -21326,6 +21345,47 @@ var doc = `{
                 "sql_query_config": {
                     "type": "object",
                     "$ref": "#/definitions/v1.SQLQueryConfigResV1"
+                }
+            }
+        },
+        "v2.InstanceTipResV2": {
+            "type": "object",
+            "properties": {
+                "backup_max_rows": {
+                    "type": "integer"
+                },
+                "enable_backup": {
+                    "type": "boolean"
+                },
+                "host": {
+                    "type": "string"
+                },
+                "instance_id": {
+                    "type": "string"
+                },
+                "instance_name": {
+                    "type": "string"
+                },
+                "instance_type": {
+                    "type": "string"
+                },
+                "port": {
+                    "type": "string"
+                },
+                "supported_backup_strategy": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": [
+                            "none",
+                            "manual",
+                            "reverse_sql",
+                            "original_row"
+                        ]
+                    }
+                },
+                "workflow_template_id": {
+                    "type": "integer"
                 }
             }
         },
