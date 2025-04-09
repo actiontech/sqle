@@ -12,6 +12,7 @@ import (
 	"time"
 
 	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
+	dmsV2 "github.com/actiontech/dms/pkg/dms-common/api/dms/v2"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/config"
 	"github.com/actiontech/sqle/sqle/dms"
@@ -1099,7 +1100,7 @@ func loadInstanceByWorkflows(ctx context.Context, workflows []*model.WorkflowLis
 func loadInstanceByInstanceIds(ctx context.Context, instanceIds []string) (instanceMap InstanceMap, err error) {
 	// get instances from dms
 	instanceMap = make(InstanceMap)
-	instances, _, err := dmsobject.ListDbServices(ctx, controller.GetDMSServerAddress(), dmsV1.ListDBServiceReq{
+	instances, _, err := dmsobject.ListDbServices(ctx, controller.GetDMSServerAddress(), dmsV2.ListDBServiceReq{
 		PageSize:             uint32(len(instanceIds)),
 		PageIndex:            1,
 		FilterByDBServiceIds: instanceIds,
