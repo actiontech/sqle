@@ -483,7 +483,7 @@ type StatisticsAuditedSQLResV1 struct {
 // @Success 200 {object} v1.StatisticsAuditedSQLResV1
 // @router /v1/projects/{project_name}/statistic/audited_sqls [get]
 func StatisticsAuditedSQLV1(c echo.Context) error {
-	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
+	projectUid, err := dms.GetProjectUIDByName(c.Request().Context(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -539,7 +539,7 @@ func (d *dbErr) getWorkFlowStatusCountByProject(status string, projectUid string
 // @Success 200 {object} v1.GetWorkflowStatusCountResV1
 // @router /v1/projects/{project_name}/statistic/workflow_status [get]
 func StatisticWorkflowStatusV1(c echo.Context) error {
-	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
+	projectUid, err := dms.GetProjectUIDByName(c.Request().Context(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -590,7 +590,7 @@ type StatisticRiskWorkflowResV1 struct {
 // @Success 200 {object} v1.StatisticRiskWorkflowResV1
 // @router /v1/projects/{project_name}/statistic/risk_workflow [get]
 func StatisticRiskWorkflowV1(c echo.Context) error {
-	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
+	projectUid, err := dms.GetProjectUIDByName(c.Request().Context(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -644,7 +644,7 @@ type StatisticAuditPlanResV1 struct {
 // @Success 200 {object} v1.StatisticAuditPlanResV1
 // @router /v1/projects/{project_name}/statistic/audit_plans [get]
 func StatisticAuditPlanV1(c echo.Context) error {
-	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
+	projectUid, err := dms.GetProjectUIDByName(c.Request().Context(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -710,7 +710,7 @@ type GetRiskAuditPlanResV1 struct {
 // @Success 200 {object} v1.GetRiskAuditPlanResV1
 // @router /v1/projects/{project_name}/statistic/risk_audit_plans [get]
 func GetRiskAuditPlanV1(c echo.Context) error {
-	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
+	projectUid, err := dms.GetProjectUIDByName(c.Request().Context(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -821,7 +821,7 @@ type GetProjectScoreResV1 struct {
 // @Success 200 {object} v1.GetProjectScoreResV1
 // @router /v1/projects/{project_name}/statistic/project_score [get]
 func GetProjectScoreV1(c echo.Context) error {
-	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
+	projectUid, err := dms.GetProjectUIDByName(c.Request().Context(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -949,7 +949,7 @@ func generateMaps(instanceWorkFlowFailedStatus []*model.InstanceWorkFlowStatusCo
 // @Success 200 {object} v1.GetInstanceHealthResV1
 // @router /v1/projects/{project_name}/statistic/instance_health [get]
 func GetInstanceHealthV1(c echo.Context) error {
-	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
+	projectUid, err := dms.GetProjectUIDByName(c.Request().Context(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

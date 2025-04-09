@@ -39,7 +39,7 @@ func BatchCompleteWorkflowsV3(c echo.Context) error {
 		return err
 	}
 
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"), true)
+	projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

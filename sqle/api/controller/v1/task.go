@@ -313,7 +313,7 @@ func CreateAndAuditTask(c echo.Context) error {
 	var err error
 	var fileRecords []*model.AuditFile
 
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -865,7 +865,7 @@ func CreateAuditTasksGroupV1(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

@@ -40,7 +40,7 @@ type ReportPushConfigList struct {
 // @Success 200 {object} GetReportPushConfigsListResV1
 // @Router /v1/projects/{project_name}/report_push_configs [get]
 func GetReportPushConfigList(c echo.Context) error {
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

@@ -61,7 +61,7 @@ type GetInstanceResV2 struct {
 // @router /v2/projects/{project_name}/instances/{instance_name}/ [get]
 func GetInstance(c echo.Context) error {
 	instanceName := c.Param("instance_name")
-	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
+	projectUid, err := dms.GetProjectUIDByName(c.Request().Context(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

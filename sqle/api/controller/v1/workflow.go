@@ -492,7 +492,7 @@ type CheckedWorkflowInfo struct {
 
 func CheckWorkflowCreationPrerequisites(c echo.Context, projectName string, taskIdsToBindWithWorkflow []uint) (*CheckedWorkflowInfo, error) {
 	// check project
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), projectName, true)
+	projectUid, err := dms.GetProjectUIDByName(context.TODO(), projectName, true)
 	if err != nil {
 		return nil, err
 	}
@@ -1142,7 +1142,7 @@ func GetWorkflowsV1(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1427,7 +1427,7 @@ func ExportWorkflowV1(c echo.Context) error {
 // @Router /v1/projects/{project_name}/workflows/{workflow_id}/tasks/terminate [post]
 func TerminateMultipleTaskByWorkflowV1(c echo.Context) error {
 
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"), true)
+	projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1475,7 +1475,7 @@ func TerminateMultipleTaskByWorkflowV1(c echo.Context) error {
 // @Success 200 {object} controller.BaseRes
 // @Router /v1/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/terminate [post]
 func TerminateSingleTaskByWorkflowV1(c echo.Context) error {
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"), true)
+	projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
