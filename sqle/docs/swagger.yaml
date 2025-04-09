@@ -6192,6 +6192,19 @@ definitions:
         example: ok
         type: string
     type: object
+  v2.GetInstanceTipsResV2:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v2.InstanceTipResV2'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
   v2.GetSqlManageListResp:
     properties:
       code:
@@ -6324,6 +6337,34 @@ definitions:
       sql_query_config:
         $ref: '#/definitions/v1.SQLQueryConfigResV1'
         type: object
+    type: object
+  v2.InstanceTipResV2:
+    properties:
+      backup_max_rows:
+        type: integer
+      enable_backup:
+        type: boolean
+      host:
+        type: string
+      instance_id:
+        type: string
+      instance_name:
+        type: string
+      instance_type:
+        type: string
+      port:
+        type: string
+      supported_backup_strategy:
+        items:
+          enum:
+          - none
+          - manual
+          - reverse_sql
+          - original_row
+          type: string
+        type: array
+      workflow_template_id:
+        type: integer
     type: object
   v2.PartialSyncAuditPlanSQLsReqV2:
     properties:
@@ -13538,7 +13579,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/v1.GetInstanceTipsResV1'
+            $ref: '#/definitions/v2.GetInstanceTipsResV2'
       security:
       - ApiKeyAuth: []
       summary: 获取实例提示列表
