@@ -136,7 +136,7 @@ func CreatePipeline(c echo.Context) error {
 	}
 
 	// 2. 获取项目 UID
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"), true)
+	projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -201,7 +201,7 @@ func GetPipelines(c echo.Context) error {
 	}
 
 	// 2. 获取项目 UID
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -249,7 +249,7 @@ type GetPipelineDetailResV1 struct {
 // @Success 200 {object} v1.GetPipelineDetailResV1
 // @router /v1/projects/{project_name}/pipelines/{pipeline_id}/ [get]
 func GetPipelineDetail(c echo.Context) error {
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -325,7 +325,7 @@ func UpdatePipeline(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -370,7 +370,7 @@ type DeletePipelineReqV1 struct {
 // @router /v1/projects/{project_name}/pipelines/{pipeline_id}/ [delete]
 func DeletePipeline(c echo.Context) error {
 	// 获取项目的 UID
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
