@@ -522,7 +522,7 @@ func CheckUserCanCreateOptimization(ctx context.Context, projectUID string, user
 // 根据用户权限获取能访问/操作的实例列表
 func GetCanOperationInstances(ctx context.Context, user *model.User, req *dmsV2.ListDBServiceReq, operationType dmsV1.OpPermissionType) ([]*model.Instance, error) {
 	// 获取当前项目下指定数据库类型的全部实例
-	instances, err := dms.GetInstancesInProjectByTypeAndBusiness(ctx, req.ProjectUid, req.FilterByDBType, req.FilterByEnvironmentTag)
+	instances, err := dms.GetInstancesInProjectByTypeAndEnvironmentTag(ctx, req.ProjectUid, req.FilterByDBType, req.FilterByEnvironmentTag)
 	if err != nil {
 		return nil, err
 	}
