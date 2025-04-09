@@ -310,7 +310,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 
 		v1ProjectViewRouter.GET("/:project_name/instances/:instance_name/connection", v1.CheckInstanceIsConnectableByName)
 		v1ProjectViewRouter.GET("/:project_name/instances/:instance_name/schemas", v1.GetInstanceSchemas)
-		v1ProjectViewRouter.GET("/:project_name/instance_tips", DeprecatedBy(dmsV1.GroupV2))
+		v1ProjectViewRouter.GET("/:project_name/instance_tips", DeprecatedBy(apiV2))
 		v1ProjectViewRouter.GET("/:project_name/instances/:instance_name/rules", v1.GetInstanceRules)
 		v1ProjectViewRouter.GET("/:project_name/instances/:instance_name/schemas/:schema_name/tables", v1.ListTableBySchema)
 		v1ProjectViewRouter.GET("/:project_name/instances/:instance_name/schemas/:schema_name/tables/:table_name/metadata", v1.GetTableMetadata)
@@ -414,6 +414,10 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v3ProjectOpRouter.POST("/:project_name/workflows/complete", v3.BatchCompleteWorkflowsV3)
 
 	}
+	v3ProjectViewRouter := v3Router.Group("/projects", sqleMiddleware.ProjectMemberViewAllowed())
+	{
+		v3ProjectViewRouter.GET("/:project_name/sql_manages", v3.GetSqlManageList)
+	}
 
 	v2ProjectViewRouter := v2Router.Group("/projects", sqleMiddleware.ProjectMemberViewAllowed())
 	{
@@ -428,7 +432,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v2ProjectViewRouter.GET("/:project_name/instance_tips", v2.GetInstanceTips)
 
 		// sql managers
-		v2ProjectViewRouter.GET("/:project_name/sql_manages", v2.GetSqlManageList)
+		v2ProjectViewRouter.GET("/:project_name/sql_manages", DeprecatedBy(apiV3))
 	}
 
 	{
