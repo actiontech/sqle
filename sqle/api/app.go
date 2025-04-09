@@ -251,7 +251,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1ProjectOpRouter.POST("/:project_name/audit_plans/:audit_plan_name/sqls/full", v1.FullSyncAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
 		v1ProjectOpRouter.POST("/:project_name/audit_plans/:audit_plan_name/sqls/partial", v1.PartialSyncAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
 
-		// instance audti plan 实例智能扫描任务
+		// instance audit plan 实例智能扫描任务
 		v1ProjectOpRouter.POST("/:project_name/instance_audit_plans", v1.CreateInstanceAuditPlan)
 		v1ProjectOpRouter.DELETE("/:project_name/instance_audit_plans/:instance_audit_plan_id/", v1.DeleteInstanceAuditPlan)
 		v1ProjectOpRouter.PUT("/:project_name/instance_audit_plans/:instance_audit_plan_id/", v1.UpdateInstanceAuditPlan)
@@ -310,7 +310,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 
 		v1ProjectViewRouter.GET("/:project_name/instances/:instance_name/connection", v1.CheckInstanceIsConnectableByName)
 		v1ProjectViewRouter.GET("/:project_name/instances/:instance_name/schemas", v1.GetInstanceSchemas)
-		v1ProjectViewRouter.GET("/:project_name/instance_tips", v1.GetInstanceTips)
+		v1ProjectViewRouter.GET("/:project_name/instance_tips", DeprecatedBy(dmsV1.GroupV2))
 		v1ProjectViewRouter.GET("/:project_name/instances/:instance_name/rules", v1.GetInstanceRules)
 		v1ProjectViewRouter.GET("/:project_name/instances/:instance_name/schemas/:schema_name/tables", v1.ListTableBySchema)
 		v1ProjectViewRouter.GET("/:project_name/instances/:instance_name/schemas/:schema_name/tables/:table_name/metadata", v1.GetTableMetadata)
@@ -425,6 +425,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v2ProjectViewRouter.GET("/:project_name/audit_plans", v2.GetAuditPlans)
 		v2ProjectViewRouter.GET("/:project_name/audit_plans/:audit_plan_name/reports/:audit_plan_report_id/sqls/:number/analysis", v2.GetAuditPlanAnalysisData)
 		v2ProjectViewRouter.GET("/:project_name/audit_plans/:audit_plan_name/reports/:audit_plan_report_id/sqls", v2.GetAuditPlanReportSQLs)
+		v2ProjectViewRouter.GET("/:project_name/instance_tips", v2.GetInstanceTips)
 
 		// sql managers
 		v2ProjectViewRouter.GET("/:project_name/sql_manages", v2.GetSqlManageList)
