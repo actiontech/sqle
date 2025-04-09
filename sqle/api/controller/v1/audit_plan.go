@@ -1518,7 +1518,7 @@ func GetAuditPlanReportSQLsV1(c echo.Context) error {
 	})
 }
 
-func spliceAuditResults(ctx context.Context, auditResults []model.AuditResult) string {
+func SpliceAuditResults(ctx context.Context, auditResults []model.AuditResult) string {
 	lang := locale.Bundle.GetLangTagFromCtx(ctx)
 	results := []string{}
 	for _, auditResult := range auditResults {
@@ -1596,7 +1596,7 @@ func ExportAuditPlanReportV1(c echo.Context) error {
 
 	sqlInfo := [][]string{}
 	for idx, sql := range reportInfo.AuditPlanReportSQLs {
-		sqlInfo = append(sqlInfo, []string{strconv.Itoa(idx + 1), sql.SQL, spliceAuditResults(ctx, sql.AuditResults)})
+		sqlInfo = append(sqlInfo, []string{strconv.Itoa(idx + 1), sql.SQL, SpliceAuditResults(ctx, sql.AuditResults)})
 	}
 
 	err = csvBuilder.WriteRows(sqlInfo)
