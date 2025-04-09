@@ -66,6 +66,25 @@ func GetSqlManageList(c echo.Context) error {
 	return getSqlManageList(c)
 }
 
+type ExportSqlManagesReq struct {
+	FuzzySearchSqlFingerprint *string `query:"fuzzy_search_sql_fingerprint" json:"fuzzy_search_sql_fingerprint,omitempty"`
+	FilterAssignee            *string `query:"filter_assignee" json:"filter_assignee,omitempty"`
+	FilterByEnvironmentTag       *string `query:"filter_by_environment_tag" json:"filter_by_environment_tag,omitempty"`
+	FilterInstanceID             *string `query:"filter_instance_id" json:"filter_instance_id,omitempty"`
+	FilterSource                 *string `query:"filter_source" json:"filter_source,omitempty"`
+	FilterAuditLevel             *string `query:"filter_audit_level" json:"filter_audit_level,omitempty"`
+	FilterLastAuditStartTimeFrom *string `query:"filter_last_audit_start_time_from" json:"filter_last_audit_start_time_from,omitempty"`
+	FilterLastAuditStartTimeTo   *string `query:"filter_last_audit_start_time_to" json:"filter_last_audit_start_time_to,omitempty"`
+	FilterStatus                 *string `query:"filter_status" json:"filter_status,omitempty"`
+	FilterDbType                 *string `query:"filter_db_type" json:"filter_db_type,omitempty"`
+	FilterRuleName               *string `query:"filter_rule_name" json:"filter_rule_name,omitempty"`
+	FilterPriority               *string `query:"filter_priority" json:"filter_priority,omitempty" enums:"high,low"`
+	FuzzySearchEndpoint          *string `query:"fuzzy_search_endpoint" json:"fuzzy_search_endpoint,omitempty"`
+	FuzzySearchSchemaName        *string `query:"fuzzy_search_schema_name" json:"fuzzy_search_schema_name,omitempty"`
+	SortField                    *string `query:"sort_field" json:"sort_field,omitempty" valid:"omitempty,oneof=first_appear_timestamp last_receive_timestamp fp_count" enums:"first_appear_timestamp,last_receive_timestamp,fp_count"`
+	SortOrder                    *string `query:"sort_order" json:"sort_order,omitempty" valid:"omitempty,oneof=asc desc" enums:"asc,desc"`
+}
+
 // ExportSqlManagesV2
 // @Summary 导出SQL管控
 // @Description export sql manage
@@ -92,5 +111,5 @@ func GetSqlManageList(c echo.Context) error {
 // @Success 200 {file} file "export sql manage"
 // @Router /v2/projects/{project_name}/sql_manages/exports [get]
 func ExportSqlManagesV2(c echo.Context) error {
-	return v1.ExportSqlManagesV1(c)
+	return exportSqlManagesV2(c)
 }

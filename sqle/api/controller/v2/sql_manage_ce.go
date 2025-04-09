@@ -11,3 +11,8 @@ import (
 func getSqlManageList(c echo.Context) error {
 	return v1.ErrCommunityEditionNotSupportSqlManage
 }
+
+
+func exportSqlManagesV2(c echo.Context) error {
+	return v1.ErrCommunityEditionNotSupportSqlManage
+}
