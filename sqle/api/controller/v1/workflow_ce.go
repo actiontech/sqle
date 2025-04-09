@@ -29,7 +29,7 @@ func exportWorkflowV1(c echo.Context) error {
 
 func getWorkflowTemplate(c echo.Context) error {
 
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

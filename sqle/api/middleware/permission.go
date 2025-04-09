@@ -37,7 +37,7 @@ func OpProjectAllowed() echo.MiddlewareFunc {
 				return echo.NewHTTPError(http.StatusForbidden)
 			}
 
-			projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+			projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"))
 			if err != nil {
 				return controller.JSONBaseErrorReq(c, err)
 			}
@@ -82,7 +82,7 @@ func ViewProjectAllowed() echo.MiddlewareFunc {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusForbidden)
 			}
-			projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+			projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"))
 			if err != nil {
 				return controller.JSONBaseErrorReq(c, err)
 			}
@@ -108,7 +108,7 @@ func ProjectAdminUserAllowed() echo.MiddlewareFunc {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusForbidden)
 			}
-			projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+			projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"))
 			if err != nil {
 				return controller.JSONBaseErrorReq(c, err)
 			}
@@ -131,7 +131,7 @@ func ProjectMemberOpAllowed() echo.MiddlewareFunc {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusForbidden)
 			}
-			projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+			projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"))
 			if err != nil {
 				return controller.JSONBaseErrorReq(c, err)
 			}
@@ -154,7 +154,7 @@ func ProjectMemberViewAllowed() echo.MiddlewareFunc {
 			if err != nil {
 				return echo.NewHTTPError(http.StatusForbidden)
 			}
-			projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+			projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"))
 			if err != nil {
 				return controller.JSONBaseErrorReq(c, err)
 			}

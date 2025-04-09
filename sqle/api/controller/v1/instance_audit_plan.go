@@ -101,7 +101,7 @@ func CreateInstanceAuditPlan(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
+	projectUid, err := dms.GetProjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -230,7 +230,7 @@ func CreateInstanceAuditPlan(c echo.Context) error {
 // @router /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/ [delete]
 func DeleteInstanceAuditPlan(c echo.Context) error {
 	instanceAuditPlanID := c.Param("instance_audit_plan_id")
-	projectUID, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
+	projectUID, err := dms.GetProjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -273,7 +273,7 @@ func UpdateInstanceAuditPlan(c echo.Context) error {
 	}
 
 	instanceAuditPlanID := c.Param("instance_audit_plan_id")
-	projectUID, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
+	projectUID, err := dms.GetProjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -302,7 +302,7 @@ func UpdateInstanceAuditPlan(c echo.Context) error {
 	}
 
 	resultAuditPlans := make([]*model.AuditPlanV2, 0)
-	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
+	projectUid, err := dms.GetProjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -398,7 +398,7 @@ func UpdateInstanceAuditPlanStatus(c echo.Context) error {
 	}
 	s := model.GetStorage()
 	instanceAuditPlanID := c.Param("instance_audit_plan_id")
-	projectUID, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
+	projectUID, err := dms.GetProjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -498,7 +498,7 @@ func GetInstanceAuditPlans(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
+	projectUid, err := dms.GetProjectUIDByName(c.Request().Context(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -655,7 +655,7 @@ type HighPriorityCondition struct {
 // @router /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id} [get]
 func GetInstanceAuditPlanDetail(c echo.Context) error {
 	instanceAuditPlanID := c.Param("instance_audit_plan_id")
-	projectUID, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
+	projectUID, err := dms.GetProjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -782,7 +782,7 @@ type InstanceAuditPlanInfo struct {
 func GetInstanceAuditPlanOverview(c echo.Context) error {
 	instanceAuditPlanID := c.Param("instance_audit_plan_id")
 	projectName := c.Param("project_name")
-	projectUID, err := dms.GetPorjectUIDByName(c.Request().Context(), projectName, true)
+	projectUID, err := dms.GetProjectUIDByName(c.Request().Context(), projectName, true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -912,7 +912,7 @@ type UpdateInstanceAuditPlanStatusReqV1 struct {
 // @router /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_id}/ [delete]
 func DeleteAuditPlanById(c echo.Context) error {
 	instanceAuditPlanID := c.Param("instance_audit_plan_id")
-	projectUID, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
+	projectUID, err := dms.GetProjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -959,7 +959,7 @@ func UpdateAuditPlanStatus(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	instanceAuditPlanID := c.Param("instance_audit_plan_id")
-	projectUID, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
+	projectUID, err := dms.GetProjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1020,7 +1020,7 @@ func GetInstanceAuditPlanSQLs(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	instanceAuditPlanID := c.Param("instance_audit_plan_id")
-	projectUID, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
+	projectUID, err := dms.GetProjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1119,7 +1119,7 @@ type FilterBetweenValue struct {
 // @router /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_id}/sql_meta [get]
 func GetInstanceAuditPlanSQLMeta(c echo.Context) error {
 	instanceAuditPlanID := c.Param("instance_audit_plan_id")
-	projectUID, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
+	projectUID, err := dms.GetProjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1219,7 +1219,7 @@ func GetInstanceAuditPlanSQLData(c echo.Context) error {
 	}
 
 	instanceAuditPlanID := c.Param("instance_audit_plan_id")
-	projectUID, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
+	projectUID, err := dms.GetProjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1285,7 +1285,7 @@ func GetInstanceAuditPlanSQLExport(c echo.Context) error {
 	}
 
 	instanceAuditPlanID := c.Param("instance_audit_plan_id")
-	projectUID, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
+	projectUID, err := dms.GetProjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1382,7 +1382,7 @@ func ConvertReqToAuditPlanFilter(fs []Filter) []auditplan.Filter {
 func GetAuditPlanSqlAnalysisData(c echo.Context) error {
 	insAuditPlanID := c.Param("instance_audit_plan_id")
 	sqlManageRecordId := c.Param("id")
-	projectUID, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"))
+	projectUID, err := dms.GetProjectUIDByName(c.Request().Context(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1436,7 +1436,7 @@ func AuditPlanTriggerSqlAudit(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("parse audit plan report id failed: %v", err)))
 	}
-	projectUID, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
+	projectUID, err := dms.GetProjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

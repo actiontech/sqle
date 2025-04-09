@@ -334,7 +334,7 @@ func CreateAuditPlan(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errAuditPlanInstanceConflict)
 	}
 
-	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
+	projectUid, err := dms.GetProjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -479,7 +479,7 @@ func autoSelectRuleTemplate(ctx context.Context, customRuleTemplateName string, 
 // @router /v1/projects/{project_name}/audit_plans/{audit_plan_name}/ [delete]
 func DeleteAuditPlan(c echo.Context) error {
 	s := model.GetStorage()
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"), true)
+	projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -523,7 +523,7 @@ func UpdateAuditPlan(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"), true)
+	projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -640,7 +640,7 @@ func GetAuditPlans(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -718,7 +718,7 @@ type GetAuditPlanResV1 struct {
 // @Success 200 {object} v1.GetAuditPlanResV1
 // @router /v1/projects/{project_name}/audit_plans/{audit_plan_name}/ [get]
 func GetAuditPlan(c echo.Context) error {
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -791,7 +791,7 @@ func GetAuditPlanReports(c echo.Context) error {
 		return err
 	}
 
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -851,7 +851,7 @@ type GetAuditPlanReportResV1 struct {
 // @Success 200 {object} v1.GetAuditPlanReportResV1
 // @router /v1/projects/{project_name}/audit_plans/{audit_plan_name}/reports/{audit_plan_report_id}/ [get]
 func GetAuditPlanReport(c echo.Context) error {
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -929,7 +929,7 @@ func FullSyncAuditPlanSQLs(c echo.Context) error {
 
 	s := model.GetStorage()
 
-	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
+	projectUid, err := dms.GetProjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -979,7 +979,7 @@ func PartialSyncAuditPlanSQLs(c echo.Context) error {
 	apName := c.Param("audit_plan_name")
 
 	s := model.GetStorage()
-	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
+	projectUid, err := dms.GetProjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1098,7 +1098,7 @@ type TriggerAuditPlanResV1 struct {
 // @Success 200 {object} v1.TriggerAuditPlanResV1
 // @router /v1/projects/{project_name}/audit_plans/{audit_plan_name}/trigger [post]
 func TriggerAuditPlan(c echo.Context) error {
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"), true)
+	projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1155,7 +1155,7 @@ func UpdateAuditPlanNotifyConfig(c echo.Context) error {
 		return err
 	}
 
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"), true)
+	projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1219,7 +1219,7 @@ type GetAuditPlanNotifyConfigResDataV1 struct {
 // @Success 200 {object} v1.GetAuditPlanNotifyConfigResV1
 // @router /v1/projects/{project_name}/audit_plans/{audit_plan_name}/notify_config [get]
 func GetAuditPlanNotifyConfig(c echo.Context) error {
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1266,7 +1266,7 @@ type TestAuditPlanNotifyConfigResDataV1 struct {
 // @Success 200 {object} v1.TestAuditPlanNotifyConfigResV1
 // @router /v1/projects/{project_name}/audit_plans/{audit_plan_name}/notify_config/test [get]
 func TestAuditPlanNotifyConfig(c echo.Context) error {
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1395,7 +1395,7 @@ func GetAuditPlanSQLs(c echo.Context) error {
 		return err
 	}
 
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1476,7 +1476,7 @@ func GetAuditPlanReportSQLsV1(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
