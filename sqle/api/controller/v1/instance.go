@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	baseV1 "github.com/actiontech/dms/pkg/dms-common/api/base/v1"
-	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	v1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/common"
@@ -17,8 +16,6 @@ import (
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/params"
-	"github.com/actiontech/sqle/sqle/server"
-	opt "github.com/actiontech/sqle/sqle/server/optimization/rule"
 	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/labstack/echo/v4"
@@ -330,10 +327,10 @@ func GetInstanceSchemas(c echo.Context) error {
 }
 
 const ( // InstanceTipReqV1.FunctionalModule Enums
-	create_audit_plan   = "create_audit_plan"
-	create_workflow     = "create_workflow"
-	create_optimization = "create_optimization"
-	create_pipeline     = "create_pipeline"
+	FunctionalModuleCreateAuditPlan    = "create_audit_plan"
+	FunctionalModuleCreateWorkflow     = "create_workflow"
+	FunctionalModuleCreateOptimization = "create_optimization"
+	FunctionalModuleCreatePipeline     = "create_pipeline"
 )
 
 type InstanceTipReqV1 struct {
@@ -377,73 +374,7 @@ type GetInstanceTipsResV1 struct {
 // @Success 200 {object} v1.GetInstanceTipsResV1
 // @router /v1/projects/{project_name}/instance_tips [get]
 func GetInstanceTips(c echo.Context) error {
-	req := new(InstanceTipReqV1)
-	if err := controller.BindAndValidateReq(c, req); err != nil {
-		return err
-	}
-	projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"))
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	user, err := controller.GetCurrentUser(c, dms.GetUser)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	var operationType v1.OpPermissionType
-	switch req.FunctionalModule {
-	case create_audit_plan:
-		operationType = v1.OpPermissionTypeSaveAuditPlan
-	case create_workflow:
-		operationType = v1.OpPermissionTypeCreateWorkflow
-	case create_optimization:
-		operationType = v1.OpPermissionTypeCreateOptimization
-	case create_pipeline:
-		operationType = v1.OpPermissionTypeCreatePipeline
-	default:
-	}
-	dbServiceReq := &dmsV1.ListDBServiceReq{
-		FilterByBusiness: req.FilterByBusiness,
-		ProjectUid:       projectUid,
-		FilterByDBType:   req.FilterDBType,
-	}
-	instances, err := GetCanOperationInstances(c.Request().Context(), user, dbServiceReq, operationType)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	s := model.GetStorage()
-	template, exist, err := s.GetWorkflowTemplateByProjectId(model.ProjectUID(projectUid))
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, fmt.Errorf("current project doesn't has workflow template"))
-	}
-	instanceTipsResV1 := make([]InstanceTipResV1, 0, len(instances))
-	svc := server.BackupService{}
-	for _, inst := range instances {
-		if operationType == v1.OpPermissionTypeCreateOptimization && !opt.CanOptimizeDbType(inst.DbType) {
-			continue
-		}
-		instanceTipRes := InstanceTipResV1{
-			ID:                      inst.GetIDStr(),
-			Name:                    inst.Name,
-			Type:                    inst.DbType,
-			Host:                    inst.Host,
-			Port:                    inst.Port,
-			WorkflowTemplateId:      uint32(template.ID),
-			EnableBackup:            inst.EnableBackup,
-			BackupMaxRows:           inst.BackupMaxRows,
-			SupportedBackupStrategy: svc.SupportedBackupStrategy(inst.DbType),
-		}
-		instanceTipsResV1 = append(instanceTipsResV1, instanceTipRes)
-	}
-
-	return c.JSON(http.StatusOK, &GetInstanceTipsResV1{
-		BaseRes: controller.NewBaseReq(nil),
-		Data:    instanceTipsResV1,
-	})
+	return nil
 }
 
 // GetInstanceRules get instance all rule
@@ -500,12 +431,12 @@ func CheckInstanceAndRuleTemplateDbType(ruleTemplates []*model.RuleTemplate, ins
 	dbType := ruleTemplates[0].DBType
 	for _, rt := range ruleTemplates {
 		if rt.DBType != dbType {
-			return errors.New(errors.DataInvalid, fmt.Errorf("instance's and ruleTemplate's dbtype should be the same"))
+			return errors.New(errors.DataInvalid, fmt.Errorf("instance's and ruleTemplate's db type should be the same"))
 		}
 	}
 	for _, inst := range instances {
 		if inst.DbType != dbType {
-			return errors.New(errors.DataInvalid, fmt.Errorf("instance's and ruleTemplate's dbtype should be the same"))
+			return errors.New(errors.DataInvalid, fmt.Errorf("instance's and ruleTemplate's db type should be the same"))
 		}
 	}
 	return nil
