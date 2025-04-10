@@ -3101,7 +3101,6 @@ var doc = `{
                 ],
                 "summary": "获取实例扫描任务列表",
                 "operationId": "getInstanceAuditPlansV1",
-                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -3109,12 +3108,6 @@ var doc = `{
                         "name": "project_name",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter by business // TODO This parameter is deprecated and will be removed soon.",
-                        "name": "filter_by_business",
-                        "in": "query"
                     },
                     {
                         "type": "string",
@@ -3232,6 +3225,7 @@ var doc = `{
                 ],
                 "summary": "获取实例扫描任务详情",
                 "operationId": "getInstanceAuditPlanDetailV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -3865,7 +3859,7 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "filter by business // TODO This parameter is deprecated and will be removed soon.",
+                        "description": "filter by business",
                         "name": "filter_by_business",
                         "in": "query"
                     },
@@ -5498,7 +5492,7 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "business // TODO This parameter is deprecated and will be removed soon.",
+                        "description": "filter by business",
                         "name": "filter_business",
                         "in": "query"
                     },
@@ -10652,6 +10646,45 @@ var doc = `{
                 }
             }
         },
+        "/v2/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get instance audit plan detail",
+                "tags": [
+                    "instance_audit_plan"
+                ],
+                "summary": "获取实例扫描任务详情",
+                "operationId": "getInstanceAuditPlanDetailV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance audit plan id",
+                        "name": "instance_audit_plan_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v2.GetInstanceAuditPlanDetailRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/projects/{project_name}/instance_tips": {
             "get": {
                 "security": [
@@ -10855,7 +10888,7 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "business // TODO This parameter is deprecated and will be removed soon.",
+                        "description": "filter by business",
                         "name": "filter_business",
                         "in": "query"
                     },
@@ -16697,7 +16730,7 @@ var doc = `{
                     }
                 },
                 "business": {
-                    "description": "TODO This parameter is deprecated and will be removed soon.",
+                    "description": "This parameter is deprecated",
                     "type": "string",
                     "example": "test"
                 },
@@ -16787,7 +16820,7 @@ var doc = `{
                     }
                 },
                 "business": {
-                    "description": "TODO This parameter is deprecated and will be removed soon.",
+                    "description": "This parameter is deprecated",
                     "type": "string"
                 },
                 "create_time": {
@@ -20508,6 +20541,34 @@ var doc = `{
                 }
             }
         },
+        "v2.AuditPlanRes": {
+            "type": "object",
+            "properties": {
+                "audit_plan_params": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.AuditPlanParamResV1"
+                    }
+                },
+                "audit_plan_type": {
+                    "type": "object",
+                    "$ref": "#/definitions/v2.AuditPlanTypeResBase"
+                },
+                "high_priority_conditions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.HighPriorityConditionResV1"
+                    }
+                },
+                "need_mark_high_priority_sql": {
+                    "type": "boolean"
+                },
+                "rule_template_name": {
+                    "type": "string",
+                    "example": "default_MySQL"
+                }
+            }
+        },
         "v2.AuditPlanResV2": {
             "type": "object",
             "properties": {
@@ -20596,6 +20657,37 @@ var doc = `{
                 "row_examined_avg": {
                     "type": "number",
                     "example": 100.22
+                }
+            }
+        },
+        "v2.AuditPlanTypeResBase": {
+            "type": "object",
+            "properties": {
+                "active_status": {
+                    "type": "string",
+                    "enum": [
+                        "normal",
+                        "disabled"
+                    ]
+                },
+                "audit_plan_id": {
+                    "type": "integer"
+                },
+                "desc": {
+                    "type": "string"
+                },
+                "last_collection_status": {
+                    "type": "string",
+                    "enum": [
+                        "normal",
+                        "abnormal"
+                    ]
+                },
+                "token": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
                 }
             }
         },
@@ -21123,6 +21215,23 @@ var doc = `{
                 }
             }
         },
+        "v2.GetInstanceAuditPlanDetailRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v2.InstanceAuditPlanDetailRes"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v2.GetInstanceResV2": {
             "type": "object",
             "properties": {
@@ -21293,6 +21402,34 @@ var doc = `{
                 "message": {
                     "type": "string",
                     "example": "ok"
+                }
+            }
+        },
+        "v2.InstanceAuditPlanDetailRes": {
+            "type": "object",
+            "properties": {
+                "audit_plans": {
+                    "description": "扫描类型",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.AuditPlanRes"
+                    }
+                },
+                "environment": {
+                    "type": "string",
+                    "example": "prod"
+                },
+                "instance_id": {
+                    "type": "string",
+                    "example": "instance_id"
+                },
+                "instance_name": {
+                    "type": "string",
+                    "example": "test_mysql"
+                },
+                "instance_type": {
+                    "type": "string",
+                    "example": "mysql"
                 }
             }
         },
