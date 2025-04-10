@@ -3156,7 +3156,7 @@ definitions:
           $ref: '#/definitions/v1.AuditPlanRes'
         type: array
       business:
-        description: TODO This parameter is deprecated and will be removed soon.
+        description: This parameter is deprecated
         example: test
         type: string
       environment:
@@ -3220,7 +3220,7 @@ definitions:
           $ref: '#/definitions/v1.AuditPlanTypeResBase'
         type: array
       business:
-        description: TODO This parameter is deprecated and will be removed soon.
+        description: This parameter is deprecated
         type: string
       create_time:
         description: TODO 采集状态
@@ -5753,6 +5753,25 @@ definitions:
         example: 1
         type: integer
     type: object
+  v2.AuditPlanRes:
+    properties:
+      audit_plan_params:
+        items:
+          $ref: '#/definitions/v1.AuditPlanParamResV1'
+        type: array
+      audit_plan_type:
+        $ref: '#/definitions/v2.AuditPlanTypeResBase'
+        type: object
+      high_priority_conditions:
+        items:
+          $ref: '#/definitions/v1.HighPriorityConditionResV1'
+        type: array
+      need_mark_high_priority_sql:
+        type: boolean
+      rule_template_name:
+        example: default_MySQL
+        type: string
+    type: object
   v2.AuditPlanResV2:
     properties:
       audit_plan_cron:
@@ -5818,6 +5837,27 @@ definitions:
       row_examined_avg:
         example: 100.22
         type: number
+    type: object
+  v2.AuditPlanTypeResBase:
+    properties:
+      active_status:
+        enum:
+        - normal
+        - disabled
+        type: string
+      audit_plan_id:
+        type: integer
+      desc:
+        type: string
+      last_collection_status:
+        enum:
+        - normal
+        - abnormal
+        type: string
+      token:
+        type: string
+      type:
+        type: string
     type: object
   v2.AuditResDataV2:
     properties:
@@ -6180,6 +6220,18 @@ definitions:
         example: ok
         type: string
     type: object
+  v2.GetInstanceAuditPlanDetailRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v2.InstanceAuditPlanDetailRes'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v2.GetInstanceResV2:
     properties:
       code:
@@ -6299,6 +6351,26 @@ definitions:
         type: array
       message:
         example: ok
+        type: string
+    type: object
+  v2.InstanceAuditPlanDetailRes:
+    properties:
+      audit_plans:
+        description: 扫描类型
+        items:
+          $ref: '#/definitions/v2.AuditPlanRes'
+        type: array
+      environment:
+        example: prod
+        type: string
+      instance_id:
+        example: instance_id
+        type: string
+      instance_name:
+        example: test_mysql
+        type: string
+      instance_type:
+        example: mysql
         type: string
     type: object
   v2.InstanceResV2:
@@ -8667,7 +8739,6 @@ paths:
       - database_comparison
   /v1/projects/{project_name}/instance_audit_plans:
     get:
-      deprecated: true
       description: get instance audit plan info list
       operationId: getInstanceAuditPlansV1
       parameters:
@@ -8675,11 +8746,6 @@ paths:
         in: path
         name: project_name
         required: true
-        type: string
-      - description: filter by business // TODO This parameter is deprecated and will
-          be removed soon.
-        in: query
-        name: filter_by_business
         type: string
       - description: filter by environment tag
         in: query
@@ -8754,6 +8820,7 @@ paths:
       - instance_audit_plan
   /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}:
     get:
+      deprecated: true
       description: get instance audit plan detail
       operationId: getInstanceAuditPlanDetailV1
       parameters:
@@ -9169,8 +9236,7 @@ paths:
         in: query
         name: filter_db_type
         type: string
-      - description: filter by business // TODO This parameter is deprecated and will
-          be removed soon.
+      - description: filter by business
         in: query
         name: filter_by_business
         type: string
@@ -10316,8 +10382,7 @@ paths:
         in: query
         name: filter_assignee
         type: string
-      - description: business // TODO This parameter is deprecated and will be removed
-          soon.
+      - description: filter by business
         in: query
         name: filter_business
         type: string
@@ -13612,6 +13677,31 @@ paths:
       summary: 增量同步SQL到扫描任务
       tags:
       - audit_plan
+  /v2/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}:
+    get:
+      description: get instance audit plan detail
+      operationId: getInstanceAuditPlanDetailV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: instance audit plan id
+        in: path
+        name: instance_audit_plan_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v2.GetInstanceAuditPlanDetailRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取实例扫描任务详情
+      tags:
+      - instance_audit_plan
   /v2/projects/{project_name}/instance_tips:
     get:
       description: get instance tip list
@@ -13744,8 +13834,7 @@ paths:
         in: query
         name: filter_db_type
         type: string
-      - description: business // TODO This parameter is deprecated and will be removed
-          soon.
+      - description: filter by business
         in: query
         name: filter_business
         type: string
