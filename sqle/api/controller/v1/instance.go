@@ -335,7 +335,7 @@ const ( // InstanceTipReqV1.FunctionalModule Enums
 
 type InstanceTipReqV1 struct {
 	FilterDBType string `json:"filter_db_type" query:"filter_db_type"`
-	// TODO This parameter is deprecated and will be removed soon.
+	// This parameter is deprecated
 	FilterByBusiness         string `json:"filter_by_business" query:"filter_by_business"`
 	FilterByEnvironmentTag   string `json:"filter_by_environment_tag" query:"filter_by_environment_tag"`
 	FilterWorkflowTemplateId uint32 `json:"filter_workflow_template_id" query:"filter_workflow_template_id"`
@@ -368,7 +368,7 @@ type GetInstanceTipsResV1 struct {
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
 // @Param filter_db_type query string false "filter db type"
-// @Param filter_by_business query string false "filter by business // TODO This parameter is deprecated and will be removed soon."
+// @Param filter_by_business query string false "filter by business" // This parameter is deprecated
 // @Param filter_workflow_template_id query string false "filter workflow template id"
 // @Param functional_module query string false "functional module" Enums(create_audit_plan,create_workflow,sql_manage,create_optimization,create_pipeline)
 // @Success 200 {object} v1.GetInstanceTipsResV1
