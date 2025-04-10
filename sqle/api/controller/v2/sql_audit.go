@@ -129,7 +129,7 @@ func DirectAuditFiles(c echo.Context) error {
 	}
 
 	userId := controller.GetUserID(c)
-	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), req.ProjectName)
+	projectUid, err := dms.GetProjectUIDByName(c.Request().Context(), req.ProjectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

@@ -89,7 +89,7 @@ func CreateSQLAuditRecord(c echo.Context) error {
 	if req.DbType == "" && req.InstanceName == "" {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, e.New("db_type and instance_name can't both be empty")))
 	}
-	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
+	projectUid, err := dms.GetProjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -552,7 +552,7 @@ func UpdateSQLAuditRecordV1(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
+	projectUid, err := dms.GetProjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -669,7 +669,7 @@ func GetSQLAuditRecordsV1(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), false)
+	projectUid, err := dms.GetProjectUIDByName(c.Request().Context(), c.Param("project_name"), false)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -785,7 +785,7 @@ type GetSQLAuditRecordResV1 struct {
 // @Success 200 {object} v1.GetSQLAuditRecordResV1
 // @router /v1/projects/{project_name}/sql_audit_records/{sql_audit_record_id}/ [get]
 func GetSQLAuditRecordV1(c echo.Context) error {
-	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), c.Param("project_name"), false)
+	projectUid, err := dms.GetProjectUIDByName(c.Request().Context(), c.Param("project_name"), false)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

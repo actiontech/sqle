@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
-	v1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
+	dmsV2 "github.com/actiontech/dms/pkg/dms-common/api/dms/v2"
 	"github.com/actiontech/dms/pkg/dms-common/dmsobject"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/dms"
@@ -203,7 +203,7 @@ func checkCurrentUserCanOpTask(c echo.Context, task *model.Task, ops []dmsV1.OpP
 	return errors.NewTaskNoExistOrNoAccessErr()
 }
 
-func GetAuditPlanIfCurrentUserCanView(c echo.Context, projectId, auditPlanName string, opType v1.OpPermissionType) (*model.AuditPlan, bool, error) {
+func GetAuditPlanIfCurrentUserCanView(c echo.Context, projectId, auditPlanName string, opType dmsV1.OpPermissionType) (*model.AuditPlan, bool, error) {
 	storage := model.GetStorage()
 
 	ap, exist, err := dms.GetAuditPlanWithInstanceFromProjectByName(projectId, auditPlanName, storage.GetAuditPlanFromProjectByName)
@@ -235,7 +235,7 @@ func GetAuditPlanIfCurrentUserCanView(c echo.Context, projectId, auditPlanName s
 	}
 
 	if opType != "" {
-		dbServiceReq := &dmsV1.ListDBServiceReq{
+		dbServiceReq := &dmsV2.ListDBServiceReq{
 			ProjectUid: projectId,
 		}
 		instances, err := GetCanOperationInstances(c.Request().Context(), user, dbServiceReq, opType)
@@ -248,10 +248,10 @@ func GetAuditPlanIfCurrentUserCanView(c echo.Context, projectId, auditPlanName s
 			}
 		}
 	}
-	return ap, false, errors.NewUserNotPermissionError(v1.GetOperationTypeDesc(opType))
+	return ap, false, errors.NewUserNotPermissionError(dmsV1.GetOperationTypeDesc(opType))
 }
 
-func GetAuditPlanIfCurrentUserCanOp(c echo.Context, projectId, auditPlanName string, opType v1.OpPermissionType) (*model.AuditPlan, bool, error) {
+func GetAuditPlanIfCurrentUserCanOp(c echo.Context, projectId, auditPlanName string, opType dmsV1.OpPermissionType) (*model.AuditPlan, bool, error) {
 	storage := model.GetStorage()
 
 	ap, exist, err := dms.GetAuditPlanWithInstanceFromProjectByName(projectId, auditPlanName, storage.GetAuditPlanFromProjectByName)
@@ -283,7 +283,7 @@ func GetAuditPlanIfCurrentUserCanOp(c echo.Context, projectId, auditPlanName str
 	}
 
 	if opType != "" {
-		dbServiceReq := &dmsV1.ListDBServiceReq{
+		dbServiceReq := &dmsV2.ListDBServiceReq{
 			ProjectUid: projectId,
 		}
 		instances, err := GetCanOperationInstances(c.Request().Context(), user, dbServiceReq, opType)
@@ -296,10 +296,10 @@ func GetAuditPlanIfCurrentUserCanOp(c echo.Context, projectId, auditPlanName str
 			}
 		}
 	}
-	return ap, false, errors.NewUserNotPermissionError(v1.GetOperationTypeDesc(opType))
+	return ap, false, errors.NewUserNotPermissionError(dmsV1.GetOperationTypeDesc(opType))
 }
 
-func GetInstanceAuditPlanIfCurrentUserCanView(c echo.Context, projectId, instanceAuditPlanID string, opType v1.OpPermissionType) (*model.InstanceAuditPlan, bool, error) {
+func GetInstanceAuditPlanIfCurrentUserCanView(c echo.Context, projectId, instanceAuditPlanID string, opType dmsV1.OpPermissionType) (*model.InstanceAuditPlan, bool, error) {
 	storage := model.GetStorage()
 
 	ap, exist, err := storage.GetInstanceAuditPlanDetail(instanceAuditPlanID)
@@ -331,7 +331,7 @@ func GetInstanceAuditPlanIfCurrentUserCanView(c echo.Context, projectId, instanc
 	}
 
 	if opType != "" {
-		dbServiceReq := &dmsV1.ListDBServiceReq{
+		dbServiceReq := &dmsV2.ListDBServiceReq{
 			ProjectUid: projectId,
 		}
 		instances, err := GetCanOperationInstances(c.Request().Context(), user, dbServiceReq, opType)
@@ -344,10 +344,10 @@ func GetInstanceAuditPlanIfCurrentUserCanView(c echo.Context, projectId, instanc
 			}
 		}
 	}
-	return ap, false, errors.NewUserNotPermissionError(v1.GetOperationTypeDesc(opType))
+	return ap, false, errors.NewUserNotPermissionError(dmsV1.GetOperationTypeDesc(opType))
 }
 
-func GetInstanceAuditPlanIfCurrentUserCanOp(c echo.Context, projectId, instanceAuditPlanID string, opType v1.OpPermissionType) (*model.InstanceAuditPlan, bool, error) {
+func GetInstanceAuditPlanIfCurrentUserCanOp(c echo.Context, projectId, instanceAuditPlanID string, opType dmsV1.OpPermissionType) (*model.InstanceAuditPlan, bool, error) {
 	storage := model.GetStorage()
 
 	ap, exist, err := storage.GetInstanceAuditPlanDetail(instanceAuditPlanID)
@@ -379,7 +379,7 @@ func GetInstanceAuditPlanIfCurrentUserCanOp(c echo.Context, projectId, instanceA
 	}
 
 	if opType != "" {
-		dbServiceReq := &dmsV1.ListDBServiceReq{
+		dbServiceReq := &dmsV2.ListDBServiceReq{
 			ProjectUid: projectId,
 		}
 		instances, err := GetCanOperationInstances(c.Request().Context(), user, dbServiceReq, opType)
@@ -392,14 +392,14 @@ func GetInstanceAuditPlanIfCurrentUserCanOp(c echo.Context, projectId, instanceA
 			}
 		}
 	}
-	return ap, false, errors.NewUserNotPermissionError(v1.GetOperationTypeDesc(opType))
+	return ap, false, errors.NewUserNotPermissionError(dmsV1.GetOperationTypeDesc(opType))
 }
 
 func GetAuditPlantReportAndInstanceIfCurrentUserCanView(c echo.Context, projectId, auditPlanName string, reportID, sqlNumber int) (
 	auditPlanReport *model.AuditPlanReportV2, auditPlanReportSQLV2 *model.AuditPlanReportSQLV2, instance *model.Instance,
 	err error) {
 
-	ap, exist, err := GetAuditPlanIfCurrentUserCanView(c, projectId, auditPlanName, v1.OpPermissionTypeViewOtherAuditPlan)
+	ap, exist, err := GetAuditPlanIfCurrentUserCanView(c, projectId, auditPlanName, dmsV1.OpPermissionTypeViewOtherAuditPlan)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -520,9 +520,9 @@ func CheckUserCanCreateOptimization(ctx context.Context, projectUID string, user
 }
 
 // 根据用户权限获取能访问/操作的实例列表
-func GetCanOperationInstances(ctx context.Context, user *model.User, req *dmsV1.ListDBServiceReq, operationType v1.OpPermissionType) ([]*model.Instance, error) {
+func GetCanOperationInstances(ctx context.Context, user *model.User, req *dmsV2.ListDBServiceReq, operationType dmsV1.OpPermissionType) ([]*model.Instance, error) {
 	// 获取当前项目下指定数据库类型的全部实例
-	instances, err := dms.GetInstancesInProjectByTypeAndBusiness(ctx, req.ProjectUid, req.FilterByDBType, req.FilterByBusiness)
+	instances, err := dms.GetInstancesInProjectByTypeAndEnvironmentTag(ctx, req.ProjectUid, req.FilterByDBType, req.FilterByEnvironmentTag)
 	if err != nil {
 		return nil, err
 	}
@@ -537,18 +537,18 @@ func GetCanOperationInstances(ctx context.Context, user *model.User, req *dmsV1.
 	}
 	canOperationInstance := make([]*model.Instance, 0)
 	for _, instance := range instances {
-		if CanOperationInstance(userOpPermissions, []v1.OpPermissionType{operationType}, instance) {
+		if CanOperationInstance(userOpPermissions, []dmsV1.OpPermissionType{operationType}, instance) {
 			canOperationInstance = append(canOperationInstance, instance)
 		}
 	}
 	return canOperationInstance, nil
 }
 
-func GetCanOpInstanceUsers(memberWithPermissions []*dmsV1.ListMembersForInternalItem, instance *model.Instance, opPermissioins []dmsV1.OpPermissionType) (opUsers []*model.User, err error) {
+func GetCanOpInstanceUsers(memberWithPermissions []*dmsV1.ListMembersForInternalItem, instance *model.Instance, opPermissions []dmsV1.OpPermissionType) (opUsers []*model.User, err error) {
 	opMapUsers := make(map[uint]struct{}, 0)
 	for _, memberWithPermission := range memberWithPermissions {
 		for _, memberOpPermission := range memberWithPermission.MemberOpPermissionList {
-			if CanOperationInstance([]dmsV1.OpPermissionItem{memberOpPermission}, opPermissioins, instance) {
+			if CanOperationInstance([]dmsV1.OpPermissionItem{memberOpPermission}, opPermissions, instance) {
 				opUser := new(model.User)
 				userId, err := strconv.Atoi(memberWithPermission.User.Uid)
 				if err != nil {

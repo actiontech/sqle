@@ -35,7 +35,7 @@ func CreateAuditWhitelist(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"), true)
+	projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -78,7 +78,7 @@ func UpdateAuditWhitelistById(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -138,7 +138,7 @@ func DeleteAuditWhitelistById(c echo.Context) error {
 	whitelistId := c.Param("audit_whitelist_id")
 	// projectName := c.Param("project_name")
 
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -197,7 +197,7 @@ func GetSqlWhitelist(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), c.Param("project_name"))
+	projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

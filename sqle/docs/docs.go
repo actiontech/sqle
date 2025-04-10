@@ -10709,7 +10709,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v1.GetInstanceTipsResV1"
+                            "$ref": "#/definitions/v2.GetInstanceTipsResV2"
                         }
                     }
                 }
@@ -11903,7 +11903,7 @@ var doc = `{
                 "tags": [
                     "SqlManage"
                 ],
-                "summary": "获取管控sql列表",
+                "summary": "获取SQL管控列表",
                 "operationId": "GetSqlManageListV3",
                 "parameters": [
                     {
@@ -11992,7 +11992,7 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "filter by environment tag",
+                        "description": "filter by name of environment tag",
                         "name": "filter_by_environment_tag",
                         "in": "query"
                     },
@@ -12058,7 +12058,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/v2.GetSqlManageListResp"
+                            "$ref": "#/definitions/v3.GetSqlManageListResp"
                         }
                     }
                 }
@@ -21140,6 +21140,25 @@ var doc = `{
                 }
             }
         },
+        "v2.GetInstanceTipsResV2": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.InstanceTipResV2"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v2.GetSqlManageListResp": {
             "type": "object",
             "properties": {
@@ -21326,6 +21345,47 @@ var doc = `{
                 "sql_query_config": {
                     "type": "object",
                     "$ref": "#/definitions/v1.SQLQueryConfigResV1"
+                }
+            }
+        },
+        "v2.InstanceTipResV2": {
+            "type": "object",
+            "properties": {
+                "backup_max_rows": {
+                    "type": "integer"
+                },
+                "enable_backup": {
+                    "type": "boolean"
+                },
+                "host": {
+                    "type": "string"
+                },
+                "instance_id": {
+                    "type": "string"
+                },
+                "instance_name": {
+                    "type": "string"
+                },
+                "instance_type": {
+                    "type": "string"
+                },
+                "port": {
+                    "type": "string"
+                },
+                "supported_backup_strategy": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "enum": [
+                            "none",
+                            "manual",
+                            "reverse_sql",
+                            "original_row"
+                        ]
+                    }
+                },
+                "workflow_template_id": {
+                    "type": "integer"
                 }
             }
         },
@@ -21715,6 +21775,107 @@ var doc = `{
                 },
                 "workflow_id": {
                     "type": "string"
+                }
+            }
+        },
+        "v3.GetSqlManageListResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v3.SqlManage"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "sql_manage_bad_num": {
+                    "type": "integer"
+                },
+                "sql_manage_optimized_num": {
+                    "type": "integer"
+                },
+                "sql_manage_total_num": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v3.SqlManage": {
+            "type": "object",
+            "properties": {
+                "assignees": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "audit_result": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.AuditResult"
+                    }
+                },
+                "audit_status": {
+                    "type": "string",
+                    "enum": [
+                        "being_audited"
+                    ]
+                },
+                "endpoints": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "first_appear_timestamp": {
+                    "type": "string"
+                },
+                "fp_count": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "instance_name": {
+                    "type": "string"
+                },
+                "last_receive_timestamp": {
+                    "type": "string"
+                },
+                "priority": {
+                    "type": "string"
+                },
+                "remark": {
+                    "type": "string"
+                },
+                "schema_name": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.Source"
+                },
+                "sql": {
+                    "type": "string"
+                },
+                "sql_fingerprint": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "unhandled",
+                        "solved",
+                        "ignored",
+                        "manual_audited",
+                        "sent"
+                    ]
                 }
             }
         }

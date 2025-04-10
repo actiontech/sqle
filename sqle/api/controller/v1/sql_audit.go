@@ -72,7 +72,7 @@ func DirectAudit(c echo.Context) error {
 
 	if req.ProjectName != nil {
 		userUid := controller.GetUserID(c)
-		projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), *req.ProjectName)
+		projectUid, err := dms.GetProjectUIDByName(c.Request().Context(), *req.ProjectName)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -92,7 +92,7 @@ func DirectAudit(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 	}
-	projectUid, err := dms.GetPorjectUIDByName(context.TODO(), *req.ProjectName)
+	projectUid, err := dms.GetProjectUIDByName(context.TODO(), *req.ProjectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -177,7 +177,7 @@ func DirectAuditFiles(c echo.Context) error {
 		return err
 	}
 	userUid := controller.GetUserID(c)
-	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), req.ProjectName)
+	projectUid, err := dms.GetProjectUIDByName(c.Request().Context(), req.ProjectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
