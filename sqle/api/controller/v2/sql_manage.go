@@ -51,7 +51,7 @@ type SqlManage struct {
 // @Param filter_status query string false "status" Enums(unhandled,solved,ignored,manual_audited,sent)
 // @Param filter_rule_name query string false "rule name"
 // @Param filter_db_type query string false "db type"
-// @Param filter_business query string false "business // TODO This parameter is deprecated and will be removed soon."
+// @Param filter_business query string false "filter by business" // This parameter is deprecated
 // @Param filter_by_environment_tag query string false "filter by environment tag"
 // @Param filter_priority query string false "priority" Enums(high,low)
 // @Param fuzzy_search_endpoint query string false "fuzzy search endpoint"
@@ -63,7 +63,7 @@ type SqlManage struct {
 // @Success 200 {object} v2.GetSqlManageListResp
 // @Router /v2/projects/{project_name}/sql_manages [get]
 func GetSqlManageList(c echo.Context) error {
-	return getSqlManageList(c)
+	return nil
 }
 
 type ExportSqlManagesReq struct {

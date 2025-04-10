@@ -345,8 +345,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1ProjectViewRouter.GET("/:project_name/audit_plans/:audit_plan_name/reports/:audit_plan_report_id/sqls", v1.GetAuditPlanReportSQLsV1)
 		v1ProjectViewRouter.GET("/:project_name/audit_plans/:audit_plan_name/reports/:audit_plan_report_id/export", v1.ExportAuditPlanReportV1)
 
-		v1ProjectViewRouter.GET("/:project_name/instance_audit_plans", v1.GetInstanceAuditPlans)
-		v1ProjectViewRouter.GET("/:project_name/instance_audit_plans/:instance_audit_plan_id", v1.GetInstanceAuditPlanDetail)
+		v1ProjectViewRouter.GET("/:project_name/instance_audit_plans", DeprecatedBy(apiV2))
+		v1ProjectViewRouter.GET("/:project_name/instance_audit_plans/:instance_audit_plan_id", DeprecatedBy(apiV2))
 		v1ProjectViewRouter.GET("/:project_name/instance_audit_plans/:instance_audit_plan_id/audit_plans", v1.GetInstanceAuditPlanOverview)
 
 		v1ProjectViewRouter.GET("/:project_name/sql_manages", v1.GetSqlManageList)
@@ -434,6 +434,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		// sql managers
 		v2ProjectViewRouter.GET("/:project_name/sql_manages", DeprecatedBy(apiV3))
 		v2ProjectViewRouter.GET("/:project_name/sql_manages/exports", v2.ExportSqlManagesV2)
+		v2ProjectViewRouter.GET("/:project_name/instance_audit_plans", v2.GetInstanceAuditPlans)
+		v2ProjectViewRouter.GET("/:project_name/instance_audit_plans/:instance_audit_plan_id", v2.GetInstanceAuditPlanDetail)
 	}
 
 	{

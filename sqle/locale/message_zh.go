@@ -327,8 +327,8 @@ var (
 	ApMetricNameMetaType                = &i18n.Message{ID: "ApMetricNameMetaType", Other: "对象类型"}
 	ApMetricNameQueryTimeTotal          = &i18n.Message{ID: "ApMetricNameQueryTimeTotal", Other: "总执行时间(s)"}
 	ApMetricNameQueryTimeAvg            = &i18n.Message{ID: "ApMetricNameQueryTimeAvg", Other: "平均执行时间(s)"}
-	ApMetricNameQueryTimeTotalMS     = &i18n.Message{ID: "ApMetricNameQueryTimeTotalMS", Other: "总执行时间(ms)"}
-	ApMetricNameQueryTimeAvgMS       = &i18n.Message{ID: "ApMetricNameQueryTimeAvgMS", Other: "平均执行时间(ms)"}
+	ApMetricNameQueryTimeTotalMS        = &i18n.Message{ID: "ApMetricNameQueryTimeTotalMS", Other: "总执行时间(ms)"}
+	ApMetricNameQueryTimeAvgMS          = &i18n.Message{ID: "ApMetricNameQueryTimeAvgMS", Other: "平均执行时间(ms)"}
 	ApMetricNameCounter                 = &i18n.Message{ID: "ApMetricNameCounter", Other: "执行次数"}
 	ApMetricNameCPUTimeAvg              = &i18n.Message{ID: "ApMetricNameCPUTimeAvg", Other: "平均 CPU 时间(μs)"}
 	ApMetricNameLockWaitTimeTotal       = &i18n.Message{ID: "ApMetricNameLockWaitTimeTotal", Other: "锁等待时间(ms)"}
@@ -429,7 +429,7 @@ var (
 
 	NotifyManageRecordSubject    = &i18n.Message{ID: "NotifyManageRecordSubject", Other: "SQL管控记录"}
 	NotifyManageRecordBodyLink   = &i18n.Message{ID: "NotifyManageRecordBodyLink", Other: "\n- SQL管控记录链接: %v\n"}
-	NotifyManageRecordBodyRecord = &i18n.Message{ID: "NotifyManageRecordBodyRecord", Other: "- SQL ID: %v\n- 所在数据源名称: %v\n- 所属业务: %v\n- SQL: %v\n- 触发规则级别: %v\n- SQL审核建议: %v\n================================"}
+	NotifyManageRecordBodyRecord = &i18n.Message{ID: "NotifyManageRecordBodyRecord", Other: "- SQL ID: %v\n- 所在数据源名称: %v\n- 环境属性: %v\n- SQL: %v\n- 触发规则级别: %v\n- SQL审核建议: %v\n================================"}
 	NotifyManageRecordBodyTime   = &i18n.Message{ID: "NotifyManageRecordBodyTime", Other: "记录时间周期: %v - %v"}
 	NotifyManageRecordBodyProj   = &i18n.Message{ID: "NotifyManageRecordBodyProj", Other: "所属项目: %v"}
 
