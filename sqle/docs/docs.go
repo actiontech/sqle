@@ -3101,6 +3101,7 @@ var doc = `{
                 ],
                 "summary": "获取实例扫描任务列表",
                 "operationId": "getInstanceAuditPlansV1",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -3108,6 +3109,12 @@ var doc = `{
                         "name": "project_name",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter by business",
+                        "name": "filter_by_business",
+                        "in": "query"
                     },
                     {
                         "type": "string",
@@ -10646,6 +10653,88 @@ var doc = `{
                 }
             }
         },
+        "/v2/projects/{project_name}/instance_audit_plans": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get instance audit plan info list",
+                "tags": [
+                    "instance_audit_plan"
+                ],
+                "summary": "获取实例扫描任务列表",
+                "operationId": "getInstanceAuditPlansV2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter by environment tag",
+                        "name": "filter_by_environment_tag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter by db type",
+                        "name": "filter_by_db_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter by instance id",
+                        "name": "filter_by_instance_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter instance audit plan type",
+                        "name": "filter_by_audit_plan_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter instance audit plan active status",
+                        "name": "filter_by_active_status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy search",
+                        "name": "fuzzy_search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v2.GetInstanceAuditPlansRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}": {
             "get": {
                 "security": [
@@ -10658,7 +10747,7 @@ var doc = `{
                     "instance_audit_plan"
                 ],
                 "summary": "获取实例扫描任务详情",
-                "operationId": "getInstanceAuditPlanDetailV1",
+                "operationId": "getInstanceAuditPlanDetailV2",
                 "parameters": [
                     {
                         "type": "string",
@@ -21232,6 +21321,28 @@ var doc = `{
                 }
             }
         },
+        "v2.GetInstanceAuditPlansRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.InstanceAuditPlanResV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
+                }
+            }
+        },
         "v2.GetInstanceResV2": {
             "type": "object",
             "properties": {
@@ -21430,6 +21541,46 @@ var doc = `{
                 "instance_type": {
                     "type": "string",
                     "example": "mysql"
+                }
+            }
+        },
+        "v2.InstanceAuditPlanResV1": {
+            "type": "object",
+            "properties": {
+                "active_status": {
+                    "type": "string",
+                    "enum": [
+                        "normal",
+                        "disabled"
+                    ]
+                },
+                "audit_plan_types": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.AuditPlanTypeResBase"
+                    }
+                },
+                "create_time": {
+                    "description": "TODO 采集状态",
+                    "type": "string"
+                },
+                "creator": {
+                    "type": "string"
+                },
+                "environment": {
+                    "type": "string"
+                },
+                "instance_audit_plan_id": {
+                    "type": "integer"
+                },
+                "instance_id": {
+                    "type": "string"
+                },
+                "instance_name": {
+                    "type": "string"
+                },
+                "instance_type": {
+                    "type": "string"
                 }
             }
         },
