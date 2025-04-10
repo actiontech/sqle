@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"time"
 
-	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	dmsV2 "github.com/actiontech/dms/pkg/dms-common/api/dms/v2"
 	"github.com/actiontech/dms/pkg/dms-common/dmsobject"
 	dmsCommonAes "github.com/actiontech/dms/pkg/dms-common/pkg/aes"
@@ -24,7 +23,7 @@ func getInstances(ctx context.Context, req dmsV2.ListDBServiceReq) ([]*model.Ins
 		req.PageIndex = pageIndex
 		req.PageSize = limit
 
-		dbServices, _, err := func() ([]*dmsV1.ListDBService, int64, error) {
+		dbServices, _, err := func() ([]*dmsV2.ListDBService, int64, error) {
 			newCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 			defer cancel()
 
@@ -78,7 +77,7 @@ func getInstance(ctx context.Context, req dmsV2.ListDBServiceReq) (*model.Instan
 	return instance, true, nil
 }
 
-func convertInstance(instance *dmsV1.ListDBService) (*model.Instance, error) {
+func convertInstance(instance *dmsV2.ListDBService) (*model.Instance, error) {
 	instanceId, err := strconv.ParseInt(instance.DBServiceUid, 0, 64)
 	if err != nil {
 		return nil, err
@@ -123,7 +122,10 @@ func convertInstance(instance *dmsV1.ListDBService) (*model.Instance, error) {
 			AllowQueryWhenLessThanAuditLevel: string(instance.SQLEConfig.SQLQueryConfig.AllowQueryWhenLessThanAuditLevel),
 		}
 	}
-
+	environmentTag := ""
+	if instance.EnvironmentTag != nil {
+		environmentTag = instance.EnvironmentTag.Name
+	}
 	return &model.Instance{
 		ID:                uint64(instanceId),
 		Name:              instance.Name,
@@ -139,7 +141,7 @@ func convertInstance(instance *dmsV1.ListDBService) (*model.Instance, error) {
 		Desc:              instance.Desc,
 		AdditionalParams:  additionalParams,
 		SqlQueryConfig:    sqlQueryConfig,
-		Business:          instance.Business,
+		Environment:       environmentTag,
 		EnableBackup:      instance.EnableBackup,
 		BackupMaxRows:     instance.BackupMaxRows,
 	}, nil
@@ -153,9 +155,9 @@ func GetInstancesInProject(ctx context.Context, projectUid string) ([]*model.Ins
 
 func GetInstancesInProjectByTypeAndEnvironmentTag(ctx context.Context, projectUid, dbType, environmentTag string) ([]*model.Instance, error) {
 	return getInstances(ctx, dmsV2.ListDBServiceReq{
-		ProjectUid:             projectUid,
-		FilterByDBType:         dbType,
-		FilterByEnvironmentTag: environmentTag,
+		ProjectUid:                projectUid,
+		FilterByDBType:            dbType,
+		FilterByEnvironmentTagUID: environmentTag,
 	})
 }
 

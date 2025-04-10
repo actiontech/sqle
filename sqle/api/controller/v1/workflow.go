@@ -812,7 +812,7 @@ func (m ProjectMap) ProjectPriority(projectUid string) dmsV1.ProjectPriority {
 	return dmsV1.ProjectPriorityUnknown
 }
 
-type InstanceMap map[string] /* instance id */ *dmsV1.ListDBService
+type InstanceMap map[string] /* instance id */ *dmsV2.ListDBService
 
 func (m InstanceMap) InstanceName(instanceId string) string {
 	if m == nil {

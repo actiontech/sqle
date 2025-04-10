@@ -35,8 +35,6 @@ type Instance struct {
 	SqlQueryConfig     SqlQueryConfig `json:"sql_query_config" gorm:"type:varchar(255); default:'{\"max_pre_query_rows\":100,\"query_timeout_second\":10}'"`
 	Source             string         `json:"source" gorm:"not null"`
 	SyncInstanceTaskID uint           `json:"sync_instance_task_id"`
-	// TODO This parameter is deprecated and will be removed soon.
-	Business      string `json:"business"`
 	Environment   string `json:"environment"`
 	EnableBackup  bool   `json:"enable_backup"`
 	BackupMaxRows uint64 `json:"backup_max_rows"`
