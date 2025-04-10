@@ -6232,6 +6232,21 @@ definitions:
         example: ok
         type: string
     type: object
+  v2.GetInstanceAuditPlansRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v2.InstanceAuditPlanResV1'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_nums:
+        type: integer
+    type: object
   v2.GetInstanceResV2:
     properties:
       code:
@@ -6371,6 +6386,33 @@ definitions:
         type: string
       instance_type:
         example: mysql
+        type: string
+    type: object
+  v2.InstanceAuditPlanResV1:
+    properties:
+      active_status:
+        enum:
+        - normal
+        - disabled
+        type: string
+      audit_plan_types:
+        items:
+          $ref: '#/definitions/v2.AuditPlanTypeResBase'
+        type: array
+      create_time:
+        description: TODO 采集状态
+        type: string
+      creator:
+        type: string
+      environment:
+        type: string
+      instance_audit_plan_id:
+        type: integer
+      instance_id:
+        type: string
+      instance_name:
+        type: string
+      instance_type:
         type: string
     type: object
   v2.InstanceResV2:
@@ -8739,6 +8781,7 @@ paths:
       - database_comparison
   /v1/projects/{project_name}/instance_audit_plans:
     get:
+      deprecated: true
       description: get instance audit plan info list
       operationId: getInstanceAuditPlansV1
       parameters:
@@ -8746,6 +8789,10 @@ paths:
         in: path
         name: project_name
         required: true
+        type: string
+      - description: filter by business
+        in: query
+        name: filter_by_business
         type: string
       - description: filter by environment tag
         in: query
@@ -13677,10 +13724,64 @@ paths:
       summary: 增量同步SQL到扫描任务
       tags:
       - audit_plan
+  /v2/projects/{project_name}/instance_audit_plans:
+    get:
+      description: get instance audit plan info list
+      operationId: getInstanceAuditPlansV2
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: filter by environment tag
+        in: query
+        name: filter_by_environment_tag
+        type: string
+      - description: filter by db type
+        in: query
+        name: filter_by_db_type
+        type: string
+      - description: filter by instance id
+        in: query
+        name: filter_by_instance_id
+        type: string
+      - description: filter instance audit plan type
+        in: query
+        name: filter_by_audit_plan_type
+        type: string
+      - description: filter instance audit plan active status
+        in: query
+        name: filter_by_active_status
+        type: string
+      - description: fuzzy search
+        in: query
+        name: fuzzy_search
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        required: true
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v2.GetInstanceAuditPlansRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取实例扫描任务列表
+      tags:
+      - instance_audit_plan
   /v2/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}:
     get:
       description: get instance audit plan detail
-      operationId: getInstanceAuditPlanDetailV1
+      operationId: getInstanceAuditPlanDetailV2
       parameters:
       - description: project name
         in: path
