@@ -20,7 +20,7 @@ type GetSqlManageListReq struct {
 	FilterStatus                 *string `query:"filter_status" json:"filter_status,omitempty"`
 	FilterDbType                 *string `query:"filter_db_type" json:"filter_db_type,omitempty"`
 	FilterRuleName               *string `query:"filter_rule_name" json:"filter_rule_name,omitempty"`
-	// TODO This parameter is deprecated and will be removed soon.
+	// This parameter is deprecated
 	FilterBusiness         *string `query:"filter_business" json:"filter_business,omitempty"`
 	FilterByEnvironmentTag *string `query:"filter_by_environment_tag" json:"filter_by_environment_tag,omitempty"`
 	FilterPriority         *string `query:"filter_priority" json:"filter_priority,omitempty" enums:"high,low"`
@@ -100,7 +100,7 @@ type Source struct {
 // @Success 200 {object} v1.GetSqlManageListResp
 // @Router /v1/projects/{project_name}/sql_manages [get]
 func GetSqlManageList(c echo.Context) error {
-	return getSqlManageList(c)
+	return nil
 }
 
 type BatchUpdateSqlManageReq struct {
@@ -171,7 +171,7 @@ func BatchUpdateSqlManage(c echo.Context) error {
 type ExportSqlManagesReq struct {
 	FuzzySearchSqlFingerprint *string `query:"fuzzy_search_sql_fingerprint" json:"fuzzy_search_sql_fingerprint,omitempty"`
 	FilterAssignee            *string `query:"filter_assignee" json:"filter_assignee,omitempty"`
-	// TODO This parameter is deprecated and will be removed soon.
+	// This parameter is deprecated
 	FilterBusiness               *string `query:"filter_business" json:"filter_business,omitempty"`
 	FilterByEnvironmentTag       *string `query:"filter_by_environment_tag" json:"filter_by_environment_tag,omitempty"`
 	FilterInstanceID             *string `query:"filter_instance_id" json:"filter_instance_id,omitempty"`
@@ -199,7 +199,7 @@ type ExportSqlManagesReq struct {
 // @Param project_name path string true "project name"
 // @Param fuzzy_search_sql_fingerprint query string false "fuzzy search sql fingerprint"
 // @Param filter_assignee query string false "assignee"
-// @Param filter_business query string false "business // TODO This parameter is deprecated and will be removed soon."
+// @Param filter_business query string false "filter by business" // This parameter is deprecated
 // @Param filter_priority query string false "priority" Enums(high,low)
 // @Param filter_instance_id query string false "instance id"
 // @Param filter_source query string false "source" Enums(audit_plan,sql_audit_record)
@@ -216,7 +216,7 @@ type ExportSqlManagesReq struct {
 // @Success 200 {file} file "export sql manage"
 // @Router /v1/projects/{project_name}/sql_manages/exports [get]
 func ExportSqlManagesV1(c echo.Context) error {
-	return exportSqlManagesV1(c)
+	return nil
 }
 
 type RuleRespV1 struct {
