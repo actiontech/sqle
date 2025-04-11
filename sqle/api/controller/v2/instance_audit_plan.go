@@ -238,7 +238,6 @@ func GetInstanceAuditPlans(c echo.Context) error {
 		"filter_instance_audit_plan_db_type": req.FilterByDBType,
 		"filter_audit_plan_type":             req.FilterByAuditPlanType,
 		"filter_audit_plan_instance_id":      req.FilterByInstanceID,
-		"filter_by_environment_tag":          req.FilterByEnvironmentTag,
 		"filter_project_id":                  projectUid,
 		"current_user_id":                    userId,
 		"current_user_is_admin":              up.IsAdmin(),
@@ -251,6 +250,19 @@ func GetInstanceAuditPlans(c echo.Context) error {
 		if len(accessibleInstanceId) > 0 {
 			data["accessible_instances_id"] = fmt.Sprintf("\"%s\"", strings.Join(accessibleInstanceId, "\",\""))
 		}
+	}
+
+	if req.FilterByEnvironmentTag != "" {
+		instances, err := dms.GetInstancesInProjectByTypeAndEnvironmentTag(c.Request().Context(), projectUid, "", req.FilterByEnvironmentTag)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		instIds := make([]string, len(instances))
+		for i, v := range instances {
+			instIds[i] = v.GetIDStr()
+		}
+
+		data["filter_instance_ids_by_env"] = fmt.Sprintf("\"%s\"", strings.Join(instIds, "\",\""))
 	}
 
 	instanceAuditPlans, count, err := s.GetInstanceAuditPlansByReq(data)
@@ -277,7 +289,7 @@ func GetInstanceAuditPlans(c echo.Context) error {
 			InstanceAuditPlanId: v.Id,
 			InstanceID:          strconv.FormatUint(inst.ID, 10),
 			InstanceName:        inst.Name,
-			Environment:         inst.Environment,
+			Environment:         inst.EnvironmentTagName,
 			InstanceType:        v.DBType,
 			AuditPlanTypes:      typeBases,
 			ActiveStatus:        v.ActiveStatus,
@@ -382,7 +394,7 @@ func GetInstanceAuditPlanDetail(c echo.Context) error {
 	resData := InstanceAuditPlanDetailRes{
 		InstanceType: detail.DBType,
 		InstanceName: inst.Name,
-		Environment:  inst.Environment,
+		Environment:  inst.EnvironmentTagUID,
 		InstanceID:   inst.GetIDStr(),
 		AuditPlans:   auditPlans,
 	}

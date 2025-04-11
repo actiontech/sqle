@@ -71,6 +71,10 @@ AND (
 )
 {{- end }}
 
+{{- if .filter_instance_ids_by_env }}
+AND instance_audit_plans.instance_id in ( {{ .filter_instance_ids_by_env}} )
+{{- end }}
+
 {{- if .filter_instance_audit_plan_db_type }}
 AND instance_audit_plans.db_type = :filter_instance_audit_plan_db_type
 {{- end }}
