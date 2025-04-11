@@ -8,11 +8,6 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func getSqlManageList(c echo.Context) error {
-	return v1.ErrCommunityEditionNotSupportSqlManage
-}
-
-
 func exportSqlManagesV2(c echo.Context) error {
 	return v1.ErrCommunityEditionNotSupportSqlManage
 }
