@@ -29,6 +29,8 @@ type GetUser struct {
 	Language string `json:"language"`
 	// user stat
 	Stat Stat `json:"stat"`
+	// user two factor enabled
+	TwoFactorEnabled bool `json:"two_factor_enabled"`
 	// user authentication type
 	AuthenticationType UserAuthenticationType `json:"authentication_type"`
 	// user groups

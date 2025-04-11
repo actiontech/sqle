@@ -5,17 +5,17 @@ import (
 	"fmt"
 	"net/url"
 
-	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
+	dmsCommonV2 "github.com/actiontech/dms/pkg/dms-common/api/dms/v2"
 	pkgHttp "github.com/actiontech/dms/pkg/dms-common/pkg/http"
 )
 
-func ListDbServices(ctx context.Context, dmsAddr string, req dmsV1.ListDBServiceReq) ([]*dmsV1.ListDBService, int64, error) {
+func ListDbServices(ctx context.Context, dmsAddr string, req dmsCommonV2.ListDBServiceReq) ([]*dmsCommonV2.ListDBService, int64, error) {
 	header := map[string]string{
 		"Authorization": pkgHttp.DefaultDMSToken,
 	}
 
 	// 构建基础 URL
-	baseURL, err := url.Parse(fmt.Sprintf("%s%s", dmsAddr, dmsV1.GetDBServiceRouter(req.ProjectUid)))
+	baseURL, err := url.Parse(fmt.Sprintf("%s%s", dmsAddr, dmsCommonV2.GetDBServiceRouter(req.ProjectUid)))
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to parse base URL: %v", err)
 	}
@@ -28,8 +28,8 @@ func ListDbServices(ctx context.Context, dmsAddr string, req dmsV1.ListDBService
 	if req.OrderBy != "" {
 		query.Set("order_by", fmt.Sprintf("%v", req.OrderBy))
 	}
-	if req.FilterByBusiness != "" {
-		query.Set("filter_by_business", req.FilterByBusiness)
+	if req.FilterByEnvironmentTagUID != "" {
+		query.Set("filter_by_environment_tag_uid", req.FilterByEnvironmentTagUID)
 	}
 	if req.FilterByHost != "" {
 		query.Set("filter_by_host", req.FilterByHost)
@@ -61,7 +61,7 @@ func ListDbServices(ctx context.Context, dmsAddr string, req dmsV1.ListDBService
 	baseURL.RawQuery = query.Encode()
 
 	// 调用 HTTP GET 请求
-	reply := &dmsV1.ListDBServiceReply{}
+	reply := &dmsCommonV2.ListDBServiceReply{}
 	if err := pkgHttp.Get(ctx, baseURL.String(), header, nil, reply); err != nil {
 		return nil, 0, err
 	}
