@@ -144,7 +144,7 @@ func GetUserNameWithDelTag(userId string) string {
 
 // !dms-todo: 注意脚本服务调用该接口，接口修改会导致脚本服务调用原接口失败，需要通知相关开发修改接口调用
 // dms-todo: 临时方案
-func GetPorjectUIDByName(ctx context.Context, projectName string, needActive ...bool) (projectUID string, err error) {
+func GetProjectUIDByName(ctx context.Context, projectName string, needActive ...bool) (projectUID string, err error) {
 	project, err := GetPorjectByName(ctx, projectName)
 	if err != nil {
 		return "", err

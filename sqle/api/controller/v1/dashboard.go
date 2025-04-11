@@ -45,7 +45,7 @@ func Dashboard(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), req.FilterProjectName)
+	projectUid, err := dms.GetProjectUIDByName(c.Request().Context(), req.FilterProjectName)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

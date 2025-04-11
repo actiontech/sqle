@@ -12,19 +12,11 @@ import (
 
 var ErrCommunityEditionNotSupportSqlManage = errors.New(errors.EnterpriseEditionFeatures, e.New("sql manage is enterprise version feature"))
 
-func getSqlManageList(c echo.Context) error {
-	return ErrCommunityEditionNotSupportSqlManage
-}
-
 func batchUpdateSqlManage(c echo.Context) error {
 	return ErrCommunityEditionNotSupportSqlManage
 }
 
 func sendSqlManage(c echo.Context) error {
-	return ErrCommunityEditionNotSupportSqlManage
-}
-
-func exportSqlManagesV1(c echo.Context) error {
 	return ErrCommunityEditionNotSupportSqlManage
 }
 

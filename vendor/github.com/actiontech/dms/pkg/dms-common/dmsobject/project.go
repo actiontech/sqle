@@ -6,6 +6,7 @@ import (
 	"net/url"
 
 	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
+	dmsV2 "github.com/actiontech/dms/pkg/dms-common/api/dms/v2"
 	pkgHttp "github.com/actiontech/dms/pkg/dms-common/pkg/http"
 )
 
@@ -16,7 +17,7 @@ func ListProjects(ctx context.Context, dmsAddr string, req dmsV1.ListProjectReq)
 
 	reply := &dmsV1.ListProjectReply{}
 
-	baseURL, err := url.Parse(fmt.Sprintf("%v%v", dmsAddr, dmsV1.GetProjectsRouter()))
+	baseURL, err := url.Parse(fmt.Sprintf("%v%v", dmsAddr, dmsV2.GetProjectsRouter()))
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to parse base URL: %v", err)
 	}
