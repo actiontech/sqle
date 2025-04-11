@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/Masterminds/semver/v3 v3.1.1
-	github.com/actiontech/dms v0.0.0-20241223063204-661bd1bf229b
+	github.com/actiontech/dms v0.0.0-20250411082853-ffd0db983e12
 	github.com/actiontech/java-sql-extractor v0.0.0-20231120024232-2b8c3c0894a1
 	github.com/actiontech/mybatis-mapper-2-sql v0.5.1-0.20250307064901-aabaceee2249
 	github.com/agiledragon/gomonkey v2.0.2+incompatible
@@ -68,6 +68,7 @@ require (
 	github.com/hashicorp/go-version v1.7.0
 	github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.1.69
 	github.com/nicksnyder/go-i18n/v2 v2.4.0
+	golang.org/x/crypto v0.14.0
 	golang.org/x/text v0.14.0
 	gorm.io/driver/mysql v1.4.7
 	gorm.io/gorm v1.24.3
@@ -166,7 +167,6 @@ require (
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.17.0 // indirect
-	golang.org/x/crypto v0.14.0 // indirect
 	golang.org/x/exp v0.0.0-20230515195305-f3d0a9c9a5cc // indirect
 	golang.org/x/mod v0.12.0 // indirect
 	golang.org/x/sys v0.15.0 // indirect

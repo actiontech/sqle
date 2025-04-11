@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
+	dmsV2 "github.com/actiontech/dms/pkg/dms-common/api/dms/v2"
 	"github.com/actiontech/dms/pkg/dms-common/dmsobject"
 	dmsCommonAes "github.com/actiontech/dms/pkg/dms-common/pkg/aes"
 	"github.com/actiontech/sqle/sqle/errors"
@@ -14,7 +14,7 @@ import (
 	"github.com/actiontech/sqle/sqle/pkg/params"
 )
 
-func getInstances(ctx context.Context, req dmsV1.ListDBServiceReq) ([]*model.Instance, error) {
+func getInstances(ctx context.Context, req dmsV2.ListDBServiceReq) ([]*model.Instance, error) {
 	var ret = make([]*model.Instance, 0)
 
 	var limit, pageIndex uint32 = 20, 1
@@ -23,7 +23,7 @@ func getInstances(ctx context.Context, req dmsV1.ListDBServiceReq) ([]*model.Ins
 		req.PageIndex = pageIndex
 		req.PageSize = limit
 
-		dbServices, _, err := func() ([]*dmsV1.ListDBService, int64, error) {
+		dbServices, _, err := func() ([]*dmsV2.ListDBService, int64, error) {
 			newCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 			defer cancel()
 
@@ -55,7 +55,7 @@ func getInstances(ctx context.Context, req dmsV1.ListDBServiceReq) ([]*model.Ins
 	return ret, nil
 }
 
-func getInstance(ctx context.Context, req dmsV1.ListDBServiceReq) (*model.Instance, bool, error) {
+func getInstance(ctx context.Context, req dmsV2.ListDBServiceReq) (*model.Instance, bool, error) {
 	newCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
@@ -77,7 +77,7 @@ func getInstance(ctx context.Context, req dmsV1.ListDBServiceReq) (*model.Instan
 	return instance, true, nil
 }
 
-func convertInstance(instance *dmsV1.ListDBService) (*model.Instance, error) {
+func convertInstance(instance *dmsV2.ListDBService) (*model.Instance, error) {
 	instanceId, err := strconv.ParseInt(instance.DBServiceUid, 0, 64)
 	if err != nil {
 		return nil, err
@@ -122,44 +122,49 @@ func convertInstance(instance *dmsV1.ListDBService) (*model.Instance, error) {
 			AllowQueryWhenLessThanAuditLevel: string(instance.SQLEConfig.SQLQueryConfig.AllowQueryWhenLessThanAuditLevel),
 		}
 	}
-
+	var environmentTagName, environmentTagUID string
+	if instance.EnvironmentTag != nil {
+		environmentTagUID = instance.EnvironmentTag.UID
+		environmentTagName = instance.EnvironmentTag.Name
+	}
 	return &model.Instance{
-		ID:                uint64(instanceId),
-		Name:              instance.Name,
-		DbType:            instance.DBType,
-		RuleTemplateId:    uint64(ruleTemplateId),
-		RuleTemplateName:  instance.SQLEConfig.RuleTemplateName,
-		ProjectId:         instance.ProjectUID,
-		MaintenancePeriod: maintenancePeriod,
-		Host:              instance.Host,
-		Port:              instance.Port,
-		User:              instance.User,
-		Password:          decryptPassword,
-		Desc:              instance.Desc,
-		AdditionalParams:  additionalParams,
-		SqlQueryConfig:    sqlQueryConfig,
-		Business:          instance.Business,
-		EnableBackup:      instance.EnableBackup,
-		BackupMaxRows:     instance.BackupMaxRows,
+		ID:                 uint64(instanceId),
+		Name:               instance.Name,
+		DbType:             instance.DBType,
+		RuleTemplateId:     uint64(ruleTemplateId),
+		RuleTemplateName:   instance.SQLEConfig.RuleTemplateName,
+		ProjectId:          instance.ProjectUID,
+		MaintenancePeriod:  maintenancePeriod,
+		Host:               instance.Host,
+		Port:               instance.Port,
+		User:               instance.User,
+		Password:           decryptPassword,
+		Desc:               instance.Desc,
+		AdditionalParams:   additionalParams,
+		SqlQueryConfig:     sqlQueryConfig,
+		EnvironmentTagName: environmentTagName,
+		EnvironmentTagUID:  environmentTagUID,
+		EnableBackup:       instance.EnableBackup,
+		BackupMaxRows:      instance.BackupMaxRows,
 	}, nil
 }
 
 func GetInstancesInProject(ctx context.Context, projectUid string) ([]*model.Instance, error) {
-	return getInstances(ctx, dmsV1.ListDBServiceReq{
+	return getInstances(ctx, dmsV2.ListDBServiceReq{
 		ProjectUid: projectUid,
 	})
 }
 
-func GetInstancesInProjectByTypeAndBusiness(ctx context.Context, projectUid, dbType, business string) ([]*model.Instance, error) {
-	return getInstances(ctx, dmsV1.ListDBServiceReq{
-		ProjectUid:       projectUid,
-		FilterByDBType:   dbType,
-		FilterByBusiness: business,
+func GetInstancesInProjectByTypeAndEnvironmentTag(ctx context.Context, projectUid, dbType, environmentTag string) ([]*model.Instance, error) {
+	return getInstances(ctx, dmsV2.ListDBServiceReq{
+		ProjectUid:                projectUid,
+		FilterByDBType:            dbType,
+		FilterByEnvironmentTagUID: environmentTag,
 	})
 }
 
 func GetInstancesNameInProjectByRuleTemplateName(ctx context.Context, projectUid, ruleTemplateName string) ([]string, error) {
-	instances, err := getInstances(ctx, dmsV1.ListDBServiceReq{
+	instances, err := getInstances(ctx, dmsV2.ListDBServiceReq{
 		ProjectUid: projectUid,
 	})
 
@@ -178,7 +183,7 @@ func GetInstancesNameInProjectByRuleTemplateName(ctx context.Context, projectUid
 }
 
 func GetInstancesNameByRuleTemplateName(ctx context.Context, ruleTemplateName string) ([]string, error) {
-	instances, err := getInstances(ctx, dmsV1.ListDBServiceReq{})
+	instances, err := getInstances(ctx, dmsV2.ListDBServiceReq{})
 
 	if err != nil {
 		return nil, err
@@ -199,7 +204,7 @@ func GetInstanceInProjectByName(ctx context.Context, projectUid, name string) (*
 		return nil, false, nil
 	}
 
-	return getInstance(ctx, dmsV1.ListDBServiceReq{
+	return getInstance(ctx, dmsV2.ListDBServiceReq{
 		PageSize:     1,
 		FilterByName: name,
 		ProjectUid:   projectUid,
@@ -208,7 +213,7 @@ func GetInstanceInProjectByName(ctx context.Context, projectUid, name string) (*
 
 func GetInstancesInProjectByNames(ctx context.Context, projectUid string, names []string) (instances []*model.Instance, err error) {
 	for _, name := range names {
-		instance, isExist, err := getInstance(ctx, dmsV1.ListDBServiceReq{
+		instance, isExist, err := getInstance(ctx, dmsV2.ListDBServiceReq{
 			PageSize:     1,
 			FilterByName: name,
 			ProjectUid:   projectUid,
@@ -229,7 +234,7 @@ func GetInstancesInProjectByNames(ctx context.Context, projectUid string, names 
 func GetInstanceNamesInProjectByIds(ctx context.Context, projectUid string, instanceIds []string) ([]string, error) {
 	ret := make([]string, 0)
 	for _, instanceId := range instanceIds {
-		instance, exist, err := getInstance(ctx, dmsV1.ListDBServiceReq{
+		instance, exist, err := getInstance(ctx, dmsV2.ListDBServiceReq{
 			PageSize:    1,
 			FilterByUID: instanceId,
 			ProjectUid:  projectUid,
@@ -250,7 +255,7 @@ func GetInstanceNamesInProjectByIds(ctx context.Context, projectUid string, inst
 func GetInstanceNamesInProject(ctx context.Context, projectUid string) ([]string, error) {
 	ret := make([]string, 0)
 
-	instances, err := getInstances(ctx, dmsV1.ListDBServiceReq{
+	instances, err := getInstances(ctx, dmsV2.ListDBServiceReq{
 		PageSize:   1,
 		ProjectUid: projectUid,
 	})
@@ -271,7 +276,7 @@ func GetInstancesByIdWithoutError(instanceId string) (instance model.Instance) {
 		return
 	}
 
-	inst, exist, err := getInstance(context.TODO(), dmsV1.ListDBServiceReq{
+	inst, exist, err := getInstance(context.TODO(), dmsV2.ListDBServiceReq{
 		PageSize:    1,
 		FilterByUID: instanceId,
 	})
@@ -286,7 +291,7 @@ func GetInstancesById(ctx context.Context, instanceId string) (*model.Instance, 
 		return nil, false, nil
 	}
 
-	return getInstance(ctx, dmsV1.ListDBServiceReq{
+	return getInstance(ctx, dmsV2.ListDBServiceReq{
 		PageSize:    1,
 		FilterByUID: instanceId,
 	})
@@ -295,7 +300,7 @@ func GetInstancesById(ctx context.Context, instanceId string) (*model.Instance, 
 func GetInstancesByIds(ctx context.Context, instanceIds []uint64) ([]*model.Instance, error) {
 	ret := make([]*model.Instance, 0)
 	for _, instanceId := range instanceIds {
-		instance, exist, err := getInstance(ctx, dmsV1.ListDBServiceReq{
+		instance, exist, err := getInstance(ctx, dmsV2.ListDBServiceReq{
 			PageSize:    1,
 			FilterByUID: strconv.FormatUint(instanceId, 10),
 		})
@@ -316,7 +321,7 @@ func GetInstanceIdNameMapByIds(ctx context.Context, instanceIds []uint64) (map[u
 	// todo: remove duplicate instance id
 	ret := make(map[uint64]string)
 	for _, instanceId := range instanceIds {
-		instance, exist, err := getInstance(ctx, dmsV1.ListDBServiceReq{
+		instance, exist, err := getInstance(ctx, dmsV2.ListDBServiceReq{
 			PageSize:    1,
 			FilterByUID: strconv.FormatUint(instanceId, 10),
 		})
@@ -338,7 +343,7 @@ func GetInstanceInProjectById(ctx context.Context, projectUid string, instanceId
 		return nil, false, nil
 	}
 
-	return getInstance(ctx, dmsV1.ListDBServiceReq{
+	return getInstance(ctx, dmsV2.ListDBServiceReq{
 		PageSize:    1,
 		FilterByUID: strconv.FormatUint(instanceId, 10),
 		ProjectUid:  projectUid,
@@ -348,7 +353,7 @@ func GetInstanceInProjectById(ctx context.Context, projectUid string, instanceId
 func GetInstancesInProjectByIds(ctx context.Context, projectUid string, instanceIds []uint64) ([]*model.Instance, error) {
 	ret := make([]*model.Instance, 0)
 	for _, instanceId := range instanceIds {
-		instance, exist, err := getInstance(ctx, dmsV1.ListDBServiceReq{
+		instance, exist, err := getInstance(ctx, dmsV2.ListDBServiceReq{
 			PageSize:    1,
 			FilterByUID: strconv.FormatUint(instanceId, 10),
 			ProjectUid:  projectUid,
@@ -372,7 +377,7 @@ type InstanceTypeCount struct {
 }
 
 func GetInstanceCountGroupType(ctx context.Context) ([]InstanceTypeCount, error) {
-	instances, err := getInstances(ctx, dmsV1.ListDBServiceReq{})
+	instances, err := getInstances(ctx, dmsV2.ListDBServiceReq{})
 
 	if err != nil {
 		return nil, err

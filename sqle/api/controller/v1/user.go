@@ -36,7 +36,7 @@ func GetUserTips(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
-	projectUid, err := dms.GetPorjectUIDByName(c.Request().Context(), req.FilterProject)
+	projectUid, err := dms.GetProjectUIDByName(c.Request().Context(), req.FilterProject)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

@@ -15,6 +15,7 @@ var (
 	SessionRouterGroup            = "/dms/sessions"
 	UserRouterGroup               = "/dms/users"
 	DBServiceRouterGroup          = "/dms/projects/:project_uid/db_services"
+	DBEnvironmentTagGroup         = "/dms/projects/:project_uid/environment_tags"
 	ProxyRouterGroup              = "/dms/proxys"
 	PluginRouterGroup             = "/dms/plugins"
 	MemberRouterGroup             = "/dms/projects/:project_uid/members"

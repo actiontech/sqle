@@ -8,12 +8,13 @@ import (
 )
 
 type IPluginDBService struct {
-	Name                 string
-	DBType               string
-	Host                 string
-	Port                 string
-	User                 string
-	Business             string
+	Name   string
+	DBType string
+	Host   string
+	Port   string
+	User   string
+	// Business             string
+	EnvironmentTag       *EnvironmentTag
 	SQLERuleTemplateName string
 	SQLERuleTemplateId   string
 	AdditionalParams     params.Params `json:"additional_params" from:"additional_params"`

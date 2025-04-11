@@ -1,13 +1,13 @@
 //go:build !enterprise
 // +build !enterprise
 
-package v2
+package v3
 
 import (
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
 	"github.com/labstack/echo/v4"
 )
 
-func exportSqlManagesV2(c echo.Context) error {
+func getSqlManageList(c echo.Context) error {
 	return v1.ErrCommunityEditionNotSupportSqlManage
 }

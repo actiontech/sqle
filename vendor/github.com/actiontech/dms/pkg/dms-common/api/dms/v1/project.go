@@ -75,7 +75,7 @@ func ToPriority(priority uint8) ProjectPriority {
 	}
 }
 
-// A dms Project
+// swagger:model ListProjectV1
 type ListProject struct {
 	// Project uid
 	ProjectUid string `json:"uid"`

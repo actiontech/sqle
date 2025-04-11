@@ -133,6 +133,7 @@ type ListDBService struct {
 	User string `json:"user"`
 	// db service admin encrypted password
 	Password string `json:"password"`
+	// TODO This parameter is deprecated and will be removed soon.
 	// the db service business name
 	Business string `json:"business"`
 	// DB Service maintenance time
@@ -163,6 +164,13 @@ type ListDBService struct {
 	LastConnectionTestStatus LastConnectionTestStatus `json:"last_connection_test_status"`
 	// DB connect test error message
 	LastConnectionTestErrorMessage string `json:"last_connection_test_error_message,omitempty"`
+}
+
+// swagger:model
+type EnvironmentTag struct {
+	UID string `json:"uid,omitempty"`
+	// 环境属性标签最多50个字符
+	Name string `json:"name" validate:"max=50"`
 }
 
 type SQLEConfig struct {
