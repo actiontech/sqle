@@ -17,12 +17,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           github_action_config.pr_actions: '["opened", "reopened", "ready_for_review", "review_requested", "synchronize"]'
-          OPENAI_API_VERSION: "2024-07-01-preview"
+          OPENAI_API_VERSION: ${{ vars.AZURE_API_VERSION }}
           github_action_config.auto_review: "true"
           github_action_config.auto_describe: "true"
           github_action_config.auto_improve: "true"
           OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
           OPENAI.API_TYPE: "azure"
           OPENAI.API_BASE: ${{ secrets.OPENAI_API_BASE }}
-          AZURE_API_VERSION: "2024-12-01-preview"
+          AZURE_API_VERSION: ${{ vars.AZURE_API_VERSION }}
           OPENAI.DEPLOYMENT_ID: ${{ secrets.DEPLOYMENT_ID }}
