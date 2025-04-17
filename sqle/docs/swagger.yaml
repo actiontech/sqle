@@ -2068,6 +2068,19 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetInstanceOverviewStatisticsRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.InstanceOverviewStatistics'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetInstanceSchemaResV1:
     properties:
       code:
@@ -3272,6 +3285,17 @@ definitions:
         type: string
       instance_name:
         type: string
+    type: object
+  v1.InstanceOverviewStatistics:
+    properties:
+      avg_score:
+        type: number
+      high_priority_sql_count:
+        type: integer
+      instance_id:
+        type: string
+      pending_workflow_count:
+        type: integer
     type: object
   v1.InstanceSchemaResV1:
     properties:
@@ -12748,6 +12772,28 @@ paths:
       summary: 直接审核SQL
       tags:
       - sql_audit
+  /v1/statistic/instances/resource_overview_statistics:
+    get:
+      description: get instance overview statistics including average score, high
+        priority SQL count and pending workflow count
+      operationId: getInstanceOverviewStatisticsV1
+      parameters:
+      - description: filter by db service ids
+        in: query
+        items:
+          type: string
+        name: filter_by_db_service_ids
+        type: array
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetInstanceOverviewStatisticsRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取实例概览统计信息
+      tags:
+      - statistic
   /v1/statistic/instances/sql_average_execution_time:
     get:
       description: get average execution time of sql
