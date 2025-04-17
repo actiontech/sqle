@@ -152,6 +152,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1Router.POST("/configurations/git/test", v1.TestGitConnectionV1, sqleMiddleware.OpGlobalAllowed())
 
 		// statistic
+		v1Router.GET("/statistic/instances/resource_overview_statistics", v1.GetInstanceOverviewStatistics)
 		v1Router.GET("/statistic/instances/type_percent", v1.GetInstancesTypePercentV1, sqleMiddleware.ViewGlobalAllowed())
 		v1Router.GET("/statistic/instances/sql_average_execution_time", v1.GetSqlAverageExecutionTimeV1, sqleMiddleware.ViewGlobalAllowed())
 		v1Router.GET("/statistic/license/usage", v1.GetLicenseUsageV1, sqleMiddleware.ViewGlobalAllowed())
