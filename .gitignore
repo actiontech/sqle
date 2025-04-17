@@ -14,3 +14,4 @@ bin/
 ui/
 static/
 .vscode/
+jdk/
