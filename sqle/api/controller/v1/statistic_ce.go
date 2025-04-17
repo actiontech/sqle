@@ -56,3 +56,7 @@ func getSqlAverageExecutionTimeV1(c echo.Context) error {
 func getSqlExecutionFailPercentV1(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportStatistic)
 }
+
+func getInstanceOverviewStatistics(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportStatistic)
+}
