@@ -1019,3 +1019,32 @@ func GetInstanceHealthV1(c echo.Context) error {
 		Data:    dBTypeHealth,
 	})
 }
+
+type GetInstanceOverviewStatisticsReq struct {
+	FilterByDBServiceIds []string `query:"filter_by_db_service_ids" params:"filter_by_db_service_ids" json:"filter_by_db_service_ids"`
+}
+
+type GetInstanceOverviewStatisticsRes struct {
+	controller.BaseRes
+	Data []InstanceOverviewStatistics `json:"data"`
+}
+
+type InstanceOverviewStatistics struct {
+	InstanceID           string  `json:"instance_id"`
+	AvgScore             float32 `json:"avg_score"`
+	HighPrioritySQLCount int32   `json:"high_priority_sql_count"`
+	PendingWorkflowCount int32   `json:"pending_workflow_count"`
+}
+
+// GetInstanceOverviewStatistics
+// @Summary 获取实例概览统计信息
+// @Description get instance overview statistics including average score, high priority SQL count and pending workflow count
+// @Tags statistic
+// @Id getInstanceOverviewStatisticsV1
+// @Security ApiKeyAuth
+// @Param filter_by_db_service_ids query []string false "filter by db service ids"
+// @Success 200 {object} v1.GetInstanceOverviewStatisticsRes
+// @router /v1/statistic/instances/resource_overview_statistics [get]
+func GetInstanceOverviewStatistics(c echo.Context) error {
+	return getInstanceOverviewStatistics(c)
+}

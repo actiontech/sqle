@@ -9144,6 +9144,40 @@ var doc = `{
                 }
             }
         },
+        "/v1/statistic/instances/resource_overview_statistics": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get instance overview statistics including average score, high priority SQL count and pending workflow count",
+                "tags": [
+                    "statistic"
+                ],
+                "summary": "获取实例概览统计信息",
+                "operationId": "getInstanceOverviewStatisticsV1",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "filter by db service ids",
+                        "name": "filter_by_db_service_ids",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetInstanceOverviewStatisticsRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/statistic/instances/sql_average_execution_time": {
             "get": {
                 "security": [
@@ -15250,6 +15284,25 @@ var doc = `{
                 }
             }
         },
+        "v1.GetInstanceOverviewStatisticsRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.InstanceOverviewStatistics"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetInstanceSchemaResV1": {
             "type": "object",
             "properties": {
@@ -16988,6 +17041,23 @@ var doc = `{
                 },
                 "instance_name": {
                     "type": "string"
+                }
+            }
+        },
+        "v1.InstanceOverviewStatistics": {
+            "type": "object",
+            "properties": {
+                "avg_score": {
+                    "type": "number"
+                },
+                "high_priority_sql_count": {
+                    "type": "integer"
+                },
+                "instance_id": {
+                    "type": "string"
+                },
+                "pending_workflow_count": {
+                    "type": "integer"
                 }
             }
         },
