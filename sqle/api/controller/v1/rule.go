@@ -498,6 +498,7 @@ type RuleResV1 struct {
 	HasAuditPower   bool                `json:"has_audit_power"`
 	HasRewritePower bool                `json:"has_rewrite_power"`
 	Categories      map[string][]string `json:"categories"`
+	Version         uint32              `json:"version"`
 }
 
 type RuleParamResV1 struct {
@@ -538,6 +539,7 @@ func convertRuleToRes(ctx context.Context, rule *model.Rule) RuleResV1 {
 		ruleRes.Params = paramsRes
 	}
 	ruleRes.Categories = associateCategories(rule.Categories)
+	ruleRes.Version = rule.Version
 	return ruleRes
 }
 
@@ -554,6 +556,7 @@ func convertCustomRuleToRuleResV1(rule *model.CustomRule) RuleResV1 {
 		HasRewritePower: false,
 	}
 	ruleRes.Categories = associateCategories(rule.Categories)
+	ruleRes.Version = 1
 	return ruleRes
 }
 
