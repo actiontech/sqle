@@ -374,7 +374,7 @@ var (
 	ApMetaDmTopSQL              = &i18n.Message{ID: "ApMetaDmTopSQL", Other: "DM TOP SQL"}
 	ApMetaObForOracleTopSQL     = &i18n.Message{ID: "ApMetaObForOracleTopSQL", Other: "OceanBase For Oracle TOP SQL"}
 	ApMetaPostgreSQLTopSQL      = &i18n.Message{ID: "ApMetaPostgreSQLTopSQL", Other: "TOP SQL"}
-	ApMetricQueryTimeAvg        = &i18n.Message{ID: "ApMetricQueryTimeAvg", Other: "平均查询时间"}
+	ApMetricQueryTimeAvg        = &i18n.Message{ID: "ApMetricQueryTimeAvg", Other: "平均查询时间(s)"}
 	ApMetricRowExaminedAvg      = &i18n.Message{ID: "ApMetricRowExaminedAvg", Other: "平均扫描行数"}
 
 	ApPriorityHigh = &i18n.Message{ID: "ApPriorityHigh", Other: "高优先级"}
