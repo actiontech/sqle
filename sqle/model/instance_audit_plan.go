@@ -792,7 +792,7 @@ TODO 优先级:低 目的: 优化该方法的SQL性能
 func (s *Storage) GetSQLsToAuditFromManage() ([]*SQLManageRecord, error) {
 	manageRecords := []*SQLManageRecord{}
 	err := s.db.Limit(1000).Model(SQLManageRecord{}).
-		Joins("JOIN audit_plans_v2 apv ON sql_manage_records.source_id = apv.instance_audit_plan_id AND sql_manage_records.source = apv.type AND apv.deleted_at IS NULL").
+		Joins("JOIN audit_plans_v2 apv ON sql_manage_records.source_id = CONCAT(apv.instance_audit_plan_id, '') AND sql_manage_records.source = apv.type AND apv.deleted_at IS NULL").
 		Joins("JOIN sql_manage_record_processes smrp ON sql_manage_records.id =smrp.sql_manage_record_id").
 		Where("sql_manage_records.updated_at > smrp.last_audit_time OR smrp.last_audit_time IS NULL").
 		Find(&manageRecords).Error
