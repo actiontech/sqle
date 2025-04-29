@@ -5694,6 +5694,72 @@ var doc = `{
                 }
             }
         },
+        "/v1/projects/{project_name}/sql_manages/sql_performance_insights": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get sql manage sql performance insights",
+                "tags": [
+                    "SqlManage"
+                ],
+                "summary": "获取SQL管控SQL性能洞察图表数据",
+                "operationId": "GetSqlManageSqlPerformanceInsights",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "comprehensive_trend",
+                            "slow_sql_trend",
+                            "top_sql_trend",
+                            "active_session_trend"
+                        ],
+                        "type": "string",
+                        "description": "metric name",
+                        "name": "metric_name",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "start time",
+                        "name": "start_time",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "end time",
+                        "name": "end_time",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "instance_name",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSqlManageSqlPerformanceInsightsResp"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{project_name}/sql_manages/{sql_manage_id}/sql_analysis": {
             "get": {
                 "security": [
@@ -16193,6 +16259,23 @@ var doc = `{
                 }
             }
         },
+        "v1.GetSqlManageSqlPerformanceInsightsResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.SqlManageSqlPerformanceInsights"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetSqlVersionDetailResV1": {
             "type": "object",
             "properties": {
@@ -17244,6 +17327,20 @@ var doc = `{
                 }
             }
         },
+        "v1.Line": {
+            "type": "object",
+            "properties": {
+                "line_name": {
+                    "type": "string"
+                },
+                "points": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ChartPoint"
+                    }
+                }
+            }
+        },
         "v1.ListTableBySchemaResV1": {
             "type": "object",
             "properties": {
@@ -18169,6 +18266,9 @@ var doc = `{
                 "type": {
                     "type": "string",
                     "example": "全局配置"
+                },
+                "version": {
+                    "type": "integer"
                 }
             }
         },
@@ -18778,6 +18878,26 @@ var doc = `{
                         "EPIC",
                         "SUB_TASK"
                     ]
+                }
+            }
+        },
+        "v1.SqlManageSqlPerformanceInsights": {
+            "type": "object",
+            "properties": {
+                "lines": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.Line"
+                    }
+                },
+                "message": {
+                    "type": "string"
+                },
+                "x_info": {
+                    "type": "string"
+                },
+                "y_info": {
+                    "type": "string"
                 }
             }
         },

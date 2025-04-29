@@ -2,6 +2,8 @@ package v1
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 
 	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"github.com/actiontech/sqle/sqle/api/controller"
@@ -560,4 +562,267 @@ type AbnormalAuditPlanInstance struct {
 // @Router /v1/projects/{project_name}/sql_manages/abnormal_audit_plan_instance [get]
 func GetAbnormalInstanceAuditPlans(c echo.Context) error {
 	return getAbnormalInstanceAuditPlans(c)
+}
+
+type GetSqlManageSqlPerformanceInsightsResp struct {
+	controller.BaseRes
+	Data *SqlManageSqlPerformanceInsights `json:"data"`
+}
+
+type SqlManageSqlPerformanceInsights struct {
+	XInfo   *string `json:"x_info"`
+	YInfo   *string `json:"y_info"`
+	Message string  `json:"message"`
+	Lines   *[]Line `json:"lines"`
+}
+
+type Line struct {
+	LineName string        `json:"line_name"`
+	Points   *[]ChartPoint `json:"points"`
+}
+
+// 定义SQL性能洞察指标类型
+type MetricName string
+
+const (
+	MetricNameComprehensiveTrend MetricName = "comprehensive_trend"  // 数据源综合趋势
+	MetricNameSlowSQLTrend       MetricName = "slow_sql_trend"       // 慢SQL趋势
+	MetricNameTopSQLTrend        MetricName = "top_sql_trend"        // TopSQL趋势
+	MetricNameActiveSessionTrend MetricName = "active_session_trend" // 活跃会话数趋势
+)
+
+// GetSqlManageSqlPerformanceInsights
+// @Summary 获取SQL管控SQL性能洞察图表数据
+// @Description get sql manage sql performance insights
+// @Id GetSqlManageSqlPerformanceInsights
+// @Tags SqlManage
+// @Param project_name path string true "project name"
+// @Param metric_name query string true "metric name" Enums(comprehensive_trend,slow_sql_trend,top_sql_trend,active_session_trend)
+// @Param start_time query string true "start time"
+// @Param end_time query string true "end time"
+// @Param instance_name query string true "instance name"
+// @Security ApiKeyAuth
+// @Success 200 {object} GetSqlManageSqlPerformanceInsightsResp
+// @Router /v1/projects/{project_name}/sql_manages/sql_performance_insights [get]
+func GetSqlManageSqlPerformanceInsights(c echo.Context) error {
+	// 获取指标类型参数
+	metricNameStr := c.QueryParam("metric_name")
+	metricName := MetricName(metricNameStr)
+
+	// 构建时间点数据 - 所有图表使用相同的时间范围
+	timePoints := []string{
+		"03-19 00:00", "03-19 03:00", "03-19 06:00", "03-19 09:00",
+		"03-19 12:00", "03-19 15:00", "03-19 18:00", "03-19 21:00",
+		"03-20 00:00",
+	}
+
+	var lines []Line
+	var xInfo, yInfo string
+
+	switch metricName {
+	case MetricNameComprehensiveTrend:
+		// 数据源综合性能趋势 - 四条线
+		xInfo = "时间"
+		yInfo = "指标值"
+
+		// CPU使用率数据
+		cpuPoints := make([]ChartPoint, len(timePoints))
+		cpuValues := []float64{50.0, 35.0, 70.0, 45.0, 30.0, 45.0, 65.0, 90.0, 75.0}
+		for i, t := range timePoints {
+			x := t
+			y := cpuValues[i]
+			cpuPoints[i] = ChartPoint{
+				X: &x,
+				Y: &y,
+				Infos: []map[string]string{
+					{"值": fmt.Sprintf("%.1f%%", y)},
+				},
+			}
+		}
+
+		// 磁盘I/O数据
+		diskIOPoints := make([]ChartPoint, len(timePoints))
+		diskIOValues := []float64{40.0, 45.0, 35.0, 50.0, 60.0, 45.0, 55.0, 65.0, 55.0}
+		for i, t := range timePoints {
+			x := t
+			y := diskIOValues[i]
+			diskIOPoints[i] = ChartPoint{
+				X: &x,
+				Y: &y,
+				Infos: []map[string]string{
+					{"值": fmt.Sprintf("%.1f MB/s", y)},
+				},
+			}
+		}
+
+		// 连接数数据
+		connectionPoints := make([]ChartPoint, len(timePoints))
+		connectionValues := []float64{60.0, 50.0, 45.0, 40.0, 50.0, 45.0, 40.0, 35.0, 45.0}
+		for i, t := range timePoints {
+			x := t
+			y := connectionValues[i]
+			connectionPoints[i] = ChartPoint{
+				X: &x,
+				Y: &y,
+				Infos: []map[string]string{
+					{"值": fmt.Sprintf("%.0f", y)},
+				},
+			}
+		}
+
+		// 网络流量数据
+		networkPoints := make([]ChartPoint, len(timePoints))
+		networkValues := []float64{55.0, 65.0, 60.0, 70.0, 75.0, 65.0, 80.0, 70.0, 85.0}
+		for i, t := range timePoints {
+			x := t
+			y := networkValues[i]
+			networkPoints[i] = ChartPoint{
+				X: &x,
+				Y: &y,
+				Infos: []map[string]string{
+					{"值": fmt.Sprintf("%.1f MB/s", y)},
+				},
+			}
+		}
+
+		// 构建四条线
+		lines = []Line{
+			{
+				LineName: "CPU使用率",
+				Points:   &cpuPoints,
+			},
+			{
+				LineName: "磁盘I/O",
+				Points:   &diskIOPoints,
+			},
+			{
+				LineName: "连接数",
+				Points:   &connectionPoints,
+			},
+			{
+				LineName: "网络流量",
+				Points:   &networkPoints,
+			},
+		}
+
+	case MetricNameSlowSQLTrend:
+		// 慢SQL趋势 - 一条线
+		xInfo = "时间"
+		yInfo = "慢SQL数量"
+
+		// 慢SQL数量数据
+		slowSQLPoints := make([]ChartPoint, len(timePoints))
+		slowSQLValues := []float64{5.0, 8.0, 6.0, 10.0, 15.0, 10.0, 20.0, 50.0, 35.0}
+		for i, t := range timePoints {
+			x := t
+			y := slowSQLValues[i]
+			slowSQLPoints[i] = ChartPoint{
+				X: &x,
+				Y: &y,
+				Infos: []map[string]string{
+					{"数量": fmt.Sprintf("%.0f", y)},
+				},
+			}
+		}
+
+		lines = []Line{
+			{
+				LineName: "慢SQL数量",
+				Points:   &slowSQLPoints,
+			},
+		}
+
+	case MetricNameTopSQLTrend:
+		// TopSQL执行趋势 - 两条线
+		xInfo = "时间"
+		yInfo = "执行指标"
+
+		// 执行次数数据
+		execCountPoints := make([]ChartPoint, len(timePoints))
+		execCountValues := []float64{30.0, 35.0, 32.0, 40.0, 45.0, 55.0, 65.0, 75.0, 70.0}
+		for i, t := range timePoints {
+			x := t
+			y := execCountValues[i]
+			execCountPoints[i] = ChartPoint{
+				X: &x,
+				Y: &y,
+				Infos: []map[string]string{
+					{"执行次数": fmt.Sprintf("%.0f", y)},
+				},
+			}
+		}
+
+		// 执行时间数据
+		execTimePoints := make([]ChartPoint, len(timePoints))
+		execTimeValues := []float64{25.0, 30.0, 25.0, 35.0, 45.0, 60.0, 70.0, 85.0, 75.0}
+		for i, t := range timePoints {
+			x := t
+			y := execTimeValues[i]
+			execTimePoints[i] = ChartPoint{
+				X: &x,
+				Y: &y,
+				Infos: []map[string]string{
+					{"执行时间": fmt.Sprintf("%.0f ms", y)},
+				},
+			}
+		}
+
+		lines = []Line{
+			{
+				LineName: "执行次数",
+				Points:   &execCountPoints,
+			},
+			{
+				LineName: "执行时间",
+				Points:   &execTimePoints,
+			},
+		}
+
+	case MetricNameActiveSessionTrend:
+		// 活跃会话数趋势 - 一条线
+		xInfo = "时间"
+		yInfo = "会话数"
+
+		// 活跃会话数据
+		sessionPoints := make([]ChartPoint, len(timePoints))
+		sessionValues := []float64{40.0, 50.0, 40.0, 50.0, 45.0, 60.0, 80.0, 150.0, 120.0}
+		for i, t := range timePoints {
+			x := t
+			y := sessionValues[i]
+			sessionPoints[i] = ChartPoint{
+				X: &x,
+				Y: &y,
+				Infos: []map[string]string{
+					{"会话数": fmt.Sprintf("%.0f", y)},
+				},
+			}
+		}
+
+		lines = []Line{
+			{
+				LineName: "活跃会话数",
+				Points:   &sessionPoints,
+			},
+		}
+
+	default:
+		// 默认返回空数据
+		xInfo = "时间"
+		yInfo = "指标值"
+		lines = []Line{}
+	}
+
+	// 返回结果
+	return c.JSON(http.StatusOK, GetSqlManageSqlPerformanceInsightsResp{
+		BaseRes: controller.BaseRes{
+			Code:    0,
+			Message: "success",
+		},
+		Data: &SqlManageSqlPerformanceInsights{
+			XInfo:   &xInfo,
+			YInfo:   &yInfo,
+			Message: "",
+			Lines:   &lines,
+		},
+	})
 }

@@ -47,3 +47,7 @@ func getGlobalSqlManageStatistics(c echo.Context) error {
 func getAbnormalInstanceAuditPlans(c echo.Context) error {
 	return ErrCommunityEditionNotSupportSqlManage
 }
+
+func getSqlManageSqlPerformanceInsights(c echo.Context) error {
+	return ErrCommunityEditionNotSupportSqlManage
+}
