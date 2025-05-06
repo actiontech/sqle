@@ -43,7 +43,7 @@ ifeq ($(IS_PRODUCTION_RELEASE),true)
 # 2. if there is no tag on current commit, means that
 #    current branch is on process.
 #    Set rpm name with current branch name(release-1.2109.x-ee or release-1.2109.x -> 1.2109.x).
-    PROJECT_VERSION = $(shell if [ "$$(git tag --points-at HEAD | tail -n1)" ]; then git tag --points-at HEAD | tail -n1 | sed 's/v\(.*\)/\1/'; else git rev-parse --abbrev-ref HEAD | sed 's/release-\(.*\)/\1/' | tr '-' '\n' | head -n1; fi)
+    PROJECT_VERSION = $(shell if [ -n "$(HEAD_TAG)" ]; then echo $(HEAD_TAG) | sed 's/v\(.*\)/\1/'; else git rev-parse --abbrev-ref HEAD | sed 's/release-\(.*\)/\1/' | tr '-' '\n' | head -n1; fi)
 else
 #    When performing daily packaging, set rpm name with current branch name(release-1.2109.x-ee or release-1.2109.x -> 1.2109.x).
     PROJECT_VERSION = $(shell git rev-parse --abbrev-ref HEAD | sed 's/release-\(.*\)/\1/' | tr '-' '\n' | head -n1)
