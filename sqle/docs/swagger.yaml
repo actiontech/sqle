@@ -10964,8 +10964,6 @@ paths:
         name: filter_source
         type: string
       - description: order by field
-        enum:
-        - execute_start_time
         in: query
         name: order_by
         type: string

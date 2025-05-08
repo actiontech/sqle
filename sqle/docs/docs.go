@@ -6245,9 +6245,6 @@ var doc = `{
                         "in": "query"
                     },
                     {
-                        "enum": [
-                            "execute_start_time"
-                        ],
                         "type": "string",
                         "description": "order by field",
                         "name": "order_by",
