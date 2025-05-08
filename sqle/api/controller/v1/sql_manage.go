@@ -856,8 +856,8 @@ type GetSqlManageSqlPerformanceInsightsRelatedSQLReq struct {
 	StartTime    string             `query:"start_time" json:"start_time" valid:"required"`
 	EndTime      string             `query:"end_time" json:"end_time" valid:"required"`
 	FilterSource *SqlSourceTypeEnum `query:"filter_source" json:"filter_source,omitempty" enums:"order,sql_manage"`
-	SortField    *string            `query:"sort_field" json:"sort_field,omitempty" valid:"omitempty,oneof=execute_start_time" enums:"execute_start_time"`
-	SortOrder    *string            `query:"sort_order" json:"sort_order,omitempty" valid:"omitempty,oneof=asc desc" enums:"asc,desc"`
+	OrderBy      *string            `query:"order_by" json:"order_by,omitempty" valid:"omitempty,oneof=execute_start_time" enums:"execute_start_time"`
+	IsAsc        *bool              `query:"is_asc" json:"is_asc,omitempty"`
 	PageIndex    uint32             `query:"page_index" valid:"required" json:"page_index"`
 	PageSize     uint32             `query:"page_size" valid:"required" json:"page_size"`
 }
@@ -872,8 +872,8 @@ type GetSqlManageSqlPerformanceInsightsRelatedSQLReq struct {
 // @Param start_time query string true "start time"
 // @Param end_time query string true "end time"
 // @Param filter_source query string false "filter by SQL source" Enums(order,sql_manage)
-// @Param sort_field query string false "sort field" Enums(execute_start_time)
-// @Param sort_order query string false "sort order" Enums(asc,desc)
+// @Param order_by query string false "order by field" Enums(execute_start_time)
+// @Param is_asc query bool false "is ascending order"
 // @Param page_index query uint32 true "page index"
 // @Param page_size query uint32 true "size of per page"
 // @Security ApiKeyAuth
@@ -1031,10 +1031,10 @@ func GetSqlManageSqlPerformanceInsightsRelatedSQL(c echo.Context) error {
 	}
 
 	// 应用排序
-	if req.SortField != nil && *req.SortField == "execute_start_time" {
+	if req.OrderBy != nil && *req.OrderBy == "execute_start_time" {
 		// 实现排序逻辑
 		sort.Slice(filteredData, func(i, j int) bool {
-			if req.SortOrder != nil && *req.SortOrder == "desc" {
+			if req.IsAsc != nil && !*req.IsAsc {
 				// 降序排序
 				return filteredData[i].ExecuteStartTime > filteredData[j].ExecuteStartTime
 			}

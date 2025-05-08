@@ -10963,19 +10963,16 @@ paths:
         in: query
         name: filter_source
         type: string
-      - description: sort field
+      - description: order by field
         enum:
         - execute_start_time
         in: query
-        name: sort_field
+        name: order_by
         type: string
-      - description: sort order
-        enum:
-        - asc
-        - desc
+      - description: is ascending order
         in: query
-        name: sort_order
-        type: string
+        name: is_asc
+        type: boolean
       - description: page index
         in: query
         name: page_index

@@ -6249,18 +6249,14 @@ var doc = `{
                             "execute_start_time"
                         ],
                         "type": "string",
-                        "description": "sort field",
-                        "name": "sort_field",
+                        "description": "order by field",
+                        "name": "order_by",
                         "in": "query"
                     },
                     {
-                        "enum": [
-                            "asc",
-                            "desc"
-                        ],
-                        "type": "string",
-                        "description": "sort order",
-                        "name": "sort_order",
+                        "type": "boolean",
+                        "description": "is ascending order",
+                        "name": "is_asc",
                         "in": "query"
                     },
                     {
