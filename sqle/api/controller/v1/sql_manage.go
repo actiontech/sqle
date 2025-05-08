@@ -856,7 +856,7 @@ type GetSqlManageSqlPerformanceInsightsRelatedSQLReq struct {
 	StartTime    string             `query:"start_time" json:"start_time" valid:"required"`
 	EndTime      string             `query:"end_time" json:"end_time" valid:"required"`
 	FilterSource *SqlSourceTypeEnum `query:"filter_source" json:"filter_source,omitempty" enums:"order,sql_manage"`
-	OrderBy      *string            `query:"order_by" json:"order_by,omitempty" valid:"omitempty,oneof=execute_start_time" enums:"execute_start_time"`
+	OrderBy      *string            `query:"order_by" json:"order_by,omitempty"`
 	IsAsc        *bool              `query:"is_asc" json:"is_asc,omitempty"`
 	PageIndex    uint32             `query:"page_index" valid:"required" json:"page_index"`
 	PageSize     uint32             `query:"page_size" valid:"required" json:"page_size"`
@@ -872,7 +872,7 @@ type GetSqlManageSqlPerformanceInsightsRelatedSQLReq struct {
 // @Param start_time query string true "start time"
 // @Param end_time query string true "end time"
 // @Param filter_source query string false "filter by SQL source" Enums(order,sql_manage)
-// @Param order_by query string false "order by field" Enums(execute_start_time)
+// @Param order_by query string false "order by field"
 // @Param is_asc query bool false "is ascending order"
 // @Param page_index query uint32 true "page index"
 // @Param page_size query uint32 true "size of per page"
@@ -1031,15 +1031,35 @@ func GetSqlManageSqlPerformanceInsightsRelatedSQL(c echo.Context) error {
 	}
 
 	// 应用排序
-	if req.OrderBy != nil && *req.OrderBy == "execute_start_time" {
+	if req.OrderBy != nil {
 		// 实现排序逻辑
 		sort.Slice(filteredData, func(i, j int) bool {
-			if req.IsAsc != nil && !*req.IsAsc {
-				// 降序排序
-				return filteredData[i].ExecuteStartTime > filteredData[j].ExecuteStartTime
+			isDescending := req.IsAsc != nil && !*req.IsAsc
+
+			// 根据OrderBy字段进行不同的排序
+			switch *req.OrderBy {
+			case "execute_start_time":
+				if isDescending {
+					return filteredData[i].ExecuteStartTime > filteredData[j].ExecuteStartTime
+				}
+				return filteredData[i].ExecuteStartTime < filteredData[j].ExecuteStartTime
+			case "execute_time":
+				if isDescending {
+					return filteredData[i].ExecuteTime > filteredData[j].ExecuteTime
+				}
+				return filteredData[i].ExecuteTime < filteredData[j].ExecuteTime
+			case "lock_wait_time":
+				if isDescending {
+					return filteredData[i].LockWaitTime > filteredData[j].LockWaitTime
+				}
+				return filteredData[i].LockWaitTime < filteredData[j].LockWaitTime
+			default:
+				// 默认按ExecuteStartTime排序
+				if isDescending {
+					return filteredData[i].ExecuteStartTime > filteredData[j].ExecuteStartTime
+				}
+				return filteredData[i].ExecuteStartTime < filteredData[j].ExecuteStartTime
 			}
-			// 默认升序排序
-			return filteredData[i].ExecuteStartTime < filteredData[j].ExecuteStartTime
 		})
 	}
 
