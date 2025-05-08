@@ -2695,6 +2695,21 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetSqlManageSqlPerformanceInsightsRelatedSQLResp:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.RelatedSQLInfo'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_nums:
+        type: integer
+    type: object
   v1.GetSqlManageSqlPerformanceInsightsResp:
     properties:
       code:
@@ -3798,6 +3813,30 @@ definitions:
   v1.RejectWorkflowReqV1:
     properties:
       reason:
+        type: string
+    type: object
+  v1.RelatedSQLInfo:
+    properties:
+      execute_end_time:
+        type: string
+      execute_start_time:
+        type: string
+      execute_time:
+        description: 执行时间(s)
+        type: number
+      execution_cost_trend:
+        $ref: '#/definitions/v1.SqlAnalysisChart'
+        description: SQL执行代价趋势图表
+        type: object
+      lock_wait_time:
+        description: 锁等待时间(s)
+        type: number
+      source:
+        enum:
+        - order
+        - sql_manage
+        type: string
+      sql_fingerprint:
         type: string
     type: object
   v1.ReleaseWorkflows:
@@ -10624,51 +10663,6 @@ paths:
       summary: 推送SQL管控结果到外部系统
       tags:
       - SqlManage
-  /v1/projects/{project_name}/sql_manages/sql_performance_insights:
-    get:
-      description: get sql manage sql performance insights
-      operationId: GetSqlManageSqlPerformanceInsights
-      parameters:
-      - description: project name
-        in: path
-        name: project_name
-        required: true
-        type: string
-      - description: metric name
-        enum:
-        - comprehensive_trend
-        - slow_sql_trend
-        - top_sql_trend
-        - active_session_trend
-        in: query
-        name: metric_name
-        required: true
-        type: string
-      - description: start time
-        in: query
-        name: start_time
-        required: true
-        type: string
-      - description: end time
-        in: query
-        name: end_time
-        required: true
-        type: string
-      - description: instance name
-        in: query
-        name: instance_name
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetSqlManageSqlPerformanceInsightsResp'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取SQL管控SQL性能洞察图表数据
-      tags:
-      - SqlManage
   /v1/projects/{project_name}/sql_optimization_records:
     get:
       description: get sql optimization records
@@ -10891,6 +10885,117 @@ paths:
       summary: 获取SQL优化语句详情
       tags:
       - sql_optimization
+  /v1/projects/{project_name}/sql_performance_insights:
+    get:
+      description: get sql manage sql performance insights
+      operationId: GetSqlManageSqlPerformanceInsights
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: metric name
+        enum:
+        - comprehensive_trend
+        - slow_sql_trend
+        - top_sql_trend
+        - active_session_trend
+        in: query
+        name: metric_name
+        required: true
+        type: string
+      - description: start time
+        in: query
+        name: start_time
+        required: true
+        type: string
+      - description: end time
+        in: query
+        name: end_time
+        required: true
+        type: string
+      - description: instance name
+        in: query
+        name: instance_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetSqlManageSqlPerformanceInsightsResp'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取SQL管控SQL性能洞察图表数据
+      tags:
+      - SqlManage
+  /v1/projects/{project_name}/sql_performance_insights/related_sql:
+    get:
+      description: Get related SQL for the selected time range in SQL performance
+        insights
+      operationId: GetSqlManageSqlPerformanceInsightsRelatedSQL
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: instance name
+        in: query
+        name: instance_name
+        required: true
+        type: string
+      - description: start time
+        in: query
+        name: start_time
+        required: true
+        type: string
+      - description: end time
+        in: query
+        name: end_time
+        required: true
+        type: string
+      - description: filter by SQL source
+        enum:
+        - order
+        - sql_manage
+        in: query
+        name: filter_source
+        type: string
+      - description: sort field
+        enum:
+        - execute_start_time
+        in: query
+        name: sort_field
+        type: string
+      - description: sort order
+        enum:
+        - asc
+        - desc
+        in: query
+        name: sort_order
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        required: true
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetSqlManageSqlPerformanceInsightsRelatedSQLResp'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取sql洞察 时间选区 的关联SQL
+      tags:
+      - SqlManage
   /v1/projects/{project_name}/sql_versions:
     get:
       consumes:

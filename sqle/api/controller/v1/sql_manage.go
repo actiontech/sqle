@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"sort"
 
 	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"github.com/actiontech/sqle/sqle/api/controller"
@@ -603,7 +604,7 @@ const (
 // @Param instance_name query string true "instance name"
 // @Security ApiKeyAuth
 // @Success 200 {object} GetSqlManageSqlPerformanceInsightsResp
-// @Router /v1/projects/{project_name}/sql_manages/sql_performance_insights [get]
+// @Router /v1/projects/{project_name}/sql_performance_insights [get]
 func GetSqlManageSqlPerformanceInsights(c echo.Context) error {
 	// 获取指标类型参数
 	metricNameStr := c.QueryParam("metric_name")
@@ -611,9 +612,9 @@ func GetSqlManageSqlPerformanceInsights(c echo.Context) error {
 
 	// 构建时间点数据 - 所有图表使用相同的时间范围
 	timePoints := []string{
-		"03-19 00:00", "03-19 03:00", "03-19 06:00", "03-19 09:00",
-		"03-19 12:00", "03-19 15:00", "03-19 18:00", "03-19 21:00",
-		"03-20 00:00",
+		"2025-05-07T00:00:00+08:00", "2025-05-07T03:00:00+08:00", "2025-05-07T06:00:00+08:00", "2025-05-07T09:00:00+08:00",
+		"2025-05-07T12:00:00+08:00", "2025-05-07T15:00:00+08:00", "2025-05-07T18:00:00+08:00", "2025-05-07T21:00:00+08:00",
+		"2025-05-08T00:00:00+08:00",
 	}
 
 	var lines []Line
@@ -824,5 +825,255 @@ func GetSqlManageSqlPerformanceInsights(c echo.Context) error {
 			Message: "",
 			Lines:   &lines,
 		},
+	})
+}
+
+type GetSqlManageSqlPerformanceInsightsRelatedSQLResp struct {
+	controller.BaseRes
+	Data      []*RelatedSQLInfo `json:"data"`
+	TotalNums uint32            `json:"total_nums"`
+}
+
+type SqlSourceTypeEnum string
+
+const (
+	SqlSourceTypeOrder     SqlSourceTypeEnum = "order"
+	SqlSourceTypeSqlManage SqlSourceTypeEnum = "sql_manage"
+)
+
+type RelatedSQLInfo struct {
+	SqlFingerprint     string            `json:"sql_fingerprint"`
+	Source             SqlSourceTypeEnum `json:"source" enums:"order,sql_manage"`
+	ExecuteStartTime   string            `json:"execute_start_time"`
+	ExecuteEndTime     string            `json:"execute_end_time"`
+	ExecuteTime        float64           `json:"execute_time"`                   // 执行时间(s)
+	LockWaitTime       float64           `json:"lock_wait_time"`                 // 锁等待时间(s)
+	ExecutionCostTrend *SqlAnalysisChart `json:"execution_cost_trend,omitempty"` // SQL执行代价趋势图表
+}
+
+type GetSqlManageSqlPerformanceInsightsRelatedSQLReq struct {
+	InstanceName string             `query:"instance_name" json:"instance_name" valid:"required"`
+	StartTime    string             `query:"start_time" json:"start_time" valid:"required"`
+	EndTime      string             `query:"end_time" json:"end_time" valid:"required"`
+	FilterSource *SqlSourceTypeEnum `query:"filter_source" json:"filter_source,omitempty" enums:"order,sql_manage"`
+	SortField    *string            `query:"sort_field" json:"sort_field,omitempty" valid:"omitempty,oneof=execute_start_time" enums:"execute_start_time"`
+	SortOrder    *string            `query:"sort_order" json:"sort_order,omitempty" valid:"omitempty,oneof=asc desc" enums:"asc,desc"`
+	PageIndex    uint32             `query:"page_index" valid:"required" json:"page_index"`
+	PageSize     uint32             `query:"page_size" valid:"required" json:"page_size"`
+}
+
+// GetSqlManageSqlPerformanceInsightsRelatedSQL
+// @Summary 获取sql洞察 时间选区 的关联SQL
+// @Description Get related SQL for the selected time range in SQL performance insights
+// @Id GetSqlManageSqlPerformanceInsightsRelatedSQL
+// @Tags SqlManage
+// @Param project_name path string true "project name"
+// @Param instance_name query string true "instance name"
+// @Param start_time query string true "start time"
+// @Param end_time query string true "end time"
+// @Param filter_source query string false "filter by SQL source" Enums(order,sql_manage)
+// @Param sort_field query string false "sort field" Enums(execute_start_time)
+// @Param sort_order query string false "sort order" Enums(asc,desc)
+// @Param page_index query uint32 true "page index"
+// @Param page_size query uint32 true "size of per page"
+// @Security ApiKeyAuth
+// @Success 200 {object} GetSqlManageSqlPerformanceInsightsRelatedSQLResp
+// @Router /v1/projects/{project_name}/sql_performance_insights/related_sql [get]
+func GetSqlManageSqlPerformanceInsightsRelatedSQL(c echo.Context) error {
+	// 解析请求参数
+	req := &GetSqlManageSqlPerformanceInsightsRelatedSQLReq{}
+	if err := c.Bind(req); err != nil {
+		return c.JSON(http.StatusBadRequest, controller.BaseRes{
+			Code:    1,
+			Message: err.Error(),
+		})
+	}
+
+	// 创建SQL执行代价趋势示例数据
+	createExecutionCostTrend := func(startValue, endValue float64) *SqlAnalysisChart {
+		timePoints := []string{
+			"2023-05-01T00:00:00+08:00", "2023-05-01T00:00:00+08:00", "2023-05-02T00:00:00+08:00", "2023-05-03T00:00:00+08:00",
+			"2023-05-04T00:00:00+08:00", "2023-05-05T00:00:00+08:00", "2023-05-05T00:00:00+08:00", "2023-05-06T00:00:00+08:00",
+			"2023-05-07T00:00:00+08:00",
+		}
+
+		// 线性变化的代价值
+		step := (endValue - startValue) / float64(len(timePoints)-1)
+		points := make([]ChartPoint, len(timePoints))
+
+		for i, t := range timePoints {
+			x := t
+			y := startValue + step*float64(i)
+			points[i] = ChartPoint{
+				X: &x,
+				Y: &y,
+				Infos: []map[string]string{
+					{"代价": fmt.Sprintf("%.2f", y)},
+				},
+			}
+		}
+
+		xInfo := "时间"
+		yInfo := "执行代价"
+
+		return &SqlAnalysisChart{
+			Points:  &points,
+			XInfo:   &xInfo,
+			YInfo:   &yInfo,
+			Message: "",
+		}
+	}
+
+	// 扩展示例数据到10条
+	mockData := []*RelatedSQLInfo{
+		{
+			SqlFingerprint:     "SELECT * FROM users WHERE user_id = 100",
+			Source:             SqlSourceTypeSqlManage,
+			ExecuteStartTime:   "2023-05-07T10:15:00+08:00",
+			ExecuteEndTime:     "2023-05-07T10:15:01+08:00",
+			ExecuteTime:        1.2,
+			LockWaitTime:       0.1,
+			ExecutionCostTrend: createExecutionCostTrend(10.5, 25.8),
+		},
+		{
+			SqlFingerprint:     "UPDATE orders SET status = 'completed' WHERE order_id = 5001",
+			Source:             SqlSourceTypeOrder,
+			ExecuteStartTime:   "2023-05-07T10:20:00+08:00",
+			ExecuteEndTime:     "2023-05-07T10:20:02+08:00",
+			ExecuteTime:        2.0,
+			LockWaitTime:       0.5,
+			ExecutionCostTrend: createExecutionCostTrend(15.3, 12.1),
+		},
+		{
+			SqlFingerprint:   "SELECT * FROM products WHERE category_id = 3 ORDER BY price DESC LIMIT 10",
+			Source:           SqlSourceTypeSqlManage,
+			ExecuteStartTime: "2023-05-07T10:25:00+08:00",
+			ExecuteEndTime:   "2023-05-07T10:25:00+08:00",
+			ExecuteTime:      0.5,
+			LockWaitTime:     0.0,
+			// 不是所有记录都有趋势数据
+		},
+		{
+			SqlFingerprint:     "INSERT INTO user_logs (user_id, action, timestamp) VALUES (102, 'login', NOW())",
+			Source:             SqlSourceTypeOrder,
+			ExecuteStartTime:   "2023-05-07T10:30:00+08:00",
+			ExecuteEndTime:     "2023-05-07T10:30:01+08:00",
+			ExecuteTime:        0.8,
+			LockWaitTime:       0.2,
+			ExecutionCostTrend: createExecutionCostTrend(5.2, 18.9),
+		},
+		{
+			SqlFingerprint:     "SELECT u.name, o.order_date FROM users u JOIN orders o ON u.id = o.user_id WHERE o.status = 'pending'",
+			Source:             SqlSourceTypeSqlManage,
+			ExecuteStartTime:   "2023-05-07T10:35:00+08:00",
+			ExecuteEndTime:     "2023-05-07T10:35:03+08:00",
+			ExecuteTime:        3.2,
+			LockWaitTime:       0.3,
+			ExecutionCostTrend: createExecutionCostTrend(30.5, 45.2),
+		},
+		{
+			SqlFingerprint:     "DELETE FROM cart_items WHERE created_at < DATE_SUB(NOW(), INTERVAL 30 DAY)",
+			Source:             SqlSourceTypeOrder,
+			ExecuteStartTime:   "2023-05-07T10:40:00+08:00",
+			ExecuteEndTime:     "2023-05-07T10:40:05+08:00",
+			ExecuteTime:        4.5,
+			LockWaitTime:       1.2,
+			ExecutionCostTrend: createExecutionCostTrend(22.7, 18.1),
+		},
+		{
+			SqlFingerprint:   "UPDATE inventory SET quantity = quantity - 1 WHERE product_id = 555",
+			Source:           SqlSourceTypeSqlManage,
+			ExecuteStartTime: "2023-05-07T10:45:00+08:00",
+			ExecuteEndTime:   "2023-05-07T10:45:01+08:00",
+			ExecuteTime:      0.9,
+			LockWaitTime:     0.4,
+			// 不是所有记录都有趋势数据
+		},
+		{
+			SqlFingerprint:     "SELECT COUNT(*) FROM customer_support_tickets WHERE status != 'closed' GROUP BY priority",
+			Source:             SqlSourceTypeOrder,
+			ExecuteStartTime:   "2023-05-07T10:50:00+08:00",
+			ExecuteEndTime:     "2023-05-07T10:50:02+08:00",
+			ExecuteTime:        1.8,
+			LockWaitTime:       0.1,
+			ExecutionCostTrend: createExecutionCostTrend(8.3, 27.5),
+		},
+		{
+			SqlFingerprint:     "SELECT p.name, SUM(oi.quantity) FROM products p JOIN order_items oi ON p.id = oi.product_id GROUP BY p.id ORDER BY SUM(oi.quantity) DESC LIMIT 5",
+			Source:             SqlSourceTypeSqlManage,
+			ExecuteStartTime:   "2023-05-07T10:55:00+08:00",
+			ExecuteEndTime:     "2023-05-07T10:55:04+08:00",
+			ExecuteTime:        3.8,
+			LockWaitTime:       0.2,
+			ExecutionCostTrend: createExecutionCostTrend(40.1, 35.6),
+		},
+		{
+			SqlFingerprint:     "ALTER TABLE user_sessions ADD COLUMN last_activity TIMESTAMP",
+			Source:             SqlSourceTypeOrder,
+			ExecuteStartTime:   "2023-05-07T11:00:00+08:00",
+			ExecuteEndTime:     "2023-05-07T11:00:10+08:00",
+			ExecuteTime:        10.0,
+			LockWaitTime:       1.5,
+			ExecutionCostTrend: createExecutionCostTrend(18.0, 60.0),
+		},
+	}
+
+	// 应用筛选条件
+	var filteredData []*RelatedSQLInfo
+	if req.FilterSource != nil {
+		for _, item := range mockData {
+			if item.Source == *req.FilterSource {
+				filteredData = append(filteredData, item)
+			}
+		}
+	} else {
+		filteredData = mockData
+	}
+
+	// 应用排序
+	if req.SortField != nil && *req.SortField == "execute_start_time" {
+		// 实现排序逻辑
+		sort.Slice(filteredData, func(i, j int) bool {
+			if req.SortOrder != nil && *req.SortOrder == "desc" {
+				// 降序排序
+				return filteredData[i].ExecuteStartTime > filteredData[j].ExecuteStartTime
+			}
+			// 默认升序排序
+			return filteredData[i].ExecuteStartTime < filteredData[j].ExecuteStartTime
+		})
+	}
+
+	// 应用分页
+	totalNums := uint32(33)
+
+	// 计算分页范围
+	startIndex := (req.PageIndex - 1) * req.PageSize
+	endIndex := startIndex + req.PageSize
+
+	// 边界检查
+	if startIndex >= uint32(len(filteredData)) {
+		startIndex = 0
+		endIndex = 0
+	}
+
+	if endIndex > uint32(len(filteredData)) {
+		endIndex = uint32(len(filteredData))
+	}
+
+	// 获取当前页的数据
+	var pageData []*RelatedSQLInfo
+	if endIndex > startIndex {
+		pageData = filteredData[startIndex:endIndex]
+	} else {
+		pageData = []*RelatedSQLInfo{}
+	}
+
+	return c.JSON(http.StatusOK, GetSqlManageSqlPerformanceInsightsRelatedSQLResp{
+		BaseRes: controller.BaseRes{
+			Code:    0,
+			Message: "success",
+		},
+		Data:      pageData,
+		TotalNums: totalNums,
 	})
 }

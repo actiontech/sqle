@@ -5694,72 +5694,6 @@ var doc = `{
                 }
             }
         },
-        "/v1/projects/{project_name}/sql_manages/sql_performance_insights": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get sql manage sql performance insights",
-                "tags": [
-                    "SqlManage"
-                ],
-                "summary": "获取SQL管控SQL性能洞察图表数据",
-                "operationId": "GetSqlManageSqlPerformanceInsights",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "project name",
-                        "name": "project_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "enum": [
-                            "comprehensive_trend",
-                            "slow_sql_trend",
-                            "top_sql_trend",
-                            "active_session_trend"
-                        ],
-                        "type": "string",
-                        "description": "metric name",
-                        "name": "metric_name",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "start time",
-                        "name": "start_time",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "end time",
-                        "name": "end_time",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "instance name",
-                        "name": "instance_name",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetSqlManageSqlPerformanceInsightsResp"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/projects/{project_name}/sql_manages/{sql_manage_id}/sql_analysis": {
             "get": {
                 "security": [
@@ -6187,6 +6121,168 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetOptimizationSQLRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/sql_performance_insights": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get sql manage sql performance insights",
+                "tags": [
+                    "SqlManage"
+                ],
+                "summary": "获取SQL管控SQL性能洞察图表数据",
+                "operationId": "GetSqlManageSqlPerformanceInsights",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "comprehensive_trend",
+                            "slow_sql_trend",
+                            "top_sql_trend",
+                            "active_session_trend"
+                        ],
+                        "type": "string",
+                        "description": "metric name",
+                        "name": "metric_name",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "start time",
+                        "name": "start_time",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "end time",
+                        "name": "end_time",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "instance_name",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSqlManageSqlPerformanceInsightsResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/sql_performance_insights/related_sql": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get related SQL for the selected time range in SQL performance insights",
+                "tags": [
+                    "SqlManage"
+                ],
+                "summary": "获取sql洞察 时间选区 的关联SQL",
+                "operationId": "GetSqlManageSqlPerformanceInsightsRelatedSQL",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "instance_name",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "start time",
+                        "name": "start_time",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "end time",
+                        "name": "end_time",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "order",
+                            "sql_manage"
+                        ],
+                        "type": "string",
+                        "description": "filter by SQL source",
+                        "name": "filter_source",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "execute_start_time"
+                        ],
+                        "type": "string",
+                        "description": "sort field",
+                        "name": "sort_field",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "description": "sort order",
+                        "name": "sort_order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSqlManageSqlPerformanceInsightsRelatedSQLResp"
                         }
                     }
                 }
@@ -16259,6 +16355,28 @@ var doc = `{
                 }
             }
         },
+        "v1.GetSqlManageSqlPerformanceInsightsRelatedSQLResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.RelatedSQLInfo"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
+                }
+            }
+        },
         "v1.GetSqlManageSqlPerformanceInsightsResp": {
             "type": "object",
             "properties": {
@@ -17872,6 +17990,40 @@ var doc = `{
             "type": "object",
             "properties": {
                 "reason": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.RelatedSQLInfo": {
+            "type": "object",
+            "properties": {
+                "execute_end_time": {
+                    "type": "string"
+                },
+                "execute_start_time": {
+                    "type": "string"
+                },
+                "execute_time": {
+                    "description": "执行时间(s)",
+                    "type": "number"
+                },
+                "execution_cost_trend": {
+                    "description": "SQL执行代价趋势图表",
+                    "type": "object",
+                    "$ref": "#/definitions/v1.SqlAnalysisChart"
+                },
+                "lock_wait_time": {
+                    "description": "锁等待时间(s)",
+                    "type": "number"
+                },
+                "source": {
+                    "type": "string",
+                    "enum": [
+                        "order",
+                        "sql_manage"
+                    ]
+                },
+                "sql_fingerprint": {
                     "type": "string"
                 }
             }
