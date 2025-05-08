@@ -944,7 +944,7 @@ var (
 	Rule00054Message    = &i18n.Message{ID: "Rule00054Message", Other: "建议主键字段使用BIGINT时采用无符号的BIGINT"}
 	Rule00055Desc       = &i18n.Message{ID: "Rule00055Desc", Other: "不建议创建冗余索引"}
 	Rule00055Annotation = &i18n.Message{ID: "Rule00055Annotation", Other: "MySQL需要单独维护重复的索引，冗余索引增加维护成本，影响更新性能"}
-	Rule00055Message    = &i18n.Message{ID: "Rule00055Message", Other: "已存在索引 %v , 索引 %v 为冗余索引"}
+	Rule00055Message    = &i18n.Message{ID: "Rule00055Message", Other: "在 %v 字段已存在 %v 索引，索引 %v 为冗余索引"}
 	Rule00056Desc       = &i18n.Message{ID: "Rule00056Desc", Other: "表建议使用指定的字符集"}
 	Rule00056Annotation = &i18n.Message{ID: "Rule00056Annotation", Other: "数据库内使用非标准的字符集，可能导致字符无法编码或者编码不全引起的乱码，最终出现应用写入数据失败或者查询结果显示乱码，影响数据库服务可用性。"}
 	Rule00056Message    = &i18n.Message{ID: "Rule00056Message", Other: "表建议使用指定的字符集: %v"}
