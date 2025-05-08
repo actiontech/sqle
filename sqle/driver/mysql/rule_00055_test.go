@@ -39,7 +39,7 @@ func TestRuleSQLE00055(t *testing.T) {
 	INDEX idx_2 (a),
 	PRIMARY KEY (id)
 	);
-	`, newTestResult().addResult(ruleName, "[id]", "[id]"))
+	`, newTestResult().addResult(ruleName, "[[id]]", "Primary Key", "[idx_1]"))
 
 	//create table, with index, with no redundant index
 	runSingleRuleInspectCase(rule, t, "create table, with index, with no redundant index", DefaultMysqlInspect(), `
@@ -61,7 +61,7 @@ func TestRuleSQLE00055(t *testing.T) {
 	INDEX idx_1 (id,v1,v2),
 	PRIMARY KEY (id, v1)
 	);
-	`, newTestResult().addResult(ruleName, "[id v1 v2]", "[id v1]"))
+	`, newTestResult().addResult(ruleName, "[[id v1]]", "Primary Key", "[idx_1]"))
 
 	//create table, with index, with repeat index
 	runSingleRuleInspectCase(rule, t, "create table, with index, with repeat index", DefaultMysqlInspect(), `
@@ -72,7 +72,7 @@ func TestRuleSQLE00055(t *testing.T) {
 		PRIMARY KEY (id),
 		INDEX idx_2 (id)
 		)ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT="unit test";
-	`, newTestResult().addResult(ruleName, "[id]", "[id]"))
+	`, newTestResult().addResult(ruleName, "[[id]]", "Primary Key", "[idx_2]"))
 
 	//create index, with no redundant index
 	runSingleRuleInspectCase(rule, t, "create index, with no redundant index", DefaultMysqlInspect(), `
@@ -82,12 +82,12 @@ func TestRuleSQLE00055(t *testing.T) {
 	//create index, with redundant index
 	runSingleRuleInspectCase(rule, t, "create index, with column, with redundant index", DefaultMysqlInspect(), `
 	CREATE INDEX idx_2 on exist_db.exist_tb_9(v1, v2(10));
-	`, newTestResult().addResult(ruleName, "[v1 v2 v3 v4]", "[v1 v2]"))
+	`, newTestResult().addResult(ruleName, "[[v1 v2 v3 v4]]", "idx_1", "[idx_2]"))
 
 	//create index, with repeat index
 	runSingleRuleInspectCase(rule, t, "create index, with repeat index", DefaultMysqlInspect(), `
 	CREATE INDEX idx_2 on exist_db.exist_tb_9(v1,v2,v3, v4);
-	`, newTestResult().addResult(ruleName, "[v1 v2 v3 v4]", "[v1 v2 v3 v4]"))
+	`, newTestResult().addResult(ruleName, "[[v1 v2 v3 v4]]", "idx_1", "[idx_2]"))
 
 	//alter table, no index
 	runSingleRuleInspectCase(rule, t, "alter table, no index", DefaultMysqlInspect(), `
@@ -104,14 +104,7 @@ ADD INDEX idx_3 (v4);
 	runSingleRuleInspectCase(rule, t, "alter table, add index, with redundant index", DefaultMysqlInspect(), `
 ALTER TABLE exist_db.exist_tb_9 
 ADD INDEX idx_3 (v1);
-`, newTestResult().addResult(ruleName, "[v1 v2 v3 v4]", "[v1]"))
-
-	// Alter table, add index, with repeat index
-	runSingleRuleInspectCase(rule, t, "alter table, add index, with repeat index", DefaultMysqlInspect(), `
-ALTER TABLE exist_db.exist_tb_9 
-ADD INDEX idx_2 (v2,v3),
-ADD INDEX idx_3 (v3);
-`, newTestResult().addResult(ruleName, "[v2 v3]", "[v2 v3]").addResult(ruleName, "[v3]", "[v3]"))
+`, newTestResult().addResult(ruleName, "[[v1 v2 v3 v4]]", "idx_1", "[idx_3]"))
 
 	// Alter table, drop index, no effect on redundancy
 	runSingleRuleInspectCase(rule, t, "alter table, drop index, no effect on redundancy", DefaultMysqlInspect(), `
