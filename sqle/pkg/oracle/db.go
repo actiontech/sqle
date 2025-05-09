@@ -66,26 +66,33 @@ func (o *DB) QueryTopSQLs(ctx context.Context, topN int, notInUsers []string, or
 		notInUsersStr = strings.Join(notInUsersFormatted, ",")
 		notInUsersStr = fmt.Sprintf(notInUserSqlTpl, notInUsersStr)
 	}
-	query := fmt.Sprintf(DynPerformanceViewSQLAreaTpl, notInUsersStr, orderBy, topN)
-	rows, err := o.db.QueryContext(ctx, query)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to query %s", query)
+	metrics := []string{DynPerformanceViewSQLAreaColumnElapsedTime, DynPerformanceViewSQLAreaColumnCPUTime, DynPerformanceViewSQLAreaColumnDiskReads, DynPerformanceViewSQLAreaColumnBufferGets}
+	if orderBy != "" {
+		metrics = []string{orderBy}
 	}
-	defer rows.Close()
-
+	if topN == 0 {
+		topN = 10
+	}
 	var ret []*DynPerformanceSQLArea
-	for rows.Next() {
-		res := DynPerformanceSQLArea{}
-		err = rows.Scan(&res.SQLFullText, &res.Executions, &res.ElapsedTime, &res.UserIOWaitTime, &res.CPUTime, &res.DiskReads, &res.BufferGets, &res.UserName)
+	for _, metric := range metrics {
+		query := fmt.Sprintf(DynPerformanceViewSQLAreaTpl, notInUsersStr, metric, topN)
+		rows, err := o.db.QueryContext(ctx, query)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to scan %s", query)
+			return nil, errors.Wrapf(err, "failed to query %s", query)
 		}
-		ret = append(ret, &res)
-	}
+		defer rows.Close()
 
-	if err := rows.Err(); err != nil {
-		return nil, errors.Wrapf(err, "failed to iterate %s", query)
+		for rows.Next() {
+			res := DynPerformanceSQLArea{}
+			err = rows.Scan(&res.SQLFullText, &res.Executions, &res.ElapsedTime, &res.UserIOWaitTime, &res.CPUTime, &res.DiskReads, &res.BufferGets, &res.UserName)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to scan %s", query)
+			}
+			ret = append(ret, &res)
+		}
+		if err := rows.Err(); err != nil {
+			return nil, errors.Wrapf(err, "failed to iterate %s", query)
+		}
 	}
-
 	return ret, nil
 }
