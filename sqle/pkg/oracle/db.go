@@ -78,21 +78,24 @@ func (o *DB) QueryTopSQLs(ctx context.Context, topN int, notInUsers []string, or
 		query := fmt.Sprintf(DynPerformanceViewSQLAreaTpl, notInUsersStr, metric, topN)
 		rows, err := o.db.QueryContext(ctx, query)
 		if err != nil {
+			rows.Close()
 			return nil, errors.Wrapf(err, "failed to query %s", query)
 		}
-		defer rows.Close()
 
 		for rows.Next() {
 			res := DynPerformanceSQLArea{}
 			err = rows.Scan(&res.SQLFullText, &res.Executions, &res.ElapsedTime, &res.UserIOWaitTime, &res.CPUTime, &res.DiskReads, &res.BufferGets, &res.UserName)
 			if err != nil {
+				rows.Close()
 				return nil, errors.Wrapf(err, "failed to scan %s", query)
 			}
 			ret = append(ret, &res)
 		}
 		if err := rows.Err(); err != nil {
+			rows.Close()
 			return nil, errors.Wrapf(err, "failed to iterate %s", query)
 		}
+		rows.Close()
 	}
 	return ret, nil
 }
