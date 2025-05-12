@@ -53,7 +53,7 @@ func (o *DB) Close() error {
 	return o.db.Close()
 }
 
-func (o *DB) QueryTopSQLs(ctx context.Context, topN int, notInUsers []string, orderBy string) ([]*DynPerformanceSQLArea, error) {
+func (o *DB) QueryTopSQLs(ctx context.Context, collectIntervalMinute string, topN int, notInUsers []string, orderBy string) ([]*DynPerformanceSQLArea, error) {
 	// if notInUsers is empty, notInUsersStr will be empty
 	// if notInUsers is not empty, notInUsersStr will be formatted as "AND u.username NOT IN ('user1', 'user2')"
 	var notInUsersStr string
@@ -66,26 +66,47 @@ func (o *DB) QueryTopSQLs(ctx context.Context, topN int, notInUsers []string, or
 		notInUsersStr = strings.Join(notInUsersFormatted, ",")
 		notInUsersStr = fmt.Sprintf(notInUserSqlTpl, notInUsersStr)
 	}
-	query := fmt.Sprintf(DynPerformanceViewSQLAreaTpl, notInUsersStr, orderBy, topN)
-	rows, err := o.db.QueryContext(ctx, query)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to query %s", query)
+	metrics := []string{DynPerformanceViewSQLAreaColumnElapsedTime, DynPerformanceViewSQLAreaColumnCPUTime, DynPerformanceViewSQLAreaColumnDiskReads, DynPerformanceViewSQLAreaColumnBufferGets}
+	if orderBy != "" {
+		metrics = []string{orderBy}
 	}
-	defer rows.Close()
-
+	if topN == 0 {
+		topN = 10
+	}
 	var ret []*DynPerformanceSQLArea
-	for rows.Next() {
-		res := DynPerformanceSQLArea{}
-		err = rows.Scan(&res.SQLFullText, &res.Executions, &res.ElapsedTime, &res.UserIOWaitTime, &res.CPUTime, &res.DiskReads, &res.BufferGets, &res.UserName)
+	for _, metric := range metrics {
+		query := fmt.Sprintf(DynPerformanceViewSQLAreaTpl, collectIntervalMinute, notInUsersStr, metric, topN)
+		err := func() error {
+			rows, err := o.db.QueryContext(ctx, query)
+			if err != nil {
+				return errors.Wrapf(err, "failed to query %s", query)
+			}
+			defer rows.Close()
+
+			for rows.Next() {
+				res := DynPerformanceSQLArea{}
+				if err := rows.Scan(
+					&res.SQLFullText,
+					&res.Executions,
+					&res.ElapsedTime,
+					&res.UserIOWaitTime,
+					&res.CPUTime,
+					&res.DiskReads,
+					&res.BufferGets,
+					&res.UserName,
+				); err != nil {
+					return errors.Wrapf(err, "failed to scan %s", query)
+				}
+				ret = append(ret, &res)
+			}
+			if err := rows.Err(); err != nil {
+				return errors.Wrapf(err, "failed to iterate %s", query)
+			}
+			return nil
+		}()
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to scan %s", query)
+			return nil, err
 		}
-		ret = append(ret, &res)
 	}
-
-	if err := rows.Err(); err != nil {
-		return nil, errors.Wrapf(err, "failed to iterate %s", query)
-	}
-
 	return ret, nil
 }

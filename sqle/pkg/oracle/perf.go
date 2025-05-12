@@ -33,6 +33,7 @@ SELECT * FROM (
     JOIN
         DBA_USERS u ON s.parsing_user_id = u.user_id
     WHERE
+        last_active_time >= SYSDATE - INTERVAL '%v' MINUTE AND
         s.EXECUTIONS > 0
         %v
     ORDER BY %v DESC

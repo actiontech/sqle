@@ -164,11 +164,16 @@ var FilterMap = map[FilterName]FilterType{
 }
 
 var OrderByMap = map[string] /* field name */ string /* field name with table*/ {
-	"counter":                "audit_plan_sqls.info->'$.counter'",
-	"last_receive_timestamp": "audit_plan_sqls.info->'$.last_receive_timestamp'",
-	"query_time_avg":         "audit_plan_sqls.info->'$.query_time_avg'",
-	"query_time_max":         "audit_plan_sqls.info->'$.query_time_max'",
-	"row_examined_avg":       "audit_plan_sqls.info->'$.row_examined_avg'",
+	"counter":                 "audit_plan_sqls.info->'$.counter'",
+	"query_time_total":        "audit_plan_sqls.info->'$.query_time_total'",
+	"cpu_time_total":          "audit_plan_sqls.info->'$.cpu_time_total'",
+	"disk_read_total":         "audit_plan_sqls.info->'$.disk_read_total'",
+	"buffer_read_total":       "audit_plan_sqls.info->'$.buffer_read_total'",
+	"user_io_wait_time_total": "audit_plan_sqls.info->'$.user_io_wait_time_total'",
+	"last_receive_timestamp":  "audit_plan_sqls.info->'$.last_receive_timestamp'",
+	"query_time_avg":          "audit_plan_sqls.info->'$.query_time_avg'",
+	"query_time_max":          "audit_plan_sqls.info->'$.query_time_max'",
+	"row_examined_avg":        "audit_plan_sqls.info->'$.row_examined_avg'",
 }
 
 var instanceAuditPlanSQLQueryTpl = `

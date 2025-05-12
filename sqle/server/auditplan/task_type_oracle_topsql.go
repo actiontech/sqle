@@ -39,20 +39,7 @@ func (at *OracleTopSQLTaskV2) Params(instanceId ...string) params.Params {
 			Type:     params.ParamTypeInt,
 			I18nDesc: locale.Bundle.LocalizeAll(locale.ParamCollectIntervalMinuteOracle),
 		},
-		{
-			Key:   "top_n",
-			Desc:  "Top N",
-			Value: "3",
-			Type:  params.ParamTypeInt,
-		},
-		{
-			Key:      "order_by_column",
-			Value:    oracle.DynPerformanceViewSQLAreaColumnElapsedTime,
-			Type:     params.ParamTypeString,
-			I18nDesc: locale.Bundle.LocalizeAll(locale.ParamOrderByColumn),
-		},
 	}
-
 }
 
 func (at *OracleTopSQLTaskV2) Metrics() []string {
@@ -138,7 +125,7 @@ func (at *OracleTopSQLTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, pe
 		notInUser = append(notInUser, blacklist.FilterContent)
 	}
 	// filter db user by
-	sqls, err := db.QueryTopSQLs(ctx, ap.Params.GetParam("top_n").Int(), notInUser, ap.Params.GetParam("order_by_column").String())
+	sqls, err := db.QueryTopSQLs(ctx, ap.Params.GetParam("collect_interval_minute").String(), ap.Params.GetParam("top_n").Int(), notInUser, ap.Params.GetParam("order_by_column").String())
 	if err != nil {
 		return nil, fmt.Errorf("query top sql fail, error: %v", err)
 	}
@@ -207,28 +194,34 @@ func (at *OracleTopSQLTaskV2) Head(ap *AuditPlan) []Head {
 			Desc: model.AuditResultDesc,
 		},
 		{
-			Name: MetricNameCounter,
-			Desc: locale.ApMetricNameCounter,
+			Name:     MetricNameCounter,
+			Desc:     locale.ApMetricNameCounter,
+			Sortable: true,
 		},
 		{
-			Name: MetricNameQueryTimeTotal,
-			Desc: locale.ApMetricNameQueryTimeTotal,
+			Name:     MetricNameQueryTimeTotal,
+			Desc:     locale.ApMetricNameQueryTimeTotal,
+			Sortable: true,
 		},
 		{
-			Name: MetricNameCPUTimeTotal,
-			Desc: locale.ApMetricNameCPUTimeTotal,
+			Name:     MetricNameCPUTimeTotal,
+			Desc:     locale.ApMetricNameCPUTimeTotal,
+			Sortable: true,
 		},
 		{
-			Name: MetricNameDiskReadTotal,
-			Desc: locale.ApMetricNameDiskReadTotal,
+			Name:     MetricNameDiskReadTotal,
+			Desc:     locale.ApMetricNameDiskReadTotal,
+			Sortable: true,
 		},
 		{
-			Name: MetricNameBufferGetCounter,
-			Desc: locale.ApMetricNameBufferGetCounter,
+			Name:     MetricNameBufferGetCounter,
+			Desc:     locale.ApMetricNameBufferGetCounter,
+			Sortable: true,
 		},
 		{
-			Name: MetricNameUserIOWaitTimeTotal,
-			Desc: locale.ApMetricNameUserIOWaitTimeTotal,
+			Name:     MetricNameUserIOWaitTimeTotal,
+			Desc:     locale.ApMetricNameUserIOWaitTimeTotal,
+			Sortable: true,
 		},
 		{
 			Name: MetricNameDBUser,
