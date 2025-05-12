@@ -125,7 +125,7 @@ func (at *OracleTopSQLTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, pe
 		notInUser = append(notInUser, blacklist.FilterContent)
 	}
 	// filter db user by
-	sqls, err := db.QueryTopSQLs(ctx, ap.Params.GetParam("top_n").Int(), notInUser, ap.Params.GetParam("order_by_column").String())
+	sqls, err := db.QueryTopSQLs(ctx, ap.Params.GetParam("collect_interval_minute").String(), ap.Params.GetParam("top_n").Int(), notInUser, ap.Params.GetParam("order_by_column").String())
 	if err != nil {
 		return nil, fmt.Errorf("query top sql fail, error: %v", err)
 	}

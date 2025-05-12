@@ -53,7 +53,7 @@ func (o *DB) Close() error {
 	return o.db.Close()
 }
 
-func (o *DB) QueryTopSQLs(ctx context.Context, topN int, notInUsers []string, orderBy string) ([]*DynPerformanceSQLArea, error) {
+func (o *DB) QueryTopSQLs(ctx context.Context, collectIntervalMinute string, topN int, notInUsers []string, orderBy string) ([]*DynPerformanceSQLArea, error) {
 	// if notInUsers is empty, notInUsersStr will be empty
 	// if notInUsers is not empty, notInUsersStr will be formatted as "AND u.username NOT IN ('user1', 'user2')"
 	var notInUsersStr string
@@ -75,7 +75,7 @@ func (o *DB) QueryTopSQLs(ctx context.Context, topN int, notInUsers []string, or
 	}
 	var ret []*DynPerformanceSQLArea
 	for _, metric := range metrics {
-		query := fmt.Sprintf(DynPerformanceViewSQLAreaTpl, notInUsersStr, metric, topN)
+		query := fmt.Sprintf(DynPerformanceViewSQLAreaTpl, collectIntervalMinute, notInUsersStr, metric, topN)
 		rows, err := o.db.QueryContext(ctx, query)
 		if err != nil {
 			rows.Close()
