@@ -6281,6 +6281,52 @@ var doc = `{
                 }
             }
         },
+        "/v1/projects/{project_name}/sql_performance_insights/related_sql/related_transaction": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get related transaction for the selected SQL in SQL performance insights",
+                "tags": [
+                    "SqlManage"
+                ],
+                "summary": "获取sql洞察 相关SQL中具体一条SQL 的关联事务",
+                "operationId": "GetSqlManageSqlPerformanceInsightsRelatedTransaction",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "instance_name",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "sql id",
+                        "name": "sql_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSqlManageSqlPerformanceInsightsRelatedTransactionResp"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{project_name}/sql_versions": {
             "get": {
                 "security": [
@@ -16370,6 +16416,23 @@ var doc = `{
                 }
             }
         },
+        "v1.GetSqlManageSqlPerformanceInsightsRelatedTransactionResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.RelatedTransactionInfo"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetSqlManageSqlPerformanceInsightsResp": {
             "type": "object",
             "properties": {
@@ -18021,6 +18084,31 @@ var doc = `{
                 }
             }
         },
+        "v1.RelatedTransactionInfo": {
+            "type": "object",
+            "properties": {
+                "related_sql_info": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.TransactionSQL"
+                    }
+                },
+                "transaction_info": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TransactionInfo"
+                },
+                "transaction_lock_info": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.TransactionLockInfo"
+                    }
+                },
+                "transaction_timeline": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TransactionTimeline"
+                }
+            }
+        },
         "v1.ReleaseWorkflows": {
             "type": "object",
             "properties": {
@@ -19566,6 +19654,116 @@ var doc = `{
                 },
                 "minute": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.TransactionInfo": {
+            "type": "object",
+            "properties": {
+                "lock_type": {
+                    "type": "string",
+                    "enum": [
+                        "SHARED",
+                        "EXCLUSIVE",
+                        "INTENTION_SHARED",
+                        "INTENTION_EXCLUSIVE",
+                        "SHARED_INTENTION_EXCLUSIVE",
+                        "ROW_LOCK",
+                        "TABLE_LOCK",
+                        "METADATA_LOCK"
+                    ]
+                },
+                "transaction_duration": {
+                    "type": "number"
+                },
+                "transaction_end_time": {
+                    "type": "string"
+                },
+                "transaction_id": {
+                    "type": "string"
+                },
+                "transaction_start_time": {
+                    "type": "string"
+                },
+                "transaction_state": {
+                    "type": "string",
+                    "enum": [
+                        "RUNNING",
+                        "COMPLETED"
+                    ]
+                }
+            }
+        },
+        "v1.TransactionLockInfo": {
+            "type": "object",
+            "properties": {
+                "create_lock_sql": {
+                    "type": "string"
+                },
+                "lock_type": {
+                    "type": "string",
+                    "enum": [
+                        "SHARED",
+                        "EXCLUSIVE",
+                        "INTENTION_SHARED",
+                        "INTENTION_EXCLUSIVE",
+                        "SHARED_INTENTION_EXCLUSIVE",
+                        "ROW_LOCK",
+                        "TABLE_LOCK",
+                        "METADATA_LOCK"
+                    ]
+                },
+                "table_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.TransactionSQL": {
+            "type": "object",
+            "properties": {
+                "execute_duration": {
+                    "type": "number"
+                },
+                "lock_type": {
+                    "type": "string",
+                    "enum": [
+                        "SHARED",
+                        "EXCLUSIVE",
+                        "INTENTION_SHARED",
+                        "INTENTION_EXCLUSIVE",
+                        "SHARED_INTENTION_EXCLUSIVE",
+                        "ROW_LOCK",
+                        "TABLE_LOCK",
+                        "METADATA_LOCK"
+                    ]
+                },
+                "sql": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.TransactionTimeline": {
+            "type": "object",
+            "properties": {
+                "current_step_index": {
+                    "type": "integer"
+                },
+                "timeline": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.TransactionTimelineItem"
+                    }
+                }
+            }
+        },
+        "v1.TransactionTimelineItem": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "start_time": {
+                    "type": "string"
                 }
             }
         },

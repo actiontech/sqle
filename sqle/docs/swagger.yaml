@@ -2710,6 +2710,18 @@ definitions:
       total_nums:
         type: integer
     type: object
+  v1.GetSqlManageSqlPerformanceInsightsRelatedTransactionResp:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.RelatedTransactionInfo'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetSqlManageSqlPerformanceInsightsResp:
     properties:
       code:
@@ -3839,6 +3851,23 @@ definitions:
       sql_fingerprint:
         type: string
     type: object
+  v1.RelatedTransactionInfo:
+    properties:
+      related_sql_info:
+        items:
+          $ref: '#/definitions/v1.TransactionSQL'
+        type: array
+      transaction_info:
+        $ref: '#/definitions/v1.TransactionInfo'
+        type: object
+      transaction_lock_info:
+        items:
+          $ref: '#/definitions/v1.TransactionLockInfo'
+        type: array
+      transaction_timeline:
+        $ref: '#/definitions/v1.TransactionTimeline'
+        type: object
+    type: object
   v1.ReleaseWorkflows:
     properties:
       target_release_instances:
@@ -4891,6 +4920,85 @@ definitions:
         type: integer
       minute:
         type: integer
+    type: object
+  v1.TransactionInfo:
+    properties:
+      lock_type:
+        enum:
+        - SHARED
+        - EXCLUSIVE
+        - INTENTION_SHARED
+        - INTENTION_EXCLUSIVE
+        - SHARED_INTENTION_EXCLUSIVE
+        - ROW_LOCK
+        - TABLE_LOCK
+        - METADATA_LOCK
+        type: string
+      transaction_duration:
+        type: number
+      transaction_end_time:
+        type: string
+      transaction_id:
+        type: string
+      transaction_start_time:
+        type: string
+      transaction_state:
+        enum:
+        - RUNNING
+        - COMPLETED
+        type: string
+    type: object
+  v1.TransactionLockInfo:
+    properties:
+      create_lock_sql:
+        type: string
+      lock_type:
+        enum:
+        - SHARED
+        - EXCLUSIVE
+        - INTENTION_SHARED
+        - INTENTION_EXCLUSIVE
+        - SHARED_INTENTION_EXCLUSIVE
+        - ROW_LOCK
+        - TABLE_LOCK
+        - METADATA_LOCK
+        type: string
+      table_name:
+        type: string
+    type: object
+  v1.TransactionSQL:
+    properties:
+      execute_duration:
+        type: number
+      lock_type:
+        enum:
+        - SHARED
+        - EXCLUSIVE
+        - INTENTION_SHARED
+        - INTENTION_EXCLUSIVE
+        - SHARED_INTENTION_EXCLUSIVE
+        - ROW_LOCK
+        - TABLE_LOCK
+        - METADATA_LOCK
+        type: string
+      sql:
+        type: string
+    type: object
+  v1.TransactionTimeline:
+    properties:
+      current_step_index:
+        type: integer
+      timeline:
+        items:
+          $ref: '#/definitions/v1.TransactionTimelineItem'
+        type: array
+    type: object
+  v1.TransactionTimelineItem:
+    properties:
+      description:
+        type: string
+      start_time:
+        type: string
     type: object
   v1.TriggerAuditPlanResV1:
     properties:
@@ -10989,6 +11097,37 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取sql洞察 时间选区 的关联SQL
+      tags:
+      - SqlManage
+  /v1/projects/{project_name}/sql_performance_insights/related_sql/related_transaction:
+    get:
+      description: Get related transaction for the selected SQL in SQL performance
+        insights
+      operationId: GetSqlManageSqlPerformanceInsightsRelatedTransaction
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: instance name
+        in: query
+        name: instance_name
+        required: true
+        type: string
+      - description: sql id
+        in: query
+        name: sql_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetSqlManageSqlPerformanceInsightsRelatedTransactionResp'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取sql洞察 相关SQL中具体一条SQL 的关联事务
       tags:
       - SqlManage
   /v1/projects/{project_name}/sql_versions:

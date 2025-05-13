@@ -359,6 +359,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1ProjectViewRouter.GET("/:project_name/sql_manages/abnormal_audit_plan_instance", v1.GetAbnormalInstanceAuditPlans)
 		v1ProjectViewRouter.GET("/:project_name/sql_performance_insights", v1.GetSqlManageSqlPerformanceInsights)
 		v1ProjectViewRouter.GET("/:project_name/sql_performance_insights/related_sql", v1.GetSqlManageSqlPerformanceInsightsRelatedSQL)
+		v1ProjectViewRouter.GET("/:project_name/sql_performance_insights/related_sql/related_transaction", v1.GetSqlManageSqlPerformanceInsightsRelatedTransaction)
 
 		// sql dev records
 		v1ProjectViewRouter.GET("/:project_name/sql_dev_records", v1.GetSqlDEVRecordList)
