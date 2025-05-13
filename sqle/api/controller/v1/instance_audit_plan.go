@@ -200,14 +200,10 @@ func CreateInstanceAuditPlan(c echo.Context) error {
 	}
 
 	// generate token , 生成ID后根据ID生成token
-	t, err := dmsCommonJwt.GenJwtToken(dmsCommonJwt.WithExpiredTime(tokenExpire), dmsCommonJwt.WithAuditPlanName(utils.Md5(ap.GetIDStr())))
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
-	}
-	err = s.UpdateInstanceAuditPlanByID(ap.ID, map[string]interface{}{"token": t})
-	if err != nil {
+	if err := generateAndUpdateAuditPlanToken(ap, s); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+
 	resID := CreatInstanceAuditPlanRes{
 		InstanceAuditPlanID: ap.GetIDStr(),
 	}
@@ -215,6 +211,18 @@ func CreateInstanceAuditPlan(c echo.Context) error {
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    resID,
 	})
+}
+
+func generateAndUpdateAuditPlanToken(ap *model.InstanceAuditPlan, s *model.Storage) error {
+	t, err := dmsCommonJwt.GenJwtToken(dmsCommonJwt.WithExpiredTime(tokenExpire), dmsCommonJwt.WithAuditPlanName(utils.Md5(ap.GetIDStr())))
+	if err != nil {
+		return errors.New(errors.DataConflict, err)
+	}
+	err = s.UpdateInstanceAuditPlanByID(ap.ID, map[string]interface{}{"token": t})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // @Summary 删除实例扫描任务
