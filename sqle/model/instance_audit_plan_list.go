@@ -179,6 +179,8 @@ var OrderByMap = map[string] /* field name */ string /* field name with table*/ 
 	"lock_wait_counter":       "audit_plan_sqls.info->'$.lock_wait_counter'",
 	"act_wait_time_total":     "audit_plan_sqls.info->'$.act_wait_time_total'",
 	"act_time_total":          "audit_plan_sqls.info->'$.act_time_total'",
+	"phy_read_page_total":     "audit_plan_sqls.info->'$.phy_read_page_total'",
+	"logic_read_page_total":   "audit_plan_sqls.info->'$.logic_read_page_total'",
 }
 
 var instanceAuditPlanSQLQueryTpl = `
