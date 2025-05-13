@@ -79,7 +79,6 @@ func checkAndGenerateHighPriorityParams(auditPlanType, instanceType string, hpcP
 			resetParams = append(resetParams, p)
 			break
 		}
-
 	}
 	return resetParams, nil
 }
@@ -201,7 +200,7 @@ func CreateInstanceAuditPlan(c echo.Context) error {
 	}
 
 	// generate token , 生成ID后根据ID生成token
-	t, err := dmsCommonJwt.GenJwtToken(dmsCommonJwt.WithUserId(userId), dmsCommonJwt.WithExpiredTime(tokenExpire), dmsCommonJwt.WithAuditPlanName(utils.Md5(ap.GetIDStr())))
+	t, err := dmsCommonJwt.GenJwtToken(dmsCommonJwt.WithExpiredTime(tokenExpire), dmsCommonJwt.WithAuditPlanName(utils.Md5(ap.GetIDStr())))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
 	}
