@@ -520,7 +520,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 	}
 
 	{ // scanner token auth
-		v2Router.POST("projects/:project_name/audit_plans/:audit_plan_id/sqls/upload", v2.UploadInstanceAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
+		e.POST("v2/projects/:project_name/audit_plans/:audit_plan_id/sqls/upload", v2.UploadInstanceAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
 	}
 
 	// enterprise customized apis
