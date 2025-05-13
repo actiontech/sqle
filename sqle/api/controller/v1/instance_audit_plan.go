@@ -13,6 +13,7 @@ import (
 	"time"
 
 	v1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
+	"github.com/actiontech/dms/pkg/dms-common/api/jwt"
 	dmsCommonJwt "github.com/actiontech/dms/pkg/dms-common/api/jwt"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	scannerCmd "github.com/actiontech/sqle/sqle/cmd/scannerd/command"
@@ -577,6 +578,7 @@ type InstanceAuditPlanInfo struct {
 	DBType               string                 `json:"audit_plan_db_type" example:"mysql"`
 	InstanceName         string                 `json:"audit_plan_instance_name" example:"test_mysql"`
 	ExecCmd              string                 `json:"exec_cmd" example:"./scanner xxx"`
+	TokenEXP             int64                  `json:"token_exp" example:"1747129752"`
 	RuleTemplate         *AuditPlanRuleTemplate `json:"audit_plan_rule_template,omitempty" `
 	TotalSQLNums         int64                  `json:"total_sql_nums"`
 	UnsolvedSQLNums      int64                  `json:"unsolved_sql_nums"`
@@ -613,6 +615,7 @@ func GetInstanceAuditPlanOverview(c echo.Context) error {
 
 	inst := dms.GetInstancesByIdWithoutError(fmt.Sprintf("%d", detail.InstanceID))
 	resAuditPlans := make([]InstanceAuditPlanInfo, 0, len(detail.AuditPlans))
+
 	for _, v := range detail.AuditPlans {
 		execCmd := GetAuditPlanExecCmd(projectName, detail, v)
 
@@ -651,6 +654,14 @@ func GetInstanceAuditPlanOverview(c echo.Context) error {
 		if v.AuditPlanTaskInfo != nil {
 			resAuditPlan.LastCollectionTime = v.AuditPlanTaskInfo.LastCollectionTime
 		}
+		if execCmd != "" {
+			tokeExpireTime, err := jwt.ParseExpiredTimeFromJwtTokenStr(detail.Token)
+			if err != nil {
+				c.Logger().Errorf("parse token failed, err: %v", err)
+			}
+			resAuditPlan.TokenEXP = tokeExpireTime
+		}
+
 		resAuditPlans = append(resAuditPlans, resAuditPlan)
 	}
 
