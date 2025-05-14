@@ -842,13 +842,30 @@ const (
 )
 
 type RelatedSQLInfo struct {
-	SqlFingerprint     string            `json:"sql_fingerprint"`
-	Source             SqlSourceTypeEnum `json:"source" enums:"order,sql_manage"`
-	ExecuteStartTime   string            `json:"execute_start_time"`
-	ExecuteEndTime     string            `json:"execute_end_time"`
-	ExecuteTime        float64           `json:"execute_time"`                   // 执行时间(s)
-	LockWaitTime       float64           `json:"lock_wait_time"`                 // 锁等待时间(s)
-	ExecutionCostTrend *SqlAnalysisChart `json:"execution_cost_trend,omitempty"` // SQL执行代价趋势图表
+	SqlFingerprint     string                   `json:"sql_fingerprint"`
+	Source             SqlSourceTypeEnum        `json:"source" enums:"order,sql_manage"`
+	ExecuteStartTime   string                   `json:"execute_start_time"`
+	ExecuteEndTime     string                   `json:"execute_end_time"`
+	ExecuteTime        float64                  `json:"execute_time"`                   // 执行时间(s)
+	LockWaitTime       float64                  `json:"lock_wait_time"`                 // 锁等待时间(s)
+	ExecutionCostTrend *SqlAnalysisScatterChart `json:"execution_cost_trend,omitempty"` // SQL执行代价趋势图表
+}
+
+// 散点图结构体，专用于SQL执行代价的散点图表示
+type SqlAnalysisScatterChart struct {
+	Points  *[]ScatterPoint `json:"points"`
+	XInfo   *string         `json:"x_info"`
+	YInfo   *string         `json:"y_info"`
+	Message string          `json:"message"`
+}
+
+type ScatterPoint struct {
+	Time            *string             `json:"time"`
+	Cost            *float64            `json:"cost"`
+	SQL             *string             `json:"sql"`
+	Id              uint64              `json:"id"`
+	IsInTransaction bool                `json:"is_in_transaction"`
+	Infos           []map[string]string `json:"info"`
 }
 
 type GetSqlManageSqlPerformanceInsightsRelatedSQLReq struct {
@@ -897,7 +914,7 @@ func GetSqlManageSqlPerformanceInsightsRelatedSQL(c echo.Context) error {
 	}
 
 	// 创建SQL执行代价趋势示例数据
-	createExecutionCostTrend := func(startValue, endValue float64) *SqlAnalysisChart {
+	createExecutionCostTrend := func(startValue, endValue float64) *SqlAnalysisScatterChart {
 		timePoints := []string{
 			"2023-05-01T00:00:00+08:00", "2023-05-01T00:00:00+08:00", "2023-05-02T00:00:00+08:00", "2023-05-03T00:00:00+08:00",
 			"2023-05-04T00:00:00+08:00", "2023-05-05T00:00:00+08:00", "2023-05-05T00:00:00+08:00", "2023-05-06T00:00:00+08:00",
@@ -906,14 +923,24 @@ func GetSqlManageSqlPerformanceInsightsRelatedSQL(c echo.Context) error {
 
 		// 线性变化的代价值
 		step := (endValue - startValue) / float64(len(timePoints)-1)
-		points := make([]ChartPoint, len(timePoints))
+		points := make([]ScatterPoint, len(timePoints))
+
+		sql1 := "SELECT * FROM users WHERE user_id = 100"
+		sql2 := "SELECT * FROM orders WHERE order_id = 5001"
 
 		for i, t := range timePoints {
 			x := t
 			y := startValue + step*float64(i)
-			points[i] = ChartPoint{
-				X: &x,
-				Y: &y,
+			sql := sql1
+			if i%2 == 0 {
+				sql = sql2
+			}
+			points[i] = ScatterPoint{
+				Time:            &x,
+				Cost:            &y,
+				Id:              uint64(i),
+				IsInTransaction: i%2 == 0,
+				SQL:             &sql,
 				Infos: []map[string]string{
 					{"代价": fmt.Sprintf("%.2f", y)},
 				},
@@ -923,7 +950,7 @@ func GetSqlManageSqlPerformanceInsightsRelatedSQL(c echo.Context) error {
 		xInfo := "时间"
 		yInfo := "执行代价"
 
-		return &SqlAnalysisChart{
+		return &SqlAnalysisScatterChart{
 			Points:  &points,
 			XInfo:   &xInfo,
 			YInfo:   &yInfo,

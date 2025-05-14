@@ -3837,7 +3837,7 @@ definitions:
         description: 执行时间(s)
         type: number
       execution_cost_trend:
-        $ref: '#/definitions/v1.SqlAnalysisChart'
+        $ref: '#/definitions/v1.SqlAnalysisScatterChart'
         description: SQL执行代价趋势图表
         type: object
       lock_wait_time:
@@ -4334,6 +4334,25 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.ScatterPoint:
+    properties:
+      cost:
+        type: number
+      id:
+        type: integer
+      info:
+        items:
+          additionalProperties:
+            type: string
+          type: object
+        type: array
+      is_in_transaction:
+        type: boolean
+      sql:
+        type: string
+      time:
+        type: string
+    type: object
   v1.ScheduleTaskDefaultOption:
     properties:
       default_selector:
@@ -4419,6 +4438,19 @@ definitions:
         items:
           $ref: '#/definitions/v1.TableMeta'
         type: array
+    type: object
+  v1.SqlAnalysisScatterChart:
+    properties:
+      message:
+        type: string
+      points:
+        items:
+          $ref: '#/definitions/v1.ScatterPoint'
+        type: array
+      x_info:
+        type: string
+      y_info:
+        type: string
     type: object
   v1.SqlAverageExecutionTime:
     properties:

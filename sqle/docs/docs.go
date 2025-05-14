@@ -18066,7 +18066,7 @@ var doc = `{
                 "execution_cost_trend": {
                     "description": "SQL执行代价趋势图表",
                     "type": "object",
-                    "$ref": "#/definitions/v1.SqlAnalysisChart"
+                    "$ref": "#/definitions/v1.SqlAnalysisScatterChart"
                 },
                 "lock_wait_time": {
                     "description": "锁等待时间(s)",
@@ -18783,6 +18783,35 @@ var doc = `{
                 }
             }
         },
+        "v1.ScatterPoint": {
+            "type": "object",
+            "properties": {
+                "cost": {
+                    "type": "number"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "info": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "is_in_transaction": {
+                    "type": "boolean"
+                },
+                "sql": {
+                    "type": "string"
+                },
+                "time": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.ScheduleTaskDefaultOption": {
             "type": "object",
             "properties": {
@@ -18907,6 +18936,26 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v1.TableMeta"
                     }
+                }
+            }
+        },
+        "v1.SqlAnalysisScatterChart": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "points": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ScatterPoint"
+                    }
+                },
+                "x_info": {
+                    "type": "string"
+                },
+                "y_info": {
+                    "type": "string"
                 }
             }
         },
