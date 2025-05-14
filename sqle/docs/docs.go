@@ -16992,6 +16992,10 @@ var doc = `{
                 "last_collection_time": {
                     "type": "string"
                 },
+                "token_exp": {
+                    "type": "integer",
+                    "example": 1747129752
+                },
                 "total_sql_nums": {
                     "type": "integer"
                 },
@@ -18224,6 +18228,9 @@ var doc = `{
                 "type": {
                     "type": "string",
                     "example": "全局配置"
+                },
+                "version": {
+                    "type": "integer"
                 }
             }
         },
