@@ -33,7 +33,7 @@ const (
 )
 
 func GenJwtToken(customClaims ...CustomClaimFunc) (tokenStr string, err error) {
-	var mapClaims = jwt.MapClaims{
+	mapClaims := jwt.MapClaims{
 		"iss":          "actiontech dms",
 		JWTExpiredTime: jwt.NewNumericDate(time.Now().Add(DefaultDmsTokenExpHours * time.Hour)),
 		JWTType:        constant.DMSToken,
@@ -43,7 +43,7 @@ func GenJwtToken(customClaims ...CustomClaimFunc) (tokenStr string, err error) {
 }
 
 func GenJwtTokenWithExpirationTime(expiredTime *jwt.NumericDate, customClaims ...CustomClaimFunc) (tokenStr string, err error) {
-	var mapClaims = jwt.MapClaims{
+	mapClaims := jwt.MapClaims{
 		"iss":          "actiontech dms",
 		JWTExpiredTime: expiredTime,
 	}
@@ -52,7 +52,7 @@ func GenJwtTokenWithExpirationTime(expiredTime *jwt.NumericDate, customClaims ..
 }
 
 func GenRefreshToken(customClaims ...CustomClaimFunc) (tokenStr string, err error) {
-	var mapClaims = jwt.MapClaims{
+	mapClaims := jwt.MapClaims{
 		"iss":          "actiontech dms",
 		JWTExpiredTime: jwt.NewNumericDate(time.Now().Add(DefaultDmsRefreshTokenExpHours * time.Hour)),
 		JWTType:        constant.DMSRefreshToken,
@@ -141,6 +141,7 @@ func WithAccessTokenMark(loginType string) CustomClaimFunc {
 		claims[JWTLoginType] = loginType
 	}
 }
+
 func WithSub(sub string) CustomClaimFunc {
 	return func(claims jwt.MapClaims) {
 		claims["sub"] = sub
@@ -177,7 +178,6 @@ func parseJwtTokenStr(tokenStr string) (*jwt.Token, error) {
 
 		return dmsCommonV1.JwtSigningKey, nil
 	})
-
 	if err != nil {
 		return token, fmt.Errorf("parse token failed: %w", err)
 	}
@@ -203,6 +203,37 @@ func ParseAuditPlanName(tokenStr string) (string, error) {
 	}
 
 	return fmt.Sprintf("%v", auditPlanName), nil
+}
+
+// 获取token的过期时间
+func ParseExpiredTimeFromJwtTokenStr(tokenStr string) (expiredTime int64, err error) {
+	// 使用自定义解析器，跳过过期验证
+	parser := jwt.NewParser(jwt.WithoutClaimsValidation())
+	token, err := parser.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
+		if signMethod256, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, jwt.ErrSignatureInvalid
+		} else if signMethod256 != jwt.SigningMethodHS256 {
+			return nil, jwt.ErrSignatureInvalid
+		}
+
+		return dmsCommonV1.JwtSigningKey, nil
+	})
+	if err != nil {
+		return 0, fmt.Errorf("parse token failed: %w", err)
+	}
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return 0, fmt.Errorf("failed to convert token claims to jwt")
+	}
+	expiredTimeStr, ok := claims[JWTExpiredTime]
+	if !ok {
+		return 0, jwt.NewValidationError("unknown token", jwt.ValidationErrorClaimsInvalid)
+	}
+	expiredTimeInt, ok := expiredTimeStr.(float64)
+	if !ok {
+		return 0, jwt.NewValidationError("unknown token", jwt.ValidationErrorClaimsInvalid)
+	}
+	return int64(expiredTimeInt), nil
 }
 
 func GetUserFromContext(c EchoContextGetter) (uid int64, err error) {
