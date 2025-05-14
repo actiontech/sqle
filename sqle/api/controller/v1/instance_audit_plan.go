@@ -13,6 +13,7 @@ import (
 	"time"
 
 	v1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
+	"github.com/actiontech/dms/pkg/dms-common/api/jwt"
 	dmsCommonJwt "github.com/actiontech/dms/pkg/dms-common/api/jwt"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	scannerCmd "github.com/actiontech/sqle/sqle/cmd/scannerd/command"
@@ -79,7 +80,6 @@ func checkAndGenerateHighPriorityParams(auditPlanType, instanceType string, hpcP
 			resetParams = append(resetParams, p)
 			break
 		}
-
 	}
 	return resetParams, nil
 }
@@ -201,14 +201,10 @@ func CreateInstanceAuditPlan(c echo.Context) error {
 	}
 
 	// generate token , 生成ID后根据ID生成token
-	t, err := dmsCommonJwt.GenJwtToken(dmsCommonJwt.WithUserId(userId), dmsCommonJwt.WithExpiredTime(tokenExpire), dmsCommonJwt.WithAuditPlanName(utils.Md5(ap.GetIDStr())))
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict, err))
-	}
-	err = s.UpdateInstanceAuditPlanByID(ap.ID, map[string]interface{}{"token": t})
-	if err != nil {
+	if err := generateAndUpdateAuditPlanToken(ap, tokenExpire); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+
 	resID := CreatInstanceAuditPlanRes{
 		InstanceAuditPlanID: ap.GetIDStr(),
 	}
@@ -216,6 +212,18 @@ func CreateInstanceAuditPlan(c echo.Context) error {
 		BaseRes: controller.NewBaseReq(nil),
 		Data:    resID,
 	})
+}
+
+func generateAndUpdateAuditPlanToken(ap *model.InstanceAuditPlan, tokenExpire time.Duration) error {
+	t, err := dmsCommonJwt.GenJwtToken(dmsCommonJwt.WithExpiredTime(tokenExpire), dmsCommonJwt.WithAuditPlanName(utils.Md5(ap.GetIDStr())))
+	if err != nil {
+		return errors.New(errors.DataConflict, err)
+	}
+	err = model.GetStorage().UpdateInstanceAuditPlanByID(ap.ID, map[string]interface{}{"token": t})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // @Summary 删除实例扫描任务
@@ -570,6 +578,7 @@ type InstanceAuditPlanInfo struct {
 	DBType               string                 `json:"audit_plan_db_type" example:"mysql"`
 	InstanceName         string                 `json:"audit_plan_instance_name" example:"test_mysql"`
 	ExecCmd              string                 `json:"exec_cmd" example:"./scanner xxx"`
+	TokenEXP             int64                  `json:"token_exp" example:"1747129752"`
 	RuleTemplate         *AuditPlanRuleTemplate `json:"audit_plan_rule_template,omitempty" `
 	TotalSQLNums         int64                  `json:"total_sql_nums"`
 	UnsolvedSQLNums      int64                  `json:"unsolved_sql_nums"`
@@ -606,6 +615,7 @@ func GetInstanceAuditPlanOverview(c echo.Context) error {
 
 	inst := dms.GetInstancesByIdWithoutError(fmt.Sprintf("%d", detail.InstanceID))
 	resAuditPlans := make([]InstanceAuditPlanInfo, 0, len(detail.AuditPlans))
+
 	for _, v := range detail.AuditPlans {
 		execCmd := GetAuditPlanExecCmd(projectName, detail, v)
 
@@ -644,6 +654,14 @@ func GetInstanceAuditPlanOverview(c echo.Context) error {
 		if v.AuditPlanTaskInfo != nil {
 			resAuditPlan.LastCollectionTime = v.AuditPlanTaskInfo.LastCollectionTime
 		}
+		if execCmd != "" {
+			tokeExpireTime, err := jwt.ParseExpiredTimeFromJwtTokenStr(detail.Token)
+			if err != nil {
+				c.Logger().Errorf("parse token failed, err: %v", err)
+			}
+			resAuditPlan.TokenEXP = tokeExpireTime
+		}
+
 		resAuditPlans = append(resAuditPlans, resAuditPlan)
 	}
 
@@ -1274,6 +1292,53 @@ func AuditPlanTriggerSqlAudit(c echo.Context) error {
 	}
 	// 更新最后审核时间
 	err = s.UpdateManageSQLProcessByManageIDs(recordIds, map[string]interface{}{"last_audit_time": time.Now()})
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return controller.JSONBaseErrorReq(c, nil)
+}
+
+type GenerateAuditPlanTokenReqV1 struct {
+	ExpiresInDays *int `json:"expires_in_days"`
+}
+
+// @Summary 生成扫描任务token
+// @Description generate audit plan token
+// @Id generateAuditPlanTokenV1
+// @Tags instance_audit_plan
+// @Security ApiKeyAuth
+// @param audit_plan body v1.GenerateAuditPlanTokenReqV1 false "update instance audit plan token"
+// @Param project_name path string true "project name"
+// @Param instance_audit_plan_id path string true "instance audit plan id"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/token [patch]
+func GenerateAuditPlanToken(c echo.Context) error {
+	req := new(GenerateAuditPlanTokenReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	insAuditPlanID := c.Param("instance_audit_plan_id")
+	projectUID, err := dms.GetProjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	instanceAuditPlan, exist, err := GetInstanceAuditPlanIfCurrentUserCanOp(c, projectUID, insAuditPlanID, v1.OpPermissionTypeSaveAuditPlan)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, errors.NewInstanceAuditPlanNotExistErr())
+	}
+	expireDuration := tokenExpire
+	if req.ExpiresInDays != nil {
+		expiresInDays := *req.ExpiresInDays
+		if expiresInDays <= 0 {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("expires_in_days must be greater than 0")))
+		} else {
+			expireDuration = time.Duration(expiresInDays) * 24 * time.Hour
+		}
+	}
+	err = generateAndUpdateAuditPlanToken(instanceAuditPlan, expireDuration)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
