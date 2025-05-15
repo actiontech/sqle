@@ -36,6 +36,8 @@ definitions:
     type: object
   v1.AbnormalAuditPlanInstance:
     properties:
+      abnormal_status_code:
+        type: integer
       instance_audit_plan_id:
         type: integer
       instance_name:
@@ -3221,6 +3223,9 @@ definitions:
         type: string
       last_collection_time:
         type: string
+      token_exp:
+        example: 1747129752
+        type: integer
       total_sql_nums:
         type: integer
       unsolved_sql_nums:
@@ -4061,6 +4066,8 @@ definitions:
       type:
         example: 全局配置
         type: string
+      version:
+        type: integer
     type: object
   v1.RuleRespV1:
     properties:
