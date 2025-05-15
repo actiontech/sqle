@@ -9686,6 +9686,36 @@ paths:
       summary: 更新流水线
       tags:
       - pipeline
+  /v1/projects/{project_name}/pipelines/{pipeline_id}/token/{node_id}/:
+    patch:
+      description: generate pipeline node token
+      operationId: generatePipelineNodeTokenV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: pipeline id
+        in: path
+        name: pipeline_id
+        required: true
+        type: string
+      - description: node id
+        in: path
+        name: node_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 生成流水线节点token
+      tags:
+      - pipeline
   /v1/projects/{project_name}/report_push_configs:
     get:
       description: Get report push config list
