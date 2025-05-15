@@ -3,10 +3,11 @@ package pipeline
 import (
 	"context"
 	"fmt"
-	"github.com/actiontech/sqle/sqle/errors"
 	"net"
 	"net/url"
 	"time"
+
+	"github.com/actiontech/sqle/sqle/errors"
 
 	dmsCommonJwt "github.com/actiontech/dms/pkg/dms-common/api/jwt"
 	"github.com/actiontech/sqle/sqle/api/controller"
@@ -54,7 +55,7 @@ func (node PipelineNode) IntegrationInfo(ctx context.Context, projectName string
 
 	switch model.PipelineNodeType(node.NodeType) {
 	case model.NodeTypeAudit:
-		var cmdUsage = locale.Bundle.LocalizeMsgByCtx(ctx, locale.PipelineCmdUsage)
+		cmdUsage := locale.Bundle.LocalizeMsgByCtx(ctx, locale.PipelineCmdUsage)
 
 		var cmd string
 		var cmdType string
@@ -426,4 +427,18 @@ func (svc PipelineSvc) UpdatePipeline(pipe *Pipeline, userId string) error {
 func (svc PipelineSvc) DeletePipeline(projectUID string, pipelineID uint) error {
 	s := model.GetStorage()
 	return s.DeletePipeline(model.ProjectUID(projectUID), pipelineID)
+}
+
+func (svc PipelineSvc) GeneratePipelineToken(pipelineID uint, nodeID uint, userID string) error {
+	s := model.GetStorage()
+	modelPiplineNode, err := s.GetPipelineNode(pipelineID, nodeID)
+	if err != nil {
+		return err
+	}
+	newToken, err := svc.newToken(userID, modelPiplineNode.NodeVersion, modelPiplineNode.UUID)
+	if err != nil {
+		return err
+	}
+	modelPiplineNode.Token = newToken
+	return s.UpdatePipelineNode(modelPiplineNode)
 }
