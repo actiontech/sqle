@@ -1505,6 +1505,11 @@ definitions:
           $ref: '#/definitions/v1.DatabaseSchemaObject'
         type: array
     type: object
+  v1.GenerateAuditPlanTokenReqV1:
+    properties:
+      expires_in_days:
+        type: integer
+    type: object
   v1.GetAbnormalAuditPlanInstancesResp:
     properties:
       code:
@@ -9290,6 +9295,36 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取扫描任务相关的SQL执行计划和表元数据
+      tags:
+      - instance_audit_plan
+  /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/token:
+    patch:
+      description: generate audit plan token
+      operationId: generateAuditPlanTokenV1
+      parameters:
+      - description: update instance audit plan token
+        in: body
+        name: audit_plan
+        schema:
+          $ref: '#/definitions/v1.GenerateAuditPlanTokenReqV1'
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: instance audit plan id
+        in: path
+        name: instance_audit_plan_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 生成扫描任务token
       tags:
       - instance_audit_plan
   /v1/projects/{project_name}/instance_tips:
