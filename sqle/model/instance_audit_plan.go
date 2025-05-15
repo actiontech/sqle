@@ -771,7 +771,7 @@ func (s *Storage) GetAuditPlansByProjectId(projectID string) ([]*InstanceAuditPl
 
 func (s *Storage) GetActiveAuditPlansByProjectId(projectID string) ([]*InstanceAuditPlan, error) {
 	instanceAuditPlan := []*InstanceAuditPlan{}
-	err := s.db.Model(InstanceAuditPlan{}).Where("project_id = ? AND active_status = ?", projectID, ActiveStatusNormal).Find(&instanceAuditPlan).Error
+	err := s.db.Model(InstanceAuditPlan{}).Where("project_id = ? AND active_status = ? AND token <> \"\"", projectID, ActiveStatusNormal).Find(&instanceAuditPlan).Error
 	return instanceAuditPlan, err
 }
 
