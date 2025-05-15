@@ -12363,6 +12363,9 @@ var doc = `{
         "v1.AbnormalAuditPlanInstance": {
             "type": "object",
             "properties": {
+                "abnormal_status_code": {
+                    "type": "integer"
+                },
                 "instance_audit_plan_id": {
                     "type": "integer"
                 },
@@ -16992,6 +16995,10 @@ var doc = `{
                 "last_collection_time": {
                     "type": "string"
                 },
+                "token_exp": {
+                    "type": "integer",
+                    "example": 1747129752
+                },
                 "total_sql_nums": {
                     "type": "integer"
                 },
@@ -18224,6 +18231,9 @@ var doc = `{
                 "type": {
                     "type": "string",
                     "example": "全局配置"
+                },
+                "version": {
+                    "type": "integer"
                 }
             }
         },
