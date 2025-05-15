@@ -12372,6 +12372,10 @@ var doc = `{
                 "instance_name": {
                     "type": "string",
                     "example": "MySQL"
+                },
+                "token_exp": {
+                    "type": "integer",
+                    "example": 1747129752
                 }
             }
         },

@@ -43,6 +43,9 @@ definitions:
       instance_name:
         example: MySQL
         type: string
+      token_exp:
+        example: 1747129752
+        type: integer
     type: object
   v1.AffectRows:
     properties:
