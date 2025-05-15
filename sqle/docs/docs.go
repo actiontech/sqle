@@ -3836,6 +3836,53 @@ var doc = `{
                 }
             }
         },
+        "/v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/token": {
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "generate audit plan token",
+                "tags": [
+                    "instance_audit_plan"
+                ],
+                "summary": "生成扫描任务token",
+                "operationId": "generateAuditPlanTokenV1",
+                "parameters": [
+                    {
+                        "description": "update instance audit plan token",
+                        "name": "audit_plan",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GenerateAuditPlanTokenReqV1"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance audit plan id",
+                        "name": "instance_audit_plan_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{project_name}/instance_tips": {
             "get": {
                 "security": [
@@ -14464,6 +14511,14 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v1.DatabaseSchemaObject"
                     }
+                }
+            }
+        },
+        "v1.GenerateAuditPlanTokenReqV1": {
+            "type": "object",
+            "properties": {
+                "expires_in_days": {
+                    "type": "integer"
                 }
             }
         },

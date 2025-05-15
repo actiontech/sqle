@@ -257,6 +257,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1ProjectOpRouter.DELETE("/:project_name/instance_audit_plans/:instance_audit_plan_id/", v1.DeleteInstanceAuditPlan)
 		v1ProjectOpRouter.PUT("/:project_name/instance_audit_plans/:instance_audit_plan_id/", v1.UpdateInstanceAuditPlan)
 		v1ProjectOpRouter.PATCH("/:project_name/instance_audit_plans/:instance_audit_plan_id/", v1.UpdateInstanceAuditPlanStatus)
+		v1ProjectOpRouter.PATCH("/:project_name/instance_audit_plans/:instance_audit_plan_id/token", v1.GenerateAuditPlanToken)
 
 		// audit plan; 智能扫描任务
 		v1ProjectOpRouter.DELETE("/:project_name/instance_audit_plans/:instance_audit_plan_id/audit_plans/:audit_plan_id/", v1.DeleteAuditPlanById)
@@ -403,17 +404,14 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v2ProjectOpRouter.PUT("/:project_name/workflows/:workflow_id/tasks/:task_id/schedule", v2.UpdateWorkflowScheduleV2)
 		v2ProjectOpRouter.PATCH("/:project_name/workflows/:workflow_id/", v2.UpdateWorkflowV2)
 
-		// scanner token auth
-		v2ProjectOpRouter.POST("/:project_name/audit_plans/:audit_plan_name/sqls/full", v2.FullSyncAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
-		v2ProjectOpRouter.POST("/:project_name/audit_plans/:audit_plan_name/sqls/partial", v2.PartialSyncAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
-		v2ProjectOpRouter.POST("/:project_name/audit_plans/:audit_plan_id/sqls/upload", v2.UploadInstanceAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
+		v2ProjectOpRouter.POST("/:project_name/audit_plans/:audit_plan_name/full", DeprecatedBy(apiV2))
+		v2ProjectOpRouter.POST("/:project_name/audit_plans/:audit_plan_name/sqls/partial", DeprecatedBy(apiV2))
 	}
 
 	v3ProjectOpRouter := v3Router.Group("/projects", sqleMiddleware.ProjectMemberOpAllowed())
 	{
 		// workflow
 		v3ProjectOpRouter.POST("/:project_name/workflows/complete", v3.BatchCompleteWorkflowsV3)
-
 	}
 	v3ProjectViewRouter := v3Router.Group("/projects", sqleMiddleware.ProjectMemberViewAllowed())
 	{
@@ -460,7 +458,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1Router.GET("/knowledge_bases/tags", v1.GetKnowledgeBaseTagList)
 		v1Router.GET("/knowledge_bases/graph", v1.GetKnowledgeGraph)
 
-		//rule
+		// rule
 		v1Router.GET("/rules", v1.GetRules)
 		v1Router.GET("/rules_version_tips", v1.GetDriverRuleVersionTips)
 		v1Router.GET("/custom_rules", v1.GetCustomRules)
@@ -519,6 +517,10 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		// 系统功能开关
 		v1Router.GET("/system/module_status", v1.GetSystemModuleStatus)
 		v1Router.GET("/system/module_red_dots", v1.GetSystemModuleRedDots)
+	}
+
+	{ // scanner token auth
+		e.POST("v2/projects/:project_name/audit_plans/:audit_plan_id/sqls/upload", v2.UploadInstanceAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
 	}
 
 	// enterprise customized apis
