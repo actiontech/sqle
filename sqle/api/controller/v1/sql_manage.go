@@ -548,6 +548,7 @@ type AbnormalAuditPlanInstance struct {
 	InstanceName        string `json:"instance_name" example:"MySQL"`
 	InstanceAuditPlanID uint   `json:"instance_audit_plan_id"`
 	AbnormalStatusCode  uint   `json:"abnormal_status_code"`
+	TokenEXP            int64  `json:"token_exp" example:"1747129752"`
 }
 
 // GetAbnormalInstanceAuditPlans get the instance of audit plan execution abnormal
