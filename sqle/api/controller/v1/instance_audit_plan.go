@@ -199,9 +199,9 @@ func CreateInstanceAuditPlan(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
 	// generate token , 生成ID后根据ID生成token
-	if err := generateAndUpdateAuditPlanToken(ap, tokenExpire); err != nil {
+	err = GenerateInstanceAuditPlanToken(ap.GetIDStr())
+	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
@@ -214,14 +214,42 @@ func CreateInstanceAuditPlan(c echo.Context) error {
 	})
 }
 
-func generateAndUpdateAuditPlanToken(ap *model.InstanceAuditPlan, tokenExpire time.Duration) error {
-	t, err := dmsCommonJwt.GenJwtToken(dmsCommonJwt.WithExpiredTime(tokenExpire), dmsCommonJwt.WithAuditPlanName(utils.Md5(ap.GetIDStr())))
-	if err != nil {
-		return errors.New(errors.DataConflict, err)
-	}
-	err = model.GetStorage().UpdateInstanceAuditPlanByID(ap.ID, map[string]interface{}{"token": t})
+func GenerateInstanceAuditPlanToken(instanceAuditPlanID string) error {
+	s := model.GetStorage()
+
+	ap, exist, err := s.GetInstanceAuditPlanDetail(instanceAuditPlanID)
 	if err != nil {
 		return err
+	}
+	if !exist {
+		return errors.NewInstanceAuditPlanNotExistErr()
+	}
+	return generateAndUpdateAuditPlanToken(ap, tokenExpire)
+}
+
+func generateAndUpdateAuditPlanToken(ap *model.InstanceAuditPlan, tokenExpire time.Duration) (err error) {
+	var needGenerateToken bool
+	for _, v := range ap.AuditPlans {
+		if _, ok := auditplan.GetSupportedScannerAuditPlanType()[v.Type]; ok {
+			needGenerateToken = true
+		}
+	}
+	var t string
+	if needGenerateToken {
+		t, err = dmsCommonJwt.GenJwtToken(dmsCommonJwt.WithExpiredTime(tokenExpire), dmsCommonJwt.WithAuditPlanName(utils.Md5(ap.GetIDStr())))
+		if err != nil {
+			return errors.New(errors.DataConflict, err)
+		}
+	}
+
+	// 更新token的条件
+	// 1. 需要生成token，并且现在token为空
+	// 2. 不需要生成token（移除token），并且现在token不为空
+	if needGenerateToken == (ap.Token == "") {
+		err = model.GetStorage().UpdateInstanceAuditPlanByID(ap.ID, map[string]interface{}{"token": t})
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -382,6 +410,10 @@ func UpdateInstanceAuditPlan(c echo.Context) error {
 	}
 
 	err = s.BatchSaveAuditPlans(resultAuditPlans)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	err = GenerateInstanceAuditPlanToken(instanceAuditPlanID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -757,6 +789,10 @@ func DeleteAuditPlanById(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.NewInstanceAuditPlanNotExistErr())
 	}
 	err = s.DeleteAuditPlan(audit_plan_id)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	err = GenerateInstanceAuditPlanToken(instanceAuditPlanID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1338,6 +1374,7 @@ func GenerateAuditPlanToken(c echo.Context) error {
 			expireDuration = time.Duration(expiresInDays) * 24 * time.Hour
 		}
 	}
+	instanceAuditPlan.Token = ""
 	err = generateAndUpdateAuditPlanToken(instanceAuditPlan, expireDuration)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
