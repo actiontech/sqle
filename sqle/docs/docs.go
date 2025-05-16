@@ -3843,19 +3843,19 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "generate audit plan token",
+                "description": "refresh audit plan token",
                 "tags": [
                     "instance_audit_plan"
                 ],
-                "summary": "生成扫描任务token",
-                "operationId": "generateAuditPlanTokenV1",
+                "summary": "重置扫描任务token",
+                "operationId": "refreshAuditPlanTokenV1",
                 "parameters": [
                     {
                         "description": "update instance audit plan token",
                         "name": "audit_plan",
                         "in": "body",
                         "schema": {
-                            "$ref": "#/definitions/v1.GenerateAuditPlanTokenReqV1"
+                            "$ref": "#/definitions/v1.RefreshAuditPlanTokenReqV1"
                         }
                     },
                     {
@@ -12409,12 +12409,19 @@ var doc = `{
         "v1.AbnormalAuditPlanInstance": {
             "type": "object",
             "properties": {
+                "abnormal_status_code": {
+                    "type": "integer"
+                },
                 "instance_audit_plan_id": {
                     "type": "integer"
                 },
                 "instance_name": {
                     "type": "string",
                     "example": "MySQL"
+                },
+                "token_exp": {
+                    "type": "integer",
+                    "example": 1747129752
                 }
             }
         },
@@ -14557,14 +14564,6 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v1.DatabaseSchemaObject"
                     }
-                }
-            }
-        },
-        "v1.GenerateAuditPlanTokenReqV1": {
-            "type": "object",
-            "properties": {
-                "expires_in_days": {
-                    "type": "integer"
                 }
             }
         },
@@ -17873,6 +17872,14 @@ var doc = `{
                 },
                 "value": {
                     "type": "string"
+                }
+            }
+        },
+        "v1.RefreshAuditPlanTokenReqV1": {
+            "type": "object",
+            "properties": {
+                "expires_in_days": {
+                    "type": "integer"
                 }
             }
         },

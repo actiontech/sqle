@@ -36,11 +36,16 @@ definitions:
     type: object
   v1.AbnormalAuditPlanInstance:
     properties:
+      abnormal_status_code:
+        type: integer
       instance_audit_plan_id:
         type: integer
       instance_name:
         example: MySQL
         type: string
+      token_exp:
+        example: 1747129752
+        type: integer
     type: object
   v1.AffectRows:
     properties:
@@ -1504,11 +1509,6 @@ definitions:
         items:
           $ref: '#/definitions/v1.DatabaseSchemaObject'
         type: array
-    type: object
-  v1.GenerateAuditPlanTokenReqV1:
-    properties:
-      expires_in_days:
-        type: integer
     type: object
   v1.GetAbnormalAuditPlanInstancesResp:
     properties:
@@ -3781,6 +3781,11 @@ definitions:
         type: string
       value:
         type: string
+    type: object
+  v1.RefreshAuditPlanTokenReqV1:
+    properties:
+      expires_in_days:
+        type: integer
     type: object
   v1.RejectWorkflowReqV1:
     properties:
@@ -9304,14 +9309,14 @@ paths:
       - instance_audit_plan
   /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/token:
     patch:
-      description: generate audit plan token
-      operationId: generateAuditPlanTokenV1
+      description: refresh audit plan token
+      operationId: refreshAuditPlanTokenV1
       parameters:
       - description: update instance audit plan token
         in: body
         name: audit_plan
         schema:
-          $ref: '#/definitions/v1.GenerateAuditPlanTokenReqV1'
+          $ref: '#/definitions/v1.RefreshAuditPlanTokenReqV1'
       - description: project name
         in: path
         name: project_name
@@ -9329,7 +9334,7 @@ paths:
             $ref: '#/definitions/controller.BaseRes'
       security:
       - ApiKeyAuth: []
-      summary: 生成扫描任务token
+      summary: 重置扫描任务token
       tags:
       - instance_audit_plan
   /v1/projects/{project_name}/instance_tips:
