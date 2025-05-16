@@ -173,7 +173,7 @@ func (a *AuditPlanV2) GetBaseInfo() BaseAuditPlan {
 }
 
 func (s *Storage) GetLatestStartTimeAuditPlanSQLV2(sourceId uint) (string, error) {
-	var info = struct {
+	info := struct {
 		StartTime string `gorm:"column:max_start_time"`
 	}{}
 	err := s.db.Raw(`SELECT MAX(STR_TO_DATE(JSON_UNQUOTE(JSON_EXTRACT(info, '$.start_time_of_last_scraped_sql')), '%Y-%m-%dT%H:%i:%s.%f')) 
@@ -720,7 +720,6 @@ func (s *Storage) DeleteSQLManageRecordBySourceId(sourceId string) error {
 							SET smr.deleted_at = now(),
 							smrp.deleted_at = now()
 							WHERE smr.source_id = ?`, sourceId).Error
-
 		if err != nil {
 			return err
 		}
@@ -767,6 +766,12 @@ func (s *Storage) UpdateAuditPlanInfoByAPID(id uint, attrs map[string]interface{
 func (s *Storage) GetAuditPlansByProjectId(projectID string) ([]*InstanceAuditPlan, error) {
 	instanceAuditPlan := []*InstanceAuditPlan{}
 	err := s.db.Model(InstanceAuditPlan{}).Where("project_id = ?", projectID).Find(&instanceAuditPlan).Error
+	return instanceAuditPlan, err
+}
+
+func (s *Storage) GetActiveScannerAuditPlansByProjectId(projectID string) ([]*InstanceAuditPlan, error) {
+	instanceAuditPlan := []*InstanceAuditPlan{}
+	err := s.db.Model(InstanceAuditPlan{}).Where("project_id = ? AND active_status = ? AND token <> \"\"", projectID, ActiveStatusNormal).Find(&instanceAuditPlan).Error
 	return instanceAuditPlan, err
 }
 

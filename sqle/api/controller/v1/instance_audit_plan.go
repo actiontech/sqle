@@ -199,9 +199,9 @@ func CreateInstanceAuditPlan(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
 	// generate token , 生成ID后根据ID生成token
-	if err := generateAndUpdateAuditPlanToken(ap, tokenExpire); err != nil {
+	err = HandleAuditPlanToken(ap.GetIDStr())
+	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
@@ -214,16 +214,58 @@ func CreateInstanceAuditPlan(c echo.Context) error {
 	})
 }
 
-func generateAndUpdateAuditPlanToken(ap *model.InstanceAuditPlan, tokenExpire time.Duration) error {
-	t, err := dmsCommonJwt.GenJwtToken(dmsCommonJwt.WithExpiredTime(tokenExpire), dmsCommonJwt.WithAuditPlanName(utils.Md5(ap.GetIDStr())))
-	if err != nil {
-		return errors.New(errors.DataConflict, err)
-	}
-	err = model.GetStorage().UpdateInstanceAuditPlanByID(ap.ID, map[string]interface{}{"token": t})
+func HandleAuditPlanToken(instanceAuditPlanID string) error {
+	s := model.GetStorage()
+
+	ap, exist, err := s.GetInstanceAuditPlanDetail(instanceAuditPlanID)
 	if err != nil {
 		return err
 	}
+	if !exist {
+		return errors.NewInstanceAuditPlanNotExistErr()
+	}
+
+	return UpdateInstanceAuditPlanToken(ap, tokenExpire)
+}
+
+func UpdateInstanceAuditPlanToken(ap *model.InstanceAuditPlan, tokenExpire time.Duration) error {
+	// 存在scanner依赖的任务类型时候，重新生成token
+	needGenerate := HasScannerTypeSubPlans(ap)
+	// 当前token是否为为空
+	currentTokenEmpty := ap.Token == ""
+
+	var token string
+	var err error
+	if needGenerate {
+		token, err = newAuditPlanToken(ap, tokenExpire)
+		if err != nil {
+			return errors.New(errors.DataConflict, err)
+		}
+	}
+
+	// 1. 添加token: 存在scanner类型任务并且原本token为空
+	// 2. 删除token: 不存在scanner类型任务并且原本token不为空
+	if needGenerate == currentTokenEmpty {
+		return model.GetStorage().UpdateInstanceAuditPlanByID(ap.ID, map[string]interface{}{"token": token})
+	}
 	return nil
+}
+
+func HasScannerTypeSubPlans(ap *model.InstanceAuditPlan) bool {
+	supportedTypes := auditplan.GetSupportedScannerAuditPlanType()
+	for _, plan := range ap.AuditPlans {
+		if _, ok := supportedTypes[plan.Type]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+func newAuditPlanToken(ap *model.InstanceAuditPlan, tokenExpire time.Duration) (string, error) {
+	return dmsCommonJwt.GenJwtToken(
+		dmsCommonJwt.WithExpiredTime(tokenExpire),
+		dmsCommonJwt.WithAuditPlanName(utils.Md5(ap.GetIDStr())),
+	)
 }
 
 // @Summary 删除实例扫描任务
@@ -382,6 +424,10 @@ func UpdateInstanceAuditPlan(c echo.Context) error {
 	}
 
 	err = s.BatchSaveAuditPlans(resultAuditPlans)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	err = HandleAuditPlanToken(instanceAuditPlanID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -757,6 +803,10 @@ func DeleteAuditPlanById(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.NewInstanceAuditPlanNotExistErr())
 	}
 	err = s.DeleteAuditPlan(audit_plan_id)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	err = HandleAuditPlanToken(instanceAuditPlanID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1298,22 +1348,22 @@ func AuditPlanTriggerSqlAudit(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, nil)
 }
 
-type GenerateAuditPlanTokenReqV1 struct {
+type RefreshAuditPlanTokenReqV1 struct {
 	ExpiresInDays *int `json:"expires_in_days"`
 }
 
-// @Summary 生成扫描任务token
-// @Description generate audit plan token
-// @Id generateAuditPlanTokenV1
+// @Summary 重置扫描任务token
+// @Description refresh audit plan token
+// @Id refreshAuditPlanTokenV1
 // @Tags instance_audit_plan
 // @Security ApiKeyAuth
-// @param audit_plan body v1.GenerateAuditPlanTokenReqV1 false "update instance audit plan token"
+// @param audit_plan body v1.RefreshAuditPlanTokenReqV1 false "update instance audit plan token"
 // @Param project_name path string true "project name"
 // @Param instance_audit_plan_id path string true "instance audit plan id"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/token [patch]
-func GenerateAuditPlanToken(c echo.Context) error {
-	req := new(GenerateAuditPlanTokenReqV1)
+func RefreshAuditPlanToken(c echo.Context) error {
+	req := new(RefreshAuditPlanTokenReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1338,9 +1388,22 @@ func GenerateAuditPlanToken(c echo.Context) error {
 			expireDuration = time.Duration(expiresInDays) * 24 * time.Hour
 		}
 	}
-	err = generateAndUpdateAuditPlanToken(instanceAuditPlan, expireDuration)
+
+	err = RefreshInstanceAuditPlanToken(instanceAuditPlan, expireDuration)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	return controller.JSONBaseErrorReq(c, nil)
+}
+
+func RefreshInstanceAuditPlanToken(ap *model.InstanceAuditPlan, tokenExpire time.Duration) error {
+	var token string
+	var err error
+	if HasScannerTypeSubPlans(ap) {
+		token, err = newAuditPlanToken(ap, tokenExpire)
+		if err != nil {
+			return errors.New(errors.DataConflict, err)
+		}
+	}
+	return model.GetStorage().UpdateInstanceAuditPlanByID(ap.ID, map[string]interface{}{"token": token})
 }
