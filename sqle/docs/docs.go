@@ -4420,6 +4420,52 @@ var doc = `{
                 }
             }
         },
+        "/v1/projects/{project_name}/pipelines/{pipeline_id}/token/{node_id}/": {
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "refresh pipeline token",
+                "tags": [
+                    "pipeline"
+                ],
+                "summary": "刷新流水线节点token",
+                "operationId": "refreshPipelineNodeTokenV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "pipeline id",
+                        "name": "pipeline_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "node id",
+                        "name": "node_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{project_name}/report_push_configs": {
             "get": {
                 "security": [
@@ -16992,6 +17038,10 @@ var doc = `{
                 "last_collection_time": {
                     "type": "string"
                 },
+                "token_exp": {
+                    "type": "integer",
+                    "example": 1747129752
+                },
                 "total_sql_nums": {
                     "type": "integer"
                 },
@@ -18224,6 +18274,9 @@ var doc = `{
                 "type": {
                     "type": "string",
                     "example": "全局配置"
+                },
+                "version": {
+                    "type": "integer"
                 }
             }
         },
