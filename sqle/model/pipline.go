@@ -132,12 +132,12 @@ func (s *Storage) GetPipelineDetail(projectID ProjectUID, pipelineID uint) (*Pip
 }
 
 func (s *Storage) GetPipelineNode(pipelineID uint, nodeID uint) (*PipelineNode, error) {
-	var node *PipelineNode
+	var node PipelineNode
 	err := s.db.Model(PipelineNode{}).Where("pipeline_id = ? AND id = ?", pipelineID, nodeID).First(&node).Error
 	if err != nil {
-		return node, errors.New(errors.ConnectStorageError, err)
+		return nil, errors.New(errors.ConnectStorageError, err)
 	}
-	return node, nil
+	return &node, nil
 }
 
 func (s *Storage) GetPipelineNodes(pipelineID uint) ([]*PipelineNode, error) {
@@ -216,7 +216,7 @@ func (s *Storage) UpdatePipeline(pipe *Pipeline, newNodes []*PipelineNode) error
 func (s *Storage) UpdatePipelineNode(newNode *PipelineNode) error {
 	return s.Tx(func(txDB *gorm.DB) error {
 		// 3 更新节点属性
-		if err := txDB.Save(&newNode).Error; err != nil {
+		if err := txDB.Save(newNode).Error; err != nil {
 			return fmt.Errorf("failed to update pipeline node: %w", err)
 		}
 		return nil
