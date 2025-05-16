@@ -4411,12 +4411,12 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "generate pipeline node token",
+                "description": "refresh pipeline token",
                 "tags": [
                     "pipeline"
                 ],
-                "summary": "生成流水线节点token",
-                "operationId": "generatePipelineNodeTokenV1",
+                "summary": "刷新流水线节点token",
+                "operationId": "refreshPipelineNodeTokenV1",
                 "parameters": [
                     {
                         "type": "string",
