@@ -429,7 +429,7 @@ func (svc PipelineSvc) DeletePipeline(projectUID string, pipelineID uint) error 
 	return s.DeletePipeline(model.ProjectUID(projectUID), pipelineID)
 }
 
-func (svc PipelineSvc) GeneratePipelineToken(pipelineID uint, nodeID uint, userID string) error {
+func (svc PipelineSvc) RefreshPipelineToken(pipelineID uint, nodeID uint, userID string) error {
 	s := model.GetStorage()
 	modelPiplineNode, err := s.GetPipelineNode(pipelineID, nodeID)
 	if err != nil {
