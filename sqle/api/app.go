@@ -257,7 +257,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1ProjectOpRouter.DELETE("/:project_name/instance_audit_plans/:instance_audit_plan_id/", v1.DeleteInstanceAuditPlan)
 		v1ProjectOpRouter.PUT("/:project_name/instance_audit_plans/:instance_audit_plan_id/", v1.UpdateInstanceAuditPlan)
 		v1ProjectOpRouter.PATCH("/:project_name/instance_audit_plans/:instance_audit_plan_id/", v1.UpdateInstanceAuditPlanStatus)
-		v1ProjectOpRouter.PATCH("/:project_name/instance_audit_plans/:instance_audit_plan_id/token", v1.GenerateAuditPlanToken)
+		v1ProjectOpRouter.PATCH("/:project_name/instance_audit_plans/:instance_audit_plan_id/token", v1.RefreshAuditPlanToken)
 
 		// audit plan; 智能扫描任务
 		v1ProjectOpRouter.DELETE("/:project_name/instance_audit_plans/:instance_audit_plan_id/audit_plans/:audit_plan_id/", v1.DeleteAuditPlanById)
