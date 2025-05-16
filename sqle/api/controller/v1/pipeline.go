@@ -386,9 +386,9 @@ func DeletePipeline(c echo.Context) error {
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
 
-// @Summary 生成流水线节点token
-// @Description generate pipeline node token
-// @Id generatePipelineNodeTokenV1
+// @Summary 刷新流水线节点token
+// @Description refresh pipeline token
+// @Id refreshPipelineNodeTokenV1
 // @Tags pipeline
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
@@ -396,7 +396,7 @@ func DeletePipeline(c echo.Context) error {
 // @Param node_id path string true "node id"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/pipelines/{pipeline_id}/token/{node_id}/ [patch]
-func GeneratePipelineToken(c echo.Context) error {
+func RefreshPipelineToken(c echo.Context) error {
 	pipelineID, err := strconv.Atoi(c.Param("pipeline_id"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -406,7 +406,7 @@ func GeneratePipelineToken(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	var pipelineSvc pipeline.PipelineSvc
-	err = pipelineSvc.GeneratePipelineToken(uint(pipelineID), uint(nodeID), controller.GetUserID(c))
+	err = pipelineSvc.RefreshPipelineToken(uint(pipelineID), uint(nodeID), controller.GetUserID(c))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

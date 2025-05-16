@@ -285,7 +285,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1ProjectOpRouter.POST("/:project_name/pipelines", v1.CreatePipeline)
 		v1ProjectOpRouter.DELETE("/:project_name/pipelines/:pipeline_id/", v1.DeletePipeline)
 		v1ProjectOpRouter.PATCH("/:project_name/pipelines/:pipeline_id/", v1.UpdatePipeline)
-		v1ProjectOpRouter.PATCH("/:project_name/pipelines/:pipeline_id/token/:node_id/", v1.GeneratePipelineToken)
+		v1ProjectOpRouter.PATCH("/:project_name/pipelines/:pipeline_id/token/:node_id/", v1.RefreshPipelineToken)
 
 		// database_compare
 		v1ProjectOpRouter.POST("/:project_name/database_comparison/execute_comparison", v1.ExecuteDatabaseComparison)
