@@ -3221,6 +3221,9 @@ definitions:
         type: string
       last_collection_time:
         type: string
+      token_exp:
+        example: 1747129752
+        type: integer
       total_sql_nums:
         type: integer
       unsolved_sql_nums:
@@ -4061,6 +4064,8 @@ definitions:
       type:
         example: 全局配置
         type: string
+      version:
+        type: integer
     type: object
   v1.RuleRespV1:
     properties:
@@ -9674,6 +9679,36 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 更新流水线
+      tags:
+      - pipeline
+  /v1/projects/{project_name}/pipelines/{pipeline_id}/token/{node_id}/:
+    patch:
+      description: refresh pipeline token
+      operationId: refreshPipelineNodeTokenV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: pipeline id
+        in: path
+        name: pipeline_id
+        required: true
+        type: string
+      - description: node id
+        in: path
+        name: node_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 刷新流水线节点token
       tags:
       - pipeline
   /v1/projects/{project_name}/report_push_configs:

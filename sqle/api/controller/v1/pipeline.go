@@ -320,7 +320,6 @@ func (req UpdatePipelineReqV1) convertToSvcPipeline(projectUID string, pipelineI
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/pipelines/{pipeline_id}/ [patch]
 func UpdatePipeline(c echo.Context) error {
-
 	req := new(UpdatePipelineReqV1)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -384,5 +383,32 @@ func DeletePipeline(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+}
+
+// @Summary 刷新流水线节点token
+// @Description refresh pipeline token
+// @Id refreshPipelineNodeTokenV1
+// @Tags pipeline
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Param pipeline_id path string true "pipeline id"
+// @Param node_id path string true "node id"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/projects/{project_name}/pipelines/{pipeline_id}/token/{node_id}/ [patch]
+func RefreshPipelineToken(c echo.Context) error {
+	pipelineID, err := strconv.Atoi(c.Param("pipeline_id"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	nodeID, err := strconv.Atoi(c.Param("node_id"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	var pipelineSvc pipeline.PipelineSvc
+	err = pipelineSvc.RefreshPipelineToken(uint(pipelineID), uint(nodeID), controller.GetUserID(c))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
