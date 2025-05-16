@@ -9683,8 +9683,8 @@ paths:
       - pipeline
   /v1/projects/{project_name}/pipelines/{pipeline_id}/token/{node_id}/:
     patch:
-      description: generate pipeline node token
-      operationId: generatePipelineNodeTokenV1
+      description: refresh pipeline token
+      operationId: refreshPipelineNodeTokenV1
       parameters:
       - description: project name
         in: path
@@ -9708,7 +9708,7 @@ paths:
             $ref: '#/definitions/controller.BaseRes'
       security:
       - ApiKeyAuth: []
-      summary: 生成流水线节点token
+      summary: 刷新流水线节点token
       tags:
       - pipeline
   /v1/projects/{project_name}/report_push_configs:
