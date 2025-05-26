@@ -39,6 +39,12 @@ const MetricNameDiskReadAvg = "disk_read_avg"
 const MetricNameBufferReadAvg = "buffer_read_avg"
 const MetricNameExplainCost = "explain_cost"
 
+const MetricNameLockTimeAvg string = "lock_time_avg"         // 平均锁等待时间
+const MetricNameLockTimeMax string = "lock_time_max"         // 最大锁等待时间
+const MetricNameRowsAffectedMax string = "rows_affected_max" // 最大影响的行数
+const MetricNameRowsAffectedAvg string = "rows_affected_avg" // 平均影响的行数
+const MetricNameChecksum string = "checksum"                 // 校验和
+
 // Lock
 const MetricNameGrantedLockId string = "granted_lock_id"
 const MetricNameWaitingLockId string = "waiting_lock_id"
