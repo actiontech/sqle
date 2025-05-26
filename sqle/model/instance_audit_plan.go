@@ -172,16 +172,16 @@ func (a *AuditPlanV2) GetBaseInfo() BaseAuditPlan {
 	}
 }
 
-func (s *Storage) GetLatestStartTimeAuditPlanSQLV2(sourceId uint) (string, error) {
+func (s *Storage) GetLatestStartTimeAuditPlanSQLV2(sourceId uint, typ string) (string, error) {
 	info := struct {
 		StartTime string `gorm:"column:max_start_time"`
 	}{}
 	err := s.db.Raw(`SELECT MAX(STR_TO_DATE(JSON_UNQUOTE(JSON_EXTRACT(info, '$.start_time_of_last_scraped_sql')), '%Y-%m-%dT%H:%i:%s.%f')) 
-					AS max_start_time FROM sql_manage_records WHERE source_id = ?`, sourceId).Scan(&info).Error
+					AS max_start_time FROM sql_manage_records WHERE source_id = ? AND source = ? AND deleted_at is NULL`, sourceId, typ).Scan(&info).Error
 	return info.StartTime, err
 }
 
-func (s *Storage) GetLastReceiveTimeAuditPlanSQLV2(sourceId uint) (string, error) {
+func (s *Storage) GetLastReceiveTimeAuditPlanSQLV2(sourceId uint, typ string) (string, error) {
 	var info = struct {
 		LastReceivedTime string `gorm:"column:last_received_time"`
 	}{}
@@ -191,9 +191,9 @@ func (s *Storage) GetLastReceiveTimeAuditPlanSQLV2(sourceId uint) (string, error
 			JSON_UNQUOTE(JSON_EXTRACT(info, '$.last_receive_timestamp'))
 		)
   		AS last_received_time 
-  	FROM sqle.sql_manage_records 
-  	WHERE source_id = ?
-	`, sourceId).Scan(&info).Error
+  	FROM sql_manage_records 
+  	WHERE source_id = ?  AND source = ? AND deleted_at is NULL
+	`, sourceId, typ).Scan(&info).Error
 	return info.LastReceivedTime, err
 }
 
