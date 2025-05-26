@@ -181,6 +181,22 @@ func (s *Storage) GetLatestStartTimeAuditPlanSQLV2(sourceId uint) (string, error
 	return info.StartTime, err
 }
 
+func (s *Storage) GetLastReceiveTimeAuditPlanSQLV2(sourceId uint) (string, error) {
+	var info = struct {
+		LastReceivedTime string `gorm:"column:last_received_time"`
+	}{}
+	err := s.db.Raw(`
+	SELECT
+		MAX(
+			JSON_UNQUOTE(JSON_EXTRACT(info, '$.last_receive_timestamp'))
+		)
+  		AS last_received_time 
+  	FROM sqle.sql_manage_records 
+  	WHERE source_id = ?
+	`, sourceId).Scan(&info).Error
+	return info.LastReceivedTime, err
+}
+
 // 此表对于来源是扫描任务的相关sql, 目前仅在采集和审核时会更新, 如有其他场景更新此表, 需要考虑更新后会触发审核影响
 // 如有其他sql业务相关字段补充, 可新增至SQLManageRecordProcess中
 type SQLManageRecord struct {
