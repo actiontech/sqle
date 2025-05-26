@@ -309,10 +309,13 @@ func (at *TaskWrapper) pushSQLToManagerSQLQueue(sqlList []*model.SQLManageQueue,
 		return err
 	}
 
-	for _, sqlQueue := range SqlQueueList {
-		err = createSqlManageCostMetricRecord(sqlQueue, ap.Instance)
-		if err != nil {
-			log.Logger().Errorf("createSqlManageCostMetricRecord: %v", err)
+	// 目前只支持MySQL
+	if ap.DBType == driverV2.DriverTypeMySQL {
+		for _, sqlQueue := range SqlQueueList {
+			err = createSqlManageCostMetricRecord(sqlQueue, ap.Instance)
+			if err != nil {
+				log.Logger().Errorf("createSqlManageCostMetricRecord: %v", err)
+			}
 		}
 	}
 	err = at.persist.PushSQLToManagerSQLQueue(SqlQueueList)
@@ -642,7 +645,7 @@ func createSqlManageCostMetricRecord(sqlManageQueue *model.SQLManageQueue, insta
 	}
 	cost, err := GetQueryCost(plugin, sqlManageQueue.SqlText)
 	if err != nil {
-		log.Logger().Errorf("createSqlManageCostMetricRecord: parse explain cost to float64 failed %v", err)
+		log.Logger().Errorf("createSqlManageCostMetricRecord: failed %v", err)
 		return err
 	}
 	storage := model.GetStorage()
