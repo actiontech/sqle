@@ -101,6 +101,12 @@ var ALLMetric = map[string]MetricType{
 	MetricNameLockStatus: MetricTypeString, // Lock
 	MetricNameEngine:     MetricTypeString, // Lock
 	MetricNameTable:      MetricTypeString, // Lock
+
+	MetricNameLockTimeAvg:     MetricTypeFloat,  // TD MYSQL Monitor DB Slow Log
+	MetricNameLockTimeMax:     MetricTypeFloat,  // TD MYSQL Monitor DB Slow Log
+	MetricNameRowsAffectedMax: MetricTypeInt,    // TD MYSQL Monitor DB Slow Log
+	MetricNameRowsAffectedAvg: MetricTypeFloat,  // TD MYSQL Monitor DB Slow Log
+	MetricNameChecksum:        MetricTypeString, // TD MYSQL Monitor DB Slow Log
 }
 
 func LoadMetrics(info map[string]interface{}, metrics []string) Metrics {
