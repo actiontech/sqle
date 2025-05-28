@@ -333,6 +333,8 @@ var (
 	ApMetricNameCPUTimeAvg              = &i18n.Message{ID: "ApMetricNameCPUTimeAvg", Other: "平均 CPU 时间(μs)"}
 	ApMetricNameLockWaitTimeTotal       = &i18n.Message{ID: "ApMetricNameLockWaitTimeTotal", Other: "锁等待时间(ms)"}
 	ApMetricNameLockWaitCounter         = &i18n.Message{ID: "ApMetricNameLockWaitCounter", Other: "锁等待次数"}
+	ApMetricNameLockWaitTimeAvg         = &i18n.Message{ID: "ApMetricNameLockWaitTimeAvg", Other: "平均锁等待时间(ms)"}
+	ApMetricNameLockWaitTimeMax         = &i18n.Message{ID: "ApMetricNameLockWaitTimeMax", Other: "锁最大等待时间(ms)"}
 	ApMetricNameActiveWaitTimeTotal     = &i18n.Message{ID: "ApMetricNameActiveWaitTimeTotal", Other: "活动等待总时间(ms)"}
 	ApMetricNameActiveTimeTotal         = &i18n.Message{ID: "ApMetricNameActiveTimeTotal", Other: "活动总时间(ms)"}
 	ApMetricNameLastReceiveTimestamp    = &i18n.Message{ID: "ApMetricNameLastReceiveTimestamp", Other: "最后一次匹配到该指纹的时间"}
@@ -351,6 +353,9 @@ var (
 	ApMetricNameFirstQueryAt            = &i18n.Message{ID: "ApMetricNameFirstQueryAt", Other: "首次执行时间"}
 	ApMetricNameLastQueryAt             = &i18n.Message{ID: "ApMetricNameLastQueryAt", Other: "最后执行时间"}
 	ApMetricNameMaxQueryTime            = &i18n.Message{ID: "ApMetricNameMaxQueryTime", Other: "最长执行时间(s)"}
+	ApMetricNameRowsAffectedMax         = &i18n.Message{ID: "ApMetricNameRowsAffectedMax", Other: "最大影响行数"}
+	ApMetricNameRowsAffectedAvg         = &i18n.Message{ID: "ApMetricNameRowsAffectedAvg", Other: "平均影响行数"}
+	ApMetricNameChecksum                = &i18n.Message{ID: "ApMetricNameChecksum", Other: "校验和"}
 
 	ApMetricNameCounterMoreThan        = &i18n.Message{ID: "ApMetricNameCounterMoreThan", Other: "出现次数 > "}
 	ApMetricNameQueryTimeAvgMoreThan   = &i18n.Message{ID: "ApMetricNameQueryTimeAvgMoreThan", Other: "平均执行时间(s) > "}
@@ -367,6 +372,7 @@ var (
 	ApMetaAllAppExtract         = &i18n.Message{ID: "ApMetaAllAppExtract", Other: "应用程序SQL抓取"}
 	ApMetaTiDBAuditLog          = &i18n.Message{ID: "ApMetaTiDBAuditLog", Other: "TiDB审计日志"}
 	ApMetaSlowLog               = &i18n.Message{ID: "ApMetaSlowLog", Other: "慢日志"}
+	ApMetaMDBSlowLog            = &i18n.Message{ID: "ApMetaMDBSlowLog", Other: "慢日志（监控库）"}
 	ApMetaTopSQL                = &i18n.Message{ID: "ApMetaTopSQL", Other: "Top SQL"}
 	ApMetaDB2TopSQL             = &i18n.Message{ID: "ApMetaDB2TopSQL", Other: "DB2 Top SQL"}
 	ApMetaSchemaMeta            = &i18n.Message{ID: "ApMetaSchemaMeta", Other: "库表元数据"}
