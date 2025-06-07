@@ -61,7 +61,7 @@ func TestRuleSQLE00108(t *testing.T) {
 	// 	"WITH CTE AS (SELECT * FROM exist_db.exist_tb_1 WHERE id IN (SELECT id FROM exist_db.exist_tb_1 WHERE id IN (SELECT id FROM exist_db.exist_tb_1 WHERE id IN (SELECT id FROM exist_db.exist_tb_1 WHERE id IN (SELECT id FROM exist_db.exist_tb_1 WHERE id = 'value'))))) SELECT * FROM CTE",
 	// 	nil, nil, newTestResult())
 
-	runAIRuleCase(rule, t, "case 13_tes: SELECT语句where中包含6层嵌套子查询，使用示例中的表结构",
+	runAIRuleCase(rule, t, "case 13: SELECT语句from中包含2层嵌套子查询，使用示例中的表结构",
 		"SELECT AVG(subquery_middle.subquery_grade) AS subquery_middle_avg FROM (SELECT grade AS subquery_grade FROM st1 WHERE st1.cid IN (SELECT cid FROM st_class WHERE cname = 'class2')) subquery_middle;",
 		session.NewAIMockContext().WithSQL("CREATE TABLE st1 (id bigint, name VARCHAR(32), cid bigint, grade NUMERIC); CREATE TABLE st_class (cid bigint, cname VARCHAR(32));"),
 		nil, newTestResult())
