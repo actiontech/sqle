@@ -392,15 +392,17 @@ func ConvertProtoTabularDataToDriver(pTd *protoV2.TabularData, isI18n bool) (Tab
 			I18nDesc: nil,
 		}
 		if isI18n {
-			if _, exist := c.I18NDesc[i18nPkg.DefaultLang.String()]; !exist {
-				// 多语言的插件 需包含 i18nPkg.DefaultLang
-				return TabularData{}, fmt.Errorf("client TabularDataHead: %s does not support language: %s", c.Name, i18nPkg.DefaultLang.String())
+			if len(c.I18NDesc) > 0 { // 列描述可以为空，为空时跳过
+				if _, exist := c.I18NDesc[i18nPkg.DefaultLang.String()]; !exist {
+					// 多语言的插件 需包含 i18nPkg.DefaultLang
+					return TabularData{}, fmt.Errorf("client TabularDataHead: %s does not support language: %s", c.Name, i18nPkg.DefaultLang.String())
+				}
+				i18nDesc, err := i18nPkg.ConvertStrMap2I18nStr(c.I18NDesc)
+				if err != nil {
+					return TabularData{}, fmt.Errorf("TabularData: %w", err)
+				}
+				h.I18nDesc = i18nDesc
 			}
-			i18nDesc, err := i18nPkg.ConvertStrMap2I18nStr(c.I18NDesc)
-			if err != nil {
-				return TabularData{}, fmt.Errorf("TabularData: %w", err)
-			}
-			h.I18nDesc = i18nDesc
 		} else {
 			// 对非多语言的插件支持
 			h.I18nDesc.SetStrInLang(i18nPkg.DefaultLang, c.Desc)
