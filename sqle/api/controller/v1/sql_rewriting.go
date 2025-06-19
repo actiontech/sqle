@@ -42,6 +42,8 @@ type RewriteSuggestion struct {
 	// @Description 重写描述（适用于所有类型）
 	// @Required
 	Desc string `json:"desc"`
+	// @Description 处理状态：初始化、已处理
+	Status string `json:"status" enums:"initial,processed" default:"initial"`
 	// @Description 重写后的SQL（适用于语句级重写和结构级重写）
 	RewrittenSQL string `json:"rewritten_sql"`
 	// @Description 数据库结构变更建议说明（例如：建议添加索引、修改表结构等优化建议）（适用于结构级重写）
@@ -55,9 +57,27 @@ type RewriteSQLRes struct {
 	Data *RewriteSQLData `json:"data"`
 }
 
-// RewriteSQL retrieves the rewritten SQL and associated suggestions for a specific SQL statement within a task.
-// @Summary 获取任务中指定SQL的重写结果和建议
-// @Description 获取特定任务中某条SQL语句的重写后的SQL及相关建议
+// AsyncRewriteTask 异步重写任务（Controller层定义）
+type AsyncRewriteTask struct {
+	// @Description 任务ID
+	TaskID string `json:"task_id"`
+	// @Description SQL编号
+	SQLNumber string `json:"sql_number"`
+	// @Description 任务状态
+	Status string `json:"status" enums:"pending,running,completed,failed"`
+	// @Description 错误信息
+	ErrorMessage string `json:"error_message,omitempty"`
+	// @Description 开始时间
+	StartTime string `json:"start_time"`
+	// @Description 结束时间
+	EndTime *string `json:"end_time,omitempty"`
+	// @Description 重写结果
+	Result *RewriteSQLData `json:"result,omitempty"`
+}
+
+// RewriteSQL starts an asynchronous SQL rewriting task for a specific SQL statement within a task.
+// @Summary 启动异步SQL重写任务
+// @Description 启动特定任务中某条SQL语句的异步重写任务，返回任务状态
 // @Id RewriteSQL
 // @Accept json
 // @Produce json
@@ -66,8 +86,30 @@ type RewriteSQLRes struct {
 // @Param number path uint true "sql number"
 // @Param req body v1.RewriteSQLReq true "request body"
 // @Security ApiKeyAuth
-// @Success 200 {object} v1.RewriteSQLRes "成功返回重写结果"
+// @Success 200 {object} v1.AsyncRewriteTaskStatusRes "成功启动异步重写任务"
 // @router /v1/tasks/audits/{task_id}/sqls/{number}/rewrite [post]
 func RewriteSQL(c echo.Context) error {
 	return getRewriteSQLData(c)
+}
+
+// 异步重写任务状态响应
+type AsyncRewriteTaskStatusRes struct {
+	controller.BaseRes
+	Data *AsyncRewriteTask `json:"data"`
+}
+
+// GetAsyncRewriteTaskStatus 获取异步重写任务状态接口
+// @Summary 获取异步重写任务状态
+// @Description 获取特定任务中某条SQL语句的异步重写任务状态
+// @Id GetAsyncRewriteTaskStatus
+// @Accept json
+// @Produce json
+// @Tags task
+// @Param task_id path string true "task id"
+// @Param number path uint true "sql number"
+// @Security ApiKeyAuth
+// @Success 200 {object} v1.AsyncRewriteTaskStatusRes "成功返回任务状态"
+// @router /v1/tasks/audits/{task_id}/sqls/{number}/rewrite/status [get]
+func GetAsyncRewriteTaskStatus(c echo.Context) error {
+	return getAsyncRewriteTaskStatus(c)
 }
