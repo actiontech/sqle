@@ -1,6 +1,6 @@
 ################################## Parameter Definition And Check ##########################################
 # 当前 HEAD 的 tag
-HEAD_TAG = $(shell git describe --exact-match --tags 2>/dev/null)
+HEAD_TAG = $(shell git tag --points-at $(HEAD_HASH) --sort=-v:refname | head -n 1 2>/dev/null)
 
 # 当前分支名
 HEAD_BRANCH = $(shell git rev-parse --abbrev-ref HEAD)
