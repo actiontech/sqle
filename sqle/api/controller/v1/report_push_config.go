@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"fmt"
+	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"net/http"
 	"strconv"
 	"time"
@@ -43,6 +44,17 @@ func GetReportPushConfigList(c echo.Context) error {
 	projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
+	}
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	hasPermission, err := hasViewPermission(user.GetIDStr(), projectUid, dmsV1.OpPermissionPushRule)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !hasPermission {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.UserNotPermission, fmt.Errorf("you have no permission to get report push configs in project")))
 	}
 	reportPushConfigs, err := model.GetStorage().GetReportPushConfigListInProject(projectUid)
 	if err != nil {
@@ -94,6 +106,21 @@ func UpdateReportPushConfig(c echo.Context) error {
 	reportPushConfigId, err := strconv.Atoi(c.Param("report_push_config_id"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
+	}
+	projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	hasPermission, err := hasManagePermission(user.GetIDStr(), projectUid, dmsV1.OpPermissionPushRule)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !hasPermission {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.UserNotPermission, fmt.Errorf("you have no permission to update report push configs in project")))
 	}
 	s := model.GetStorage()
 	config, exist, err := s.GetReportPushConfigById(uint(reportPushConfigId))

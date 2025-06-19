@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"net/http"
 	"strconv"
 
@@ -205,13 +206,23 @@ func GetPipelines(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 	// 3. 计算分页参数
 	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
-
+	canViewAllPipelines, err := CanVewAllPipelines(user.GetIDStr(), projectUid)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	userId := ""
+	if !canViewAllPipelines {
+		userId = user.GetIDStr()
+	}
 	// 4. 获取存储对象并查询流水线列表
 	var pipelineSvc pipeline.PipelineSvc
-	count, pipelineList, err := pipelineSvc.GetPipelineList(limit, offset, req.FuzzySearchNameDesc, projectUid)
+	count, pipelineList, err := pipelineSvc.GetPipelineList(limit, offset, req.FuzzySearchNameDesc, projectUid, userId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -226,6 +237,19 @@ func GetPipelines(c echo.Context) error {
 		TotalNums: count,
 		Data:      data,
 	})
+}
+
+func CanVewAllPipelines(userId string, projectUid string) (bool, error) {
+	up, err := dms.NewUserPermission(userId, projectUid)
+	if err != nil {
+		return false, err
+	}
+	canViewAllPipelines := up.HasOnePermission(dmsV1.OpPermissionViewPipeline)
+	canViewProject := up.CanViewProject()
+	if canViewAllPipelines || canViewProject {
+		return true, nil
+	}
+	return false, nil
 }
 
 // GetPipelineDetailReqV1 用于请求获取流水线详情的结构体
