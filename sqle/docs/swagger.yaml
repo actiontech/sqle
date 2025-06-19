@@ -73,6 +73,48 @@ definitions:
       workflow_name:
         type: string
     type: object
+  v1.AsyncRewriteTask:
+    properties:
+      end_time:
+        description: '@Description 结束时间'
+        type: string
+      error_message:
+        description: '@Description 错误信息'
+        type: string
+      result:
+        $ref: '#/definitions/v1.RewriteSQLData'
+        description: '@Description 重写结果'
+        type: object
+      sql_number:
+        description: '@Description SQL编号'
+        type: string
+      start_time:
+        description: '@Description 开始时间'
+        type: string
+      status:
+        description: '@Description 任务状态'
+        enum:
+        - pending
+        - running
+        - completed
+        - failed
+        type: string
+      task_id:
+        description: '@Description 任务ID'
+        type: string
+    type: object
+  v1.AsyncRewriteTaskStatusRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.AsyncRewriteTask'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.AuditFileResp:
     properties:
       file_name:
@@ -3875,18 +3917,6 @@ definitions:
         example: false
         type: boolean
     type: object
-  v1.RewriteSQLRes:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/v1.RewriteSQLData'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
   v1.RewriteSuggestion:
     properties:
       audit_level:
@@ -3917,6 +3947,13 @@ definitions:
         description: |-
           @Description 审核规则名称
           @Required
+        type: string
+      status:
+        default: initial
+        description: '@Description 处理状态：初始化、已处理'
+        enum:
+        - initial
+        - processed
         type: string
       type:
         description: |-
@@ -13472,7 +13509,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: 获取特定任务中某条SQL语句的重写后的SQL及相关建议
+      description: 启动特定任务中某条SQL语句的异步重写任务，返回任务状态
       operationId: RewriteSQL
       parameters:
       - description: task id
@@ -13495,12 +13532,41 @@ paths:
       - application/json
       responses:
         "200":
-          description: 成功返回重写结果
+          description: 成功启动异步重写任务
           schema:
-            $ref: '#/definitions/v1.RewriteSQLRes'
+            $ref: '#/definitions/v1.AsyncRewriteTaskStatusRes'
       security:
       - ApiKeyAuth: []
-      summary: 获取任务中指定SQL的重写结果和建议
+      summary: 启动异步SQL重写任务
+      tags:
+      - task
+  /v1/tasks/audits/{task_id}/sqls/{number}/rewrite/status:
+    get:
+      consumes:
+      - application/json
+      description: 获取特定任务中某条SQL语句的异步重写任务状态
+      operationId: GetAsyncRewriteTaskStatus
+      parameters:
+      - description: task id
+        in: path
+        name: task_id
+        required: true
+        type: string
+      - description: sql number
+        in: path
+        name: number
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功返回任务状态
+          schema:
+            $ref: '#/definitions/v1.AsyncRewriteTaskStatusRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取异步重写任务状态
       tags:
       - task
   /v1/tasks/audits/{task_id}/sqls/{sql_id}/backup_strategy:
