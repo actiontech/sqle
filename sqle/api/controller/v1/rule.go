@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	e "errors"
 	"fmt"
+	dmsv1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"io"
 	"mime"
 	"net/http"

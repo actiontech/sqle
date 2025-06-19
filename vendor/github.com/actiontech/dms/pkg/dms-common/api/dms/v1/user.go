@@ -200,6 +200,40 @@ const (
 	OpPermissionTypeViewOthersOptimization OpPermissionType = "view_others_optimization"
 	// 配置流水线
 	OpPermissionTypeCreatePipeline OpPermissionType = "create_pipeline"
+	// SQL工作台;查看所有操作记录
+	OpPermissionViewOperationRecord OpPermissionType = "view_operation_record"
+	// 数据导出;查看所有导出任务
+	OpPermissionViewExportTask OpPermissionType = "view_export_task"
+	// 快捷审核;查看所有快捷审核记录
+	OpPermissionViewQuickAuditRecord OpPermissionType = "view_quick_audit_record"
+	// IDE审核;查看所有IDE审核记录
+	OpPermissionViewIDEAuditRecord OpPermissionType = "view_ide_audit_record"
+	// SQL优化;查看所有优化记录
+	OpPermissionViewOptimizationRecord OpPermissionType = "view_optimization_record"
+	// 版本管理;版本管理
+	OpPermissionVersionManage OpPermissionType = "version_manage"
+	// CI/CD集成;查看所有流水线
+	OpPermissionViewPipeline OpPermissionType = "view_pipeline"
+	// 数据源管理;管理项目数据源管理
+	OpPermissionManageProjectDataSource OpPermissionType = "manage_project_data_source"
+	// 审核规则模版;管理审核规则模版
+	OpPermissionManageAuditRuleTemplate OpPermissionType = "manage_audit_rule_template"
+	// 审批流程模版;管理审批流程模版
+	OpPermissionManageApprovalTemplate OpPermissionType = "manage_approval_template"
+	// 成员与权限;管理成员与权限
+	OpPermissionManageMember OpPermissionType = "manage_member"
+	// 推送规则;管理推送规则
+	OpPermissionPushRule OpPermissionType = "manage_push_rule"
+	// 审核SQL例外;管理审核SQL例外
+	OpPermissionMangeAuditSQLWhiteList OpPermissionType = "manage_audit_sql_white_list"
+	// 管控SQL例外;管理管控SQL例外
+	OpPermissionManageSQLMangeWhiteList OpPermissionType = "manage_sql_mange_white_list"
+	// 角色管理;角色管理权限
+	OpPermissionManageRoleMange OpPermissionType = "manage_role_mange"
+	// 脱敏规则;脱敏规则配置权限
+	OpPermissionDesensitization OpPermissionType = "desensitization"
+	// 无任何权限
+	OpPermissionTypeNone OpPermissionType = "none"
 )
 
 func ParseOpPermissionType(typ string) (OpPermissionType, error) {
@@ -238,6 +272,23 @@ func ParseOpPermissionType(typ string) (OpPermissionType, error) {
 		return OpPermissionTypeViewOthersOptimization, nil
 	case string(OpPermissionTypeCreatePipeline):
 		return OpPermissionTypeCreatePipeline, nil
+	case string(OpPermissionViewOperationRecord): return OpPermissionViewOperationRecord, nil
+	case string(OpPermissionViewExportTask): return OpPermissionViewExportTask, nil
+	case string(OpPermissionViewQuickAuditRecord): return OpPermissionViewQuickAuditRecord, nil
+	case string(OpPermissionViewIDEAuditRecord): return OpPermissionViewIDEAuditRecord, nil
+	case string(OpPermissionViewOptimizationRecord): return OpPermissionViewOptimizationRecord, nil
+	case string(OpPermissionVersionManage): return OpPermissionVersionManage, nil
+	case string(OpPermissionViewPipeline): return OpPermissionViewPipeline, nil
+	case string(OpPermissionManageProjectDataSource): return OpPermissionManageProjectDataSource, nil
+	case string(OpPermissionManageAuditRuleTemplate): return OpPermissionManageAuditRuleTemplate, nil
+	case string(OpPermissionManageApprovalTemplate): return OpPermissionManageApprovalTemplate, nil
+	case string(OpPermissionManageMember): return OpPermissionManageMember, nil
+	case string(OpPermissionPushRule): return OpPermissionPushRule, nil
+	case string(OpPermissionMangeAuditSQLWhiteList): return OpPermissionMangeAuditSQLWhiteList, nil
+	case string(OpPermissionManageSQLMangeWhiteList): return OpPermissionManageSQLMangeWhiteList, nil
+	case string(OpPermissionManageRoleMange): return OpPermissionManageRoleMange, nil
+	case string(OpPermissionDesensitization): return OpPermissionDesensitization, nil
+	case string(OpPermissionTypeNone): return OpPermissionTypeNone, nil
 	default:
 		return "", fmt.Errorf("invalid op permission type: %s", typ)
 	}
@@ -328,6 +379,8 @@ type ListUser struct {
 	UserGroups []UidWithName `json:"user_groups"`
 	// user operation permissions
 	OpPermissions []UidWithName `json:"op_permissions"`
+	// projects
+	Projects []string `json:"projects"`
 	// user is deleted
 	IsDeleted bool `json:"is_deleted"`
 	// third party user info
