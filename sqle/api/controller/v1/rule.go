@@ -882,7 +882,18 @@ func CreateProjectRuleTemplate(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	hasPermission, err := hasManagePermission(user.GetIDStr(), projectUid, dmsv1.OpPermissionManageAuditRuleTemplate)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !hasPermission {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.UserNotPermission,
+			fmt.Errorf("you have no permission to get rule templates in project")))
+	}
 	s := model.GetStorage()
 	_, exist, err := s.GetGlobalAndProjectRuleTemplateByNameAndProjectId(req.Name, projectUid)
 	if err != nil {
@@ -973,6 +984,18 @@ func UpdateProjectRuleTemplate(c echo.Context) error {
 	projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
+	}
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	hasPermission, err := hasManagePermission(user.GetIDStr(), projectUid, dmsv1.OpPermissionManageAuditRuleTemplate)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !hasPermission {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.UserNotPermission,
+			fmt.Errorf("you have no permission to get rule templates in project")))
 	}
 	s := model.GetStorage()
 	template, exist, err := s.GetGlobalAndProjectRuleTemplateByNameAndProjectId(templateName, projectUid)
@@ -1111,7 +1134,18 @@ func DeleteProjectRuleTemplate(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	hasPermission, err := hasManagePermission(user.GetIDStr(), projectUid, dmsv1.OpPermissionManageAuditRuleTemplate)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !hasPermission {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.UserNotPermission,
+			fmt.Errorf("you have no permission to get rule templates in project")))
+	}
 	s := model.GetStorage()
 
 	templateName := c.Param("rule_template_name")
@@ -1193,6 +1227,18 @@ func GetProjectRuleTemplates(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	hasPermission, err := hasViewPermission(user.GetIDStr(), projectUid, dmsv1.OpPermissionManageAuditRuleTemplate)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !hasPermission {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.UserNotPermission,
+			fmt.Errorf("you have no permission to get rule templates in project")))
+	}
 	s := model.GetStorage()
 	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
 	ruleTemplates, count, err := getRuleTemplatesByReq(s, limit, offset, projectUid)
@@ -1205,6 +1251,30 @@ func GetProjectRuleTemplates(c echo.Context) error {
 		Data:      convertProjectRuleTemplatesToRes(ruleTemplates),
 		TotalNums: count,
 	})
+}
+
+func hasViewPermission(userId, projectUid string, permissionType dmsv1.OpPermissionType) (bool, error) {
+	up, err := dms.NewUserPermission(userId, projectUid)
+	if err != nil {
+		return false, fmt.Errorf("get permissions failed: %v", err)
+	}
+	canManage := up.CanViewProject() || up.HasOnePermission(permissionType)
+	if canManage {
+		return true, nil
+	}
+	return false, nil
+}
+
+func hasManagePermission(userId, projectUid string, permissionType dmsv1.OpPermissionType) (bool, error) {
+	up, err := dms.NewUserPermission(userId, projectUid)
+	if err != nil {
+		return false, fmt.Errorf("get permissions failed: %v", err)
+	}
+	canManage := up.CanOpGlobal() || up.HasOnePermission(permissionType)
+	if canManage {
+		return true, nil
+	}
+	return false, nil
 }
 
 func convertProjectRuleTemplatesToRes(ruleTemplates []*model.RuleTemplateDetail) []ProjectRuleTemplateResV1 {

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	e "errors"
 	"fmt"
+	v1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"io"
 	"io/fs"
 	"net/http"
@@ -685,6 +686,7 @@ func GetSQLAuditRecordsV1(c echo.Context) error {
 	}
 
 	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
+	canViewAllAuditRecord := up.CanViewProject() || up.HasOnePermission(v1.OpPermissionViewQuickAuditRecord)
 
 	data := map[string]interface{}{
 		"filter_project_id":       projectUid,
@@ -693,7 +695,7 @@ func GetSQLAuditRecordsV1(c echo.Context) error {
 		"filter_instance_id":      req.FilterInstanceId,
 		"filter_create_time_from": req.FilterCreateTimeFrom,
 		"filter_create_time_to":   req.FilterCreateTimeTo,
-		"check_user_can_access":   !up.CanViewProject(),
+		"check_user_can_access":   !canViewAllAuditRecord,
 		"filter_audit_record_ids": req.FilterSqlAuditRecordIDs,
 		"limit":                   limit,
 		"offset":                  offset,

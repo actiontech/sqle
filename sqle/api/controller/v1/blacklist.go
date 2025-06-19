@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"fmt"
+	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"net/http"
 	"time"
 
@@ -40,6 +41,17 @@ func CreateBlacklist(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	hasPermission, err := hasManagePermission(user.GetIDStr(), projectUid, dmsV1.OpPermissionManageSQLMangeWhiteList)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !hasPermission {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.UserNotPermission, fmt.Errorf("you have no permission to create manage whitelist")))
+	}
 	s := model.GetStorage()
 	err = s.Save(&model.BlackListAuditPlanSQL{
 		ProjectId:     model.ProjectUID(projectUid),
@@ -70,7 +82,17 @@ func DeleteBlacklist(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	hasPermission, err := hasManagePermission(user.GetIDStr(), projectUid, dmsV1.OpPermissionManageSQLMangeWhiteList)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !hasPermission {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.UserNotPermission, fmt.Errorf("you have no permission to delete manage whitelist")))
+	}
 	s := model.GetStorage()
 	blacklist, exist, err := s.GetBlacklistByID(model.ProjectUID(projectUid), blacklistId)
 	if err != nil {
@@ -117,7 +139,17 @@ func UpdateBlacklist(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	hasPermission, err := hasManagePermission(user.GetIDStr(), projectUid, dmsV1.OpPermissionManageSQLMangeWhiteList)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !hasPermission {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.UserNotPermission, fmt.Errorf("you have no permission to create manage whitelist")))
+	}
 	s := model.GetStorage()
 	blacklist, exist, err := s.GetBlacklistByID(model.ProjectUID(projectUid), blacklistId)
 	if err != nil {
@@ -196,7 +228,17 @@ func GetBlacklist(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	hasPermission, err := hasViewPermission(user.GetIDStr(), projectUid, dmsV1.OpPermissionManageSQLMangeWhiteList)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !hasPermission {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.UserNotPermission, fmt.Errorf("you have no permission to select manage whitelist")))
+	}
 	s := model.GetStorage()
 	blacklistList, count, err := s.GetBlacklistList(model.ProjectUID(projectUid), model.BlacklistFilterType(req.FilterType), req.FuzzySearchContent, req.PageIndex, req.PageSize)
 	if err != nil {
