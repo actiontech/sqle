@@ -10202,7 +10202,7 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "获取特定任务中某条SQL语句的重写后的SQL及相关建议",
+                "description": "启动特定任务中某条SQL语句的异步重写任务，返回任务状态",
                 "consumes": [
                     "application/json"
                 ],
@@ -10212,7 +10212,7 @@ var doc = `{
                 "tags": [
                     "task"
                 ],
-                "summary": "获取任务中指定SQL的重写结果和建议",
+                "summary": "启动异步SQL重写任务",
                 "operationId": "RewriteSQL",
                 "parameters": [
                     {
@@ -10241,9 +10241,54 @@ var doc = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "成功返回重写结果",
+                        "description": "成功启动异步重写任务",
                         "schema": {
-                            "$ref": "#/definitions/v1.RewriteSQLRes"
+                            "$ref": "#/definitions/v1.AsyncRewriteTaskStatusRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/tasks/audits/{task_id}/sqls/{number}/rewrite/status": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "获取特定任务中某条SQL语句的异步重写任务状态",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "task"
+                ],
+                "summary": "获取异步重写任务状态",
+                "operationId": "GetAsyncRewriteTaskStatus",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "task id",
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "sql number",
+                        "name": "number",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功返回任务状态",
+                        "schema": {
+                            "$ref": "#/definitions/v1.AsyncRewriteTaskStatusRes"
                         }
                     }
                 }
@@ -12459,6 +12504,63 @@ var doc = `{
                 },
                 "workflow_name": {
                     "type": "string"
+                }
+            }
+        },
+        "v1.AsyncRewriteTask": {
+            "type": "object",
+            "properties": {
+                "end_time": {
+                    "description": "@Description 结束时间",
+                    "type": "string"
+                },
+                "error_message": {
+                    "description": "@Description 错误信息",
+                    "type": "string"
+                },
+                "result": {
+                    "description": "@Description 重写结果",
+                    "type": "object",
+                    "$ref": "#/definitions/v1.RewriteSQLData"
+                },
+                "sql_number": {
+                    "description": "@Description SQL编号",
+                    "type": "string"
+                },
+                "start_time": {
+                    "description": "@Description 开始时间",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "@Description 任务状态",
+                    "type": "string",
+                    "enum": [
+                        "pending",
+                        "running",
+                        "completed",
+                        "failed"
+                    ]
+                },
+                "task_id": {
+                    "description": "@Description 任务ID",
+                    "type": "string"
+                }
+            }
+        },
+        "v1.AsyncRewriteTaskStatusRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.AsyncRewriteTask"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
@@ -18012,23 +18114,6 @@ var doc = `{
                 }
             }
         },
-        "v1.RewriteSQLRes": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.RewriteSQLData"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
         "v1.RewriteSuggestion": {
             "type": "object",
             "properties": {
@@ -18061,6 +18146,15 @@ var doc = `{
                 "rule_name": {
                     "description": "@Description 审核规则名称\n@Required",
                     "type": "string"
+                },
+                "status": {
+                    "description": "@Description 处理状态：初始化、已处理",
+                    "type": "string",
+                    "default": "initial",
+                    "enum": [
+                        "initial",
+                        "processed"
+                    ]
                 },
                 "type": {
                     "description": "@Description 重写建议类型：语句级重写、结构级重写、其他\n@Required",
