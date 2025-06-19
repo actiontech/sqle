@@ -6,49 +6,45 @@ import (
 )
 
 type RewriteSQLReq struct {
-	// @Description 是否启用结构化类型的重写
+	// 是否启用结构化类型的重写
 	EnableStructureType bool `json:"enable_structure_type" example:"false" default:"false"`
 }
 
 type RewriteSQLData struct {
-	// @Description 重写前的SQL业务描述
+	// 重写前的SQL业务描述
 	BusinessDesc string `json:"business_desc"`
-	// @Description 重写前的SQL执行逻辑描述
+	// 重写前的SQL执行逻辑描述
 	LogicDesc string `json:"logic_desc"`
-	// @Description 重写建议列表
+	// 重写建议列表
 	Suggestions []*RewriteSuggestion `json:"suggestions"`
-	// @Description 重写后的SQL
+	// 重写后的SQL
 	RewrittenSQL string `json:"rewritten_sql"`
-	// @Description 重写后的SQL业务描述
+	// 重写后的SQL业务描述
 	RewrittenSQLBusinessDesc string `json:"rewritten_sql_business_desc"`
-	// @Description 重写后的SQL执行逻辑描述
+	// 重写后的SQL执行逻辑描述
 	RewrittenSQLLogicDesc string `json:"rewritten_sql_logic_desc"`
-	// @Description 重写前后的业务不等价性描述，为空表示等价
+	// 重写前后的业务不等价性描述，为空表示等价
 	BusinessNonEquivalentDesc string `json:"business_non_equivalent_desc"`
 
 	// TODO: 重写SQL的审核结果
 }
 
 type RewriteSuggestion struct {
-	// @Description 审核规则名称
-	// @Required
+	// 审核规则名称
 	RuleName string `json:"rule_name"`
-	// @Description 审核规则等级
-	// @Required
+	// 审核规则等级
 	AuditLevel string `json:"audit_level" enums:"normal,notice,warn,error"`
-	// @Description 重写建议类型：语句级重写、结构级重写、其他
-	// @Required
+	// 重写建议类型：语句级重写、结构级重写、其他
 	Type string `json:"type" enums:"statement,structure,other"`
-	// @Description 重写描述（适用于所有类型）
-	// @Required
+	// 重写描述（适用于所有类型）
 	Desc string `json:"desc"`
-	// @Description 处理状态：初始化、已处理
+	// 处理状态：初始化、已处理
 	Status string `json:"status" enums:"initial,processed" default:"initial"`
-	// @Description 重写后的SQL（适用于语句级重写和结构级重写）
+	// 重写后的SQL（适用于语句级重写和结构级重写）
 	RewrittenSQL string `json:"rewritten_sql"`
-	// @Description 数据库结构变更建议说明（例如：建议添加索引、修改表结构等优化建议）（适用于结构级重写）
+	// 数据库结构变更建议说明（例如：建议添加索引、修改表结构等优化建议）（适用于结构级重写）
 	DDL_DCL_desc string `json:"ddl_dcl_desc"`
-	// @Description 具体的数据库结构变更语句，需要在数据库中执行该变更语句之后再应用重写SQL（包含CREATE/ALTER/DROP等DDL语句，或SET等DCL语句）（适用于结构级重写）
+	// 具体的数据库结构变更语句，需要在数据库中执行该变更语句之后再应用重写SQL（包含CREATE/ALTER/DROP等DDL语句，或SET等DCL语句）（适用于结构级重写）
 	DDL_DCL string `json:"ddl_dcl"`
 }
 
@@ -59,19 +55,19 @@ type RewriteSQLRes struct {
 
 // AsyncRewriteTask 异步重写任务（Controller层定义）
 type AsyncRewriteTask struct {
-	// @Description 任务ID
+	// 任务ID
 	TaskID string `json:"task_id"`
-	// @Description SQL编号
+	// SQL编号
 	SQLNumber string `json:"sql_number"`
-	// @Description 任务状态
+	// 任务状态
 	Status string `json:"status" enums:"pending,running,completed,failed"`
-	// @Description 错误信息
+	// 错误信息
 	ErrorMessage string `json:"error_message,omitempty"`
-	// @Description 开始时间
+	// 开始时间
 	StartTime string `json:"start_time"`
-	// @Description 结束时间
+	// 结束时间
 	EndTime *string `json:"end_time,omitempty"`
-	// @Description 重写结果
+	// 重写结果
 	Result *RewriteSQLData `json:"result,omitempty"`
 }
 
