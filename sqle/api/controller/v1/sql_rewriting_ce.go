@@ -13,3 +13,8 @@ import (
 func getRewriteSQLData(c echo.Context) error {
 	return errors.New(errors.EnterpriseEditionFeatures, e.New("sql rewriting is enterprise version feature"))
 }
+
+// getAsyncRewriteTaskStatus 获取异步重写任务状态
+func getAsyncRewriteTaskStatus(c echo.Context) error {
+	return errors.New(errors.EnterpriseEditionFeatures, e.New("sql rewriting is enterprise version feature"))
+}

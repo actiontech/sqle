@@ -73,6 +73,48 @@ definitions:
       workflow_name:
         type: string
     type: object
+  v1.AsyncRewriteTask:
+    properties:
+      end_time:
+        description: 结束时间
+        type: string
+      error_message:
+        description: 错误信息
+        type: string
+      result:
+        $ref: '#/definitions/v1.RewriteSQLData'
+        description: 重写结果
+        type: object
+      sql_number:
+        description: SQL编号
+        type: string
+      start_time:
+        description: 开始时间
+        type: string
+      status:
+        description: 任务状态
+        enum:
+        - pending
+        - running
+        - completed
+        - failed
+        type: string
+      task_id:
+        description: 任务ID
+        type: string
+    type: object
+  v1.AsyncRewriteTaskStatusRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.AsyncRewriteTask'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.AuditFileResp:
     properties:
       file_name:
@@ -3844,25 +3886,25 @@ definitions:
   v1.RewriteSQLData:
     properties:
       business_desc:
-        description: '@Description 重写前的SQL业务描述'
+        description: 重写前的SQL业务描述
         type: string
       business_non_equivalent_desc:
-        description: '@Description 重写前后的业务不等价性描述，为空表示等价'
+        description: 重写前后的业务不等价性描述，为空表示等价
         type: string
       logic_desc:
-        description: '@Description 重写前的SQL执行逻辑描述'
+        description: 重写前的SQL执行逻辑描述
         type: string
       rewritten_sql:
-        description: '@Description 重写后的SQL'
+        description: 重写后的SQL
         type: string
       rewritten_sql_business_desc:
-        description: '@Description 重写后的SQL业务描述'
+        description: 重写后的SQL业务描述
         type: string
       rewritten_sql_logic_desc:
-        description: '@Description 重写后的SQL执行逻辑描述'
+        description: 重写后的SQL执行逻辑描述
         type: string
       suggestions:
-        description: '@Description 重写建议列表'
+        description: 重写建议列表
         items:
           $ref: '#/definitions/v1.RewriteSuggestion'
         type: array
@@ -3871,28 +3913,14 @@ definitions:
     properties:
       enable_structure_type:
         default: false
-        description: '@Description 是否启用结构化类型的重写'
+        description: 是否启用结构化类型的重写
         example: false
         type: boolean
-    type: object
-  v1.RewriteSQLRes:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/v1.RewriteSQLData'
-        type: object
-      message:
-        example: ok
-        type: string
     type: object
   v1.RewriteSuggestion:
     properties:
       audit_level:
-        description: |-
-          @Description 审核规则等级
-          @Required
+        description: 审核规则等级
         enum:
         - normal
         - notice
@@ -3900,28 +3928,29 @@ definitions:
         - error
         type: string
       ddl_dcl:
-        description: '@Description 具体的数据库结构变更语句，需要在数据库中执行该变更语句之后再应用重写SQL（包含CREATE/ALTER/DROP等DDL语句，或SET等DCL语句）（适用于结构级重写）'
+        description: 具体的数据库结构变更语句，需要在数据库中执行该变更语句之后再应用重写SQL（包含CREATE/ALTER/DROP等DDL语句，或SET等DCL语句）（适用于结构级重写）
         type: string
       ddl_dcl_desc:
-        description: '@Description 数据库结构变更建议说明（例如：建议添加索引、修改表结构等优化建议）（适用于结构级重写）'
+        description: 数据库结构变更建议说明（例如：建议添加索引、修改表结构等优化建议）（适用于结构级重写）
         type: string
       desc:
-        description: |-
-          @Description 重写描述（适用于所有类型）
-          @Required
+        description: 重写描述（适用于所有类型）
         type: string
       rewritten_sql:
-        description: '@Description 重写后的SQL（适用于语句级重写和结构级重写）'
+        description: 重写后的SQL（适用于语句级重写和结构级重写）
         type: string
       rule_name:
-        description: |-
-          @Description 审核规则名称
-          @Required
+        description: 审核规则名称
+        type: string
+      status:
+        default: initial
+        description: 处理状态：初始化、已处理
+        enum:
+        - initial
+        - processed
         type: string
       type:
-        description: |-
-          @Description 重写建议类型：语句级重写、结构级重写、其他
-          @Required
+        description: 重写建议类型：语句级重写、结构级重写、其他
         enum:
         - statement
         - structure
@@ -13472,7 +13501,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: 获取特定任务中某条SQL语句的重写后的SQL及相关建议
+      description: 启动特定任务中某条SQL语句的异步重写任务，返回任务状态
       operationId: RewriteSQL
       parameters:
       - description: task id
@@ -13495,12 +13524,41 @@ paths:
       - application/json
       responses:
         "200":
-          description: 成功返回重写结果
+          description: 成功启动异步重写任务
           schema:
-            $ref: '#/definitions/v1.RewriteSQLRes'
+            $ref: '#/definitions/v1.AsyncRewriteTaskStatusRes'
       security:
       - ApiKeyAuth: []
-      summary: 获取任务中指定SQL的重写结果和建议
+      summary: 启动异步SQL重写任务
+      tags:
+      - task
+  /v1/tasks/audits/{task_id}/sqls/{number}/rewrite/status:
+    get:
+      consumes:
+      - application/json
+      description: 获取特定任务中某条SQL语句的异步重写任务状态
+      operationId: GetAsyncRewriteTaskStatus
+      parameters:
+      - description: task id
+        in: path
+        name: task_id
+        required: true
+        type: string
+      - description: sql number
+        in: path
+        name: number
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功返回任务状态
+          schema:
+            $ref: '#/definitions/v1.AsyncRewriteTaskStatusRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取异步重写任务状态
       tags:
       - task
   /v1/tasks/audits/{task_id}/sqls/{sql_id}/backup_strategy:

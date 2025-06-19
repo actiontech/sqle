@@ -10202,7 +10202,7 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "获取特定任务中某条SQL语句的重写后的SQL及相关建议",
+                "description": "启动特定任务中某条SQL语句的异步重写任务，返回任务状态",
                 "consumes": [
                     "application/json"
                 ],
@@ -10212,7 +10212,7 @@ var doc = `{
                 "tags": [
                     "task"
                 ],
-                "summary": "获取任务中指定SQL的重写结果和建议",
+                "summary": "启动异步SQL重写任务",
                 "operationId": "RewriteSQL",
                 "parameters": [
                     {
@@ -10241,9 +10241,54 @@ var doc = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "成功返回重写结果",
+                        "description": "成功启动异步重写任务",
                         "schema": {
-                            "$ref": "#/definitions/v1.RewriteSQLRes"
+                            "$ref": "#/definitions/v1.AsyncRewriteTaskStatusRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/tasks/audits/{task_id}/sqls/{number}/rewrite/status": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "获取特定任务中某条SQL语句的异步重写任务状态",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "task"
+                ],
+                "summary": "获取异步重写任务状态",
+                "operationId": "GetAsyncRewriteTaskStatus",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "task id",
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "sql number",
+                        "name": "number",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功返回任务状态",
+                        "schema": {
+                            "$ref": "#/definitions/v1.AsyncRewriteTaskStatusRes"
                         }
                     }
                 }
@@ -12459,6 +12504,63 @@ var doc = `{
                 },
                 "workflow_name": {
                     "type": "string"
+                }
+            }
+        },
+        "v1.AsyncRewriteTask": {
+            "type": "object",
+            "properties": {
+                "end_time": {
+                    "description": "结束时间",
+                    "type": "string"
+                },
+                "error_message": {
+                    "description": "错误信息",
+                    "type": "string"
+                },
+                "result": {
+                    "description": "重写结果",
+                    "type": "object",
+                    "$ref": "#/definitions/v1.RewriteSQLData"
+                },
+                "sql_number": {
+                    "description": "SQL编号",
+                    "type": "string"
+                },
+                "start_time": {
+                    "description": "开始时间",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "任务状态",
+                    "type": "string",
+                    "enum": [
+                        "pending",
+                        "running",
+                        "completed",
+                        "failed"
+                    ]
+                },
+                "task_id": {
+                    "description": "任务ID",
+                    "type": "string"
+                }
+            }
+        },
+        "v1.AsyncRewriteTaskStatusRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.AsyncRewriteTask"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
@@ -17969,31 +18071,31 @@ var doc = `{
             "type": "object",
             "properties": {
                 "business_desc": {
-                    "description": "@Description 重写前的SQL业务描述",
+                    "description": "重写前的SQL业务描述",
                     "type": "string"
                 },
                 "business_non_equivalent_desc": {
-                    "description": "@Description 重写前后的业务不等价性描述，为空表示等价",
+                    "description": "重写前后的业务不等价性描述，为空表示等价",
                     "type": "string"
                 },
                 "logic_desc": {
-                    "description": "@Description 重写前的SQL执行逻辑描述",
+                    "description": "重写前的SQL执行逻辑描述",
                     "type": "string"
                 },
                 "rewritten_sql": {
-                    "description": "@Description 重写后的SQL",
+                    "description": "重写后的SQL",
                     "type": "string"
                 },
                 "rewritten_sql_business_desc": {
-                    "description": "@Description 重写后的SQL业务描述",
+                    "description": "重写后的SQL业务描述",
                     "type": "string"
                 },
                 "rewritten_sql_logic_desc": {
-                    "description": "@Description 重写后的SQL执行逻辑描述",
+                    "description": "重写后的SQL执行逻辑描述",
                     "type": "string"
                 },
                 "suggestions": {
-                    "description": "@Description 重写建议列表",
+                    "description": "重写建议列表",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/v1.RewriteSuggestion"
@@ -18005,27 +18107,10 @@ var doc = `{
             "type": "object",
             "properties": {
                 "enable_structure_type": {
-                    "description": "@Description 是否启用结构化类型的重写",
+                    "description": "是否启用结构化类型的重写",
                     "type": "boolean",
                     "default": false,
                     "example": false
-                }
-            }
-        },
-        "v1.RewriteSQLRes": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.RewriteSQLData"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
                 }
             }
         },
@@ -18033,7 +18118,7 @@ var doc = `{
             "type": "object",
             "properties": {
                 "audit_level": {
-                    "description": "@Description 审核规则等级\n@Required",
+                    "description": "审核规则等级",
                     "type": "string",
                     "enum": [
                         "normal",
@@ -18043,27 +18128,36 @@ var doc = `{
                     ]
                 },
                 "ddl_dcl": {
-                    "description": "@Description 具体的数据库结构变更语句，需要在数据库中执行该变更语句之后再应用重写SQL（包含CREATE/ALTER/DROP等DDL语句，或SET等DCL语句）（适用于结构级重写）",
+                    "description": "具体的数据库结构变更语句，需要在数据库中执行该变更语句之后再应用重写SQL（包含CREATE/ALTER/DROP等DDL语句，或SET等DCL语句）（适用于结构级重写）",
                     "type": "string"
                 },
                 "ddl_dcl_desc": {
-                    "description": "@Description 数据库结构变更建议说明（例如：建议添加索引、修改表结构等优化建议）（适用于结构级重写）",
+                    "description": "数据库结构变更建议说明（例如：建议添加索引、修改表结构等优化建议）（适用于结构级重写）",
                     "type": "string"
                 },
                 "desc": {
-                    "description": "@Description 重写描述（适用于所有类型）\n@Required",
+                    "description": "重写描述（适用于所有类型）",
                     "type": "string"
                 },
                 "rewritten_sql": {
-                    "description": "@Description 重写后的SQL（适用于语句级重写和结构级重写）",
+                    "description": "重写后的SQL（适用于语句级重写和结构级重写）",
                     "type": "string"
                 },
                 "rule_name": {
-                    "description": "@Description 审核规则名称\n@Required",
+                    "description": "审核规则名称",
                     "type": "string"
                 },
+                "status": {
+                    "description": "处理状态：初始化、已处理",
+                    "type": "string",
+                    "default": "initial",
+                    "enum": [
+                        "initial",
+                        "processed"
+                    ]
+                },
                 "type": {
-                    "description": "@Description 重写建议类型：语句级重写、结构级重写、其他\n@Required",
+                    "description": "重写建议类型：语句级重写、结构级重写、其他",
                     "type": "string",
                     "enum": [
                         "statement",
