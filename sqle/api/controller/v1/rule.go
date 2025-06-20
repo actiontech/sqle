@@ -893,7 +893,7 @@ func CreateProjectRuleTemplate(c echo.Context) error {
 	}
 	if !hasPermission {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.UserNotPermission,
-			fmt.Errorf("you have no permission to get rule templates in project")))
+			fmt.Errorf("you have no permission to create rule templates in project")))
 	}
 	s := model.GetStorage()
 	_, exist, err := s.GetGlobalAndProjectRuleTemplateByNameAndProjectId(req.Name, projectUid)
@@ -996,7 +996,7 @@ func UpdateProjectRuleTemplate(c echo.Context) error {
 	}
 	if !hasPermission {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.UserNotPermission,
-			fmt.Errorf("you have no permission to get rule templates in project")))
+			fmt.Errorf("you have no permission to update rule templates in project")))
 	}
 	s := model.GetStorage()
 	template, exist, err := s.GetGlobalAndProjectRuleTemplateByNameAndProjectId(templateName, projectUid)
@@ -1145,7 +1145,7 @@ func DeleteProjectRuleTemplate(c echo.Context) error {
 	}
 	if !hasPermission {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.UserNotPermission,
-			fmt.Errorf("you have no permission to get rule templates in project")))
+			fmt.Errorf("you have no permission to delete rule templates in project")))
 	}
 	s := model.GetStorage()
 
