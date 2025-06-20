@@ -1,12 +1,19 @@
 ################################## Parameter Definition And Check ##########################################
-# 当前 HEAD 的 tag
-HEAD_TAG = $(shell git tag --points-at $(HEAD_HASH) --sort=-v:refname | head -n 1 2>/dev/null)
+# 当前 commit hash
+HEAD_HASH = $(shell git rev-parse HEAD)
+# 尝试获取稳定版标签 (不包含 -pre, -rc, -alpha, -beta 等后缀)
+# grep -Ev '(-alpha|-beta|-rc|-pre)[0-9]*$$' 过滤掉带有预发布后缀的标签
+STABLE_TAG = $(shell git tag --points-at $(HEAD_HASH) --sort=-v:refname | grep -Evi '(-pre)[0-9]*$$' | head -n 1 2>/dev/null)
+
+# 如果没有稳定版标签，则获取最新的预发布标签
+# 注意：这里我们重新获取所有标签，不再过滤，以确保能取到预发布版中最高的
+PRE_RELEASE_TAG = $(shell git tag --points-at $(HEAD_HASH) --sort=-v:refname | head -n 1 2>/dev/null)
+
+# 如果存在稳定版标签，则使用稳定版；否则使用预发布版
+HEAD_TAG := $(if $(STABLE_TAG),$(STABLE_TAG),$(PRE_RELEASE_TAG))
 
 # 当前分支名
 HEAD_BRANCH = $(shell git rev-parse --abbrev-ref HEAD)
-
-# 当前 commit hash
-HEAD_HASH = $(shell git rev-parse HEAD)
 
 # 1. 如果HEAD存在tag，则GIT_VERSION=<版本名称>-<企业版/社区版> <commit>
 # PS: 通常会在版本名称前增加字符“v”作为tag内容，当版本名称为 3.2411.0时，tag内容为v3.2411.0 
@@ -16,7 +23,6 @@ HEAD_HASH = $(shell git rev-parse HEAD)
 # e.g. 分支名为main时，GIT_VERSION=main a6355ff4cf8d181315a2b30341bc954b29576b11
 # e.g. 分支名为release-3.2411.x时，GIT_VERSION=release-3.2411.x a6355ff4cf8d181315a2b30341bc954b29576b11
 override GIT_VERSION = $(if $(HEAD_TAG),$(shell echo $(HEAD_TAG) | sed 's/^v//')-$(EDITION),$(HEAD_BRANCH))${CUSTOM} $(HEAD_HASH)
-# override GIT_VERSION    		= $(shell if git describe --exact-match --tags >/dev/null 2>&1; then git describe --exact-match --tags | sed 's/^v//'; else git rev-parse --abbrev-ref HEAD; fi)-${EDITION}${CUSTOM} $(shell git rev-parse HEAD)
 override GIT_COMMIT     		= $(shell git rev-parse HEAD)
 override PROJECT_NAME 			= sqle
 override LDFLAGS 				= -ldflags "-X 'main.version=${GIT_VERSION}'"
@@ -43,7 +49,9 @@ ifeq ($(IS_PRODUCTION_RELEASE),true)
 # 2. if there is no tag on current commit, means that
 #    current branch is on process.
 #    Set rpm name with current branch name(release-1.2109.x-ee or release-1.2109.x -> 1.2109.x).
-    PROJECT_VERSION = $(shell if [ "$$(git tag --points-at HEAD | tail -n1)" ]; then git tag --points-at HEAD | tail -n1 | sed 's/v\(.*\)/\1/'; else git rev-parse --abbrev-ref HEAD | sed 's/release-\(.*\)/\1/' | tr '-' '\n' | head -n1; fi)
+    PROJECT_VERSION = $(if $(HEAD_TAG),\
+    $(shell echo $(HEAD_TAG) | sed 's/v\(.*\)/\1/'),\
+    $(shell git rev-parse --abbrev-ref HEAD | sed 's/release-\(.*\)/\1/' | tr '-' '\n' | head -n1))
 else
 #    When performing daily packaging, set rpm name with current branch name(release-1.2109.x-ee or release-1.2109.x -> 1.2109.x).
     PROJECT_VERSION = $(shell git rev-parse --abbrev-ref HEAD | sed 's/release-\(.*\)/\1/' | tr '-' '\n' | head -n1)
