@@ -212,12 +212,12 @@ func GetPipelines(c echo.Context) error {
 	}
 	// 3. 计算分页参数
 	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
-	canViewAllPipelines, err := CanVewAllPipelines(user.GetIDStr(), projectUid)
+	hasPermission, err := hasViewPermission(user.GetIDStr(), projectUid, dmsV1.OpPermissionViewPipeline)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	userId := ""
-	if !canViewAllPipelines {
+	if !hasPermission {
 		userId = user.GetIDStr()
 	}
 	// 4. 获取存储对象并查询流水线列表
@@ -237,19 +237,6 @@ func GetPipelines(c echo.Context) error {
 		TotalNums: count,
 		Data:      data,
 	})
-}
-
-func CanVewAllPipelines(userId string, projectUid string) (bool, error) {
-	up, err := dms.NewUserPermission(userId, projectUid)
-	if err != nil {
-		return false, err
-	}
-	canViewAllPipelines := up.HasOnePermission(dmsV1.OpPermissionViewPipeline)
-	canViewProject := up.CanViewProject()
-	if canViewAllPipelines || canViewProject {
-		return true, nil
-	}
-	return false, nil
 }
 
 // GetPipelineDetailReqV1 用于请求获取流水线详情的结构体
