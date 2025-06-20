@@ -19,6 +19,7 @@ var (
 	ProxyRouterGroup              = "/dms/proxys"
 	PluginRouterGroup             = "/dms/plugins"
 	MemberRouterGroup             = "/dms/projects/:project_uid/members"
+	MemberGroupRouterGroup        = "/dms/projects/:project_uid/member_groups"
 	ProjectRouterGroup            = "/dms/projects"
 	NotificationRouterGroup       = "/dms/notifications"
 	WebHookRouterGroup            = "/dms/webhooks"
@@ -54,6 +55,10 @@ func GetDBServiceRouter(projectUid string) string {
 
 func GetUserRouter(userUid string) string {
 	return fmt.Sprintf("%s%s/%s", CurrentGroupVersion, UserRouterGroup, userUid)
+}
+
+func GetMemberGroupRouter(memberGroupUid, projectUid string) string {
+	return fmt.Sprintf("%s%s/%s", CurrentGroupVersion, strings.Replace(MemberGroupRouterGroup, ":project_uid", projectUid, 1), memberGroupUid)
 }
 
 func GetUsersRouter() string {

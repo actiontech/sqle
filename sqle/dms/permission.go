@@ -88,9 +88,18 @@ func (p *UserPermission) CanViewProject() bool {
 	return false
 }
 
+func (p *UserPermission) HasOnePermission(opPermissionType v1.OpPermissionType) bool {
+	for _, userOpPermission := range p.opPermissionItem {
+		if userOpPermission.OpPermissionType == opPermissionType {
+			return true
+		}
+	}
+	return false
+}
+
 func (p *UserPermission) IsProjectAdmin() bool {
 	for _, userOpPermission := range p.opPermissionItem {
-		if userOpPermission.RangeType == v1.OpRangeTypeProject {
+		if userOpPermission.OpPermissionType == v1.OpPermissionTypeProjectAdmin {
 			return true
 		}
 	}

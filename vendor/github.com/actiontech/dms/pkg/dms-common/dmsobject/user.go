@@ -27,6 +27,25 @@ func GetUser(ctx context.Context, userUid string, dmsAddr string) (*dmsV1.GetUse
 	return reply.Data, nil
 }
 
+func GetMemberGroup(ctx context.Context, memberGroupUid, projectUid string, dmsAddr string) (*dmsV1.GetMemberGroup, error) {
+	header := map[string]string{
+		"Authorization": pkgHttp.DefaultDMSToken,
+	}
+
+	reply := &dmsV1.GetMemberGroupReply{}
+
+	url := fmt.Sprintf("%v%v", dmsAddr, dmsV1.GetMemberGroupRouter(memberGroupUid, projectUid))
+
+	if err := pkgHttp.Get(ctx, url, header, nil, reply); err != nil {
+		return nil, fmt.Errorf("failed to get member group from %v: %v", url, err)
+	}
+	if reply.Code != 0 {
+		return nil, fmt.Errorf("http reply code(%v) error: %v", reply.Code, reply.Message)
+	}
+
+	return reply.Data, nil
+}
+
 func GetUserOpPermission(ctx context.Context, projectUid, userUid, dmsAddr string) (ret []dmsV1.OpPermissionItem, isAdmin bool, err error) {
 	header := map[string]string{
 		"Authorization": pkgHttp.DefaultDMSToken,

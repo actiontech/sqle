@@ -63,10 +63,12 @@ type RegisterDMSPluginReply struct {
 type DataResourceType string
 
 const (
-	DataResourceTypeDBService DataResourceType = "db_service"
-	DataResourceTypeProject   DataResourceType = "project"
-	DataResourceTypeUser      DataResourceType = "user"
-	DataResourceTypeUserGroup DataResourceType = "user_group"
+	DataResourceTypeDBService   DataResourceType = "db_service"
+	DataResourceTypeProject     DataResourceType = "project"
+	DataResourceTypeUser        DataResourceType = "user"
+	DataResourceTypeUserGroup   DataResourceType = "user_group"
+	DataResourceTypeMember      DataResourceType = "member"
+	DataResourceTypeMemberGroup DataResourceType = "member_group"
 )
 
 // swagger:enum OperationType

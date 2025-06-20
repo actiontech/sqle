@@ -38,10 +38,11 @@ const (
 
 type Pipeline struct {
 	Model
-	ProjectUid  ProjectUID `gorm:"index; not null" json:"project_uid"`     // 关联的流水线ID
-	Name        string     `gorm:"type:varchar(255);not null" json:"name"` // 流水线名称
-	Description string     `gorm:"type:varchar(512)" json:"description"`   // 流水线描述
-	Address     string     `gorm:"type:varchar(255)" json:"address"`       // 关联流水线地址
+	ProjectUid   ProjectUID `gorm:"index; not null" json:"project_uid"`      // 关联的流水线ID
+	Name         string     `gorm:"type:varchar(255);not null" json:"name"`  // 流水线名称
+	Description  string     `gorm:"type:varchar(512)" json:"description"`    // 流水线描述
+	Address      string     `gorm:"type:varchar(255)" json:"address"`        // 关联流水线地址
+	CreateUserID string     `gorm:"type:varchar(255)" json:"create_user_id"` // 创建用户ID
 }
 
 type PipelineNode struct {
@@ -100,11 +101,13 @@ func isValidAuditMethod(a string) bool {
 	return false
 }
 
-func (s *Storage) GetPipelineList(projectID ProjectUID, fuzzySearchContent string, limit, offset uint32) ([]*Pipeline, uint64, error) {
+func (s *Storage) GetPipelineList(projectID ProjectUID, fuzzySearchContent string, limit, offset uint32, userId string) ([]*Pipeline, uint64, error) {
 	var count int64
 	var pipelines []*Pipeline
 	query := s.db.Model(&Pipeline{}).Where("project_uid = ?", projectID)
-
+	if userId != "" {
+		query = query.Where("create_user_id = ? OR create_user_id IS NULL", userId)
+	}
 	if fuzzySearchContent != "" {
 		query = query.Where("name LIKE ? OR description LIKE ?", "%"+fuzzySearchContent+"%", "%"+fuzzySearchContent+"%")
 	}
