@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"net/http"
 	"strconv"
 
@@ -205,13 +206,23 @@ func GetPipelines(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 	// 3. 计算分页参数
 	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
-
+	hasPermission, err := hasViewPermission(user.GetIDStr(), projectUid, dmsV1.OpPermissionViewPipeline)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	userId := ""
+	if !hasPermission {
+		userId = user.GetIDStr()
+	}
 	// 4. 获取存储对象并查询流水线列表
 	var pipelineSvc pipeline.PipelineSvc
-	count, pipelineList, err := pipelineSvc.GetPipelineList(limit, offset, req.FuzzySearchNameDesc, projectUid)
+	count, pipelineList, err := pipelineSvc.GetPipelineList(limit, offset, req.FuzzySearchNameDesc, projectUid, userId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

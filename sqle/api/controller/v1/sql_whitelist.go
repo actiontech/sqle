@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"fmt"
+	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"net/http"
 	"time"
 
@@ -35,9 +36,20 @@ func CreateAuditWhitelist(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 	projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
+	}
+	hasPermission, err := hasManagePermission(user.GetIDStr(), projectUid, dmsV1.OpPermissionMangeAuditSQLWhiteList)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !hasPermission {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.UserNotPermission, fmt.Errorf("you have no permission to create audit whitelist")))
 	}
 	s := model.GetStorage()
 
@@ -81,6 +93,18 @@ func UpdateAuditWhitelistById(c echo.Context) error {
 	projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	hasPermission, err := hasManagePermission(user.GetIDStr(), projectUid, dmsV1.OpPermissionMangeAuditSQLWhiteList)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !hasPermission {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.UserNotPermission, fmt.Errorf("you have no permission to update audit whitelist")))
 	}
 
 	s := model.GetStorage()
@@ -142,7 +166,17 @@ func DeleteAuditWhitelistById(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	hasPermission, err := hasManagePermission(user.GetIDStr(), projectUid, dmsV1.OpPermissionMangeAuditSQLWhiteList)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !hasPermission {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.UserNotPermission, fmt.Errorf("you have no permission to delete audit whitelist")))
+	}
 	sqlWhitelist, exist, err := s.GetSqlWhitelistByIdAndProjectUID(whitelistId, model.ProjectUID(projectUid))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -201,7 +235,17 @@ func GetSqlWhitelist(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	hasPermission, err := hasViewPermission(user.GetIDStr(), projectUid, dmsV1.OpPermissionMangeAuditSQLWhiteList)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !hasPermission {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.UserNotPermission, fmt.Errorf("you have no permission to select audit whitelist")))
+	}
 	s := model.GetStorage()
 	sqlWhitelist, count, err := s.GetSqlWhitelistByProjectUID(req.PageIndex, req.PageSize, model.ProjectUID(projectUid), req.FuzzySearchValue, req.FilterMatchType)
 	if err != nil {

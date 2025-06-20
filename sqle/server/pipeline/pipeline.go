@@ -145,7 +145,7 @@ func (svc PipelineSvc) CheckInstance(ctx context.Context, pipe *Pipeline) (err e
 
 func (svc PipelineSvc) CreatePipeline(pipe *Pipeline, userID string) error {
 	s := model.GetStorage()
-	modelPipeline := svc.toModelPipeline(pipe)
+	modelPipeline := svc.toModelPipeline(pipe, userID)
 	modelPipelineNodes := svc.toModelPipelineNodes(pipe, userID)
 	err := s.CreatePipeline(modelPipeline, modelPipelineNodes)
 	if err != nil {
@@ -155,16 +155,17 @@ func (svc PipelineSvc) CreatePipeline(pipe *Pipeline, userID string) error {
 	return nil
 }
 
-func (svc PipelineSvc) toModelPipeline(pipe *Pipeline) *model.Pipeline {
+func (svc PipelineSvc) toModelPipeline(pipe *Pipeline, userId string) *model.Pipeline {
 	if pipe == nil {
 		return nil
 	}
 
 	return &model.Pipeline{
-		ProjectUid:  model.ProjectUID(pipe.ProjectUID),
-		Name:        pipe.Name,
-		Description: pipe.Description,
-		Address:     pipe.Address,
+		ProjectUid:   model.ProjectUID(pipe.ProjectUID),
+		Name:         pipe.Name,
+		Description:  pipe.Description,
+		Address:      pipe.Address,
+		CreateUserID: userId,
 	}
 }
 
@@ -234,9 +235,9 @@ func (svc PipelineSvc) GetPipeline(projectUID string, pipelineID uint) (*Pipelin
 	return svc.toPipeline(modelPipeline, modelPiplineNodes), nil
 }
 
-func (svc PipelineSvc) GetPipelineList(limit, offset uint32, fuzzySearchNameDesc string, projectUID string) (count uint64, pipelines []*Pipeline, err error) {
+func (svc PipelineSvc) GetPipelineList(limit, offset uint32, fuzzySearchNameDesc string, projectUID string, userId string) (count uint64, pipelines []*Pipeline, err error) {
 	s := model.GetStorage()
-	modelPipelines, count, err := s.GetPipelineList(model.ProjectUID(projectUID), fuzzySearchNameDesc, limit, offset)
+	modelPipelines, count, err := s.GetPipelineList(model.ProjectUID(projectUID), fuzzySearchNameDesc, limit, offset, userId)
 	if err != nil {
 		return 0, nil, err
 	}
