@@ -680,13 +680,9 @@ func GetSQLAuditRecordsV1(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	up, err := dms.NewUserPermission(user.GetIDStr(), projectUid)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, fmt.Errorf("check project manager failed: %v", err))
-	}
 
 	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
-	canViewAllAuditRecord := up.CanViewProject() || up.HasOnePermission(v1.OpPermissionViewQuickAuditRecord)
+	hasPermission, err := hasViewPermission(user.GetIDStr(), projectUid, v1.OpPermissionViewQuickAuditRecord)
 
 	data := map[string]interface{}{
 		"filter_project_id":       projectUid,
@@ -695,7 +691,7 @@ func GetSQLAuditRecordsV1(c echo.Context) error {
 		"filter_instance_id":      req.FilterInstanceId,
 		"filter_create_time_from": req.FilterCreateTimeFrom,
 		"filter_create_time_to":   req.FilterCreateTimeTo,
-		"check_user_can_access":   !canViewAllAuditRecord,
+		"check_user_can_access":   !hasPermission,
 		"filter_audit_record_ids": req.FilterSqlAuditRecordIDs,
 		"limit":                   limit,
 		"offset":                  offset,
