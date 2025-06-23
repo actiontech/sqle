@@ -439,7 +439,7 @@ var (
 	NotifyManageRecordBodyTime   = &i18n.Message{ID: "NotifyManageRecordBodyTime", Other: "记录时间周期: %v - %v"}
 	NotifyManageRecordBodyProj   = &i18n.Message{ID: "NotifyManageRecordBodyProj", Other: "所属项目: %v"}
 
-	NotifyWorkflowBodyHead              = &i18n.Message{ID: "NotifyWorkflowBodyHead", Other: "\n- 工单主题: %v\n- 工单ID: %v\n- 工单描述: %v\n- 申请人: %v\n- 创建时间: %v"}
+	NotifyWorkflowBodyHead              = &i18n.Message{ID: "NotifyWorkflowBodyHead", Other: "\n- 工单主题: %v\n 所属项目： %v\n- 工单ID: %v\n- 工单描述: %v\n- 申请人: %v\n- 创建时间: %v"}
 	NotifyWorkflowBodyWorkFlowErr       = &i18n.Message{ID: "NotifyWorkflowBodyWorkFlowErr", Other: "- 读取工单任务内容失败，请通过SQLE界面确认工单状态"}
 	NotifyWorkflowBodyLink              = &i18n.Message{ID: "NotifyWorkflowBodyLink", Other: "- 工单链接: %v"}
 	NotifyWorkflowBodyConfigUrl         = &i18n.Message{ID: "NotifyWorkflowBodyConfigUrl", Other: "请在系统设置-全局配置中补充全局url"}
