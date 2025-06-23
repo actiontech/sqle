@@ -167,7 +167,7 @@ func (w *WorkflowNotification) NotificationBody() i18nPkg.I18nStr {
 func (w *WorkflowNotification) buildNotifyBody(task *model.Task) i18nPkg.I18nStr {
 	instanceName := task.InstanceName()
 	score := task.Score
-	passRate := task.PassRate
+	// passRate := task.PassRate
 	schema := task.Schema
 	executeStartAt := task.ExecStartAt
 	executeEndAt := task.ExecEndAt
@@ -188,7 +188,8 @@ func (w *WorkflowNotification) buildNotifyBody(task *model.Task) i18nPkg.I18nStr
 		}
 		res = append(res, locale.Bundle.LocalizeAllWithArgs(locale.NotifyWorkflowBodyReason, reason))
 	default:
-		res = append(res, locale.Bundle.LocalizeAllWithArgs(locale.NotifyWorkflowBodyReport, score, passRate*100))
+		// res = append(res, locale.Bundle.LocalizeAllWithArgs(locale.NotifyWorkflowBodyReport, score, passRate*100))
+		res = append(res, locale.Bundle.LocalizeAllWithArgs(locale.NotifyWorkflowBodyReport, score))
 	}
 	return locale.Bundle.JoinI18nStr(res, "\n")
 }
