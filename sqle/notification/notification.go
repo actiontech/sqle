@@ -29,7 +29,8 @@ type Notifier interface {
 }
 
 type WorkflowNotifyConfig struct {
-	SQLEUrl *string
+	SQLEUrl     *string
+	ProjectName string
 }
 
 func Notify(notification Notification, userIds []string) error {
@@ -110,6 +111,7 @@ func (w *WorkflowNotification) NotificationBody() i18nPkg.I18nStr {
 	bodyStr := make([]i18nPkg.I18nStr, 0)
 	bodyStr = append(bodyStr, locale.Bundle.LocalizeAllWithArgs(locale.NotifyWorkflowBodyHead,
 		w.workflow.Subject,
+		w.config.ProjectName,
 		w.workflow.WorkflowId,
 		w.workflow.Desc,
 		dms.GetUserNameWithDelTag(w.workflow.CreateUserId),
@@ -228,6 +230,11 @@ func notifyWorkflow(sqleUrl string, workflow *model.Workflow, wt WorkflowNotifyT
 	if len(sqleUrl) > 0 {
 		config.SQLEUrl = &sqleUrl
 	}
+	project, err := dms.GetProjectByID(string(workflow.ProjectId))
+	if err != nil {
+		log.NewEntry().Errorf("notify workflow get project by id error: %v", err)
+	}
+	config.ProjectName = project.Name
 	wn := NewWorkflowNotification(workflow, wt, config)
 	userIds := wn.notifyUser()
 	// workflow has been finished.
@@ -235,7 +242,7 @@ func notifyWorkflow(sqleUrl string, workflow *model.Workflow, wt WorkflowNotifyT
 		return
 	}
 
-	err := Notify(wn, userIds)
+	err = Notify(wn, userIds)
 	if err != nil {
 		log.NewEntry().Errorf("notify workflow error, %v", err)
 	}
