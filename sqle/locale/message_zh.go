@@ -447,5 +447,5 @@ var (
 	NotifyWorkflowBodyInstanceAndSchema = &i18n.Message{ID: "NotifyWorkflowBodyInstanceAndSchema", Other: "- 数据源: %v\n- schema: %v"}
 	NotifyWorkflowBodyStartEnd          = &i18n.Message{ID: "NotifyWorkflowBodyStartEnd", Other: "- 上线开始时间: %v\n- 上线结束时间: %v"}
 	NotifyWorkflowBodyReason            = &i18n.Message{ID: "NotifyWorkflowBodyReason", Other: "- 驳回原因: %v"}
-	NotifyWorkflowBodyReport            = &i18n.Message{ID: "NotifyWorkflowBodyReport", Other: "- 工单审核得分: %v\n- 工单审核通过率：%v%%"}
+	NotifyWorkflowBodyReport            = &i18n.Message{ID: "NotifyWorkflowBodyReport", Other: "- 工单审核得分: %v"}
 )
