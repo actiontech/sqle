@@ -10991,7 +10991,8 @@ var doc = `{
                             "create_workflow",
                             "sql_manage",
                             "create_optimization",
-                            "create_pipeline"
+                            "create_pipeline",
+                            "create_version"
                         ],
                         "type": "string",
                         "description": "functional module",
