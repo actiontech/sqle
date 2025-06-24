@@ -178,7 +178,7 @@ const (
 	OpPermissionTypeCreateWorkflow OpPermissionType = "create_workflow"
 	// 审核/驳回工单；拥有该权限的用户可以审核/驳回工单
 	OpPermissionTypeAuditWorkflow OpPermissionType = "audit_workflow"
-	// 授权数据源数据权限；拥有该权限的用户可以授权数据源数据权限
+	// 账号管理；拥有该权限的用户可以授权数据源数据权限
 	OpPermissionTypeAuthDBServiceData OpPermissionType = "auth_db_service_data"
 	// 查看其他工单权限
 	OpPermissionTypeViewOthersWorkflow OpPermissionType = "view_others_workflow"
@@ -210,6 +210,8 @@ const (
 	OpPermissionViewIDEAuditRecord OpPermissionType = "view_ide_audit_record"
 	// SQL优化;查看所有优化记录
 	OpPermissionViewOptimizationRecord OpPermissionType = "view_optimization_record"
+	// 版本管理;查看他人创建的版本记录
+	OpPermissionViewVersionManage OpPermissionType = "view_version_manage"
 	// 版本管理;版本管理
 	OpPermissionVersionManage OpPermissionType = "version_manage"
 	// CI/CD集成;查看所有流水线
