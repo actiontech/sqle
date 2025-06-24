@@ -331,6 +331,7 @@ const ( // InstanceTipReqV1.FunctionalModule Enums
 	FunctionalModuleCreateWorkflow     = "create_workflow"
 	FunctionalModuleCreateOptimization = "create_optimization"
 	FunctionalModuleCreatePipeline     = "create_pipeline"
+	FunctionalModuleCreateVersion      = "create_version"
 )
 
 type InstanceTipReqV1 struct {
