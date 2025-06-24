@@ -3,7 +3,7 @@ name: 'New feature '
 about: Suggest an feature for this project
 title: ''
 labels: ''
-assignees: ColdWaterLW
+assignees: LordofAvernus
 
 ---
 
