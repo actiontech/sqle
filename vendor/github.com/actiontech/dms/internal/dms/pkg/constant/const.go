@@ -34,9 +34,9 @@ const (
 	UIDOfPermissionViewQuickAuditRecord = "700021"
 	UIDOfOpPermissionViewIDEAuditRecord = "700022"
 	UIDOfOpPermissionViewOptimizationRecord = "700023"
+	UIDOfOpPermissionViewVersionManage = "700024"
 	UIDOfOpPermissionVersionManage = "700025"
 	UIdOfOpPermissionViewPipeline  = "700026"
-	UIdOfOpPermissionViewPendingSQLManage = "700027"
 	UIdOfOpPermissionManageProjectDataSource  = "700028"
 	UIdOfOpPermissionManageAuditRuleTemplate = "700029"
 	UIdOfOpPermissionManageApprovalTemplate  = "700030"
@@ -98,6 +98,8 @@ func ConvertPermissionIdToType(opPermissionUid string) (apiOpPermissionTyp dmsCo
 		apiOpPermissionTyp = dmsCommonV1.OpPermissionViewIDEAuditRecord
 	case UIDOfOpPermissionViewOptimizationRecord:
 		apiOpPermissionTyp = dmsCommonV1.OpPermissionViewOptimizationRecord
+	case UIDOfOpPermissionViewVersionManage:
+		apiOpPermissionTyp = dmsCommonV1.OpPermissionViewVersionManage
 	case UIDOfOpPermissionVersionManage:
 		apiOpPermissionTyp = dmsCommonV1.OpPermissionVersionManage
 	case UIdOfOpPermissionViewPipeline:
@@ -171,6 +173,8 @@ func ConvertPermissionTypeToId(opPermissionType dmsCommonV1.OpPermissionType) (p
 		permissionId = UIDOfOpPermissionViewIDEAuditRecord
 	case dmsCommonV1.OpPermissionViewOptimizationRecord:
 		permissionId = UIDOfOpPermissionViewOptimizationRecord
+	case dmsCommonV1.OpPermissionViewVersionManage:
+		permissionId = UIDOfOpPermissionViewVersionManage
 	case dmsCommonV1.OpPermissionVersionManage:
 		permissionId = UIDOfOpPermissionVersionManage
 	case dmsCommonV1.OpPermissionViewPipeline:
