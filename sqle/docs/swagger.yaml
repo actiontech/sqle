@@ -14011,6 +14011,7 @@ paths:
         - sql_manage
         - create_optimization
         - create_pipeline
+        - create_version
         in: query
         name: functional_module
         type: string
