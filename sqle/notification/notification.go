@@ -29,7 +29,8 @@ type Notifier interface {
 }
 
 type WorkflowNotifyConfig struct {
-	SQLEUrl *string
+	SQLEUrl     *string
+	ProjectName string
 }
 
 func Notify(notification Notification, userIds []string) error {
@@ -110,6 +111,7 @@ func (w *WorkflowNotification) NotificationBody() i18nPkg.I18nStr {
 	bodyStr := make([]i18nPkg.I18nStr, 0)
 	bodyStr = append(bodyStr, locale.Bundle.LocalizeAllWithArgs(locale.NotifyWorkflowBodyHead,
 		w.workflow.Subject,
+		w.config.ProjectName,
 		w.workflow.WorkflowId,
 		w.workflow.Desc,
 		dms.GetUserNameWithDelTag(w.workflow.CreateUserId),
@@ -165,7 +167,7 @@ func (w *WorkflowNotification) NotificationBody() i18nPkg.I18nStr {
 func (w *WorkflowNotification) buildNotifyBody(task *model.Task) i18nPkg.I18nStr {
 	instanceName := task.InstanceName()
 	score := task.Score
-	passRate := task.PassRate
+	// passRate := task.PassRate
 	schema := task.Schema
 	executeStartAt := task.ExecStartAt
 	executeEndAt := task.ExecEndAt
@@ -186,7 +188,8 @@ func (w *WorkflowNotification) buildNotifyBody(task *model.Task) i18nPkg.I18nStr
 		}
 		res = append(res, locale.Bundle.LocalizeAllWithArgs(locale.NotifyWorkflowBodyReason, reason))
 	default:
-		res = append(res, locale.Bundle.LocalizeAllWithArgs(locale.NotifyWorkflowBodyReport, score, passRate*100))
+		// res = append(res, locale.Bundle.LocalizeAllWithArgs(locale.NotifyWorkflowBodyReport, score, passRate*100))
+		res = append(res, locale.Bundle.LocalizeAllWithArgs(locale.NotifyWorkflowBodyReport, score))
 	}
 	return locale.Bundle.JoinI18nStr(res, "\n")
 }
@@ -228,6 +231,11 @@ func notifyWorkflow(sqleUrl string, workflow *model.Workflow, wt WorkflowNotifyT
 	if len(sqleUrl) > 0 {
 		config.SQLEUrl = &sqleUrl
 	}
+	project, err := dms.GetProjectByID(string(workflow.ProjectId))
+	if err != nil {
+		log.NewEntry().Errorf("notify workflow get project by id error: %v", err)
+	}
+	config.ProjectName = project.Name
 	wn := NewWorkflowNotification(workflow, wt, config)
 	userIds := wn.notifyUser()
 	// workflow has been finished.
@@ -235,7 +243,7 @@ func notifyWorkflow(sqleUrl string, workflow *model.Workflow, wt WorkflowNotifyT
 		return
 	}
 
-	err := Notify(wn, userIds)
+	err = Notify(wn, userIds)
 	if err != nil {
 		log.NewEntry().Errorf("notify workflow error, %v", err)
 	}
