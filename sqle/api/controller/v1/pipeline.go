@@ -2,7 +2,9 @@ package v1
 
 import (
 	"context"
-	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
+	"fmt"
+	v1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
+	"github.com/actiontech/sqle/sqle/errors"
 	"net/http"
 	"strconv"
 
@@ -14,17 +16,33 @@ import (
 
 // pipelineDetail 流水线的信息详情
 type pipelineDetail struct {
-	ID        uint   `json:"id"`         // 流水线的唯一标识符
-	NodeCount uint32 `json:"node_count"` // 节点个数
+	ID          uint     `json:"id"`           // 流水线的唯一标识符
+	NodeCount   uint32   `json:"node_count"`   // 节点个数
+	DataSources []string `json:"data_sources"` // 数据源
 	pipelineBase
 }
 
-func (p *pipelineDetail) fillWith(pipe *pipeline.Pipeline) {
+func (p *pipelineDetail) fillWith(pipe *pipeline.Pipeline) error {
 	p.ID = pipe.ID
 	p.NodeCount = pipe.NodeCount()
 	p.Name = pipe.Name
 	p.Description = pipe.Description
 	p.Address = pipe.Address
+	dataSources := make([]string, 0)
+	for _, node := range pipe.PipelineNodes {
+		if node.InstanceID != 0 {
+			instance, exist, err := dms.GetInstancesById(context.TODO(), fmt.Sprint(node.InstanceID))
+			if err != nil {
+				return err
+			}
+			if !exist {
+				return errors.NewInstanceNoExistErr()
+			}
+			dataSources = append(dataSources, instance.Name)
+		}
+	}
+	p.DataSources = dataSources
+	return nil
 }
 
 // pipelineBase 流水线基础信息
@@ -212,24 +230,30 @@ func GetPipelines(c echo.Context) error {
 	}
 	// 3. 计算分页参数
 	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
-	hasPermission, err := hasViewPermission(user.GetIDStr(), projectUid, dmsV1.OpPermissionViewPipeline)
+	userPermission, err := dms.NewUserPermission(user.GetIDStr(), projectUid)
 	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
+		return errors.New(errors.ConnectStorageError, fmt.Errorf("check get pipelines failed: %v", err))
 	}
 	userId := ""
-	if !hasPermission {
+	if !userPermission.CanViewProject() {
 		userId = user.GetIDStr()
+	}
+	rangeDatasourceIds := make([]string, 0)
+	viewPipelinePermission := userPermission.GetOnePermission(v1.OpPermissionViewPipeline)
+	if viewPipelinePermission != nil {
+		userId = ""
+		rangeDatasourceIds = viewPipelinePermission.RangeUids
 	}
 	// 4. 获取存储对象并查询流水线列表
 	var pipelineSvc pipeline.PipelineSvc
-	count, pipelineList, err := pipelineSvc.GetPipelineList(limit, offset, req.FuzzySearchNameDesc, projectUid, userId)
+	count, pipelineList, err := pipelineSvc.GetPipelineList(limit, offset, req.FuzzySearchNameDesc, projectUid, userId, rangeDatasourceIds)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	data := make([]pipelineDetail, len(pipelineList))
 	for idx, pipe := range pipelineList {
-		data[idx].fillWith(pipe)
+		err = data[idx].fillWith(pipe)
 	}
 	// 5. 返回成功响应
 	return c.JSON(http.StatusOK, &GetPipelinesResV1{
@@ -277,7 +301,7 @@ func GetPipelineDetail(c echo.Context) error {
 	}
 
 	var pipelineDetail pipelineDetail
-	pipelineDetail.fillWith(pipe)
+	err = pipelineDetail.fillWith(pipe)
 	nodeDetails := make([]pipelineNodeDetail, len(pipe.PipelineNodes))
 	for i, node := range pipe.PipelineNodes {
 		nodeDetails[i].fillWith(c.Request().Context(), node, c.Param("project_name"))

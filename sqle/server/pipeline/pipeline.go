@@ -235,9 +235,9 @@ func (svc PipelineSvc) GetPipeline(projectUID string, pipelineID uint) (*Pipelin
 	return svc.toPipeline(modelPipeline, modelPiplineNodes), nil
 }
 
-func (svc PipelineSvc) GetPipelineList(limit, offset uint32, fuzzySearchNameDesc string, projectUID string, userId string) (count uint64, pipelines []*Pipeline, err error) {
+func (svc PipelineSvc) GetPipelineList(limit, offset uint32, fuzzySearchNameDesc string, projectUID string, userId string, rangeDatasourceIds []string) (count uint64, pipelines []*Pipeline, err error) {
 	s := model.GetStorage()
-	modelPipelines, count, err := s.GetPipelineList(model.ProjectUID(projectUID), fuzzySearchNameDesc, limit, offset, userId)
+	modelPipelines, count, err := s.GetPipelineList(model.ProjectUID(projectUID), fuzzySearchNameDesc, limit, offset, userId, rangeDatasourceIds)
 	if err != nil {
 		return 0, nil, err
 	}

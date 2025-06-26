@@ -20584,6 +20584,13 @@ var doc = `{
                     "description": "关联流水线地址",
                     "type": "string"
                 },
+                "data_sources": {
+                    "description": "数据源",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "description": {
                     "description": "流水线描述",
                     "type": "string"
@@ -20608,6 +20615,13 @@ var doc = `{
                 "address": {
                     "description": "关联流水线地址",
                     "type": "string"
+                },
+                "data_sources": {
+                    "description": "数据源",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "description": {
                     "description": "流水线描述",

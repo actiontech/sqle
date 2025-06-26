@@ -97,6 +97,15 @@ func (p *UserPermission) HasOnePermission(opPermissionType v1.OpPermissionType) 
 	return false
 }
 
+func (p *UserPermission) GetOnePermission(opPermissionType v1.OpPermissionType) *v1.OpPermissionItem {
+	for _, userOpPermission := range p.opPermissionItem {
+		if userOpPermission.OpPermissionType == opPermissionType {
+			return &userOpPermission
+		}
+	}
+	return nil
+}
+
 func (p *UserPermission) IsProjectAdmin() bool {
 	for _, userOpPermission := range p.opPermissionItem {
 		if userOpPermission.OpPermissionType == v1.OpPermissionTypeProjectAdmin {
