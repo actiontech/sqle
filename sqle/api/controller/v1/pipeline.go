@@ -253,7 +253,9 @@ func GetPipelines(c echo.Context) error {
 
 	data := make([]pipelineDetail, len(pipelineList))
 	for idx, pipe := range pipelineList {
-		err = data[idx].fillWith(pipe)
+		if err = data[idx].fillWith(pipe); err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
 	}
 	// 5. 返回成功响应
 	return c.JSON(http.StatusOK, &GetPipelinesResV1{
