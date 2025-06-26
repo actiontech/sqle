@@ -101,7 +101,7 @@ func isValidAuditMethod(a string) bool {
 	return false
 }
 
-func (s *Storage) GetPipelineList(projectID ProjectUID, fuzzySearchContent string, limit, offset uint32, userId string) ([]*Pipeline, uint64, error) {
+func (s *Storage) GetPipelineList(projectID ProjectUID, fuzzySearchContent string, limit, offset uint32, userId string, rangeDatasourceIds []string) ([]*Pipeline, uint64, error) {
 	var count int64
 	var pipelines []*Pipeline
 	query := s.db.Model(&Pipeline{}).Where("project_uid = ?", projectID)
@@ -110,6 +110,11 @@ func (s *Storage) GetPipelineList(projectID ProjectUID, fuzzySearchContent strin
 	}
 	if fuzzySearchContent != "" {
 		query = query.Where("name LIKE ? OR description LIKE ?", "%"+fuzzySearchContent+"%", "%"+fuzzySearchContent+"%")
+	}
+	if len(rangeDatasourceIds) > 0 {
+		query = query.Joins("JOIN pipeline_nodes ON pipelines.id = pipeline_nodes.pipeline_id").
+			Where("pipeline_nodes.instance_id IN (?)", rangeDatasourceIds).
+			Group("pipelines.id")
 	}
 
 	err := query.Count(&count).Error
