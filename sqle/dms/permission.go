@@ -106,6 +106,25 @@ func (p *UserPermission) GetOnePermission(opPermissionType v1.OpPermissionType) 
 	return nil
 }
 
+func (p *UserPermission) HasProjectPermission() bool {
+	for _, userOpPermission := range p.opPermissionItem {
+		if userOpPermission.OpPermissionType == v1.OpPermissionTypeAuthDBServiceData ||
+			userOpPermission.OpPermissionType == v1.OpPermissionManageProjectDataSource ||
+			userOpPermission.OpPermissionType == v1.OpPermissionManageAuditRuleTemplate ||
+			userOpPermission.OpPermissionType == v1.OpPermissionManageApprovalTemplate ||
+			userOpPermission.OpPermissionType == v1.OpPermissionManageMember ||
+			userOpPermission.OpPermissionType == v1.OpPermissionPushRule ||
+			userOpPermission.OpPermissionType == v1.OpPermissionMangeAuditSQLWhiteList ||
+			userOpPermission.OpPermissionType == v1.OpPermissionManageSQLMangeWhiteList ||
+			userOpPermission.OpPermissionType == v1.OpPermissionManageRoleMange ||
+			userOpPermission.OpPermissionType == v1.OpPermissionDesensitization ||
+			userOpPermission.OpPermissionType == v1.OpPermissionTypeProjectAdmin {
+			return true
+		}
+	}
+	return false
+}
+
 func (p *UserPermission) IsProjectAdmin() bool {
 	for _, userOpPermission := range p.opPermissionItem {
 		if userOpPermission.OpPermissionType == v1.OpPermissionTypeProjectAdmin {
