@@ -97,6 +97,17 @@ func (p *UserPermission) HasOnePermission(opPermissionType v1.OpPermissionType) 
 	return false
 }
 
+func (p *UserPermission) HasSomsPermissions(opPermissionTypes []v1.OpPermissionType) bool {
+	for _, userOpPermission := range p.opPermissionItem {
+		for _, permissionType := range opPermissionTypes {
+			if userOpPermission.OpPermissionType == permissionType {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func (p *UserPermission) GetOnePermission(opPermissionType v1.OpPermissionType) *v1.OpPermissionItem {
 	for i := range p.opPermissionItem {
 		if p.opPermissionItem[i].OpPermissionType == opPermissionType {

@@ -1266,6 +1266,18 @@ func hasViewPermission(userId, projectUid string, permissionType dmsv1.OpPermiss
 	return false, nil
 }
 
+func hasViewPermissions(userId, projectUid string, permissionTypes []dmsv1.OpPermissionType) (bool, error) {
+	up, err := dms.NewUserPermission(userId, projectUid)
+	if err != nil {
+		return false, fmt.Errorf("get permissions failed: %v", err)
+	}
+	canManage := up.CanViewProject() || up.HasSomsPermissions(permissionTypes)
+	if canManage {
+		return true, nil
+	}
+	return false, nil
+}
+
 func hasManagePermission(userId, projectUid string, permissionType dmsv1.OpPermissionType) (bool, error) {
 	up, err := dms.NewUserPermission(userId, projectUid)
 	if err != nil {
