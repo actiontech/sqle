@@ -1271,7 +1271,7 @@ func hasViewPermissions(userId, projectUid string, permissionTypes []dmsv1.OpPer
 	if err != nil {
 		return false, fmt.Errorf("get permissions failed: %v", err)
 	}
-	canManage := up.CanViewProject() || up.HasSomsPermissions(permissionTypes)
+	canManage := up.CanViewProject() || up.HasOneOfPermission(permissionTypes)
 	if canManage {
 		return true, nil
 	}
