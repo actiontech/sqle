@@ -339,9 +339,35 @@ func (s *Storage) GetRuleTemplateDetailByNameAndProjectIds(projectIds []string, 
 	if err == gorm.ErrRecordNotFound {
 		return t, false, nil
 	}
+
+	// GORM 的 .Preload() 在对关联字段添加条件时，是通过 额外查询 加载子表数据。 它不会对主表（RuleList）做联动过滤，只是关联加载数据，如果子查询没命中，就导致该字段是 nil。
+	// 清洗无效数据，避免后续 nil 指针
+	t.RuleList = filterValidRuleList(t.RuleList)
+	t.CustomRuleList = filterValidCustomRuleList(t.CustomRuleList)
+
 	t.RuleList = filterRulesByTag(t.RuleList, tags)
 	t.CustomRuleList = filterCustomRulesByTag(t.CustomRuleList, tags)
 	return t, true, errors.New(errors.ConnectStorageError, err)
+}
+
+func filterValidRuleList(list []RuleTemplateRule) []RuleTemplateRule {
+	result := make([]RuleTemplateRule, 0, len(list))
+	for _, item := range list {
+		if item.Rule != nil {
+			result = append(result, item)
+		}
+	}
+	return result
+}
+
+func filterValidCustomRuleList(list []RuleTemplateCustomRule) []RuleTemplateCustomRule {
+	result := make([]RuleTemplateCustomRule, 0, len(list))
+	for _, item := range list {
+		if item.CustomRule != nil {
+			result = append(result, item)
+		}
+	}
+	return result
 }
 
 func filterRulesByTag(ruleTemplateRules []RuleTemplateRule, tags string) []RuleTemplateRule {
