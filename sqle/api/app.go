@@ -204,12 +204,15 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 
 		// report push
 		v1OpProjectRouter.PUT("/:project_name/report_push_configs/:report_push_config_id/", v1.UpdateReportPushConfig)
+	}
 
+	sqlVersionRouter := v1Router.Group("/projects")
+	{
 		// sql version
-		v1OpProjectRouter.POST("/:project_name/sql_versions", v1.CreateSqlVersion)
-		v1OpProjectRouter.PATCH("/:project_name/sql_versions/:sql_version_id/", v1.UpdateSqlVersion)
-		v1OpProjectRouter.DELETE("/:project_name/sql_versions/:sql_version_id/", v1.DeleteSqlVersion)
-		v1OpProjectRouter.POST("/:project_name/sql_versions/:sql_version_id/lock", v1.LockSqlVersion)
+		sqlVersionRouter.POST("/:project_name/sql_versions", v1.CreateSqlVersion)
+		sqlVersionRouter.PATCH("/:project_name/sql_versions/:sql_version_id/", v1.UpdateSqlVersion)
+		sqlVersionRouter.DELETE("/:project_name/sql_versions/:sql_version_id/", v1.DeleteSqlVersion)
+		sqlVersionRouter.POST("/:project_name/sql_versions/:sql_version_id/lock", v1.LockSqlVersion)
 	}
 
 	// project member router
