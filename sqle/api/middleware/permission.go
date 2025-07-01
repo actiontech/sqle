@@ -47,7 +47,7 @@ func OpProjectAllowed() echo.MiddlewareFunc {
 				return echo.NewHTTPError(http.StatusForbidden)
 			}
 
-			if up.CanOpProject() || up.HasProjectPermission() || up.HasOtherAllowedPermission() {
+			if up.CanOpProject() || up.HasProjectPermission() {
 				return next(c)
 			}
 
