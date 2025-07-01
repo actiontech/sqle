@@ -573,8 +573,8 @@ func CanOperationInstance(userOpPermissions []dmsV1.OpPermissionItem, needOpPerm
 			return true
 		}
 
-		// 对象权限(当前空间内所有对象)
-		if userOpPermission.RangeType == dmsV1.OpRangeTypeProject {
+		// 项目管理员可以访问所有数据源
+		if userOpPermission.OpPermissionType == dmsV1.OpPermissionTypeProjectAdmin {
 			return true
 		}
 
