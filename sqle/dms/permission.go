@@ -125,6 +125,15 @@ func (p *UserPermission) HasProjectPermission() bool {
 	return false
 }
 
+func (p *UserPermission) HasOtherAllowedPermission() bool {
+	for _, userOpPermission := range p.opPermissionItem {
+		if userOpPermission.OpPermissionType == v1.OpPermissionVersionManage {
+			return true
+		}
+	}
+	return false
+}
+
 func (p *UserPermission) IsProjectAdmin() bool {
 	for _, userOpPermission := range p.opPermissionItem {
 		if userOpPermission.OpPermissionType == v1.OpPermissionTypeProjectAdmin {
