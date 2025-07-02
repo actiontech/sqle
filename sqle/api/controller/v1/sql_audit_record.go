@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -700,10 +701,12 @@ func GetSQLAuditRecordsV1(c echo.Context) error {
 		"limit":                   limit,
 		"offset":                  offset,
 	}
-	if !canViewProject && viewQuickAuditRecordPermission != nil && req.FilterInstanceId == 0 {
+	if !canViewProject && viewQuickAuditRecordPermission != nil {
 		rangeUids := viewQuickAuditRecordPermission.RangeUids
-		filterInstanceIds := strings.Join(rangeUids, ",")
-		data["filter_instance_ids"] = filterInstanceIds
+		if req.FilterInstanceId != 0 {
+			rangeUids = utils.FindIntersection(rangeUids, strconv.FormatUint(req.FilterInstanceId, 10))
+		}
+		data["filter_instance_ids"] = fmt.Sprintf("\"%s\"", strings.Join(rangeUids, "\",\""))
 		data["check_user_can_access"] = false
 	}
 
