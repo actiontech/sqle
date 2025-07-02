@@ -76,8 +76,8 @@ AND tasks.status = :filter_task_status
 AND tasks.status <> :filter_task_status_exclude
 {{- end }}
 
-{{- if .filter_instance_id }}
-AND  tasks.instance_id = :filter_instance_id
+{{- if .filter_instance_ids }}
+AND  tasks.instance_id IN ( {{ .filter_instance_ids }} )
 {{- end }}
 
 {{- if .filter_create_time_from }}
