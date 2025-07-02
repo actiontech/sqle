@@ -704,7 +704,7 @@ func GetSQLAuditRecordsV1(c echo.Context) error {
 	if !canViewProject && viewQuickAuditRecordPermission != nil {
 		rangeUids := viewQuickAuditRecordPermission.RangeUids
 		if req.FilterInstanceId != 0 {
-			rangeUids = utils.FindIntersection(rangeUids, strconv.FormatUint(req.FilterInstanceId, 10))
+			rangeUids = utils.FindIntersection(rangeUids, []string{strconv.FormatUint(req.FilterInstanceId, 10)})
 		}
 		data["filter_instance_ids"] = fmt.Sprintf("\"%s\"", strings.Join(rangeUids, "\",\""))
 		data["check_user_can_access"] = false
