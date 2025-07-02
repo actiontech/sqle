@@ -490,14 +490,23 @@ func GenerateSSHKeyPair() (privateKeyStr, publicKeyStr string, err error) {
 	return string(privatePEM), publicKeyStr, nil
 }
 
-func FindIntersection(elements []string, target string) []string {
-	elementMap := make(map[string]bool)
-	for _, elem := range elements {
-		elementMap[elem] = true
+func FindIntersection(slice1, slice2 []string) []string {
+	map1 := make(map[string]bool)
+	map2 := make(map[string]bool)
+
+	// 填充第一个 map
+	for _, item := range slice1 {
+		map1[item] = true
 	}
-	// 检查 target 是否存在于 map 中
-	if elementMap[target] {
-		return []string{target}
+
+	// 填充第二个 map 并查找交集
+	var intersection []string
+	for _, item := range slice2 {
+		if map1[item] && !map2[item] {
+			intersection = append(intersection, item)
+		}
+		map2[item] = true
 	}
-	return []string{}
+
+	return intersection
 }
