@@ -489,3 +489,15 @@ func GenerateSSHKeyPair() (privateKeyStr, publicKeyStr string, err error) {
 
 	return string(privatePEM), publicKeyStr, nil
 }
+
+func FindIntersection(elements []string, target string) []string {
+	elementMap := make(map[string]bool)
+	for _, elem := range elements {
+		elementMap[elem] = true
+	}
+	// 检查 target 是否存在于 map 中
+	if elementMap[target] {
+		return []string{target}
+	}
+	return []string{}
+}
