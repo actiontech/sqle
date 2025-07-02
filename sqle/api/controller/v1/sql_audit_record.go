@@ -682,20 +682,31 @@ func GetSQLAuditRecordsV1(c echo.Context) error {
 	}
 
 	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
-	hasPermission, err := hasViewPermission(user.GetIDStr(), projectUid, v1.OpPermissionViewQuickAuditRecord)
-
+	up, err := dms.NewUserPermission(user.GetIDStr(), projectUid)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("check project manager failed: %v", err))
+	}
+	canViewProject := up.CanViewProject()
+	viewQuickAuditRecordPermission := up.GetOnePermission(v1.OpPermissionViewQuickAuditRecord)
 	data := map[string]interface{}{
 		"filter_project_id":       projectUid,
 		"filter_creator_id":       user.ID,
 		"fuzzy_search_tags":       req.FuzzySearchTags,
-		"filter_instance_id":      req.FilterInstanceId,
+		"filter_instance_ids":     req.FilterInstanceId,
 		"filter_create_time_from": req.FilterCreateTimeFrom,
 		"filter_create_time_to":   req.FilterCreateTimeTo,
-		"check_user_can_access":   !hasPermission,
+		"check_user_can_access":   !canViewProject,
 		"filter_audit_record_ids": req.FilterSqlAuditRecordIDs,
 		"limit":                   limit,
 		"offset":                  offset,
 	}
+	if !canViewProject && viewQuickAuditRecordPermission != nil {
+		rangeUids := viewQuickAuditRecordPermission.RangeUids
+		filterInstanceIds := strings.Join(rangeUids, ",")
+		data["filter_instance_ids"] = filterInstanceIds
+		data["check_user_can_access"] = false
+	}
+
 	if req.FilterSQLAuditStatus == SQLAuditRecordStatusAuditing {
 		data["filter_task_status_exclude"] = model.TaskStatusAudited
 	} else if req.FilterSQLAuditStatus == SQLAuditRecordStatusSuccessfully {
