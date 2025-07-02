@@ -700,7 +700,7 @@ func GetSQLAuditRecordsV1(c echo.Context) error {
 		"limit":                   limit,
 		"offset":                  offset,
 	}
-	if !canViewProject && viewQuickAuditRecordPermission != nil {
+	if !canViewProject && viewQuickAuditRecordPermission != nil && req.FilterInstanceId == 0 {
 		rangeUids := viewQuickAuditRecordPermission.RangeUids
 		filterInstanceIds := strings.Join(rangeUids, ",")
 		data["filter_instance_ids"] = filterInstanceIds
