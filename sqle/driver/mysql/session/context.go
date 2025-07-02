@@ -465,7 +465,7 @@ func (c *Context) IsTableExist(stmt *ast.TableName) (bool, error) {
 			return false, nil
 		}
 
-		tables, err := c.e.ShowSchemaTables(schemaName)
+		tables, err := c.e.ShowAllSchemaObjects(schemaName)
 		if err != nil {
 			return false, err
 		}
