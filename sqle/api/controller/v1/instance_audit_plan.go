@@ -650,7 +650,7 @@ func GetInstanceAuditPlanOverview(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	// check current user instance audit plan permission
-	detail, exist, err := GetInstanceAuditPlanIfCurrentUserCanView(c, projectUID, instanceAuditPlanID, v1.OpPermissionTypeViewOtherAuditPlan)
+	detail, exist, err := GetInstanceAuditPlanIfCurrentUserCanView(c, projectUID, instanceAuditPlanID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -901,7 +901,7 @@ func GetInstanceAuditPlanSQLs(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	// check current user instance audit plan permission
-	_, exist, err := GetInstanceAuditPlanIfCurrentUserCanView(c, projectUID, instanceAuditPlanID, v1.OpPermissionTypeViewOtherAuditPlan)
+	_, exist, err := GetInstanceAuditPlanIfCurrentUserCanView(c, projectUID, instanceAuditPlanID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1000,7 +1000,7 @@ func GetInstanceAuditPlanSQLMeta(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	// check current user instance audit plan permission
-	_, exist, err := GetInstanceAuditPlanIfCurrentUserCanView(c, projectUID, instanceAuditPlanID, v1.OpPermissionTypeViewOtherAuditPlan)
+	_, exist, err := GetInstanceAuditPlanIfCurrentUserCanView(c, projectUID, instanceAuditPlanID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1100,7 +1100,7 @@ func GetInstanceAuditPlanSQLData(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	// check current user instance audit plan permission
-	_, exist, err := GetInstanceAuditPlanIfCurrentUserCanView(c, projectUID, instanceAuditPlanID, v1.OpPermissionTypeViewOtherAuditPlan)
+	_, exist, err := GetInstanceAuditPlanIfCurrentUserCanView(c, projectUID, instanceAuditPlanID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1166,7 +1166,7 @@ func GetInstanceAuditPlanSQLExport(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	// check current user instance audit plan permission
-	_, exist, err := GetInstanceAuditPlanIfCurrentUserCanView(c, projectUID, instanceAuditPlanID, v1.OpPermissionTypeViewOtherAuditPlan)
+	_, exist, err := GetInstanceAuditPlanIfCurrentUserCanView(c, projectUID, instanceAuditPlanID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1262,7 +1262,7 @@ func GetAuditPlanSqlAnalysisData(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	detail, exist, err := GetInstanceAuditPlanIfCurrentUserCanView(c, projectUID, insAuditPlanID, v1.OpPermissionTypeViewOtherAuditPlan)
+	detail, exist, err := GetInstanceAuditPlanIfCurrentUserCanView(c, projectUID, insAuditPlanID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
