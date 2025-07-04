@@ -248,7 +248,8 @@ func GetInstanceAuditPlans(c echo.Context) error {
 		"offset":                             offset,
 	}
 	if !up.CanViewProject() {
-		accessibleInstanceId := up.GetInstancesByOP(dmsCommonV1.OpPermissionTypeViewOtherAuditPlan)
+		// 如果有配置SQL管控权限，那么可以查看自己创建的或者该权限对应数据源的
+		accessibleInstanceId := up.GetInstancesByOP(dmsCommonV1.OpPermissionTypeViewOtherAuditPlan, dmsCommonV1.OpPermissionTypeSaveAuditPlan)
 		if len(accessibleInstanceId) > 0 {
 			data["accessible_instances_id"] = fmt.Sprintf("\"%s\"", strings.Join(accessibleInstanceId, "\",\""))
 		}
@@ -381,7 +382,7 @@ func GetInstanceAuditPlanDetail(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	// check current user instance audit plan permission
-	detail, exist, err := v1.GetInstanceAuditPlanIfCurrentUserCanView(c, projectUID, instanceAuditPlanID, dmsCommonV1.OpPermissionTypeViewOtherAuditPlan)
+	detail, exist, err := v1.GetInstanceAuditPlanIfCurrentUserCanView(c, projectUID, instanceAuditPlanID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
