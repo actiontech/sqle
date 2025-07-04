@@ -249,7 +249,7 @@ func GetInstanceAuditPlans(c echo.Context) error {
 	}
 	if !up.CanViewProject() {
 		// 如果有配置SQL管控权限，那么可以查看自己创建的或者该权限对应数据源的
-		accessibleInstanceId := up.GetInstancesByOP(dmsCommonV1.OpPermissionTypeViewOtherAuditPlan, dmsCommonV1.OpPermissionTypeSaveAuditPlan)
+		accessibleInstanceId := up.GetInstancesByOP(dmsCommonV1.OpPermissionTypeSaveAuditPlan)
 		if len(accessibleInstanceId) > 0 {
 			data["accessible_instances_id"] = fmt.Sprintf("\"%s\"", strings.Join(accessibleInstanceId, "\",\""))
 		}

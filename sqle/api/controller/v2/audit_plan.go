@@ -101,7 +101,7 @@ func GetAuditPlans(c echo.Context) error {
 		"offset":                          offset,
 	}
 	if !up.IsAdmin() {
-		instanceNames, err := dms.GetInstanceNamesInProjectByIds(c.Request().Context(), projectUid, up.GetInstancesByOP(dmsV1.OpPermissionTypeViewOtherAuditPlan))
+		instanceNames, err := dms.GetInstanceNamesInProjectByIds(c.Request().Context(), projectUid, up.GetInstancesByOP(dmsV1.OpPermissionTypeSaveAuditPlan))
 		if err != nil {
 			return err
 		}
@@ -195,7 +195,7 @@ func GetAuditPlanReportSQLs(c echo.Context) error {
 	}
 	apName := c.Param("audit_plan_name")
 
-	ap, exist, err := v1.GetAuditPlanIfCurrentUserCanView(c, projectUid, apName, dmsV1.OpPermissionTypeViewOtherAuditPlan)
+	ap, exist, err := v1.GetAuditPlanIfCurrentUserCanView(c, projectUid, apName, dmsV1.OpPermissionTypeSaveAuditPlan)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

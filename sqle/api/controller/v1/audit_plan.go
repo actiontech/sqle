@@ -666,7 +666,7 @@ func GetAuditPlans(c echo.Context) error {
 		"offset":                          offset,
 	}
 	if !up.CanViewProject() {
-		instanceNames, err := dms.GetInstanceNamesInProjectByIds(c.Request().Context(), projectUid, up.GetInstancesByOP(v1.OpPermissionTypeViewOtherAuditPlan))
+		instanceNames, err := dms.GetInstanceNamesInProjectByIds(c.Request().Context(), projectUid, up.GetInstancesByOP(v1.OpPermissionTypeSaveAuditPlan))
 		if err != nil {
 			return err
 		}
@@ -797,7 +797,7 @@ func GetAuditPlanReports(c echo.Context) error {
 	}
 	apName := c.Param("audit_plan_name")
 
-	_, exist, err := GetAuditPlanIfCurrentUserCanView(c, projectUid, apName, v1.OpPermissionTypeViewOtherAuditPlan)
+	_, exist, err := GetAuditPlanIfCurrentUserCanView(c, projectUid, apName, v1.OpPermissionTypeSaveAuditPlan)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -857,7 +857,7 @@ func GetAuditPlanReport(c echo.Context) error {
 	}
 	apName := c.Param("audit_plan_name")
 
-	ap, exist, err := GetAuditPlanIfCurrentUserCanView(c, projectUid, apName, v1.OpPermissionTypeViewOtherAuditPlan)
+	ap, exist, err := GetAuditPlanIfCurrentUserCanView(c, projectUid, apName, v1.OpPermissionTypeSaveAuditPlan)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1225,7 +1225,7 @@ func GetAuditPlanNotifyConfig(c echo.Context) error {
 	}
 	apName := c.Param("audit_plan_name")
 
-	ap, exist, err := GetAuditPlanIfCurrentUserCanView(c, projectUid, apName, v1.OpPermissionTypeViewOtherAuditPlan)
+	ap, exist, err := GetAuditPlanIfCurrentUserCanView(c, projectUid, apName, v1.OpPermissionTypeSaveAuditPlan)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1401,7 +1401,7 @@ func GetAuditPlanSQLs(c echo.Context) error {
 	}
 	apName := c.Param("audit_plan_name")
 
-	ap, exist, err := GetAuditPlanIfCurrentUserCanView(c, projectUid, apName, v1.OpPermissionTypeViewOtherAuditPlan)
+	ap, exist, err := GetAuditPlanIfCurrentUserCanView(c, projectUid, apName, v1.OpPermissionTypeSaveAuditPlan)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1482,7 +1482,7 @@ func GetAuditPlanReportSQLsV1(c echo.Context) error {
 	}
 	apName := c.Param("audit_plan_name")
 
-	ap, exist, err := GetAuditPlanIfCurrentUserCanView(c, projectUid, apName, v1.OpPermissionTypeViewOtherAuditPlan)
+	ap, exist, err := GetAuditPlanIfCurrentUserCanView(c, projectUid, apName, v1.OpPermissionTypeSaveAuditPlan)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
