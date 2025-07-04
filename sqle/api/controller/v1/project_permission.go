@@ -329,7 +329,7 @@ func GetInstanceAuditPlanIfCurrentUserCanView(c echo.Context, projectId, instanc
 			return ap, true, nil
 		}
 	}
-	opTypes := []dmsV1.OpPermissionType{dmsV1.OpPermissionTypeViewOtherAuditPlan, dmsV1.OpPermissionTypeSaveAuditPlan}
+	opTypes := []dmsV1.OpPermissionType{dmsV1.OpPermissionTypeSaveAuditPlan}
 	for _, opType := range opTypes {
 		dbServiceReq := &dmsV2.ListDBServiceReq{
 			ProjectUid: projectId,
@@ -344,7 +344,7 @@ func GetInstanceAuditPlanIfCurrentUserCanView(c echo.Context, projectId, instanc
 			}
 		}
 	}
-	return ap, false, errors.NewUserNotPermissionError(dmsV1.GetOperationTypeDesc(dmsV1.OpPermissionTypeViewOtherAuditPlan))
+	return ap, false, errors.NewUserNotPermissionError(dmsV1.GetOperationTypeDesc(dmsV1.OpPermissionTypeSaveAuditPlan))
 }
 
 func GetInstanceAuditPlanIfCurrentUserCanOp(c echo.Context, projectId, instanceAuditPlanID string, opType dmsV1.OpPermissionType) (*model.InstanceAuditPlan, bool, error) {
@@ -399,7 +399,7 @@ func GetAuditPlantReportAndInstanceIfCurrentUserCanView(c echo.Context, projectI
 	auditPlanReport *model.AuditPlanReportV2, auditPlanReportSQLV2 *model.AuditPlanReportSQLV2, instance *model.Instance,
 	err error) {
 
-	ap, exist, err := GetAuditPlanIfCurrentUserCanView(c, projectId, auditPlanName, dmsV1.OpPermissionTypeViewOtherAuditPlan)
+	ap, exist, err := GetAuditPlanIfCurrentUserCanView(c, projectId, auditPlanName, dmsV1.OpPermissionTypeSaveAuditPlan)
 	if err != nil {
 		return nil, nil, nil, err
 	}
