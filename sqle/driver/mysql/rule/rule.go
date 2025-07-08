@@ -4027,9 +4027,9 @@ func getColumnWithCharset(stmt *ast.CreateTableStmt, input *RuleHandlerInput) []
 		// 如果 col.Tp 不为 nil，先处理 Charset 和 Collate
 		if col.Tp != nil {
 			// 如果 col.Tp.Charset 非空，直接加入
-			if col.Tp.Charset != "" {
+			if col.Tp.Charset != "" && col.Tp.Charset != "binary" {
 				columnWithCharset = append(columnWithCharset, col)
-			} else if col.Tp.Collate != "" {
+			} else if col.Tp.Collate != "" && col.Tp.Charset != "binary" {
 				// 如果 col.Tp.Collate 非空，设置 Charset
 				col.Tp.Charset, _ = input.Ctx.GetSchemaCharacterByCollation(col.Tp.Collate)
 				columnWithCharset = append(columnWithCharset, col)
