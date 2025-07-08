@@ -4027,9 +4027,9 @@ func getColumnWithCharset(stmt *ast.CreateTableStmt, input *RuleHandlerInput) []
 		// 如果 col.Tp 不为 nil，先处理 Charset 和 Collate
 		if col.Tp != nil {
 			// 如果 col.Tp.Charset 非空，直接加入
-			if col.Tp.Charset != "" {
+			if col.Tp.Charset != "" && col.Tp.Charset != "binary" {
 				columnWithCharset = append(columnWithCharset, col)
-			} else if col.Tp.Collate != "" {
+			} else if col.Tp.Collate != "" && col.Tp.Charset != "binary" {
 				// 如果 col.Tp.Collate 非空，设置 Charset
 				col.Tp.Charset, _ = input.Ctx.GetSchemaCharacterByCollation(col.Tp.Collate)
 				columnWithCharset = append(columnWithCharset, col)
@@ -4924,7 +4924,7 @@ func checkColumnNotNull(input *RuleHandlerInput) error {
 		for _, spec := range stmt.Specs {
 			for _, newColumn := range spec.NewColumns {
 				ok := util.IsAllInOptions(newColumn.Options, ast.ColumnOptionNotNull)
-				if !ok {
+				if !ok && !isBlob(newColumn) {
 					notNullColumns = append(notNullColumns, newColumn.Name.OrigColName())
 				}
 			}
@@ -4932,7 +4932,7 @@ func checkColumnNotNull(input *RuleHandlerInput) error {
 	case *ast.CreateTableStmt:
 		for _, col := range stmt.Cols {
 			ok := util.IsAllInOptions(col.Options, ast.ColumnOptionNotNull)
-			if !ok {
+			if !ok && !isBlob(col) {
 				notNullColumns = append(notNullColumns, col.Name.OrigColName())
 			}
 		}
@@ -4942,6 +4942,17 @@ func checkColumnNotNull(input *RuleHandlerInput) error {
 		addResult(input.Res, input.Rule, input.Rule.Name, notNullColString)
 	}
 	return nil
+}
+
+func isBlob(columnDef *ast.ColumnDef) bool {
+	if columnDef.Tp == nil {
+		return false
+	}
+	switch columnDef.Tp.Tp {
+	case mysql.TypeBlob, mysql.TypeMediumBlob, mysql.TypeTinyBlob, mysql.TypeLongBlob:
+		return true
+	}
+	return false
 }
 
 func checkIndexSelectivity(input *RuleHandlerInput) error {
