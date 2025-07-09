@@ -1771,7 +1771,7 @@ func checkIndex(input *RuleHandlerInput) error {
 				singleConstraint.Column = append(singleConstraint.Column, key.Column.Name.L)
 				singleIndexCounter[key.Column.Name.L]++
 			}
-			if constraint.Name != "" {
+			if constraint.Tp != ast.ConstraintCheck {
 				newIndexs = append(newIndexs, singleConstraint)
 			}
 		}
