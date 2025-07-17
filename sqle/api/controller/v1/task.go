@@ -34,13 +34,14 @@ import (
 var ErrTooManyDataSource = errors.New(errors.DataConflict, fmt.Errorf("the number of data sources must be less than %v", MaximumDataSourceNum))
 
 type CreateAuditTaskReqV1 struct {
-	InstanceName    string  `json:"instance_name" form:"instance_name" example:"inst_1" valid:"required"`
-	InstanceSchema  string  `json:"instance_schema" form:"instance_schema" example:"db1"`
-	Sql             string  `json:"sql" form:"sql" example:"alter table tb1 drop columns c1"`
-	ExecMode        string  `json:"exec_mode" form:"exec_mode" enums:"sql_file,sqls"`
-	EnableBackup    bool    `json:"enable_backup" form:"enable_backup"`
-	BackupMaxRows   *uint64 `json:"backup_max_rows,omitempty" form:"backup_max_rows"`
-	FileOrderMethod string  `json:"file_order_method" form:"file_order_method"`
+	InstanceName     string  `json:"instance_name" form:"instance_name" example:"inst_1" valid:"required"`
+	InstanceSchema   string  `json:"instance_schema" form:"instance_schema" example:"db1"`
+	Sql              string  `json:"sql" form:"sql" example:"alter table tb1 drop columns c1"`
+	ExecMode         string  `json:"exec_mode" form:"exec_mode" enums:"sql_file,sqls"`
+	EnableBackup     bool    `json:"enable_backup" form:"enable_backup"`
+	BackupMaxRows    *uint64 `json:"backup_max_rows,omitempty" form:"backup_max_rows"`
+	FileOrderMethod  string  `json:"file_order_method" form:"file_order_method"`
+	RuleTemplateName *string `json:"rule_template_name" form:"rule_template_name"`
 }
 
 type GetAuditTaskResV1 struct {
@@ -295,6 +296,7 @@ func getFileHeaderFromContext(c echo.Context) (fileHeader *multipart.FileHeader,
 // @Param enable_backup formData bool false "enable backup"
 // @Param backup_max_rows formData uint64 false "backup max rows"
 // @Param sql formData string false "sqls for audit"
+// @Param rule_template_name formData string false "rule template name"
 // @Param input_sql_file formData file false "input SQL file"
 // @Param input_mybatis_xml_file formData file false "input mybatis XML file"
 // @Param input_zip_file formData file false "input ZIP file"
@@ -344,6 +346,17 @@ func CreateAndAuditTask(c echo.Context) error {
 	task, err := buildOnlineTaskForAudit(c, s, uint64(user.ID), req.InstanceName, req.InstanceSchema, projectUid, sqls)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
+	}
+	if req.RuleTemplateName != nil && *req.RuleTemplateName != "" {
+		ruleTemplate, exist, err := s.GetGlobalAndProjectRuleTemplateByNameAndProjectId(*req.RuleTemplateName, projectUid)
+		if err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+		if !exist {
+			return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist, fmt.Errorf("rule template %v not exist", *req.RuleTemplateName)))
+		}
+		task.RuleTemplate = ruleTemplate
+		task.RuleTemplateID = ruleTemplate.ID
 	}
 	// if task instance is not nil, gorm will update instance when save task.
 	tmpInst := *task.Instance
