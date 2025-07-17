@@ -6219,6 +6219,209 @@ var doc = `{
                 }
             }
         },
+        "/v1/projects/{project_name}/sql_performance_insights": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get sql manage sql performance insights",
+                "tags": [
+                    "SqlInsight"
+                ],
+                "summary": "获取SQL管控SQL性能洞察图表数据",
+                "operationId": "GetSqlPerformanceInsights",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "comprehensive_trend",
+                            "slow_sql_trend",
+                            "top_sql_trend",
+                            "active_session_trend"
+                        ],
+                        "type": "string",
+                        "description": "metric name",
+                        "name": "metric_name",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "start time",
+                        "name": "start_time",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "end time",
+                        "name": "end_time",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "instance_name",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSqlPerformanceInsightsResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/sql_performance_insights/related_sql": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get related SQL for the selected time range in SQL performance insights",
+                "tags": [
+                    "SqlInsight"
+                ],
+                "summary": "获取sql洞察 时间选区 的关联SQL",
+                "operationId": "GetSqlPerformanceInsightsRelatedSQL",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "instance_name",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "start time",
+                        "name": "start_time",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "end time",
+                        "name": "end_time",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "workflow",
+                            "sql_manage",
+                            "workbench"
+                        ],
+                        "type": "string",
+                        "description": "filter by SQL source",
+                        "name": "filter_source",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "order by field",
+                        "name": "order_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "is ascending order",
+                        "name": "is_asc",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "size of per page",
+                        "name": "page_size",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSqlPerformanceInsightsRelatedSQLResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/sql_performance_insights/related_sql/related_transaction": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Get related transaction for the selected SQL in SQL performance insights",
+                "tags": [
+                    "SqlInsight"
+                ],
+                "summary": "获取sql洞察 相关SQL中具体一条SQL 的关联事务",
+                "operationId": "GetSqlPerformanceInsightsRelatedTransaction",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance name",
+                        "name": "instance_name",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "sql id",
+                        "name": "sql_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSqlPerformanceInsightsRelatedTransactionResp"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{project_name}/sql_versions": {
             "get": {
                 "security": [
@@ -13479,6 +13682,9 @@ var doc = `{
                         }
                     }
                 },
+                "status": {
+                    "type": "integer"
+                },
                 "x": {
                     "type": "string"
                 },
@@ -16396,6 +16602,62 @@ var doc = `{
                 }
             }
         },
+        "v1.GetSqlPerformanceInsightsRelatedSQLResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.RelatedSQLInfo"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.GetSqlPerformanceInsightsRelatedTransactionResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.RelatedTransactionInfo"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetSqlPerformanceInsightsResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.SqlPerformanceInsights"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetSqlVersionDetailResV1": {
             "type": "object",
             "properties": {
@@ -17451,6 +17713,20 @@ var doc = `{
                 }
             }
         },
+        "v1.Line": {
+            "type": "object",
+            "properties": {
+                "line_name": {
+                    "type": "string"
+                },
+                "points": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ChartPoint"
+                    }
+                }
+            }
+        },
         "v1.ListTableBySchemaResV1": {
             "type": "object",
             "properties": {
@@ -17991,6 +18267,71 @@ var doc = `{
             "properties": {
                 "reason": {
                     "type": "string"
+                }
+            }
+        },
+        "v1.RelatedSQLInfo": {
+            "type": "object",
+            "properties": {
+                "execute_time_avg": {
+                    "description": "平均执行时间(s)",
+                    "type": "number"
+                },
+                "execute_time_max": {
+                    "description": "最大执行时间(s)",
+                    "type": "number"
+                },
+                "execute_time_min": {
+                    "description": "最小执行时间(s)",
+                    "type": "number"
+                },
+                "execute_time_sum": {
+                    "description": "总执行时间(s)",
+                    "type": "number"
+                },
+                "execution_time_trend": {
+                    "description": "SQL 趋势图表",
+                    "type": "object",
+                    "$ref": "#/definitions/v1.SqlAnalysisScatterChart"
+                },
+                "lock_wait_time": {
+                    "description": "锁等待时间(s)",
+                    "type": "number"
+                },
+                "source": {
+                    "type": "string",
+                    "enum": [
+                        "workflow",
+                        "sql_manage"
+                    ]
+                },
+                "sql_fingerprint": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.RelatedTransactionInfo": {
+            "type": "object",
+            "properties": {
+                "related_sql_info": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.TransactionSQL"
+                    }
+                },
+                "transaction_info": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TransactionInfo"
+                },
+                "transaction_lock_info": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.TransactionLockInfo"
+                    }
+                },
+                "transaction_timeline": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.TransactionTimeline"
                 }
             }
         },
@@ -18660,6 +19001,35 @@ var doc = `{
                 }
             }
         },
+        "v1.ScatterPoint": {
+            "type": "object",
+            "properties": {
+                "execute_time": {
+                    "type": "number"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "info": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "is_in_transaction": {
+                    "type": "boolean"
+                },
+                "sql": {
+                    "type": "string"
+                },
+                "time": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.ScheduleTaskDefaultOption": {
             "type": "object",
             "properties": {
@@ -18784,6 +19154,26 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v1.TableMeta"
                     }
+                }
+            }
+        },
+        "v1.SqlAnalysisScatterChart": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "points": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ScatterPoint"
+                    }
+                },
+                "x_info": {
+                    "type": "string"
+                },
+                "y_info": {
+                    "type": "string"
                 }
             }
         },
@@ -18988,6 +19378,32 @@ var doc = `{
                         "EPIC",
                         "SUB_TASK"
                     ]
+                }
+            }
+        },
+        "v1.SqlPerformanceInsights": {
+            "type": "object",
+            "properties": {
+                "lines": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.Line"
+                    }
+                },
+                "message": {
+                    "type": "string"
+                },
+                "task_enable": {
+                    "type": "boolean"
+                },
+                "task_support": {
+                    "type": "boolean"
+                },
+                "x_info": {
+                    "type": "string"
+                },
+                "y_info": {
+                    "type": "string"
                 }
             }
         },
@@ -19511,6 +19927,116 @@ var doc = `{
                 },
                 "minute": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.TransactionInfo": {
+            "type": "object",
+            "properties": {
+                "lock_type": {
+                    "type": "string",
+                    "enum": [
+                        "SHARED",
+                        "EXCLUSIVE",
+                        "INTENTION_SHARED",
+                        "INTENTION_EXCLUSIVE",
+                        "SHARED_INTENTION_EXCLUSIVE",
+                        "ROW_LOCK",
+                        "TABLE_LOCK",
+                        "METADATA_LOCK"
+                    ]
+                },
+                "transaction_duration": {
+                    "type": "number"
+                },
+                "transaction_end_time": {
+                    "type": "string"
+                },
+                "transaction_id": {
+                    "type": "string"
+                },
+                "transaction_start_time": {
+                    "type": "string"
+                },
+                "transaction_state": {
+                    "type": "string",
+                    "enum": [
+                        "RUNNING",
+                        "COMPLETED"
+                    ]
+                }
+            }
+        },
+        "v1.TransactionLockInfo": {
+            "type": "object",
+            "properties": {
+                "create_lock_sql": {
+                    "type": "string"
+                },
+                "lock_type": {
+                    "type": "string",
+                    "enum": [
+                        "SHARED",
+                        "EXCLUSIVE",
+                        "INTENTION_SHARED",
+                        "INTENTION_EXCLUSIVE",
+                        "SHARED_INTENTION_EXCLUSIVE",
+                        "ROW_LOCK",
+                        "TABLE_LOCK",
+                        "METADATA_LOCK"
+                    ]
+                },
+                "table_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.TransactionSQL": {
+            "type": "object",
+            "properties": {
+                "execute_duration": {
+                    "type": "number"
+                },
+                "lock_type": {
+                    "type": "string",
+                    "enum": [
+                        "SHARED",
+                        "EXCLUSIVE",
+                        "INTENTION_SHARED",
+                        "INTENTION_EXCLUSIVE",
+                        "SHARED_INTENTION_EXCLUSIVE",
+                        "ROW_LOCK",
+                        "TABLE_LOCK",
+                        "METADATA_LOCK"
+                    ]
+                },
+                "sql": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.TransactionTimeline": {
+            "type": "object",
+            "properties": {
+                "current_step_index": {
+                    "type": "integer"
+                },
+                "timeline": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.TransactionTimelineItem"
+                    }
+                }
+            }
+        },
+        "v1.TransactionTimelineItem": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "start_time": {
+                    "type": "string"
                 }
             }
         },
