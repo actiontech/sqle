@@ -7228,6 +7228,12 @@ var doc = `{
                         "in": "formData"
                     },
                     {
+                        "type": "string",
+                        "description": "rule template name",
+                        "name": "rule_template_name",
+                        "in": "formData"
+                    },
+                    {
                         "type": "file",
                         "description": "input SQL file",
                         "name": "input_sql_file",
@@ -13650,6 +13656,9 @@ var doc = `{
                 "instance_schema": {
                     "type": "string",
                     "example": "db1"
+                },
+                "rule_template_name": {
+                    "type": "string"
                 },
                 "sql": {
                     "type": "string",
