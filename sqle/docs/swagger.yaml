@@ -856,6 +856,8 @@ definitions:
       instance_schema:
         example: db1
         type: string
+      rule_template_name:
+        type: string
       sql:
         example: alter table tb1 drop columns c1
         type: string
@@ -11569,6 +11571,10 @@ paths:
       - description: sqls for audit
         in: formData
         name: sql
+        type: string
+      - description: rule template name
+        in: formData
+        name: rule_template_name
         type: string
       - description: input SQL file
         in: formData
