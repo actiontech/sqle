@@ -739,6 +739,8 @@ definitions:
             type: string
           type: object
         type: array
+      status:
+        type: integer
       x:
         type: string
       "y":
@@ -2742,6 +2744,45 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetSqlPerformanceInsightsRelatedSQLResp:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.RelatedSQLInfo'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_nums:
+        type: integer
+    type: object
+  v1.GetSqlPerformanceInsightsRelatedTransactionResp:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.RelatedTransactionInfo'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetSqlPerformanceInsightsResp:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.SqlPerformanceInsights'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetSqlVersionDetailResV1:
     properties:
       code:
@@ -3470,6 +3511,17 @@ definitions:
         $ref: '#/definitions/v1.LicenseUsageItem'
         type: object
     type: object
+  v1.Line:
+    properties:
+      line_name:
+        description: 线条名称
+        type: string
+      points:
+        description: 图表点数据
+        items:
+          $ref: '#/definitions/v1.ChartPoint'
+        type: array
+    type: object
   v1.ListTableBySchemaResV1:
     properties:
       code:
@@ -3833,6 +3885,56 @@ definitions:
     properties:
       reason:
         type: string
+    type: object
+  v1.RelatedSQLInfo:
+    properties:
+      execute_time_avg:
+        description: 平均执行时间(s)
+        type: number
+      execute_time_max:
+        description: 最大执行时间(s)
+        type: number
+      execute_time_min:
+        description: 最小执行时间(s)
+        type: number
+      execute_time_sum:
+        description: 总执行时间(s)
+        type: number
+      execution_time_trend:
+        $ref: '#/definitions/v1.SqlAnalysisScatterChart'
+        description: SQL 趋势图表
+        type: object
+      lock_wait_time:
+        description: 锁等待时间(s)
+        type: number
+      source:
+        enum:
+        - workflow
+        - sql_manage
+        type: string
+      sql_fingerprint:
+        type: string
+    type: object
+  v1.RelatedTransactionInfo:
+    properties:
+      related_sql_info:
+        description: 相关SQL列表
+        items:
+          $ref: '#/definitions/v1.TransactionSQL'
+        type: array
+      transaction_info:
+        $ref: '#/definitions/v1.TransactionInfo'
+        description: 事务信息
+        type: object
+      transaction_lock_info:
+        description: 事务锁信息
+        items:
+          $ref: '#/definitions/v1.TransactionLockInfo'
+        type: array
+      transaction_timeline:
+        $ref: '#/definitions/v1.TransactionTimeline'
+        description: 事务时间线
+        type: object
     type: object
   v1.ReleaseWorkflows:
     properties:
@@ -4287,6 +4389,31 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.ScatterPoint:
+    properties:
+      execute_time:
+        description: 执行时间
+        type: number
+      id:
+        description: SQL ID
+        type: integer
+      info:
+        description: 额外信息
+        items:
+          additionalProperties:
+            type: string
+          type: object
+        type: array
+      is_in_transaction:
+        description: 是否在事务中
+        type: boolean
+      sql:
+        description: SQL语句
+        type: string
+      time:
+        description: 时间点
+        type: string
+    type: object
   v1.ScheduleTaskDefaultOption:
     properties:
       default_selector:
@@ -4372,6 +4499,19 @@ definitions:
         items:
           $ref: '#/definitions/v1.TableMeta'
         type: array
+    type: object
+  v1.SqlAnalysisScatterChart:
+    properties:
+      message:
+        type: string
+      points:
+        items:
+          $ref: '#/definitions/v1.ScatterPoint'
+        type: array
+      x_info:
+        type: string
+      y_info:
+        type: string
     type: object
   v1.SqlAverageExecutionTime:
     properties:
@@ -4510,6 +4650,29 @@ definitions:
         - REQUIREMENT
         - EPIC
         - SUB_TASK
+        type: string
+    type: object
+  v1.SqlPerformanceInsights:
+    properties:
+      lines:
+        description: 图表线条数据
+        items:
+          $ref: '#/definitions/v1.Line'
+        type: array
+      message:
+        description: 提示信息
+        type: string
+      task_enable:
+        description: 是否启用任务
+        type: boolean
+      task_support:
+        description: 是否支持任务
+        type: boolean
+      x_info:
+        description: X轴信息
+        type: string
+      y_info:
+        description: Y轴信息
         type: string
     type: object
   v1.SqlVersionDetailResV1:
@@ -4860,6 +5023,101 @@ definitions:
         type: integer
       minute:
         type: integer
+    type: object
+  v1.TransactionInfo:
+    properties:
+      lock_type:
+        description: 锁类型
+        enum:
+        - SHARED
+        - EXCLUSIVE
+        - INTENTION_SHARED
+        - INTENTION_EXCLUSIVE
+        - SHARED_INTENTION_EXCLUSIVE
+        - ROW_LOCK
+        - TABLE_LOCK
+        - METADATA_LOCK
+        type: string
+      transaction_duration:
+        description: 事务持续时间
+        type: number
+      transaction_end_time:
+        description: 事务结束时间
+        type: string
+      transaction_id:
+        description: 事务ID
+        type: string
+      transaction_start_time:
+        description: 事务开始时间
+        type: string
+      transaction_state:
+        description: 事务状态
+        enum:
+        - RUNNING
+        - COMPLETED
+        type: string
+    type: object
+  v1.TransactionLockInfo:
+    properties:
+      create_lock_sql:
+        description: 创建锁的SQL语句
+        type: string
+      lock_type:
+        description: 锁类型
+        enum:
+        - SHARED
+        - EXCLUSIVE
+        - INTENTION_SHARED
+        - INTENTION_EXCLUSIVE
+        - SHARED_INTENTION_EXCLUSIVE
+        - ROW_LOCK
+        - TABLE_LOCK
+        - METADATA_LOCK
+        type: string
+      table_name:
+        description: 表名
+        type: string
+    type: object
+  v1.TransactionSQL:
+    properties:
+      execute_duration:
+        description: 执行时长
+        type: number
+      lock_type:
+        description: 锁类型
+        enum:
+        - SHARED
+        - EXCLUSIVE
+        - INTENTION_SHARED
+        - INTENTION_EXCLUSIVE
+        - SHARED_INTENTION_EXCLUSIVE
+        - ROW_LOCK
+        - TABLE_LOCK
+        - METADATA_LOCK
+        type: string
+      sql:
+        description: SQL语句
+        type: string
+    type: object
+  v1.TransactionTimeline:
+    properties:
+      current_step_index:
+        description: 当前步骤索引
+        type: integer
+      timeline:
+        description: 时间线项目列表
+        items:
+          $ref: '#/definitions/v1.TransactionTimelineItem'
+        type: array
+    type: object
+  v1.TransactionTimelineItem:
+    properties:
+      description:
+        description: 描述信息
+        type: string
+      start_time:
+        description: 开始时间
+        type: string
     type: object
   v1.TriggerAuditPlanResV1:
     properties:
@@ -10924,6 +11182,145 @@ paths:
       summary: 获取SQL优化语句详情
       tags:
       - sql_optimization
+  /v1/projects/{project_name}/sql_performance_insights:
+    get:
+      description: get sql manage sql performance insights
+      operationId: GetSqlPerformanceInsights
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: metric name
+        enum:
+        - comprehensive_trend
+        - slow_sql_trend
+        - top_sql_trend
+        - active_session_trend
+        in: query
+        name: metric_name
+        required: true
+        type: string
+      - description: start time
+        in: query
+        name: start_time
+        required: true
+        type: string
+      - description: end time
+        in: query
+        name: end_time
+        required: true
+        type: string
+      - description: instance id
+        in: query
+        name: instance_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetSqlPerformanceInsightsResp'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取SQL管控SQL性能洞察图表数据
+      tags:
+      - SqlInsight
+  /v1/projects/{project_name}/sql_performance_insights/related_sql:
+    get:
+      description: Get related SQL for the selected time range in SQL performance
+        insights
+      operationId: GetSqlPerformanceInsightsRelatedSQL
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: instance id
+        in: query
+        name: instance_id
+        required: true
+        type: string
+      - description: start time
+        in: query
+        name: start_time
+        required: true
+        type: string
+      - description: end time
+        in: query
+        name: end_time
+        required: true
+        type: string
+      - description: filter by SQL source
+        enum:
+        - workflow
+        - sql_manage
+        - workbench
+        in: query
+        name: filter_source
+        required: true
+        type: string
+      - description: order by field
+        in: query
+        name: order_by
+        type: string
+      - description: is ascending order
+        in: query
+        name: is_asc
+        type: boolean
+      - description: page index
+        in: query
+        name: page_index
+        required: true
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetSqlPerformanceInsightsRelatedSQLResp'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取sql洞察 时间选区 的关联SQL
+      tags:
+      - SqlInsight
+  /v1/projects/{project_name}/sql_performance_insights/related_sql/related_transaction:
+    get:
+      description: Get related transaction for the selected SQL in SQL performance
+        insights
+      operationId: GetSqlPerformanceInsightsRelatedTransaction
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: instance id
+        in: query
+        name: instance_id
+        required: true
+        type: string
+      - description: sql id
+        in: query
+        name: sql_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetSqlPerformanceInsightsRelatedTransactionResp'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取sql洞察 相关SQL中具体一条SQL 的关联事务
+      tags:
+      - SqlInsight
   /v1/projects/{project_name}/sql_versions:
     get:
       consumes:
