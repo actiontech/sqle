@@ -331,8 +331,9 @@ func ConvertAuditResultFromModelToDriver(mar *AuditResult) *driverV2.AuditResult
 
 type ExecuteSQL struct {
 	BaseSQL
-	AuditStatus  string       `json:"audit_status" gorm:"default:\"initialized\""`
-	AuditResults AuditResults `json:"audit_results" gorm:"type:json"`
+	SqlFingerprint string       `json:"sql_fingerprint" gorm:"index,length:255;type:longtext"`
+	AuditStatus    string       `json:"audit_status" gorm:"default:\"initialized\""`
+	AuditResults   AuditResults `json:"audit_results" gorm:"type:json"`
 	// AuditFingerprint generate from SQL and SQL audit result use MD5 hash algorithm,
 	// it used for deduplication in one audit task.
 	AuditFingerprint string `json:"audit_fingerprint" gorm:"index;type:char(32)"`

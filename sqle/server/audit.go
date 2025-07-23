@@ -205,6 +205,7 @@ func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHoo
 			executeSQL.AuditStatus = model.SQLAuditStatusFinished
 			executeSQL.AuditLevel = string(result.Level())
 			executeSQL.AuditFingerprint = utils.Md5String(string(append([]byte(result.Message()), []byte(node.Fingerprint)...)))
+			executeSQL.SqlFingerprint = node.Fingerprint
 			appendExecuteSqlResults(executeSQL, result)
 			if err := st.UpdateSqlWhitelistMatchedInfo(matchedWhitelistID, 1, time.Now()); err != nil {
 				l.Errorf("update sql whitelist matched info error: %v", err)
@@ -233,6 +234,7 @@ func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHoo
 			sql.AuditStatus = model.SQLAuditStatusFinished
 			sql.AuditLevel = string(results[i].Level())
 			sql.AuditFingerprint = utils.Md5String(string(append([]byte(results[i].Message()), []byte(nodes[i].Fingerprint)...)))
+			sql.SqlFingerprint = nodes[i].Fingerprint
 			appendExecuteSqlResults(sql, results[i])
 		}
 	}
