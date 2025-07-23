@@ -22508,6 +22508,12 @@ var doc = `{
                 "enable_backup": {
                     "type": "boolean"
                 },
+                "environment_tag_name": {
+                    "type": "string"
+                },
+                "environment_tag_uid": {
+                    "type": "string"
+                },
                 "host": {
                     "type": "string"
                 },
