@@ -45,6 +45,8 @@ type InstanceTipResV2 struct {
 	EnableBackup            bool     `json:"enable_backup"`
 	SupportedBackupStrategy []string `json:"supported_backup_strategy"  enums:"none,manual,reverse_sql,original_row"`
 	BackupMaxRows           uint64   `json:"backup_max_rows"`
+	EnvironmentTagName      string   `json:"environment_tag_name"`
+	EnvironmentTagUID       string   `json:"environment_tag_uid"`
 }
 
 // GetInstanceTips get instance tip list
@@ -124,6 +126,8 @@ func GetInstanceTips(c echo.Context) error {
 			EnableBackup:            inst.EnableBackup,
 			BackupMaxRows:           inst.BackupMaxRows,
 			SupportedBackupStrategy: svc.SupportedBackupStrategy(inst.DbType),
+			EnvironmentTagName:      inst.EnvironmentTagName,
+			EnvironmentTagUID:       inst.EnvironmentTagUID,
 		}
 		instanceTipsResV1 = append(instanceTipsResV1, instanceTipRes)
 	}
