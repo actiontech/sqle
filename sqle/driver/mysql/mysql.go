@@ -289,7 +289,7 @@ func (i *MysqlDriverImpl) Parse(ctx context.Context, sqlText string) ([]driverV2
 	ns := make([]driverV2.Node, len(nodes))
 	for idx := range nodes {
 		n := driverV2.Node{}
-		fingerprint, err := util.Fingerprint(nodes[idx].Text(), lowerCaseTableNames == "0")
+		fingerprint, err := util.FingerprintByParser(nodes[idx], lowerCaseTableNames == "0")
 		if err != nil {
 			return nil, err
 		}
