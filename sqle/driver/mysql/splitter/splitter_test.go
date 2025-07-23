@@ -1333,3 +1333,78 @@ GROUP BY column1;`,
 		})
 	}
 }
+
+// TestCaseStatementInBeginEndBlock 测试在 BEGIN...END 块中的 CASE 语句处理
+func TestCaseStatementInBeginEndBlock(t *testing.T) {
+	parser := NewSplitter()
+
+	testCases := []struct {
+		name     string
+		sql      string
+		expected int // 期望分割出的 SQL 语句数量
+	}{
+		{
+			name: "CASE statement with END CASE in procedure",
+			sql: `CREATE PROCEDURE test_proc()
+BEGIN
+    CASE 
+        WHEN 1 = 1 THEN 
+            SELECT 'one';
+        ELSE 
+            SELECT 'other';
+    END CASE;
+END;`,
+			expected: 1,
+		},
+		{
+			name: "CASE expression with END in procedure",
+			sql: `CREATE PROCEDURE test_proc()
+BEGIN
+    SELECT CASE 
+        WHEN 1 = 1 THEN 'one'
+        ELSE 'other'
+    END as result;
+END;`,
+			expected: 1,
+		},
+		{
+			name: "Mixed CASE statements in procedure",
+			sql: `CREATE PROCEDURE test_proc()
+BEGIN
+    CASE 
+        WHEN 1 = 1 THEN 
+            SELECT CASE WHEN 2 = 2 THEN 'nested' ELSE 'other' END;
+        ELSE 
+            SELECT 'other';
+    END CASE;
+END;`,
+			expected: 1,
+		},
+		{
+			name: "Multiple statements with CASE",
+			sql: `CREATE PROCEDURE test_proc()
+BEGIN
+    SELECT CASE WHEN 1 = 1 THEN 'one' ELSE 'other' END;
+END;
+SELECT * FROM users;`,
+			expected: 2,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			stmts, err := parser.ParseSqlText(tc.sql)
+			if err != nil {
+				t.Errorf("解析失败: %v", err)
+				return
+			}
+
+			if len(stmts) != tc.expected {
+				t.Errorf("期望分割出 %d 个语句，实际得到 %d 个", tc.expected, len(stmts))
+				for i, stmt := range stmts {
+					t.Logf("语句 %d: %s", i+1, stmt.Text())
+				}
+			}
+		})
+	}
+}

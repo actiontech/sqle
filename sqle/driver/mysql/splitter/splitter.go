@@ -170,14 +170,37 @@ func (s *splitter) skipBeginEndBlock(token *parser.Token) *parser.Token {
 	// 如果BEGIN后面就是分隔符，那么就直接return
 	for len(blockStack) > 0 {
 		token = s.scanner.NextToken()
+		currentOffset := s.scanner.Offset()
 		tokenIndex++
 		if s.isBeginQuit(token, tokenIndex) {
 			return token
 		}
+
+		// 检查是否是新的嵌套块的开始
+		var matchedBlock Block
 		for _, block := range allBlocks {
 			if block.MatchBegin(token) {
-				blockStack = append(blockStack, block)
+				matchedBlock = block
 				break
+			}
+		}
+		if matchedBlock != nil {
+			// 如果匹配到的是 IF 块，需要向前看一个 token 来确定它是一个控制流语句还是一个函数。
+			if _, ok := matchedBlock.(IfEndIfBlock); ok {
+				// 向前看一个 token
+				nextToken := s.scanner.NextToken()
+				// **非常重要**：将扫描器位置恢复，以便后续逻辑可以重新处理这个 token
+				s.scanner.SetCursor(currentOffset)
+
+				if nextToken.Ident() == "(" {
+					// 如果 IF 后面是 '('，说明是 IF() 函数，而不是块语句，继续处理下一个 token。
+				} else {
+					// 否则，它是一个真正的 IF 块语句，将其压入堆栈。
+					blockStack = append(blockStack, matchedBlock)
+				}
+			} else {
+				// 对于其他类型的块，直接压入堆栈
+				blockStack = append(blockStack, matchedBlock)
 			}
 		}
 		/*
