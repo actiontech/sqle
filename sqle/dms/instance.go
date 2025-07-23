@@ -149,6 +149,9 @@ func convertInstance(instance *dmsV2.ListDBService) (*model.Instance, error) {
 	}, nil
 }
 
+func GetInstances(ctx context.Context, req dmsV2.ListDBServiceReq) ([]*model.Instance, error) {
+	return getInstances(ctx, req)
+}
 func GetInstancesInProject(ctx context.Context, projectUid string) ([]*model.Instance, error) {
 	return getInstances(ctx, dmsV2.ListDBServiceReq{
 		ProjectUid: projectUid,
