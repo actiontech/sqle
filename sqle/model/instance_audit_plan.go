@@ -814,3 +814,25 @@ func (s *Storage) UpdateManageSQLProcessByManageIDs(ids []uint, attrs map[string
 	err := s.db.Model(SQLManageRecordProcess{}).Where("sql_manage_record_id IN (?)", ids).Updates(attrs).Error
 	return errors.New(errors.ConnectStorageError, err)
 }
+
+func (s *Storage) IsAuditPlanEnabledOnInstance(instanceID string, auditPlanType string) (bool, error) {
+	var count int
+	query := fmt.Sprintf(`
+select
+	count(1)
+from
+	instance_audit_plans iap
+join audit_plans_v2 apv 
+on
+	apv.instance_audit_plan_id = iap.id
+where
+	iap.instance_id = ?
+	and iap.active_status = '%s'
+	and apv.type = ?
+	and apv.active_status = '%s'`, ActiveStatusNormal, ActiveStatusNormal)
+	err := s.db.Raw(query, instanceID, auditPlanType).Scan(&count).Error
+	if err != nil {
+		return false, errors.ConnectStorageErrWrapper(err)
+	}
+	return count > 0, nil
+}
