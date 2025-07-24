@@ -27,6 +27,9 @@ const (
 )
 
 func FillingSQLWithParamMarker(sqlContent string, task *model.Task) (string, error) {
+	if task.DBType != v2.DriverTypeMySQL {
+		return sqlContent, fmt.Errorf("fill sql with param marker unsupported database type: %s, only MySQL is supported", task.DBType)
+	}
 	l := log.NewEntry()
 	driver := mysql.MysqlDriverImpl{}
 	nodes, err := driver.ParseSql(sqlContent)
