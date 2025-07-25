@@ -183,6 +183,7 @@ var autoMigrateList = []interface{}{
 	&Tag{},
 	&Knowledge{},
 	&DataLock{},
+	&SQLManageRawSQL{},
 }
 
 func (s *Storage) AutoMigrate() error {

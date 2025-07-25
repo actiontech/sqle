@@ -836,3 +836,27 @@ where
 	}
 	return count > 0, nil
 }
+
+type SQLManageRawSQL struct {
+	Model
+
+	Source         string    `json:"source" gorm:"type:varchar(255);index:idx_db_source_exec_time,priority:2"`
+	SourceId       string    `json:"source_id" gorm:"type:varchar(255)"`
+	ProjectId      string    `json:"project_id" gorm:"type:varchar(255)"`
+	InstanceID     string    `json:"instance_id" gorm:"index:idx_db_source_exec_time,priority:1;type:varchar(255)"`
+	SchemaName     string    `json:"schema_name" gorm:"type:varchar(255)"`
+	SqlFingerprint string    `json:"sql_fingerprint" gorm:"index,length:255;type:longtext;not null"`
+	SqlText        string    `json:"sql_text" gorm:"type:longtext;not null"`
+	Info           JSON      `gorm:"type:json"` // 慢日志的 执行时间等特殊属性
+	SQLID          string    `json:"sql_id" gorm:"type:varchar(255);not null"`
+	SqlExecTime    time.Time `json:"sql_exec_time" gorm:"column:sql_exec_time;index:idx_db_source_exec_time,priority:3"`
+}
+
+func (s *Storage) CreateSqlManageRawSQLs(sqls []*SQLManageRawSQL) error {
+	return s.createSqlManageRawSQLs(sqls)
+}
+
+func (s *Storage) RemoveExpiredSQLFromRaw(expiredTime time.Time) (int64, error) {
+	result := s.db.Unscoped().Where("sql_exec_time < ?", expiredTime).Delete(&SQLManageRawSQL{})
+	return result.RowsAffected, result.Error
+}
