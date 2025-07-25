@@ -91,7 +91,9 @@ func (at *MySQLProcessListTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan
 		return nil, nil
 	}
 	cache := NewSQLV2Cache()
+	rawSQLs := make([]*model.SQLManageRawSQL, 0, len(res))
 	sqlMinSecond := ap.Params.GetParam(paramKeySQLMinSecond).Int()
+
 	for i := range res {
 		if at.filterFullProcessList(res[i], sqlMinSecond, db.Db.GetConnectionID()) {
 			continue
@@ -125,11 +127,17 @@ func (at *MySQLProcessListTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan
 
 		sqlV2.Info = info
 		sqlV2.GenSQLId()
+		rawSQLs = append(rawSQLs, ConvertSQLV2ToMangerRawSQL(sqlV2))
 		if err = at.AggregateSQL(cache, sqlV2); err != nil {
 			logger.Warnf("aggregate sql failed error : %v", err)
 			continue
 		}
 	}
+
+	if err := model.GetStorage().CreateSqlManageRawSQLs(rawSQLs); err != nil {
+		logger.Errorf("MySQLProcessListTaskV2 create sql manage raw sql failed, error: %v", err)
+	}
+
 	return cache.GetSQLs(), nil
 }
 
