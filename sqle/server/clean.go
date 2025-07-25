@@ -30,6 +30,7 @@ func (j *CleanJob) job(entry *logrus.Entry) {
 	// j.CleanExpiredWorkflows(entry) /* 不再自动销毁工单（目前没有使用场景）*/
 	j.CleanExpiredTasks(entry)
 	j.CleanExpiredOperationLog(entry)
+	j.CleanExpiredSqlManageRawSql(entry)
 }
 
 func (j *CleanJob) CleanExpiredWorkflows(entry *logrus.Entry) {
@@ -102,6 +103,27 @@ func (j *CleanJob) CleanExpiredOperationLog(entry *logrus.Entry) {
 		}
 
 		entry.Infof("delete expired operation record succeeded, count: %d id: %s", len(idList), strings.Join(idList, ","))
+	}
+}
+
+func (j *CleanJob) CleanExpiredSqlManageRawSql(entry *logrus.Entry) {
+	st := model.GetStorage()
+
+	expiredHours, err := st.GetSqlManageRawSqlExpiredHoursOrDefault()
+	if err != nil {
+		entry.Errorf("get sql manage raw sql expired hours error: %v", err)
+		return
+	}
+	expiredTime := time.Now().Add(time.Duration(-expiredHours) * time.Hour)
+
+	rowsAffected, err := st.RemoveExpiredSQLFromRaw(expiredTime)
+	if err != nil {
+		entry.Errorf("clean sql manage raw sql error: %s", err)
+		return
+	}
+
+	if rowsAffected > 0 {
+		entry.Infof("clean sql manage raw sql before %s success, count: %d", expiredTime.Format(time.RFC3339), rowsAffected)
 	}
 }
 
