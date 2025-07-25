@@ -136,7 +136,7 @@ func ExecuteWorkflow(workflow *model.Workflow, needExecTaskIdToUserId map[uint]s
 	if err != nil {
 		return nil, err
 	}
-	workflowStatusChan := make(chan string)
+	workflowStatusChan := make(chan string, 1)
 	var lock sync.Mutex
 	for taskId := range needExecTaskIdToUserId {
 		id := taskId
