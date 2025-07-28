@@ -14,6 +14,7 @@ import (
 type Meta struct {
 	Type         string        `json:"audit_plan_type"`
 	Desc         *i18n.Message `json:"audit_plan_type_desc"`
+	Tips         *i18n.Message `json:"audit_plan_type_tips"`
 	InstanceType string        `json:"instance_type"`
 	// instanceId means gen `enums` by db conn, default is a constant definition
 	Params             func(instanceId ...string) params.Params `json:"audit_plan_params,omitempty"`
@@ -26,6 +27,7 @@ type Meta struct {
 type MetaBuilder struct {
 	Type          string
 	Desc          *i18n.Message
+	Tips          *i18n.Message
 	TaskHandlerFn func() interface{}
 }
 
@@ -137,6 +139,7 @@ func buildMeta(b MetaBuilder) Meta {
 	return Meta{
 		Type:         b.Type,
 		Desc:         b.Desc,
+		Tips:         b.Tips,
 		InstanceType: taskMeta.InstanceType(),
 		Params: func(instanceId ...string) params.Params {
 			return taskMeta.Params(instanceId...)
