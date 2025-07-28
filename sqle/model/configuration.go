@@ -14,6 +14,7 @@ import (
 
 const globalConfigurationTablePrefix = "global_configuration"
 const (
+	SystemVariableSqlManageRawExpiredHours    = "system_variable_sql_manage_raw_expired_hours"
 	SystemVariableWorkflowExpiredHours        = "system_variable_workflow_expired_hours"
 	SystemVariableSqleUrl                     = "system_variable_sqle_url"
 	SystemVariableOperationRecordExpiredHours = "system_variable_operation_record_expired_hours"
@@ -22,6 +23,7 @@ const (
 )
 
 const (
+	DefaultSqlManageRawExpiredHours    = 30 * 24
 	DefaultOperationRecordExpiredHours = 90 * 24
 	DefaultCbOperationLogsExpiredHours = 90 * 24
 )
@@ -121,6 +123,25 @@ func (s *Storage) GetWorkflowExpiredHoursOrDefault() (int64, error) {
 	}
 
 	return 30 * 24, nil
+}
+func (s *Storage) GetSqlManageRawSqlExpiredHoursOrDefault() (int64, error) {
+	var svs []SystemVariable
+	err := s.db.Find(&svs).Error
+	if err != nil {
+		return 0, errors.New(errors.ConnectStorageError, err)
+	}
+
+	for _, sv := range svs {
+		if sv.Key == SystemVariableSqlManageRawExpiredHours {
+			expiredHs, err := strconv.ParseInt(sv.Value, 10, 64)
+			if err != nil {
+				return 0, err
+			}
+			return expiredHs, nil
+		}
+	}
+
+	return DefaultSqlManageRawExpiredHours, nil
 }
 
 const (

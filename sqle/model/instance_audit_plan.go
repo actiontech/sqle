@@ -814,3 +814,49 @@ func (s *Storage) UpdateManageSQLProcessByManageIDs(ids []uint, attrs map[string
 	err := s.db.Model(SQLManageRecordProcess{}).Where("sql_manage_record_id IN (?)", ids).Updates(attrs).Error
 	return errors.New(errors.ConnectStorageError, err)
 }
+
+func (s *Storage) IsAuditPlanEnabledOnInstance(instanceID string, auditPlanType string) (bool, error) {
+	var count int
+	query := fmt.Sprintf(`
+select
+	count(1)
+from
+	instance_audit_plans iap
+join audit_plans_v2 apv 
+on
+	apv.instance_audit_plan_id = iap.id
+where
+	iap.instance_id = ?
+	and iap.active_status = '%s'
+	and apv.type = ?
+	and apv.active_status = '%s'`, ActiveStatusNormal, ActiveStatusNormal)
+	err := s.db.Raw(query, instanceID, auditPlanType).Scan(&count).Error
+	if err != nil {
+		return false, errors.ConnectStorageErrWrapper(err)
+	}
+	return count > 0, nil
+}
+
+type SQLManageRawSQL struct {
+	Model
+
+	Source         string    `json:"source" gorm:"type:varchar(255);index:idx_db_source_exec_time,priority:2"`
+	SourceId       string    `json:"source_id" gorm:"type:varchar(255)"`
+	ProjectId      string    `json:"project_id" gorm:"type:varchar(255)"`
+	InstanceID     string    `json:"instance_id" gorm:"index:idx_db_source_exec_time,priority:1;type:varchar(255)"`
+	SchemaName     string    `json:"schema_name" gorm:"type:varchar(255)"`
+	SqlFingerprint string    `json:"sql_fingerprint" gorm:"index,length:255;type:longtext;not null"`
+	SqlText        string    `json:"sql_text" gorm:"type:longtext;not null"`
+	Info           JSON      `gorm:"type:json"` // 慢日志的 执行时间等特殊属性
+	SQLID          string    `json:"sql_id" gorm:"type:varchar(255);not null"`
+	SqlExecTime    time.Time `json:"sql_exec_time" gorm:"column:sql_exec_time;index:idx_db_source_exec_time,priority:3"`
+}
+
+func (s *Storage) CreateSqlManageRawSQLs(sqls []*SQLManageRawSQL) error {
+	return s.createSqlManageRawSQLs(sqls)
+}
+
+func (s *Storage) RemoveExpiredSQLFromRaw(expiredTime time.Time) (int64, error) {
+	result := s.db.Unscoped().Where("sql_exec_time < ?", expiredTime).Delete(&SQLManageRawSQL{})
+	return result.RowsAffected, result.Error
+}
