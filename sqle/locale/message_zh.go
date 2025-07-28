@@ -197,7 +197,7 @@ var (
 	OprDelGlobalRuleTemplateWithName  = &i18n.Message{ID: "OprDelGlobalRuleTemplateWithName", Other: "删除全局规则模板，模板名：%v"}
 
 	OprAddAuditPlanWithName  = &i18n.Message{ID: "OprAddAuditPlanWithName", Other: "创建智能扫描任务，任务名：%v"}
-	OprEditAuditPlanWithName = &i18n.Message{ID: "OprDelAuditPlanWithName", Other: "编辑智能扫描任务，任务名：%v"}
+	OprEditAuditPlanWithName = &i18n.Message{ID: "OprEditAuditPlanWithName", Other: "编辑智能扫描任务，任务名：%v"}
 	OprDelAuditPlanWithName  = &i18n.Message{ID: "OprDelAuditPlanWithName", Other: "删除智能扫描任务，任务名：%v"}
 
 	OprAddSchedulingWorkflowWithNameAndDB = &i18n.Message{ID: "OprAddSchedulingWorkflowWithNameAndDB", Other: "设置定时上线，工单名称：%v, 数据源名: %v"}
@@ -382,6 +382,10 @@ var (
 	ApMetaPostgreSQLTopSQL      = &i18n.Message{ID: "ApMetaPostgreSQLTopSQL", Other: "TOP SQL"}
 	ApMetricQueryTimeAvg        = &i18n.Message{ID: "ApMetricQueryTimeAvg", Other: "平均查询时间(s)"}
 	ApMetricRowExaminedAvg      = &i18n.Message{ID: "ApMetricRowExaminedAvg", Other: "平均扫描行数"}
+	ApMetaPerformanceCollect    = &i18n.Message{ID: "ApMetaPerformanceCollect", Other: "性能指标采集"}
+	ApMetaCollectTime           = &i18n.Message{ID: "ApMetaCollectTime", Other: "采集时间"}
+	ApMetaThreadsConnected      = &i18n.Message{ID: "ApMetaThreadsConnected", Other: "线程数"}
+	ApMetaQPS                   = &i18n.Message{ID: "ApMetaQueries", Other: "QPS"}
 
 	ApPriorityHigh = &i18n.Message{ID: "ApPriorityHigh", Other: "高优先级"}
 
