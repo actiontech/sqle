@@ -30,19 +30,20 @@ type MetaBuilder struct {
 }
 
 const (
-	TypeDefault                = "default"
-	TypeMySQLSlowLog           = scannerCmd.TypeMySQLSlowLog
-	TypeMySQLMybatis           = scannerCmd.TypeMySQLMybatis
-	TypeMySQLSchemaMeta        = "mysql_schema_meta"
-	TypeMySQLProcesslist       = "mysql_processlist"
-	TypeAliRdsMySQLSlowLog     = "ali_rds_mysql_slow_log"
-	TypeAliRdsMySQLAuditLog    = "ali_rds_mysql_audit_log"
-	TypeHuaweiRdsMySQLSlowLog  = "huawei_rds_mysql_slow_log"
-	TypeOracleTopSQL           = "oracle_top_sql"
-	TypeAllAppExtract          = "all_app_extract"
-	TypeBaiduRdsMySQLSlowLog   = "baidu_rds_mysql_slow_log"
-	TypeTDMySQLDistributedLock = "tdsql_for_innodb_distributed_lock"
-	TypeSQLFile                = scannerCmd.TypeSQLFile
+	TypeDefault                 = "default"
+	TypeMySQLSlowLog            = scannerCmd.TypeMySQLSlowLog
+	TypeMySQLMybatis            = scannerCmd.TypeMySQLMybatis
+	TypeMySQLSchemaMeta         = "mysql_schema_meta"
+	TypeMySQLProcesslist        = "mysql_processlist"
+	TypeMySQLPerformanceCollect = "mysql_performance_collect"
+	TypeAliRdsMySQLSlowLog      = "ali_rds_mysql_slow_log"
+	TypeAliRdsMySQLAuditLog     = "ali_rds_mysql_audit_log"
+	TypeHuaweiRdsMySQLSlowLog   = "huawei_rds_mysql_slow_log"
+	TypeOracleTopSQL            = "oracle_top_sql"
+	TypeAllAppExtract           = "all_app_extract"
+	TypeBaiduRdsMySQLSlowLog    = "baidu_rds_mysql_slow_log"
+	TypeTDMySQLDistributedLock  = "tdsql_for_innodb_distributed_lock"
+	TypeSQLFile                 = scannerCmd.TypeSQLFile
 )
 
 const (
