@@ -3,6 +3,7 @@ package auditplan
 import (
 	"encoding/json"
 	"strconv"
+	"time"
 
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/utils"
@@ -141,5 +142,26 @@ func ConvertSQLV2ToMangerSQLQueue(sql *SQLV2) *model.SQLManageQueue {
 		SqlFingerprint: sql.Fingerprint,
 		SqlText:        sql.SQLContent,
 		Info:           data,
+	}
+}
+
+func ConvertSQLV2ToMangerRawSQL(sql *SQLV2) *model.SQLManageRawSQL {
+	data, _ := json.Marshal(sql.Info.ToMap()) // todo: 错误处理
+	execTimeStr := sql.Info.Get(MetricNameLastReceiveTimestamp).String()
+	execTime, err := time.Parse(time.RFC3339, execTimeStr)
+	if err != nil {
+		execTime = time.Now()
+	}
+	return &model.SQLManageRawSQL{
+		Source:         sql.Source,
+		SourceId:       sql.SourceId,
+		ProjectId:      sql.ProjectId,
+		InstanceID:     sql.InstanceID,
+		SchemaName:     sql.SchemaName,
+		SqlFingerprint: sql.Fingerprint,
+		SqlText:        sql.SQLContent,
+		Info:           data,
+		SQLID:          sql.SQLId,
+		SqlExecTime:    execTime,
 	}
 }
