@@ -134,7 +134,7 @@ func (at *MySQLProcessListTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan
 		}
 	}
 
-	if err := model.GetStorage().CreateSqlManageRawSQLs(rawSQLs); err != nil {
+	if err := persist.CreateSqlManageRawSQLs(rawSQLs); err != nil {
 		logger.Errorf("MySQLProcessListTaskV2 create sql manage raw sql failed, error: %v", err)
 	}
 
