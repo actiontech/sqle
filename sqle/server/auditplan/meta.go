@@ -14,6 +14,7 @@ import (
 type Meta struct {
 	Type         string        `json:"audit_plan_type"`
 	Desc         *i18n.Message `json:"audit_plan_type_desc"`
+	Tips         *i18n.Message `json:"audit_plan_type_tips"`
 	InstanceType string        `json:"instance_type"`
 	// instanceId means gen `enums` by db conn, default is a constant definition
 	Params             func(instanceId ...string) params.Params `json:"audit_plan_params,omitempty"`
@@ -26,23 +27,25 @@ type Meta struct {
 type MetaBuilder struct {
 	Type          string
 	Desc          *i18n.Message
+	Tips          *i18n.Message
 	TaskHandlerFn func() interface{}
 }
 
 const (
-	TypeDefault                = "default"
-	TypeMySQLSlowLog           = scannerCmd.TypeMySQLSlowLog
-	TypeMySQLMybatis           = scannerCmd.TypeMySQLMybatis
-	TypeMySQLSchemaMeta        = "mysql_schema_meta"
-	TypeMySQLProcesslist       = "mysql_processlist"
-	TypeAliRdsMySQLSlowLog     = "ali_rds_mysql_slow_log"
-	TypeAliRdsMySQLAuditLog    = "ali_rds_mysql_audit_log"
-	TypeHuaweiRdsMySQLSlowLog  = "huawei_rds_mysql_slow_log"
-	TypeOracleTopSQL           = "oracle_top_sql"
-	TypeAllAppExtract          = "all_app_extract"
-	TypeBaiduRdsMySQLSlowLog   = "baidu_rds_mysql_slow_log"
-	TypeTDMySQLDistributedLock = "tdsql_for_innodb_distributed_lock"
-	TypeSQLFile                = scannerCmd.TypeSQLFile
+	TypeDefault                 = "default"
+	TypeMySQLSlowLog            = scannerCmd.TypeMySQLSlowLog
+	TypeMySQLMybatis            = scannerCmd.TypeMySQLMybatis
+	TypeMySQLSchemaMeta         = "mysql_schema_meta"
+	TypeMySQLProcesslist        = "mysql_processlist"
+	TypeMySQLPerformanceCollect = "mysql_performance_collect"
+	TypeAliRdsMySQLSlowLog      = "ali_rds_mysql_slow_log"
+	TypeAliRdsMySQLAuditLog     = "ali_rds_mysql_audit_log"
+	TypeHuaweiRdsMySQLSlowLog   = "huawei_rds_mysql_slow_log"
+	TypeOracleTopSQL            = "oracle_top_sql"
+	TypeAllAppExtract           = "all_app_extract"
+	TypeBaiduRdsMySQLSlowLog    = "baidu_rds_mysql_slow_log"
+	TypeTDMySQLDistributedLock  = "tdsql_for_innodb_distributed_lock"
+	TypeSQLFile                 = scannerCmd.TypeSQLFile
 )
 
 const (
@@ -136,6 +139,7 @@ func buildMeta(b MetaBuilder) Meta {
 	return Meta{
 		Type:         b.Type,
 		Desc:         b.Desc,
+		Tips:         b.Tips,
 		InstanceType: taskMeta.InstanceType(),
 		Params: func(instanceId ...string) params.Params {
 			return taskMeta.Params(instanceId...)
