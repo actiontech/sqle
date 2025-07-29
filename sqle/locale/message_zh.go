@@ -197,7 +197,7 @@ var (
 	OprDelGlobalRuleTemplateWithName  = &i18n.Message{ID: "OprDelGlobalRuleTemplateWithName", Other: "删除全局规则模板，模板名：%v"}
 
 	OprAddAuditPlanWithName  = &i18n.Message{ID: "OprAddAuditPlanWithName", Other: "创建智能扫描任务，任务名：%v"}
-	OprEditAuditPlanWithName = &i18n.Message{ID: "OprDelAuditPlanWithName", Other: "编辑智能扫描任务，任务名：%v"}
+	OprEditAuditPlanWithName = &i18n.Message{ID: "OprEditAuditPlanWithName", Other: "编辑智能扫描任务，任务名：%v"}
 	OprDelAuditPlanWithName  = &i18n.Message{ID: "OprDelAuditPlanWithName", Other: "删除智能扫描任务，任务名：%v"}
 
 	OprAddSchedulingWorkflowWithNameAndDB = &i18n.Message{ID: "OprAddSchedulingWorkflowWithNameAndDB", Other: "设置定时上线，工单名称：%v, 数据源名: %v"}
@@ -361,27 +361,32 @@ var (
 	ApMetricNameQueryTimeAvgMoreThan   = &i18n.Message{ID: "ApMetricNameQueryTimeAvgMoreThan", Other: "平均执行时间(s) > "}
 	ApMetricNameRowExaminedAvgMoreThan = &i18n.Message{ID: "ApMetricNameRowExaminedAvgMoreThan", Other: "平均扫描行数 > "}
 
-	ApMetaCustom                = &i18n.Message{ID: "ApMetaCustom", Other: "自定义"}
-	ApMetaMySQLSchemaMeta       = &i18n.Message{ID: "ApMetaMySQLSchemaMeta", Other: "库表元数据"}
-	ApMetaMySQLProcesslist      = &i18n.Message{ID: "ApMetaMySQLProcesslist", Other: "processlist 列表"}
-	ApMetaAliRdsMySQLSlowLog    = &i18n.Message{ID: "ApMetaAliRdsMySQLSlowLog", Other: "阿里RDS MySQL慢日志"}
-	ApMetaAliRdsMySQLAuditLog   = &i18n.Message{ID: "ApMetaAliRdsMySQLAuditLog", Other: "阿里RDS MySQL审计日志"}
-	ApMetaBaiduRdsMySQLSlowLog  = &i18n.Message{ID: "ApMetaBaiduRdsMySQLSlowLog", Other: "百度云RDS MySQL慢日志"}
-	ApMetaHuaweiRdsMySQLSlowLog = &i18n.Message{ID: "ApMetaHuaweiRdsMySQLSlowLog", Other: "华为云RDS MySQL慢日志"}
-	ApMetaOracleTopSQL          = &i18n.Message{ID: "ApMetaOracleTopSQL", Other: "Oracle TOP SQL"}
-	ApMetaAllAppExtract         = &i18n.Message{ID: "ApMetaAllAppExtract", Other: "应用程序SQL抓取"}
-	ApMetaTiDBAuditLog          = &i18n.Message{ID: "ApMetaTiDBAuditLog", Other: "TiDB审计日志"}
-	ApMetaSlowLog               = &i18n.Message{ID: "ApMetaSlowLog", Other: "慢日志"}
-	ApMetaMDBSlowLog            = &i18n.Message{ID: "ApMetaMDBSlowLog", Other: "慢日志（监控库）"}
-	ApMetaTopSQL                = &i18n.Message{ID: "ApMetaTopSQL", Other: "Top SQL"}
-	ApMetaDB2TopSQL             = &i18n.Message{ID: "ApMetaDB2TopSQL", Other: "DB2 Top SQL"}
-	ApMetaSchemaMeta            = &i18n.Message{ID: "ApMetaSchemaMeta", Other: "库表元数据"}
-	ApMetaDistributedLock       = &i18n.Message{ID: "ApMetaDistributedLock", Other: "分布式锁"}
-	ApMetaDmTopSQL              = &i18n.Message{ID: "ApMetaDmTopSQL", Other: "DM TOP SQL"}
-	ApMetaObForOracleTopSQL     = &i18n.Message{ID: "ApMetaObForOracleTopSQL", Other: "OceanBase For Oracle TOP SQL"}
-	ApMetaPostgreSQLTopSQL      = &i18n.Message{ID: "ApMetaPostgreSQLTopSQL", Other: "TOP SQL"}
-	ApMetricQueryTimeAvg        = &i18n.Message{ID: "ApMetricQueryTimeAvg", Other: "平均查询时间(s)"}
-	ApMetricRowExaminedAvg      = &i18n.Message{ID: "ApMetricRowExaminedAvg", Other: "平均扫描行数"}
+	ApMetaCustom                 = &i18n.Message{ID: "ApMetaCustom", Other: "自定义"}
+	ApMetaMySQLSchemaMeta        = &i18n.Message{ID: "ApMetaMySQLSchemaMeta", Other: "库表元数据"}
+	ApMetaMySQLProcesslist       = &i18n.Message{ID: "ApMetaMySQLProcesslist", Other: "processlist 列表"}
+	ApMetaAliRdsMySQLSlowLog     = &i18n.Message{ID: "ApMetaAliRdsMySQLSlowLog", Other: "阿里RDS MySQL慢日志"}
+	ApMetaAliRdsMySQLAuditLog    = &i18n.Message{ID: "ApMetaAliRdsMySQLAuditLog", Other: "阿里RDS MySQL审计日志"}
+	ApMetaBaiduRdsMySQLSlowLog   = &i18n.Message{ID: "ApMetaBaiduRdsMySQLSlowLog", Other: "百度云RDS MySQL慢日志"}
+	ApMetaHuaweiRdsMySQLSlowLog  = &i18n.Message{ID: "ApMetaHuaweiRdsMySQLSlowLog", Other: "华为云RDS MySQL慢日志"}
+	ApMetaOracleTopSQL           = &i18n.Message{ID: "ApMetaOracleTopSQL", Other: "Oracle TOP SQL"}
+	ApMetaAllAppExtract          = &i18n.Message{ID: "ApMetaAllAppExtract", Other: "应用程序SQL抓取"}
+	ApMetaTiDBAuditLog           = &i18n.Message{ID: "ApMetaTiDBAuditLog", Other: "TiDB审计日志"}
+	ApMetaSlowLog                = &i18n.Message{ID: "ApMetaSlowLog", Other: "慢日志"}
+	ApMetaMDBSlowLog             = &i18n.Message{ID: "ApMetaMDBSlowLog", Other: "慢日志（监控库）"}
+	ApMetaTopSQL                 = &i18n.Message{ID: "ApMetaTopSQL", Other: "Top SQL"}
+	ApMetaDB2TopSQL              = &i18n.Message{ID: "ApMetaDB2TopSQL", Other: "DB2 Top SQL"}
+	ApMetaSchemaMeta             = &i18n.Message{ID: "ApMetaSchemaMeta", Other: "库表元数据"}
+	ApMetaDistributedLock        = &i18n.Message{ID: "ApMetaDistributedLock", Other: "分布式锁"}
+	ApMetaDmTopSQL               = &i18n.Message{ID: "ApMetaDmTopSQL", Other: "DM TOP SQL"}
+	ApMetaObForOracleTopSQL      = &i18n.Message{ID: "ApMetaObForOracleTopSQL", Other: "OceanBase For Oracle TOP SQL"}
+	ApMetaPostgreSQLTopSQL       = &i18n.Message{ID: "ApMetaPostgreSQLTopSQL", Other: "TOP SQL"}
+	ApMetricQueryTimeAvg         = &i18n.Message{ID: "ApMetricQueryTimeAvg", Other: "平均查询时间(s)"}
+	ApMetricRowExaminedAvg       = &i18n.Message{ID: "ApMetricRowExaminedAvg", Other: "平均扫描行数"}
+	ApMetaPerformanceCollect     = &i18n.Message{ID: "ApMetaPerformanceCollect", Other: "性能指标采集"}
+	ApMetaPerformanceCollectTips = &i18n.Message{ID: "ApMetaPerformanceCollectTips", Other: "性能指标采集将产生较大性能开销，请谨慎开启"}
+	ApMetaCollectTime            = &i18n.Message{ID: "ApMetaCollectTime", Other: "采集时间"}
+	ApMetaThreadsConnected       = &i18n.Message{ID: "ApMetaThreadsConnected", Other: "线程数"}
+	ApMetaQPS                    = &i18n.Message{ID: "ApMetaQueries", Other: "QPS"}
 
 	ApPriorityHigh = &i18n.Message{ID: "ApPriorityHigh", Other: "高优先级"}
 

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -31,6 +32,7 @@ func (j *CleanJob) job(entry *logrus.Entry) {
 	j.CleanExpiredTasks(entry)
 	j.CleanExpiredOperationLog(entry)
 	j.CleanExpiredSqlManageRawSql(entry)
+	j.CleanExpiredSqlManageInsightRecords(entry)
 }
 
 func (j *CleanJob) CleanExpiredWorkflows(entry *logrus.Entry) {
@@ -124,6 +126,27 @@ func (j *CleanJob) CleanExpiredSqlManageRawSql(entry *logrus.Entry) {
 
 	if rowsAffected > 0 {
 		entry.Infof("clean sql manage raw sql before %s success, count: %d", expiredTime.Format(time.RFC3339), rowsAffected)
+	}
+}
+
+func (j *CleanJob) CleanExpiredSqlManageInsightRecords(entry *logrus.Entry) {
+	st := model.GetStorage()
+
+	// todo insight 是否需要单独设置过期变量
+	expiredHours, err := st.GetSqlManageRawSqlExpiredHoursOrDefault()
+	if err != nil {
+		entry.Errorf("get sql manage raw sql expired hours error: %v", err)
+		return
+	}
+	expiredTime := time.Now().Add(time.Duration(-expiredHours) * time.Hour)
+
+	rowsAffected, err := st.RemoveExpiredSqlInsightRecord(expiredTime)
+	if err != nil {
+		entry.Error(fmt.Errorf("clean sql insight records fail, error: %v", err))
+		return
+	}
+	if rowsAffected > 0 {
+		entry.Infof("clean sql insight records success, rowsAffected: %d", rowsAffected)
 	}
 }
 

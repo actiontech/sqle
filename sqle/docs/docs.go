@@ -12839,6 +12839,9 @@ var doc = `{
                 "audit_plan_type_desc": {
                     "type": "string"
                 },
+                "audit_plan_type_tips": {
+                    "type": "string"
+                },
                 "high_priority_conditions": {
                     "type": "array",
                     "items": {

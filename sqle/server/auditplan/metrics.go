@@ -65,6 +65,12 @@ const MetricNameWaitingLockConnectionId string = "waiting_lock_connection_id"
 const MetricNameGrantedLockTrxId string = "granted_lock_trx_id"
 const MetricNameWaitingLockTrxId string = "waiting_lock_trx_id"
 
+// sql insight
+const MetricNameSqlInsightCollectTime = "collect_time"
+const MetricNameSqlInsightThreadsConnected = "Threads_connected"
+const MetricNameSqlInsightQueries = "Queries"
+const MetricNameSqlInsightQPS = "QPS"
+
 var ALLMetric = map[string]MetricType{
 	MetricNameCounter:                   MetricTypeInt,    // MySQL slow log
 	MetricNameLastReceiveTimestamp:      MetricTypeString, // MySQL slow log
@@ -107,6 +113,11 @@ var ALLMetric = map[string]MetricType{
 	MetricNameRowsAffectedMax: MetricTypeInt,    // TD MYSQL Monitor DB Slow Log
 	MetricNameRowsAffectedAvg: MetricTypeFloat,  // TD MYSQL Monitor DB Slow Log
 	MetricNameChecksum:        MetricTypeString, // TD MYSQL Monitor DB Slow Log
+
+	MetricNameSqlInsightCollectTime:      MetricTypeTime,
+	MetricNameSqlInsightThreadsConnected: MetricTypeInt,
+	MetricNameSqlInsightQueries:          MetricTypeInt,
+	MetricNameSqlInsightQPS:              MetricTypeFloat,
 }
 
 func LoadMetrics(info map[string]interface{}, metrics []string) Metrics {

@@ -51,6 +51,7 @@ type GetAuditPlanMetasResV1 struct {
 type AuditPlanMetaV1 struct {
 	Type                   string                       `json:"audit_plan_type"`
 	Desc                   string                       `json:"audit_plan_type_desc"`
+	Tips                   string                       `json:"audit_plan_type_tips"`
 	InstanceType           string                       `json:"instance_type"`
 	Params                 []AuditPlanParamResV1        `json:"audit_plan_params,omitempty"`
 	HighPriorityConditions []HighPriorityConditionResV1 `json:"high_priority_conditions"`
@@ -93,6 +94,9 @@ func ConvertAuditPlanMetaWithInstanceIdToRes(ctx context.Context, meta auditplan
 		Type:         meta.Type,
 		Desc:         locale.Bundle.LocalizeMsgByCtx(ctx, meta.Desc),
 		InstanceType: meta.InstanceType,
+	}
+	if meta.Tips != nil {
+		res.Tips = locale.Bundle.LocalizeMsgByCtx(ctx, meta.Tips)
 	}
 	if meta.Params != nil && len(meta.Params()) > 0 {
 		paramsRes := make([]AuditPlanParamResV1, 0, len(meta.Params()))
