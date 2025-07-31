@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
+	"runtime/debug"
 	"strings"
 
 	"github.com/BurntSushi/toml"
@@ -71,7 +72,8 @@ func (b *Bundle) GetLocalizer(tag language.Tag) *i18n.Localizer {
 
 func (b *Bundle) localizeMsg(localizer *i18n.Localizer, msg *i18n.Message) string {
 	if msg == nil {
-		b.logger.Errorf("i18nPkg localize nil msg")
+		stack := debug.Stack()
+		b.logger.Errorf("i18nPkg localize nil msg, %s", stack)
 		return ""
 	}
 	m, err := localizer.LocalizeMessage(msg)
@@ -85,7 +87,7 @@ func (b *Bundle) LocalizeMsgByCtx(ctx context.Context, msg *i18n.Message) string
 	l, ok := ctx.Value(LocalizerCtxKey).(*i18n.Localizer)
 	if !ok {
 		l = b.DefaultLocalizer()
-		b.logger.Errorf("i18nPkg No localizer in context when localize msg: %v, use default", msg.ID)
+		b.logger.Errorf("i18nPkg No localizer in context when localize msg: %v, use default", msg)
 	}
 
 	return b.localizeMsg(l, msg)

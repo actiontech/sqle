@@ -27,25 +27,26 @@ const (
 	UIDOfOpPermissionGlobalView = "700016"
 	// UIDOfOpPermissionGlobalManagement 可以操作和查看全局资源,但是权限级别低于admin,admin可以修改全局资源权限,全局资源权限不能修改admin
 	// 拥有全局资源权限用户不能同级权限用户
-	UIDOfOpPermissionGlobalManagement = "700017"
-	UIDOfOrdinaryUser                 = "700018"
-	UIDOfOpPermissionViewOperationRecord  = "700019"
-	UIDOfOpPermissionViewExportTask = "700020"
-	UIDOfPermissionViewQuickAuditRecord = "700021"
-	UIDOfOpPermissionViewIDEAuditRecord = "700022"
-	UIDOfOpPermissionViewOptimizationRecord = "700023"
-	UIDOfOpPermissionViewVersionManage = "700024"
-	UIDOfOpPermissionVersionManage = "700025"
-	UIdOfOpPermissionViewPipeline  = "700026"
-	UIdOfOpPermissionManageProjectDataSource  = "700028"
+	UIDOfOpPermissionGlobalManagement        = "700017"
+	UIDOfOrdinaryUser                        = "700018"
+	UIDOfOpPermissionViewOperationRecord     = "700019"
+	UIDOfOpPermissionViewExportTask          = "700020"
+	UIDOfPermissionViewQuickAuditRecord      = "700021"
+	UIDOfOpPermissionViewIDEAuditRecord      = "700022"
+	UIDOfOpPermissionViewOptimizationRecord  = "700023"
+	UIDOfOpPermissionViewVersionManage       = "700024"
+	UIDOfOpPermissionVersionManage           = "700025"
+	UIdOfOpPermissionViewPipeline            = "700026"
+	UIdOfOpPermissionManageProjectDataSource = "700028"
 	UIdOfOpPermissionManageAuditRuleTemplate = "700029"
 	UIdOfOpPermissionManageApprovalTemplate  = "700030"
-	UIdOfOpPermissionManageMember = "700031"
-	UIdOfOpPermissionPushRule = "700032"
-	UIdOfOpPermissionMangeAuditSQLWhiteList = "700033"
+	UIdOfOpPermissionManageMember            = "700031"
+	UIdOfOpPermissionPushRule                = "700032"
+	UIdOfOpPermissionMangeAuditSQLWhiteList  = "700033"
 	UIdOfOpPermissionManageSQLMangeWhiteList = "700034"
-	UIdOfOpPermissionManageRoleMange  = "700035"
-	UIdOfOpPermissionDesensitization = "700036"
+	UIdOfOpPermissionManageRoleMange         = "700035"
+	UIdOfOpPermissionDesensitization         = "700036"
+	UIDOfOpPermissionViewSQLInsight          = "700037"
 
 	UIDOfDMSConfig = "700100"
 
@@ -80,6 +81,8 @@ func ConvertPermissionIdToType(opPermissionUid string) (apiOpPermissionTyp dmsCo
 		apiOpPermissionTyp = dmsCommonV1.OpPermissionTypeSaveAuditPlan
 	case UIDOfOpPermissionViewOthersAuditPlan:
 		apiOpPermissionTyp = dmsCommonV1.OpPermissionTypeViewOtherAuditPlan
+	case UIDOfOpPermissionViewSQLInsight:
+		apiOpPermissionTyp = dmsCommonV1.OpPermissionTypeViewSQLInsight
 	case UIDOfOpPermissionSQLQuery:
 		apiOpPermissionTyp = dmsCommonV1.OpPermissionTypeSQLQuery
 	case UIDOfOpPermissionExportApprovalReject:
@@ -155,6 +158,8 @@ func ConvertPermissionTypeToId(opPermissionType dmsCommonV1.OpPermissionType) (p
 		permissionId = UIDOfOpPermissionSaveAuditPlan
 	case dmsCommonV1.OpPermissionTypeViewOtherAuditPlan:
 		permissionId = UIDOfOpPermissionViewOthersAuditPlan
+	case dmsCommonV1.OpPermissionTypeViewSQLInsight:
+		permissionId = UIDOfOpPermissionViewSQLInsight
 	case dmsCommonV1.OpPermissionTypeSQLQuery:
 		permissionId = UIDOfOpPermissionSQLQuery
 	case dmsCommonV1.OpPermissionTypeAuditExportWorkflow:

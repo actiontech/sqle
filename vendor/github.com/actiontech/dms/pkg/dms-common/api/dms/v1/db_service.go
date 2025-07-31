@@ -174,10 +174,16 @@ type EnvironmentTag struct {
 }
 
 type SQLEConfig struct {
+	// DB Service audit enabled
+	AuditEnabled bool `json:"audit_enabled" example:"false"`
 	// DB Service rule template name
 	RuleTemplateName string `json:"rule_template_name"`
 	// DB Service rule template id
 	RuleTemplateID string `json:"rule_template_id"`
+	// DB Service data export rule template name
+	DataExportRuleTemplateName string `json:"data_export_rule_template_name"`
+	// DB Service data export rule template id
+	DataExportRuleTemplateID string `json:"data_export_rule_template_id"`
 	// DB Service SQL query config
 	SQLQueryConfig *SQLQueryConfig `json:"sql_query_config"`
 }
@@ -197,6 +203,8 @@ type SQLQueryConfig struct {
 	QueryTimeoutSecond               int                     `json:"query_timeout_second" example:"10"`
 	AuditEnabled                     bool                    `json:"audit_enabled" example:"false"`
 	AllowQueryWhenLessThanAuditLevel SQLAllowQueryAuditLevel `json:"allow_query_when_less_than_audit_level" enums:"normal,notice,warn,error" valid:"omitempty,oneof=normal notice warn error " example:"error"`
+	RuleTemplateName                 string                  `json:"rule_template_name"`
+	RuleTemplateID                   string                  `json:"rule_template_id"`
 }
 
 // swagger:model ListDBServiceReply

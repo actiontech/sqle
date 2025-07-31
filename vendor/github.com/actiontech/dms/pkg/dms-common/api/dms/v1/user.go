@@ -186,6 +186,8 @@ const (
 	OpPermissionTypeExecuteWorkflow OpPermissionType = "execute_workflow"
 	// 查看其他扫描任务权限
 	OpPermissionTypeViewOtherAuditPlan OpPermissionType = "view_other_audit_plan"
+	// 查看SQL洞察权限
+	OpPermissionTypeViewSQLInsight OpPermissionType = "view_sql_insight"
 	// 创建扫描任务权限；拥有该权限的用户可以创建/更新扫描任务
 	OpPermissionTypeSaveAuditPlan OpPermissionType = "save_audit_plan"
 	//SQL查询；SQL查询权限
@@ -212,7 +214,7 @@ const (
 	OpPermissionViewOptimizationRecord OpPermissionType = "view_optimization_record"
 	// 版本管理;查看他人创建的版本记录
 	OpPermissionViewVersionManage OpPermissionType = "view_version_manage"
-	// 版本管理;版本管理
+	// 版本管理;配置版本
 	OpPermissionVersionManage OpPermissionType = "version_manage"
 	// CI/CD集成;查看所有流水线
 	OpPermissionViewPipeline OpPermissionType = "view_pipeline"
@@ -260,6 +262,8 @@ func ParseOpPermissionType(typ string) (OpPermissionType, error) {
 		return OpPermissionTypeExecuteWorkflow, nil
 	case string(OpPermissionTypeViewOtherAuditPlan):
 		return OpPermissionTypeViewOtherAuditPlan, nil
+	case string(OpPermissionTypeViewSQLInsight):
+		return OpPermissionTypeViewSQLInsight, nil
 	case string(OpPermissionTypeSaveAuditPlan):
 		return OpPermissionTypeSaveAuditPlan, nil
 	case string(OpPermissionTypeSQLQuery):
@@ -274,23 +278,42 @@ func ParseOpPermissionType(typ string) (OpPermissionType, error) {
 		return OpPermissionTypeViewOthersOptimization, nil
 	case string(OpPermissionTypeCreatePipeline):
 		return OpPermissionTypeCreatePipeline, nil
-	case string(OpPermissionViewOperationRecord): return OpPermissionViewOperationRecord, nil
-	case string(OpPermissionViewExportTask): return OpPermissionViewExportTask, nil
-	case string(OpPermissionViewQuickAuditRecord): return OpPermissionViewQuickAuditRecord, nil
-	case string(OpPermissionViewIDEAuditRecord): return OpPermissionViewIDEAuditRecord, nil
-	case string(OpPermissionViewOptimizationRecord): return OpPermissionViewOptimizationRecord, nil
-	case string(OpPermissionVersionManage): return OpPermissionVersionManage, nil
-	case string(OpPermissionViewPipeline): return OpPermissionViewPipeline, nil
-	case string(OpPermissionManageProjectDataSource): return OpPermissionManageProjectDataSource, nil
-	case string(OpPermissionManageAuditRuleTemplate): return OpPermissionManageAuditRuleTemplate, nil
-	case string(OpPermissionManageApprovalTemplate): return OpPermissionManageApprovalTemplate, nil
-	case string(OpPermissionManageMember): return OpPermissionManageMember, nil
-	case string(OpPermissionPushRule): return OpPermissionPushRule, nil
-	case string(OpPermissionMangeAuditSQLWhiteList): return OpPermissionMangeAuditSQLWhiteList, nil
-	case string(OpPermissionManageSQLMangeWhiteList): return OpPermissionManageSQLMangeWhiteList, nil
-	case string(OpPermissionManageRoleMange): return OpPermissionManageRoleMange, nil
-	case string(OpPermissionDesensitization): return OpPermissionDesensitization, nil
-	case string(OpPermissionTypeNone): return OpPermissionTypeNone, nil
+	case string(OpPermissionViewOperationRecord):
+		return OpPermissionViewOperationRecord, nil
+	case string(OpPermissionViewExportTask):
+		return OpPermissionViewExportTask, nil
+	case string(OpPermissionViewQuickAuditRecord):
+		return OpPermissionViewQuickAuditRecord, nil
+	case string(OpPermissionViewIDEAuditRecord):
+		return OpPermissionViewIDEAuditRecord, nil
+	case string(OpPermissionViewOptimizationRecord):
+		return OpPermissionViewOptimizationRecord, nil
+	case string(OpPermissionViewVersionManage):
+		return OpPermissionViewVersionManage, nil
+	case string(OpPermissionVersionManage):
+		return OpPermissionVersionManage, nil
+	case string(OpPermissionViewPipeline):
+		return OpPermissionViewPipeline, nil
+	case string(OpPermissionManageProjectDataSource):
+		return OpPermissionManageProjectDataSource, nil
+	case string(OpPermissionManageAuditRuleTemplate):
+		return OpPermissionManageAuditRuleTemplate, nil
+	case string(OpPermissionManageApprovalTemplate):
+		return OpPermissionManageApprovalTemplate, nil
+	case string(OpPermissionManageMember):
+		return OpPermissionManageMember, nil
+	case string(OpPermissionPushRule):
+		return OpPermissionPushRule, nil
+	case string(OpPermissionMangeAuditSQLWhiteList):
+		return OpPermissionMangeAuditSQLWhiteList, nil
+	case string(OpPermissionManageSQLMangeWhiteList):
+		return OpPermissionManageSQLMangeWhiteList, nil
+	case string(OpPermissionManageRoleMange):
+		return OpPermissionManageRoleMange, nil
+	case string(OpPermissionDesensitization):
+		return OpPermissionDesensitization, nil
+	case string(OpPermissionTypeNone):
+		return OpPermissionTypeNone, nil
 	default:
 		return "", fmt.Errorf("invalid op permission type: %s", typ)
 	}
@@ -316,6 +339,8 @@ func GetOperationTypeDesc(opType OpPermissionType) string {
 		return "上线工单"
 	case OpPermissionTypeViewOtherAuditPlan:
 		return "查看其他扫描任务权限"
+	case OpPermissionTypeViewSQLInsight:
+		return "查看SQL洞察权限"
 	case OpPermissionTypeSaveAuditPlan:
 		return "创建扫描任务权限"
 	case OpPermissionTypeSQLQuery:
