@@ -37,10 +37,11 @@ const (
 )
 
 type GetSqlPerformanceInsightsReq struct {
-	InstanceId string     `query:"instance_id" json:"instance_id" valid:"required"`
-	StartTime  string     `query:"start_time" json:"start_time" valid:"required"`
-	EndTime    string     `query:"end_time" json:"end_time" valid:"required"`
-	MetricName MetricName `query:"metric_name" json:"metric_name" enums:"comprehensive_trend,slow_sql_trend,active_session_trend" valid:"required"`
+	ProjectName string     `param:"project_name" json:"project_name" valid:"required"`
+	InstanceId  string     `query:"instance_id" json:"instance_id" valid:"required"`
+	StartTime   string     `query:"start_time" json:"start_time" valid:"required"`
+	EndTime     string     `query:"end_time" json:"end_time" valid:"required"`
+	MetricName  MetricName `query:"metric_name" json:"metric_name" enums:"comprehensive_trend,slow_sql_trend,active_session_trend" valid:"required"`
 }
 
 // GetSqlPerformanceInsights
