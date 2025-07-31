@@ -121,6 +121,28 @@ func CheckCurrentUserCanOperateTasks(c echo.Context, projectUid string, workflow
 	return ErrWorkflowNoAccess
 }
 
+func CheckCurrentUserCanViewSQLInsightOfInstance(c echo.Context, projectName string, instanceId string) error {
+	userId := controller.GetUserID(c)
+	projectUid, err := dms.GetProjectUIDByName(c.Request().Context(), projectName)
+	if err != nil {
+		return err
+	}
+
+	up, err := dms.NewUserPermission(userId, projectUid)
+	if err != nil {
+		return err
+	}
+
+	if up.CanOpProject() {
+		return nil
+	}
+	if up.CanOpInstanceNoAdmin(instanceId, dmsV1.OpPermissionTypeViewSQLInsight) {
+		return nil
+	}
+
+	return fmt.Errorf("permission denied")
+}
+
 func checkCurrentUserCanViewTask(c echo.Context, task *model.Task, ops []dmsV1.OpPermissionType) error {
 	userId := controller.GetUserID(c)
 	// todo issues-2005
