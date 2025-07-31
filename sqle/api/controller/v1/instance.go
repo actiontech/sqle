@@ -332,6 +332,7 @@ const ( // InstanceTipReqV1.FunctionalModule Enums
 	FunctionalModuleCreateOptimization = "create_optimization"
 	FunctionalModuleCreatePipeline     = "create_pipeline"
 	FunctionalModuleCreateVersion      = "create_version"
+	FunctionalModuleViewSQLInsight     = "view_sql_insight"
 )
 
 type InstanceTipReqV1 struct {

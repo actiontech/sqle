@@ -27,7 +27,7 @@ type InstanceTipReqV2 struct {
 	FilterDBType             string `json:"filter_db_type" query:"filter_db_type"`
 	FilterByEnvironmentTag   string `json:"filter_by_environment_tag" query:"filter_by_environment_tag"`
 	FilterWorkflowTemplateId uint32 `json:"filter_workflow_template_id" query:"filter_workflow_template_id"`
-	FunctionalModule         string `json:"functional_module" query:"functional_module" enums:"create_audit_plan,create_workflow,sql_manage,create_optimization,create_pipeline,create_version" valid:"omitempty,oneof=create_audit_plan create_workflow sql_manage create_optimization create_pipeline create_version"`
+	FunctionalModule         string `json:"functional_module" query:"functional_module" enums:"create_audit_plan,create_workflow,sql_manage,create_optimization,create_pipeline,create_version,view_sql_insight" valid:"omitempty,oneof=create_audit_plan create_workflow sql_manage create_optimization create_pipeline create_version view_sql_insight"`
 }
 
 type GetInstanceTipsResV2 struct {
@@ -59,7 +59,7 @@ type InstanceTipResV2 struct {
 // @Param filter_db_type query string false "filter db type"
 // @Param filter_by_environment_tag query string false "filter by environment tag"
 // @Param filter_workflow_template_id query string false "filter workflow template id"
-// @Param functional_module query string false "functional module" Enums(create_audit_plan,create_workflow,sql_manage,create_optimization,create_pipeline,create_version)
+// @Param functional_module query string false "functional module" Enums(create_audit_plan,create_workflow,sql_manage,create_optimization,create_pipeline,create_version,view_sql_insight)
 // @Success 200 {object} v2.GetInstanceTipsResV2
 // @router /v2/projects/{project_name}/instance_tips [get]
 func GetInstanceTips(c echo.Context) error {
@@ -89,6 +89,8 @@ func GetInstanceTips(c echo.Context) error {
 		operationType = dmsCommonV1.OpPermissionTypeCreatePipeline
 	case v1.FunctionalModuleCreateVersion:
 		operationType = dmsCommonV1.OpPermissionVersionManage
+	case v1.FunctionalModuleViewSQLInsight:
+		operationType = dmsCommonV1.OpPermissionTypeViewSQLInsight
 	default:
 	}
 	dbServiceReq := &dmsCommonV2.ListDBServiceReq{

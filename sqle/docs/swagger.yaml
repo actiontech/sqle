@@ -14431,6 +14431,7 @@ paths:
         - create_optimization
         - create_pipeline
         - create_version
+        - view_sql_insight
         in: query
         name: functional_module
         type: string

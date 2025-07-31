@@ -826,8 +826,10 @@ join audit_plans_v2 apv
 on
 	apv.instance_audit_plan_id = iap.id
 where
-	iap.instance_id = ?
+	iap.deleted_at is null
+	and iap.instance_id = ?
 	and iap.active_status = '%s'
+	and apv.deleted_at is null
 	and apv.type = ?
 	and apv.active_status = '%s'`, ActiveStatusNormal, ActiveStatusNormal)
 	err := s.db.Raw(query, instanceID, auditPlanType).Scan(&count).Error
