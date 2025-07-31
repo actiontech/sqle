@@ -11201,7 +11201,8 @@ var doc = `{
                             "sql_manage",
                             "create_optimization",
                             "create_pipeline",
-                            "create_version"
+                            "create_version",
+                            "view_sql_insight"
                         ],
                         "type": "string",
                         "description": "functional module",
