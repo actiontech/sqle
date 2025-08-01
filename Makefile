@@ -3,11 +3,11 @@
 HEAD_HASH = $(shell git rev-parse HEAD)
 # 尝试获取稳定版标签 (不包含 -pre, -rc, -alpha, -beta 等后缀)
 # grep -Ev '(-alpha|-beta|-rc|-pre)[0-9]*$$' 过滤掉带有预发布后缀的标签
-STABLE_TAG = $(shell git tag --points-at $(HEAD_HASH) --sort=-v:refname | grep -Evi '(-pre)[0-9]*$$' | head -n 1 2>/dev/null)
+STABLE_TAG = $(shell git tag --points-at $(HEAD_HASH) | sort -rV | grep -Evi '(-pre)[0-9]*$$' | head -n 1 2>/dev/null)
 
 # 如果没有稳定版标签，则获取最新的预发布标签
 # 注意：这里我们重新获取所有标签，不再过滤，以确保能取到预发布版中最高的
-PRE_RELEASE_TAG = $(shell git tag --points-at $(HEAD_HASH) --sort=-v:refname | head -n 1 2>/dev/null)
+PRE_RELEASE_TAG = $(shell git tag --points-at $(HEAD_HASH) | sort -rV | head -n 1 2>/dev/null)
 
 # 如果存在稳定版标签，则使用稳定版；否则使用预发布版
 HEAD_TAG := $(if $(STABLE_TAG),$(STABLE_TAG),$(PRE_RELEASE_TAG))
