@@ -295,9 +295,9 @@ var (
 	DDLCheckColumnWithoutDefaultDesc                             = &i18n.Message{ID: "DDLCheckColumnWithoutDefaultDesc", Other: "除了自增列及大字段列之外，每个列都必须添加默认值"}
 	DDLCheckColumnWithoutDefaultAnnotation                       = &i18n.Message{ID: "DDLCheckColumnWithoutDefaultAnnotation", Other: "列添加默认值，可避免列为NULL值时对查询的影响"}
 	DDLCheckColumnWithoutDefaultMessage                          = &i18n.Message{ID: "DDLCheckColumnWithoutDefaultMessage", Other: "除了自增列及大字段列之外，每个列都必须添加默认值"}
-	DDLCheckColumnTimestampWithoutDefaultDesc                    = &i18n.Message{ID: "DDLCheckColumnTimestampWithoutDefaultDesc", Other: "TIMESTAMP 类型的列必须添加默认值"}
-	DDLCheckColumnTimestampWithoutDefaultAnnotation              = &i18n.Message{ID: "DDLCheckColumnTimestampWithoutDefaultAnnotation", Other: "TIMESTAMP添加默认值，可避免出现全为0的日期格式与业务预期不符"}
-	DDLCheckColumnTimestampWithoutDefaultMessage                 = &i18n.Message{ID: "DDLCheckColumnTimestampWithoutDefaultMessage", Other: "TIMESTAMP 类型的列必须添加默认值"}
+	DDLCheckColumnTimestampWithoutDefaultDesc                    = &i18n.Message{ID: "DDLCheckColumnTimestampWithoutDefaultDesc", Other: "TIMESTAMP、DATETIME 类型的列必须添加默认值"}
+	DDLCheckColumnTimestampWithoutDefaultAnnotation              = &i18n.Message{ID: "DDLCheckColumnTimestampWithoutDefaultAnnotation", Other: "TIMESTAMP、DATETIME 添加默认值，可避免出现全为0的日期格式与业务预期不符"}
+	DDLCheckColumnTimestampWithoutDefaultMessage                 = &i18n.Message{ID: "DDLCheckColumnTimestampWithoutDefaultMessage", Other: "TIMESTAMP、DATETIME 类型的列必须添加默认值"}
 	DDLCheckColumnBlobWithNotNullDesc                            = &i18n.Message{ID: "DDLCheckColumnBlobWithNotNullDesc", Other: "BLOB 和 TEXT 类型的字段不建议设置为 NOT NULL"}
 	DDLCheckColumnBlobWithNotNullAnnotation                      = &i18n.Message{ID: "DDLCheckColumnBlobWithNotNullAnnotation", Other: "BLOB 和 TEXT 类型的字段无法指定默认值，如插入数据不指定字段默认为NULL，如果添加了 NOT NULL 限制，写入数据时又未对该字段指定值会导致写入失败"}
 	DDLCheckColumnBlobWithNotNullMessage                         = &i18n.Message{ID: "DDLCheckColumnBlobWithNotNullMessage", Other: "BLOB 和 TEXT 类型的字段不建议设置为 NOT NULL"}
