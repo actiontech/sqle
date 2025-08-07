@@ -343,6 +343,14 @@ func (i *MysqlDriverImpl) audit(ctx context.Context, sql string) (*driverV2.Audi
 		return nil, err
 	}
 
+	// 解析失败时，尝试ob-mysql ddl 兼容性解析
+	if _, ok := nodes[0].(*ast.UnparsedStmt); ok {
+		createTableStmt, err := util.ParseCreateTableSqlCompatibly(sql)
+		if err == nil {
+			nodes[0] = createTableStmt
+		}
+	}
+
 	if i.IsOfflineAudit() || i.IsExecutedSQL() {
 		err = i.CheckInvalidOffline(nodes[0])
 	} else {
