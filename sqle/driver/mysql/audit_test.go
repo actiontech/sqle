@@ -3339,13 +3339,13 @@ func TestCheckIndexesExistBeforeCreatConstraints(t *testing.T) {
 	rule := rulepkg.RuleHandlerMap[rulepkg.DDLCheckIndexesExistBeforeCreateConstraints].Rule
 	runSingleRuleInspectCase(rule, t, "Add unique: check indexes exist before creat constraints", DefaultMysqlInspect(),
 		`
-alter table exist_db.exist_tb_3 Add unique uniq_test(v2);
+alter table exist_db.exist_tb_3 MODIFY COLUMN v2 VARCHAR(255) NOT NULL;
 `, /*not exist index*/
 		newTestResult().addResult(rulepkg.DDLCheckIndexesExistBeforeCreateConstraints),
 	)
 	runSingleRuleInspectCase(rule, t, "Add unique: passing the check indexes exist before creat constraints", DefaultMysqlInspect(),
 		`
-alter table exist_db.exist_tb_1 Add unique uniq_test(v1); 
+alter table exist_db.exist_tb_1 MODIFY COLUMN v1 VARCHAR(255) NOT NULL; 
 `, /*exist index*/
 		newTestResult(),
 	)
