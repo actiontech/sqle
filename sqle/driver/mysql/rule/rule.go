@@ -1182,11 +1182,31 @@ func checkIndexesExistBeforeCreatConstraints(input *RuleHandlerInput) error {
 	case *ast.AlterTableStmt:
 		constraintMap := make(map[string]struct{})
 		cols := []string{}
-		for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint) {
-			if spec.Constraint != nil && (spec.Constraint.Tp == ast.ConstraintPrimaryKey ||
-				spec.Constraint.Tp == ast.ConstraintUniq || spec.Constraint.Tp == ast.ConstraintUniqKey) {
-				for _, key := range spec.Constraint.Keys {
-					cols = append(cols, key.Column.Name.String())
+		for _, spec := range util.GetAlterTableSpecByTp(stmt.Specs, ast.AlterTableAddConstraint, ast.AlterTableModifyColumn) {
+			if spec.Constraint != nil {
+				// 处理外键约束
+				if spec.Constraint.Tp == ast.ConstraintForeignKey {
+					for _, key := range spec.Constraint.Keys {
+						cols = append(cols, key.Column.Name.String())
+					}
+				}
+				// 处理CHECK约束
+				if spec.Constraint.Tp == ast.ConstraintCheck {
+					expr := spec.Constraint.Expr
+					if binaryExpr, ok := expr.(*ast.BinaryOperationExpr); ok {
+						if columnExpr, ok := binaryExpr.L.(*ast.ColumnNameExpr); ok {
+							cols = append(cols, columnExpr.Name.String())
+						}
+					}
+				}
+			}
+			// 处理DEFAULT约束和非空约束
+			for _, column := range spec.NewColumns {
+				for _, option := range column.Options {
+					if option.Tp == ast.ColumnOptionDefaultValue || option.Tp == ast.ColumnOptionNotNull {
+						cols = append(cols, column.Name.String())
+						break
+					}
 				}
 			}
 		}
