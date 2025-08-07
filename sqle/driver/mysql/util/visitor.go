@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/pingcap/parser/ast"
@@ -55,6 +56,127 @@ func (v *HasVarChecker) Enter(in ast.Node) (node ast.Node, skipChildren bool) {
 
 func (v *HasVarChecker) Leave(in ast.Node) (node ast.Node, ok bool) {
 	return in, true
+}
+
+// OB建表语句中要剥离的关键词和对应的正则表达式
+//
+//	OBMySQL  v4.4.0 SQL型
+var (
+	obOptionsRegex = map[string]*regexp.Regexp{
+		// 存储属性  https://www.oceanbase.com/docs/common-oceanbase-database-cn-1000000003382263
+		"BLOCK_SIZE":  regexp.MustCompile(`(?i)BLOCK_SIZE\s*(=\s*\d+|\s+\d+\s*(LOCAL)?)`), // 兼容 BLOCK_SIZE=16384 和 BLOCK_SIZE 16384 [LOCAL]
+		"COMPRESSION": regexp.MustCompile(`(?i)COMPRESSION\s*=\s*'[^']*'`),
+		"PCTFREE":     regexp.MustCompile(`(?i)PCTFREE\s*=\s*\d+`),
+		"TABLET_SIZE": regexp.MustCompile(`(?i)TABLET_SIZE\s*=\s*\d+`),
+		// 分布式属性 https://www.oceanbase.com/docs/common-oceanbase-database-cn-1000000003382263
+		"PRIMARY_ZONE":       regexp.MustCompile(`(?i)PRIMARY_ZONE\s*=\s*'[^']*'`),
+		"ZONE_LIST":          regexp.MustCompile(`(?i)ZONE_LIST\s*=\s*'[^']*'`),
+		"REPLICA_NUM":        regexp.MustCompile(`(?i)REPLICA_NUM\s*=\s*\d+`),
+		"TABLEGROUP":         regexp.MustCompile(`(?i)TABLEGROUP\s*=\s*'[^']*'`),
+		"DEFAULT_TABLEGROUP": regexp.MustCompile(`(?i)DEFAULT_TABLEGROUP\s*=\s*'[^']*'`),
+	}
+
+	// MySQL兼容的table options，需要保留
+	mysqlCompatibleOptionsRegex = map[string]*regexp.Regexp{
+		"DEFAULT_CHARSET": regexp.MustCompile(`(?i)DEFAULT\s+CHARSET\s*=\s*\w+`),
+		"COLLATE":         regexp.MustCompile(`(?i)COLLATE\s*=\s*\w+`),
+		"COMMENT":         regexp.MustCompile(`(?i)COMMENT\s*=\s*'[^']*'`),
+	}
+)
+
+// ParseCreateTableSqlCompatibly 解析并清理OceanBase的建表语句
+// 1. 先删除SQL尾部的options和分区等OceanBase特有的内容，只保留到最后一个右括号
+// 2. 再做特有语法点的清理
+func ParseCreateTableSqlCompatibly(createTableSql string) (*ast.CreateTableStmt, error) {
+	// 先尝试完整解析
+	if stmt, err := ParseCreateTableStmt(createTableSql); err == nil {
+		return stmt, nil
+	}
+
+	/*
+		建表语句可能如下:
+		CREATE TABLE `__all_server_event_history` (
+
+			`gmt_create` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+			`svr_ip` varchar(46) NOT NULL,
+			`svr_port` bigint(20) NOT NULL,
+			`module` varchar(64) NOT NULL,
+			`event` varchar(64) NOT NULL,
+			`name1` varchar(256) DEFAULT '',
+			`value1` varchar(256) DEFAULT '',
+			`name2` varchar(256) DEFAULT '',
+			`value2` longtext DEFAULT NULL,
+			`name3` varchar(256) DEFAULT '',
+			`value3` varchar(256) DEFAULT '',
+			`name4` varchar(256) DEFAULT '',
+			`value4` varchar(256) DEFAULT '',
+			`name5` varchar(256) DEFAULT '',
+			`value5` varchar(256) DEFAULT '',
+			`name6` varchar(256) DEFAULT '',
+			`value6` varchar(256) DEFAULT '',
+			`extra_info` varchar(512) DEFAULT '',
+			PRIMARY KEY (`gmt_create`, `svr_ip`, `svr_port`)
+
+		) DEFAULT CHARSET = utf8mb4 ROW_FORMAT = COMPACT COMPRESSION = 'none' REPLICA_NUM = 1 BLOCK_SIZE = 16384 USE_BLOOM_FILTER = FALSE TABLET_SIZE = 134217728 PCTFREE = 10 TABLEGROUP = 'oceanbase'
+
+			partition by key_v2(svr_ip, svr_port)
+
+		(partition p0,
+		partition p1,
+		partition p2,
+		partition p3,
+		partition p4,
+		partition p5,
+		partition p6,
+		partition p7,
+		partition p8,
+		partition p9,
+		partition p10,
+		partition p11,
+		partition p12,
+		partition p13,
+		partition p14,
+		partition p15)
+
+		建表语句后半段是options，oceanbase mysql模式下的show create table结果返回的options中包含mysql不支持的options, 为了能解析, 方法将会倒着遍历建表语句, 每次找到右括号时截断后面的部分, 检查截断部分是否包含MySQL兼容选项, 如果有则加回SQL末尾, 此时剩余的建表语句将不在包含OB特有options
+	*/
+
+	// 第1步：移除OB特有选项
+	replacedSQL := createTableSql
+	for _, regex := range obOptionsRegex {
+		replacedSQL = regex.ReplaceAllString(replacedSQL, "")
+	}
+
+	// 第2步：尝试从后向前截断解析
+	cleanedSQL := replacedSQL
+	for i := len(replacedSQL) - 1; i >= 0; i-- {
+		if replacedSQL[i] == ')' {
+			truncatedPart := cleanedSQL[i+1:]
+			cleanedSQL = cleanedSQL[:i+1]
+			// 从截断部分提取MySQL兼容的选项
+			var mysqlCompatibleOptions []string
+			for _, regex := range mysqlCompatibleOptionsRegex {
+				matches := regex.FindString(truncatedPart)
+				if matches == "" {
+					continue
+				}
+				mysqlCompatibleOptions = append(mysqlCompatibleOptions, matches)
+			}
+			// 如果有MySQL兼容选项，加回SQL末尾
+			trySQL := cleanedSQL
+			if len(mysqlCompatibleOptions) > 0 {
+				trySQL += " " + strings.Join(mysqlCompatibleOptions, " ")
+			}
+
+			// 再次尝试解析
+			if stmt, err := ParseCreateTableStmt(trySQL); err == nil {
+				return stmt, nil
+			}
+		}
+	}
+
+	// 所有尝试都失败
+	return nil, fmt.Errorf("failed to parse create table SQL with compatible method")
 }
 
 func ParseCreateTableStmt(sql string) (*ast.CreateTableStmt, error) {
