@@ -185,6 +185,12 @@ func TestRuleSQLE00112(t *testing.T) {
 		session.NewAIMockContext().WithSQL("CREATE TABLE orders (c_id VARCHAR(100), order_date DATE);").
 			WithSQL("CREATE TABLE customers (c_id INT, name VARCHAR(100));"),
 		nil, newTestResult().addResult(ruleName))
+
+	runAIRuleCase(rule, t, "case 33: UPDATE语句中WHERE子句比较t1.id (bigint)与常量2838923，预期通过",
+		"UPDATE t1 SET name = 'jack' WHERE id = 2838923;",
+		session.NewAIMockContext().WithSQL("CREATE TABLE t1 (id BIGINT UNSIGNED not null, name VARCHAR(100));"),
+		nil, newTestResult())
+
 }
 
 // ==== Rule test code end ====
