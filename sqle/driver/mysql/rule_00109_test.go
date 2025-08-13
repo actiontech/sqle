@@ -71,12 +71,11 @@ func TestRuleSQLE00109(t *testing.T) {
 			WithSQL("CREATE TABLE orders_archive (id INT, amount DECIMAL(10,2));"),
 		nil, newTestResult())
 
-	// 特殊情况：解析器好像对from中嵌套的子查询 ，会被视作为属于非实际路由的子查询，因此没有累计（相当于只是个外壳嵌套而已，因此这里可以视作为不违规
-	runAIRuleCase(rule, t, "case 9: SELECT ... UNION ALL SELECT语句中的子查询使用LIMIT，但是这里子查询其实是可以直接push到外层的，可以不算做子查询",
+	runAIRuleCase(rule, t, "case 9: SELECT ... UNION ALL SELECT语句中的子查询使用LIMIT",
 		"SELECT * FROM (SELECT id FROM products LIMIT 1) AS sub UNION ALL SELECT * FROM products;",
 		session.NewAIMockContext().
 			WithSQL("CREATE TABLE products (id INT, name VARCHAR(100));"),
-		nil, newTestResult())
+		nil, newTestResult().addResult(ruleName))
 
 	runAIRuleCase(rule, t, "case 10: SELECT ... UNION ALL SELECT语句中的子查询不使用LIMIT",
 		"SELECT * FROM (SELECT id FROM products) AS sub UNION ALL SELECT * FROM products;",
