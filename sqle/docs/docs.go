@@ -11607,7 +11607,7 @@ var doc = `{
                     "sql_optimization"
                 ],
                 "summary": "获取SQL优化记录列表",
-                "operationId": "getOptimizationRecords",
+                "operationId": "GetOptimizationRecordsV2",
                 "parameters": [
                     {
                         "type": "string",
@@ -11687,7 +11687,7 @@ var doc = `{
                     "sql_optimization"
                 ],
                 "summary": "优化SQL",
-                "operationId": "OptimizeSQLReq",
+                "operationId": "SQLOptimizeV2",
                 "parameters": [
                     {
                         "description": "sqls that should be optimization",
@@ -11795,7 +11795,7 @@ var doc = `{
                     "sql_optimization"
                 ],
                 "summary": "获取SQL优化语句详情",
-                "operationId": "GetOptimizationReq",
+                "operationId": "GetOptimizationSQLDetailV2",
                 "parameters": [
                     {
                         "type": "string",
@@ -23000,7 +23000,7 @@ var doc = `{
                     "type": "string"
                 },
                 "optimization_id": {
-                    "description": "todo flash 待调整",
+                    "description": "优化ID",
                     "type": "string"
                 },
                 "optimization_name": {
@@ -23021,7 +23021,6 @@ var doc = `{
                     "$ref": "#/definitions/sql_flash.AdvisedIndex"
                 },
                 "id": {
-                    "description": "SQL Flash相关字段 - 直接映射SQLFlash响应结构",
                     "type": "integer"
                 },
                 "metadata": {
@@ -23042,7 +23041,7 @@ var doc = `{
                     "$ref": "#/definitions/sql_flash.QueryPlan"
                 },
                 "origin_sql": {
-                    "description": "原始SQL（来自SQLFlash）",
+                    "description": "SQL Flash相关字段",
                     "type": "string"
                 },
                 "total_analysis": {

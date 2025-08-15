@@ -6973,7 +6973,7 @@ definitions:
         description: 数据源
         type: string
       optimization_id:
-        description: todo flash 待调整
+        description: 优化ID
         type: string
       optimization_name:
         type: string
@@ -6988,7 +6988,6 @@ definitions:
         description: 索引建议详情
         type: object
       id:
-        description: SQL Flash相关字段 - 直接映射SQLFlash响应结构
         type: integer
       metadata:
         description: 数据库元数据信息
@@ -7004,7 +7003,7 @@ definitions:
         description: 原始SQL查询计划
         type: object
       origin_sql:
-        description: 原始SQL（来自SQLFlash）
+        description: SQL Flash相关字段
         type: string
       total_analysis:
         $ref: '#/definitions/sql_flash.TotalAnalysis'
@@ -14928,7 +14927,7 @@ paths:
   /v2/projects/{project_name}/sql_optimization_records:
     get:
       description: get sql optimization records
-      operationId: getOptimizationRecords
+      operationId: GetOptimizationRecordsV2
       parameters:
       - description: fuzzy search for optimization_id or create_username
         in: query
@@ -14987,7 +14986,7 @@ paths:
         5. formData[git_http_url]:the url which scheme is http(s) and end with .git.
         6. formData[git_user_name]:The name of the user who owns the repository read access.
         7. formData[git_user_password]:The password corresponding to git_user_name.
-      operationId: OptimizeSQLReq
+      operationId: SQLOptimizeV2
       parameters:
       - description: sqls that should be optimization
         in: body
@@ -15060,7 +15059,7 @@ paths:
   /v2/projects/{project_name}/sql_optimization_records/{optimization_record_id}/detail:
     get:
       description: get sql optimization record
-      operationId: GetOptimizationReq
+      operationId: GetOptimizationSQLDetailV2
       parameters:
       - description: project name
         in: path
