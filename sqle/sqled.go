@@ -130,7 +130,8 @@ func Run(options *config.SqleOptions) error {
 	}
 
 	if options.OptimizationConfig.OptimizationKey != "" && options.OptimizationConfig.OptimizationURL != "" {
-		optimizationRule.InitOptimizationRule()
+		// todo flash del optimize rules
+		//optimizationRule.InitOptimizationRule()
 	}
 
 	server.InitSqled(exitChan)
