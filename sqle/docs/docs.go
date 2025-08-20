@@ -672,64 +672,6 @@ var doc = `{
                 }
             }
         },
-        "/v1/configurations/system_variables": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get system variables",
-                "tags": [
-                    "configuration"
-                ],
-                "summary": "获取系统变量",
-                "operationId": "getSystemVariablesV1",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetSystemVariablesResV1"
-                        }
-                    }
-                }
-            },
-            "patch": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "update system variables",
-                "consumes": [
-                    "application/json"
-                ],
-                "tags": [
-                    "configuration"
-                ],
-                "summary": "修改系统变量",
-                "operationId": "updateSystemVariablesV1",
-                "parameters": [
-                    {
-                        "description": "update system variables request",
-                        "name": "instance",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.UpdateSystemVariablesReqV1"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/configurations/wechat_audit": {
             "get": {
                 "security": [
@@ -16460,23 +16402,6 @@ var doc = `{
                 }
             }
         },
-        "v1.GetSystemVariablesResV1": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.SystemVariablesResV1"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
         "v1.GetTableMetadataResV1": {
             "type": "object",
             "properties": {
@@ -19143,20 +19068,6 @@ var doc = `{
                 }
             }
         },
-        "v1.SystemVariablesResV1": {
-            "type": "object",
-            "properties": {
-                "cb_operation_logs_expired_hours": {
-                    "type": "integer"
-                },
-                "operation_record_expired_hours": {
-                    "type": "integer"
-                },
-                "url": {
-                    "type": "string"
-                }
-            }
-        },
         "v1.Table": {
             "type": "object",
             "properties": {
@@ -19956,23 +19867,6 @@ var doc = `{
                 },
                 "stage_instance_id": {
                     "type": "string"
-                }
-            }
-        },
-        "v1.UpdateSystemVariablesReqV1": {
-            "type": "object",
-            "properties": {
-                "cb_operation_logs_expired_hours": {
-                    "type": "integer",
-                    "example": 2160
-                },
-                "operation_record_expired_hours": {
-                    "type": "integer",
-                    "example": 2160
-                },
-                "url": {
-                    "type": "string",
-                    "example": "http://10.186.61.32:8080"
                 }
             }
         },
