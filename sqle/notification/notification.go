@@ -210,6 +210,7 @@ func (w *WorkflowNotification) notifyUser() []string {
 		auditUsers, err := w.getAuditUsersForWorkflowInstances()
 		if err != nil {
 			log.NewEntry().Errorf("get audit users for workflow instances error: %v", err)
+			return []string{}
 		}
 		return auditUsers
 	default:
