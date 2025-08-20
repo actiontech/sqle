@@ -355,7 +355,7 @@ func NotifyWorkflow(projectId, workflowId string, wt WorkflowNotifyType) {
 
 	go func() { notifyWorkflowWebhook(workflow, wt) }()
 
-	sqleUrl, err := s.GetSqleUrl()
+	sqleUrl, err := dms.GetSqleUrl(context.TODO())
 	if err != nil {
 		logger.Errorf("get sqle url error, %v", err)
 		return
@@ -431,10 +431,9 @@ func (t *TestNotify) NotificationBody() i18nPkg.I18nStr {
 }
 
 func getAPNotifyConfig() (AuditPlanNotifyConfig, error) {
-	s := model.GetStorage()
 	config := AuditPlanNotifyConfig{}
 
-	url, err := s.GetSqleUrl()
+	url, err := dms.GetSqleUrl(context.TODO())
 	if err != nil {
 		return config, err
 	}
