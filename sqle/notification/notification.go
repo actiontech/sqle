@@ -206,16 +206,110 @@ func (w *WorkflowNotification) notifyUser() []string {
 		}
 		// if workflow is executed, the creator and executor needs to be notified.
 	case WorkflowNotifyTypeExecuteSuccess, WorkflowNotifyTypeExecuteFail:
-		users := []string{
-			w.workflow.CreateUserId,
+		// 获取该工单对应数据源上有工单审核权限的所有用户
+		auditUsers, err := w.getAuditUsersForWorkflowInstances()
+		if err != nil {
+			log.NewEntry().Errorf("get audit users for workflow instances error: %v", err)
+			return []string{w.workflow.CreateUserId}
 		}
-		if executeUser := w.workflow.FinalStep().OperationUserId; executeUser != "" {
-			users = append(users, executeUser)
-		}
-		return users
+		return auditUsers
 	default:
 		return []string{}
 	}
+}
+
+// getAuditUsersForWorkflowInstances 获取工单对应数据源上有工单审核权限的所有用户
+func (w *WorkflowNotification) getAuditUsersForWorkflowInstances() ([]string, error) {
+	instanceIds := w.workflow.GetInstanceIds()
+	// 获取实例信息
+	instances, err := dms.GetInstancesInProjectByIds(context.Background(), string(w.workflow.ProjectId), instanceIds)
+	if err != nil {
+		return nil, fmt.Errorf("get instances by ids error: %v", err)
+	}
+	// 获取项目成员和权限信息
+	memberWithPermissions, _, err := dmsobject.ListMembersInProject(context.Background(), controller.GetDMSServerAddress(), v1.ListMembersForInternalReq{
+		ProjectUid: string(w.workflow.ProjectId),
+		PageSize:   999,
+		PageIndex:  1,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list members in project error: %v", err)
+	}
+
+	// 收集所有有审核权限的用户ID
+	auditUserIds := make(map[string]struct{})
+	for _, instance := range instances {
+		// 获取该实例上有审核权限的用户
+		userIds, err := w.getCanOpInstanceUsers(memberWithPermissions, instance, []v1.OpPermissionType{v1.OpPermissionTypeAuditWorkflow})
+		if err != nil {
+			log.NewEntry().Errorf("get can op instance users error: %v", err)
+			continue
+		}
+
+		// 将用户ID添加到集合中
+		for _, user := range userIds {
+			auditUserIds[user] = struct{}{}
+		}
+	}
+	auditUserIds[w.workflow.CreateUserId] = struct{}{}
+	// 转换为字符串切片
+	result := make([]string, 0, len(auditUserIds))
+	for userId := range auditUserIds {
+		result = append(result, userId)
+	}
+	return result, nil
+}
+
+// getCanOpInstanceUsers 获取实例上有指定权限的用户
+func (w *WorkflowNotification) getCanOpInstanceUsers(memberWithPermissions []*v1.ListMembersForInternalItem, instance *model.Instance, opPermissions []v1.OpPermissionType) (userIds []string, err error) {
+	opMapUsers := make(map[string]struct{}, 0)
+	for _, memberWithPermission := range memberWithPermissions {
+		for _, memberOpPermission := range memberWithPermission.MemberOpPermissionList {
+			if w.CanOperationInstance([]v1.OpPermissionItem{memberOpPermission}, opPermissions, instance) {
+				userId := memberWithPermission.User.Uid
+				if _, ok := opMapUsers[userId]; !ok {
+					opMapUsers[userId] = struct{}{}
+					userIds = append(userIds, userId)
+				}
+			}
+		}
+	}
+	return userIds, nil
+}
+
+func (w *WorkflowNotification) CanOperationInstance(userOpPermissions []v1.OpPermissionItem, needOpPermissionTypes []v1.OpPermissionType, instance *model.Instance) bool {
+	for _, userOpPermission := range userOpPermissions {
+		// 全局操作权限用户
+		if userOpPermission.OpPermissionType == v1.OpPermissionTypeGlobalManagement {
+			return true
+		}
+
+		// 项目管理员可以访问所有数据源
+		if userOpPermission.OpPermissionType == v1.OpPermissionTypeProjectAdmin {
+			return true
+		}
+
+		// 动作权限(创建、审核、上线工单等)
+		hasPrivilege := false
+		for _, needOpPermissionType := range needOpPermissionTypes {
+			if needOpPermissionType == userOpPermission.OpPermissionType {
+				hasPrivilege = true
+				break
+			}
+		}
+		if !hasPrivilege {
+			continue
+		}
+		// 对象权限(指定数据源)
+		if userOpPermission.RangeType == v1.OpRangeTypeDBService {
+			for _, id := range userOpPermission.RangeUids {
+				if id == instance.GetIDStr() {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 func notifyWorkflowWebhook(workflow *model.Workflow, wt WorkflowNotifyType) {

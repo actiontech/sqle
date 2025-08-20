@@ -426,6 +426,17 @@ func (w *Workflow) GetTaskIds() []uint {
 	return taskIds
 }
 
+func (w *Workflow) GetInstanceIds() []uint64 {
+	if w.Record == nil || w.Record.InstanceRecords == nil {
+		return nil
+	}
+	instanceIds := make([]uint64, len(w.Record.InstanceRecords))
+	for i, instRecord := range w.Record.InstanceRecords {
+		instanceIds[i] = instRecord.InstanceId
+	}
+	return instanceIds
+}
+
 func (w *Workflow) isExecuteStep() bool {
 	currentStep := w.CurrentStep()
 	if currentStep == nil {
