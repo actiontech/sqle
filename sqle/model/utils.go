@@ -138,7 +138,6 @@ var autoMigrateList = []interface{}{
 	&AuditRuleCategoryRel{},
 	&CustomRuleCategoryRel{},
 	&SqlWhitelist{},
-	&SystemVariable{},
 	&Task{},
 	&AuditFile{},
 	&WorkflowRecord{},
