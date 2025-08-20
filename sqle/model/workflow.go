@@ -427,6 +427,9 @@ func (w *Workflow) GetTaskIds() []uint {
 }
 
 func (w *Workflow) GetInstanceIds() []uint64 {
+	if w.Record == nil || w.Record.InstanceRecords == nil {
+		return nil
+	}
 	instanceIds := make([]uint64, len(w.Record.InstanceRecords))
 	for i, instRecord := range w.Record.InstanceRecords {
 		instanceIds[i] = instRecord.InstanceId
