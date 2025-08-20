@@ -95,13 +95,12 @@ func CreateApprove(projectId, workflowId string) {
 			continue
 		}
 
-		systemVariables, err := s.GetAllSystemVariables()
+		sqleUrl, err := dms.GetSqleUrl(context.TODO())
 		if err != nil {
-			newLog.Errorf("get sqle url system variables error: %v", err)
+			newLog.Errorf("get sqle url error: %v", err)
 			continue
 		}
 
-		sqleUrl := systemVariables[model.SystemVariableSqleUrl].Value
 		workflowUrl := fmt.Sprintf("%v/project/%s/exec-workflow/%s", sqleUrl, workflow.ProjectId, workflow.WorkflowId)
 		if sqleUrl == "" {
 			newLog.Errorf("sqle url is empty")
