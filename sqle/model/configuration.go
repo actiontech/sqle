@@ -1,11 +1,8 @@
 package model
 
 import (
-	"fmt"
-	"strconv"
-
 	e "errors"
-
+	"fmt"
 	dmsCommonAes "github.com/actiontech/dms/pkg/dms-common/pkg/aes"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
@@ -13,115 +10,6 @@ import (
 )
 
 const globalConfigurationTablePrefix = "global_configuration"
-const (
-	SystemVariableWorkflowExpiredHours        = "system_variable_workflow_expired_hours"
-	SystemVariableSqleUrl                     = "system_variable_sqle_url"
-	SystemVariableOperationRecordExpiredHours = "system_variable_operation_record_expired_hours"
-	SystemVariableCbOperationLogsExpiredHours = "system_variable_cb_operation_logs_expired_hours"
-	SystemVariableSSHPrimaryKey               = "system_variable_ssh_primary_key"
-)
-
-const (
-	DefaultOperationRecordExpiredHours = 90 * 24
-	DefaultCbOperationLogsExpiredHours = 90 * 24
-)
-
-// SystemVariable store misc K-V.
-type SystemVariable struct {
-	Key   string `gorm:"primary_key"`
-	Value string `gorm:"not null;type:text"`
-}
-
-func (s *Storage) PathSaveSystemVariables(systemVariables []SystemVariable) error {
-	return s.Tx(func(tx *gorm.DB) error {
-		for _, v := range systemVariables {
-			if err := tx.Save(&v).Error; err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-}
-
-func (s *Storage) GetAllSystemVariables() (map[string]SystemVariable, error) {
-	var svs []SystemVariable
-	if s.db.Find(&svs).Error != nil {
-		return nil, errors.New(errors.ConnectStorageError, s.db.Error)
-	}
-
-	sysVariables := make(map[string] /*system variable key*/ SystemVariable, len(svs))
-	for _, sv := range svs {
-		sysVariables[sv.Key] = sv
-	}
-
-	// if _, ok := sysVariables[SystemVariableWorkflowExpiredHours]; !ok {
-	// 	sysVariables[SystemVariableWorkflowExpiredHours] = SystemVariable{
-	// 		Key:   SystemVariableWorkflowExpiredHours,
-	// 		Value: strconv.Itoa(30 * 24),
-	// 	}
-	// }
-
-	if _, ok := sysVariables[SystemVariableOperationRecordExpiredHours]; !ok {
-		sysVariables[SystemVariableOperationRecordExpiredHours] = SystemVariable{
-			Key:   SystemVariableOperationRecordExpiredHours,
-			Value: strconv.Itoa(DefaultOperationRecordExpiredHours),
-		}
-	}
-
-	if _, ok := sysVariables[SystemVariableCbOperationLogsExpiredHours]; !ok {
-		sysVariables[SystemVariableCbOperationLogsExpiredHours] = SystemVariable{
-			Key:   SystemVariableCbOperationLogsExpiredHours,
-			Value: strconv.Itoa(DefaultCbOperationLogsExpiredHours),
-		}
-	}
-
-	return sysVariables, nil
-}
-
-// GetSystemVariableByKey retrieves a system variable by its key.
-// Returns the system variable, a boolean indicating if it was found, and any error that occurred.
-func (s *Storage) GetSystemVariableByKey(key string) (SystemVariable, bool, error) {
-	var systemVariable SystemVariable
-
-	err := s.db.Where("`key` = ?", key).First(&systemVariable).Error
-
-	if err == gorm.ErrRecordNotFound {
-		return systemVariable, false, nil
-	}
-	if err != nil {
-		return systemVariable, false, errors.New(errors.ConnectStorageError, err)
-	}
-
-	return systemVariable, true, nil
-}
-
-func (s *Storage) GetSqleUrl() (string, error) {
-	sys, err := s.GetAllSystemVariables()
-	if err != nil {
-		return "", err
-	}
-	return sys[SystemVariableSqleUrl].Value, nil
-}
-
-func (s *Storage) GetWorkflowExpiredHoursOrDefault() (int64, error) {
-	var svs []SystemVariable
-	err := s.db.Find(&svs).Error
-	if err != nil {
-		return 0, errors.New(errors.ConnectStorageError, err)
-	}
-
-	for _, sv := range svs {
-		if sv.Key == SystemVariableWorkflowExpiredHours {
-			wfExpiredHs, err := strconv.ParseInt(sv.Value, 10, 64)
-			if err != nil {
-				return 0, err
-			}
-			return wfExpiredHs, nil
-		}
-	}
-
-	return 30 * 24, nil
-}
 
 const (
 	ImTypeDingTalk    = "dingTalk"
