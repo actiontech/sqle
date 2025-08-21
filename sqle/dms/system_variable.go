@@ -53,7 +53,7 @@ func GetSqleUrl(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to get system variables from DMS: %v", err)
 	}
-	return reply.Data.Url, nil
+	return fmt.Sprintf("%s/sqle", reply.Data.Url), nil
 }
 
 // UpdateSystemVariables 更新系统变量配置到DMS
