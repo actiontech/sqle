@@ -7023,6 +7023,10 @@ definitions:
         type: string
       status:
         description: SQLe 维护的状态
+        enum:
+        - optimizing
+        - failed
+        - finish
         type: string
       status_detail:
         description: SQLe 维护的状态详情

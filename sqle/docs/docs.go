@@ -23072,7 +23072,12 @@ var doc = `{
                 },
                 "status": {
                     "description": "SQLe 维护的状态",
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "optimizing",
+                        "failed",
+                        "finish"
+                    ]
                 },
                 "status_detail": {
                     "description": "SQLe 维护的状态详情",
