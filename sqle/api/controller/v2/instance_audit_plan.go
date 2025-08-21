@@ -19,7 +19,6 @@ import (
 	"github.com/actiontech/sqle/sqle/pkg/params"
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/server/auditplan"
-	opt "github.com/actiontech/sqle/sqle/server/optimization/rule"
 	"github.com/labstack/echo/v4"
 )
 
@@ -115,9 +114,6 @@ func GetInstanceTips(c echo.Context) error {
 	instanceTipsResV1 := make([]InstanceTipResV2, 0, len(instances))
 	svc := server.BackupService{}
 	for _, inst := range instances {
-		if operationType == dmsCommonV1.OpPermissionTypeCreateOptimization && !opt.CanOptimizeDbType(inst.DbType) {
-			continue
-		}
 		instanceTipRes := InstanceTipResV2{
 			ID:                      inst.GetIDStr(),
 			Name:                    inst.Name,
