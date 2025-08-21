@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 
 	v1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	dmsobject "github.com/actiontech/dms/pkg/dms-common/dmsobject"
@@ -53,7 +54,7 @@ func GetSqleUrl(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to get system variables from DMS: %v", err)
 	}
-	return fmt.Sprintf("%s/sqle", reply.Data.Url), nil
+	return fmt.Sprintf("%s/sqle", strings.TrimRight(reply.Data.Url, "/")), nil
 }
 
 // UpdateSystemVariables 更新系统变量配置到DMS
