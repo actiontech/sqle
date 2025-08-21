@@ -46,8 +46,8 @@ github.com/VividCortex/ewma v1.1.1 h1:MnEK4VOv6n0RSY4vtRe3h11qjxL3+t0B8yOL8iMXdc
 github.com/VividCortex/ewma v1.1.1/go.mod h1:2Tkkvm3sRDVXaiyucHiACn4cqf7DpdyLvmxzcbUokwA=
 github.com/acomagu/bufpipe v1.0.4 h1:e3H4WUzM3npvo5uv95QuJM3cQspFNtFBzvJ2oNjKIDQ=
 github.com/acomagu/bufpipe v1.0.4/go.mod h1:mxdxdup/WdsKVreO5GpW4+M/1CE2sMG4jeGJ2sYmHc4=
-github.com/actiontech/dms v0.0.0-20250820111433-27cbea3ed14e h1:ayF6sOHAyNSKAaNJo0XRaBvrYOf9w4LMF4m9B7rEeuM=
-github.com/actiontech/dms v0.0.0-20250820111433-27cbea3ed14e/go.mod h1:Jm+tDoBYmX8R8zqgPJRq1NwZXdxO/F+HxVRJVF65WXA=
+github.com/actiontech/dms v0.0.0-20250821024621-eb0fc701649a h1:A1VYR3c16h9a3iDz2EEfRROc561Zspm2OYrxFZTY3cg=
+github.com/actiontech/dms v0.0.0-20250821024621-eb0fc701649a/go.mod h1:Jm+tDoBYmX8R8zqgPJRq1NwZXdxO/F+HxVRJVF65WXA=
 github.com/actiontech/java-sql-extractor v0.0.0-20231120024232-2b8c3c0894a1 h1:/UHUgr+645xeXCqXzvOc3IqwOK5gLM+bU/C+s2Xe/Kk=
 github.com/actiontech/java-sql-extractor v0.0.0-20231120024232-2b8c3c0894a1/go.mod h1:adDZHhAf2LRMx2h0JzofPXn12x2XlyQjVE116KXquwo=
 github.com/actiontech/mybatis-mapper-2-sql v0.5.1-0.20250307064901-aabaceee2249 h1:BjbL364Bl45WMARnEqZrT7Pd0rMhd4vvnQbMvxX3iQw=
