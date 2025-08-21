@@ -7021,6 +7021,12 @@ definitions:
       origin_sql:
         description: SQL Flash相关字段
         type: string
+      status:
+        description: SQLe 维护的状态
+        type: string
+      status_detail:
+        description: SQLe 维护的状态详情
+        type: string
       total_analysis:
         $ref: '#/definitions/sql_flash.TotalAnalysis'
         description: 总体分析
@@ -7031,11 +7037,12 @@ definitions:
     type: object
   v2.OptimizeSQLReq:
     properties:
-      db_type:
-        example: MySQL
+      explain_info:
         type: string
       instance_name:
         example: instance1
+        type: string
+      metadata:
         type: string
       optimization_name:
         example: optmz_2024031412091244
@@ -15099,36 +15106,6 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取SQL优化语句详情
-      tags:
-      - sql_optimization
-  /v2/projects/{project_name}/sql_optimization_records/instance_sql_latest_detail:
-    get:
-      description: get sql optimization record by instance and sql
-      operationId: GetLatestOptimizationSQLDetailByInstanceAndSQL
-      parameters:
-      - description: project name
-        in: path
-        name: project_name
-        required: true
-        type: string
-      - description: instance name
-        in: query
-        name: instance_name
-        required: true
-        type: string
-      - description: origin sql
-        in: query
-        name: origin_sql
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v2.GetOptimizationDetailRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取数据源上SQL最新优化详情
       tags:
       - sql_optimization
   /v2/projects/{project_name}/workflows:

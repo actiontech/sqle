@@ -11788,52 +11788,6 @@ var doc = `{
                 }
             }
         },
-        "/v2/projects/{project_name}/sql_optimization_records/instance_sql_latest_detail": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "get sql optimization record by instance and sql",
-                "tags": [
-                    "sql_optimization"
-                ],
-                "summary": "获取数据源上SQL最新优化详情",
-                "operationId": "GetLatestOptimizationSQLDetailByInstanceAndSQL",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "project name",
-                        "name": "project_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "instance name",
-                        "name": "instance_name",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "origin sql",
-                        "name": "origin_sql",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v2.GetOptimizationDetailRes"
-                        }
-                    }
-                }
-            }
-        },
         "/v2/projects/{project_name}/sql_optimization_records/{optimization_record_id}/detail": {
             "get": {
                 "security": [
@@ -23116,6 +23070,14 @@ var doc = `{
                     "description": "SQL Flash相关字段",
                     "type": "string"
                 },
+                "status": {
+                    "description": "SQLe 维护的状态",
+                    "type": "string"
+                },
+                "status_detail": {
+                    "description": "SQLe 维护的状态详情",
+                    "type": "string"
+                },
                 "total_analysis": {
                     "description": "总体分析",
                     "type": "object",
@@ -23130,13 +23092,15 @@ var doc = `{
         "v2.OptimizeSQLReq": {
             "type": "object",
             "properties": {
-                "db_type": {
-                    "type": "string",
-                    "example": "MySQL"
+                "explain_info": {
+                    "type": "string"
                 },
                 "instance_name": {
                     "type": "string",
                     "example": "instance1"
+                },
+                "metadata": {
+                    "type": "string"
                 },
                 "optimization_name": {
                     "type": "string",
