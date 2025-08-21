@@ -108,8 +108,7 @@ func (j *CleanJob) CleanExpiredOperationLog(entry *logrus.Entry) {
 	}
 }
 
-func getOperationRecordExpiredHours(
-	s *model.Storage, entry *logrus.Entry) (operationRecordExpiredHours int) {
+func getOperationRecordExpiredHours(entry *logrus.Entry) (operationRecordExpiredHours int) {
 
 	operationRecordExpiredHours = dms.DefaultOperationRecordExpiredHours
 	systemVariables, err := dmsobject.GetSystemVariables(context.TODO(), dms.GetDMSServerAddress())
