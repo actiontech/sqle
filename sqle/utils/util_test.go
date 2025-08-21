@@ -124,3 +124,38 @@ func TestIsUpperAndLowerLetterMixed(t *testing.T) {
 		})
 	}
 }
+
+func TestIsEventSQL(t *testing.T) {
+	type args struct {
+		sql string
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{"with DELIMITER", args{sql: `-- 1. 修改分隔符为 $$
+DELIMITER $$ 
+
+-- 2. 编写包含多条语句的事件
+CREATE EVENT my_multi_statement_event
+ON SCHEDULE EVERY 1 DAY
+DO
+BEGIN
+    -- 内部的第一条语句
+    DELETE FROM old_logs WHERE log_date < NOW() - INTERVAL 1 YEAR;
+
+    -- 内部的第二条语句
+    INSERT INTO report_log (message) VALUES ('Old logs have been deleted.');
+END $$
+
+-- 3. 恢复分隔符为默认的分号
+DELIMITER ;`}, true},
+		{"test2", args{sql: "create event my_event on schedule every 10 second do update schema.table set mycol = mycol + 1;"}, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, IsEventSQL(tt.args.sql), "IsEventSQL(%v)", tt.args.sql)
+		})
+	}
+}

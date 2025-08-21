@@ -5434,9 +5434,15 @@ func avoidSet(input *RuleHandlerInput) error {
 }
 
 func checkEventScheduler(input *RuleHandlerInput) error {
-	if utils.IsOpenEventScheduler(input.Node.Text()) ||
-		utils.IsEventSQL(input.Node.Text()) {
+	if utils.IsOpenEventScheduler(input.Node.Text()) {
 		addResult(input.Res, input.Rule, input.Rule.Name)
 	}
+	switch input.Node.(type) {
+	case *ast.UnparsedStmt:
+		if utils.IsEventSQL(input.Node.Text()) {
+			addResult(input.Res, input.Rule, input.Rule.Name)
+		}
+	}
+
 	return nil
 }
