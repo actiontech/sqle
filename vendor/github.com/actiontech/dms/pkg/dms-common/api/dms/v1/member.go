@@ -43,3 +43,33 @@ type ListMembersForInternalReply struct {
 	// Generic reply
 	base.GenericResp
 }
+
+// swagger:model GetMemberGroupReply
+type GetMemberGroupReply struct {
+	// List member reply
+	Data *GetMemberGroup `json:"data"`
+
+	// Generic reply
+	base.GenericResp
+}
+
+type GetMemberGroup struct {
+	Name string `json:"name"`
+	// member group uid
+	Uid string `json:"uid"`
+	// member user
+	Users []UidWithName `json:"users"`
+	// Whether the member has project admin permission
+	IsProjectAdmin bool `json:"is_project_admin"`
+	// member op permission
+	RoleWithOpRanges []ListMemberRoleWithOpRange `json:"role_with_op_ranges"`
+}
+
+type ListMemberRoleWithOpRange struct {
+	// role uid
+	RoleUID UidWithName `json:"role_uid" validate:"required"`
+	// op permission range type, only support db service now
+	OpRangeType OpRangeType `json:"op_range_type" validate:"required"`
+	// op range uids
+	RangeUIDs []UidWithName `json:"range_uids" validate:"required"`
+}

@@ -2783,18 +2783,6 @@ definitions:
         example: ok
         type: string
     type: object
-  v1.GetSystemVariablesResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        $ref: '#/definitions/v1.SystemVariablesResV1'
-        type: object
-      message:
-        example: ok
-        type: string
-    type: object
   v1.GetTableMetadataResV1:
     properties:
       code:
@@ -4611,15 +4599,6 @@ definitions:
       risk_rate:
         type: integer
     type: object
-  v1.SystemVariablesResV1:
-    properties:
-      cb_operation_logs_expired_hours:
-        type: integer
-      operation_record_expired_hours:
-        type: integer
-      url:
-        type: string
-    type: object
   v1.Table:
     properties:
       name:
@@ -5161,18 +5140,6 @@ definitions:
       next_stage_instance_id:
         type: string
       stage_instance_id:
-        type: string
-    type: object
-  v1.UpdateSystemVariablesReqV1:
-    properties:
-      cb_operation_logs_expired_hours:
-        example: 2160
-        type: integer
-      operation_record_expired_hours:
-        example: 2160
-        type: integer
-      url:
-        example: http://10.186.61.32:8080
         type: string
     type: object
   v1.UpdateTaskBackupStrategyReq:
@@ -7287,42 +7254,6 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 生成SSH密钥对
-      tags:
-      - configuration
-  /v1/configurations/system_variables:
-    get:
-      description: get system variables
-      operationId: getSystemVariablesV1
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetSystemVariablesResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取系统变量
-      tags:
-      - configuration
-    patch:
-      consumes:
-      - application/json
-      description: update system variables
-      operationId: updateSystemVariablesV1
-      parameters:
-      - description: update system variables request
-        in: body
-        name: instance
-        required: true
-        schema:
-          $ref: '#/definitions/v1.UpdateSystemVariablesReqV1'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controller.BaseRes'
-      security:
-      - ApiKeyAuth: []
-      summary: 修改系统变量
       tags:
       - configuration
   /v1/configurations/wechat_audit:

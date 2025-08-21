@@ -1,11 +1,14 @@
 package server
 
 import (
+	"context"
+	"github.com/actiontech/dms/pkg/dms-common/dmsobject"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/sirupsen/logrus"
@@ -35,7 +38,7 @@ func (j *CleanJob) job(entry *logrus.Entry) {
 func (j *CleanJob) CleanExpiredWorkflows(entry *logrus.Entry) {
 	st := model.GetStorage()
 
-	expiredHours, err := st.GetWorkflowExpiredHoursOrDefault()
+	expiredHours, err := dms.GetWorkflowExpiredHoursOrDefault()
 	if err != nil {
 		entry.Errorf("get workflow expired hours error: %v", err)
 		return
@@ -86,7 +89,7 @@ func (j *CleanJob) CleanExpiredTasks(entry *logrus.Entry) {
 func (j *CleanJob) CleanExpiredOperationLog(entry *logrus.Entry) {
 
 	st := model.GetStorage()
-	operationRecordExpiredHours := getOperationRecordExpiredHours(st, j.entry)
+	operationRecordExpiredHours := getOperationRecordExpiredHours(j.entry)
 	start := time.Now().Add(-time.Duration(operationRecordExpiredHours) * time.Hour)
 	idList, err := st.GetExpiredOperationRecordIDListByStartTime(start)
 
@@ -105,26 +108,16 @@ func (j *CleanJob) CleanExpiredOperationLog(entry *logrus.Entry) {
 	}
 }
 
-func getOperationRecordExpiredHours(
-	s *model.Storage, entry *logrus.Entry) (operationRecordExpiredHours int) {
+func getOperationRecordExpiredHours(entry *logrus.Entry) (operationRecordExpiredHours int) {
 
-	operationRecordExpiredHours = model.DefaultOperationRecordExpiredHours
-	systemVariables, err := s.GetAllSystemVariables()
-	if err != nil {
+	operationRecordExpiredHours = dms.DefaultOperationRecordExpiredHours
+	systemVariables, err := dmsobject.GetSystemVariables(context.TODO(), dms.GetDMSServerAddress())
+	if err != nil || systemVariables.Code != 0 {
 		entry.Warnf("get system variables failed, err: %s", err.Error())
 		return operationRecordExpiredHours
 	}
-	strVal := systemVariables[model.SystemVariableOperationRecordExpiredHours].Value
-	intVal, err := strconv.Atoi(strVal)
-	if err != nil {
-		entry.Warnf(
-			"get system variables operation_record_expired_hours failed, err: %s",
-			err.Error())
-		return operationRecordExpiredHours
-	}
-	operationRecordExpiredHours = intVal
 
-	return operationRecordExpiredHours
+	return systemVariables.Data.OperationRecordExpiredHours
 }
 
 type CleanJobForAllNodes struct {

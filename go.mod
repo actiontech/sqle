@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/Masterminds/semver/v3 v3.1.1
-	github.com/actiontech/dms v0.0.0-20250411082853-ffd0db983e12
+	github.com/actiontech/dms v0.0.0-20250821024621-eb0fc701649a
 	github.com/actiontech/java-sql-extractor v0.0.0-20231120024232-2b8c3c0894a1
 	github.com/actiontech/mybatis-mapper-2-sql v0.5.1-0.20250307064901-aabaceee2249
 	github.com/agiledragon/gomonkey v2.0.2+incompatible
