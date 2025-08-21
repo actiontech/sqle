@@ -9,6 +9,7 @@ import (
 var (
 	DBServiceRouterGroup = "/dms/projects/:project_uid/db_services"
 	ProjectRouterGroup   = "/dms/projects"
+	MemberRouterGroup    = "/dms/projects/:project_uid/members"
 )
 
 // api group
