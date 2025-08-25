@@ -12,7 +12,6 @@ import (
 	"github.com/actiontech/sqle/sqle/api"
 	"github.com/actiontech/sqle/sqle/dms"
 	knowledge_base "github.com/actiontech/sqle/sqle/server/knowledge_base"
-	optimizationRule "github.com/actiontech/sqle/sqle/server/optimization/rule"
 
 	"github.com/actiontech/sqle/sqle/config"
 	"github.com/actiontech/sqle/sqle/driver"
@@ -102,7 +101,7 @@ func Run(options *config.SqleOptions) error {
 			if err := s.CreateRuleCategoriesRelated(); err != nil {
 				return fmt.Errorf("create rule categories related failed while auto migrating table: %v", err)
 			}
-			rules := model.MergeOptimizationRules(driver.GetPluginManager().GetAllRules(), optimizationRule.OptimizationRuleMap)
+			rules := model.MergeOptimizationRules(driver.GetPluginManager().GetAllRules())
 			if err := s.CreateRulesIfNotExist(rules); err != nil {
 				return fmt.Errorf("create rules failed while auto migrating table: %v", err)
 			}
