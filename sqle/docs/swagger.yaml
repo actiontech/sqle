@@ -15051,6 +15051,14 @@ paths:
         in: formData
         name: sql_content
         type: string
+      - description: explain info
+        in: formData
+        name: explain_info
+        type: string
+      - description: metadata
+        in: formData
+        name: metadata
+        type: string
       - description: input SQL file
         in: formData
         name: input_sql_file

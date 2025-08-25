@@ -11742,6 +11742,18 @@ var doc = `{
                         "in": "formData"
                     },
                     {
+                        "type": "string",
+                        "description": "explain info",
+                        "name": "explain_info",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "metadata",
+                        "name": "metadata",
+                        "in": "formData"
+                    },
+                    {
                         "type": "file",
                         "description": "input SQL file",
                         "name": "input_sql_file",
