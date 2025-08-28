@@ -7008,6 +7008,9 @@ definitions:
     type: object
   v2.OptimizeSQLReq:
     properties:
+      db_type:
+        example: MySQL
+        type: string
       explain_info:
         type: string
       instance_name:
@@ -14972,6 +14975,7 @@ paths:
       - description: db type of instance
         in: formData
         name: db_type
+        required: true
         type: string
       - description: optimization name
         in: formData

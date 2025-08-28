@@ -11668,7 +11668,8 @@ var doc = `{
                         "type": "string",
                         "description": "db type of instance",
                         "name": "db_type",
-                        "in": "formData"
+                        "in": "formData",
+                        "required": true
                     },
                     {
                         "type": "string",
@@ -23003,6 +23004,10 @@ var doc = `{
         "v2.OptimizeSQLReq": {
             "type": "object",
             "properties": {
+                "db_type": {
+                    "type": "string",
+                    "example": "MySQL"
+                },
                 "explain_info": {
                     "type": "string"
                 },
