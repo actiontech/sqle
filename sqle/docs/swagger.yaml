@@ -10370,6 +10370,10 @@ paths:
         name: sql_manage_id
         required: true
         type: string
+      - description: whether to calculate and return affected rows, default is true
+        in: query
+        name: affectRowsEnabled
+        type: boolean
       responses:
         "200":
           description: OK
@@ -14730,6 +14734,10 @@ paths:
         name: number
         required: true
         type: integer
+      - description: whether to calculate and return affected rows, default is true
+        in: query
+        name: affectRowsEnabled
+        type: boolean
       responses:
         "200":
           description: OK
