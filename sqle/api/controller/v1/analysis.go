@@ -22,7 +22,7 @@ type AnalysisResult struct {
 	AffectRowsResultErr error
 }
 
-func GetSQLAnalysisResult(l *logrus.Entry, instance *model.Instance, schema, sql string) (res *AnalysisResult, err error) {
+func GetSQLAnalysisResult(l *logrus.Entry, instance *model.Instance, schema, sql string, affectRowsEnabled bool) (res *AnalysisResult, err error) {
 	dsn, err := common.NewDSN(instance, schema)
 	if err != nil {
 		return nil, err
@@ -41,7 +41,11 @@ func GetSQLAnalysisResult(l *logrus.Entry, instance *model.Instance, schema, sql
 	res.Cost = &cost
 	res.ExplainResult, res.ExplainResultErr = Explain(instance.DbType, plugin, sql)
 	res.TableMetaResult, res.TableMetaResultErr = GetTableMetas(instance.DbType, plugin, sql)
-	res.AffectRowsResult, res.AffectRowsResultErr = GetRowsAffected(instance.DbType, plugin, sql)
+
+	// 只有当AffectRowsEnabled为true时才执行影响行数计算
+	if affectRowsEnabled {
+		res.AffectRowsResult, res.AffectRowsResultErr = GetRowsAffected(instance.DbType, plugin, sql)
+	}
 
 	return res, nil
 }

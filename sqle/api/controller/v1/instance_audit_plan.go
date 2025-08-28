@@ -1285,14 +1285,14 @@ func GetAuditPlanSqlAnalysisData(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	res, err := GetSQLAnalysisResult(log.NewEntry(), instance, originSQL.SchemaName, originSQL.SqlText)
+	res, err := GetSQLAnalysisResult(log.NewEntry(), instance, originSQL.SchemaName, originSQL.SqlText, true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	return c.JSON(http.StatusOK, &GetSqlManageSqlAnalysisResp{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertSQLAnalysisResultToRes(c.Request().Context(), res, originSQL.SqlText),
+		Data:    convertSQLAnalysisResultToRes(c.Request().Context(), res, originSQL.SqlText, true),
 	})
 }
 
