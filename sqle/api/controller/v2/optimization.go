@@ -12,6 +12,7 @@ import (
 
 type OptimizeSQLReq struct {
 	OptimizationName string  `json:"optimization_name" form:"optimization_name" example:"optmz_2024031412091244" valid:"required"`
+	DBType           string  `json:"db_type" form:"db_type" example:"MySQL" valid:"required"`
 	SQLContent       string  `json:"sql_content" form:"sql_content" example:"select * from t1; select * from t2;"`
 	InstanceName     *string `json:"instance_name" form:"instance_name" example:"instance1"`
 	SchemaName       *string `json:"schema_name" form:"schema_name" example:"schema1"`
@@ -47,7 +48,7 @@ type OptimizeSQLResData struct {
 // @Param project_name path string true "project name"
 // @Param instance_name formData string false "instance name"
 // @Param schema_name formData string false "schema of instance"
-// @Param db_type formData string false "db type of instance"
+// @Param db_type formData string true "db type of instance"
 // @Param optimization_name formData string true "optimization name"
 // @Param sql_content formData string false "sqls for audit"
 // @Param explain_info formData string false "explain info"
