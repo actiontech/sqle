@@ -3,6 +3,7 @@ package v2
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
@@ -30,7 +31,7 @@ func getTaskAnalysisData(c echo.Context) error {
 	// 获取AffectRowsEnabled查询参数，默认为true以保持向后兼容
 	affectRowsEnabled := true
 	if affectRowsEnabledStr := c.QueryParam("affectRowsEnabled"); affectRowsEnabledStr != "" {
-		if affectRowsEnabledStr == "false" {
+		if strings.EqualFold(affectRowsEnabledStr, "false") {
 			affectRowsEnabled = false
 		}
 	}

@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	v1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
@@ -1261,7 +1262,7 @@ func GetAuditPlanSqlAnalysisData(c echo.Context) error {
 	sqlManageRecordId := c.Param("id")
 	affectRowsEnabled := true
 	if affectRowsEnabledStr := c.QueryParam("affectRowsEnabled"); affectRowsEnabledStr != "" {
-		if affectRowsEnabledStr == "false" {
+		if strings.EqualFold(affectRowsEnabledStr, "false") {
 			affectRowsEnabled = false
 		}
 	}
