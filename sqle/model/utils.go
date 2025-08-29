@@ -19,7 +19,6 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
-	opt "github.com/actiontech/sqle/sqle/server/optimization/rule"
 	"github.com/jmoiron/sqlx"
 	"github.com/jmoiron/sqlx/reflectx"
 	xerrors "github.com/pkg/errors"
@@ -138,7 +137,6 @@ var autoMigrateList = []interface{}{
 	&AuditRuleCategoryRel{},
 	&CustomRuleCategoryRel{},
 	&SqlWhitelist{},
-	&SystemVariable{},
 	&Task{},
 	&AuditFile{},
 	&WorkflowRecord{},
@@ -431,42 +429,17 @@ func DBRuleInPluginRule(dbRule *Rule) bool {
 }
 
 // 整合sql优化规则与插件规则，并赋予审核、重写能力
-func MergeOptimizationRules(pluginRulesMap map[string][]*driverV2.Rule, optimizationRulesMap map[string][]opt.OptimizationRuleHandler) map[string][]*Rule {
+func MergeOptimizationRules(pluginRulesMap map[string][]*driverV2.Rule) map[string][]*Rule {
 	resultAllRulesMap := map[string][]*Rule{}
-	rulesMap := map[string]*Rule{}
 	for dbType, pluginRules := range pluginRulesMap {
 		resultAllRules := []*Rule{}
-		optimizationRules, exist := optimizationRulesMap[dbType]
-		if exist {
-			// 插件规则转换并赋值能力
-			for _, rule := range pluginRules {
-				resultRule := GenerateRuleByDriverRule(rule, dbType)
-				resultRule.HasAuditPower = true
-				resultRule.HasRewritePower = false
-				resultAllRules = append(resultAllRules, resultRule)
-				rulesMap[rule.Name] = resultRule
-			}
-			// sql优化规则转换并赋值能力
-			for _, rule := range optimizationRules {
-				// 与插件规则复用的sql优化规则（rule name相同）
-				if value, ok := rulesMap[rule.Rule.Name]; ok {
-					value.HasRewritePower = true
-					rulesMap[rule.Rule.Name] = value
-				} else {
-					resultRule := GenerateRuleByDriverRule(&rule.Rule, dbType)
-					resultRule.HasRewritePower = true
-					resultRule.HasAuditPower = false
-					resultAllRules = append(resultAllRules, resultRule)
-				}
-			}
-		} else {
-			for _, rule := range pluginRules {
-				resultRule := GenerateRuleByDriverRule(rule, dbType)
-				resultRule.HasAuditPower = true
-				resultRule.HasRewritePower = false
-				resultAllRules = append(resultAllRules, resultRule)
-			}
+		for _, rule := range pluginRules {
+			resultRule := GenerateRuleByDriverRule(rule, dbType)
+			resultRule.HasAuditPower = true
+			resultRule.HasRewritePower = false
+			resultAllRules = append(resultAllRules, resultRule)
 		}
+
 		resultAllRulesMap[dbType] = resultAllRules
 	}
 	return resultAllRulesMap

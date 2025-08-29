@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	v1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
@@ -1252,12 +1253,19 @@ func ConvertReqToAuditPlanFilter(fs []Filter) []auditplan.Filter {
 // @Param project_name path string true "project name"
 // @Param instance_audit_plan_id path string true "instance audit plan id"
 // @Param id path string true "audit plan sql id"
+// @Param affectRowsEnabled query bool false "whether to calculate and return affected rows, default is true"
 // @Security ApiKeyAuth
 // @Success 200 {object} v1.GetSqlManageSqlAnalysisResp
 // @router /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/sqls/{id}/analysis [get]
 func GetAuditPlanSqlAnalysisData(c echo.Context) error {
 	insAuditPlanID := c.Param("instance_audit_plan_id")
 	sqlManageRecordId := c.Param("id")
+	affectRowsEnabled := true
+	if affectRowsEnabledStr := c.QueryParam("affectRowsEnabled"); affectRowsEnabledStr != "" {
+		if strings.EqualFold(affectRowsEnabledStr, "false") {
+			affectRowsEnabled = false
+		}
+	}
 	projectUID, err := dms.GetProjectUIDByName(c.Request().Context(), c.Param("project_name"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -1285,14 +1293,14 @@ func GetAuditPlanSqlAnalysisData(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	res, err := GetSQLAnalysisResult(log.NewEntry(), instance, originSQL.SchemaName, originSQL.SqlText)
+	res, err := GetSQLAnalysisResult(log.NewEntry(), instance, originSQL.SchemaName, originSQL.SqlText, affectRowsEnabled)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	return c.JSON(http.StatusOK, &GetSqlManageSqlAnalysisResp{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertSQLAnalysisResultToRes(c.Request().Context(), res, originSQL.SqlText),
+		Data:    convertSQLAnalysisResultToRes(c.Request().Context(), res, originSQL.SqlText, affectRowsEnabled),
 	})
 }
 

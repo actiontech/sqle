@@ -290,14 +290,14 @@ func GetAuditPlanAnalysisData(c echo.Context) error {
 		schema = auditPlanReportSQLV2.Schema
 	}
 
-	res, err := v1.GetSQLAnalysisResult(log.NewEntry(), instance, schema, auditPlanReportSQLV2.SQL)
+	res, err := v1.GetSQLAnalysisResult(log.NewEntry(), instance, schema, auditPlanReportSQLV2.SQL, true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	return c.JSON(http.StatusOK, &GetAuditPlanAnalysisDataResV2{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertSQLAnalysisResultToRes(c.Request().Context(), res, auditPlanReportSQLV2.SQL),
+		Data:    convertSQLAnalysisResultToRes(c.Request().Context(), res, auditPlanReportSQLV2.SQL, true),
 	})
 }
 

@@ -4,24 +4,21 @@ import (
 	"context"
 	"crypto/rsa"
 	"fmt"
-	"net/http"
-	"os"
-	"strconv"
-
+	"github.com/actiontech/dms/pkg/dms-common/dmsobject"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
+	"net/http"
+	"os"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/driver"
-
-	"github.com/actiontech/sqle/sqle/model"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	goGitTransport "github.com/go-git/go-git/v5/plumbing/transport/http"
-
 	sshTransport "github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/ssh"
@@ -98,53 +95,6 @@ type UpdateSystemVariablesReqV1 struct {
 	CbOperationLogsExpiredHours *int    `json:"cb_operation_logs_expired_hours" form:"cb_operation_logs_expired_hours" example:"2160"`
 }
 
-// @Summary 修改系统变量
-// @Description update system variables
-// @Accept json
-// @Id updateSystemVariablesV1
-// @Tags configuration
-// @Security ApiKeyAuth
-// @Param instance body v1.UpdateSystemVariablesReqV1 true "update system variables request"
-// @Success 200 {object} controller.BaseRes
-// @router /v1/configurations/system_variables [patch]
-func UpdateSystemVariables(c echo.Context) error {
-	req := new(UpdateSystemVariablesReqV1)
-	if err := controller.BindAndValidateReq(c, req); err != nil {
-		return err
-	}
-
-	s := model.GetStorage()
-
-	var systemVariables []model.SystemVariable
-
-	if req.OperationRecordExpiredHours != nil {
-		systemVariables = append(systemVariables, model.SystemVariable{
-			Key:   model.SystemVariableOperationRecordExpiredHours,
-			Value: strconv.Itoa(*req.OperationRecordExpiredHours),
-		})
-	}
-
-	if req.CbOperationLogsExpiredHours != nil {
-		systemVariables = append(systemVariables, model.SystemVariable{
-			Key:   model.SystemVariableCbOperationLogsExpiredHours,
-			Value: strconv.Itoa(*req.CbOperationLogsExpiredHours),
-		})
-	}
-
-	if req.Url != nil {
-		systemVariables = append(systemVariables, model.SystemVariable{
-			Key:   model.SystemVariableSqleUrl,
-			Value: *req.Url,
-		})
-	}
-
-	if err := s.PathSaveSystemVariables(systemVariables); err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	return controller.JSONBaseErrorReq(c, nil)
-}
-
 type GetSystemVariablesResV1 struct {
 	controller.BaseRes
 	Data SystemVariablesResV1 `json:"data"`
@@ -154,39 +104,6 @@ type SystemVariablesResV1 struct {
 	Url                         string `json:"url"`
 	OperationRecordExpiredHours int    `json:"operation_record_expired_hours"`
 	CbOperationLogsExpiredHours int    `json:"cb_operation_logs_expired_hours"`
-}
-
-// @Summary 获取系统变量
-// @Description get system variables
-// @Id getSystemVariablesV1
-// @Tags configuration
-// @Security ApiKeyAuth
-// @Success 200 {object} v1.GetSystemVariablesResV1
-// @router /v1/configurations/system_variables [get]
-func GetSystemVariables(c echo.Context) error {
-	s := model.GetStorage()
-	systemVariables, err := s.GetAllSystemVariables()
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	operationRecordExpiredHours, err := strconv.Atoi(systemVariables[model.SystemVariableOperationRecordExpiredHours].Value)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	cbOperationLogsExpiredHours, err := strconv.Atoi(systemVariables[model.SystemVariableCbOperationLogsExpiredHours].Value)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
-	return c.JSON(http.StatusOK, &GetSystemVariablesResV1{
-		BaseRes: controller.NewBaseReq(nil),
-		Data: SystemVariablesResV1{
-			Url:                         systemVariables[model.SystemVariableSqleUrl].Value,
-			OperationRecordExpiredHours: operationRecordExpiredHours,
-			CbOperationLogsExpiredHours: cbOperationLogsExpiredHours,
-		},
-	})
 }
 
 type GetDriversResV1 struct {
@@ -498,15 +415,14 @@ func getGitAuthMethod(url, username, password string) (transport.AuthMethod, err
 		// 			2. 查看公钥
 		// 			3. 仓库配置密钥
 		//             不支持该步骤，用户手动执行
-		storage := model.GetStorage()
-		privateKey, exists, err := storage.GetSystemVariableByKey(model.SystemVariableSSHPrimaryKey)
+		systemVariable, err := dmsobject.GetSystemVariables(context.TODO(), dms.GetDMSServerAddress())
 		if err != nil {
 			return nil, err
 		}
-		if !exists {
+		if systemVariable.Code != 0 {
 			return nil, errors.New(errors.DataNotExist, fmt.Errorf("git ssh private key not found"))
 		}
-		publicKeys, err := sshTransport.NewPublicKeys("git", []byte(privateKey.Value), "")
+		publicKeys, err := sshTransport.NewPublicKeys("git", []byte(systemVariable.Data.SystemVariableSSHPrimaryKey), "")
 		if err != nil {
 			return nil, fmt.Errorf("failed to load SSH key: %w", err)
 		}
@@ -630,12 +546,11 @@ type SSHPublicKeyInfo struct {
 // @Success 200 {object} v1.SSHPublicKeyInfoV1Rsp
 // @Router /v1/configurations/ssh_key [get]
 func GetSSHPublicKey(c echo.Context) error {
-	storage := model.GetStorage()
-	systemVariables, exists, err := storage.GetSystemVariableByKey(model.SystemVariableSSHPrimaryKey)
+	systemVariable, err := dmsobject.GetSystemVariables(context.TODO(), dms.GetDMSServerAddress())
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if !exists {
+	if systemVariable.Code != 0 {
 		return c.JSON(http.StatusOK, SSHPublicKeyInfoV1Rsp{
 			BaseRes: controller.NewBaseReq(nil),
 			Data: SSHPublicKeyInfo{
@@ -643,7 +558,7 @@ func GetSSHPublicKey(c echo.Context) error {
 			},
 		})
 	}
-	privateKey, err := ssh.ParseRawPrivateKey([]byte(systemVariables.Value))
+	privateKey, err := ssh.ParseRawPrivateKey([]byte(systemVariable.Data.SystemVariableSSHPrimaryKey))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -673,14 +588,11 @@ func GetSSHPublicKey(c echo.Context) error {
 // @Success 200 {object} controller.BaseRes
 // @Router /v1/configurations/ssh_key [post]
 func GenSSHKey(c echo.Context) error {
-	storage := model.GetStorage()
-	_, exists, err := storage.GetSystemVariableByKey(model.SystemVariableSSHPrimaryKey)
+	systemVariable, err := dmsobject.GetSystemVariables(context.TODO(), dms.GetDMSServerAddress())
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
-	// 如果已存在密钥，则不重新生成
-	if exists {
+	if systemVariable.Data.SystemVariableSSHPrimaryKey != "" {
 		return controller.JSONBaseErrorReq(c, nil)
 	}
 
@@ -691,12 +603,7 @@ func GenSSHKey(c echo.Context) error {
 	}
 
 	// 保存密钥到系统变量
-	err = storage.PathSaveSystemVariables([]model.SystemVariable{
-		{
-			Key:   model.SystemVariableSSHPrimaryKey,
-			Value: primaryKey,
-		},
-	})
+	err = dms.UpdateSystemVariables(c.Request().Context(), dms.SystemVariableSSHPrimaryKey, primaryKey)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

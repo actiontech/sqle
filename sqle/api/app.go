@@ -134,8 +134,6 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1Router.GET("/configurations/ding_talk", v1.GetDingTalkConfigurationV1, sqleMiddleware.ViewGlobalAllowed())
 		v1Router.PATCH("/configurations/ding_talk", v1.UpdateDingTalkConfigurationV1, sqleMiddleware.OpGlobalAllowed())
 		v1Router.POST("/configurations/ding_talk/test", v1.TestDingTalkConfigV1, sqleMiddleware.OpGlobalAllowed())
-		v1Router.GET("/configurations/system_variables", v1.GetSystemVariables, sqleMiddleware.ViewGlobalAllowed())
-		v1Router.PATCH("/configurations/system_variables", v1.UpdateSystemVariables, sqleMiddleware.OpGlobalAllowed())
 		v1Router.GET("/configurations/license", v1.GetLicense, sqleMiddleware.ViewGlobalAllowed())
 		v1Router.POST("/configurations/license", v1.SetLicense, sqleMiddleware.OpGlobalAllowed())
 		v1Router.GET("/configurations/license/info", v1.GetSQLELicenseInfo, sqleMiddleware.ViewGlobalAllowed())
@@ -414,6 +412,9 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 
 		v2ProjectOpRouter.POST("/:project_name/audit_plans/:audit_plan_name/full", DeprecatedBy(apiV2))
 		v2ProjectOpRouter.POST("/:project_name/audit_plans/:audit_plan_name/sqls/partial", DeprecatedBy(apiV2))
+
+		// sql optimization
+		v2ProjectOpRouter.POST("/:project_name/sql_optimization_records", v2.SQLOptimize)
 	}
 
 	v3ProjectOpRouter := v3Router.Group("/projects", sqleMiddleware.ProjectMemberOpAllowed())
@@ -443,6 +444,10 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v2ProjectViewRouter.GET("/:project_name/sql_manages/exports", v2.ExportSqlManagesV2)
 		v2ProjectViewRouter.GET("/:project_name/instance_audit_plans", v2.GetInstanceAuditPlans)
 		v2ProjectViewRouter.GET("/:project_name/instance_audit_plans/:instance_audit_plan_id", v2.GetInstanceAuditPlanDetail)
+
+		// sql optimization
+		v2ProjectViewRouter.GET("/:project_name/sql_optimization_records", v2.GetOptimizationRecords)
+		v2ProjectViewRouter.GET("/:project_name/sql_optimization_records/:optimization_record_id/detail", v2.GetOptimizationSQLDetail)
 	}
 
 	{
