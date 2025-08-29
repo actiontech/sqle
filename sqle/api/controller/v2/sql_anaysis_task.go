@@ -3,6 +3,7 @@ package v2
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
@@ -27,6 +28,14 @@ func getTaskAnalysisData(c echo.Context) error {
 	taskID := c.Param("task_id")
 	sqlNumber := c.Param("number")
 
+	// 获取AffectRowsEnabled查询参数，默认为true以保持向后兼容
+	affectRowsEnabled := true
+	if affectRowsEnabledStr := c.QueryParam("affectRowsEnabled"); affectRowsEnabledStr != "" {
+		if strings.EqualFold(affectRowsEnabledStr, "false") {
+			affectRowsEnabled = false
+		}
+	}
+
 	s := model.GetStorage()
 	task, err := v1.GetTaskById(c.Request().Context(), taskID)
 	if err != nil {
@@ -50,18 +59,18 @@ func getTaskAnalysisData(c echo.Context) error {
 		log.NewEntry().Errorf("fill param marker sql failed: %v", err)
 		sqlContent = taskSql.Content
 	}
-	res, err := v1.GetSQLAnalysisResult(log.NewEntry(), task.Instance, task.Schema, sqlContent)
+	res, err := v1.GetSQLAnalysisResult(log.NewEntry(), task.Instance, task.Schema, sqlContent, affectRowsEnabled)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	return c.JSON(http.StatusOK, &GetTaskAnalysisDataResV2{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertSQLAnalysisResultToRes(c.Request().Context(), res, taskSql.Content),
+		Data:    convertSQLAnalysisResultToRes(c.Request().Context(), res, taskSql.Content, affectRowsEnabled),
 	})
 }
 
-func convertSQLAnalysisResultToRes(ctx context.Context, res *v1.AnalysisResult, rawSQL string) *TaskAnalysisDataV2 {
+func convertSQLAnalysisResultToRes(ctx context.Context, res *v1.AnalysisResult, rawSQL string, affectRowsEnabled bool) *TaskAnalysisDataV2 {
 
 	data := &TaskAnalysisDataV2{}
 
@@ -160,15 +169,16 @@ func convertSQLAnalysisResultToRes(ctx context.Context, res *v1.AnalysisResult, 
 	{
 		data.PerformanceStatistics = &PerformanceStatistics{}
 
-		// affect_rows
-		data.PerformanceStatistics.AffectRows = &AffectRows{}
-		if res.AffectRowsResultErr != nil {
-			data.PerformanceStatistics.AffectRows.ErrMessage = res.AffectRowsResultErr.Error()
-		} else {
-			data.PerformanceStatistics.AffectRows.ErrMessage = res.AffectRowsResult.ErrMessage
-			data.PerformanceStatistics.AffectRows.Count = int(res.AffectRowsResult.Count)
+		// 只有当AffectRowsEnabled为true时才处理影响行数
+		if affectRowsEnabled {
+			data.PerformanceStatistics.AffectRows = &AffectRows{}
+			if res.AffectRowsResultErr != nil {
+				data.PerformanceStatistics.AffectRows.ErrMessage = res.AffectRowsResultErr.Error()
+			} else if res.AffectRowsResult != nil {
+				data.PerformanceStatistics.AffectRows.ErrMessage = res.AffectRowsResult.ErrMessage
+				data.PerformanceStatistics.AffectRows.Count = int(res.AffectRowsResult.Count)
+			}
 		}
-
 	}
 
 	return data

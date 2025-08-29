@@ -303,6 +303,7 @@ type CodingResp struct {
 // @Tags SqlManage
 // @Param project_name path string true "project name"
 // @Param sql_manage_id path string true "sql manage id"
+// @Param affectRowsEnabled query bool false "whether to calculate and return affected rows, default is true"
 // @Security ApiKeyAuth
 // @Success 200 {object} GetSqlManageSqlAnalysisResp
 // @Router /v1/projects/{project_name}/sql_manages/{sql_manage_id}/sql_analysis [get]
@@ -354,7 +355,7 @@ func SendSqlManage(c echo.Context) error {
 	return sendSqlManage(c)
 }
 
-func convertSQLAnalysisResultToRes(ctx context.Context, res *AnalysisResult, rawSQL string) *SqlAnalysis {
+func convertSQLAnalysisResultToRes(ctx context.Context, res *AnalysisResult, rawSQL string, affectRowsEnabled bool) *SqlAnalysis {
 	data := &SqlAnalysis{}
 
 	// explain
@@ -453,15 +454,16 @@ func convertSQLAnalysisResultToRes(ctx context.Context, res *AnalysisResult, raw
 	{
 		data.PerformanceStatistics = &PerformanceStatistics{}
 
-		// affect_rows
-		data.PerformanceStatistics.AffectRows = &AffectRows{}
-		if res.AffectRowsResultErr != nil {
-			data.PerformanceStatistics.AffectRows.ErrMessage = res.AffectRowsResultErr.Error()
-		} else {
-			data.PerformanceStatistics.AffectRows.ErrMessage = res.AffectRowsResult.ErrMessage
-			data.PerformanceStatistics.AffectRows.Count = int(res.AffectRowsResult.Count)
+		// 只有当AffectRowsEnabled为true时才处理影响行数
+		if affectRowsEnabled {
+			data.PerformanceStatistics.AffectRows = &AffectRows{}
+			if res.AffectRowsResultErr != nil {
+				data.PerformanceStatistics.AffectRows.ErrMessage = res.AffectRowsResultErr.Error()
+			} else if res.AffectRowsResult != nil {
+				data.PerformanceStatistics.AffectRows.ErrMessage = res.AffectRowsResult.ErrMessage
+				data.PerformanceStatistics.AffectRows.Count = int(res.AffectRowsResult.Count)
+			}
 		}
-
 	}
 
 	return data
