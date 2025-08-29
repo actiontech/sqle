@@ -3766,6 +3766,12 @@ var doc = `{
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "whether to calculate and return affected rows, default is true",
+                        "name": "affectRowsEnabled",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -5756,6 +5762,12 @@ var doc = `{
                         "name": "sql_manage_id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "whether to calculate and return affected rows, default is true",
+                        "name": "affectRowsEnabled",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -12572,6 +12584,12 @@ var doc = `{
                         "name": "number",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "whether to calculate and return affected rows, default is true",
+                        "name": "affectRowsEnabled",
+                        "in": "query"
                     }
                 ],
                 "responses": {

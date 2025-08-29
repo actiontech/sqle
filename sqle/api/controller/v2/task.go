@@ -221,6 +221,7 @@ type GetTaskAnalysisDataResV2 struct {
 // @Tags task
 // @Param task_id path string true "task id"
 // @Param number path uint true "sql number"
+// @Param affectRowsEnabled query bool false "whether to calculate and return affected rows, default is true"
 // @Security ApiKeyAuth
 // @Success 200 {object} v2.GetTaskAnalysisDataResV2
 // @router /v2/tasks/audits/{task_id}/sqls/{number}/analysis [get]
