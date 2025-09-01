@@ -550,7 +550,7 @@ func GetSSHPublicKey(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if systemVariable.Code != 0 {
+	if systemVariable.Code != 0 || systemVariable.Data.SystemVariableSSHPrimaryKey == "" {
 		return c.JSON(http.StatusOK, SSHPublicKeyInfoV1Rsp{
 			BaseRes: controller.NewBaseReq(nil),
 			Data: SSHPublicKeyInfo{
