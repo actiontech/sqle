@@ -157,7 +157,7 @@ func getOperationRecordExpiredHours(entry *logrus.Entry) (operationRecordExpired
 
 	operationRecordExpiredHours = dms.DefaultOperationRecordExpiredHours
 	systemVariables, err := dmsobject.GetSystemVariables(context.TODO(), dms.GetDMSServerAddress())
-	if err != nil || systemVariables.Code != 0 {
+	if err != nil {
 		entry.Warnf("get system variables failed, err: %s", err.Error())
 		return operationRecordExpiredHours
 	}
