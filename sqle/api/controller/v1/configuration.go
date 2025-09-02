@@ -419,7 +419,7 @@ func getGitAuthMethod(url, username, password string) (transport.AuthMethod, err
 		if err != nil {
 			return nil, err
 		}
-		if systemVariable.Code != 0 {
+		if systemVariable.Data.SystemVariableSSHPrimaryKey != "" {
 			return nil, errors.New(errors.DataNotExist, fmt.Errorf("git ssh private key not found"))
 		}
 		publicKeys, err := sshTransport.NewPublicKeys("git", []byte(systemVariable.Data.SystemVariableSSHPrimaryKey), "")
@@ -550,7 +550,7 @@ func GetSSHPublicKey(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if systemVariable.Code != 0 || systemVariable.Data.SystemVariableSSHPrimaryKey == "" {
+	if systemVariable.Data.SystemVariableSSHPrimaryKey == "" {
 		return c.JSON(http.StatusOK, SSHPublicKeyInfoV1Rsp{
 			BaseRes: controller.NewBaseReq(nil),
 			Data: SSHPublicKeyInfo{
