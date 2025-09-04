@@ -158,12 +158,23 @@ type SubqueryExprExtractor struct {
 	expr []*ast.SubqueryExpr
 }
 
-func (te *SubqueryExprExtractor) Enter(in ast.Node) (node ast.Node, skipChildren bool) {
-	e, ok := in.(*ast.SubqueryExpr)
-	if !ok {
+func (te *SubqueryExprExtractor) Enter(in ast.Node) (ast.Node, bool) {
+	// 情况 1: WHERE、IN、EXISTS 中的子查询
+	if sub, ok := in.(*ast.SubqueryExpr); ok {
+		te.expr = append(te.expr, sub)
 		return in, false
 	}
-	te.expr = append(te.expr, e)
+
+	// 情况 2: FROM 中的子查询（即 SelectStmt 嵌套在 TableSource 中）
+	if ts, ok := in.(*ast.TableSource); ok {
+		if sel, ok := ts.Source.(*ast.SelectStmt); ok {
+			// 包装成 SubqueryExpr 形式以便统一处理
+			te.expr = append(te.expr, &ast.SubqueryExpr{
+				Query: sel,
+			})
+		}
+	}
+
 	return in, false
 }
 
