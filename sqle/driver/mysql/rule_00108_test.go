@@ -72,15 +72,15 @@ func TestRuleSQLE00108(t *testing.T) {
 		nil, newTestResult())
 
 	// 这个子查询中实际扫描表的子查询 只有1个，因此不算违规
-	runAIRuleCase(rule, t, "case 15: SELECT语句中使用JOIN的ON条件中嵌套子查询5层, 但是实际扫描表的子查询只有1次，因此不算违规",
+	runAIRuleCase(rule, t, "case 15: SELECT语句中使用JOIN的ON条件中嵌套子查询5层",
 		"SELECT st1.id FROM st1 JOIN st_class ON st1.cid in (SELECT cid FROM (SELECT cid FROM (SELECT cid FROM (SELECT cid FROM (SELECT cid FROM st_class WHERE cname = 'class2') AS sub1) AS sub2) AS sub3) AS sub4);",
 		session.NewAIMockContext().WithSQL("CREATE TABLE st1 (id INT, cid INT); CREATE TABLE st_class (cid INT, cname VARCHAR(50));"),
 		nil, newTestResult())
 
-	runAIRuleCase(rule, t, "case 16: SELECT语句中使用JOIN的ON条件中嵌套子查询6层, 但是实际扫描表的子查询只有2次，因此不算违规",
+	runAIRuleCase(rule, t, "case 16: SELECT语句中使用JOIN的ON条件中嵌套子查询6层, 违规",
 		"SELECT st1.id FROM st1 JOIN st_class ON st1.cid in (SELECT cid FROM (SELECT cid FROM (SELECT cid FROM (SELECT cid FROM (SELECT cid FROM st_class WHERE cname in (SELECT cname FROM st_class WHERE cname = 'class2')) AS sub1) AS sub2) AS sub3) AS sub4);",
 		session.NewAIMockContext().WithSQL("CREATE TABLE st1 (id INT, cid INT); CREATE TABLE st_class (cid INT, cname VARCHAR(50));"),
-		nil, newTestResult())
+		nil, newTestResult().addResult(ruleName))
 
 	runAIRuleCase(rule, t, "case 17: SELECT语句中 查询列中, 嵌套子查询2层",
 		"SELECT 1, st1.id, (SELECT (SELECT id0 FROM exist_db.exist_tb_1 WHERE id1 = 'value') xx2 FROM exist_db.exist_tb_1 WHERE id1 = 'value') xxx FROM st1;",
