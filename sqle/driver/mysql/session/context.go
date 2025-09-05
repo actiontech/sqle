@@ -1,6 +1,7 @@
 package session
 
 import (
+	"database/sql"
 	"fmt"
 	"strconv"
 	"strings"
@@ -185,6 +186,35 @@ func (c *Context) IsLowerCaseTableName() bool {
 		return false
 	}
 	return lowerCaseTableNames != "0"
+}
+
+// GetMySQLVersion 获取MySQL版本号
+func (c *Context) GetMySQLVersion() string {
+	version, err := c.GetSystemVariable(SysVarVersion)
+	if err != nil {
+		log.NewEntry().Errorf("fail to load system variable version, error: %v", err)
+		return ""
+	}
+	return version
+}
+
+// GetMySQLMajorVersion 获取MySQL主版本号
+func (c *Context) GetMySQLMajorVersion() (int, error) {
+	versionStr := c.GetMySQLVersion()
+	if versionStr == "" {
+		return 0, fmt.Errorf("unable to get MySQL version")
+	}
+
+	// 解析版本号，例如 "8.0.33" -> 8
+	versionParts := strings.Split(versionStr, ".")
+	if len(versionParts) > 0 {
+		majorVersion, err := strconv.Atoi(versionParts[0])
+		if err == nil {
+			return majorVersion, nil
+		}
+	}
+
+	return 0, fmt.Errorf("unable to parse MySQL version: %s", versionStr)
 }
 
 func (c *Context) getSchema(schemaName string) (*SchemaInfo, bool) {
@@ -478,6 +508,7 @@ func (c *Context) IsTableExist(stmt *ast.TableName) (bool, error) {
 
 const (
 	SysVarLowerCaseTableNames = "lower_case_table_names"
+	SysVarVersion             = "version"
 )
 
 // GetSystemVariable get system variable.
@@ -567,27 +598,31 @@ func (c *Context) GetCreateTableStmt(stmt *ast.TableName) (*ast.CreateTableStmt,
 /*
 建表语句可能如下:
 CREATE TABLE `__all_server_event_history` (
-  `gmt_create` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-  `svr_ip` varchar(46) NOT NULL,
-  `svr_port` bigint(20) NOT NULL,
-  `module` varchar(64) NOT NULL,
-  `event` varchar(64) NOT NULL,
-  `name1` varchar(256) DEFAULT '',
-  `value1` varchar(256) DEFAULT '',
-  `name2` varchar(256) DEFAULT '',
-  `value2` longtext DEFAULT NULL,
-  `name3` varchar(256) DEFAULT '',
-  `value3` varchar(256) DEFAULT '',
-  `name4` varchar(256) DEFAULT '',
-  `value4` varchar(256) DEFAULT '',
-  `name5` varchar(256) DEFAULT '',
-  `value5` varchar(256) DEFAULT '',
-  `name6` varchar(256) DEFAULT '',
-  `value6` varchar(256) DEFAULT '',
-  `extra_info` varchar(512) DEFAULT '',
-  PRIMARY KEY (`gmt_create`, `svr_ip`, `svr_port`)
+
+	`gmt_create` timestamp(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+	`svr_ip` varchar(46) NOT NULL,
+	`svr_port` bigint(20) NOT NULL,
+	`module` varchar(64) NOT NULL,
+	`event` varchar(64) NOT NULL,
+	`name1` varchar(256) DEFAULT '',
+	`value1` varchar(256) DEFAULT '',
+	`name2` varchar(256) DEFAULT '',
+	`value2` longtext DEFAULT NULL,
+	`name3` varchar(256) DEFAULT '',
+	`value3` varchar(256) DEFAULT '',
+	`name4` varchar(256) DEFAULT '',
+	`value4` varchar(256) DEFAULT '',
+	`name5` varchar(256) DEFAULT '',
+	`value5` varchar(256) DEFAULT '',
+	`name6` varchar(256) DEFAULT '',
+	`value6` varchar(256) DEFAULT '',
+	`extra_info` varchar(512) DEFAULT '',
+	PRIMARY KEY (`gmt_create`, `svr_ip`, `svr_port`)
+
 ) DEFAULT CHARSET = utf8mb4 ROW_FORMAT = COMPACT COMPRESSION = 'none' REPLICA_NUM = 1 BLOCK_SIZE = 16384 USE_BLOOM_FILTER = FALSE TABLET_SIZE = 134217728 PCTFREE = 10 TABLEGROUP = 'oceanbase'
- partition by key_v2(svr_ip, svr_port)
+
+	partition by key_v2(svr_ip, svr_port)
+
 (partition p0,
 partition p1,
 partition p2,
@@ -606,7 +641,6 @@ partition p14,
 partition p15)
 
 建表语句后半段是options，oceanbase mysql模式下的show create table结果返回的options中包含mysql不支持的options, 为了能解析, 方法将会倒着遍历建表语句, 每次找到右括号时截断后面的部分, 然后尝试解析一次, 直到解析成功, 此时剩余的建表语句将不在包含OB特有options
-
 */
 func (c *Context) parseCreateTableSqlCompatibly(createTableSql string) (*ast.CreateTableStmt, error) {
 	for i := len(createTableSql) - 1; i >= 0; i-- {
@@ -888,4 +922,66 @@ func (c *Context) GetColumnCardinality(tn *ast.TableName, columnName string) (in
 
 func (c *Context) GetExecutor() *executor.Executor {
 	return c.e
+}
+
+func (c *Context) CheckTransactionNotCommittedMySQL5(execSecs int) (int, int, error) {
+	var count, timeoutCount int
+	query := `SELECT COUNT(*) FROM information_schema.innodb_trx`
+	results, err := c.GetExecutor().Db.Query(query)
+	if err != nil {
+		return 0, 0, err
+	}
+	if len(results) > 0 && len(results[0]) > 0 {
+		countStr := results[0]["COUNT(*)"]
+		count, err = strconv.Atoi(countStr.String)
+		if err != nil {
+			return 0, 0, err
+		}
+	}
+
+	query = `SELECT COUNT(*) FROM information_schema.innodb_trx WHERE TIMESTAMPDIFF(SECOND, trx_started, NOW()) > ?`
+	results, err = c.GetExecutor().Db.Query(query, execSecs)
+	if err != nil {
+		return 0, 0, err
+	}
+	if len(results) > 0 && len(results[0]) > 0 {
+		countStr := results[0]["COUNT(*)"]
+		timeoutCount, err = strconv.Atoi(countStr.String)
+		if err != nil {
+			return 0, 0, err
+		}
+	}
+
+	return count, timeoutCount, nil
+
+}
+
+func (c *Context) CheckTableRelatedTransactionNotCommittedMySQL8(schema, table string) (int, error) {
+	if schema == "" {
+		return 0, nil
+	}
+
+	var results []map[string]sql.NullString
+	var err error
+
+	if table == "" {
+		query := `SELECT COUNT(*) FROM performance_schema.data_locks WHERE object_schema = ?`
+		results, err = c.GetExecutor().Db.Query(query, schema)
+	} else {
+		query := `SELECT COUNT(*) FROM performance_schema.data_locks WHERE object_schema = ? AND object_name = ?`
+		results, err = c.GetExecutor().Db.Query(query, schema, table)
+	}
+
+	if err != nil {
+		return 0, err
+	}
+
+	if len(results) > 0 && len(results[0]) > 0 {
+		countStr := results[0]["COUNT(*)"]
+		if countStr.Valid {
+			return strconv.Atoi(countStr.String)
+		}
+	}
+
+	return 0, nil
 }
