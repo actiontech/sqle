@@ -46,6 +46,7 @@ const (
 
 // inspector DDL rules
 const (
+	DDLCheckTransactionNotCommitted                    = "ddl_check_transactions_not_committed"
 	DDLCheckPKWithoutIfNotExists                       = "ddl_check_table_without_if_not_exists"
 	DDLCheckObjectNameLength                           = "ddl_check_object_name_length"
 	DDLCheckObjectNameUsingKeyword                     = "ddl_check_object_name_using_keyword"
@@ -432,6 +433,18 @@ var RuleHandlers = []RuleHandler{
 	},
 
 	// rule
+	{
+		Rule: driverV2.Rule{
+			Name:       DDLCheckTransactionNotCommitted,
+			Desc:       "DDL执行前存在事务未提交",
+			Annotation: "检查可能产生锁冲突的DDL操作执行前是否存在事务未提交，避免DDL操作与未提交事务产生冲突，导致锁等待或死锁问题。MySQL8之前版本会查询information_schema.innodb_trx所有记录，MySQL8版本会查询performance_schema.data_locks相关记录。",
+			Level:      driverV2.RuleLevelWarn,
+			Category:   RuleTypeUsageSuggestion,
+		},
+		Message:      "DDL执行前存在事务未提交, %s",
+		AllowOffline: false,
+		Func:         checkTransactionNotCommittedBeforeDDL,
+	},
 	{
 		Rule: driverV2.Rule{
 			Name:       DDLCheckPKWithoutIfNotExists,
@@ -5909,7 +5922,7 @@ func getTableNameWithSchema(stmt *ast.TableName, c *session.Context) string {
 	} else {
 		tableWithSchema = fmt.Sprintf("`%s`.`%s`", stmt.Schema, stmt.Name)
 	}
-	
+
 	if c.IsLowerCaseTableName() {
 		tableWithSchema = strings.ToLower(tableWithSchema)
 	}
@@ -5919,7 +5932,7 @@ func getTableNameWithSchema(stmt *ast.TableName, c *session.Context) string {
 
 func checkSameTableJoinedMultipleTimes(input *RuleHandlerInput) error {
 	var repeatTables []string
-	
+
 	if _, ok := input.Node.(ast.DMLNode); ok {
 		selectVisitor := &util.SelectVisitor{}
 		input.Node.Accept(selectVisitor)
@@ -5972,4 +5985,140 @@ func checkAllIndexNotNullConstraint(input *RuleHandlerInput) error {
 		addResult(input.Res, input.Rule, input.Rule.Name)
 	}
 	return nil
+}
+
+type checkTransactionNotCommittedBeforeDDLTableInfo struct {
+	Schema string
+	Table  string
+}
+
+func (c checkTransactionNotCommittedBeforeDDLTableInfo) String() string {
+	if c.Table == "" {
+		return c.Schema
+	}
+	if c.Schema == "" {
+		return c.Table
+	}
+	return fmt.Sprintf("%s.%s", c.Schema, c.Table)
+}
+
+func checkTransactionNotCommittedBeforeDDL(input *RuleHandlerInput) error {
+	// 跳过非DDL语句
+	switch input.Node.(type) {
+	case ast.DDLNode:
+	default:
+		return nil
+	}
+
+	tables := extractDDLSchemaAndTable(input.Node)
+	if len(tables) == 0 {
+		return nil
+	}
+
+	const transactionExecSecs = 600
+
+	// 首先检测MySQL版本
+	version, err := input.Ctx.GetMySQLMajorVersion()
+	if err != nil {
+		return err
+	}
+
+	for _, table := range tables {
+		if table.Schema == "" {
+			table.Schema = input.Ctx.CurrentSchema()
+		}
+		if table.Schema == "" {
+			// 如果没有提取到schema，跳过检查
+			continue
+		}
+
+		if input.Ctx.IsLowerCaseTableName() {
+			table.Schema, table.Table = strings.ToLower(table.Schema), strings.ToLower(table.Table)
+		}
+
+		// 根据版本选择不同的策略
+		if version >= 8 {
+			// MySQL 8
+			count, err := input.Ctx.CheckTableRelatedTransactionNotCommittedMySQL8(table.Schema, table.Table)
+			if err != nil {
+				return err
+			}
+			if count > 0 {
+				addResult(input.Res, input.Rule, input.Rule.Name,
+					fmt.Sprintf("performance_schema.data_locks存在%d条%s的相关记录", count, table))
+				return nil
+			}
+		} else {
+			// MySQL 5
+			count, ExecTimeoutCount, err := input.Ctx.CheckTransactionNotCommittedMySQL5(transactionExecSecs)
+			if err != nil {
+				return err
+			}
+			if count > 0 || ExecTimeoutCount > 0 {
+				addResult(input.Res, input.Rule, input.Rule.Name,
+					fmt.Sprintf("information_schema.innodb_trx存在%d条记录, %d条执行时长超过%d秒", count, ExecTimeoutCount, transactionExecSecs))
+				return nil
+			}
+		}
+	}
+
+	return nil
+}
+
+// extractDDLSchemaAndTable 从DDL语句中提取schema和table name
+func extractDDLSchemaAndTable(node ast.Node) []checkTransactionNotCommittedBeforeDDLTableInfo {
+	var tables []checkTransactionNotCommittedBeforeDDLTableInfo
+
+	switch stmt := node.(type) {
+	case *ast.CreateTableStmt, *ast.CreateIndexStmt, *ast.CreateViewStmt, *ast.CreateSequenceStmt, *ast.CreateDatabaseStmt:
+		// 跳过CREATE类型的DDL
+		return nil
+	case *ast.AlterTableStmt:
+		tables = append(tables, checkTransactionNotCommittedBeforeDDLTableInfo{
+			Schema: stmt.Table.Schema.O,
+			Table:  stmt.Table.Name.O,
+		})
+	case *ast.DropTableStmt:
+		for _, table := range stmt.Tables {
+			tables = append(tables, checkTransactionNotCommittedBeforeDDLTableInfo{
+				Schema: table.Schema.O,
+				Table:  table.Name.O,
+			})
+		}
+	case *ast.DropIndexStmt:
+		tables = append(tables, checkTransactionNotCommittedBeforeDDLTableInfo{
+			Schema: stmt.Table.Schema.O,
+			Table:  stmt.Table.Name.O,
+		})
+	case *ast.DropSequenceStmt:
+		for _, sequence := range stmt.Sequences {
+			tables = append(tables, checkTransactionNotCommittedBeforeDDLTableInfo{
+				Schema: sequence.Schema.O,
+				Table:  sequence.Name.O,
+			})
+		}
+	case *ast.RenameTableStmt:
+		// 对于RENAME TABLE，检查旧表
+		tables = append(tables, checkTransactionNotCommittedBeforeDDLTableInfo{
+			Schema: stmt.OldTable.Schema.O,
+			Table:  stmt.OldTable.Name.O,
+		})
+	case *ast.TruncateTableStmt:
+		tables = append(tables, checkTransactionNotCommittedBeforeDDLTableInfo{
+			Schema: stmt.Table.Schema.O,
+			Table:  stmt.Table.Name.O,
+		})
+	case *ast.RepairTableStmt:
+		tables = append(tables, checkTransactionNotCommittedBeforeDDLTableInfo{
+			Schema: stmt.Table.Schema.O,
+			Table:  stmt.Table.Name.O,
+		})
+	case *ast.DropDatabaseStmt:
+		// 数据库级别的DDL，返回数据库名作为schema
+		tables = append(tables, checkTransactionNotCommittedBeforeDDLTableInfo{
+			Schema: stmt.Name,
+		})
+	}
+
+	return tables
 }
