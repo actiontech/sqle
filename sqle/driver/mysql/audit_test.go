@@ -129,7 +129,8 @@ func runDefaultRulesInspectCase(t *testing.T, desc string, i *MysqlDriverImpl, s
 		rulepkg.DMLCheckAlias:                               {},
 		rulepkg.DMLCheckAffectedRows:                        {},
 		rulepkg.DMLCheckSortColumnLength:                    {},
-		rulepkg.DDLCheckAllIndexNotNullConstraint:			 {},
+		rulepkg.DDLCheckAllIndexNotNullConstraint:           {},
+		rulepkg.DDLCheckTransactionNotCommitted:             {},
 	}
 	for i := range rulepkg.RuleHandlers {
 		handler := rulepkg.RuleHandlers[i]
@@ -5329,7 +5330,6 @@ func TestDDLCheckAllIndexNotNullConstraint(t *testing.T) {
 		newTestResult(),
 	)
 }
-
 
 func TestDMLCheckSameTableJoinedMultipleTimes(t *testing.T) {
 	rule := rulepkg.RuleHandlerMap[rulepkg.DMLCheckSameTableJoinedMultipleTimes].Rule
