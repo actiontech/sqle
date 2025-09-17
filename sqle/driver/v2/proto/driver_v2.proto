@@ -284,6 +284,12 @@ message TxRequest {
 
 message TxResponse {
   repeated ExecResult results = 1;
+  ExecErr execErr = 2;
+}
+
+message ExecErr {
+  uint32 errSqlIndex = 1;
+  string sqlExecErrMsg = 2;
 }
 
 // Query
