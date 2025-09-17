@@ -25,7 +25,7 @@ type Plugin interface {
 	Ping(ctx context.Context) error
 	Exec(ctx context.Context, query string) (driver.Result, error)
 	ExecBatch(ctx context.Context, sqls ...string) ([]driver.Result, error)
-	Tx(ctx context.Context, queries ...string) ([]driver.Result, error)
+	Tx(ctx context.Context, queries ...string) (*driverV2.TxResponse, error)
 	Query(ctx context.Context, sql string, conf *driverV2.QueryConf) (*driverV2.QueryResult, error)
 	Explain(ctx context.Context, conf *driverV2.ExplainConf) (*driverV2.ExplainResult, error)
 	ExplainJSONFormat(ctx context.Context, conf *driverV2.ExplainConf) (*driverV2.ExplainJSONResult, error)

@@ -82,7 +82,10 @@ type Driver interface {
 	Ping(ctx context.Context) error
 	Exec(ctx context.Context, sql string) (sqlDriver.Result, error)
 	ExecBatch(ctx context.Context, sqls ...string) ([]sqlDriver.Result, error)
-	Tx(ctx context.Context, sqls ...string) ([]sqlDriver.Result, error)
+
+	// Tx execute sqls in transaction.
+	// When just a sql execute failed, ErrSqlIndex of TxResponse.ExecErr should be set.
+	Tx(ctx context.Context, sqls ...string) (*TxResponse, error)
 	Query(ctx context.Context, sql string, conf *QueryConf) (*QueryResult, error)
 	Explain(ctx context.Context, conf *ExplainConf) (*ExplainResult, error)
 
@@ -461,4 +464,18 @@ type DatabaseObjectDDL struct {
 type DatabaseDiffModifySQLResult struct {
 	SchemaName string
 	ModifySQLs []string
+}
+
+type TxResponse struct {
+	// ExecResult indicates the result of successfully executed SQLs.
+	ExecResult []sqlDriver.Result
+	// ExecErr indicates the error when executing SQL.
+	ExecErr *ExecErr
+}
+
+type ExecErr struct {
+	// ErrSqlIndex indicates the index of the SQL that failed to execute.
+	ErrSqlIndex uint32
+	// SqlExecErrMsg indicates the error message when executing SQL.
+	SqlExecErrMsg string
 }
