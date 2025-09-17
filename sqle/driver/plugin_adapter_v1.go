@@ -223,7 +223,7 @@ func (s *PluginImplV1) ExecBatch(ctx context.Context, sqls ...string) ([]sqlDriv
 	return nil, fmt.Errorf("unimplement this method")
 }
 
-func (p *PluginImplV1) Tx(ctx context.Context, queries ...string) ([]sqlDriver.Result, error) {
+func (p *PluginImplV1) Tx(ctx context.Context, queries ...string) (*driverV2.TxResponse, error) {
 	client, err := p.DriverManager.GetAuditDriver()
 	if err != nil {
 		return nil, err
