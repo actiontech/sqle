@@ -167,7 +167,9 @@ func (d *PluginProcessorV2) Open(l *logrus.Entry, cfgV2 *driverV2.Config) (Plugi
 func (d *PluginProcessorV2) Stop() error {
 	d.Lock()
 	if d.client != nil {
+		log.NewEntry().Infof("stopping plugin %s", d.meta.PluginName)
 		d.client.Kill()
+		log.NewEntry().Infof("plugin %s stopped", d.meta.PluginName)
 	}
 	os.Remove(d.pluginPidFilePath)
 	d.Unlock()
