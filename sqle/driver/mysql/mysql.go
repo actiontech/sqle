@@ -240,7 +240,7 @@ func (i *MysqlDriverImpl) onlineddlWithGhost(query string) (bool, error) {
 	return int64(tableSize) > i.cnf.DDLGhostMinSize, nil
 }
 
-func (i *MysqlDriverImpl) Tx(ctx context.Context, queries ...string) ([]_driver.Result, error) {
+func (i *MysqlDriverImpl) Tx(ctx context.Context, queries ...string) (*driverV2.TxResponse, error) {
 	if i.IsOfflineAudit() {
 		return nil, nil
 	}
