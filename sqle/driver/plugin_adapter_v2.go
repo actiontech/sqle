@@ -415,7 +415,7 @@ func (s *PluginImplV2) ExecBatch(ctx context.Context, sqls ...string) ([]sqlDriv
 	return ret, nil
 }
 
-func (s *PluginImplV2) Tx(ctx context.Context, sqls ...string) ([]sqlDriver.Result, error) {
+func (s *PluginImplV2) Tx(ctx context.Context, sqls ...string) (*driverV2.TxResponse, error) {
 	api := "Tx"
 	s.preLog(api)
 	execSqls := make([]*protoV2.ExecSQL, 0, len(sqls))
@@ -427,20 +427,31 @@ func (s *PluginImplV2) Tx(ctx context.Context, sqls ...string) ([]sqlDriver.Resu
 		Sqls:    execSqls,
 	})
 	s.afterLog(api, err)
-	if err != nil {
-		return nil, err
-	}
+	return convertTxRespToDriverV2(resp), err
+}
 
-	ret := make([]sqlDriver.Result, len(resp.Results))
+func convertTxRespToDriverV2(resp *protoV2.TxResponse) *driverV2.TxResponse {
+	if resp == nil {
+		return nil
+	}
+	ret := &driverV2.TxResponse{
+		ExecResult: make([]sqlDriver.Result, len(resp.Results)),
+	}
 	for i, result := range resp.Results {
-		ret[i] = &dbDriverResult{
+		ret.ExecResult[i] = &dbDriverResult{
 			lastInsertId:    result.LastInsertId,
 			lastInsertIdErr: result.LastInsertIdError,
 			rowsAffected:    result.RowsAffected,
 			rowsAffectedErr: result.RowsAffectedError,
 		}
 	}
-	return ret, nil
+	if resp.ExecErr != nil {
+		ret.ExecErr = &driverV2.ExecErr{
+			ErrSqlIndex:   resp.ExecErr.ErrSqlIndex,
+			SqlExecErrMsg: resp.ExecErr.SqlExecErrMsg,
+		}
+	}
+	return ret
 }
 
 func (s *PluginImplV2) Query(ctx context.Context, sql string, conf *driverV2.QueryConf) (*driverV2.QueryResult, error) {
