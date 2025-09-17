@@ -253,6 +253,7 @@ func getJdkPath() string {
 }
 
 func (pm *pluginManager) Stop() {
+	log.NewEntry().Info("plugin manager is stopping")
 	for name, pp := range pm.pluginProcessors {
 		err := pp.Stop()
 		if err != nil {
