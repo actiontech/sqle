@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/actiontech/sqle/sqle/driver/v1/proto"
-
 	goPlugin "github.com/hashicorp/go-plugin"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -82,7 +81,7 @@ func (d *auditDriverGRPCServer) Tx(ctx context.Context, req *proto.TxRequest) (*
 	}
 
 	txResp := &proto.TxResponse{}
-	for _, result := range results {
+	for _, result := range results.ExecResult {
 		resp := &proto.ExecResponse{}
 
 		lastInsertId, lastInsertIdErr := result.LastInsertId()
