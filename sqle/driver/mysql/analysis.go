@@ -9,6 +9,7 @@ import (
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/executor"
 	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
+	utilV2 "github.com/actiontech/sqle/sqle/driver/mysql/rule/ai/util"
 	"github.com/actiontech/sqle/sqle/driver/mysql/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/utils"
@@ -285,48 +286,9 @@ func (i *MysqlDriverImpl) ExtractSchemaTableList(sql string) ([]SchemaTable, err
 		}
 	}
 
-	getMultiTables := func(stmt *ast.Join) {
-		tables := util.GetTables(stmt)
-		for _, t := range tables {
-			addTable(t)
-		}
-	}
-
-	switch stmt := node.(type) {
-	case *ast.SelectStmt:
-		if stmt.From == nil {
-			break
-		}
-		getMultiTables(stmt.From.TableRefs)
-	case *ast.UnionStmt:
-		for _, selectStmt := range stmt.SelectList.Selects {
-			if selectStmt.From == nil {
-				continue
-			}
-			getMultiTables(selectStmt.From.TableRefs)
-		}
-	case *ast.UpdateStmt:
-		getMultiTables(stmt.TableRefs.TableRefs)
-	case *ast.InsertStmt:
-		getMultiTables(stmt.Table.TableRefs)
-		if stmt.Select != nil {
-			// TODO：INSERT INTO SQLE00115_t1_tmp_employee (id, cname, sex, age, salary) SELECT 4000002, '小张', 0, 25, (SELECT AVG(salary) FROM SQLE00115_t1_employee) 对于这条SQL，解析器无法解析子查询为一个Select语句，而是认为是一个文本
-			if selectStmt, ok := stmt.Select.(*ast.SelectStmt); ok {
-				if selectStmt.From != nil{
-					getMultiTables(selectStmt.From.TableRefs)
-				}
-			}
-		}
-	case *ast.DeleteStmt:
-		getMultiTables(stmt.TableRefs.TableRefs)
-	case *ast.LoadDataStmt:
-		addTable(stmt.Table)
-	case *ast.ShowStmt:
-		if stmt.Table != nil {
-			addTable(stmt.Table)
-		}
-	default:
-		return nil, fmt.Errorf("the sql is `%v`, we don't support analysing this sql", sql)
+	tables := utilV2.GetTableNames(node)
+	for _, t := range tables {
+		addTable(t)
 	}
 
 	return schemaTables, nil
