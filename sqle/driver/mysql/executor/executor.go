@@ -23,7 +23,7 @@ type Db interface {
 	Close()
 	Ping() error
 	Exec(query string) (driver.Result, error)
-	Transact(qs ...string) ([]driver.Result, error)
+	Transact(qs ...string) (*driverV2.TxResponse, error)
 	Query(query string, args ...interface{}) ([]map[string]sql.NullString, error)
 	QueryWithContext(ctx context.Context, query string, args ...interface{}) (column []string, row [][]sql.NullString, err error)
 	Logger() *logrus.Entry
@@ -137,14 +137,13 @@ func (c *BaseConn) Exec(query string) (driver.Result, error) {
 	return result, errors.New(errors.ConnectRemoteDatabaseError, err)
 }
 
-func (c *BaseConn) Transact(qs ...string) ([]driver.Result, error) {
+func (c *BaseConn) Transact(qs ...string) (*driverV2.TxResponse, error) {
 	var err error
 	var tx *sql.Tx
-	var results []driver.Result
 	c.Logger().Infof("doing sql transact, host: %s, port: %s, user: %s", c.host, c.port, c.user)
 	tx, err = c.conn.BeginTx(context.Background(), nil)
 	if err != nil {
-		return results, err
+		return nil, err
 	}
 	defer func() {
 		if p := recover(); p != nil {
@@ -168,14 +167,23 @@ func (c *BaseConn) Transact(qs ...string) ([]driver.Result, error) {
 			c.Logger().Info("done sql transact")
 		}
 	}()
-	for _, query := range qs {
+
+	results := &driverV2.TxResponse{
+		ExecResult: make([]driver.Result, 0, len(qs)),
+	}
+	for k, query := range qs {
 		var txResult driver.Result
 		txResult, err = tx.Exec(query)
 		if err != nil {
+			// SQL执行报错记录序号和错误信息在业务结构中
+			results.ExecErr = &driverV2.ExecErr{
+				ErrSqlIndex:   uint32(k),
+				SqlExecErrMsg: err.Error(),
+			}
 			c.Logger().Errorf("exec sql failed, error: %s, query: %s", err, query)
-			return results, err
+			return results, nil
 		} else {
-			results = append(results, txResult)
+			results.ExecResult = append(results.ExecResult, txResult)
 			c.Logger().Infof("exec sql success, query: %s", query)
 		}
 	}

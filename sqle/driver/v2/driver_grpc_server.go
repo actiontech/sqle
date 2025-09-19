@@ -402,12 +402,16 @@ func (d *DriverGrpcServer) Tx(ctx context.Context, req *protoV2.TxRequest) (*pro
 	}
 
 	results, err := driver.Tx(ctx, sqls...)
-	if err != nil {
-		return &protoV2.TxResponse{}, err
+	return convertTxRespToProtoV2(results), err
+}
+
+func convertTxRespToProtoV2(txResp *TxResponse) *protoV2.TxResponse {
+	if txResp == nil {
+		return nil
 	}
 
-	txResults := make([]*protoV2.ExecResult, 0, len(results))
-	for _, result := range results {
+	txResults := make([]*protoV2.ExecResult, 0, len(txResp.ExecResult))
+	for _, result := range txResp.ExecResult {
 		txResult := &protoV2.ExecResult{}
 
 		lastInsertId, lastInsertIdErr := result.LastInsertId()
@@ -423,7 +427,16 @@ func (d *DriverGrpcServer) Tx(ctx context.Context, req *protoV2.TxRequest) (*pro
 
 		txResults = append(txResults, txResult)
 	}
-	return &protoV2.TxResponse{Results: txResults}, nil
+
+	protoTxResp := &protoV2.TxResponse{Results: txResults}
+	if txResp.ExecErr != nil {
+		protoTxResp.ExecErr = &protoV2.ExecErr{
+			ErrSqlIndex:   txResp.ExecErr.ErrSqlIndex,
+			SqlExecErrMsg: txResp.ExecErr.SqlExecErrMsg,
+		}
+	}
+
+	return protoTxResp
 }
 
 func (d *DriverGrpcServer) Query(ctx context.Context, req *protoV2.QueryRequest) (*protoV2.QueryResponse, error) {
