@@ -101,7 +101,7 @@ func (p *DriverImpl) ExecBatch(ctx context.Context, sqls ...string) ([]_driver.R
 	return nil, fmt.Errorf("unimplemented this method")
 }
 
-func (p *DriverImpl) Tx(ctx context.Context, sqls ...string) ([]_driver.Result, error) {
+func (p *DriverImpl) Tx(ctx context.Context, sqls ...string) (*driverV2.TxResponse, error) {
 	var (
 		err error
 		tx  *sql.Tx
@@ -129,14 +129,20 @@ func (p *DriverImpl) Tx(ctx context.Context, sqls ...string) ([]_driver.Result, 
 		}
 	}()
 
-	results := make([]_driver.Result, 0, len(sqls))
-	for _, sql := range sqls {
+	results := &driverV2.TxResponse{
+		ExecResult: make([]_driver.Result, 0, len(sqls)),
+	}
+	for k, sql := range sqls {
 		result, e := tx.ExecContext(ctx, sql)
 		if e != nil {
-			err = errors.Wrap(e, "exec sql in driver adaptor")
-			return nil, err
+			// SQL执行报错记录序号和错误信息在业务结构中
+			results.ExecErr = &driverV2.ExecErr{
+				ErrSqlIndex:   uint32(k),
+				SqlExecErrMsg: errors.Wrap(e, "exec sql in driver adaptor").Error(),
+			}
+			return results, nil
 		}
-		results = append(results, result)
+		results.ExecResult = append(results.ExecResult, result)
 	}
 
 	return results, nil

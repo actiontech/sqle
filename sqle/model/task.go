@@ -41,6 +41,7 @@ const (
 )
 
 const TaskExecResultOK = "OK"
+const TaskExecResultRollback = "The transaction has been rolled back"
 
 const ExecModeSqlFile = "sql_file"
 const ExecModeSqls = "sqls"

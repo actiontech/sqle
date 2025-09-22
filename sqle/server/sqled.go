@@ -714,24 +714,28 @@ func (a *action) execSQLs(executeSQLs []*model.ExecuteSQL) error {
 
 	results, txErr := a.plugin.Tx(context.TODO(), qs...)
 	for idx, executeSQL := range executeSQLs {
+		if results != nil && idx < len(results.ExecResult) {
+			rowAffects, _ := results.ExecResult[idx].RowsAffected()
+			executeSQL.RowAffects = rowAffects
+		}
 		if txErr != nil {
 			executeSQL.ExecStatus = model.SQLExecuteStatusFailed
 			executeSQL.ExecResult = txErr.Error()
 			if a.hasTermination() && _errors.Is(mysql.ErrInvalidConn, txErr) {
 				executeSQL.ExecStatus = model.SQLExecuteStatusTerminateSucc
-				if idx >= len(results) {
-					continue
-				}
-				if results[idx] == nil {
-					continue
-				}
-				rowAffects, _ := results[idx].RowsAffected()
-				executeSQL.RowAffects = rowAffects
 			}
 			continue
 		}
-		rowAffects, _ := results[idx].RowsAffected()
-		executeSQL.RowAffects = rowAffects
+		if results != nil && results.ExecErr != nil {
+			if results.ExecErr.ErrSqlIndex == uint32(idx) {
+				executeSQL.ExecStatus = model.SQLExecuteStatusFailed
+				executeSQL.ExecResult = results.ExecErr.SqlExecErrMsg
+			} else {
+				executeSQL.ExecStatus = model.SQLExecuteStatusFailed
+				executeSQL.ExecResult = model.TaskExecResultRollback
+			}
+			continue
+		}
 		executeSQL.ExecStatus = model.SQLExecuteStatusSucceeded
 		executeSQL.ExecResult = model.TaskExecResultOK
 	}
@@ -740,6 +744,9 @@ func (a *action) execSQLs(executeSQLs []*model.ExecuteSQL) error {
 	}
 	if txErr != nil {
 		return txErr
+	}
+	if results != nil && results.ExecErr != nil {
+		return fmt.Errorf("sql execute err msg: %v", results.ExecErr.SqlExecErrMsg)
 	}
 	return nil
 }
