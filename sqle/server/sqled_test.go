@@ -74,7 +74,7 @@ func (i *mockDriver) ExecBatch(ctx context.Context, queries ...string) ([]_drive
 	return nil, fmt.Errorf("unimplement this method")
 }
 
-func (d *mockDriver) Tx(ctx context.Context, queries ...string) ([]_driver.Result, error) {
+func (d *mockDriver) Tx(ctx context.Context, queries ...string) (*driverV2.TxResponse, error) {
 	return nil, nil
 }
 
