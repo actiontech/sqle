@@ -778,20 +778,6 @@ func UpdateWorkflowV2(c echo.Context) error {
 			fmt.Errorf("you are not allow to operate the workflow")))
 	}
 
-	template, exist, err := s.GetWorkflowTemplateByProjectId(workflow.ProjectId)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-	if !exist {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.DataConflict,
-			fmt.Errorf("failed to find the corresponding workflow template based on the task id")))
-	}
-
-	err = v1.CheckWorkflowCanCommit(template, tasks)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
 	err = s.UpdateWorkflowRecord(workflow, tasks)
 	if err != nil {
 		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
