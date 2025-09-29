@@ -834,6 +834,14 @@ func toGlobalWorkflowRes(workflows []*model.WorkflowListDetail, projectMap Proje
 				InstanceName: instanceMap.InstanceName(id),
 			})
 		}
+
+		CurrentStepAssigneeUserNames := make([]string, 0)
+		for _, currentStepAssigneeUser := range strings.Split(workflow.CurrentStepAssigneeUserIds.String, ",") {
+			if currentStepAssigneeUser == "" {
+				continue
+			}
+			CurrentStepAssigneeUserNames = append(CurrentStepAssigneeUserNames, dms.GetUserNameWithDelTag(currentStepAssigneeUser))
+		}
 		workflowRes := &WorkflowDetailResV1{
 			ProjectName:             projectMap.ProjectName(workflow.ProjectId),
 			ProjectUid:              workflow.ProjectId,
@@ -845,7 +853,7 @@ func toGlobalWorkflowRes(workflows []*model.WorkflowListDetail, projectMap Proje
 			CreateUser:              utils.AddDelTag(workflow.CreateUserDeletedAt, workflow.CreateUser.String),
 			CreateTime:              workflow.CreateTime,
 			CurrentStepType:         workflow.CurrentStepType.String,
-			CurrentStepAssigneeUser: strings.Split(workflow.CurrentStepAssigneeUserIds.String, ","),
+			CurrentStepAssigneeUser: CurrentStepAssigneeUserNames,
 			Status:                  workflow.Status,
 		}
 		workflowsResV1 = append(workflowsResV1, workflowRes)
