@@ -41,9 +41,12 @@ const MetricNameExplainCost = "explain_cost"
 
 const MetricNameLockTimeAvg string = "lock_time_avg"         // 平均锁等待时间
 const MetricNameLockTimeMax string = "lock_time_max"         // 最大锁等待时间
+const MetricNameLockWaitTotal string = "lock_wait_total"     // 累计锁等待时间
 const MetricNameRowsAffectedMax string = "rows_affected_max" // 最大影响的行数
 const MetricNameRowsAffectedAvg string = "rows_affected_avg" // 平均影响的行数
 const MetricNameChecksum string = "checksum"                 // 校验和
+
+const MetricNameNoIndexUsedTotal string = "no_index_used_total" // 累计未使用索引次数
 
 // Lock
 const MetricNameGrantedLockId string = "granted_lock_id"
@@ -70,6 +73,11 @@ const MetricNameSqlInsightCollectTime = "collect_time"
 const MetricNameSqlInsightThreadsConnected = "Threads_connected"
 const MetricNameSqlInsightQueries = "Queries"
 const MetricNameSqlInsightQPS = "QPS"
+
+const MetricNameInstance = "instance"
+const MetricNameMemMax = "mem_max"
+const MetricNameDiskMax = "disk_max"
+const MetricNameFullTableScanCount = "full_table_scan_count"
 
 var ALLMetric = map[string]MetricType{
 	MetricNameCounter:                   MetricTypeInt,    // MySQL slow log
@@ -118,6 +126,11 @@ var ALLMetric = map[string]MetricType{
 	MetricNameSqlInsightThreadsConnected: MetricTypeInt,
 	MetricNameSqlInsightQueries:          MetricTypeInt,
 	MetricNameSqlInsightQPS:              MetricTypeFloat,
+
+	MetricNameMemMax:             MetricTypeInt,
+	MetricNameDiskMax:            MetricTypeInt,
+	MetricNameInstance:           MetricTypeString,
+	MetricNameFullTableScanCount: MetricTypeInt,
 }
 
 func LoadMetrics(info map[string]interface{}, metrics []string) Metrics {

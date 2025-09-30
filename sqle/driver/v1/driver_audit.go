@@ -10,6 +10,7 @@ import (
 
 	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
 	"github.com/actiontech/sqle/sqle/driver/v1/proto"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 
 	"github.com/pkg/errors"
@@ -147,7 +148,7 @@ type Driver interface {
 	Close(ctx context.Context)
 	Ping(ctx context.Context) error
 	Exec(ctx context.Context, query string) (driver.Result, error)
-	Tx(ctx context.Context, queries ...string) ([]driver.Result, error)
+	Tx(ctx context.Context, queries ...string) (*driverV2.TxResponse, error)
 
 	// Schemas export all supported schemas.
 	//
@@ -333,15 +334,17 @@ func (s *driverImpl) Exec(ctx context.Context, query string) (driver.Result, err
 	}, nil
 }
 
-func (s *driverImpl) Tx(ctx context.Context, queries ...string) ([]driver.Result, error) {
+func (s *driverImpl) Tx(ctx context.Context, queries ...string) (*driverV2.TxResponse, error) {
 	resp, err := s.plugin.Tx(ctx, &proto.TxRequest{Queries: queries})
 	if err != nil {
 		return nil, err
 	}
 
-	ret := make([]driver.Result, len(resp.Results))
+	ret := &driverV2.TxResponse{
+		ExecResult: make([]driver.Result, len(resp.Results)),
+	}
 	for i, result := range resp.Results {
-		ret[i] = &dbDriverResult{
+		ret.ExecResult[i] = &dbDriverResult{
 			lastInsertId:    result.LastInsertId,
 			lastInsertIdErr: result.LastInsertIdError,
 			rowsAffected:    result.RowsAffected,
