@@ -1346,6 +1346,30 @@ func ExecuteTasksOnWorkflowV1(c echo.Context) error {
 	return nil
 }
 
+type ReExecuteTaskOnWorkflowReq struct {
+	ExecSqlIds []uint `json:"exec_sql_ids" form:"exec_sql_ids" valid:"required"`
+}
+
+// ReExecuteTaskOnWorkflowV1
+// @Summary 单数据源SQL重新上线
+// @Description re-execute task on workflow
+// @Tags workflow
+// @Id reExecuteTaskOnWorkflowV1
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Param workflow_id path string true "workflow id"
+// @Param task_id path string true "task id"
+// @Param instance body v1.ReExecuteTaskOnWorkflowReq true "re-execute task on workflow request"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/exec_sqls/re_execute [post]
+func ReExecuteTaskOnWorkflowV1(c echo.Context) error {
+	req := new(ReExecuteTaskOnWorkflowReq)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+}
+
 type GetWorkflowResV1 struct {
 	controller.BaseRes
 	Data *WorkflowResV1 `json:"data"`
