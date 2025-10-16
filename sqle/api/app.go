@@ -229,6 +229,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1ProjectOpRouter.POST("/:project_name/workflows/:workflow_name/tasks/:task_id/execute", DeprecatedBy(apiV2))
 		v1ProjectOpRouter.POST("/:project_name/workflows/:workflow_id/tasks/:task_id/terminate", v1.TerminateSingleTaskByWorkflowV1)
 		v1ProjectOpRouter.POST("/:project_name/workflows/:workflow_name/tasks/execute", DeprecatedBy(apiV2))
+		v1ProjectOpRouter.POST("/:project_name/workflows/:workflow_id/tasks/:task_id/re_execute", v1.ReExecuteTaskOnWorkflowV1)
 		v1ProjectOpRouter.POST("/:project_name/workflows/:workflow_id/tasks/terminate", v1.TerminateMultipleTaskByWorkflowV1)
 		v1ProjectOpRouter.PUT("/:project_name/workflows/:workflow_name/tasks/:task_id/schedule", DeprecatedBy(apiV2))
 		v1ProjectOpRouter.PATCH("/:project_name/workflows/:workflow_name/", DeprecatedBy(apiV2))
