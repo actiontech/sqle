@@ -3966,6 +3966,13 @@ definitions:
       score:
         type: integer
     type: object
+  v1.ReExecuteTaskOnWorkflowReq:
+    properties:
+      exec_sql_ids:
+        items:
+          type: integer
+        type: array
+    type: object
   v1.RecordSource:
     properties:
       name:
@@ -12527,6 +12534,42 @@ paths:
       summary: 下载工单中的SQL备份
       tags:
       - task
+  /v1/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/exec_sqls/re_execute:
+    post:
+      description: re-execute task on workflow
+      operationId: reExecuteTaskOnWorkflowV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: workflow id
+        in: path
+        name: workflow_id
+        required: true
+        type: string
+      - description: task id
+        in: path
+        name: task_id
+        required: true
+        type: string
+      - description: re-execute task on workflow request
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.ReExecuteTaskOnWorkflowReq'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 单数据源SQL重新上线
+      tags:
+      - workflow
   /v1/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/order_file:
     post:
       consumes:
