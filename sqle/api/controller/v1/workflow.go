@@ -20,6 +20,7 @@ import (
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/pkg/im"
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/utils"
 
@@ -1367,7 +1368,101 @@ func ReExecuteTaskOnWorkflowV1(c echo.Context) error {
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
+	projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"), true)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	workflowId := c.Param("workflow_id")
+	taskId := c.Param("task_id")
+	reExecSqlIds := req.ExecSqlIds
+
+	s := model.GetStorage()
+	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectUid, workflowId, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	task, exist, err := s.GetTaskDetailById(taskId)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+	if !exist {
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("task is not exist"))
+	}
+
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	if err := PrepareForTaskReExecution(c, projectUid, workflow, user, task, reExecSqlIds); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	err = server.ReExecuteTaskSQLs(workflow, task, reExecSqlIds, user)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	im.UpdateApprove(workflow.WorkflowId, user, model.ApproveStatusAgree, "")
+
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
+}
+
+func PrepareForTaskReExecution(c echo.Context, projectID string, workflow *model.Workflow, user *model.User, task *model.Task, reExecSqlIds []uint) error {
+	// 只有上线失败的工单可以重新上线sql
+	if workflow.Record.Status != model.WorkflowStatusExecFailed {
+		return errors.New(errors.DataInvalid, e.New("workflow status is not exec failed"))
+	}
+
+	if task.Status != model.TaskStatusExecuteFailed {
+		return errors.New(errors.DataInvalid, e.New("task status is not execute failed"))
+	}
+
+	err := CheckCurrentUserCanOperateTasks(c, projectID, workflow, []dmsV1.OpPermissionType{dmsV1.OpPermissionTypeExecuteWorkflow}, []uint{task.ID})
+	if err != nil {
+		return err
+	}
+
+	for _, record := range workflow.Record.InstanceRecords {
+		if record.TaskId != task.ID {
+			continue
+		}
+
+		for _, u := range strings.Split(record.ExecutionAssignees, ",") {
+			if u == user.GetIDStr() {
+				goto CheckReExecSqlIds
+			}
+		}
+	}
+
+	return e.New("you are not allow to execute the task")
+
+CheckReExecSqlIds:
+	// 校验reExecSqlIds对应的SQL状态是否都为SQLExecuteStatusFailed
+	if len(reExecSqlIds) == 0 {
+		return errors.New(errors.DataInvalid, e.New("re-execute sql ids cannot be empty"))
+	}
+
+	// 创建一个map用于快速查找ExecuteSQLs中的SQL
+	execSqlMap := make(map[uint]*model.ExecuteSQL)
+	for _, execSql := range task.ExecuteSQLs {
+		execSqlMap[execSql.ID] = execSql
+	}
+
+	// 检查每个reExecSqlId
+	for _, sqlId := range reExecSqlIds {
+		execSql, exists := execSqlMap[sqlId]
+		if !exists {
+			return errors.New(errors.DataInvalid, fmt.Errorf("execute sql id %d not found in task", sqlId))
+		}
+
+		if execSql.ExecStatus != model.SQLExecuteStatusFailed && execSql.ExecStatus != model.SQLExecuteStatusInitialized {
+			return errors.New(errors.DataInvalid, fmt.Errorf("execute sql id %d status is %s, only failed or initialized sql can be re-executed", sqlId, execSql.ExecStatus))
+		}
+	}
+
+	return nil
 }
 
 type GetWorkflowResV1 struct {
