@@ -62,7 +62,7 @@ func (s *Sqled) HasTask(taskId string) bool {
 
 // addTask receive taskId and action type, using taskId and typ to create an action;
 // action will be validated, and sent to Sqled.queue.
-func (s *Sqled) addTask(projectId string, taskId string, typ int) (*action, error) {
+func (s *Sqled) addTask(projectId string, taskId string, typ int, execSqlIds []uint) (*action, error) {
 	var err error
 	var p driver.Plugin
 	var rules []*model.Rule
@@ -87,7 +87,7 @@ func (s *Sqled) addTask(projectId string, taskId string, typ int) (*action, erro
 		return action, errors.New(errors.TaskRunning, fmt.Errorf("task is running"))
 	}
 
-	task, exist, err := st.GetTaskDetailById(taskId)
+	task, exist, err := st.GetTaskDetailByIdWithExecSqlIds(taskId, execSqlIds)
 	if err != nil {
 		goto Error
 	}
@@ -140,12 +140,21 @@ Error:
 }
 
 func (s *Sqled) AddTask(projectId string, taskId string, typ int) error {
-	_, err := s.addTask(projectId, taskId, typ)
+	_, err := s.addTask(projectId, taskId, typ, nil)
 	return err
 }
 
 func (s *Sqled) AddTaskWaitResult(projectId string, taskId string, typ int) (*model.Task, error) {
-	action, err := s.addTask(projectId, taskId, typ)
+	action, err := s.addTask(projectId, taskId, typ, nil)
+	if err != nil {
+		return nil, err
+	}
+	<-action.done
+	return action.task, action.err
+}
+
+func (s *Sqled) AddTaskWaitResultWithSQLIds(projectId string, taskId string, execSqlIds []uint, typ int) (*model.Task, error) {
+	action, err := s.addTask(projectId, taskId, typ, execSqlIds)
 	if err != nil {
 		return nil, err
 	}
@@ -390,12 +399,13 @@ func (a *action) execute() (err error) {
 			taskStatus = model.TaskStatusExecuteSucceeded
 		}
 		// update task status by sql
-		for _, sql := range task.ExecuteSQLs {
-			if sql.ExecStatus == model.SQLExecuteStatusFailed ||
-				sql.ExecStatus == model.SQLExecuteStatusTerminateSucc {
-				taskStatus = model.TaskStatusExecuteFailed
-				break
-			}
+		// 验证task下所有的sql是否全部成功（工单中允许重新上线部分sql，所以需要验证全部sql是否成功）
+		failedSqls, err := st.GetExecSqlsByTaskIdAndStatus(task.ID, []string{model.SQLExecuteStatusFailed, model.SQLExecuteStatusTerminateSucc})
+		if err != nil {
+			return err
+		}
+		if len(failedSqls) > 0 {
+			taskStatus = model.TaskStatusExecuteFailed
 		}
 
 	case terminationErr := <-terminateErrChan:
