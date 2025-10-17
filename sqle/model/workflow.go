@@ -773,6 +773,16 @@ func (s *Storage) UpdateWorkflowExecInstanceRecord(w *Workflow, operateStep *Wor
 	})
 }
 
+// UpdateWorkflowExecInstanceRecordForReExecute， 用于重新执行SQL时更新上线状态和执行人
+func (s *Storage) UpdateWorkflowExecInstanceRecordForReExecute(w *Workflow, needExecInstanceRecords []*WorkflowInstanceRecord) error {
+	return s.Tx(func(tx *gorm.DB) error {
+		if err := updateWorkflowStatus(tx, w); err != nil {
+			return err
+		}
+		return updateWorkflowInstanceRecordForReExecute(tx, needExecInstanceRecords)
+	})
+}
+
 func updateWorkflowStatus(tx *gorm.DB, w *Workflow) error {
 	db := tx.Exec("UPDATE workflow_records SET status = ?, current_workflow_step_id = ? WHERE id = ?",
 		w.Record.Status, w.Record.CurrentWorkflowStepId, w.Record.ID)
@@ -805,6 +815,17 @@ func updateWorkflowInstanceRecord(tx *gorm.DB, needExecInstanceRecords []*Workfl
 		}
 		if db.RowsAffected == 0 {
 			return fmt.Errorf("update workflow instance record %d failed, it appears to have been modified by another process", inst.ID)
+		}
+	}
+	return nil
+}
+
+func updateWorkflowInstanceRecordForReExecute(tx *gorm.DB, needExecInstanceRecords []*WorkflowInstanceRecord) error {
+	for _, inst := range needExecInstanceRecords {
+		db := tx.Exec("UPDATE workflow_instance_records SET is_sql_executed = ?, execution_user_id = ? WHERE id = ? AND is_sql_executed = 0 AND execution_user_id = 0",
+			inst.IsSQLExecuted, inst.ExecutionUserId, inst.ID)
+		if db.Error != nil {
+			return db.Error
 		}
 	}
 	return nil
