@@ -17,7 +17,7 @@ func getStrValueFromExpression(expr *Expression) []string {
 			return results
 		}
 		results = values
-		if expr.Symbol == PLUS {
+		if expr.Symbol == PLUS && expr.Next != nil {
 			var tmpSlice []string
 			nextStrs := getStrValueFromExpression(expr.Next)
 			for _, str := range nextStrs {
@@ -35,7 +35,7 @@ func getStrValueFromExpression(expr *Expression) []string {
 			return results
 		}
 
-		if expr.Symbol == PLUS {
+		if expr.Symbol == PLUS && expr.Next != nil {
 			nextStrs := getStrValueFromExpression(expr.Next)
 			if len(nextStrs) == 0 {
 				return []string{result}
@@ -80,7 +80,7 @@ func (f *FuncBlock) getValueFromCallExpr(argumentIndex int) []string {
 				}
 			} else if arg.RuleIndex == javaAntlr.JavaParserRULE_literal {
 				values = append(values, strings.Trim(arg.Content, "\""))
-				if arg.Symbol == PLUS {
+				if arg.Symbol == PLUS && arg.Next != nil {
 					var tmpSlice []string
 					nextStrs := getStrValueFromExpression(arg.Next)
 					for _, str := range nextStrs {
@@ -148,7 +148,7 @@ func GetSqlsFromVisitor(ctx *JavaVisitor) []string {
 		// 参数为变量
 		if arg.RuleIndex == javaAntlr.JavaParserRULE_identifier {
 			sqls = append(sqls, getVariableValueFromTree(arg.Content, expression.Node)...)
-			if arg.Symbol == PLUS {
+			if arg.Symbol == PLUS && arg.Next != nil {
 				tmpSlice := []string{}
 				nextSqls := getVariableValueFromTree(arg.Next.Content, expression.Node)
 				for _, str := range nextSqls {
@@ -168,7 +168,7 @@ func GetSqlsFromVisitor(ctx *JavaVisitor) []string {
 				continue
 			}
 			sqls = append(sqls, sql)
-			if arg.Symbol == PLUS {
+			if arg.Symbol == PLUS && arg.Next != nil {
 				tmpSlice := []string{}
 				nextSqls := getVariableValueFromTree(arg.Next.Content, expression.Node)
 				for _, str := range nextSqls {
