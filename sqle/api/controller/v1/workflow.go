@@ -1361,7 +1361,7 @@ type ReExecuteTaskOnWorkflowReq struct {
 // @Param task_id path string true "task id"
 // @Param instance body v1.ReExecuteTaskOnWorkflowReq true "re-execute task on workflow request"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/exec_sqls/re_execute [post]
+// @router /v1/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/re_execute [post]
 func ReExecuteTaskOnWorkflowV1(c echo.Context) error {
 	req := new(ReExecuteTaskOnWorkflowReq)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
