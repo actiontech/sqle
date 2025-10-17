@@ -8132,61 +8132,6 @@
                 }
             }
         },
-        "/v1/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/exec_sqls/re_execute": {
-            "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "re-execute task on workflow",
-                "tags": [
-                    "workflow"
-                ],
-                "summary": "单数据源SQL重新上线",
-                "operationId": "reExecuteTaskOnWorkflowV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "project name",
-                        "name": "project_name",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "workflow id",
-                        "name": "workflow_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "task id",
-                        "name": "task_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "re-execute task on workflow request",
-                        "name": "instance",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/v1.ReExecuteTaskOnWorkflowReq"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/controller.BaseRes"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/order_file": {
             "post": {
                 "security": [
@@ -8243,6 +8188,61 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetSqlFileOrderMethodResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/workflows/{workflow_id}/tasks/{task_id}/re_execute": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "re-execute task on workflow",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "单数据源SQL重新上线",
+                "operationId": "reExecuteTaskOnWorkflowV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "workflow id",
+                        "name": "workflow_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "task id",
+                        "name": "task_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "re-execute task on workflow request",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.ReExecuteTaskOnWorkflowReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
                         }
                     }
                 }
