@@ -54,14 +54,13 @@ func ReExecuteTaskSQLs(workflow *model.Workflow, task *model.Task, execSqlIds []
 	if err != nil {
 		return err
 	}
-	workflowStatusChan := make(chan string, 1)
 	var lock sync.Mutex
 	go func() {
 		sqledServer := GetSqled()
 		task, err := sqledServer.AddTaskWaitResultWithSQLIds(string(workflow.ProjectId), strconv.Itoa(int(task.ID)), execSqlIds, ActionTypeExecute)
-		{ // NOTE: Update the workflow status before sending notifications to ensure that the notification content reflects the latest information.
+		{
 			lock.Lock()
-			updateStatus(s, workflow, l, workflowStatusChan)
+			updateStatus(s, workflow, l, nil)
 			lock.Unlock()
 		}
 		if err != nil || task.Status == model.TaskStatusExecuteFailed {
