@@ -20,7 +20,6 @@ import (
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
-	"github.com/actiontech/sqle/sqle/pkg/im"
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/utils"
 
@@ -1403,8 +1402,6 @@ func ReExecuteTaskOnWorkflowV1(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-
-	im.UpdateApprove(workflow.WorkflowId, user, model.ApproveStatusAgree, "")
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
