@@ -400,9 +400,9 @@ func (a *action) execute() (err error) {
 		}
 		// update task status by sql
 		// 验证task下所有的sql是否全部成功（工单中允许重新上线部分sql，所以需要验证全部sql是否成功）
-		failedSqls, err := st.GetExecSqlsByTaskIdAndStatus(task.ID, []string{model.SQLExecuteStatusFailed, model.SQLExecuteStatusTerminateSucc})
-		if err != nil {
-			return err
+		failedSqls, queryErr := st.GetExecSqlsByTaskIdAndStatus(task.ID, []string{model.SQLExecuteStatusFailed, model.SQLExecuteStatusTerminateSucc})
+		if queryErr != nil {
+			return queryErr
 		}
 		if len(failedSqls) > 0 {
 			taskStatus = model.TaskStatusExecuteFailed
