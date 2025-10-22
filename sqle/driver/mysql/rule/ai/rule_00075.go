@@ -1,6 +1,8 @@
 package ai
 
 import (
+	"strings"
+
 	rulepkg "github.com/actiontech/sqle/sqle/driver/mysql/rule"
 	util "github.com/actiontech/sqle/sqle/driver/mysql/rule/ai/util"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
@@ -41,13 +43,13 @@ func init() {
 
 /*
 ==== Prompt start ====
-In MySQL, you should check if the SQL violate the rule(SQLE00075): "In table definition, setting column-level specified charset or collation is prohibited".
+In MySQL, you should check if the SQL violate the rule(SQLE00075): "Compare whether the character set of the specified table and columns in the statement are consistent".
 You should follow the following logic:
 
-1. For "create table ..." statement, check every column, if it has no charset setting and no collation setting, otherwise, add the column name to violation-list
-2. For "alter table ... add column ..." statement, check the column, if it has no charset setting and no collation setting, otherwise, add the column name to violation-list
-3. For "alter table ... modify column ..." statement, check the modified column definition, if it has no charset setting and no collation setting, otherwise, add the column name to violation-list
-4. For "alter table ... change column ..." statement, check the new column's definition, if it has no charset setting and no collation setting, otherwise, add the column name to violation-list
+1. For "create table ..." statement, check if the table's charset is consistent with each column's charset. If a column has specified charset and it's different from table's charset, add the column name to violation-list
+2. For "alter table ... add column ..." statement, check if the table's charset is consistent with the new column's charset. If the column has specified charset and it's different from table's charset, add the column name to violation-list
+3. For "alter table ... modify column ..." statement, check if the table's charset is consistent with the modified column's charset. If the column has specified charset and it's different from table's charset, add the column name to violation-list
+4. For "alter table ... change column ..." statement, check if the table's charset is consistent with the new column's charset. If the column has specified charset and it's different from table's charset, add the column name to violation-list
 5. Generate a violation message as the checking result, including column names which violate the rule, if there is any violations
 ==== Prompt end ====
 */
@@ -55,26 +57,65 @@ You should follow the following logic:
 // ==== Rule code start ====
 func RuleSQLE00075(input *rulepkg.RuleHandlerInput) error {
 	violateColumns := []*ast.ColumnDef{}
+	var tableCharset string
+	var err error
+
 	switch stmt := input.Node.(type) {
 	case *ast.CreateTableStmt:
-		//"create table ..."
-		for _, col := range stmt.Cols {
-			//if the column has "CHARSET" or "COLLATE" specified, it is violate the rule
-			if util.IsColumnHasSpecifiedCharset(col) || util.IsColumnHasOption(col, ast.ColumnOptionCollate) {
-				violateColumns = append(violateColumns, col)
+		// Get table charset from CREATE TABLE statement
+		if charsetOption := util.GetTableOption(stmt.Options, ast.TableOptionCharset); charsetOption != nil {
+			tableCharset = charsetOption.StrValue
+		} else {
+			// If no table charset specified, get from schema default
+			tableCharset, err = input.Ctx.GetSchemaCharacter(stmt.Table, "")
+			if err != nil {
+				return err
 			}
 		}
-	case *ast.AlterTableStmt:
-		for _, spec := range util.GetAlterTableCommandsByTypes(stmt, ast.AlterTableAddColumns, ast.AlterTableChangeColumn, ast.AlterTableModifyColumn) {
-			// "alter table ... add column ..." or "alter table ... modify column ..." or "alter table ... change column ..."
-			for _, col := range spec.NewColumns {
-				//if the column has "CHARSET" or "COLLATE" specified, it is violate the rule
-				if util.IsColumnHasSpecifiedCharset(col) || util.IsColumnHasOption(col, ast.ColumnOptionCollate) {
+
+		// Check each column's charset against table charset
+		for _, col := range stmt.Cols {
+			if util.IsColumnHasSpecifiedCharset(col) {
+				columnCharset := col.Tp.Charset
+				if !strings.EqualFold(columnCharset, tableCharset) {
 					violateColumns = append(violateColumns, col)
 				}
 			}
 		}
+
+	case *ast.AlterTableStmt:
+		// Get table charset from ALTER TABLE statement
+		tableCharset, err = input.Ctx.GetSchemaCharacter(stmt.Table, "")
+		if err != nil {
+			return err
+		}
+
+		// Check if table charset is being changed in this ALTER statement
+		for _, spec := range stmt.Specs {
+			// Use the last defined table character set
+			if spec.Tp == ast.AlterTableOption {
+				for _, option := range spec.Options {
+					if option.Tp == ast.TableOptionCharset {
+						tableCharset = option.StrValue
+						break
+					}
+				}
+			}
+		}
+
+		// Check columns in ALTER TABLE commands
+		for _, spec := range util.GetAlterTableCommandsByTypes(stmt, ast.AlterTableAddColumns, ast.AlterTableChangeColumn, ast.AlterTableModifyColumn) {
+			for _, col := range spec.NewColumns {
+				if util.IsColumnHasSpecifiedCharset(col) {
+					columnCharset := col.Tp.Charset
+					if !strings.EqualFold(columnCharset, tableCharset) {
+						violateColumns = append(violateColumns, col)
+					}
+				}
+			}
+		}
 	}
+
 	if len(violateColumns) > 0 {
 		rulepkg.AddResult(input.Res, input.Rule, SQLE00075, util.JoinColumnNames(violateColumns))
 	}
