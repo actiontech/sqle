@@ -331,6 +331,8 @@ func Test_action_execute(t *testing.T) {
 			mockDB, mock, err := sqlmock.New()
 			assert.NoError(t, err)
 			mock.ExpectQuery("SELECT VERSION()").WillReturnRows(sqlmock.NewRows([]string{"VERSION()"}).AddRow("5.7"))
+			mock.ExpectQuery("SELECT \\* FROM `execute_sql_detail`").
+				WillReturnRows(sqlmock.NewRows([]string{"id", "task_id", "exec_status"}))
 			model.InitMockStorage(mockDB)
 			a := getAction(tt.sqls, ActionTypeExecute, d)
 			if err := a.execute(); (err != nil) != tt.wantErr {

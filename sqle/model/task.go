@@ -411,7 +411,7 @@ func (t *Task) HasDoingAudit() bool {
 func (t *Task) HasDoingExecute() bool {
 	if t.ExecuteSQLs != nil {
 		for _, commitSQL := range t.ExecuteSQLs {
-			if commitSQL.ExecStatus != SQLExecuteStatusInitialized {
+			if commitSQL.ExecStatus != SQLExecuteStatusInitialized && commitSQL.ExecStatus != SQLExecuteStatusFailed {
 				return true
 			}
 		}
@@ -488,6 +488,38 @@ func (s *Storage) GetTaskDetailById(taskId string) (*Task, bool, error) {
 		return nil, false, nil
 	}
 	return task, true, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetTaskDetailByIdWithExecSqlIds(taskId string, execSqlIds []uint) (*Task, bool, error) {
+	task := &Task{}
+
+	db := s.db.Where("id = ?", taskId).
+		Preload("RuleTemplate").
+		Preload("RollbackSQLs")
+
+	if len(execSqlIds) > 0 {
+		// 重新执行上线，获取指定需要执行的sql
+		db = db.Preload("ExecuteSQLs", "id IN (?)", execSqlIds)
+	} else {
+		// 未指定则加载所有待执行sql
+		db = db.Preload("ExecuteSQLs")
+	}
+
+	err := db.First(task).Error
+
+	if err == gorm.ErrRecordNotFound {
+		return nil, false, nil
+	}
+	return task, true, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetExecSqlsByTaskIdAndStatus(taskId uint, status []string) ([]*ExecuteSQL, error) {
+	executeSQLs := []*ExecuteSQL{}
+	err := s.db.Where("task_id = ? and exec_status IN (?)", taskId, status).Find(&executeSQLs).Error
+	if err != nil {
+		return nil, errors.New(errors.ConnectStorageError, err)
+	}
+	return executeSQLs, nil
 }
 
 func (s *Storage) GetTaskExecuteSQLContent(taskId string) ([]byte, error) {
