@@ -143,6 +143,9 @@ func init() {
 
 // getValueFromExpr 从ValueExpr中提取实际的数值
 func getValueFromExpr(expr *parserdriver.ValueExpr) (int64, bool) {
+	if expr == nil {
+		return 0, false
+	}
 	switch expr.Datum.Kind() {
 	case tidbTypes.KindInt64:
 		return expr.GetInt64(), true
