@@ -929,6 +929,42 @@ func GetGlobalWorkflowStatistics(c echo.Context) error {
 	})
 }
 
+// GetGlobalDataExportWorkflowsV1
+// @Summary 获取全局导出工单列表
+// @Description get global data export workflows list
+// @Tags workflow
+// @Id getGlobalDataExportWorkflowsV1
+// @Security ApiKeyAuth
+// @Param filter_create_user_id query string false "filter create user id"
+// @Param filter_status_list query []string false "filter by workflow status,support using many status" Enums(wait_for_approve,wait_for_export,exporting,failed,rejected,cancel,finish)
+// @Param filter_project_uid query string false "filter by project uid"
+// @Param filter_instance_id query string false "filter by instance id in project"
+// @Param filter_project_priority query string false "filter by project priority" Enums(high,medium,low)
+// @Param page_index query uint32 true "page index"
+// @Param page_size query uint32 true "size of per page"
+// @Success 200 {object} v1.GetWorkflowsResV1
+// @router /v1/dashboard/data_export_workflows [get]
+func GetGlobalDataExportWorkflowsV1(c echo.Context) error {
+	return getGlobalDataExportWorkflowsV1(c)
+}
+
+// GetGlobalDataExportWorkflowStatisticsV1
+// @Summary 获取全局导出工单统计数据
+// @Description get global data export workflows statistics
+// @Tags workflow
+// @Id getGlobalDataExportWorkflowStatisticsV1
+// @Security ApiKeyAuth
+// @Param filter_create_user_id query string false "filter create user id"
+// @Param filter_status_list query []string false "filter by workflow status,support using many status" Enums(wait_for_approve,wait_for_export,exporting,failed,rejected,cancel,finish)
+// @Param filter_project_uid query string false "filter by project uid"
+// @Param filter_instance_id query string false "filter by instance id in project"
+// @Param filter_project_priority query string false "filter by project priority" Enums(high,medium,low)
+// @Success 200 {object} v1.GlobalWorkflowStatisticsResV1
+// @router /v1/dashboard/data_export_workflows/statistics [get]
+func GetGlobalDataExportWorkflowStatisticsV1(c echo.Context) error {
+	return getGlobalDataExportWorkflowStatisticsV1(c)
+}
+
 type globalWorkflowBasicFilter struct {
 	FilterCreateUserId    string                `json:"filter_create_user_id" query:"filter_create_user_id"`
 	FilterStatusList      []string              `json:"filter_status_list" query:"filter_status_list" validate:"dive,oneof=wait_for_audit wait_for_execution rejected canceled executing exec_failed finished"`

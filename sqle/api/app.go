@@ -508,7 +508,9 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1Router.GET("/dashboard/sql_manages", v1.GetGlobalSqlManageList)
 		v1Router.GET("/dashboard/sql_manages/statistics", v1.GetGlobalSqlManageStatistics)
 		v1Router.GET("/dashboard/workflows", v1.GetGlobalWorkflowsV1)
+		v1Router.GET("/dashboard/data_export_workflows", v1.GetGlobalDataExportWorkflowsV1)
 		v1Router.GET("/dashboard/workflows/statistics", v1.GetGlobalWorkflowStatistics)
+		v1Router.GET("/dashboard/data_export_workflows/statistics", v1.GetGlobalDataExportWorkflowStatisticsV1)
 
 		// configurations
 		v1Router.GET("/configurations/drivers", v1.GetDrivers)
