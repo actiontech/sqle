@@ -21,6 +21,7 @@ var (
 	errCommunityEditionDoesNotSupportFeatureExportWorkflowList = errors.New(errors.EnterpriseEditionFeatures, e.New("community edition does not support feature export workflow list"))
 	errCommunityEditionDoesNotSupportWorkflowTemplate          = errors.New(errors.EnterpriseEditionFeatures, e.New("community edition does not support workflow template"))
 	errCommunityEditionDoesNotSupportFileOrder                 = errors.New(errors.EnterpriseEditionFeatures, e.New("community edition does not support file order"))
+	errCommunityEditionDoesNotSupportDataExportWorkflowList    = errors.New(errors.EnterpriseEditionFeatures, e.New("community edition does not support data export workflow list"))
 )
 
 func exportWorkflowV1(c echo.Context) error {
@@ -49,4 +50,12 @@ func updateWorkflowTemplate(c echo.Context) error {
 
 func updateSqlFileOrderByWorkflow(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportFileOrder)
+}
+
+func getGlobalDataExportWorkflowsV1(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportDataExportWorkflowList)
+}
+
+func getGlobalDataExportWorkflowStatisticsV1(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportDataExportWorkflowList)
 }

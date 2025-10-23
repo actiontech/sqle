@@ -8012,6 +8012,114 @@ paths:
       summary: 获取 dashboard 信息
       tags:
       - dashboard
+  /v1/dashboard/data_export_workflows:
+    get:
+      description: get global data export workflows list
+      operationId: getGlobalDataExportWorkflowsV1
+      parameters:
+      - description: filter create user id
+        in: query
+        name: filter_create_user_id
+        type: string
+      - description: filter by workflow status,support using many status
+        enum:
+        - wait_for_approve
+        - wait_for_export
+        - exporting
+        - failed
+        - rejected
+        - cancel
+        - finish
+        in: query
+        items:
+          type: string
+        name: filter_status_list
+        type: array
+      - description: filter by project uid
+        in: query
+        name: filter_project_uid
+        type: string
+      - description: filter by instance id in project
+        in: query
+        name: filter_instance_id
+        type: string
+      - description: filter by project priority
+        enum:
+        - high
+        - medium
+        - low
+        in: query
+        name: filter_project_priority
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        required: true
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetWorkflowsResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取全局导出工单列表
+      tags:
+      - workflow
+  /v1/dashboard/data_export_workflows/statistics:
+    get:
+      description: get global data export workflows statistics
+      operationId: getGlobalDataExportWorkflowStatisticsV1
+      parameters:
+      - description: filter create user id
+        in: query
+        name: filter_create_user_id
+        type: string
+      - description: filter by workflow status,support using many status
+        enum:
+        - wait_for_approve
+        - wait_for_export
+        - exporting
+        - failed
+        - rejected
+        - cancel
+        - finish
+        in: query
+        items:
+          type: string
+        name: filter_status_list
+        type: array
+      - description: filter by project uid
+        in: query
+        name: filter_project_uid
+        type: string
+      - description: filter by instance id in project
+        in: query
+        name: filter_instance_id
+        type: string
+      - description: filter by project priority
+        enum:
+        - high
+        - medium
+        - low
+        in: query
+        name: filter_project_priority
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GlobalWorkflowStatisticsResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取全局导出工单统计数据
+      tags:
+      - workflow
   /v1/dashboard/sql_manages:
     get:
       description: get global sql manage list
