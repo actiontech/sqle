@@ -12,7 +12,6 @@ import (
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/parser/opcode"
-	"github.com/pingcap/tidb/types"
 	parserdriver "github.com/pingcap/tidb/types/parser_driver"
 
 	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
@@ -96,6 +95,16 @@ func RuleSQLE00112(input *rulepkg.RuleHandlerInput) error {
 		return defaultTable
 	}
 
+	//  内部辅助函数：判断TP是否为整数类型
+	isIntegerType := func(tp byte) bool {
+		switch tp {
+		case mysql.TypeTiny, mysql.TypeShort, mysql.TypeInt24, mysql.TypeLong, mysql.TypeLonglong:
+			return true
+		default:
+			return false
+		}
+	}
+
 	// 内部辅助函数：获取表达式的类型
 	getExprType := func(expr ast.ExprNode) (byte, error) {
 		switch node := expr.(type) {
@@ -131,32 +140,9 @@ func RuleSQLE00112(input *rulepkg.RuleHandlerInput) error {
 			}
 			return 0, fmt.Errorf("不支持的函数: %s", strings.Join(names, "."))
 		case *parserdriver.ValueExpr:
-			switch node.Datum.Kind() {
-			case types.KindInt64, types.KindUint64:
-				return mysql.TypeLong, nil
-			case types.KindFloat32, types.KindFloat64:
-				return mysql.TypeDouble, nil
-			case types.KindString:
-				return mysql.TypeVarchar, nil
-			case types.KindBytes:
-				return mysql.TypeBlob, nil
-			case types.KindBinaryLiteral:
-				return mysql.TypeBit, nil
-			case types.KindMysqlDecimal:
-				return mysql.TypeNewDecimal, nil
-			case types.KindMysqlDuration:
-				return mysql.TypeDuration, nil
-			case types.KindMysqlTime:
-				return mysql.TypeDatetime, nil
-			case types.KindMysqlEnum:
-				return mysql.TypeEnum, nil
-			case types.KindMysqlSet:
-				return mysql.TypeSet, nil
-			case types.KindMysqlJSON:
-				return mysql.TypeJSON, nil
-			default:
-				return 0, fmt.Errorf("不支持的常量类型: %d", node.Datum.Kind())
-			}
+			// 处理常量表达式
+			return node.Type.Tp, nil
+
 		default:
 			return 0, fmt.Errorf("不支持的表达式类型: %T", expr)
 		}
@@ -225,8 +211,12 @@ func RuleSQLE00112(input *rulepkg.RuleHandlerInput) error {
 
 					// 比较类型是否一致
 					if leftType != rightType {
-						// 报告违规
-						rulepkg.AddResult(input.Res, input.Rule, SQLE00112)
+						//如果不都是整数类型
+						if !(isIntegerType(leftType) && isIntegerType(rightType)) {
+							// 报告违规
+							rulepkg.AddResult(input.Res, input.Rule, SQLE00112)
+						}
+
 					}
 					return false
 				}, expr)
@@ -311,8 +301,12 @@ func RuleSQLE00112(input *rulepkg.RuleHandlerInput) error {
 
 				// 比较类型是否一致
 				if leftType != rightType {
-					// 报告违规
-					rulepkg.AddResult(input.Res, input.Rule, SQLE00112)
+					//如果不都是整数类型
+					if !(isIntegerType(leftType) && isIntegerType(rightType)) {
+						// 报告违规
+						rulepkg.AddResult(input.Res, input.Rule, SQLE00112)
+					}
+
 				}
 				return false
 			}, expr)
@@ -368,8 +362,12 @@ func RuleSQLE00112(input *rulepkg.RuleHandlerInput) error {
 
 				// 比较类型是否一致
 				if leftType != rightType {
-					// 报告违规
-					rulepkg.AddResult(input.Res, input.Rule, SQLE00112)
+					//如果不都是整数类型
+					if !(isIntegerType(leftType) && isIntegerType(rightType)) {
+						// 报告违规
+						rulepkg.AddResult(input.Res, input.Rule, SQLE00112)
+					}
+
 				}
 				return false
 			}, expr)
