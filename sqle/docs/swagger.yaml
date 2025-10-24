@@ -5684,12 +5684,18 @@ definitions:
       status:
         enum:
         - wait_for_audit
+        - wait_for_approve
         - wait_for_execution
+        - wait_for_export
         - rejected
         - canceled
+        - cancel
         - exec_failed
+        - failed
         - executing
+        - exporting
         - finished
+        - finish
         type: string
       workflow_id:
         type: string
