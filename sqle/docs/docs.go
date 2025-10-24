@@ -21340,12 +21340,18 @@ var doc = `{
                     "type": "string",
                     "enum": [
                         "wait_for_audit",
+                        "wait_for_approve",
                         "wait_for_execution",
+                        "wait_for_export",
                         "rejected",
                         "canceled",
+                        "cancel",
                         "exec_failed",
+                        "failed",
                         "executing",
-                        "finished"
+                        "exporting",
+                        "finished",
+                        "finish"
                     ]
                 },
                 "workflow_id": {

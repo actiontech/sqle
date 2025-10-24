@@ -698,7 +698,7 @@ type WorkflowDetailResV1 struct {
 	CreateTime              *time.Time            `json:"create_time"`
 	CurrentStepType         string                `json:"current_step_type,omitempty" enums:"sql_review,sql_execute"`
 	CurrentStepAssigneeUser []string              `json:"current_step_assignee_user_name_list,omitempty"`
-	Status                  string                `json:"status" enums:"wait_for_audit,wait_for_execution,rejected,canceled,exec_failed,executing,finished"`
+	Status                  string                `json:"status" enums:"wait_for_audit,wait_for_approve,wait_for_execution,wait_for_export,rejected,canceled,cancel,exec_failed,failed,executing,exporting,finished,finish"`
 	InstanceInfo            []InstanceInfo        `json:"instance_info,omitempty"`
 }
 
