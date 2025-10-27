@@ -9,6 +9,7 @@ import (
 
 	"github.com/actiontech/sqle/sqle/errors"
 
+	v1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	dmsCommonJwt "github.com/actiontech/dms/pkg/dms-common/api/jwt"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	scannerCmd "github.com/actiontech/sqle/sqle/cmd/scannerd/command"
@@ -235,19 +236,59 @@ func (svc PipelineSvc) GetPipeline(projectUID string, pipelineID uint) (*Pipelin
 	return svc.toPipeline(modelPipeline, modelPiplineNodes), nil
 }
 
-func (svc PipelineSvc) GetPipelineList(limit, offset uint32, fuzzySearchNameDesc string, projectUID string, userId string, rangeDatasourceIds []string) (count uint64, pipelines []*Pipeline, err error) {
+// GetPipelineListWithPermission 根据用户权限获取流水线列表
+func (svc PipelineSvc) GetPipelineListWithPermission(limit, offset uint32, fuzzySearchNameDesc string, projectUID string, userPermission *dms.UserPermission, userId string) (count uint64, pipelines []*Pipeline, err error) {
 	s := model.GetStorage()
-	modelPipelines, count, err := s.GetPipelineList(model.ProjectUID(projectUID), fuzzySearchNameDesc, limit, offset, userId, rangeDatasourceIds)
+
+	// 根据用户权限确定查询参数
+	var queryUserId string
+	var rangeDatasourceIds []string
+	var canViewAll bool
+
+	// 权限判断逻辑
+	if userPermission.IsAdmin() || userPermission.IsProjectAdmin() {
+		// 超级管理员或项目管理员：可以查看所有流水线
+		canViewAll = true
+	} else if viewPipelinePermission := userPermission.GetOnePermission(v1.OpPermissionViewPipeline); viewPipelinePermission != nil {
+		// 拥有"查看流水线"权限的普通用户：可以查看指定数据源相关的流水线 + 自己创建的所有流水线
+		queryUserId = userId
+		rangeDatasourceIds = viewPipelinePermission.RangeUids
+		canViewAll = false
+	} else {
+		// 普通用户：只能查看自己创建的流水线
+		queryUserId = userId
+		rangeDatasourceIds = nil
+		canViewAll = false
+	}
+
+	// 执行数据库查询
+	modelPipelines, count, err := s.GetPipelineList(model.ProjectUID(projectUID), fuzzySearchNameDesc, limit, offset, queryUserId, rangeDatasourceIds, canViewAll)
 	if err != nil {
 		return 0, nil, err
 	}
+
+	// 转换为服务层对象
 	pipelines = make([]*Pipeline, 0, len(modelPipelines))
+	if len(modelPipelines) == 0 {
+		return count, pipelines, nil
+	}
+
+	// 收集所有pipeline ID
+	pipelineIDs := make([]uint, 0, len(modelPipelines))
+	for _, mp := range modelPipelines {
+		pipelineIDs = append(pipelineIDs, mp.ID)
+	}
+
+	// 批量获取所有节点
+	nodesMap, err := s.GetPipelineNodesInBatch(pipelineIDs)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	// 组装结果
 	for _, modelPipeline := range modelPipelines {
-		modelPiplineNodes, err := s.GetPipelineNodes(modelPipeline.ID)
-		if err != nil {
-			return 0, nil, err
-		}
-		pipelines = append(pipelines, svc.toPipeline(modelPipeline, modelPiplineNodes))
+		nodes := nodesMap[modelPipeline.ID]
+		pipelines = append(pipelines, svc.toPipeline(modelPipeline, nodes))
 	}
 	return count, pipelines, nil
 }
