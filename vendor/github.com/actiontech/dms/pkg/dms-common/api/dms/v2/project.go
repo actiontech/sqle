@@ -35,6 +35,9 @@ type ListProjectReq struct {
 	FilterByBusinessTag string `query:"filter_by_business_tag" json:"filter_by_business_tag"`
 	// filter the Project By Project description
 	FilterByDesc string `query:"filter_by_desc" json:"filter_by_desc"`
+	// fuzzy keyword
+	// in:query
+	FuzzyKeyword string `query:"fuzzy_keyword" json:"fuzzy_keyword"`
 }
 
 // swagger:model ListProjectV2

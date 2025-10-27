@@ -44,6 +44,8 @@ type GetUser struct {
 	ThirdPartyUserInfo string            `json:"third_party_user_info"`
 	// access token
 	AccessTokenInfo AccessTokenInfo `json:"access_token_info"`
+	// user system
+	System UserSystem `json:"system"`
 }
 
 type AccessTokenInfo struct {
@@ -83,6 +85,14 @@ const (
 	UserAuthenticationTypeDMS     UserAuthenticationType = "dms"    // user verify through dms
 	UserAuthenticationTypeOAUTH2  UserAuthenticationType = "oauth2" // user verify through oauth2
 	UserAuthenticationTypeUnknown UserAuthenticationType = "unknown"
+)
+
+// swagger:enum UserSystem
+type UserSystem string
+
+const (
+	UserSystemWorkbench  UserSystem = "WORKBENCH"
+	UserSystemManagement UserSystem = "MANAGEMENT"
 )
 
 // swagger:model GetUserReply
@@ -377,6 +387,9 @@ type ListUserReq struct {
 	// filter deleted user to be return ,default is false
 	// in:query
 	FilterDeletedUser bool `query:"filter_del_user" json:"filter_del_user"`
+	// fuzzy keyword
+	// in:query
+	FuzzyKeyword string `query:"fuzzy_keyword" json:"fuzzy_keyword"`
 }
 
 // swagger:enum UserOrderByField
@@ -412,6 +425,8 @@ type ListUser struct {
 	IsDeleted bool `json:"is_deleted"`
 	// third party user info
 	ThirdPartyUserInfo string `json:"third_party_user_info"`
+	// user system
+	System UserSystem `json:"system"`
 }
 
 // swagger:model ListUserReply
