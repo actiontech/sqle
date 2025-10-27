@@ -153,12 +153,15 @@ func (w *WorkflowNotification) NotificationBody() i18nPkg.I18nStr {
 		instanceMap[instance.ID] = instance
 	}
 
+	// Add a blank line before task details for better readability
+	bodyStr = append(bodyStr, i18nPkg.ConvertStr2I18nAsDefaultLang(""))
+
 	for _, t := range tasks {
 		if instance, ok := instanceMap[t.InstanceId]; ok {
 			t.Instance = instance
 		}
 
-		bodyStr = append(bodyStr, i18nPkg.ConvertStr2I18nAsDefaultLang("--------------"), w.buildNotifyBody(t))
+		bodyStr = append(bodyStr, i18nPkg.ConvertStr2I18nAsDefaultLang("────────────────"), w.buildNotifyBody(t))
 	}
 
 	return locale.Bundle.JoinI18nStr(bodyStr, "\n")
