@@ -3,10 +3,10 @@ package v1
 import (
 	"context"
 	"fmt"
-	v1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
-	"github.com/actiontech/sqle/sqle/errors"
 	"net/http"
 	"strconv"
+
+	"github.com/actiontech/sqle/sqle/errors"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/dms"
@@ -234,19 +234,10 @@ func GetPipelines(c echo.Context) error {
 	if err != nil {
 		return errors.New(errors.ConnectStorageError, fmt.Errorf("check get pipelines failed: %v", err))
 	}
-	userId := ""
-	if !userPermission.CanViewProject() {
-		userId = user.GetIDStr()
-	}
-	rangeDatasourceIds := make([]string, 0)
-	viewPipelinePermission := userPermission.GetOnePermission(v1.OpPermissionViewPipeline)
-	if viewPipelinePermission != nil {
-		userId = ""
-		rangeDatasourceIds = viewPipelinePermission.RangeUids
-	}
-	// 4. 获取存储对象并查询流水线列表
+
+	// 3. 获取存储对象并查询流水线列表
 	var pipelineSvc pipeline.PipelineSvc
-	count, pipelineList, err := pipelineSvc.GetPipelineList(limit, offset, req.FuzzySearchNameDesc, projectUid, userId, rangeDatasourceIds)
+	count, pipelineList, err := pipelineSvc.GetPipelineListWithPermission(limit, offset, req.FuzzySearchNameDesc, projectUid, userPermission, user.GetIDStr())
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
