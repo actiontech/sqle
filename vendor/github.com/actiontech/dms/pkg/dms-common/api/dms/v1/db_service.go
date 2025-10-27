@@ -216,3 +216,8 @@ type ListDBServiceReply struct {
 	// Generic reply
 	base.GenericResp
 }
+
+type DBServiceUidWithNameInfo struct {
+	DBServiceUid  string
+	DBServiceName string
+}

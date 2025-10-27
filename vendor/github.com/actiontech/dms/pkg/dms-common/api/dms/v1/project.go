@@ -112,3 +112,9 @@ type ListProjectReply struct {
 	// Generic reply
 	base.GenericResp
 }
+
+type ProjectInfo struct {
+	ProjectUid      string          `json:"project_uid"`
+	ProjectName     string          `json:"project_name"`
+	ProjectPriority ProjectPriority `json:"project_priority"`
+}
