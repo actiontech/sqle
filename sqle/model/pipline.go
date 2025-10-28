@@ -101,22 +101,50 @@ func isValidAuditMethod(a string) bool {
 	return false
 }
 
-func (s *Storage) GetPipelineList(projectID ProjectUID, fuzzySearchContent string, limit, offset uint32, userId string, rangeDatasourceIds []string) ([]*Pipeline, uint64, error) {
+func (s *Storage) GetPipelineList(projectID ProjectUID, fuzzySearchContent string, limit, offset uint32, userId string, rangeDatasourceIds []string, canViewAll bool) ([]*Pipeline, uint64, error) {
 	var count int64
 	var pipelines []*Pipeline
 	query := s.db.Model(&Pipeline{}).Where("project_uid = ?", projectID)
-	if userId != "" {
-		query = query.Where("create_user_id = ? OR create_user_id IS NULL", userId)
-	}
+
+	// 1. 模糊搜索
 	if fuzzySearchContent != "" {
 		query = query.Where("name LIKE ? OR description LIKE ?", "%"+fuzzySearchContent+"%", "%"+fuzzySearchContent+"%")
 	}
-	if len(rangeDatasourceIds) > 0 {
-		query = query.Joins("JOIN pipeline_nodes ON pipelines.id = pipeline_nodes.pipeline_id").
-			Where("pipeline_nodes.instance_id IN (?)", rangeDatasourceIds).
-			Group("pipelines.id")
-	}
 
+	// 2. 权限过滤
+	if !canViewAll {
+		if len(rangeDatasourceIds) > 0 {
+			// 有数据源权限的用户可以看到：
+			// 1. 包含权限范围内数据源的流水线（通过LEFT JOIN匹配）
+			// 2. 自己创建的所有流水线
+			// 3. 所有节点都是离线节点的流水线（通过NOT EXISTS检查）
+			query = query.
+				Joins("LEFT JOIN pipeline_nodes ON pipelines.id = pipeline_nodes.pipeline_id").
+				Where(`
+					pipeline_nodes.instance_id IN (?) OR 
+					pipelines.create_user_id = ? OR 
+					NOT EXISTS (
+						SELECT 1 FROM pipeline_nodes pn2 
+						WHERE pn2.pipeline_id = pipelines.id 
+						AND pn2.instance_id != 0
+					)`, rangeDatasourceIds, userId).
+				Group("pipelines.id") // 去重，因为LEFT JOIN可能产生重复记录
+		} else if userId != "" {
+			// 普通用户只能看到：
+			// 1. 自己创建的流水线
+			// 2. 所有节点都是离线节点的流水线
+			query = query.Where(`
+				create_user_id = ? OR 
+				NOT EXISTS (
+					SELECT 1 FROM pipeline_nodes pn 
+					WHERE pn.pipeline_id = pipelines.id 
+					AND pn.instance_id != 0
+				)`, userId)
+		}
+	}
+	// canViewAll = true 时不添加任何过滤条件
+
+	// 3. 统计和分页查询
 	err := query.Count(&count).Error
 	if err != nil {
 		return pipelines, uint64(count), errors.New(errors.ConnectStorageError, err)
@@ -167,6 +195,27 @@ func (s *Storage) GetPipelineNodesByInstanceId(instanceID uint64) ([]*PipelineNo
 		return nodes, errors.New(errors.ConnectStorageError, err)
 	}
 	return nodes, nil
+}
+
+// GetPipelineNodesInBatch 批量获取多个流水线的节点
+func (s *Storage) GetPipelineNodesInBatch(pipelineIDs []uint) (map[uint][]*PipelineNode, error) {
+	if len(pipelineIDs) == 0 {
+		return make(map[uint][]*PipelineNode), nil
+	}
+
+	var nodes []*PipelineNode
+	err := s.db.Model(PipelineNode{}).Where("pipeline_id IN (?)", pipelineIDs).Find(&nodes).Error
+	if err != nil {
+		return nil, errors.New(errors.ConnectStorageError, err)
+	}
+
+	// 按pipeline_id分组
+	nodeMap := make(map[uint][]*PipelineNode)
+	for _, node := range nodes {
+		nodeMap[node.PipelineID] = append(nodeMap[node.PipelineID], node)
+	}
+
+	return nodeMap, nil
 }
 
 func (s *Storage) CreatePipeline(pipeline *Pipeline, nodes []*PipelineNode) error {
