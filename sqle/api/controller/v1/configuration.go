@@ -4,13 +4,14 @@ import (
 	"context"
 	"crypto/rsa"
 	"fmt"
+	"net/http"
+	"os"
+
 	"github.com/actiontech/dms/pkg/dms-common/dmsobject"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
-	"net/http"
-	"os"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/dms"
@@ -419,7 +420,7 @@ func getGitAuthMethod(url, username, password string) (transport.AuthMethod, err
 		if err != nil {
 			return nil, err
 		}
-		if systemVariable.Data.SystemVariableSSHPrimaryKey != "" {
+		if systemVariable.Data.SystemVariableSSHPrimaryKey == "" {
 			return nil, errors.New(errors.DataNotExist, fmt.Errorf("git ssh private key not found"))
 		}
 		publicKeys, err := sshTransport.NewPublicKeys("git", []byte(systemVariable.Data.SystemVariableSSHPrimaryKey), "")
