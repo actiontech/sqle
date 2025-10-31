@@ -4,13 +4,14 @@ import (
 	"context"
 	"crypto/rsa"
 	"fmt"
+	"net/http"
+	"os"
+
 	"github.com/actiontech/dms/pkg/dms-common/dmsobject"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
-	"net/http"
-	"os"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/dms"
@@ -419,7 +420,7 @@ func getGitAuthMethod(url, username, password string) (transport.AuthMethod, err
 		if err != nil {
 			return nil, err
 		}
-		if systemVariable.Data.SystemVariableSSHPrimaryKey != "" {
+		if systemVariable.Data.SystemVariableSSHPrimaryKey == "" {
 			return nil, errors.New(errors.DataNotExist, fmt.Errorf("git ssh private key not found"))
 		}
 		publicKeys, err := sshTransport.NewPublicKeys("git", []byte(systemVariable.Data.SystemVariableSSHPrimaryKey), "")
@@ -449,7 +450,8 @@ func ListGitBranches(ctx context.Context, url, username, password string) ([]str
 
 	// 获取远程引用（包括分支和标签）
 	refs, err := remote.List(&git.ListOptions{
-		Auth: auth,
+		Auth:            auth,
+		InsecureSkipTLS: true, // 跳过 SSL 证书验证,支持自签名证书
 	})
 	if err != nil {
 		return nil, err
@@ -476,7 +478,8 @@ func CloneGitRepository(ctx context.Context, url, username, password, branch str
 	}
 
 	cloneOpts := &git.CloneOptions{
-		URL: url,
+		URL:             url,
+		InsecureSkipTLS: true, // 跳过 SSL 证书验证,支持自签名证书
 	}
 	if branch != "" {
 		cloneOpts.ReferenceName = plumbing.ReferenceName(branch)
