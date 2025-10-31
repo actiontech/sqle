@@ -464,13 +464,13 @@ var (
 	NotifyManageRecordBodyTime   = &i18n.Message{ID: "NotifyManageRecordBodyTime", Other: "记录时间周期: %v - %v"}
 	NotifyManageRecordBodyProj   = &i18n.Message{ID: "NotifyManageRecordBodyProj", Other: "所属项目: %v"}
 
-	NotifyWorkflowBodyHead              = &i18n.Message{ID: "NotifyWorkflowBodyHead", Other: "\n- 工单主题: %v\n 所属项目： %v\n- 工单ID: %v\n- 工单描述: %v\n- 申请人: %v\n- 创建时间: %v"}
-	NotifyWorkflowBodyWorkFlowErr       = &i18n.Message{ID: "NotifyWorkflowBodyWorkFlowErr", Other: "- 读取工单任务内容失败，请通过SQLE界面确认工单状态"}
-	NotifyWorkflowBodyLink              = &i18n.Message{ID: "NotifyWorkflowBodyLink", Other: "- 工单链接: %v"}
+	NotifyWorkflowBodyHead              = &i18n.Message{ID: "NotifyWorkflowBodyHead", Other: "\n📋 工单主题: %v\n📍 所属项目: %v\n🆔 工单ID: %v\n📝 工单描述: %v\n👤 申请人: %v\n⏰ 创建时间: %v\n"}
+	NotifyWorkflowBodyWorkFlowErr       = &i18n.Message{ID: "NotifyWorkflowBodyWorkFlowErr", Other: "❌ 读取工单任务内容失败，请通过SQLE界面确认工单状态"}
+	NotifyWorkflowBodyLink              = &i18n.Message{ID: "NotifyWorkflowBodyLink", Other: "🔗 工单链接: %v"}
 	NotifyWorkflowBodyConfigUrl         = &i18n.Message{ID: "NotifyWorkflowBodyConfigUrl", Other: "请在系统设置-全局配置中补充全局url"}
-	NotifyWorkflowBodyInstanceErr       = &i18n.Message{ID: "NotifyWorkflowBodyInstanceErr", Other: "获取数据源实例失败: %v\n"}
-	NotifyWorkflowBodyInstanceAndSchema = &i18n.Message{ID: "NotifyWorkflowBodyInstanceAndSchema", Other: "- 数据源: %v\n- schema: %v"}
-	NotifyWorkflowBodyStartEnd          = &i18n.Message{ID: "NotifyWorkflowBodyStartEnd", Other: "- 上线开始时间: %v\n- 上线结束时间: %v"}
-	NotifyWorkflowBodyReason            = &i18n.Message{ID: "NotifyWorkflowBodyReason", Other: "- 驳回原因: %v"}
-	NotifyWorkflowBodyReport            = &i18n.Message{ID: "NotifyWorkflowBodyReport", Other: "- 工单审核得分: %v"}
+	NotifyWorkflowBodyInstanceErr       = &i18n.Message{ID: "NotifyWorkflowBodyInstanceErr", Other: "❌ 获取数据源实例失败: %v\n"}
+	NotifyWorkflowBodyInstanceAndSchema = &i18n.Message{ID: "NotifyWorkflowBodyInstanceAndSchema", Other: "🗄️ 数据源: %v\n📊 Schema: %v\n"}
+	NotifyWorkflowBodyStartEnd          = &i18n.Message{ID: "NotifyWorkflowBodyStartEnd", Other: "▶️ 上线开始时间: %v\n◀️ 上线结束时间: %v\n"}
+	NotifyWorkflowBodyReason            = &i18n.Message{ID: "NotifyWorkflowBodyReason", Other: "❌ 驳回原因: %v\n"}
+	NotifyWorkflowBodyReport            = &i18n.Message{ID: "NotifyWorkflowBodyReport", Other: "✅ 工单审核得分: %v\n"}
 )
