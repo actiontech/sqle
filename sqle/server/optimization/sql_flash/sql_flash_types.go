@@ -180,9 +180,10 @@ func (q *TotalAnalysis) Scan(value interface{}) error {
 
 // 索引建议
 type AdvisedIndex struct {
-	State   string       `json:"state"`
-	Message string       `json:"message"`
-	Indexes []*IndexInfo `json:"indexes"`
+	State       string       `json:"state"`
+	HasAdvice   bool         `json:"has_advice"`
+	OtherAdvice string       `json:"other_advice"`
+	Indexes     []*IndexInfo `json:"indexes"`
 }
 
 // Value impl sql.driver.Valuer interface
@@ -216,4 +217,56 @@ func (q *AdvisedIndex) Scan(value interface{}) error {
 type IndexInfo struct {
 	CreateIndexStatement string `json:"create_index_statement"`
 	Reason               string `json:"reason"`
+}
+
+// ========== 重写任务相关结构 ==========
+
+// 创建重写任务请求
+type CreateRewriteTaskReq struct {
+	Type     string `json:"type"`     // SQL类型：SQL 或 MyBatis
+	Content  string `json:"content"`  // SQL内容（文本形式）
+	Metadata string `json:"metadata"` // 数据库元数据信息
+	Explain  string `json:"explain"`  // 执行计划信息
+}
+
+// 创建重写任务响应
+type CreateRewriteTaskResp struct {
+	Code    json.Number `json:"code"`
+	Message string      `json:"message"`
+	Data    struct {
+		TaskID string `json:"task_id"`
+	} `json:"data"`
+}
+
+// 重写任务结果
+type RewriteResult struct {
+	ID            string          `json:"id"`
+	TaskID        string          `json:"task_id"`
+	OriginSQL     string          `json:"origin_sql"`
+	Metadata      string          `json:"metadata"`
+	OptimizeState string          `json:"optimize_state"` // 优化状态：running, rewrite_done, failed等
+	OptimizeSteps []*OptimizeStep `json:"optimize_steps"` // 优化步骤
+}
+
+// 获取重写任务结果响应
+type GetRewriteResultResp struct {
+	Code    json.Number    `json:"code"`
+	Message string         `json:"message"`
+	Data    *RewriteResult `json:"data"`
+}
+
+// ========== 索引推荐任务相关结构 ==========
+
+// 创建索引推荐任务请求
+type CreateAdviseIndexTaskReq struct {
+	Explain string `json:"explain"` // 执行计划信息
+}
+
+// 创建索引推荐任务响应
+type CreateAdviseIndexTaskResp struct {
+	Code    json.Number `json:"code"`
+	Message string      `json:"message"`
+	Data    struct {
+		Message string `json:"message"`
+	} `json:"data"`
 }
