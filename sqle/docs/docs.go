@@ -13083,13 +13083,16 @@ var doc = `{
         "sql_flash.AdvisedIndex": {
             "type": "object",
             "properties": {
+                "has_advice": {
+                    "type": "boolean"
+                },
                 "indexes": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/sql_flash.IndexInfo"
                     }
                 },
-                "message": {
+                "other_advice": {
                     "type": "string"
                 },
                 "state": {

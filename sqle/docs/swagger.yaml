@@ -36,11 +36,13 @@ definitions:
     type: object
   sql_flash.AdvisedIndex:
     properties:
+      has_advice:
+        type: boolean
       indexes:
         items:
           $ref: '#/definitions/sql_flash.IndexInfo'
         type: array
-      message:
+      other_advice:
         type: string
       state:
         type: string
