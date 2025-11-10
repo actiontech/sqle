@@ -51,6 +51,7 @@ type Plugin interface {
 	Backup(ctx context.Context, backupStrategy string, sql string, backupMaxRows uint64) (backupSqls []string, executeResult string, err error)
 
 	RecommendBackupStrategy(ctx context.Context, sql string) (*RecommendBackupStrategyRes, error)
+	GetSelectivityOfSQLColumns(ctx context.Context, sql string) (map[string] /*table name*/ map[string] /*column name*/ float32, error)
 }
 
 type RecommendBackupStrategyRes struct {

@@ -39,6 +39,7 @@ service Driver {
   rpc EstimateSQLAffectRows(EstimateSQLAffectRowsRequest) returns (EstimateSQLAffectRowsResponse); // Introduced from SQLE v2.2304.0
   rpc GetDatabaseObjectDDL(DatabaseObjectInfoRequest) returns (DatabaseSchemaObjectResponse);
   rpc GetDatabaseDiffModifySQL(DatabaseDiffModifyRequest) returns (DatabaseDiffModifyRponse);
+  rpc GetSelectivityOfSQLColumns(GetSelectivityOfSQLColumnsRequest) returns (GetSelectivityOfSQLColumnsResponse);
 }
 
 message Empty {}
@@ -476,4 +477,18 @@ message DatabaseDiffModifyRponse {
 message SchemaDiffModify {
   string schemaName = 1;  
 	repeated string modifySQLs = 2;
+}
+
+message GetSelectivityOfSQLColumnsRequest {
+  Session session = 1;
+  string sql = 2;
+}
+
+message SelectivityOfSQLColumns {
+  string tableName = 1;
+  map<string, float> selectivityOfColumns = 2;
+}
+
+message GetSelectivityOfSQLColumnsResponse {
+  repeated SelectivityOfSQLColumns selectivity = 1;
 }
