@@ -12,6 +12,7 @@ import (
 	"github.com/actiontech/sqle/sqle/api"
 	"github.com/actiontech/sqle/sqle/dms"
 	knowledge_base "github.com/actiontech/sqle/sqle/server/knowledge_base"
+	optimization "github.com/actiontech/sqle/sqle/server/optimization"
 
 	"github.com/actiontech/sqle/sqle/config"
 	"github.com/actiontech/sqle/sqle/driver"
@@ -120,6 +121,9 @@ func Run(options *config.SqleOptions) error {
 			if err := s.CreateDefaultReportPushConfigIfNotExist(model.DefaultProjectUid); err != nil {
 				return fmt.Errorf("create default report push config failed: %v", err)
 			}
+		}
+		{
+			go optimization.SyncOptimizeResult()
 		}
 	}
 

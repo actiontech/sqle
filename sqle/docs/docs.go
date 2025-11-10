@@ -23204,6 +23204,10 @@ var doc = `{
                     "type": "object",
                     "$ref": "#/definitions/sql_flash.AdvisedIndex"
                 },
+                "enable_high_analysis": {
+                    "description": "是否启用高级分析",
+                    "type": "boolean"
+                },
                 "id": {
                     "type": "integer"
                 },
