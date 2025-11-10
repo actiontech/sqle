@@ -311,3 +311,7 @@ func (p *DriverImpl) GetDatabaseObjectDDL(ctx context.Context, objInfos []*drive
 func (p *DriverImpl) GetDatabaseDiffModifySQL(ctx context.Context, calibratedDSN *driverV2.DSN, objInfos []*driverV2.DatabasCompareSchemaInfo) ([]*driverV2.DatabaseDiffModifySQLResult, error) {
 	return []*driverV2.DatabaseDiffModifySQLResult{}, nil
 }
+
+func (p *DriverImpl) GetSelectivityOfSQLColumns(ctx context.Context, sql string) (map[string]map[string]float32, error) {
+	return nil, nil
+}
