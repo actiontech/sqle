@@ -99,6 +99,7 @@ type Driver interface {
 
 	Backup(ctx context.Context, req *BackupReq) (*BackupRes, error)
 	RecommendBackupStrategy(ctx context.Context, req *RecommendBackupStrategyReq) (*RecommendBackupStrategyRes, error)
+	GetSelectivityOfSQLColumns(ctx context.Context, sql string) (map[string] /*table name*/ map[string] /*column name*/ float32, error)
 }
 
 const (
