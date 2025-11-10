@@ -11,13 +11,14 @@ import (
 )
 
 type OptimizeSQLReq struct {
-	OptimizationName string  `json:"optimization_name" form:"optimization_name" example:"optmz_2024031412091244" valid:"required"`
-	DBType           string  `json:"db_type" form:"db_type" example:"MySQL" valid:"required"`
-	SQLContent       string  `json:"sql_content" form:"sql_content" example:"select * from t1; select * from t2;"`
-	InstanceName     *string `json:"instance_name" form:"instance_name" example:"instance1"`
-	SchemaName       *string `json:"schema_name" form:"schema_name" example:"schema1"`
-	ExplainInfo      string  `json:"explain_info" form:"explain_info"`
-	Metadata         string  `json:"metadata" form:"metadata"`
+	OptimizationName   string  `json:"optimization_name" form:"optimization_name" example:"optmz_2024031412091244" valid:"required"`
+	DBType             string  `json:"db_type" form:"db_type" example:"MySQL" valid:"required"`
+	SQLContent         string  `json:"sql_content" form:"sql_content" example:"select * from t1; select * from t2;"`
+	InstanceName       *string `json:"instance_name" form:"instance_name" example:"instance1"`
+	SchemaName         *string `json:"schema_name" form:"schema_name" example:"schema1"`
+	ExplainInfo        string  `json:"explain_info" form:"explain_info"`
+	Metadata           string  `json:"metadata" form:"metadata"`
+	EnableHighAnalysis bool    `json:"enable_high_analysis" form:"enable_high_analysis"` // 是否启用高级分析
 }
 
 type OptimizeSQLRes struct {
@@ -132,14 +133,13 @@ type OptimizationSQLDetail struct {
 	StatusDetail   string `json:"status_detail"`                           // SQLe 维护的状态详情
 
 	// SQL Flash相关字段
-	OriginSQL          string                    `json:"origin_sql"`           // 原始SQL
-	Metadata           string                    `json:"metadata"`             // 数据库元数据信息
-	TotalState         string                    `json:"total_state"`          // 总状态
-	EnableHighAnalysis bool                      `json:"enable_high_analysis"` // 是否启用高级分析
-	OriginQueryPlan    *sql_flash.QueryPlan      `json:"origin_query_plan"`    // 原始SQL查询计划
-	OptimizeDetail     *sql_flash.OptimizeDetail `json:"optimize"`             // 优化详情
-	TotalAnalysis      *sql_flash.TotalAnalysis  `json:"total_analysis"`       // 总体分析
-	AdvisedIndex       *sql_flash.AdvisedIndex   `json:"advised_index"`        // 索引建议详情
+	OriginSQL       string                    `json:"origin_sql"`        // 原始SQL
+	Metadata        string                    `json:"metadata"`          // 数据库元数据信息
+	TotalState      string                    `json:"total_state"`       // 总状态
+	OriginQueryPlan *sql_flash.QueryPlan      `json:"origin_query_plan"` // 原始SQL查询计划
+	OptimizeDetail  *sql_flash.OptimizeDetail `json:"optimize"`          // 优化详情
+	TotalAnalysis   *sql_flash.TotalAnalysis  `json:"total_analysis"`    // 总体分析
+	AdvisedIndex    *sql_flash.AdvisedIndex   `json:"advised_index"`     // 索引建议详情
 
 }
 

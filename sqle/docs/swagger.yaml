@@ -6985,9 +6985,6 @@ definitions:
         $ref: '#/definitions/sql_flash.AdvisedIndex'
         description: 索引建议详情
         type: object
-      enable_high_analysis:
-        description: 是否启用高级分析
-        type: boolean
       id:
         type: integer
       metadata:
@@ -7029,6 +7026,9 @@ definitions:
       db_type:
         example: MySQL
         type: string
+      enable_high_analysis:
+        description: 是否启用高级分析
+        type: boolean
       explain_info:
         type: string
       instance_name:
