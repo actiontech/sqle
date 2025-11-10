@@ -353,3 +353,7 @@ func (s *PluginImplV1) GetDatabaseObjectDDL(ctx context.Context, objInfos []*dri
 func (s *PluginImplV1) GetDatabaseDiffModifySQL(ctx context.Context, calibratedDSN *driverV2.DSN, objInfos []*driverV2.DatabasCompareSchemaInfo) ([]*driverV2.DatabaseDiffModifySQLResult, error) {
 	return nil, fmt.Errorf("unimplement this method")
 }
+
+func (p *PluginImplV1) GetSelectivityOfSQLColumns(ctx context.Context, sql string) (map[string]map[string]float32, error) {
+	return nil, fmt.Errorf("unimplement this method")
+}
