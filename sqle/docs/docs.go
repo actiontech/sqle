@@ -11922,6 +11922,12 @@ var doc = `{
                         "in": "formData"
                     },
                     {
+                        "type": "boolean",
+                        "description": "enable high analysis",
+                        "name": "enable_high_analysis",
+                        "in": "formData"
+                    },
+                    {
                         "type": "file",
                         "description": "input SQL file",
                         "name": "input_sql_file",

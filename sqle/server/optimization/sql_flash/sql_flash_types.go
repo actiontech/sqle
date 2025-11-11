@@ -255,11 +255,10 @@ type GetRewriteResultResp struct {
 	Data    *RewriteResult `json:"data"`
 }
 
-// ========== 索引推荐任务相关结构 ==========
-
 // 创建索引推荐任务请求
 type CreateAdviseIndexTaskReq struct {
-	Explain string `json:"explain"` // 执行计划信息
+	Explain        string `json:"explain"`         // 执行计划信息
+	SelectivityMap string `json:"selectivity_map"` // 列选择性信息
 }
 
 // 创建索引推荐任务响应
