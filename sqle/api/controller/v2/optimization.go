@@ -54,6 +54,7 @@ type OptimizeSQLResData struct {
 // @Param sql_content formData string false "sqls for audit"
 // @Param explain_info formData string false "explain info"
 // @Param metadata formData string false "metadata"
+// @Param enable_high_analysis formData bool false "enable high analysis"
 // @Param input_sql_file formData file false "input SQL file"
 // @Param input_zip_file formData file false "input ZIP file"
 // @Param input_mybatis_xml_file formData file false "input mybatis XML file"
