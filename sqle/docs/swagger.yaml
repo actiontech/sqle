@@ -15164,6 +15164,10 @@ paths:
         in: formData
         name: metadata
         type: string
+      - description: enable high analysis
+        in: formData
+        name: enable_high_analysis
+        type: boolean
       - description: input SQL file
         in: formData
         name: input_sql_file
