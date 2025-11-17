@@ -238,23 +238,6 @@ type CreateRewriteTaskResp struct {
 	} `json:"data"`
 }
 
-// 重写任务结果
-type RewriteResult struct {
-	ID            string          `json:"id"`
-	TaskID        string          `json:"task_id"`
-	OriginSQL     string          `json:"origin_sql"`
-	Metadata      string          `json:"metadata"`
-	OptimizeState string          `json:"optimize_state"` // 优化状态：running, rewrite_done, failed等
-	OptimizeSteps []*OptimizeStep `json:"optimize_steps"` // 优化步骤
-}
-
-// 获取重写任务结果响应
-type GetRewriteResultResp struct {
-	Code    json.Number    `json:"code"`
-	Message string         `json:"message"`
-	Data    *RewriteResult `json:"data"`
-}
-
 // 创建索引推荐任务请求
 type CreateAdviseIndexTaskReq struct {
 	Explain        string `json:"explain"`         // 执行计划信息
