@@ -126,6 +126,7 @@ func convertSQLsToTask(sql string, p driver.Plugin) (*model.Task, error) {
 			BaseSQL: model.BaseSQL{
 				Number:  uint(n + 1),
 				Content: node.Text,
+				SQLType: node.Type,
 			},
 		})
 	}
