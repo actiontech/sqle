@@ -95,15 +95,15 @@ func CreateSQLAuditRecord(c echo.Context) error {
 	}
 
 	s := model.GetStorage()
-	sqls := getSQLFromFileResp{}
+	sqls := GetSQLFromFileResp{}
 	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if req.Sqls != "" {
-		sqls = getSQLFromFileResp{model.TaskSQLSourceFromFormData, []SQLsFromFile{{SQLs: req.Sqls}}}
+		sqls = GetSQLFromFileResp{model.TaskSQLSourceFromFormData, []SQLsFromFile{{SQLs: req.Sqls}}}
 	} else {
-		sqls, err = getSQLFromFile(c)
+		sqls, err = GetSQLFromFile(c)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, err)
 		}
@@ -165,7 +165,7 @@ func CreateSQLAuditRecord(c echo.Context) error {
 	})
 }
 
-type getSQLFromFileResp struct {
+type GetSQLFromFileResp struct {
 	SourceType string
 	SQLs       []SQLsFromFile
 }
@@ -175,7 +175,14 @@ type SQLsFromFile struct {
 	SQLs     string
 }
 
-func addSQLsFromFileToTasks(sqls getSQLFromFileResp, task *model.Task, plugin driver.Plugin) error {
+func (s GetSQLFromFileResp) MergeSQLs() (sqls string) {
+	for _, v := range s.SQLs {
+		sqls += v.SQLs
+	}
+	return sqls
+}
+
+func addSQLsFromFileToTasks(sqls GetSQLFromFileResp, task *model.Task, plugin driver.Plugin) error {
 	var num uint = 1
 	for _, sqlsFromOneFile := range sqls.SQLs {
 		nodes, err := plugin.Parse(context.TODO(), sqlsFromOneFile.SQLs)
@@ -196,7 +203,7 @@ func addSQLsFromFileToTasks(sqls getSQLFromFileResp, task *model.Task, plugin dr
 	return nil
 }
 
-func buildOnlineTaskForAudit(c echo.Context, s *model.Storage, userId uint64, instanceName, instanceSchema, projectUid string, sqls getSQLFromFileResp) (*model.Task, error) {
+func buildOnlineTaskForAudit(c echo.Context, s *model.Storage, userId uint64, instanceName, instanceSchema, projectUid string, sqls GetSQLFromFileResp) (*model.Task, error) {
 	instance, exist, err := dms.GetInstanceInProjectByName(c.Request().Context(), projectUid, instanceName)
 	if err != nil {
 		return nil, err
@@ -241,7 +248,7 @@ func buildOnlineTaskForAudit(c echo.Context, s *model.Storage, userId uint64, in
 	return task, nil
 }
 
-func buildOfflineTaskForAudit(userId uint64, dbType string, sqls getSQLFromFileResp) (*model.Task, error) {
+func buildOfflineTaskForAudit(userId uint64, dbType string, sqls GetSQLFromFileResp) (*model.Task, error) {
 	task := &model.Task{
 		CreateUserId: userId,
 		ExecuteSQLs:  []*model.ExecuteSQL{},
