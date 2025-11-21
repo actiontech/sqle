@@ -308,3 +308,34 @@ func IsPrefixSubStrArray(arr []string, prefix []string) bool {
 
 	return true
 }
+
+// TruncateStringByRunes 按字符数截取字符串
+func TruncateStringByRunes(s string, maxRunes uint) string {
+	// 字节数不大于 maxRunes ，那字符数肯定不大于 maxRunes
+	if uint(len(s)) <= maxRunes {
+		return s
+	}
+
+	// UTF-8一个字符的字节数是不确定的，如：s="a一b二c"，汉字为多字节字符，len(s)=9
+	//    s的hexdump结果：
+	//    00000000  61 e4 b8 80 62 e4 ba 8c 63                       |a...b...c|
+	//
+	//    当想截取头两个字符：“a一”，即 maxRunes 为2时，
+	//    直接返回s[:maxRunes]的话得到是：“61 e4”这两个字节组成的字符串，并非“a一”，“a一”是“61 e4 b8 80”这四个字节，此时应取s[:4]
+	//
+	//    为得到s[:4]中4这个索引，可以“range s”：逐个rune遍历s，i为每个rune起始的字节索引
+	//    i依次为　0　　1　　4　　5　　8
+	//          　^ａ　^一　^ｂ　^二　^ｃ
+	//    遍历 maxRunes (2)次后，i为下一个字符(b)的起始索引，即4，此时s[:i]就是要截取的头两个字符“a一”
+	var runesCount uint
+	for i := range s {
+		if runesCount == maxRunes {
+			// 达到截取的字符数了，将字符截取至此时rune的字节索引
+			return s[:i]
+		}
+		// 未达到要截取的字符数，继续获取下一个rune
+		runesCount++
+	}
+	// 字符串字符数不足 maxRunes
+	return s
+}
