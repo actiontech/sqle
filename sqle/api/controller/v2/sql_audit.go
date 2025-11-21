@@ -38,6 +38,7 @@ type AuditSQLResV2 struct {
 	ExecSQL     string        `json:"exec_sql"`
 	AuditResult []AuditResult `json:"audit_result"`
 	AuditLevel  string        `json:"audit_level"`
+	SQLType     string        `json:"sql_type"`
 }
 
 type DirectAuditResV2 struct {
@@ -91,6 +92,7 @@ func convertTaskResultToAuditResV2(ctx context.Context, task *model.Task) *Audit
 			ExecSQL:     sql.Content,
 			AuditResult: convertAuditResultToAuditResV2(ctx, sql.AuditResults),
 			AuditLevel:  sql.AuditLevel,
+			SQLType:     sql.SQLType,
 		}
 
 	}
@@ -212,6 +214,7 @@ func convertFileAuditTaskResultToAuditResV2(ctx context.Context, task *model.Tas
 			ExecSQL:     sql.Content,
 			AuditResult: convertAuditResultToAuditResV2(ctx, sql.AuditResults),
 			AuditLevel:  sql.AuditLevel,
+			SQLType:     sql.SQLType,
 		}
 
 	}
