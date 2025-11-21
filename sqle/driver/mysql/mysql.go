@@ -614,6 +614,83 @@ func (p *PluginProcessor) GetDriverMetas() (*driverV2.DriverMetas, error) {
 	}, nil
 }
 
+func (i *MysqlDriverImpl) GetSelectivityOfSQLColumns(ctx context.Context, sql string) (map[string]map[string]float32, error) {
+	node, err := util.ParseOneSql(sql)
+	if err != nil {
+		return nil, err
+	}
+
+	if _, ok := node.(*ast.SelectStmt); !ok {
+		log.NewEntry().Errorf("get selectivity of sql columns failed, sql is not a select statement, sql: %s", sql)
+		return nil, nil
+	}
+
+	selectVisitor := &util.SelectVisitor{}
+	node.Accept(selectVisitor)
+
+	result := make(map[string]map[string]float32)
+
+	for _, selectNode := range selectVisitor.SelectList {
+		if selectNode.From == nil || selectNode.From.TableRefs == nil {
+			continue
+		}
+
+		// 获取表别名映射关系
+		aliasInfo := util.GetTableAliasInfoFromJoin(selectNode.From.TableRefs)
+		aliasMap := make(map[string]string)
+		allTables := make([]string, 0, len(aliasInfo))
+
+		for _, alias := range aliasInfo {
+			if alias.TableAliasName != "" {
+				aliasMap[alias.TableAliasName] = alias.TableName
+			}
+			allTables = append(allTables, alias.TableName)
+		}
+
+		// 提取列并按表分组
+		tableColumns := util.ExtractColumnsFromSelectStmt(selectNode, aliasMap, allTables)
+
+		// 遍历每个表，获取其列的选择性
+		for tableName, columnSet := range tableColumns {
+			columns := make([]string, 0, len(columnSet))
+			for colName := range columnSet {
+				columns = append(columns, colName)
+			}
+
+			if len(columns) == 0 {
+				continue
+			}
+
+			// 构造 TableName 对象
+			var schemaName string
+			for _, alias := range aliasInfo {
+				if alias.TableName == tableName {
+					schemaName = alias.SchemaName
+					break
+				}
+			}
+			tableNameObj := util.NewTableName(schemaName, tableName)
+
+			columnSelectivityMap, err := i.Ctx.GetSelectivityOfColumns(tableNameObj, columns)
+			if err != nil {
+				log.NewEntry().Errorf("get selectivity of columns failed, table: %s, columns: %v, error: %v", tableName, columns, err)
+				continue
+			}
+
+			if result[tableName] == nil {
+				result[tableName] = make(map[string]float32)
+			}
+			for columnName, selectivity := range columnSelectivityMap {
+				if selectivity > 0 {
+					result[tableName][columnName] = float32(selectivity)
+				}
+			}
+		}
+	}
+
+	return result, nil
+}
+
 func (p *PluginProcessor) Open(l *logrus.Entry, cfg *driverV2.Config) (driver.Plugin, error) {
 	return NewInspect(l, cfg)
 }
