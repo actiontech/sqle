@@ -286,3 +286,7 @@ func (p *DriverImpl) EstimateSQLAffectRows(ctx context.Context, sql string) (*dr
 func (p *DriverImpl) KillProcess(ctx context.Context) (*driverV2.KillProcessInfo, error) {
 	return &driverV2.KillProcessInfo{}, nil
 }
+
+func (p *DriverImpl) GetSelectivityOfSQLColumns(ctx context.Context, sql string) (map[string]map[string]float32, error) {
+	return nil, nil
+}

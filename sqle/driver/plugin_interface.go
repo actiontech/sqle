@@ -40,6 +40,8 @@ type Plugin interface {
 
 	// Introduced from v2.2304.0
 	EstimateSQLAffectRows(ctx context.Context, sql string) (*driverV2.EstimatedAffectRows, error)
+
+	GetSelectivityOfSQLColumns(ctx context.Context, sql string) (map[string] /*table name*/ map[string] /*column name*/ float32, error)
 }
 
 type PluginProcessor interface {

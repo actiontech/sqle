@@ -50,6 +50,7 @@ const (
 	OptionalModuleEstimateSQLAffectRows
 	OptionalModuleKillProcess
 	OptionalExecBatch
+	OptionalModuleGetSelectivityOfSQLColumns
 )
 
 func (m OptionalModule) String() string {
@@ -70,6 +71,8 @@ func (m OptionalModule) String() string {
 		return "KillProcess"
 	case OptionalExecBatch:
 		return "ExecBatch"
+	case OptionalModuleGetSelectivityOfSQLColumns:
+		return "GetSelectivityOfSQLColumns"
 	default:
 		return "Unknown"
 	}
