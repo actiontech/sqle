@@ -31,6 +31,7 @@ service Driver {
   rpc GetTableMeta(GetTableMetaRequest) returns (GetTableMetaResponse);
   rpc ExtractTableFromSQL(ExtractTableFromSQLRequest) returns (ExtractTableFromSQLResponse);
   rpc EstimateSQLAffectRows(EstimateSQLAffectRowsRequest) returns (EstimateSQLAffectRowsResponse); // Introduced from SQLE v2.2304.0
+  rpc GetSelectivityOfSQLColumns(GetSelectivityOfSQLColumnsRequest) returns (GetSelectivityOfSQLColumnsResponse);
 }
 
 message Empty {}
@@ -342,4 +343,18 @@ message EstimateSQLAffectRowsResponse {
 
 message KillProcessResponse {
   string errMessage = 1; // 记录执行失败原因
+}
+
+message GetSelectivityOfSQLColumnsRequest {
+  Session session = 1;
+  string sql = 2;
+}
+
+message SelectivityOfSQLColumns {
+  string tableName = 1;
+  map<string, float> selectivityOfColumns = 2;
+}
+
+message GetSelectivityOfSQLColumnsResponse {
+  repeated SelectivityOfSQLColumns selectivity = 1;
 }

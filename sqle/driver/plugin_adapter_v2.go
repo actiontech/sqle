@@ -3,9 +3,9 @@ package driver
 import (
 	"context"
 	sqlDriver "database/sql/driver"
+	"errors"
 	"fmt"
 	"sync"
-	"errors"
 
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	protoV2 "github.com/actiontech/sqle/sqle/driver/v2/proto"
@@ -503,4 +503,26 @@ func (s *dbDriverResult) RowsAffected() (int64, error) {
 		return s.rowsAffected, fmt.Errorf(s.rowsAffectedErr)
 	}
 	return s.rowsAffected, nil
+}
+
+func (s *PluginImplV2) GetSelectivityOfSQLColumns(ctx context.Context, sql string) (map[string]map[string]float32, error) {
+	api := "GetSelectivityOfSQLColumns"
+	s.preLog(api)
+	resp, err := s.client.GetSelectivityOfSQLColumns(ctx, &protoV2.GetSelectivityOfSQLColumnsRequest{
+		Session: s.Session,
+		Sql:     sql,
+	})
+	s.afterLog(api, err)
+	if err != nil {
+		return nil, err
+	}
+	result := make(map[string]map[string]float32, len(resp.Selectivity))
+	for _, v := range resp.Selectivity {
+		colMap := make(map[string]float32, len(v.SelectivityOfColumns))
+		for k, sel := range v.SelectivityOfColumns {
+			colMap[k] = sel
+		}
+		result[v.TableName] = colMap
+	}
+	return result, nil
 }

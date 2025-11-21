@@ -449,3 +449,27 @@ func (d *DriverGrpcServer) KillProcess(ctx context.Context, req *protoV2.KillPro
 		ErrMessage: info.ErrMessage,
 	}, nil
 }
+
+func (d *DriverGrpcServer) GetSelectivityOfSQLColumns(ctx context.Context, req *protoV2.GetSelectivityOfSQLColumnsRequest) (*protoV2.GetSelectivityOfSQLColumnsResponse, error) {
+	driver, err := d.getDriverBySession(req.Session)
+	if err != nil {
+		return &protoV2.GetSelectivityOfSQLColumnsResponse{}, err
+	}
+	selectivity, err := driver.GetSelectivityOfSQLColumns(ctx, req.Sql)
+	if err != nil {
+		return &protoV2.GetSelectivityOfSQLColumnsResponse{}, err
+	}
+	protoSelectivity := make([]*protoV2.SelectivityOfSQLColumns, 0, len(selectivity))
+	for tableName, colMap := range selectivity {
+		// 直接将 map[string]float32 赋值，无需合并操作
+		merged := make(map[string]float32, len(colMap))
+		for col, val := range colMap {
+			merged[col] = val
+		}
+		protoSelectivity = append(protoSelectivity, &protoV2.SelectivityOfSQLColumns{
+			TableName:            tableName,
+			SelectivityOfColumns: merged,
+		})
+	}
+	return &protoV2.GetSelectivityOfSQLColumnsResponse{Selectivity: protoSelectivity}, nil
+}
