@@ -101,6 +101,10 @@ func (d *mockDriver) EstimateSQLAffectRows(ctx context.Context, sql string) (*dr
 	return nil, nil
 }
 
+func (d *mockDriver) GetSelectivityOfSQLColumns(ctx context.Context, sql string) (map[string]map[string]float32, error) {
+	return make(map[string]map[string]float32), nil
+}
+
 func TestAction_validation(t *testing.T) {
 	actions := map[int]*action{
 		ActionTypeAudit:    {typ: ActionTypeAudit},

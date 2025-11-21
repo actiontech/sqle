@@ -88,6 +88,7 @@ type Driver interface {
 	ExtractTableFromSQL(ctx context.Context, sql string) ([]*Table, error)
 	EstimateSQLAffectRows(ctx context.Context, sql string) (*EstimatedAffectRows, error)
 	KillProcess(ctx context.Context) (*KillProcessInfo, error)
+	GetSelectivityOfSQLColumns(ctx context.Context, sql string) (map[string] /*table name*/ map[string] /*column name*/ float32, error)
 }
 
 type Node struct {

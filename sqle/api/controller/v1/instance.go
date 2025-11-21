@@ -326,14 +326,15 @@ func GetInstanceSchemas(c echo.Context) error {
 }
 
 const ( // InstanceTipReqV1.FunctionalModule Enums
-	create_audit_plan = "create_audit_plan"
-	create_workflow   = "create_workflow"
+	FunctionalModuleCreateAuditPlan    = "create_audit_plan"
+	FunctionalModuleCreateWorkflow     = "create_workflow"
+	FunctionalModuleCreateOptimization = "create_optimization"
 )
 
 type InstanceTipReqV1 struct {
 	FilterDBType             string `json:"filter_db_type" query:"filter_db_type"`
 	FilterWorkflowTemplateId uint32 `json:"filter_workflow_template_id" query:"filter_workflow_template_id"`
-	FunctionalModule         string `json:"functional_module" query:"functional_module" enums:"create_audit_plan,create_workflow,sql_manage" valid:"omitempty,oneof=create_audit_plan create_workflow sql_manage"`
+	FunctionalModule         string `json:"functional_module" query:"functional_module" enums:"create_audit_plan,create_workflow,sql_manage,create_optimization" valid:"omitempty,oneof=create_audit_plan create_workflow sql_manage create_optimization"`
 }
 
 type InstanceTipResV1 struct {
@@ -379,10 +380,12 @@ func GetInstanceTips(c echo.Context) error {
 
 	var operationType v1.OpPermissionType
 	switch req.FunctionalModule {
-	case create_audit_plan:
+	case FunctionalModuleCreateAuditPlan:
 		operationType = v1.OpPermissionTypeSaveAuditPlan
-	case create_workflow:
+	case FunctionalModuleCreateWorkflow:
 		operationType = v1.OpPermissionTypeCreateWorkflow
+	case FunctionalModuleCreateOptimization:
+		operationType = v1.OpPermissionTypeCreateOptimization
 	default:
 	}
 

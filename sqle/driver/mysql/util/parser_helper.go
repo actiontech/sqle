@@ -895,3 +895,153 @@ func ConvertAliasToTable(alias string, tables []*ast.TableSource) (*ast.TableNam
 	}
 	return nil, errors.New("can not find table")
 }
+
+// TableColumnMap 表示按表分组的列名集合
+type TableColumnMap map[string]map[string]struct{}
+
+// ExtractColumnsFromSelectStmt 从 SELECT 语句中提取列，并按表分组
+// 参数：
+//   - selectStmt: SELECT 语句节点
+//   - aliasMap: 表别名到实际表名的映射
+//   - allTables: 所有涉及的表名列表（用于处理无表前缀的列）
+//
+// 返回：按表名分组的列名集合
+func ExtractColumnsFromSelectStmt(selectStmt *ast.SelectStmt, aliasMap map[string]string, allTables []string) TableColumnMap {
+	tableColumns := make(TableColumnMap)
+
+	// 收集 SELECT 列表中的所有列别名
+	selectAliases := make(map[string]struct{})
+	if selectStmt.Fields != nil {
+		for _, field := range selectStmt.Fields.Fields {
+			if field.AsName.L != "" {
+				selectAliases[field.AsName.L] = struct{}{}
+			}
+		}
+	}
+
+	// 辅助函数：从表达式中提取列并按表分组
+	extractColumnsFromExpr := func(expr ast.Node, skipAliases bool) {
+		if expr == nil {
+			return
+		}
+		columnVisitor := &ColumnNameVisitor{}
+		expr.Accept(columnVisitor)
+
+		for _, colExpr := range columnVisitor.ColumnNameList {
+			if colExpr.Name == nil {
+				continue
+			}
+
+			// 如果需要跳过别名且当前列名是一个别名，则跳过
+			if skipAliases {
+				if _, isAlias := selectAliases[colExpr.Name.Name.L]; isAlias && colExpr.Name.Table.L == "" {
+					continue
+				}
+			}
+
+			var targetTableName string
+
+			// 如果列有表前缀（可能是别名或实际表名）
+			if colExpr.Name.Table.L != "" {
+				// 先尝试从别名映射中查找
+				if actualTable, exists := aliasMap[colExpr.Name.Table.L]; exists {
+					targetTableName = actualTable
+				} else {
+					// 如果不是别名，就当作实际表名
+					targetTableName = colExpr.Name.Table.L
+				}
+			}
+
+			if targetTableName != "" {
+				if tableColumns[targetTableName] == nil {
+					tableColumns[targetTableName] = make(map[string]struct{})
+				}
+				tableColumns[targetTableName][colExpr.Name.Name.L] = struct{}{}
+			} else {
+				// 没有表前缀的列，可能属于任何表
+				// 在多表查询中，尝试将该列添加到所有表
+				for _, tableName := range allTables {
+					if tableColumns[tableName] == nil {
+						tableColumns[tableName] = make(map[string]struct{})
+					}
+					tableColumns[tableName][colExpr.Name.Name.L] = struct{}{}
+				}
+			}
+		}
+	}
+
+	// 从 SELECT Fields 提取列（包括聚合函数内的列）
+	if selectStmt.Fields != nil {
+		for _, field := range selectStmt.Fields.Fields {
+			extractColumnsFromExpr(field.Expr, false)
+		}
+	}
+
+	// 从 WHERE 条件提取列
+	if selectStmt.Where != nil {
+		extractColumnsFromExpr(selectStmt.Where, false)
+	}
+
+	// 从 GROUP BY 提取列（需要跳过别名引用）
+	if selectStmt.GroupBy != nil {
+		for _, item := range selectStmt.GroupBy.Items {
+			extractColumnsFromExpr(item.Expr, true)
+		}
+	}
+
+	// 从 HAVING 提取列
+	if selectStmt.Having != nil {
+		extractColumnsFromExpr(selectStmt.Having.Expr, false)
+	}
+
+	// 注意：不从 ORDER BY 提取，因为可能包含别名引用
+
+	return tableColumns
+}
+
+// a helper function to get the table alias info from join node
+func GetTableAliasInfoFromJoin(join *ast.Join) []*TableAliasInfo {
+	tableAlias := make([]*TableAliasInfo, 0)
+	tableSources := GetTableSourcesFromJoin(join)
+	for _, tableSource := range tableSources {
+		if tableName, ok := tableSource.Source.(*ast.TableName); ok {
+			tableAlias = append(tableAlias, &TableAliasInfo{
+				TableAliasName: tableSource.AsName.String(),
+				TableName:      tableName.Name.O,
+				SchemaName:     tableName.Schema.O,
+			})
+		}
+	}
+	return tableAlias
+}
+
+type TableAliasInfo struct {
+	TableName      string
+	SchemaName     string
+	TableAliasName string
+}
+
+// a helper function to get the table source from join node
+func GetTableSourcesFromJoin(join *ast.Join) []*ast.TableSource {
+	sources := []*ast.TableSource{}
+	if join == nil {
+		return sources
+	}
+	if n := join.Left; n != nil {
+		switch t := n.(type) {
+		case *ast.TableSource:
+			sources = append(sources, t)
+		case *ast.Join:
+			sources = append(sources, GetTableSourcesFromJoin(t)...)
+		}
+	}
+	if n := join.Right; n != nil {
+		switch t := n.(type) {
+		case *ast.TableSource:
+			sources = append(sources, t)
+		case *ast.Join:
+			sources = append(sources, GetTableSourcesFromJoin(t)...)
+		}
+	}
+	return sources
+}
