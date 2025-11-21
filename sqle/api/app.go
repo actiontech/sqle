@@ -160,6 +160,9 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		// 内部调用
 		v1Router.POST("/data_resource/handle", v1.OperateDataResourceHandle, sqleMiddleware.AdminUserAllowed())
 		v1Router.POST(fmt.Sprintf("%s/connection", dmsV1.InternalDBServiceRouterGroup), v1.CheckInstanceIsConnectable, sqleMiddleware.AdminUserAllowed())
+
+		// 系统功能开关
+		v1Router.GET("/system/module_status", v1.GetSystemModuleStatus)
 	}
 
 	// project admin router
@@ -314,6 +317,11 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		// scanner token auth
 		v2ProjectRouter.POST("/:project_name/audit_plans/:audit_plan_name/sqls/full", v2.FullSyncAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
 		v2ProjectRouter.POST("/:project_name/audit_plans/:audit_plan_name/sqls/partial", v2.PartialSyncAuditPlanSQLs, sqleMiddleware.ScannerVerifier())
+
+		// sql optimization
+		v2ProjectRouter.POST("/:project_name/sql_optimization_records", v2.SQLOptimize)
+		v2ProjectRouter.GET("/:project_name/sql_optimization_records", v2.GetOptimizationRecords)
+		v2ProjectRouter.GET("/:project_name/sql_optimization_records/:optimization_record_id/detail", v2.GetOptimizationSQLDetail)
 
 	}
 
