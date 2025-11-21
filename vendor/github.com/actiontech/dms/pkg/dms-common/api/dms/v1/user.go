@@ -166,6 +166,10 @@ const (
 	OpPermissionTypeSaveAuditPlan OpPermissionType = "save_audit_plan"
 	//SQL查询；SQL查询权限
 	OpPermissionTypeSQLQuery OpPermissionType = "sql_query"
+	// 查看他人创建的SQL调优
+	OpPermissionTypeViewOthersOptimization OpPermissionType = "view_others_optimization"
+	// 创建SQL调优；拥有该权限的用户可以创建SQL调优任务
+	OpPermissionTypeCreateOptimization OpPermissionType = "create_optimization"
 )
 
 func ParseOpPermissionType(typ string) (OpPermissionType, error) {
@@ -190,6 +194,10 @@ func ParseOpPermissionType(typ string) (OpPermissionType, error) {
 		return OpPermissionTypeSaveAuditPlan, nil
 	case string(OpPermissionTypeSQLQuery):
 		return OpPermissionTypeSQLQuery, nil
+	case string(OpPermissionTypeViewOthersOptimization):
+		return OpPermissionTypeViewOthersOptimization, nil
+	case string(OpPermissionTypeCreateOptimization):
+		return OpPermissionTypeCreateOptimization, nil
 	default:
 		return "", fmt.Errorf("invalid op permission type: %s", typ)
 	}
@@ -219,6 +227,10 @@ func GetOperationTypeDesc(opType OpPermissionType) string {
 		return "创建扫描任务权限"
 	case OpPermissionTypeSQLQuery:
 		return "SQL查询"
+	case OpPermissionTypeViewOthersOptimization:
+		return "查看他人创建的SQL调优"
+	case OpPermissionTypeCreateOptimization:
+		return "创建SQL调优"
 	default:
 		return "不支持的操作类型"
 	}
