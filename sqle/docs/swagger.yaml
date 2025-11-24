@@ -9,6 +9,115 @@ definitions:
         example: ok
         type: string
     type: object
+  sql_flash.AdvisedIndex:
+    properties:
+      has_advice:
+        type: boolean
+      indexes:
+        items:
+          $ref: '#/definitions/sql_flash.IndexInfo'
+        type: array
+      other_advice:
+        type: string
+      state:
+        type: string
+    type: object
+  sql_flash.Analysis:
+    properties:
+      detail:
+        items:
+          $ref: '#/definitions/sql_flash.AnalysisDetail'
+        type: array
+      improvement_desc:
+        type: string
+      improvement_rate:
+        type: number
+      state:
+        type: string
+      total_score:
+        type: number
+    type: object
+  sql_flash.AnalysisDetail:
+    properties:
+      category:
+        type: string
+      optimized_score:
+        type: number
+      original_score:
+        type: number
+    type: object
+  sql_flash.IndexInfo:
+    properties:
+      create_index_statement:
+        type: string
+      reason:
+        type: string
+    type: object
+  sql_flash.OptimizeDetail:
+    properties:
+      state:
+        type: string
+      steps:
+        items:
+          $ref: '#/definitions/sql_flash.OptimizeStep'
+        type: array
+    type: object
+  sql_flash.OptimizeStep:
+    properties:
+      analysis:
+        $ref: '#/definitions/sql_flash.Analysis'
+        type: object
+      chat_id:
+        type: string
+      optimized_sql:
+        type: string
+      query_plan:
+        $ref: '#/definitions/sql_flash.QueryPlan'
+        type: object
+      rule_desc:
+        type: string
+      rule_id:
+        type: string
+      rule_name:
+        type: string
+    type: object
+  sql_flash.QueryPlan:
+    properties:
+      query_plan_desc:
+        items:
+          $ref: '#/definitions/sql_flash.QueryPlanNode'
+        type: array
+      state:
+        type: string
+    type: object
+  sql_flash.QueryPlanNode:
+    properties:
+      children:
+        items:
+          $ref: '#/definitions/sql_flash.QueryPlanNode'
+        type: array
+      operator:
+        type: string
+      summary:
+        items:
+          type: string
+        type: array
+    type: object
+  sql_flash.TotalAnalysis:
+    properties:
+      detail:
+        items:
+          $ref: '#/definitions/sql_flash.AnalysisDetail'
+        type: array
+      improvement_desc:
+        type: string
+      improvement_rate:
+        type: number
+      state:
+        type: string
+      total_score:
+        type: number
+    type: object
   v1.AffectRows:
     properties:
       count:
@@ -3796,6 +3905,33 @@ definitions:
         example: ok
         type: string
     type: object
+  v2.GetOptimizationDetailRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v2.OptimizationSQLDetail'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v2.GetOptimizationRecordsRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v2.OptimizationRecord'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_nums:
+        type: integer
+    type: object
   v2.GetSqlManageListResp:
     properties:
       code:
@@ -3928,6 +4064,129 @@ definitions:
       sql_query_config:
         $ref: '#/definitions/v1.SQLQueryConfigResV1'
         type: object
+    type: object
+  v2.OptimizationRecord:
+    properties:
+      created_time:
+        description: 创建时间
+        type: string
+      created_user:
+        description: 创建人
+        type: string
+      db_type:
+        description: 数据库类型
+        type: string
+      instance_name:
+        description: 数据源
+        type: string
+      number_of_index:
+        description: 优化索引数量
+        type: integer
+      number_of_rule:
+        description: 优化规则数量
+        type: integer
+      optimization_id:
+        description: 优化ID
+        type: string
+      optimization_name:
+        type: string
+      performance_improve:
+        description: 优化提升性能
+        type: number
+      status:
+        description: 优化状态
+        enum:
+        - optimizing
+        - failed
+        - finish
+        type: string
+      status_detail:
+        description: 优化状态详情
+        type: string
+    type: object
+  v2.OptimizationSQLDetail:
+    properties:
+      advised_index:
+        $ref: '#/definitions/sql_flash.AdvisedIndex'
+        description: 索引建议详情
+        type: object
+      id:
+        type: integer
+      metadata:
+        description: 数据库元数据信息
+        type: string
+      optimization_id:
+        type: string
+      optimize:
+        $ref: '#/definitions/sql_flash.OptimizeDetail'
+        description: 优化详情
+        type: object
+      origin_query_plan:
+        $ref: '#/definitions/sql_flash.QueryPlan'
+        description: 原始SQL查询计划
+        type: object
+      origin_sql:
+        description: SQL Flash相关字段
+        type: string
+      status:
+        description: SQLe 维护的状态
+        enum:
+        - optimizing
+        - failed
+        - finish
+        type: string
+      status_detail:
+        description: SQLe 维护的状态详情
+        type: string
+      total_analysis:
+        $ref: '#/definitions/sql_flash.TotalAnalysis'
+        description: 总体分析
+        type: object
+      total_state:
+        description: 总状态
+        type: string
+    type: object
+  v2.OptimizeSQLReq:
+    properties:
+      db_type:
+        example: MySQL
+        type: string
+      enable_high_analysis:
+        description: 是否启用高级分析
+        type: boolean
+      explain_info:
+        type: string
+      instance_name:
+        example: instance1
+        type: string
+      metadata:
+        type: string
+      optimization_name:
+        example: optmz_2024031412091244
+        type: string
+      schema_name:
+        example: schema1
+        type: string
+      sql_content:
+        example: select * from t1; select * from t2;
+        type: string
+    type: object
+  v2.OptimizeSQLRes:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v2.OptimizeSQLResData'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v2.OptimizeSQLResData:
+    properties:
+      sql_optimization_record_id:
+        type: string
     type: object
   v2.PartialSyncAuditPlanSQLsReqV2:
     properties:
@@ -8228,7 +8487,7 @@ paths:
       - statistic
   /v1/system/module_status:
     get:
-      description: get module status for modulealities in the system
+      description: get module status for module in the system
       operationId: getSystemModuleStatus
       parameters:
       - description: db type
@@ -8967,6 +9226,180 @@ paths:
       summary: 获取管控sql列表
       tags:
       - SqlManage
+  /v2/projects/{project_name}/sql_optimization_records:
+    get:
+      description: get sql optimization records
+      operationId: GetOptimizationRecordsV2
+      parameters:
+      - description: fuzzy search for optimization_id or create_username
+        in: query
+        name: fuzzy_search
+        type: string
+      - description: filter instance name
+        in: query
+        name: filter_instance_name
+        type: string
+      - description: filter create time from
+        in: query
+        name: filter_create_time_from
+        type: string
+      - description: filter create time to
+        in: query
+        name: filter_create_time_to
+        type: string
+      - description: filter status
+        enum:
+        - optimizing
+        - failed
+        - finish
+        in: query
+        name: filter_status
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        required: true
+        type: integer
+      - description: size of per page
+        in: query
+        name: page_size
+        required: true
+        type: integer
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v2.GetOptimizationRecordsRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取SQL优化记录列表
+      tags:
+      - sql_optimization
+    post:
+      consumes:
+      - multipart/form-data
+      description: |-
+        optimize sql
+        1. formData[sql]: sql content;
+        2. file[input_sql_file]: it is a sql file;
+        3. file[input_mybatis_xml_file]: it is mybatis xml file, sql will be parsed from it.
+        4. file[input_zip_file]: it is ZIP file that sql will be parsed from xml or sql file inside it.
+        5. formData[git_http_url]:the url which scheme is http(s) and end with .git.
+        6. formData[git_user_name]:The name of the user who owns the repository read access.
+        7. formData[git_user_password]:The password corresponding to git_user_name.
+      operationId: SQLOptimizeV2
+      parameters:
+      - description: sqls that should be optimization
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/v2.OptimizeSQLReq'
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: instance name
+        in: formData
+        name: instance_name
+        type: string
+      - description: schema of instance
+        in: formData
+        name: schema_name
+        type: string
+      - description: db type of instance
+        in: formData
+        name: db_type
+        required: true
+        type: string
+      - description: optimization name
+        in: formData
+        name: optimization_name
+        required: true
+        type: string
+      - description: sqls for audit
+        in: formData
+        name: sql_content
+        type: string
+      - description: explain info
+        in: formData
+        name: explain_info
+        type: string
+      - description: metadata
+        in: formData
+        name: metadata
+        type: string
+      - description: enable high analysis
+        in: formData
+        name: enable_high_analysis
+        type: boolean
+      - description: input SQL file
+        in: formData
+        name: input_sql_file
+        type: file
+      - description: input ZIP file
+        in: formData
+        name: input_zip_file
+        type: file
+      - description: input mybatis XML file
+        in: formData
+        name: input_mybatis_xml_file
+        type: file
+      - description: git repository url
+        in: formData
+        name: git_http_url
+        type: string
+      - description: the name of user to clone the repository
+        in: formData
+        name: git_user_name
+        type: string
+      - description: the password corresponding to git_user_name
+        in: formData
+        name: git_user_password
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v2.OptimizeSQLRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 优化SQL
+      tags:
+      - sql_optimization
+  /v2/projects/{project_name}/sql_optimization_records/{optimization_record_id}/detail:
+    get:
+      description: get sql optimization record
+      operationId: GetOptimizationSQLDetailV2
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: sql optimization record id
+        in: path
+        name: optimization_record_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v2.GetOptimizationDetailRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取SQL优化语句详情
+      tags:
+      - sql_optimization
   /v2/projects/{project_name}/workflows:
     post:
       consumes:

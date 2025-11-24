@@ -18,6 +18,7 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/server/cluster"
+	"github.com/actiontech/sqle/sqle/server/optimization"
 
 	"github.com/facebookgo/grace/gracenet"
 )
@@ -105,6 +106,18 @@ func Run(options *config.SqleOptions) error {
 			return fmt.Errorf("create default template failed while auto migrating table: %v", err)
 		}
 	}
+
+	{
+		go func() {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Logger().Errorf("panic in Re-sync optimize results: %v", r)
+				}
+			}()
+			optimization.SyncOptimizeResult()
+		}()
+	}
+
 	exitChan := make(chan struct{})
 	server.InitSqled(exitChan)
 

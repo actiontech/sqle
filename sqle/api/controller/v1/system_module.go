@@ -24,7 +24,7 @@ type ModuleStatusRes struct {
 }
 
 // @Summary 查询系统功能支持情况信息
-// @Description get module status for modulealities in the system
+// @Description get module status for module in the system
 // @Id getSystemModuleStatus
 // @Tags system
 // @Security ApiKeyAuth
@@ -49,4 +49,16 @@ func GetSystemModuleStatus(c echo.Context) error {
 			IsSupported: checker.CheckIsSupport(),
 		},
 	})
+}
+
+type GetSystemModuleRedDotsRes struct {
+	controller.BaseRes
+	Data ModuleRedDots `json:"data"`
+}
+
+type ModuleRedDots []ModuleRedDot
+
+type ModuleRedDot struct {
+	ModuleName string `json:"module_name" enums:"global_dashboard"`
+	HasRedDot  bool   `json:"has_red_dot"`
 }

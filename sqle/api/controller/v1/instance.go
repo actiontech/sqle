@@ -326,8 +326,9 @@ func GetInstanceSchemas(c echo.Context) error {
 }
 
 const ( // InstanceTipReqV1.FunctionalModule Enums
-	create_audit_plan = "create_audit_plan"
-	create_workflow   = "create_workflow"
+	FunctionalModuleCreateAuditPlan    = "create_audit_plan"
+	FunctionalModuleCreateWorkflow     = "create_workflow"
+	FunctionalModuleCreateOptimization = "create_optimization"
 )
 
 type InstanceTipReqV1 struct {
@@ -379,10 +380,12 @@ func GetInstanceTips(c echo.Context) error {
 
 	var operationType v1.OpPermissionType
 	switch req.FunctionalModule {
-	case create_audit_plan:
+	case FunctionalModuleCreateAuditPlan:
 		operationType = v1.OpPermissionTypeSaveAuditPlan
-	case create_workflow:
+	case FunctionalModuleCreateWorkflow:
 		operationType = v1.OpPermissionTypeCreateWorkflow
+	case FunctionalModuleCreateOptimization:
+		operationType = v1.OpPermissionTypeCreateOptimization
 	default:
 	}
 
