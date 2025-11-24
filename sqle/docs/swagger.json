@@ -6324,7 +6324,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "get module status for modulealities in the system",
+                "description": "get module status for module in the system",
                 "tags": [
                     "system"
                 ],
@@ -8408,6 +8408,173 @@
                 "message": {
                     "type": "string",
                     "example": "ok"
+                }
+            }
+        },
+        "sql_flash.AdvisedIndex": {
+            "type": "object",
+            "properties": {
+                "has_advice": {
+                    "type": "boolean"
+                },
+                "indexes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/sql_flash.IndexInfo"
+                    }
+                },
+                "other_advice": {
+                    "type": "string"
+                },
+                "state": {
+                    "type": "string"
+                }
+            }
+        },
+        "sql_flash.Analysis": {
+            "type": "object",
+            "properties": {
+                "detail": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/sql_flash.AnalysisDetail"
+                    }
+                },
+                "improvement_desc": {
+                    "type": "string"
+                },
+                "improvement_rate": {
+                    "type": "number"
+                },
+                "state": {
+                    "type": "string"
+                },
+                "total_score": {
+                    "type": "number"
+                }
+            }
+        },
+        "sql_flash.AnalysisDetail": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "optimized_score": {
+                    "type": "number"
+                },
+                "original_score": {
+                    "type": "number"
+                }
+            }
+        },
+        "sql_flash.IndexInfo": {
+            "type": "object",
+            "properties": {
+                "create_index_statement": {
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string"
+                }
+            }
+        },
+        "sql_flash.OptimizeDetail": {
+            "type": "object",
+            "properties": {
+                "state": {
+                    "type": "string"
+                },
+                "steps": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/sql_flash.OptimizeStep"
+                    }
+                }
+            }
+        },
+        "sql_flash.OptimizeStep": {
+            "type": "object",
+            "properties": {
+                "analysis": {
+                    "type": "object",
+                    "$ref": "#/definitions/sql_flash.Analysis"
+                },
+                "chat_id": {
+                    "type": "string"
+                },
+                "optimized_sql": {
+                    "type": "string"
+                },
+                "query_plan": {
+                    "type": "object",
+                    "$ref": "#/definitions/sql_flash.QueryPlan"
+                },
+                "rule_desc": {
+                    "type": "string"
+                },
+                "rule_id": {
+                    "type": "string"
+                },
+                "rule_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "sql_flash.QueryPlan": {
+            "type": "object",
+            "properties": {
+                "query_plan_desc": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/sql_flash.QueryPlanNode"
+                    }
+                },
+                "state": {
+                    "type": "string"
+                }
+            }
+        },
+        "sql_flash.QueryPlanNode": {
+            "type": "object",
+            "properties": {
+                "children": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/sql_flash.QueryPlanNode"
+                    }
+                },
+                "operator": {
+                    "type": "string"
+                },
+                "summary": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "sql_flash.TotalAnalysis": {
+            "type": "object",
+            "properties": {
+                "detail": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/sql_flash.AnalysisDetail"
+                    }
+                },
+                "improvement_desc": {
+                    "type": "string"
+                },
+                "improvement_rate": {
+                    "type": "number"
+                },
+                "state": {
+                    "type": "string"
+                },
+                "total_score": {
+                    "type": "number"
                 }
             }
         },
@@ -14246,7 +14413,8 @@
             "properties": {
                 "advised_index": {
                     "description": "索引建议详情",
-                    "type": "string"
+                    "type": "object",
+                    "$ref": "#/definitions/sql_flash.AdvisedIndex"
                 },
                 "id": {
                     "type": "integer"
@@ -14260,11 +14428,13 @@
                 },
                 "optimize": {
                     "description": "优化详情",
-                    "type": "string"
+                    "type": "object",
+                    "$ref": "#/definitions/sql_flash.OptimizeDetail"
                 },
                 "origin_query_plan": {
                     "description": "原始SQL查询计划",
-                    "type": "string"
+                    "type": "object",
+                    "$ref": "#/definitions/sql_flash.QueryPlan"
                 },
                 "origin_sql": {
                     "description": "SQL Flash相关字段",
@@ -14285,7 +14455,8 @@
                 },
                 "total_analysis": {
                     "description": "总体分析",
-                    "type": "string"
+                    "type": "object",
+                    "$ref": "#/definitions/sql_flash.TotalAnalysis"
                 },
                 "total_state": {
                     "description": "总状态",
