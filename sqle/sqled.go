@@ -11,6 +11,7 @@ import (
 	"github.com/actiontech/dms/pkg/dms-common/pkg/http"
 	"github.com/actiontech/sqle/sqle/api"
 	"github.com/actiontech/sqle/sqle/dms"
+	"github.com/actiontech/sqle/sqle/pprof"
 	knowledge_base "github.com/actiontech/sqle/sqle/server/knowledge_base"
 	optimization "github.com/actiontech/sqle/sqle/server/optimization"
 
@@ -58,7 +59,7 @@ func Run(options *config.SqleOptions) error {
 	// nofify singal
 	exitChan := make(chan struct{})
 	net := &gracenet.Net{}
-	go NotifySignal(exitChan, net)
+	go NotifySignal(exitChan, net, sqleCnf.LogPath)
 
 	// init plugins
 	{
@@ -156,6 +157,9 @@ func Run(options *config.SqleOptions) error {
 
 	go api.StartApi(net, exitChan, options, sqleSwaggerYaml)
 
+	// start independent pprof server on separate port
+	pprof.StartServerAsync(sqleCnf.PprofPort)
+
 	// Wait for exit signal from NotifySignal goroutine
 	<-exitChan
 	log.Logger().Infoln("sqled server will exit")
@@ -175,22 +179,39 @@ func validateConfig(options *config.SqleOptions) error {
 	return nil
 }
 
-func NotifySignal(exitChan chan struct{}, net *gracenet.Net) {
+func NotifySignal(exitChan chan struct{}, net *gracenet.Net, logPath string) {
 	killChan := make(chan os.Signal, 1)
 	// os.Kill is like kill -9 which kills a process immediately, can't be caught
-	signal.Notify(killChan, os.Interrupt, syscall.SIGTERM, syscall.SIGUSR2 /*graceful-shutdown*/)
-	sig := <-killChan
-	switch sig {
-	case syscall.SIGUSR2:
-		if pid, err := net.StartProcess(); nil != err {
-			log.Logger().Infof("Graceful restarted by signal SIGUSR2, but failed: %v", err)
-		} else {
-			log.Logger().Infof("Graceful restarted, new pid is %v", pid)
-		}
-		log.Logger().Infof("old sqled exit")
-	default:
-		log.Logger().Infof("Exit by signal %v", sig)
-	}
+	// SIGUSR1: trigger pprof collection
+	// SIGUSR2: graceful restart
+	signal.Notify(killChan, os.Interrupt, syscall.SIGTERM, syscall.SIGUSR1, syscall.SIGUSR2)
 
-	close(exitChan)
+	for {
+		sig := <-killChan
+		switch sig {
+		case syscall.SIGUSR1:
+			// Trigger pprof collection
+			log.Logger().Infof("Received SIGUSR1, collecting pprof profiles...")
+			if err := pprof.CollectAllProfiles(logPath); err != nil {
+				log.Logger().Errorf("Failed to collect pprof profiles: %v", err)
+			} else {
+				log.Logger().Infof("pprof profiles collected successfully")
+			}
+			// Continue running after collecting profiles
+			continue
+		case syscall.SIGUSR2:
+			if pid, err := net.StartProcess(); nil != err {
+				log.Logger().Infof("Graceful restarted by signal SIGUSR2, but failed: %v", err)
+			} else {
+				log.Logger().Infof("Graceful restarted, new pid is %v", pid)
+			}
+			log.Logger().Infof("old sqled exit")
+			close(exitChan)
+			return
+		default:
+			log.Logger().Infof("Exit by signal %v", sig)
+			close(exitChan)
+			return
+		}
+	}
 }
