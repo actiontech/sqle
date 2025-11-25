@@ -340,7 +340,7 @@ func GetNeedExecTaskIds(workflow *model.Workflow, user *model.User) (taskIds map
 }
 
 func CheckCurrentUserCanOperateWorkflowByUser(user *model.User, projectUid string, workflow *model.Workflow, ops []dmsV1.OpPermissionType) error {
-	if user.Name == model.DefaultAdminUser {
+	if user.Name == model.DefaultAdminUser || user.Name == model.DefaultSysUser {
 		return nil
 	}
 
@@ -383,6 +383,11 @@ func CheckUserCanOperateStep(user *model.User, workflow *model.Workflow, stepId 
 	}
 	if uint(stepId) != workflow.CurrentStep().ID {
 		return fmt.Errorf("workflow current step is not %d", stepId)
+	}
+
+	// sys 用户和 admin 用户可以直接操作工单
+	if user.Name == model.DefaultSysUser || user.Name == model.DefaultAdminUser {
+		return nil
 	}
 
 	if !workflow.IsOperationUser(user) {

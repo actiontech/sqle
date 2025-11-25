@@ -236,6 +236,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1ProjectOpRouter.POST("/:project_name/workflows/:workflow_id/tasks/:task_id/order_file", v1.UpdateSqlFileOrderByWorkflowV1)
 		v1ProjectOpRouter.GET("/:project_name/workflows/:workflow_id/backup_sqls", v1.GetBackupSqlList)
 		v1ProjectOpRouter.POST("/:project_name/workflows/:workflow_id/create_rollback_workflow", v1.CreateRollbackWorkflow)
+		v1ProjectOpRouter.POST("/:project_name/workflows/auto_create_and_execute", v1.AutoCreateAndExecuteWorkflowV1)
 
 		// sql version
 		v1ProjectOpRouter.POST("/:project_name/sql_versions/:sql_version_id/batch_release_workflows", v1.BatchReleaseWorkflows)
