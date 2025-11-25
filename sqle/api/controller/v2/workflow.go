@@ -1202,13 +1202,19 @@ func convertWorkflowRecordToRes(ctx context.Context, workflow *model.Workflow, r
 func convertWorkflowStepToRes(step *model.WorkflowStep) *WorkflowStepResV2 {
 	stepRes := &WorkflowStepResV2{
 		Id:            step.ID,
-		Type:          step.Template.Typ,
-		Desc:          step.Template.Desc,
 		OperationTime: step.OperateAt,
 		State:         step.State,
 		Reason:        step.Reason,
 		Users:         []string{},
 		OperationUser: dms.GetUserNameWithDelTag(step.OperationUserId),
+	}
+	// 处理 Template 可能为 nil 的情况（例如使用临时模板创建的工单）
+	if step.Template != nil {
+		stepRes.Type = step.Template.Typ
+		stepRes.Desc = step.Template.Desc
+	} else {
+		// todo 临时模板创建的工单只能有执行节点
+		stepRes.Type = model.WorkflowStepTypeSQLExecute
 	}
 	stepRes.Users = append(stepRes.Users, strings.Split(step.Assignees, ",")...)
 	return stepRes

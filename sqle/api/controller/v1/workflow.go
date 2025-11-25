@@ -2,6 +2,8 @@ package v1
 
 import (
 	"context"
+	"database/sql"
+	"encoding/json"
 	e "errors"
 	"fmt"
 	"mime"
@@ -13,7 +15,9 @@ import (
 
 	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	dmsV2 "github.com/actiontech/dms/pkg/dms-common/api/dms/v2"
+	"github.com/actiontech/dms/pkg/dms-common/dmsobject"
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/common"
 	"github.com/actiontech/sqle/sqle/config"
 	"github.com/actiontech/sqle/sqle/dms"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
@@ -22,8 +26,6 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/utils"
-
-	"github.com/actiontech/dms/pkg/dms-common/dmsobject"
 	"github.com/labstack/echo/v4"
 )
 
@@ -1863,4 +1865,401 @@ type CreateRollbackWorkflowResData struct {
 // @router /v1/projects/{project_name}/workflows/{workflow_id}/create_rollback_workflow [post]
 func CreateRollbackWorkflow(c echo.Context) error {
 	return createRollbackWorkflow(c)
+}
+
+type AutoCreateAndExecuteWorkflowReqV1 struct {
+	// 创建task group的参数
+	Instances       []*InstanceForCreatingTask `json:"instances" valid:"dive,required"`
+	ExecMode        string                     `json:"exec_mode" enums:"sql_file,sqls"`
+	FileOrderMethod string                     `json:"file_order_method"`
+	// 审核task group的参数
+	Sql string `json:"sql" form:"sql" example:"alter table tb1 drop columns c1"`
+	// 创建工单的参数
+	Subject string `json:"workflow_subject" form:"workflow_subject" valid:"required,name"`
+	Desc    string `json:"desc" form:"desc"`
+}
+
+type AutoCreateAndExecuteWorkflowResV1 struct {
+	controller.BaseRes
+	Data *AutoCreateAndExecuteWorkflowResV1Data `json:"data"`
+}
+
+type AutoCreateAndExecuteWorkflowResV1Data struct {
+	WorkflowID     string `json:"workflow_id"`
+	WorkFlowStatus string `json:"workflow_status"`
+}
+
+// AutoCreateAndExecuteWorkflowV1
+// @Summary 自动创建工单、审核SQL、审批和上线工单（仅sys用户）
+// @Description auto create task group, audit SQL, create workflow, approve and execute workflow (sys user only)
+// @Accept mpfd
+// @Produce json
+// @Tags workflow
+// @Id autoCreateAndExecuteWorkflowV1
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Param instances formData string true "instances JSON array" example:"[{\"instance_name\":\"inst_1\",\"instance_schema\":\"db1\"}]"
+// @Param exec_mode formData string false "exec mode" Enums(sql_file,sqls)
+// @Param file_order_method formData string false "file order method"
+// @Param sql formData string false "sqls for audit"
+// @Param workflow_subject formData string true "workflow subject"
+// @Param desc formData string false "workflow description"
+// @Param input_sql_file formData file false "input SQL file"
+// @Param input_mybatis_xml_file formData file false "input mybatis XML file"
+// @Param input_zip_file formData file false "input ZIP file"
+// @Success 200 {object} v1.AutoCreateAndExecuteWorkflowResV1
+// @router /v1/projects/{project_name}/workflows/auto_create_and_execute [post]
+func AutoCreateAndExecuteWorkflowV1(c echo.Context) error {
+	// 1. 权限校验
+	user, err := validateSysUserPermission(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	projectName := c.Param("project_name")
+	projectUid, err := dms.GetProjectUIDByName(c.Request().Context(), projectName, true)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	s := model.GetStorage()
+
+	// 2. 解析请求参数
+	req, err := parseAutoCreateWorkflowRequest(c)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	// 3. 准备和验证实例
+	nameInstanceMap, err := prepareAndValidateInstances(c.Request().Context(), projectUid, req.Instances)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	// 4. 创建任务组
+	tasks, err := createTaskGroup(s, user, req, nameInstanceMap)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	// 5. 审核任务组
+	if err := auditTaskGroup(c, s, tasks, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	// 6. 验证非 DQL SQL 的备份配置
+	if err := validateBackupForNonDQLSQLs(s, tasks); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	// 7. 检查工单创建前置条件
+	taskIds := make([]uint, 0, len(tasks))
+	for _, task := range tasks {
+		taskIds = append(taskIds, task.ID)
+	}
+
+	w, err := CheckWorkflowCreationPrerequisites(c, projectName, taskIds)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	// 8. 创建只有执行步骤的工单模板
+	// todo 临时模板创建的工单只能有执行节点
+	w.StepTemplates = []*model.WorkflowStepTemplate{
+		{
+			Number:              1,
+			Typ:                 model.WorkflowStepTypeSQLExecute,
+			ExecuteByAuthorized: sql.NullBool{Bool: true, Valid: true},
+		},
+	}
+
+	// 9. 创建工单
+	if err := s.CreateWorkflowV2(req.Subject, w.WorkflowId, req.Desc, w.User, w.Tasks, w.StepTemplates, w.ProjectId, nil, nil, nil, w.GetOpExecUser); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	// 10. 获取创建的工单
+	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectUid, w.WorkflowId, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	// 11. 执行工单
+	workFlowStatus, err := executeWorkflow(projectUid, workflow, user)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	return c.JSON(http.StatusOK, &AutoCreateAndExecuteWorkflowResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: &AutoCreateAndExecuteWorkflowResV1Data{
+			WorkflowID:     workflow.WorkflowId,
+			WorkFlowStatus: workFlowStatus,
+		},
+	})
+}
+
+// validateSysUserPermission 验证当前用户是否为 sys 用户
+func validateSysUserPermission(c echo.Context) (*model.User, error) {
+	user, err := controller.GetCurrentUser(c, dms.GetUser)
+	if err != nil {
+		return nil, err
+	}
+	if user.Name != model.DefaultSysUser {
+		return nil, errors.New(errors.DataInvalid, fmt.Errorf("only sys user can access this API"))
+	}
+	return user, nil
+}
+
+// parseAutoCreateWorkflowRequest 解析自动创建工单的请求参数
+func parseAutoCreateWorkflowRequest(c echo.Context) (*AutoCreateAndExecuteWorkflowReqV1, error) {
+	req := new(AutoCreateAndExecuteWorkflowReqV1)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return nil, err
+	}
+
+	// 解析 instances JSON 字符串
+	if instancesStr := c.FormValue("instances"); instancesStr != "" {
+		if err := json.Unmarshal([]byte(instancesStr), &req.Instances); err != nil {
+			return nil, errors.New(errors.DataInvalid, fmt.Errorf("invalid instances JSON: %v", err))
+		}
+	}
+	return req, nil
+}
+
+// prepareAndValidateInstances 准备和验证实例，返回实例名称到实例的映射
+func prepareAndValidateInstances(ctx context.Context, projectUid string, reqInstances []*InstanceForCreatingTask) (map[string]*model.Instance, error) {
+	if len(reqInstances) > MaximumDataSourceNum {
+		return nil, ErrTooManyDataSource
+	}
+
+	instNames := make([]string, len(reqInstances))
+	for i, instance := range reqInstances {
+		instNames[i] = instance.InstanceName
+	}
+
+	distinctInstNames := utils.RemoveDuplicate(instNames)
+	instances, err := dms.GetInstancesInProjectByNames(ctx, projectUid, distinctInstNames)
+	if err != nil {
+		return nil, err
+	}
+
+	nameInstanceMap := make(map[string]*model.Instance, len(reqInstances))
+	for _, inst := range instances {
+		inst, exist, err := dms.GetInstanceInProjectByName(ctx, projectUid, inst.Name)
+		if err != nil {
+			return nil, err
+		}
+		if !exist {
+			return nil, ErrInstanceNoAccess
+		}
+
+		if err := common.CheckInstanceIsConnectable(inst); err != nil {
+			return nil, err
+		}
+
+		nameInstanceMap[inst.Name] = inst
+	}
+
+	return nameInstanceMap, nil
+}
+
+// createTaskGroup 创建任务组
+func createTaskGroup(s *model.Storage, user *model.User, req *AutoCreateAndExecuteWorkflowReqV1, nameInstanceMap map[string]*model.Instance) ([]*model.Task, error) {
+	now := time.Now()
+	tasks := make([]*model.Task, len(req.Instances))
+	for i, reqInstance := range req.Instances {
+		instance := nameInstanceMap[reqInstance.InstanceName]
+		task := &model.Task{
+			Schema:          reqInstance.InstanceSchema,
+			InstanceId:      instance.ID,
+			CreateUserId:    uint64(user.ID),
+			DBType:          instance.DbType,
+			ExecMode:        req.ExecMode,
+			FileOrderMethod: req.FileOrderMethod,
+		}
+		task.CreatedAt = now
+		tasks[i] = task
+	}
+
+	taskGroup := model.TaskGroup{Tasks: tasks}
+	if err := s.Save(&taskGroup); err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
+}
+
+// auditTaskGroup 审核任务组
+func auditTaskGroup(c echo.Context, s *model.Storage, tasks []*model.Task, req *AutoCreateAndExecuteWorkflowReqV1) error {
+	instanceIds := make([]uint64, 0, len(tasks))
+	for _, task := range tasks {
+		instanceIds = append(instanceIds, task.InstanceId)
+	}
+
+	instancesForAudit, err := dms.GetInstancesByIds(c.Request().Context(), instanceIds)
+	if err != nil {
+		return err
+	}
+
+	if len(instancesForAudit) == 0 {
+		return errors.New(errors.DataNotExist, fmt.Errorf("no instances found for audit"))
+	}
+
+	projectId := instancesForAudit[0].ProjectId
+	dbType := instancesForAudit[0].DbType
+
+	// 获取 SQL 内容
+	var sqls GetSQLFromFileResp
+	var fileRecords []*model.AuditFile
+	if req.Sql != "" {
+		sqls = GetSQLFromFileResp{
+			SourceType:       model.TaskSQLSourceFromFormData,
+			SQLsFromFormData: req.Sql,
+		}
+	} else {
+		sqls, err = GetSQLFromFile(c)
+		if err != nil {
+			return err
+		}
+		fileRecords, err = saveFileFromContext(c)
+		if err != nil {
+			return err
+		}
+	}
+
+	// 处理任务 SQL 和备份配置
+	l := log.NewEntry()
+	plugin, err := common.NewDriverManagerWithoutCfg(l, dbType)
+	if err != nil {
+		return err
+	}
+	defer plugin.Close(context.TODO())
+
+	instanceMap := make(map[uint64]*model.Instance)
+	for _, instance := range instancesForAudit {
+		instanceMap[instance.ID] = instance
+	}
+
+	backupService := server.BackupService{}
+	for _, task := range tasks {
+		task.SQLSource = sqls.SourceType
+
+		instance, exist := instanceMap[task.InstanceId]
+		if !exist {
+			return fmt.Errorf("can not find instance in task")
+		}
+
+		// 使用数据源上的备份配置
+		if instance.EnableBackup {
+			if err := backupService.CheckBackupConflictWithExecMode(instance.EnableBackup, task.ExecMode); err != nil {
+				return err
+			}
+			if err := backupService.CheckIsDbTypeSupportEnableBackup(task.DBType); err != nil {
+				return err
+			}
+			task.EnableBackup = instance.EnableBackup
+			// 使用数据源上的 BackupMaxRows 配置
+			task.BackupMaxRows = backupService.AutoChooseBackupMaxRows(instance.EnableBackup, nil, *instance)
+			task.InstanceEnableBackup = instance.EnableBackup
+		}
+
+		// 添加 SQL 到任务
+		if err := addSQLsFromFileToTasks(sqls, task, plugin); err != nil {
+			return errors.New(errors.GenericError, fmt.Errorf("add sqls from file to task failed: %v", err))
+		}
+
+		// 处理文件记录
+		if len(fileRecords) > 0 {
+			fileHeader, _, err := getFileHeaderFromContext(c)
+			if err != nil {
+				return err
+			}
+			if strings.HasSuffix(fileHeader.Filename, ZIPFileExtension) && task.FileOrderMethod != "" && task.ExecMode == model.ExecModeSqlFile {
+				sortAuditFiles(fileRecords, task.FileOrderMethod)
+			}
+
+			if err := batchCreateFileRecords(s, fileRecords, task.ID); err != nil {
+				return errors.New(errors.GenericError, fmt.Errorf("save sql file record failed: %v", err))
+			}
+		}
+	}
+
+	// 转换 SQL 编码
+	for _, task := range tasks {
+		if err := convertSQLSourceEncodingFromTask(task); err != nil {
+			return err
+		}
+	}
+
+	if err := s.Save(tasks); err != nil {
+		return err
+	}
+
+	// 执行审核
+	for i, task := range tasks {
+		if task.Status != model.TaskStatusInit {
+			continue
+		}
+
+		tasks[i], err = server.GetSqled().AddTaskWaitResult(projectId, fmt.Sprintf("%d", task.ID), server.ActionTypeAudit)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// validateBackupForNonDQLSQLs 验证非 DQL SQL 的备份配置
+func validateBackupForNonDQLSQLs(s *model.Storage, tasks []*model.Task) error {
+	backupService := server.BackupService{}
+	for _, task := range tasks {
+		if task.Instance == nil {
+			return errors.New(errors.DataNotExist, fmt.Errorf("instance is nil for task %v", task.ID))
+		}
+		// 检查数据源是否开启备份
+		if !task.Instance.EnableBackup {
+			continue
+		}
+		// 检查数据源是否支持备份
+		if err := backupService.CheckIsDbTypeSupportEnableBackup(task.DBType); err != nil {
+			return errors.New(errors.FeatureNotImplemented, fmt.Errorf("%v instance %v does not support backup: %v", task.DBType, task.Instance.Name, err))
+		}
+
+		for _, executeSQL := range task.ExecuteSQLs {
+			if executeSQL.SQLType != driverV2.SQLTypeDQL {
+				// 检查备份策略
+				backupTask, err := s.GetBackupTaskByExecuteSqlId(executeSQL.ID)
+				if err != nil {
+					return errors.New(errors.GenericError, fmt.Errorf("get backup task err: %v", err))
+				}
+
+				if backupTask.BackupStrategy == string(server.BackupStrategyNone) ||
+					backupTask.BackupStrategy == string(server.BackupStrategyManually) {
+					return errors.New(errors.FeatureNotImplemented, fmt.Errorf("SQL that does not support backup: %q", utils.TruncateStringByRunes(executeSQL.SqlFingerprint, 100)))
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// executeWorkflow 执行工单
+func executeWorkflow(projectUid string, workflow *model.Workflow, user *model.User) (string, error) {
+	needExecTaskIds, err := GetNeedExecTaskIds(workflow, user)
+	if err != nil {
+		return "", err
+	}
+
+	if len(needExecTaskIds) == 0 {
+		return "", nil
+	}
+
+	ch, err := server.ExecuteTasksProcess(workflow.WorkflowId, projectUid, user)
+	if err != nil {
+		return "", err
+	}
+
+	return <-ch, nil
 }
