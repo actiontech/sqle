@@ -53,6 +53,7 @@ type SeviceOpts struct {
 	PluginPath         string         `yaml:"plugin_path"`
 	Database           Database       `yaml:"database"`
 	PluginConfig       []PluginConfig `yaml:"plugin_config"`
+	PprofPort          int            `yaml:"pprof_port"` // pprof 独立服务器端口，0 表示禁用
 }
 
 type Database struct {
