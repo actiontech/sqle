@@ -7854,6 +7854,104 @@ var doc = `{
                 }
             }
         },
+        "/v1/projects/{project_name}/workflows/auto_create_and_execute": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "auto create task group, audit SQL, create workflow, approve and execute workflow (sys user only)",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "自动创建工单、审核SQL、审批和上线工单（仅sys用户）",
+                "operationId": "autoCreateAndExecuteWorkflowV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "instances JSON array",
+                        "name": "instances",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "sql_file",
+                            "sqls"
+                        ],
+                        "type": "string",
+                        "description": "exec mode",
+                        "name": "exec_mode",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "file order method",
+                        "name": "file_order_method",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "sqls for audit",
+                        "name": "sql",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "workflow subject",
+                        "name": "workflow_subject",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "workflow description",
+                        "name": "desc",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "input SQL file",
+                        "name": "input_sql_file",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "input mybatis XML file",
+                        "name": "input_mybatis_xml_file",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "input ZIP file",
+                        "name": "input_zip_file",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.AutoCreateAndExecuteWorkflowResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{project_name}/workflows/cancel": {
             "post": {
                 "security": [
@@ -14039,6 +14137,34 @@ var doc = `{
                 },
                 "total_sql_count": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.AutoCreateAndExecuteWorkflowResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.AutoCreateAndExecuteWorkflowResV1Data"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.AutoCreateAndExecuteWorkflowResV1Data": {
+            "type": "object",
+            "properties": {
+                "workflow_id": {
+                    "type": "string"
+                },
+                "workflow_status": {
+                    "type": "string"
                 }
             }
         },
@@ -22298,6 +22424,9 @@ var doc = `{
                 },
                 "number": {
                     "type": "integer"
+                },
+                "sql_type": {
+                    "type": "string"
                 }
             }
         },
