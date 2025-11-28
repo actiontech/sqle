@@ -786,7 +786,7 @@ ExecSQLs:
 				TaskId:  rollbackSQL.TaskId,
 				Content: node.Text,
 			}, ExecuteSQLId: rollbackSQL.ExecuteSQLId}
-			_, execErr := a.plugin.Exec(context.TODO(), node.Text)
+			_, execErr = a.plugin.Exec(context.TODO(), node.Text)
 			if execErr != nil {
 				currentSQL.ExecStatus = model.SQLExecuteStatusFailed
 				currentSQL.ExecResult = execErr.Error()
@@ -794,7 +794,7 @@ ExecSQLs:
 				currentSQL.ExecStatus = model.SQLExecuteStatusSucceeded
 				currentSQL.ExecResult = model.TaskExecResultOK
 			}
-			if execErr := st.Save(currentSQL); execErr != nil {
+			if execErr = st.Save(currentSQL); execErr != nil {
 				break ExecSQLs
 			}
 		}
