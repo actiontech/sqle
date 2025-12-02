@@ -236,7 +236,6 @@ type BatchCompleteWorkflowsReqV1 struct {
 // @router /v1/projects/{project_name}/workflows/complete [post]
 func BatchCompleteWorkflows(c echo.Context) error {
 	return nil
-
 }
 
 func FormatStringToInt(s string) (ret int, err error) {
@@ -744,11 +743,12 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 	// 3. 将用户可视范围、接口请求以及用户的权限范围，构造为全局工单的基础的过滤器，满足全局工单统一的过滤逻辑
 	filter, err := constructGlobalWorkflowBasicFilter(c.Request().Context(), user, userVisibility,
 		&globalWorkflowBasicFilter{
-			FilterCreateUserId:    req.FilterCreateUserId,
-			FilterStatusList:      req.FilterStatusList,
-			FilterProjectUid:      req.FilterProjectUid,
-			FilterInstanceId:      req.FilterInstanceId,
-			FilterProjectPriority: req.FilterProjectPriority,
+			FilterCreateUserId:              req.FilterCreateUserId,
+			FilterStatusList:                req.FilterStatusList,
+			FilterProjectUid:                req.FilterProjectUid,
+			FilterInstanceId:                req.FilterInstanceId,
+			FilterProjectPriority:           req.FilterProjectPriority,
+			FilterCurrentStepAssigneeUserId: req.FilterCurrentStepAssigneeUserId,
 		})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -771,7 +771,7 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 		})
 	}
 	// 6. 从dms获取工单对应的项目信息
-	var projectMap = make(ProjectMap)
+	projectMap := make(ProjectMap)
 	if req.FilterProjectPriority != "" {
 		_, projectMap, err = loadProjectsByPriority(c.Request().Context(), req.FilterProjectPriority)
 	} else {
@@ -864,11 +864,12 @@ func toGlobalWorkflowRes(workflows []*model.WorkflowListDetail, projectMap Proje
 }
 
 type GetGlobalWorkflowStatisticsReqV1 struct {
-	FilterCreateUserId    string                `json:"filter_create_user_id" query:"filter_create_user_id"`
-	FilterStatusList      []string              `json:"filter_status_list" query:"filter_status_list" validate:"dive,oneof=wait_for_audit wait_for_execution rejected canceled executing exec_failed finished"`
-	FilterProjectUid      string                `json:"filter_project_uid" query:"filter_project_uid"`
-	FilterInstanceId      string                `json:"filter_instance_id" query:"filter_instance_id"`
-	FilterProjectPriority dmsV1.ProjectPriority `json:"filter_project_priority" query:"filter_project_priority"  valid:"omitempty,oneof=high medium low"`
+	FilterCreateUserId              string                `json:"filter_create_user_id" query:"filter_create_user_id"`
+	FilterStatusList                []string              `json:"filter_status_list" query:"filter_status_list" validate:"dive,oneof=wait_for_audit wait_for_execution rejected canceled executing exec_failed finished"`
+	FilterProjectUid                string                `json:"filter_project_uid" query:"filter_project_uid"`
+	FilterInstanceId                string                `json:"filter_instance_id" query:"filter_instance_id"`
+	FilterProjectPriority           dmsV1.ProjectPriority `json:"filter_project_priority" query:"filter_project_priority"  valid:"omitempty,oneof=high medium low"`
+	FilterCurrentStepAssigneeUserId string                `json:"filter_current_step_assignee_user_id" query:"filter_current_step_assignee_user_id"`
 }
 
 type GlobalWorkflowStatisticsResV1 struct {
@@ -887,6 +888,7 @@ type GlobalWorkflowStatisticsResV1 struct {
 // @Param filter_project_uid query string false "filter by project uid"
 // @Param filter_instance_id query string false "filter by instance id in project"
 // @Param filter_project_priority query string false "filter by project priority" Enums(high,medium,low)
+// @Param filter_current_step_assignee_user_id query string false "filter current step assignee user id"
 // @Success 200 {object} v1.GlobalWorkflowStatisticsResV1
 // @router /v1/dashboard/workflows/statistics [get]
 func GetGlobalWorkflowStatistics(c echo.Context) error {
@@ -909,11 +911,12 @@ func GetGlobalWorkflowStatistics(c echo.Context) error {
 	// 3. 将用户可视范围、接口请求以及用户的权限范围，构造为全局工单的基础的过滤器，满足全局工单统一的过滤逻辑
 	filter, err := constructGlobalWorkflowBasicFilter(c.Request().Context(), user, userVisibility,
 		&globalWorkflowBasicFilter{
-			FilterCreateUserId:    req.FilterCreateUserId,
-			FilterStatusList:      req.FilterStatusList,
-			FilterProjectUid:      req.FilterProjectUid,
-			FilterInstanceId:      req.FilterInstanceId,
-			FilterProjectPriority: req.FilterProjectPriority,
+			FilterCreateUserId:              req.FilterCreateUserId,
+			FilterStatusList:                req.FilterStatusList,
+			FilterProjectUid:                req.FilterProjectUid,
+			FilterInstanceId:                req.FilterInstanceId,
+			FilterProjectPriority:           req.FilterProjectPriority,
+			FilterCurrentStepAssigneeUserId: req.FilterCurrentStepAssigneeUserId,
 		})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -961,6 +964,7 @@ func GetGlobalDataExportWorkflowsV1(c echo.Context) error {
 // @Param filter_project_uid query string false "filter by project uid"
 // @Param filter_instance_id query string false "filter by instance id in project"
 // @Param filter_project_priority query string false "filter by project priority" Enums(high,medium,low)
+// @Param filter_current_step_assignee_user_id query string false "filter current step assignee user id"
 // @Success 200 {object} v1.GlobalWorkflowStatisticsResV1
 // @router /v1/dashboard/data_export_workflows/statistics [get]
 func GetGlobalDataExportWorkflowStatisticsV1(c echo.Context) error {
@@ -968,11 +972,12 @@ func GetGlobalDataExportWorkflowStatisticsV1(c echo.Context) error {
 }
 
 type globalWorkflowBasicFilter struct {
-	FilterCreateUserId    string                `json:"filter_create_user_id" query:"filter_create_user_id"`
-	FilterStatusList      []string              `json:"filter_status_list" query:"filter_status_list" validate:"dive,oneof=wait_for_audit wait_for_execution rejected canceled executing exec_failed finished"`
-	FilterProjectUid      string                `json:"filter_project_uid" query:"filter_project_uid"`
-	FilterInstanceId      string                `json:"filter_instance_id" query:"filter_instance_id"`
-	FilterProjectPriority dmsV1.ProjectPriority `json:"filter_project_priority" query:"filter_project_priority"  valid:"omitempty,oneof=high medium low"`
+	FilterCreateUserId              string                `json:"filter_create_user_id" query:"filter_create_user_id"`
+	FilterStatusList                []string              `json:"filter_status_list" query:"filter_status_list" validate:"dive,oneof=wait_for_audit wait_for_execution rejected canceled executing exec_failed finished"`
+	FilterProjectUid                string                `json:"filter_project_uid" query:"filter_project_uid"`
+	FilterInstanceId                string                `json:"filter_instance_id" query:"filter_instance_id"`
+	FilterProjectPriority           dmsV1.ProjectPriority `json:"filter_project_priority" query:"filter_project_priority"  valid:"omitempty,oneof=high medium low"`
+	FilterCurrentStepAssigneeUserId string                `json:"filter_current_step_assignee_user_id" query:"filter_current_step_assignee_user_id"`
 }
 
 // 将用户可视范围、接口请求以及用户的权限范围，构造为全局工单的基础的过滤器，满足全局工单统一的过滤逻辑
@@ -983,6 +988,10 @@ func constructGlobalWorkflowBasicFilter(ctx context.Context, user *model.User, u
 		"filter_status_list":    req.FilterStatusList,   // 根据SQL工单的状态筛选多个状态的工单
 		"filter_project_id":     req.FilterProjectUid,   // 根据项目id筛选某些一个项目下的多个工单
 		"filter_instance_id":    req.FilterInstanceId,   // 根据工单记录的数据源id，筛选包含该数据源的工单，多数据源情况下，一旦包含该数据源，则被选中
+	}
+	// 1.0 如果指定了待操作人筛选，则使用指定的待操作人ID
+	if req.FilterCurrentStepAssigneeUserId != "" {
+		data["filter_current_step_assignee_user_id"] = req.FilterCurrentStepAssigneeUserId
 	}
 	// 1.1 页面筛选项：如果根据项目优先级筛选，则先筛选出对应优先级下的项目
 	var projectIdsByPriority []string
@@ -1011,16 +1020,21 @@ func constructGlobalWorkflowBasicFilter(ctx context.Context, user *model.User, u
 		}
 	case GlobalDashBoardVisibilityAssignee:
 		// 3.2 若用户可视范围为受让人，则查看分配给他的工单
-		data["filter_current_step_assignee_user_id"] = user.GetIDStr()
+		// 如果请求中已经指定了待操作人筛选，则使用请求中的值，否则使用当前用户ID
+		if req.FilterCurrentStepAssigneeUserId == "" {
+			data["filter_current_step_assignee_user_id"] = user.GetIDStr()
+		}
 	}
 	return data, nil
 }
 
 type VisibilityType string
 
-const GlobalDashBoardVisibilityGlobal VisibilityType = "global"     // 全局可见
-const GlobalDashBoardVisibilityProjects VisibilityType = "projects" // 多项目可见
-const GlobalDashBoardVisibilityAssignee VisibilityType = "assignee" // 仅可见授予自己的
+const (
+	GlobalDashBoardVisibilityGlobal   VisibilityType = "global"   // 全局可见
+	GlobalDashBoardVisibilityProjects VisibilityType = "projects" // 多项目可见
+	GlobalDashBoardVisibilityAssignee VisibilityType = "assignee" // 仅可见授予自己的
+)
 
 type GlobalDashBoardVisibility struct {
 	VisibilityType  VisibilityType
@@ -1589,7 +1603,6 @@ func ExportWorkflowV1(c echo.Context) error {
 // @Success 200 {object} controller.BaseRes
 // @Router /v1/projects/{project_name}/workflows/{workflow_id}/tasks/terminate [post]
 func TerminateMultipleTaskByWorkflowV1(c echo.Context) error {
-
 	projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -1743,7 +1756,6 @@ func isTaskCanBeTerminate(s *model.Storage, taskID string) (bool, error) {
 }
 
 func getTerminatingTaskIDs(workflow *model.Workflow) (taskIDs []uint) {
-
 	taskIDs = make([]uint, 0)
 	for i := range workflow.Record.InstanceRecords {
 		instRecord := workflow.Record.InstanceRecords[i]
