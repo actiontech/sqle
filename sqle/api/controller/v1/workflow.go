@@ -719,6 +719,7 @@ type InstanceInfo struct {
 // @Param filter_project_uid query string false "filter by project uid"
 // @Param filter_instance_id query string false "filter by instance id in project"
 // @Param filter_project_priority query string false "filter by project priority" Enums(high,medium,low)
+// @Param filter_current_step_assignee_user_id query string false "filter current step assignee user id"
 // @Param page_index query uint32 true "page index"
 // @Param page_size query uint32 true "size of per page"
 // @Success 200 {object} v1.GetWorkflowsResV1
@@ -945,6 +946,7 @@ func GetGlobalWorkflowStatistics(c echo.Context) error {
 // @Param filter_project_uid query string false "filter by project uid"
 // @Param filter_instance_id query string false "filter by instance id in project"
 // @Param filter_project_priority query string false "filter by project priority" Enums(high,medium,low)
+// @Param filter_current_step_assignee_user_id query string false "filter current step assignee user id"
 // @Param page_index query uint32 true "page index"
 // @Param page_size query uint32 true "size of per page"
 // @Success 200 {object} v1.GetWorkflowsResV1
