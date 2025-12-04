@@ -51,9 +51,9 @@ func HookAudit(l *logrus.Entry, task *model.Task, hook AuditHook, projectId *mod
 
 const AuditSchema = "AuditSchema"
 
-func DirectAuditByInstance(l *logrus.Entry, sql, schemaName string, instance *model.Instance) (*model.Task, error) {
+func DirectAuditByInstance(l *logrus.Entry, sql, schemaName string, instance *model.Instance, ruleTemplateName string) (*model.Task, error) {
 	st := model.GetStorage()
-	rules, customRules, err := st.GetAllRulesByTmpNameAndProjectIdInstanceDBType("", "", instance, instance.DbType)
+	rules, customRules, err := st.GetAllRulesByTmpNameAndProjectIdInstanceDBType(ruleTemplateName, instance.ProjectId, instance, instance.DbType)
 	if err != nil {
 		return nil, err
 	}
