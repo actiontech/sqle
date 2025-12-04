@@ -6505,6 +6505,9 @@ definitions:
     type: object
   v2.DirectAuditReqV2:
     properties:
+      instance_name:
+        example: instance1
+        type: string
       instance_type:
         example: MySQL
         type: string
@@ -6513,6 +6516,9 @@ definitions:
         type: string
       rule_template_name:
         example: default
+        type: string
+      schema_name:
+        example: schema1
         type: string
       sql_content:
         description: 调用方不应该关心SQL是否被完美的拆分成独立的条目, 拆分SQL由SQLE实现
