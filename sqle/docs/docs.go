@@ -22620,6 +22620,10 @@ var doc = `{
         "v2.DirectAuditReqV2": {
             "type": "object",
             "properties": {
+                "instance_name": {
+                    "type": "string",
+                    "example": "instance1"
+                },
                 "instance_type": {
                     "type": "string",
                     "example": "MySQL"
@@ -22631,6 +22635,10 @@ var doc = `{
                 "rule_template_name": {
                     "type": "string",
                     "example": "default"
+                },
+                "schema_name": {
+                    "type": "string",
+                    "example": "schema1"
                 },
                 "sql_content": {
                     "description": "调用方不应该关心SQL是否被完美的拆分成独立的条目, 拆分SQL由SQLE实现",
