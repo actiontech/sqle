@@ -8089,6 +8089,10 @@ paths:
         in: query
         name: filter_project_priority
         type: string
+      - description: filter current step assignee user id
+        in: query
+        name: filter_current_step_assignee_user_id
+        type: string
       - description: page index
         in: query
         name: page_index
@@ -8147,6 +8151,10 @@ paths:
         - low
         in: query
         name: filter_project_priority
+        type: string
+      - description: filter current step assignee user id
+        in: query
+        name: filter_current_step_assignee_user_id
         type: string
       responses:
         "200":
@@ -8220,6 +8228,10 @@ paths:
         in: query
         name: filter_project_priority
         type: string
+      - description: filter current step assignee user id
+        in: query
+        name: filter_current_step_assignee_user_id
+        type: string
       responses:
         "200":
           description: OK
@@ -8268,6 +8280,10 @@ paths:
         - low
         in: query
         name: filter_project_priority
+        type: string
+      - description: filter current step assignee user id
+        in: query
+        name: filter_current_step_assignee_user_id
         type: string
       - description: page index
         in: query
@@ -8327,6 +8343,10 @@ paths:
         - low
         in: query
         name: filter_project_priority
+        type: string
+      - description: filter current step assignee user id
+        in: query
+        name: filter_current_step_assignee_user_id
         type: string
       responses:
         "200":

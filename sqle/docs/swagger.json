@@ -1072,6 +1072,12 @@
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "filter current step assignee user id",
+                        "name": "filter_current_step_assignee_user_id",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
                         "description": "page index",
                         "name": "page_index",
@@ -1155,6 +1161,12 @@
                         "type": "string",
                         "description": "filter by project priority",
                         "name": "filter_project_priority",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter current step assignee user id",
+                        "name": "filter_current_step_assignee_user_id",
                         "in": "query"
                     }
                 ],
@@ -1266,6 +1278,12 @@
                         "description": "project priority",
                         "name": "filter_project_priority",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter current step assignee user id",
+                        "name": "filter_current_step_assignee_user_id",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1337,6 +1355,12 @@
                         "type": "string",
                         "description": "filter by project priority",
                         "name": "filter_project_priority",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter current step assignee user id",
+                        "name": "filter_current_step_assignee_user_id",
                         "in": "query"
                     },
                     {
@@ -1423,6 +1447,12 @@
                         "type": "string",
                         "description": "filter by project priority",
                         "name": "filter_project_priority",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter current step assignee user id",
+                        "name": "filter_current_step_assignee_user_id",
                         "in": "query"
                     }
                 ],
