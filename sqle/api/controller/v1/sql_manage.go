@@ -517,9 +517,10 @@ func GetGlobalSqlManageList(c echo.Context) error {
 }
 
 type GetGlobalSqlManageStatisticsReq struct {
-	FilterProjectUid      *string                `query:"filter_project_uid" json:"filter_project_uid,omitempty"`
-	FilterInstanceId      *string                `query:"filter_instance_id" json:"filter_instance_id,omitempty"`
-	FilterProjectPriority *dmsV1.ProjectPriority `query:"filter_project_priority" json:"filter_project_priority,omitempty" enums:"high,medium,low"`
+	FilterProjectUid                *string                `query:"filter_project_uid" json:"filter_project_uid,omitempty"`
+	FilterInstanceId                 *string                `query:"filter_instance_id" json:"filter_instance_id,omitempty"`
+	FilterProjectPriority            *dmsV1.ProjectPriority `query:"filter_project_priority" json:"filter_project_priority,omitempty" enums:"high,medium,low"`
+	FilterCurrentStepAssigneeUserId  *string                `query:"filter_current_step_assignee_user_id" json:"filter_current_step_assignee_user_id,omitempty"`
 }
 
 type GetGlobalSqlManageStatisticsResp struct {
@@ -536,6 +537,7 @@ type GetGlobalSqlManageStatisticsResp struct {
 // @Param filter_project_uid query string false "project uid"
 // @Param filter_instance_id query string false "instance id"
 // @Param filter_project_priority query string false "project priority" Enums(high,medium,low)
+// @Param filter_current_step_assignee_user_id query string false "filter current step assignee user id"
 // @Success 200 {object} v1.GetGlobalSqlManageStatisticsResp
 // @Router /v1/dashboard/sql_manages/statistics  [get]
 func GetGlobalSqlManageStatistics(c echo.Context) error {
