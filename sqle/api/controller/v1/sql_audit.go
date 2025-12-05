@@ -118,7 +118,7 @@ func DirectAudit(c echo.Context) error {
 
 	var task *model.Task
 	if instance != nil && schemaName != "" {
-		task, err = server.DirectAuditByInstance(l, sql, schemaName, instance)
+		task, err = server.DirectAuditByInstance(l, sql, schemaName, instance, "")
 	} else {
 		task, err = server.AuditSQLByDBType(l, sql, req.InstanceType, projectUid, "")
 	}
@@ -226,7 +226,7 @@ func DirectAuditFiles(c echo.Context) error {
 
 	var task *model.Task
 	if instance != nil && schemaName != "" {
-		task, err = server.DirectAuditByInstance(l, sqls, schemaName, instance)
+		task, err = server.DirectAuditByInstance(l, sqls, schemaName, instance, "")
 	} else {
 		task, err = server.AuditSQLByDBType(l, sqls, req.InstanceType, projectUid, "")
 	}
