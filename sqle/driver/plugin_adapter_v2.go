@@ -225,7 +225,7 @@ func (p *PluginImplV2) RecommendBackupStrategy(ctx context.Context, sql string) 
 		return nil, err
 	}
 	return &RecommendBackupStrategyRes{
-		BackupStrategy:    resp.BackupStrategy.String(),
+		BackupStrategy:    driverV2.ConvertProtoBackupStrategyToDriver(resp.BackupStrategy),
 		BackupStrategyTip: resp.BackupStrategyTip,
 		TablesRefer:       resp.TablesRefer,
 		SchemasRefer:      resp.SchemasRefer,

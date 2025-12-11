@@ -57,6 +57,8 @@ const (
 	OptionalModuleKillProcess
 	OptionalExecBatch
 	OptionalModuleI18n
+	OptionalGetDatabaseObjectDDL
+	OptionalGetDatabaseDiffModifySQL
 	OptionalBackup
 )
 
@@ -501,5 +503,20 @@ func GetDriverTypeDefaultRuleVersion(dbType string) uint32 {
 		return 2
 	default:
 		return 1
+	}
+}
+
+func ConvertProtoBackupStrategyToDriver(strategy protoV2.BackupStrategy) string {
+	switch strategy {
+	case protoV2.BackupStrategy_None:
+		return BackupStrategyNone
+	case protoV2.BackupStrategy_ReverseSql:
+		return BackupStrategyReverseSql
+	case protoV2.BackupStrategy_OriginalRow:
+		return BackupStrategyOriginalRow
+	case protoV2.BackupStrategy_Manually:
+		return BackupStrategyManually
+	default:
+		return BackupStrategyNone
 	}
 }
