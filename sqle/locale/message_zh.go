@@ -452,6 +452,7 @@ var (
 	NotifyWorkflowNotifyTypeReject         = &i18n.Message{ID: "WorkflowNotifyTypeReject", Other: "SQL工单已被驳回"}
 	NotifyWorkflowNotifyTypeExecuteSuccess = &i18n.Message{ID: "WorkflowNotifyTypeExecuteSuccess", Other: "SQL工单上线成功"}
 	NotifyWorkflowNotifyTypeExecuteFail    = &i18n.Message{ID: "WorkflowNotifyTypeExecuteFail", Other: "SQL工单上线失败"}
+	NotifyWorkflowNotifyTypeCancel         = &i18n.Message{ID: "WorkflowNotifyTypeCancel", Other: "SQL工单已被关闭"}
 	NotifyWorkflowNotifyTypeDefault        = &i18n.Message{ID: "WorkflowNotifyTypeDefault", Other: "SQL工单未知请求"}
 
 	NotifyAuditPlanSubject  = &i18n.Message{ID: "NotifyAuditPlanSubject", Other: "SQLE扫描任务[%v]扫描结果[%v]"}

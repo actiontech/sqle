@@ -51,6 +51,7 @@ const (
 	WorkflowNotifyTypeReject
 	WorkflowNotifyTypeExecuteSuccess
 	WorkflowNotifyTypeExecuteFail
+	WorkflowNotifyTypeCancel
 )
 
 func getWorkflowNotifyTypeAction(wt WorkflowNotifyType) string {
@@ -65,6 +66,8 @@ func getWorkflowNotifyTypeAction(wt WorkflowNotifyType) string {
 		return "exec_success"
 	case WorkflowNotifyTypeExecuteFail:
 		return "exec_failed"
+	case WorkflowNotifyTypeCancel:
+		return "cancel"
 	}
 	return "unknown"
 }
@@ -102,6 +105,8 @@ func (w *WorkflowNotification) NotificationSubject() i18nPkg.I18nStr {
 		return locale.Bundle.LocalizeAll(locale.NotifyWorkflowNotifyTypeExecuteSuccess)
 	case WorkflowNotifyTypeExecuteFail:
 		return locale.Bundle.LocalizeAll(locale.NotifyWorkflowNotifyTypeExecuteFail)
+	case WorkflowNotifyTypeCancel:
+		return locale.Bundle.LocalizeAll(locale.NotifyWorkflowNotifyTypeCancel)
 	default:
 		return locale.Bundle.LocalizeAll(locale.NotifyWorkflowNotifyTypeDefault)
 	}
@@ -204,6 +209,11 @@ func (w *WorkflowNotification) notifyUser() []string {
 
 	// if workflow is rejected, the creator needs to be notified.
 	case WorkflowNotifyTypeReject:
+		return []string{
+			w.workflow.CreateUserId,
+		}
+	// if workflow is cancelled, the creator needs to be notified.
+	case WorkflowNotifyTypeCancel:
 		return []string{
 			w.workflow.CreateUserId,
 		}
