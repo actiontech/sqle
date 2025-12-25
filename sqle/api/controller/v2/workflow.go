@@ -240,6 +240,8 @@ func CancelWorkflowV2(c echo.Context) error {
 	}
 	go im.BatchCancelApprove([]string{workflow.WorkflowId}, user)
 
+	go notification.NotifyWorkflow(string(workflow.ProjectId), workflow.WorkflowId, notification.WorkflowNotifyTypeCancel)
+
 	return controller.JSONBaseErrorReq(c, nil)
 }
 
