@@ -452,6 +452,8 @@ var (
 	NotifyWorkflowNotifyTypeReject         = &i18n.Message{ID: "WorkflowNotifyTypeReject", Other: "SQL工单已被驳回"}
 	NotifyWorkflowNotifyTypeExecuteSuccess = &i18n.Message{ID: "WorkflowNotifyTypeExecuteSuccess", Other: "SQL工单上线成功"}
 	NotifyWorkflowNotifyTypeExecuteFail    = &i18n.Message{ID: "WorkflowNotifyTypeExecuteFail", Other: "SQL工单上线失败"}
+	NotifyWorkflowNotifyTypeComplete       = &i18n.Message{ID: "WorkflowNotifyTypeComplete", Other: "SQL工单标记为人工上线"}
+	NotifyWorkflowNotifyTypeCancel         = &i18n.Message{ID: "WorkflowNotifyTypeCancel", Other: "SQL工单已关闭"}
 	NotifyWorkflowNotifyTypeDefault        = &i18n.Message{ID: "WorkflowNotifyTypeDefault", Other: "SQL工单未知请求"}
 
 	NotifyAuditPlanSubject  = &i18n.Message{ID: "NotifyAuditPlanSubject", Other: "SQLE扫描任务[%v]扫描结果[%v]"}
@@ -473,4 +475,6 @@ var (
 	NotifyWorkflowBodyStartEnd          = &i18n.Message{ID: "NotifyWorkflowBodyStartEnd", Other: "▶️ 上线开始时间: %v\n◀️ 上线结束时间: %v\n"}
 	NotifyWorkflowBodyReason            = &i18n.Message{ID: "NotifyWorkflowBodyReason", Other: "❌ 驳回原因: %v\n"}
 	NotifyWorkflowBodyReport            = &i18n.Message{ID: "NotifyWorkflowBodyReport", Other: "✅ 工单审核得分: %v\n"}
+	NotifyWorkflowBodyCancel            = &i18n.Message{ID: "NotifyWorkflowBodyCancel", Other: "🚫 工单已关闭\n"}
+	NotifyWorkflowBodyComplete          = &i18n.Message{ID: "NotifyWorkflowBodyComplete", Other: "✅ 工单已标记为人工上线\n"}
 )

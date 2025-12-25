@@ -51,6 +51,8 @@ const (
 	WorkflowNotifyTypeReject
 	WorkflowNotifyTypeExecuteSuccess
 	WorkflowNotifyTypeExecuteFail
+	WorkflowNotifyTypeCancel
+	WorkflowNotifyTypeComplete
 )
 
 func getWorkflowNotifyTypeAction(wt WorkflowNotifyType) string {
@@ -65,6 +67,10 @@ func getWorkflowNotifyTypeAction(wt WorkflowNotifyType) string {
 		return "exec_success"
 	case WorkflowNotifyTypeExecuteFail:
 		return "exec_failed"
+	case WorkflowNotifyTypeCancel:
+		return "cancel"
+	case WorkflowNotifyTypeComplete:
+		return "complete"
 	}
 	return "unknown"
 }
@@ -102,6 +108,10 @@ func (w *WorkflowNotification) NotificationSubject() i18nPkg.I18nStr {
 		return locale.Bundle.LocalizeAll(locale.NotifyWorkflowNotifyTypeExecuteSuccess)
 	case WorkflowNotifyTypeExecuteFail:
 		return locale.Bundle.LocalizeAll(locale.NotifyWorkflowNotifyTypeExecuteFail)
+	case WorkflowNotifyTypeComplete:
+		return locale.Bundle.LocalizeAll(locale.NotifyWorkflowNotifyTypeComplete)
+	case WorkflowNotifyTypeCancel:
+		return locale.Bundle.LocalizeAll(locale.NotifyWorkflowNotifyTypeCancel)
 	default:
 		return locale.Bundle.LocalizeAll(locale.NotifyWorkflowNotifyTypeDefault)
 	}
@@ -190,6 +200,10 @@ func (w *WorkflowNotification) buildNotifyBody(task *model.Task) i18nPkg.I18nStr
 			}
 		}
 		res = append(res, locale.Bundle.LocalizeAllWithArgs(locale.NotifyWorkflowBodyReason, reason))
+	case WorkflowNotifyTypeComplete:
+		res = append(res, locale.Bundle.LocalizeAll(locale.NotifyWorkflowBodyComplete))
+	case WorkflowNotifyTypeCancel:
+		res = append(res, locale.Bundle.LocalizeAll(locale.NotifyWorkflowBodyCancel))
 	default:
 		// res = append(res, locale.Bundle.LocalizeAllWithArgs(locale.NotifyWorkflowBodyReport, score, passRate*100))
 		res = append(res, locale.Bundle.LocalizeAllWithArgs(locale.NotifyWorkflowBodyReport, score))
@@ -207,8 +221,22 @@ func (w *WorkflowNotification) notifyUser() []string {
 		return []string{
 			w.workflow.CreateUserId,
 		}
+	// if workflow is canceled, the creator needs to be notified.
+	case WorkflowNotifyTypeCancel:
+		return []string{
+			w.workflow.CreateUserId,
+		}
 		// if workflow is executed, the creator and executor needs to be notified.
 	case WorkflowNotifyTypeExecuteSuccess, WorkflowNotifyTypeExecuteFail:
+		// 获取该工单对应数据源上有工单审核权限的所有用户
+		auditUsers, err := w.getAuditUsersForWorkflowInstances()
+		if err != nil {
+			log.NewEntry().Errorf("get audit users for workflow instances error: %v", err)
+			return []string{w.workflow.CreateUserId}
+		}
+		return auditUsers
+	// if workflow is manually completed, the creator and executor needs to be notified.
+	case WorkflowNotifyTypeComplete:
 		// 获取该工单对应数据源上有工单审核权限的所有用户
 		auditUsers, err := w.getAuditUsersForWorkflowInstances()
 		if err != nil {

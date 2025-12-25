@@ -10,6 +10,7 @@ import (
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/notification"
 	"github.com/actiontech/sqle/sqle/server/sqlversion"
 	"github.com/labstack/echo/v4"
 )
@@ -108,6 +109,8 @@ func BatchCompleteWorkflowsV3(c echo.Context) error {
 				return controller.JSONBaseErrorReq(c, err)
 			}
 		}
+
+		go notification.NotifyWorkflow(string(workflow.ProjectId), workflow.WorkflowId, notification.WorkflowNotifyTypeComplete)
 	}
 
 	return controller.JSONBaseErrorReq(c, nil)
