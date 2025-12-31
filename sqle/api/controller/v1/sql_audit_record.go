@@ -6,15 +6,17 @@ import (
 	"encoding/json"
 	e "errors"
 	"fmt"
-	v1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"io"
 	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	v1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 
 	javaParser "github.com/actiontech/java-sql-extractor/parser"
 	xmlParser "github.com/actiontech/mybatis-mapper-2-sql"
@@ -418,6 +420,14 @@ func getSqlsFromZip(c echo.Context) (sqlsFromSQLFile []SQLsFromSQLFile, sqlsFrom
 		}
 		sqlsFromXML = append(sqlsFromXML, sqlsFromXmls...)
 	}
+
+	// 按文件名排序，确保SQL按文件顺序执行
+	sort.Slice(sqlsFromSQLFile, func(i, j int) bool {
+		return sqlsFromSQLFile[i].FilePath < sqlsFromSQLFile[j].FilePath
+	})
+	sort.Slice(sqlsFromXML, func(i, j int) bool {
+		return sqlsFromXML[i].FilePath < sqlsFromXML[j].FilePath
+	})
 
 	return sqlsFromSQLFile, sqlsFromXML, true, nil
 }
