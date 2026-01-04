@@ -421,12 +421,12 @@ func getSqlsFromZip(c echo.Context) (sqlsFromSQLFile []SQLsFromSQLFile, sqlsFrom
 		sqlsFromXML = append(sqlsFromXML, sqlsFromXmls...)
 	}
 
-	// 按文件名排序，确保SQL按文件顺序执行
+	// 按文件名自然排序，确保SQL按文件顺序执行（数字按数值大小比较，如 "file2.sql" 会排在 "file11.sql" 前面）
 	sort.Slice(sqlsFromSQLFile, func(i, j int) bool {
-		return sqlsFromSQLFile[i].FilePath < sqlsFromSQLFile[j].FilePath
+		return utils.CompareNatural(sqlsFromSQLFile[i].FilePath, sqlsFromSQLFile[j].FilePath)
 	})
 	sort.Slice(sqlsFromXML, func(i, j int) bool {
-		return sqlsFromXML[i].FilePath < sqlsFromXML[j].FilePath
+		return utils.CompareNatural(sqlsFromXML[i].FilePath, sqlsFromXML[j].FilePath)
 	})
 
 	return sqlsFromSQLFile, sqlsFromXML, true, nil
