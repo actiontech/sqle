@@ -490,6 +490,101 @@ func GenerateSSHKeyPair() (privateKeyStr, publicKeyStr string, err error) {
 	return string(privatePEM), publicKeyStr, nil
 }
 
+// CompareNatural 实现自然排序比较，数字按数值大小比较，非数字按字典序比较
+// 例如："file2.sql" 会排在 "file11.sql" 前面
+// 返回值：如果 a < b 返回 true，否则返回 false
+func CompareNatural(a, b string) bool {
+	aRunes := []rune(a)
+	bRunes := []rune(b)
+	
+	aLen := len(aRunes)
+	bLen := len(bRunes)
+	
+	i, j := 0, 0
+	
+	for i < aLen && j < bLen {
+		// 跳过前导空格
+		for i < aLen && unicode.IsSpace(aRunes[i]) {
+			i++
+		}
+		for j < bLen && unicode.IsSpace(bRunes[j]) {
+			j++
+		}
+		
+		if i >= aLen || j >= bLen {
+			break
+		}
+		
+		// 检查当前位置是否为数字
+		aIsDigit := unicode.IsDigit(aRunes[i])
+		bIsDigit := unicode.IsDigit(bRunes[j])
+		
+		if aIsDigit && bIsDigit {
+			// 两者都是数字，提取完整的数字进行比较
+			aNumStart := i
+			bNumStart := j
+			
+			// 提取 a 的数字部分
+			for i < aLen && unicode.IsDigit(aRunes[i]) {
+				i++
+			}
+			// 提取 b 的数字部分
+			for j < bLen && unicode.IsDigit(bRunes[j]) {
+				j++
+			}
+			
+			// 将数字字符串转换为整数进行比较
+			aNumStr := string(aRunes[aNumStart:i])
+			bNumStr := string(bRunes[bNumStart:j])
+			
+			aNum, err1 := strconv.Atoi(aNumStr)
+			bNum, err2 := strconv.Atoi(bNumStr)
+			
+			// 如果转换失败，按字符串比较
+			if err1 != nil || err2 != nil {
+				if aNumStr < bNumStr {
+					return true
+				}
+				if aNumStr > bNumStr {
+					return false
+				}
+				continue
+			}
+			
+			// 按数值比较
+			if aNum < bNum {
+				return true
+			}
+			if aNum > bNum {
+				return false
+			}
+			// 数值相等，但字符串可能不同（如 "02" vs "2"），按字符串比较以保持稳定性
+			if aNumStr < bNumStr {
+				return true
+			}
+			if aNumStr > bNumStr {
+				return false
+			}
+			// 数值和字符串都相等，继续比较下一部分
+			continue
+		}
+		
+		// 至少有一个不是数字，按字符比较
+		if aRunes[i] < bRunes[j] {
+			return true
+		}
+		if aRunes[i] > bRunes[j] {
+			return false
+		}
+		
+		i++
+		j++
+	}
+	
+	// 一个字符串已经比较完，较短的排在前面
+	return aLen < bLen
+}
+
 func FindIntersection(slice1, slice2 []string) []string {
 	map1 := make(map[string]bool)
 	map2 := make(map[string]bool)
