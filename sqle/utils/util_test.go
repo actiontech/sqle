@@ -3,6 +3,7 @@ package utils
 import (
 	"math/rand"
 	"reflect"
+	"sort"
 	"strconv"
 	"testing"
 	"time"
@@ -414,4 +415,97 @@ func TestGenerateRandomString(t *testing.T) {
 
 	// If we've gone through all iterations without finding a duplicate, log a success message.
 	t.Logf("All %d generated strings were unique.", iterations)
+}
+
+func TestCompareNatural(t *testing.T) {
+	testCases := []struct {
+		name     string
+		a        string
+		b        string
+		expected bool // expected: a < b
+	}{
+		// 基本数字排序：数字按数值大小比较
+		{"数字排序：2 < 11", "file2.sql", "file11.sql", true},
+		{"数字排序：11 > 2", "file11.sql", "file2.sql", false},
+		{"数字排序：相等", "file2.sql", "file2.sql", false},
+		
+		// 多位数比较
+		{"多位数：10 < 100", "file10.sql", "file100.sql", true},
+		{"多位数：100 > 10", "file100.sql", "file10.sql", false},
+		{"多位数：99 < 100", "file99.sql", "file100.sql", true},
+		
+		// 前导零
+		{"前导零：02 < 11", "file02.sql", "file11.sql", true},
+		{"前导零：02 < 2", "file02.sql", "file2.sql", true}, // 02 作为字符串是 "02"，数值是 2
+		
+		// 纯字符串比较
+		{"纯字符串：a < b", "a.sql", "b.sql", true},
+		{"纯字符串：b > a", "b.sql", "a.sql", false},
+		{"纯字符串：相等", "file.sql", "file.sql", false},
+		
+		// 混合：字符串+数字
+		{"混合：file1 < file2", "file1.sql", "file2.sql", true},
+		{"混合：file2 > file1", "file2.sql", "file1.sql", false},
+		{"混合：file < file1", "file.sql", "file1.sql", true},
+		{"混合：file1 > file", "file1.sql", "file.sql", false},
+		
+		// 多个数字段
+		{"多数字段：1-2 < 1-10", "file1-2.sql", "file1-10.sql", true},
+		{"多数字段：1-10 > 1-2", "file1-10.sql", "file1-2.sql", false},
+		{"多数字段：2-1 < 10-1", "file2-1.sql", "file10-1.sql", true},
+		
+		// 路径中的排序
+		{"路径：dir1 < dir11", "dir1/file.sql", "dir11/file.sql", true},
+		{"路径：dir11 > dir2", "dir11/file.sql", "dir2/file.sql", false},
+		
+		// 边界情况
+		{"空字符串", "", "a", true},
+		{"空字符串相等", "", "", false},
+		{"相同字符串", "file.sql", "file.sql", false},
+		
+		// 复杂场景
+		{"复杂：test2 < test10", "test2.sql", "test10.sql", true},
+		{"复杂：test10 > test2", "test10.sql", "test2.sql", false},
+		{"复杂：a2b < a10b", "a2b.sql", "a10b.sql", true},
+		{"复杂：a10b > a2b", "a10b.sql", "a2b.sql", false},
+	}
+	
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := CompareNatural(tc.a, tc.b)
+			if result != tc.expected {
+				t.Errorf("CompareNatural(%q, %q) = %v, want %v", tc.a, tc.b, result, tc.expected)
+			}
+		})
+	}
+	
+	// 测试排序稳定性：验证排序后的顺序
+	t.Run("排序稳定性测试", func(t *testing.T) {
+		files := []string{
+			"file11.sql",
+			"file2.sql",
+			"file1.sql",
+			"file10.sql",
+			"file20.sql",
+			"file3.sql",
+		}
+		
+		expectedOrder := []string{
+			"file1.sql",
+			"file2.sql",
+			"file3.sql",
+			"file10.sql",
+			"file11.sql",
+			"file20.sql",
+		}
+		
+		// 使用自然排序进行排序
+		sort.Slice(files, func(i, j int) bool {
+			return CompareNatural(files[i], files[j])
+		})
+		
+		if !reflect.DeepEqual(files, expectedOrder) {
+			t.Errorf("排序结果不正确，got %v, want %v", files, expectedOrder)
+		}
+	})
 }
