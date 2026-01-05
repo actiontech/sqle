@@ -79,7 +79,7 @@ const MetricNameMemMax = "mem_max"
 const MetricNameDiskMax = "disk_max"
 const MetricNameFullTableScanCount = "full_table_scan_count"
 
-const MetricNameUserClientIp = "user_client_ip"
+const MetricNameUserClientIP = "user_client_ip"
 const MetricNameTenantName = "tenant_name"
 const MetricNameRequestTime = "request_time"
 
@@ -137,7 +137,7 @@ var ALLMetric = map[string]MetricType{
 	MetricNameInstance:           MetricTypeString,
 	MetricNameFullTableScanCount: MetricTypeInt,
 
-	MetricNameUserClientIp: MetricTypeString,
+	MetricNameUserClientIP: MetricTypeString,
 	MetricNameTenantName:   MetricTypeString,
 	MetricNameRequestTime:  MetricTypeString,
 }
