@@ -322,7 +322,7 @@ var (
 	ApMetricNameGrantedLockSql          = &i18n.Message{ID: "ApMetricNameGrantedLockSql", Other: "持有锁SQL"}
 	ApMetricNameWaitingLockSql          = &i18n.Message{ID: "ApMetricNameWaitingLockSql", Other: "等待锁SQL"}
 	ApMetricNameDBUser                  = &i18n.Message{ID: "ApMetricNameDBUser", Other: "用户"}
-	ApMetricUserClientIP                = &i18n.Message{ID: "ApMetricClientIP", Other: "客户端IP"}
+	ApMetricUserClientIP                = &i18n.Message{ID: "ApMetricUserClientIP", Other: "客户端IP"}
 	ApMetricNameHost                    = &i18n.Message{ID: "ApMetricNameHost", Other: "主机"}
 	ApMetricNameMetaName                = &i18n.Message{ID: "ApMetricNameMetaName", Other: "对象名称"}
 	ApMetricNameMetaType                = &i18n.Message{ID: "ApMetricNameMetaType", Other: "对象类型"}
