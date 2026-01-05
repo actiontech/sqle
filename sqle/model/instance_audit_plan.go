@@ -181,6 +181,18 @@ func (s *Storage) GetLatestStartTimeAuditPlanSQLV2(sourceId uint, typ string) (s
 	return info.StartTime, err
 }
 
+// HasSQLManageRecords 检查是否存在指定 source_id 和 source 的 SQL 记录
+func (s *Storage) HasSQLManageRecords(sourceId string, source string) (bool, error) {
+	info := struct {
+		Count int64 `gorm:"column:cnt"`
+	}{}
+	err := s.db.Raw(`SELECT COUNT(*) AS cnt FROM sql_manage_records WHERE source_id = ? AND source = ? AND deleted_at IS NULL`, sourceId, source).Scan(&info).Error
+	if err != nil {
+		return false, err
+	}
+	return info.Count > 0, nil
+}
+
 // 此表对于来源是扫描任务的相关sql, 目前仅在采集和审核时会更新, 如有其他场景更新此表, 需要考虑更新后会触发审核影响
 // 如有其他sql业务相关字段补充, 可新增至SQLManageRecordProcess中
 type SQLManageRecord struct {

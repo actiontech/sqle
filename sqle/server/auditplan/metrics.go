@@ -79,6 +79,10 @@ const MetricNameMemMax = "mem_max"
 const MetricNameDiskMax = "disk_max"
 const MetricNameFullTableScanCount = "full_table_scan_count"
 
+const MetricNameUserClientIp = "user_client_ip"
+const MetricNameTenantName = "tenant_name"
+const MetricNameRequestTime = "request_time"
+
 var ALLMetric = map[string]MetricType{
 	MetricNameCounter:                   MetricTypeInt,    // MySQL slow log
 	MetricNameLastReceiveTimestamp:      MetricTypeString, // MySQL slow log
@@ -92,6 +96,7 @@ var ALLMetric = map[string]MetricType{
 	MetricNameMetaName:                  MetricTypeString, // MySQL schema meta
 	MetricNameMetaType:                  MetricTypeString, // MySQL schema meta
 	MetricNameRecordDeleted:             MetricTypeBool,   // MySQL schema meta
+	MetricNameHost:                      MetricTypeString, // OB MySQL Full Collect
 
 	MetricNameQueryTimeTotal:      MetricTypeFloat, // DB2 TOP SQL | OB Oracle TOP SQL
 	MetricNameCPUTimeAvg:          MetricTypeFloat, // DB2 TOP SQL | OB MySQL TOP SQL
@@ -131,6 +136,10 @@ var ALLMetric = map[string]MetricType{
 	MetricNameDiskMax:            MetricTypeInt,
 	MetricNameInstance:           MetricTypeString,
 	MetricNameFullTableScanCount: MetricTypeInt,
+
+	MetricNameUserClientIp: MetricTypeString,
+	MetricNameTenantName:   MetricTypeString,
+	MetricNameRequestTime:  MetricTypeString,
 }
 
 func LoadMetrics(info map[string]interface{}, metrics []string) Metrics {
