@@ -85,12 +85,20 @@ type ExportDataResult struct {
 // header: 表头字符串数组
 // rows: 数据行，二维字符串数组
 // fileNamePrefix: 文件名前缀，会自动添加时间戳和 .xlsx 扩展名
-func ExportDataAsExcel(header []string, rows [][]string, fileNamePrefix string) (*ExportDataResult, error) {
+// prependRows: 可选的前置行，会在表头之前写入（可以为 nil）
+func ExportDataAsExcel(header []string, rows [][]string, fileNamePrefix string, prependRows ...[][]string) (*ExportDataResult, error) {
 	excelBuilder, err := NewExcelBuilder()
 	if err != nil {
 		return nil, fmt.Errorf("create excel builder failed: %v", err)
 	}
 	defer excelBuilder.Close()
+
+	// 如果有前置行，先写入前置行
+	if len(prependRows) > 0 && prependRows[0] != nil {
+		if err = excelBuilder.WriteRows(prependRows[0]); err != nil {
+			return nil, fmt.Errorf("write excel prepend rows failed: %v", err)
+		}
+	}
 
 	if err = excelBuilder.WriteHeader(header); err != nil {
 		return nil, fmt.Errorf("write excel header failed: %v", err)
@@ -116,8 +124,16 @@ func ExportDataAsExcel(header []string, rows [][]string, fileNamePrefix string) 
 // header: 表头字符串数组
 // rows: 数据行，二维字符串数组
 // fileNamePrefix: 文件名前缀，会自动添加时间戳和 .csv 扩展名
-func ExportDataAsCSV(header []string, rows [][]string, fileNamePrefix string) (*ExportDataResult, error) {
+// prependRows: 可选的前置行，会在表头之前写入（可以为 nil）
+func ExportDataAsCSV(header []string, rows [][]string, fileNamePrefix string, prependRows ...[][]string) (*ExportDataResult, error) {
 	csvBuilder := NewCSVBuilder()
+
+	// 如果有前置行，先写入前置行
+	if len(prependRows) > 0 && prependRows[0] != nil {
+		if err := csvBuilder.WriteRows(prependRows[0]); err != nil {
+			return nil, fmt.Errorf("write csv prepend rows failed: %v", err)
+		}
+	}
 
 	if err := csvBuilder.WriteHeader(header); err != nil {
 		return nil, fmt.Errorf("write csv header failed: %v", err)
