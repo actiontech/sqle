@@ -1132,13 +1132,14 @@ func GetInstanceAuditPlanSQLData(c echo.Context) error {
 }
 
 type GetAuditPlanSQLExportReqV1 struct {
-	OrderBy string   `json:"order_by"`
-	IsAsc   bool     `json:"is_asc"`
-	Filters []Filter `json:"filter_list"`
+	OrderBy      string   `json:"order_by"`
+	IsAsc        bool     `json:"is_asc"`
+	Filters      []Filter `json:"filter_list"`
+	ExportFormat string   `json:"export_format" enums:"csv,excel" example:"excel"` // 导出格式：csv 或 excel，默认为 excel
 }
 
-// @Summary 导出指定扫描任务的 SQL CSV 列表
-// @Description export audit plan SQL report as CSV
+// @Summary 导出指定扫描任务的 SQL 列表
+// @Description export audit plan SQL report as CSV or Excel
 // @Id getInstanceAuditPlanSQLExportV1
 // @Tags instance_audit_plan
 // @Security ApiKeyAuth
@@ -1193,29 +1194,45 @@ func GetInstanceAuditPlanSQLExport(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	csvBuilder := utils.NewCSVBuilder()
+	// 确定导出格式，默认为excel
+	exportFormat := strings.ToLower(req.ExportFormat)
+	if exportFormat != "csv" && exportFormat != "excel" {
+		exportFormat = "excel"
+	}
 
-	csvHeader := make([]string, len(head))
+	// 准备表头数据
+	header := make([]string, len(head))
 	for col, h := range head {
-		csvHeader[col] = locale.Bundle.LocalizeMsgByCtx(c.Request().Context(), h.Desc)
+		header[col] = locale.Bundle.LocalizeMsgByCtx(c.Request().Context(), h.Desc)
 	}
-	if err = csvBuilder.WriteHeader(csvHeader); err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
+
+	// 准备行数据
+	rowData := make([][]string, 0, len(rows))
 	for _, rowMap := range rows {
-		csvRow := make([]string, len(head))
+		row := make([]string, len(head))
 		for col, h := range head {
-			csvRow[col] = rowMap[h.Name]
+			row[col] = rowMap[h.Name]
 		}
-		if err = csvBuilder.WriteRow(csvRow); err != nil {
-			return controller.JSONBaseErrorReq(c, err)
-		}
+		rowData = append(rowData, row)
 	}
 
-	fileName := fmt.Sprintf("sql_export_%s_%s.csv", ap.Type, time.Now().Format("20060102150405"))
-	c.Response().Header().Set(echo.HeaderContentDisposition, mime.FormatMediaType("attachment", map[string]string{"filename": fileName}))
+	// 使用通用的导出方法
+	var exportResult *utils.ExportDataResult
+	var exportErr error
+	fileNamePrefix := fmt.Sprintf("sql_export_%s", ap.Type)
 
-	return c.Blob(http.StatusOK, "text/csv", csvBuilder.FlushAndGetBuffer().Bytes())
+	if exportFormat == "csv" {
+		exportResult, exportErr = utils.ExportDataAsCSV(header, rowData, fileNamePrefix)
+	} else {
+		exportResult, exportErr = utils.ExportDataAsExcel(header, rowData, fileNamePrefix)
+	}
+
+	if exportErr != nil {
+		return controller.JSONBaseErrorReq(c, exportErr)
+	}
+
+	c.Response().Header().Set(echo.HeaderContentDisposition, mime.FormatMediaType("attachment", map[string]string{"filename": exportResult.FileName}))
+	return c.Blob(http.StatusOK, exportResult.ContentType, exportResult.Content)
 }
 
 func ConvertFilterTipsToRes(fts []auditplan.FilterTip) []FilterTip {
