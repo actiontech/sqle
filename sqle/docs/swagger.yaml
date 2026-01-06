@@ -1836,6 +1836,13 @@ definitions:
     type: object
   v1.GetAuditPlanSQLExportReqV1:
     properties:
+      export_format:
+        description: 导出格式：csv 或 excel，默认为 excel
+        enum:
+        - csv
+        - excel
+        example: excel
+        type: string
       filter_list:
         items:
           $ref: '#/definitions/v1.Filter'
@@ -9836,7 +9843,7 @@ paths:
       - instance_audit_plan
   /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_id}/sql_export:
     post:
-      description: export audit plan SQL report as CSV
+      description: export audit plan SQL report as CSV or Excel
       operationId: getInstanceAuditPlanSQLExportV1
       parameters:
       - description: project name
@@ -9867,7 +9874,7 @@ paths:
             type: file
       security:
       - ApiKeyAuth: []
-      summary: 导出指定扫描任务的 SQL CSV 列表
+      summary: 导出指定扫描任务的 SQL 列表
       tags:
       - instance_audit_plan
   /v1/projects/{project_name}/instance_audit_plans/{instance_audit_plan_id}/audit_plans/{audit_plan_id}/sql_meta:
@@ -13233,7 +13240,7 @@ paths:
       - workflow
   /v1/projects/{project_name}/workflows/exports:
     get:
-      description: export workflow
+      description: export workflow as CSV or Excel
       operationId: exportWorkflowV1
       parameters:
       - description: filter subject
@@ -13292,6 +13299,13 @@ paths:
       - description: fuzzy matching subject/workflow_id/desc
         in: query
         name: fuzzy_keyword
+        type: string
+      - description: export format
+        enum:
+        - csv
+        - excel
+        in: query
+        name: export_format
         type: string
       responses:
         "200":
@@ -15063,7 +15077,7 @@ paths:
       - SqlManage
   /v2/projects/{project_name}/sql_manages/exports:
     get:
-      description: export sql manage
+      description: export sql manage as CSV or Excel
       operationId: exportSqlManageV2
       parameters:
       - description: project name
@@ -15157,6 +15171,13 @@ paths:
         - desc
         in: query
         name: sort_order
+        type: string
+      - description: export format
+        enum:
+        - csv
+        - excel
+        in: query
+        name: export_format
         type: string
       responses:
         "200":
