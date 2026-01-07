@@ -1132,10 +1132,10 @@ func GetInstanceAuditPlanSQLData(c echo.Context) error {
 }
 
 type GetAuditPlanSQLExportReqV1 struct {
-	OrderBy      string   `json:"order_by"`
-	IsAsc        bool     `json:"is_asc"`
-	Filters      []Filter `json:"filter_list"`
-	ExportFormat string   `json:"export_format" enums:"csv,excel" example:"excel"` // 导出格式：csv 或 excel，默认为 excel
+	OrderBy      string             `json:"order_by"`
+	IsAsc        bool               `json:"is_asc"`
+	Filters      []Filter           `json:"filter_list"`
+	ExportFormat utils.ExportFormat `json:"export_format" enums:"csv,excel" example:"excel"` // 导出格式：csv 或 excel
 }
 
 // @Summary 导出指定扫描任务的 SQL 列表
@@ -1195,10 +1195,7 @@ func GetInstanceAuditPlanSQLExport(c echo.Context) error {
 	}
 
 	// 确定导出格式，默认为excel
-	exportFormat := strings.ToLower(req.ExportFormat)
-	if exportFormat != "csv" && exportFormat != "excel" {
-		exportFormat = "excel"
-	}
+	exportFormat := utils.NormalizeExportFormat(&req.ExportFormat)
 
 	// 准备表头数据
 	header := make([]string, len(head))
@@ -1217,18 +1214,10 @@ func GetInstanceAuditPlanSQLExport(c echo.Context) error {
 	}
 
 	// 使用通用的导出方法
-	var exportResult *utils.ExportDataResult
-	var exportErr error
 	fileNamePrefix := fmt.Sprintf("sql_export_%s", ap.Type)
-
-	if exportFormat == "csv" {
-		exportResult, exportErr = utils.ExportDataAsCSV(header, rowData, fileNamePrefix)
-	} else {
-		exportResult, exportErr = utils.ExportDataAsExcel(header, rowData, fileNamePrefix)
-	}
-
-	if exportErr != nil {
-		return controller.JSONBaseErrorReq(c, exportErr)
+	exportResult, err := utils.ExportData(header, rowData, fileNamePrefix, exportFormat)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
 	}
 
 	c.Response().Header().Set(echo.HeaderContentDisposition, mime.FormatMediaType("attachment", map[string]string{"filename": exportResult.FileName}))
