@@ -329,6 +329,7 @@ var (
 	ApMetricNameQueryTimeTotal          = &i18n.Message{ID: "ApMetricNameQueryTimeTotal", Other: "总执行时间(s)"}
 	ApMetricNameQueryTimeAvg            = &i18n.Message{ID: "ApMetricNameQueryTimeAvg", Other: "平均执行时间(s)"}
 	ApMetricNameQueryTimeTotalMS        = &i18n.Message{ID: "ApMetricNameQueryTimeTotalMS", Other: "总执行时间(ms)"}
+	ApMetricNameQueryTimeTotalUS        = &i18n.Message{ID: "ApMetricNameQueryTimeTotalUS", Other: "总执行时间(μs)"}
 	ApMetricNameQueryTimeAvgMS          = &i18n.Message{ID: "ApMetricNameQueryTimeAvgMS", Other: "平均执行时间(ms)"}
 	ApMetricNameCounter                 = &i18n.Message{ID: "ApMetricNameCounter", Other: "执行次数"}
 	ApMetricNameCPUTimeAvg              = &i18n.Message{ID: "ApMetricNameCPUTimeAvg", Other: "平均 CPU 时间(μs)"}
