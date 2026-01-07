@@ -5,6 +5,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -149,4 +150,33 @@ func ExportDataAsCSV(header []string, rows [][]string, fileNamePrefix string, pr
 		ContentType: "text/csv",
 		FileName:    fileName,
 	}, nil
+}
+
+// NormalizeExportFormat 规范化导出格式，支持 string 和 *string 类型
+// 如果格式不是 "csv" 或 "excel"，则默认返回 "csv"
+// 参数 format 可以是 string 或 *string 类型
+func NormalizeExportFormat(format interface{}) string {
+	var formatStr string
+
+	switch v := format.(type) {
+	case string:
+		formatStr = v
+	case *string:
+		if v != nil {
+			formatStr = *v
+		}
+	default:
+		return "csv"
+	}
+
+	if formatStr == "" {
+		return "csv"
+	}
+
+	formatStr = strings.ToLower(formatStr)
+	if formatStr != "csv" && formatStr != "excel" {
+		return "csv"
+	}
+
+	return formatStr
 }
