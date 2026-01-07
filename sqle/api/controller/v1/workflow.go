@@ -1568,11 +1568,12 @@ type ExportWorkflowReqV1 struct {
 	FilterTaskExecuteStartTimeFrom  string `json:"filter_task_execute_start_time_from" query:"filter_task_execute_start_time_from"`
 	FilterTaskExecuteStartTimeTo    string `json:"filter_task_execute_start_time_to" query:"filter_task_execute_start_time_to"`
 	FuzzyKeyword                    string `json:"fuzzy_keyword" query:"fuzzy_keyword"`
+	ExportFormat                    string `json:"export_format" query:"export_format" enums:"csv,excel" example:"excel"` // 导出格式：csv 或 excel，默认为 excel
 }
 
 // ExportWorkflowV1
 // @Summary 导出工单
-// @Description export workflow
+// @Description export workflow as CSV or Excel
 // @Id exportWorkflowV1
 // @Tags workflow
 // @Security ApiKeyAuth
@@ -1588,6 +1589,7 @@ type ExportWorkflowReqV1 struct {
 // @Param filter_task_instance_id query string false "filter instance id"
 // @Param project_name path string true "project name"
 // @Param fuzzy_keyword query string false "fuzzy matching subject/workflow_id/desc"
+// @Param export_format query string false "export format" Enums(csv,excel) "export format: csv or excel, default is excel"
 // @Success 200 {file} file "export workflow"
 // @Router /v1/projects/{project_name}/workflows/exports [get]
 func ExportWorkflowV1(c echo.Context) error {

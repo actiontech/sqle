@@ -3766,11 +3766,11 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "export audit plan SQL report as CSV",
+                "description": "export audit plan SQL report as CSV or Excel",
                 "tags": [
                     "instance_audit_plan"
                 ],
-                "summary": "导出指定扫描任务的 SQL CSV 列表",
+                "summary": "导出指定扫描任务的 SQL 列表",
                 "operationId": "getInstanceAuditPlanSQLExportV1",
                 "parameters": [
                     {
@@ -8073,7 +8073,7 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "export workflow",
+                "description": "export workflow as CSV or Excel",
                 "tags": [
                     "workflow"
                 ],
@@ -8160,6 +8160,16 @@ var doc = `{
                         "type": "string",
                         "description": "fuzzy matching subject/workflow_id/desc",
                         "name": "fuzzy_keyword",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "csv",
+                            "excel"
+                        ],
+                        "type": "string",
+                        "description": "export format",
+                        "name": "export_format",
                         "in": "query"
                     }
                 ],
@@ -11740,7 +11750,7 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "export sql manage",
+                "description": "export sql manage as CSV or Excel",
                 "tags": [
                     "SqlManage"
                 ],
@@ -11877,6 +11887,16 @@ var doc = `{
                         "type": "string",
                         "description": "sort order",
                         "name": "sort_order",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "csv",
+                            "excel"
+                        ],
+                        "type": "string",
+                        "description": "export format",
+                        "name": "export_format",
                         "in": "query"
                     }
                 ],
@@ -15855,6 +15875,15 @@ var doc = `{
         "v1.GetAuditPlanSQLExportReqV1": {
             "type": "object",
             "properties": {
+                "export_format": {
+                    "description": "导出格式：csv 或 excel，默认为 excel",
+                    "type": "string",
+                    "enum": [
+                        "csv",
+                        "excel"
+                    ],
+                    "example": "excel"
+                },
                 "filter_list": {
                     "type": "array",
                     "items": {

@@ -67,8 +67,8 @@ func GetSqlManageList(c echo.Context) error {
 }
 
 type ExportSqlManagesReq struct {
-	FuzzySearchSqlFingerprint *string `query:"fuzzy_search_sql_fingerprint" json:"fuzzy_search_sql_fingerprint,omitempty"`
-	FilterAssignee            *string `query:"filter_assignee" json:"filter_assignee,omitempty"`
+	FuzzySearchSqlFingerprint    *string `query:"fuzzy_search_sql_fingerprint" json:"fuzzy_search_sql_fingerprint,omitempty"`
+	FilterAssignee               *string `query:"filter_assignee" json:"filter_assignee,omitempty"`
 	FilterByEnvironmentTag       *string `query:"filter_by_environment_tag" json:"filter_by_environment_tag,omitempty"`
 	FilterInstanceID             *string `query:"filter_instance_id" json:"filter_instance_id,omitempty"`
 	FilterSource                 *string `query:"filter_source" json:"filter_source,omitempty"`
@@ -83,11 +83,12 @@ type ExportSqlManagesReq struct {
 	FuzzySearchSchemaName        *string `query:"fuzzy_search_schema_name" json:"fuzzy_search_schema_name,omitempty"`
 	SortField                    *string `query:"sort_field" json:"sort_field,omitempty" valid:"omitempty,oneof=first_appear_timestamp last_receive_timestamp fp_count" enums:"first_appear_timestamp,last_receive_timestamp,fp_count"`
 	SortOrder                    *string `query:"sort_order" json:"sort_order,omitempty" valid:"omitempty,oneof=asc desc" enums:"asc,desc"`
+	ExportFormat                 *string `query:"export_format" json:"export_format,omitempty" enums:"csv,excel" example:"excel"` // 导出格式：csv 或 excel，默认为 excel
 }
 
 // ExportSqlManagesV2
 // @Summary 导出SQL管控
-// @Description export sql manage
+// @Description export sql manage as CSV or Excel
 // @Id exportSqlManageV2
 // @Tags SqlManage
 // @Security ApiKeyAuth
@@ -108,6 +109,7 @@ type ExportSqlManagesReq struct {
 // @Param fuzzy_search_schema_name query string false "fuzzy search schema name"
 // @Param sort_field query string false "sort field" Enums(first_appear_timestamp,last_receive_timestamp,fp_count)
 // @Param sort_order query string false "sort order" Enums(asc,desc)
+// @Param export_format query string false "export format" Enums(csv,excel) "export format: csv or excel, default is excel"
 // @Success 200 {file} file "export sql manage"
 // @Router /v2/projects/{project_name}/sql_manages/exports [get]
 func ExportSqlManagesV2(c echo.Context) error {
