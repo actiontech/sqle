@@ -5,7 +5,6 @@ import (
 	"io"
 	"io/fs"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -74,6 +73,14 @@ func SaveFile(file io.ReadSeeker, targetPath string) (err error) {
 	}
 	return nil
 }
+
+// ExportFormat 导出格式枚举类型
+type ExportFormat string
+
+const (
+	CsvExportFormat   ExportFormat = "csv"
+	ExcelExportFormat ExportFormat = "excel"
+)
 
 // ExportDataResult 导出数据的结果
 type ExportDataResult struct {
@@ -152,31 +159,24 @@ func ExportDataAsCSV(header []string, rows [][]string, fileNamePrefix string, pr
 	}, nil
 }
 
-// NormalizeExportFormat 规范化导出格式，支持 string 和 *string 类型
-// 如果格式不是 "csv" 或 "excel"，则默认返回 "csv"
-// 参数 format 可以是 string 或 *string 类型
-func NormalizeExportFormat(format interface{}) string {
-	var formatStr string
-
-	switch v := format.(type) {
-	case string:
-		formatStr = v
-	case *string:
-		if v != nil {
-			formatStr = *v
-		}
-	default:
-		return "csv"
+// NormalizeExportFormat 规范化导出格式
+// 如果格式为空，则默认返回 "csv"
+func NormalizeExportFormat(format *ExportFormat) ExportFormat {
+	if format == nil {
+		return CsvExportFormat
 	}
+	return *format
+}
 
-	if formatStr == "" {
-		return "csv"
+// ExportData 根据导出格式导出数据
+// header: 表头字符串数组
+// rows: 数据行，二维字符串数组
+// fileNamePrefix: 文件名前缀，会自动添加时间戳和扩展名
+// exportFormat: 导出格式（CsvExportFormat 或 ExcelExportFormat）
+// prependRows: 可选的前置行，会在表头之前写入（可以为 nil）
+func ExportData(header []string, rows [][]string, fileNamePrefix string, exportFormat ExportFormat, prependRows ...[][]string) (*ExportDataResult, error) {
+	if exportFormat == ExcelExportFormat {
+		return ExportDataAsExcel(header, rows, fileNamePrefix, prependRows...)
 	}
-
-	formatStr = strings.ToLower(formatStr)
-	if formatStr != "csv" && formatStr != "excel" {
-		return "csv"
-	}
-
-	return formatStr
+	return ExportDataAsCSV(header, rows, fileNamePrefix, prependRows...)
 }
