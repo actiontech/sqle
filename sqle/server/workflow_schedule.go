@@ -64,7 +64,23 @@ func (j *WorkflowScheduleJob) WorkflowSchedule(entry *logrus.Entry) {
 	}
 }
 
-func ExecuteWorkflow(workflow *model.Workflow, needExecTaskIdToUserId map[uint]string) (chan string, error) {
+// ExecuteWorkflow 执行工单中的任务
+// 参数说明:
+//   - workflow: 要执行的工单对象
+//   - needExecTaskIdToUserId: 需要执行的任务ID到用户ID的映射
+//   - isAutoCreated: 可变参数，用于标识工单是否为自动创建
+//     * 使用场景:
+//       - 当工单是通过 AutoCreateAndExecuteWorkflowV1 等自动创建接口创建时，应传递 true
+//       - 当工单是通过普通创建流程（如 CreateWorkflowV2）创建时，不传递此参数或传递 false
+//     * 默认行为:
+//       - 如果不传递此参数（即 len(isAutoCreated) == 0），则默认为 false，使用普通工单的通知类型
+//       - 如果传递 true，则使用自动创建工单的特殊通知类型（auto_exec_success/auto_exec_failed）
+//       - 如果传递 false，则使用普通工单的通知类型（exec_success/exec_failed）
+//     * 通知类型差异:
+//       - 自动创建工单: WorkflowNotifyTypeAutoExecuteSuccess/AutoExecuteFail
+//       - 普通工单: WorkflowNotifyTypeExecuteSuccess/ExecuteFail
+//     * 注意: 此参数仅影响通知的 action 类型，不影响工单的实际执行逻辑
+func ExecuteWorkflow(workflow *model.Workflow, needExecTaskIdToUserId map[uint]string, isAutoCreated ...bool) (chan string, error) {
 	s := model.GetStorage()
 	l := log.NewEntry()
 	err := s.UpdateStageWorkflowExecTimeIfNeed(workflow.WorkflowId)
@@ -150,10 +166,29 @@ func ExecuteWorkflow(workflow *model.Workflow, needExecTaskIdToUserId map[uint]s
 				lock.Unlock()
 			}
 
+			// 判断是否为自动创建的工单
+			// 逻辑说明:
+			//   - 如果 isAutoCreated 参数未传递（len == 0），则 isAuto = false，使用普通工单通知类型
+			//   - 如果 isAutoCreated[0] == true，则 isAuto = true，使用自动创建工单的特殊通知类型
+			//   - 如果 isAutoCreated[0] == false，则 isAuto = false，使用普通工单通知类型
+			// 通知类型说明:
+			//   - 自动创建工单成功: WorkflowNotifyTypeAutoExecuteSuccess -> action: "auto_exec_success"
+			//   - 自动创建工单失败: WorkflowNotifyTypeAutoExecuteFail -> action: "auto_exec_failed"
+			//   - 普通工单成功: WorkflowNotifyTypeExecuteSuccess -> action: "exec_success"
+			//   - 普通工单失败: WorkflowNotifyTypeExecuteFail -> action: "exec_failed"
+			isAuto := len(isAutoCreated) > 0 && isAutoCreated[0]
 			if err != nil || task.Status == model.TaskStatusExecuteFailed {
-				go notification.NotifyWorkflow(string(workflow.ProjectId), workflow.WorkflowId, notification.WorkflowNotifyTypeExecuteFail)
+				if isAuto {
+					go notification.NotifyWorkflow(string(workflow.ProjectId), workflow.WorkflowId, notification.WorkflowNotifyTypeAutoExecuteFail)
+				} else {
+					go notification.NotifyWorkflow(string(workflow.ProjectId), workflow.WorkflowId, notification.WorkflowNotifyTypeExecuteFail)
+				}
 			} else {
-				go notification.NotifyWorkflow(string(workflow.ProjectId), workflow.WorkflowId, notification.WorkflowNotifyTypeExecuteSuccess)
+				if isAuto {
+					go notification.NotifyWorkflow(string(workflow.ProjectId), workflow.WorkflowId, notification.WorkflowNotifyTypeAutoExecuteSuccess)
+				} else {
+					go notification.NotifyWorkflow(string(workflow.ProjectId), workflow.WorkflowId, notification.WorkflowNotifyTypeExecuteSuccess)
+				}
 			}
 
 		}()
@@ -264,7 +299,19 @@ func RejectWorkflowProcess(workflow *model.Workflow, reason string, user *model.
 	return nil
 }
 
-func ExecuteTasksProcess(workflowId string, projectUid string, user *model.User) (chan string, error) {
+// ExecuteTasksProcess 执行工单任务处理流程
+// 参数说明:
+//   - workflowId: 工单ID
+//   - projectUid: 项目UID
+//   - user: 执行用户
+//   - isAutoCreated: 可变参数，用于标识工单是否为自动创建
+//     * 使用场景: 与 ExecuteWorkflow 的 isAutoCreated 参数相同
+//     * 默认行为: 如果不传递此参数，则默认为 false，表示普通工单
+//     * 传递方式: 此参数会透传给 ExecuteWorkflow 函数，用于控制通知类型
+//     * 示例:
+//       - 自动创建工单: ExecuteTasksProcess(workflowId, projectUid, user, true)
+//       - 普通工单: ExecuteTasksProcess(workflowId, projectUid, user) 或 ExecuteTasksProcess(workflowId, projectUid, user, false)
+func ExecuteTasksProcess(workflowId string, projectUid string, user *model.User, isAutoCreated ...bool) (chan string, error) {
 	s := model.GetStorage()
 	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectUid, workflowId, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
 	if err != nil {
@@ -280,7 +327,7 @@ func ExecuteTasksProcess(workflowId string, projectUid string, user *model.User)
 		return nil, err
 	}
 
-	workflowExecResultChan, err := ExecuteWorkflow(workflow, needExecTaskIds)
+	workflowExecResultChan, err := ExecuteWorkflow(workflow, needExecTaskIds, isAutoCreated...)
 	if err != nil {
 		return nil, err
 	}
