@@ -2001,7 +2001,7 @@ func AutoCreateAndExecuteWorkflowV1(c echo.Context) error {
 	}
 
 	// 11. 执行工单
-	workFlowStatus, err := executeWorkflow(projectUid, workflow, user)
+	workFlowStatus, err := executeWorkflowForAuto(projectUid, workflow, user)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -2261,8 +2261,8 @@ func validateBackupForNonDQLSQLs(s *model.Storage, tasks []*model.Task) error {
 	return nil
 }
 
-// executeWorkflow 执行工单
-func executeWorkflow(projectUid string, workflow *model.Workflow, user *model.User) (string, error) {
+// executeWorkflowForAuto 执行工单
+func executeWorkflowForAuto(projectUid string, workflow *model.Workflow, user *model.User) (string, error) {
 	needExecTaskIds, err := GetNeedExecTaskIds(workflow, user)
 	if err != nil {
 		return "", err
@@ -2272,7 +2272,7 @@ func executeWorkflow(projectUid string, workflow *model.Workflow, user *model.Us
 		return "", nil
 	}
 
-	ch, err := server.ExecuteTasksProcess(workflow.WorkflowId, projectUid, user)
+	ch, err := server.ExecuteTasksProcess(workflow.WorkflowId, projectUid, user, true)
 	if err != nil {
 		return "", err
 	}
