@@ -2261,7 +2261,13 @@ func validateBackupForNonDQLSQLs(s *model.Storage, tasks []*model.Task) error {
 	return nil
 }
 
-// executeWorkflowForAuto 执行工单
+// executeWorkflowForAuto 执行自动创建的工单
+// 此函数专门用于自动创建工单的执行流程，与普通工单执行的区别在于：
+//   - 使用特殊的通知类型（auto_exec_success/auto_exec_failed）来区分自动创建和普通创建的工单
+//   - 通过传递 isAutoCreated=true 给 ExecuteTasksProcess，确保 webhook 通知中的 action 字段为 "auto_exec_success" 或 "auto_exec_failed"
+// 使用场景:
+//   - AutoCreateAndExecuteWorkflowV1: 通过工作台执行非DQL类型SQL时自动创建的工单
+// 注意: 此函数不应用于普通工单的执行，普通工单应使用其他执行流程
 func executeWorkflowForAuto(projectUid string, workflow *model.Workflow, user *model.User) (string, error) {
 	needExecTaskIds, err := GetNeedExecTaskIds(workflow, user)
 	if err != nil {
@@ -2272,6 +2278,7 @@ func executeWorkflowForAuto(projectUid string, workflow *model.Workflow, user *m
 		return "", nil
 	}
 
+	// 传递 true 标识这是自动创建的工单，将使用特殊的通知类型
 	ch, err := server.ExecuteTasksProcess(workflow.WorkflowId, projectUid, user, true)
 	if err != nil {
 		return "", err
