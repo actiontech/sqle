@@ -53,6 +53,8 @@ const (
 	WorkflowNotifyTypeExecuteFail
 	WorkflowNotifyTypeCancel
 	WorkflowNotifyTypeComplete
+	WorkflowNotifyTypeAutoExecuteSuccess
+	WorkflowNotifyTypeAutoExecuteFail
 )
 
 func getWorkflowNotifyTypeAction(wt WorkflowNotifyType) string {
@@ -71,6 +73,10 @@ func getWorkflowNotifyTypeAction(wt WorkflowNotifyType) string {
 		return "cancel"
 	case WorkflowNotifyTypeComplete:
 		return "complete"
+	case WorkflowNotifyTypeAutoExecuteSuccess:
+		return "auto_exec_success"
+	case WorkflowNotifyTypeAutoExecuteFail:
+		return "auto_exec_failed"
 	}
 	return "unknown"
 }
@@ -104,9 +110,9 @@ func (w *WorkflowNotification) NotificationSubject() i18nPkg.I18nStr {
 		return locale.Bundle.LocalizeAllWithArgs(locale.NotifyWorkflowNotifyTypeWaiting, GetWorkflowStepTypeDesc(w.workflow.CurrentStep().Template.Typ))
 	case WorkflowNotifyTypeReject:
 		return locale.Bundle.LocalizeAll(locale.NotifyWorkflowNotifyTypeReject)
-	case WorkflowNotifyTypeExecuteSuccess:
+	case WorkflowNotifyTypeExecuteSuccess, WorkflowNotifyTypeAutoExecuteSuccess:
 		return locale.Bundle.LocalizeAll(locale.NotifyWorkflowNotifyTypeExecuteSuccess)
-	case WorkflowNotifyTypeExecuteFail:
+	case WorkflowNotifyTypeExecuteFail, WorkflowNotifyTypeAutoExecuteFail:
 		return locale.Bundle.LocalizeAll(locale.NotifyWorkflowNotifyTypeExecuteFail)
 	case WorkflowNotifyTypeComplete:
 		return locale.Bundle.LocalizeAll(locale.NotifyWorkflowNotifyTypeComplete)
@@ -189,7 +195,7 @@ func (w *WorkflowNotification) buildNotifyBody(task *model.Task) i18nPkg.I18nStr
 	res = append(res, locale.Bundle.LocalizeAllWithArgs(locale.NotifyWorkflowBodyInstanceAndSchema, instanceName, schema))
 
 	switch w.notifyType {
-	case WorkflowNotifyTypeExecuteSuccess, WorkflowNotifyTypeExecuteFail:
+	case WorkflowNotifyTypeExecuteSuccess, WorkflowNotifyTypeExecuteFail, WorkflowNotifyTypeAutoExecuteSuccess, WorkflowNotifyTypeAutoExecuteFail:
 		res = append(res, locale.Bundle.LocalizeAllWithArgs(locale.NotifyWorkflowBodyStartEnd, executeStartAt, executeEndAt))
 	case WorkflowNotifyTypeReject:
 		var reason string
@@ -227,7 +233,7 @@ func (w *WorkflowNotification) notifyUser() []string {
 			w.workflow.CreateUserId,
 		}
 		// if workflow is executed, the creator and executor needs to be notified.
-	case WorkflowNotifyTypeExecuteSuccess, WorkflowNotifyTypeExecuteFail:
+	case WorkflowNotifyTypeExecuteSuccess, WorkflowNotifyTypeExecuteFail, WorkflowNotifyTypeAutoExecuteSuccess, WorkflowNotifyTypeAutoExecuteFail:
 		// 获取该工单对应数据源上有工单审核权限的所有用户
 		auditUsers, err := w.getAuditUsersForWorkflowInstances()
 		if err != nil {

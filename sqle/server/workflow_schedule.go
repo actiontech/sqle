@@ -64,7 +64,7 @@ func (j *WorkflowScheduleJob) WorkflowSchedule(entry *logrus.Entry) {
 	}
 }
 
-func ExecuteWorkflow(workflow *model.Workflow, needExecTaskIdToUserId map[uint]string) (chan string, error) {
+func ExecuteWorkflow(workflow *model.Workflow, needExecTaskIdToUserId map[uint]string, isAutoCreated ...bool) (chan string, error) {
 	s := model.GetStorage()
 	l := log.NewEntry()
 	err := s.UpdateStageWorkflowExecTimeIfNeed(workflow.WorkflowId)
@@ -150,10 +150,20 @@ func ExecuteWorkflow(workflow *model.Workflow, needExecTaskIdToUserId map[uint]s
 				lock.Unlock()
 			}
 
+			// 判断是否为自动创建的工单, 自动创建的工单, 使用特殊的通知类型
+			isAuto := len(isAutoCreated) > 0 && isAutoCreated[0]
 			if err != nil || task.Status == model.TaskStatusExecuteFailed {
-				go notification.NotifyWorkflow(string(workflow.ProjectId), workflow.WorkflowId, notification.WorkflowNotifyTypeExecuteFail)
+				if isAuto {
+					go notification.NotifyWorkflow(string(workflow.ProjectId), workflow.WorkflowId, notification.WorkflowNotifyTypeAutoExecuteFail)
+				} else {
+					go notification.NotifyWorkflow(string(workflow.ProjectId), workflow.WorkflowId, notification.WorkflowNotifyTypeExecuteFail)
+				}
 			} else {
-				go notification.NotifyWorkflow(string(workflow.ProjectId), workflow.WorkflowId, notification.WorkflowNotifyTypeExecuteSuccess)
+				if isAuto {
+					go notification.NotifyWorkflow(string(workflow.ProjectId), workflow.WorkflowId, notification.WorkflowNotifyTypeAutoExecuteSuccess)
+				} else {
+					go notification.NotifyWorkflow(string(workflow.ProjectId), workflow.WorkflowId, notification.WorkflowNotifyTypeExecuteSuccess)
+				}
 			}
 
 		}()
@@ -264,7 +274,7 @@ func RejectWorkflowProcess(workflow *model.Workflow, reason string, user *model.
 	return nil
 }
 
-func ExecuteTasksProcess(workflowId string, projectUid string, user *model.User) (chan string, error) {
+func ExecuteTasksProcess(workflowId string, projectUid string, user *model.User, isAutoCreated ...bool) (chan string, error) {
 	s := model.GetStorage()
 	workflow, err := dms.GetWorkflowDetailByWorkflowId(projectUid, workflowId, s.GetWorkflowDetailWithoutInstancesByWorkflowID)
 	if err != nil {
@@ -280,7 +290,7 @@ func ExecuteTasksProcess(workflowId string, projectUid string, user *model.User)
 		return nil, err
 	}
 
-	workflowExecResultChan, err := ExecuteWorkflow(workflow, needExecTaskIds)
+	workflowExecResultChan, err := ExecuteWorkflow(workflow, needExecTaskIds, isAutoCreated...)
 	if err != nil {
 		return nil, err
 	}
