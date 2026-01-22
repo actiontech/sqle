@@ -88,6 +88,22 @@ func DefaultMysqlInspect() *MysqlDriverImpl {
 	}
 }
 
+// setupMockViewQueryExpectations sets up mock expectations for view queries to avoid test failures
+func setupMockViewQueryExpectations(handler sqlmock.Sqlmock) {
+	handler.MatchExpectationsInOrder(false)
+	// Set up expectations that can be matched multiple times
+	// Use regexp to match both exact and lowercase schema queries
+	handler.ExpectQuery(regexp.QuoteMeta(`select TABLE_NAME from information_schema.tables where table_schema='exist_db' and TABLE_TYPE='VIEW'`)).
+		WillReturnRows(sqlmock.NewRows([]string{"TABLE_NAME"}))
+	handler.ExpectQuery(regexp.QuoteMeta(`select TABLE_NAME from information_schema.tables where lower(table_schema)='exist_db' and TABLE_TYPE='VIEW'`)).
+		WillReturnRows(sqlmock.NewRows([]string{"TABLE_NAME"}))
+	// Add additional expectations for potential multiple calls
+	handler.ExpectQuery(regexp.QuoteMeta(`select TABLE_NAME from information_schema.tables where table_schema='exist_db' and TABLE_TYPE='VIEW'`)).
+		WillReturnRows(sqlmock.NewRows([]string{"TABLE_NAME"}))
+	handler.ExpectQuery(regexp.QuoteMeta(`select TABLE_NAME from information_schema.tables where lower(table_schema)='exist_db' and TABLE_TYPE='VIEW'`)).
+		WillReturnRows(sqlmock.NewRows([]string{"TABLE_NAME"}))
+}
+
 func NewMockInspect(e *executor.Executor) *MysqlDriverImpl {
 	log.Logger().SetLevel(logrus.ErrorLevel)
 	return &MysqlDriverImpl{
@@ -149,6 +165,9 @@ func AIMockExecutor(expectations []*AIMockSQLExpectation) (*executor.Executor, e
 		return nil, err
 	}
 	handler.MatchExpectationsInOrder(false)
+
+	// 为视图查询添加 mock 期望
+	setupMockViewQueryExpectations(handler)
 
 	for _, exp := range expectations {
 		handler.ExpectQuery(regexp.QuoteMeta(exp.Query)).
@@ -5485,6 +5504,8 @@ func TestDDLRecommendTableColumnCharsetSame(t *testing.T) {
 	// 需要查询数据库 获取数据库默认字符集
 	e, handler, err := executor.NewMockExecutor()
 	assert.NoError(t, err)
+	// 为视图查询添加 mock 期望
+	setupMockViewQueryExpectations(handler)
 	inspect1 := NewMockInspect(e)
 
 	// 不触发规则
@@ -7961,8 +7982,10 @@ func TestDDLCheckCharLength(t *testing.T) {
 	rule := rulepkg.RuleHandlerMap[rulepkg.DDLCheckCharLength].Rule
 	for _, arg := range args {
 		rule.Params.SetParamValue(rulepkg.DefaultSingleParamKeyName, arg.Param)
-		e, _, err := executor.NewMockExecutor()
+		e, handler, err := executor.NewMockExecutor()
 		assert.NoError(t, err)
+		// 为视图查询添加 mock 期望
+		setupMockViewQueryExpectations(handler)
 		inspect := NewMockInspect(e)
 
 		t.Run(arg.Name, func(t *testing.T) {
