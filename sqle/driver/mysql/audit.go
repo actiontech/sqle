@@ -111,7 +111,7 @@ func (i *MysqlDriverImpl) checkInvalidCreateTable(stmt *ast.CreateTableStmt) err
 	if !schemaExist {
 		i.result.Add(driverV2.RuleLevelError, "", plocale.Bundle.LocalizeAll(plocale.SchemaNotExistMessage), schemaName)
 	} else {
-		tableExist, err := i.Ctx.IsTableExist(stmt.Table)
+		tableExist, err := i.Ctx.IsTableOrViewExist(stmt.Table)
 		if err != nil {
 			return err
 		}
@@ -120,7 +120,7 @@ func (i *MysqlDriverImpl) checkInvalidCreateTable(stmt *ast.CreateTableStmt) err
 				i.getTableName(stmt.Table))
 		}
 		if stmt.ReferTable != nil {
-			referTableExist, err := i.Ctx.IsTableExist(stmt.ReferTable)
+			referTableExist, err := i.Ctx.IsTableOrViewExist(stmt.ReferTable)
 			if err != nil {
 				return err
 			}
@@ -531,7 +531,7 @@ func (i *MysqlDriverImpl) checkInvalidDropTable(stmt *ast.DropTableStmt) error {
 		if !schemaExist {
 			needExistsSchemasName = append(needExistsSchemasName, schemaName)
 		} else {
-			tableExist, err := i.Ctx.IsTableExist(table)
+			tableExist, err := i.Ctx.IsTableOrViewExist(table)
 			if err != nil {
 				return err
 			}
@@ -896,7 +896,7 @@ func (i *MysqlDriverImpl) checkInvalidUpdate(stmt *ast.UpdateStmt) error {
 		if !schemaExist {
 			needExistsSchemasName = append(needExistsSchemasName, schemaName)
 		} else {
-			tableExist, err := i.Ctx.IsTableExist(table)
+			tableExist, err := i.Ctx.IsTableOrViewExist(table)
 			if err != nil {
 				return err
 			}
@@ -1024,7 +1024,7 @@ func (i *MysqlDriverImpl) checkInvalidDelete(stmt *ast.DeleteStmt) error {
 		if !schemaExist {
 			needExistsSchemasName = append(needExistsSchemasName, schemaName)
 		} else {
-			tableExist, err := i.Ctx.IsTableExist(table)
+			tableExist, err := i.Ctx.IsTableOrViewExist(table)
 			if err != nil {
 				return err
 			}
@@ -1135,7 +1135,7 @@ func (i *MysqlDriverImpl) checkInvalidSelect(stmt *ast.SelectStmt) error {
 		if !schemaExist {
 			needExistsSchemasName = append(needExistsSchemasName, schemaName)
 		} else {
-			tableExist, err := i.Ctx.IsTableExist(table)
+			tableExist, err := i.Ctx.IsTableOrViewExist(table)
 			if err != nil {
 				return err
 			}
