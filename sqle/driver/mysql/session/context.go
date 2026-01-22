@@ -49,6 +49,11 @@ type TableInfo struct {
 	Selectivity map[string] /*column name or index name*/ float64 /*selectivity*/
 }
 
+type ViewInfo struct {
+	// isLoad indicate whether ViewInfo load from database or not.
+	isLoad bool
+}
+
 type SchemaInfo struct {
 	DefaultEngine    string
 	engineLoad       bool
@@ -58,6 +63,7 @@ type SchemaInfo struct {
 	collationLoad    bool
 	IsRealSchema     bool // issue #1832, 判断当前的 schema 是否真实存在于数据库中.
 	Tables           map[string]*TableInfo
+	Views            map[string]*ViewInfo
 }
 
 type HistorySQLInfo struct {
@@ -118,6 +124,7 @@ func NewContext(parent *Context, opts ...contextOption) *Context {
 	for schemaName, schema := range parent.schemas {
 		newSchema := &SchemaInfo{
 			Tables: map[string]*TableInfo{},
+			Views:  map[string]*ViewInfo{},
 		}
 		if schema == nil || schema.Tables == nil {
 			continue
@@ -130,6 +137,13 @@ func NewContext(parent *Context, opts ...contextOption) *Context {
 				OriginalTable: table.OriginalTable,
 				MergedTable:   table.MergedTable,
 				AlterTables:   table.AlterTables,
+			}
+		}
+		if schema.Views != nil {
+			for viewName, view := range schema.Views {
+				newSchema.Views[viewName] = &ViewInfo{
+					isLoad: view.isLoad,
+				}
 			}
 		}
 		ctx.schemas[schemaName] = newSchema
@@ -216,6 +230,7 @@ func (c *Context) addSchema(name string) {
 	}
 	c.schemas[name] = &SchemaInfo{
 		Tables: map[string]*TableInfo{},
+		Views:  map[string]*ViewInfo{},
 	}
 }
 
@@ -301,6 +316,54 @@ func (c *Context) delTable(schemaName, tableName string) {
 		tableName = strings.ToLower(tableName)
 	}
 	delete(schema.Tables, tableName)
+}
+
+func (c *Context) hasLoadViews(schemaName string) (hasLoad bool) {
+	if schema, ok := c.getSchema(schemaName); ok {
+		if schema.Views == nil {
+			hasLoad = false
+		} else {
+			hasLoad = true
+		}
+	}
+	return
+}
+
+func (c *Context) loadViews(schemaName string, viewsName []string) {
+	schema, ok := c.getSchema(schemaName)
+	if !ok {
+		return
+	}
+	if c.hasLoadViews(schemaName) {
+		return
+	}
+	if schema.Views == nil {
+		schema.Views = map[string]*ViewInfo{}
+	}
+	isLowerCaseTableName := c.IsLowerCaseTableName()
+	for _, name := range viewsName {
+		if isLowerCaseTableName {
+			name = strings.ToLower(name)
+		}
+		schema.Views[name] = &ViewInfo{
+			isLoad: true,
+		}
+	}
+}
+
+func (c *Context) hasView(schemaName, viewName string) (has bool) {
+	schema, SchemaExist := c.getSchema(schemaName)
+	if !SchemaExist {
+		return false
+	}
+	if !c.hasLoadViews(schemaName) {
+		return false
+	}
+	if c.IsLowerCaseTableName() {
+		viewName = strings.ToLower(viewName)
+	}
+	_, has = schema.Views[viewName]
+	return
 }
 
 func (c *Context) SetCurrentSchema(schema string) {
@@ -491,6 +554,87 @@ func (c *Context) IsTableExist(stmt *ast.TableName) (bool, error) {
 		return exist, nil
 	}
 	return c.hasTable(schemaName, stmt.Name.String()), nil
+}
+
+// IsTableOrViewExist check table or view is exist or not.
+func (c *Context) IsTableOrViewExist(stmt *ast.TableName) (bool, error) {
+	schemaName := c.GetSchemaName(stmt)
+	schemaExist, err := c.IsSchemaExist(schemaName)
+	if err != nil {
+		return schemaExist, err
+	}
+	if !schemaExist {
+		return false, nil
+	}
+
+	if !c.hasLoadTables(schemaName) {
+		if c.e == nil {
+			return false, nil
+		}
+
+		tables, err := c.e.ShowSchemaTables(schemaName)
+		if err != nil {
+			return false, err
+		}
+		c.loadTables(schemaName, tables)
+	}
+
+	lowerCaseTableNames, err := c.GetSystemVariable(SysVarLowerCaseTableNames)
+	if err != nil {
+		return false, err
+	}
+
+	var tableExist bool
+	if lowerCaseTableNames != "0" {
+		capitalizedTable := make(map[string]struct{})
+		schemaInfo, ok := c.getSchema(schemaName)
+		if !ok {
+			return false, fmt.Errorf("schema %s not exist", schemaName)
+		}
+
+		for name := range schemaInfo.Tables {
+			capitalizedTable[strings.ToUpper(name)] = struct{}{}
+		}
+		_, tableExist = capitalizedTable[strings.ToUpper(stmt.Name.String())]
+	} else {
+		tableExist = c.hasTable(schemaName, stmt.Name.String())
+	}
+
+	// If table exists, return true
+	if tableExist {
+		return true, nil
+	}
+
+	// If table doesn't exist, check if it's a view
+	if !c.hasLoadViews(schemaName) {
+		if c.e == nil {
+			return false, nil
+		}
+
+		views, err := c.e.ShowSchemaViews(schemaName)
+		if err != nil {
+			return false, err
+		}
+		c.loadViews(schemaName, views)
+	}
+
+	var viewExist bool
+	if lowerCaseTableNames != "0" {
+		capitalizedView := make(map[string]struct{})
+		schemaInfo, ok := c.getSchema(schemaName)
+		if !ok {
+			return false, fmt.Errorf("schema %s not exist", schemaName)
+		}
+
+		for name := range schemaInfo.Views {
+			capitalizedView[strings.ToUpper(name)] = struct{}{}
+		}
+		_, viewExist = capitalizedView[strings.ToUpper(stmt.Name.String())]
+	} else {
+		viewExist = c.hasView(schemaName, stmt.Name.String())
+	}
+
+	return viewExist, nil
 }
 
 const (
