@@ -324,6 +324,20 @@ func (ws *WorkflowStep) OperationTime() string {
 	return ws.OperateAt.Format("2006-01-02 15:04:05")
 }
 
+// filterDisabledUsers 过滤掉禁用状态的用户
+func filterDisabledUsers(users []*User) []*User {
+	if len(users) == 0 {
+		return []*User{}
+	}
+	enabledUsers := make([]*User, 0)
+	for _, user := range users {
+		if user.Stat == 0 {
+			enabledUsers = append(enabledUsers, user)
+		}
+	}
+	return enabledUsers
+}
+
 func generateWorkflowStepByTemplate(stepsTemplate []*WorkflowStepTemplate, allInspector []*User, allExecutor []*User) []*WorkflowStep {
 	steps := make([]*WorkflowStep, 0, len(stepsTemplate))
 	for i, st := range stepsTemplate {
@@ -550,6 +564,10 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 		canOptUsers = GetOverlapOfUsers(canOptUsers, allUsers[i])
 		canExecUsers = GetOverlapOfUsers(canExecUsers, allExecutor[i])
 	}
+
+	// 过滤掉禁用状态的用户
+	canOptUsers = filterDisabledUsers(canOptUsers)
+	canExecUsers = filterDisabledUsers(canExecUsers)
 
 	if len(canOptUsers) == 0 || len(canExecUsers) == 0 {
 		// TODO 获取管理用户
