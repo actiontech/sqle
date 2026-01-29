@@ -567,25 +567,38 @@ func GetCanOperationInstances(ctx context.Context, user *model.User, req *dmsV2.
 }
 
 func GetCanOpInstanceUsers(memberWithPermissions []*dmsV1.ListMembersForInternalItem, instance *model.Instance, opPermissions []dmsV1.OpPermissionType) (opUsers []*model.User, err error) {
-	opMapUsers := make(map[uint]struct{}, 0)
+	userUids := make([]string, 0)
+	userMap := make(map[string]*model.User)
+
+	// 收集所有有权限的用户ID
 	for _, memberWithPermission := range memberWithPermissions {
 		for _, memberOpPermission := range memberWithPermission.MemberOpPermissionList {
 			if CanOperationInstance([]dmsV1.OpPermissionItem{memberOpPermission}, opPermissions, instance) {
-				opUser := new(model.User)
 				userId, err := strconv.Atoi(memberWithPermission.User.Uid)
 				if err != nil {
 					return nil, err
 				}
-				opUser.ID = uint(userId)
-				opUser.Name = memberWithPermission.User.Name
-				if _, ok := opMapUsers[opUser.ID]; !ok {
-					opMapUsers[opUser.ID] = struct{}{}
-					opUsers = append(opUsers, opUser)
+				userUid := memberWithPermission.User.Uid
+				if _, ok := userMap[userUid]; !ok {
+					userUids = append(userUids, userUid)
+					opUser := &model.User{
+						Model: model.Model{
+							ID: uint(userId),
+						},
+						Name: memberWithPermission.User.Name,
+					}
+					userMap[userUid] = opUser
 				}
 			}
 		}
 	}
-	return opUsers, nil
+
+	// 批量获取用户完整信息（包括状态）
+	if len(userUids) > 0 {
+		return dms.GetUsers(context.Background(), userUids, controller.GetDMSServerAddress())
+	}
+
+	return []*model.User{}, nil
 }
 
 func CanOperationInstance(userOpPermissions []dmsV1.OpPermissionItem, needOpPermissionTypes []dmsV1.OpPermissionType, instance *model.Instance) bool {
