@@ -65,6 +65,7 @@ func SaveFile(file io.ReadSeeker, targetPath string) (err error) {
 	if err != nil {
 		return err
 	}
+	defer target.Close()
 
 	// 保存文件
 	_, err = io.Copy(target, file)
