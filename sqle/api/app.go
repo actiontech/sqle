@@ -119,6 +119,12 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 	v3Router.Use(sqleMiddleware.JWTTokenAdapter(), sqleMiddleware.JWTWithConfig(dmsV1.JwtSigningKey), sqleMiddleware.VerifyUserIsDisabled(), locale.Bundle.EchoMiddlewareByCustomFunc(dms.GetCurrentUserLanguage, i18nPkg.GetLangByAcceptLanguage), sqleMiddleware.OperationLogRecord(), accesstoken.CheckLatestAccessToken(controller.GetDMSServerAddress(), jwtPkg.GetTokenDetailFromContextWithOldJwt))
 	// v1 admin api, just admin user can access.
 	{
+		// AI 智能中心
+		v1Router.GET("/ai_hub/banner", v1.GetAIHubBanner, sqleMiddleware.ViewGlobalAllowed())
+		v1Router.GET("/ai_hub/strategic_value", v1.GetAIHubStrategicValue, sqleMiddleware.ViewGlobalAllowed())
+		v1Router.GET("/ai_hub/management_view", v1.GetAIHubManagementView, sqleMiddleware.ViewGlobalAllowed())
+		v1Router.GET("/ai_hub/execution_data", v1.GetAIHubExecutionData, sqleMiddleware.ViewGlobalAllowed())
+
 		// rule template
 		v1Router.POST("/rule_templates", v1.CreateRuleTemplate, sqleMiddleware.OpGlobalAllowed())
 		v1Router.POST("/rule_templates/:rule_template_name/clone", v1.CloneRuleTemplate, sqleMiddleware.OpGlobalAllowed())
