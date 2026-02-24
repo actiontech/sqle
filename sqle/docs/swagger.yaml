@@ -143,6 +143,117 @@ definitions:
       total_score:
         type: number
     type: object
+  v1.AIHubBannerData:
+    properties:
+      modules:
+        description: 按模块分组的效能卡片
+        items:
+          $ref: '#/definitions/v1.AIModuleEfficiencyCards'
+        type: array
+    type: object
+  v1.AIHubExecutionRecord:
+    properties:
+      estimated_upgrade:
+        description: 预估提升
+        type: number
+      function_module:
+        description: 功能模块
+        enum:
+        - smart_correction
+        - performance_engine
+        type: string
+      id:
+        description: 记录ID
+        type: integer
+      operation_time:
+        description: 操作时间
+        type: string
+      process_status:
+        description: 处理状态
+        enum:
+        - pending
+        - running
+        - completed
+        - failed
+        type: string
+      source_project:
+        description: 来源项目
+        type: string
+      sql_snippet:
+        description: SQL片段
+        type: string
+      value_dimension:
+        description: 价值维度
+        enum:
+        - security
+        - performance
+        - correction
+        - maintenance
+        - code_standard
+        type: string
+    type: object
+  v1.AIHubManagementViewData:
+    properties:
+      modules:
+        description: 按模块分组的分析数据
+        items:
+          $ref: '#/definitions/v1.AIModuleAnalysis'
+        type: array
+    type: object
+  v1.AIHubStrategicValueData:
+    properties:
+      ai_strategic_insight:
+        $ref: '#/definitions/v1.AIStrategicInsight'
+        description: AI战略洞察
+        type: object
+      efficiency_cards:
+        description: 效能卡片列表
+        items:
+          $ref: '#/definitions/v1.EfficiencyCard'
+        type: array
+    type: object
+  v1.AIModuleAnalysis:
+    properties:
+      ai_module_type:
+        description: AI模块类型
+        enum:
+        - smart_correction
+        - performance_engine
+        type: string
+      project_io_analysis:
+        description: 项目组投入产出分析
+        items:
+          $ref: '#/definitions/v1.ProjectIOAnalysis'
+        type: array
+      top_problem_distribution:
+        description: Top问题分布
+        items:
+          $ref: '#/definitions/v1.TopProblemDistribution'
+        type: array
+    type: object
+  v1.AIModuleEfficiencyCards:
+    properties:
+      ai_module_type:
+        description: AI模块类型
+        enum:
+        - smart_correction
+        - performance_engine
+        type: string
+      efficiency_cards:
+        description: 效能卡片列表
+        items:
+          $ref: '#/definitions/v1.EfficiencyCard'
+        type: array
+    type: object
+  v1.AIStrategicInsight:
+    properties:
+      description:
+        description: 描述
+        type: string
+      title:
+        description: 标题
+        type: string
+    type: object
   v1.AbnormalAuditPlanInstance:
     properties:
       abnormal_status_code:
@@ -1560,6 +1671,29 @@ definitions:
         description: 权重
         type: integer
     type: object
+  v1.EfficiencyCard:
+    properties:
+      business_value:
+        description: 业务价值描述（仅战略价值接口使用）
+        type: string
+      evidence_value:
+        description: 具体指标分值
+        example: 高危拦截35次
+        type: string
+      metric_evaluation:
+        description: 效能评价
+        example: S级,+450%,123h
+        type: string
+      metric_title:
+        description: 效能指标标题
+        enum:
+        - security_defense
+        - resource_cost
+        - code_standard
+        - rd_efficiency
+        - query_performance
+        type: string
+    type: object
   v1.EnumsValueResV1:
     properties:
       desc:
@@ -1685,6 +1819,58 @@ definitions:
         items:
           $ref: '#/definitions/v1.DatabaseSchemaObject'
         type: array
+    type: object
+  v1.GetAIHubBannerResp:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.AIHubBannerData'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetAIHubExecutionDataResp:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.AIHubExecutionRecord'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_nums:
+        description: 总数
+        type: integer
+    type: object
+  v1.GetAIHubManagementViewResp:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.AIHubManagementViewData'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetAIHubStrategicValueResp:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.AIHubStrategicValueData'
+        type: object
+      message:
+        example: ok
+        type: string
     type: object
   v1.GetAbnormalAuditPlanInstancesResp:
     properties:
@@ -1837,7 +2023,7 @@ definitions:
   v1.GetAuditPlanSQLExportReqV1:
     properties:
       export_format:
-        description: 导出格式：csv 或 excel，默认为 excel
+        description: 导出格式：csv 或 excel
         enum:
         - csv
         - excel
@@ -3980,6 +4166,30 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.ProjectIOAnalysis:
+    properties:
+      active_members:
+        description: 活跃人数
+        type: integer
+      health_score:
+        description: 健康分
+        example: 92.3
+        type: number
+      invoke_count:
+        description: 调用频次
+        type: integer
+      performance_gain:
+        description: 性能提升
+        example: +35%
+        type: string
+      project_name:
+        description: 项目名称
+        type: string
+      time_saved:
+        description: 节省工时
+        example: 45.5
+        type: number
+    type: object
   v1.ProjectRuleTemplateResV1:
     properties:
       db_type:
@@ -5148,6 +5358,15 @@ definitions:
         type: integer
       minute:
         type: integer
+    type: object
+  v1.TopProblemDistribution:
+    properties:
+      percentage:
+        description: 占比
+        type: number
+      problem_type:
+        description: 问题类型
+        type: string
     type: object
   v1.TransactionInfo:
     properties:
@@ -7435,6 +7654,70 @@ info:
   title: Sqle API Docs
   version: "1.0"
 paths:
+  /v1/ai_hub/banner:
+    get:
+      description: 返回按模块分组的效能卡片列表（模块类型、效能指标、效能评价、具体指标）
+      operationId: GetAIHubBanner
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetAIHubBannerResp'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取AI智能中心Banner
+      tags:
+      - ai_hub
+  /v1/ai_hub/execution_data:
+    get:
+      description: 返回最新10条执行数据记录（来源项目、SQL片段、功能模块、价值维度、处理状态、预估提升、时间）
+      operationId: GetAIHubExecutionData
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetAIHubExecutionDataResp'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取AI智能中心执行数据
+      tags:
+      - ai_hub
+  /v1/ai_hub/management_view:
+    get:
+      description: 返回按模块分组的分析数据（模块类型、项目组投入产出分析、Top问题分布）
+      operationId: GetAIHubManagementView
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetAIHubManagementViewResp'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取AI智能中心管理视图
+      tags:
+      - ai_hub
+  /v1/ai_hub/strategic_value:
+    get:
+      description: 返回AI战略洞察（标题、描述）和效能卡片列表（效能指标、效能评价、具体指标、价值描述）
+      operationId: GetAIHubStrategicValue
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetAIHubStrategicValueResp'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取AI智能中心战略价值
+      tags:
+      - ai_hub
   /v1/audit_files:
     post:
       description: Direct audit sql from SQL files and MyBatis files
