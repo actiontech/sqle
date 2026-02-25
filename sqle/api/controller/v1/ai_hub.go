@@ -16,8 +16,13 @@ type EfficiencyCard struct {
 	MetricEvaluation string `json:"metric_evaluation" example:"S级,+450%,123h"` // 效能评价
 
 	EvidenceValue string `json:"evidence_value" example:"高危拦截35次"` // 具体指标分值
+}
 
-	BusinessValue string `json:"business_value"` // 业务价值描述（仅战略价值接口使用）
+// BannerCard Banner卡片
+type BannerCard struct {
+	MetricEvaluation string `json:"metric_evaluation" example:"高危风险消除率 79%"` // 效能评价
+	EvidenceValue    string `json:"evidence_value" example:"22"`             // 具体指标分值
+	NeedDisplay      bool   `json:"need_display" example:"true"`             // 是否需要展示
 }
 
 // ProjectIOAnalysis 项目投入产出分析
@@ -77,19 +82,20 @@ type GetAIHubBannerResp struct {
 }
 
 type AIHubBannerData struct {
-	Modules []AIModuleEfficiencyCards `json:"modules"` // 按模块分组的效能卡片
+	Modules []AIModuleBannerCards `json:"modules"` // 按模块分组的Banner卡片
 }
 
-// AIModuleEfficiencyCards 模块效能卡片
-type AIModuleEfficiencyCards struct {
+// AIModuleBannerCards 模块Banner卡片
+type AIModuleBannerCards struct {
 	AIModuleType string `json:"ai_module_type" enums:"smart_correction,performance_engine"` // AI模块类型
+	IsEnabled    bool   `json:"is_enabled" example:"true"`                                    // 功能是否启用
 
-	EfficiencyCards []EfficiencyCard `json:"efficiency_cards"` // 效能卡片列表
+	BannerCards []BannerCard `json:"banner_cards"` // Banner卡片列表
 }
 
 // GetAIHubBanner
 // @Summary 获取AI智能中心Banner
-// @Description 返回按模块分组的效能卡片列表（模块类型、效能指标、效能评价、具体指标）
+// @Description 返回按模块分组的Banner卡片列表（模块类型、Banner卡片列表）
 // @Id GetAIHubBanner
 // @Tags ai_hub
 // @Security ApiKeyAuth
