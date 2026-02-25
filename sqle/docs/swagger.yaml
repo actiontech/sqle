@@ -146,9 +146,9 @@ definitions:
   v1.AIHubBannerData:
     properties:
       modules:
-        description: 按模块分组的效能卡片
+        description: 按模块分组的Banner卡片
         items:
-          $ref: '#/definitions/v1.AIModuleEfficiencyCards'
+          $ref: '#/definitions/v1.AIModuleBannerCards'
         type: array
     type: object
   v1.AIHubExecutionRecord:
@@ -231,7 +231,7 @@ definitions:
           $ref: '#/definitions/v1.TopProblemDistribution'
         type: array
     type: object
-  v1.AIModuleEfficiencyCards:
+  v1.AIModuleBannerCards:
     properties:
       ai_module_type:
         description: AI模块类型
@@ -239,11 +239,15 @@ definitions:
         - smart_correction
         - performance_engine
         type: string
-      efficiency_cards:
-        description: 效能卡片列表
+      banner_cards:
+        description: Banner卡片列表
         items:
-          $ref: '#/definitions/v1.EfficiencyCard'
+          $ref: '#/definitions/v1.BannerCard'
         type: array
+      is_enabled:
+        description: 功能是否启用
+        example: true
+        type: boolean
     type: object
   v1.AIStrategicInsight:
     properties:
@@ -870,6 +874,21 @@ definitions:
         type: string
       total_nums:
         type: integer
+    type: object
+  v1.BannerCard:
+    properties:
+      evidence_value:
+        description: 具体指标分值
+        example: "22"
+        type: string
+      metric_evaluation:
+        description: 效能评价
+        example: 高危风险消除率 79%
+        type: string
+      need_display:
+        description: 是否需要展示
+        example: true
+        type: boolean
     type: object
   v1.BatchAssociateWorkflowsWithVersionReqV1:
     properties:
@@ -1673,9 +1692,6 @@ definitions:
     type: object
   v1.EfficiencyCard:
     properties:
-      business_value:
-        description: 业务价值描述（仅战略价值接口使用）
-        type: string
       evidence_value:
         description: 具体指标分值
         example: 高危拦截35次
@@ -7656,7 +7672,7 @@ info:
 paths:
   /v1/ai_hub/banner:
     get:
-      description: 返回按模块分组的效能卡片列表（模块类型、效能指标、效能评价、具体指标）
+      description: 返回按模块分组的Banner卡片列表（模块类型、Banner卡片列表）
       operationId: GetAIHubBanner
       produces:
       - application/json
