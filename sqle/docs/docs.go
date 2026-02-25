@@ -32,7 +32,7 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "返回按模块分组的效能卡片列表（模块类型、效能指标、效能评价、具体指标）",
+                "description": "返回按模块分组的Banner卡片列表（模块类型、Banner卡片列表）",
                 "produces": [
                     "application/json"
                 ],
@@ -13509,10 +13509,10 @@ var doc = `{
             "type": "object",
             "properties": {
                 "modules": {
-                    "description": "按模块分组的效能卡片",
+                    "description": "按模块分组的Banner卡片",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.AIModuleEfficiencyCards"
+                        "$ref": "#/definitions/v1.AIModuleBannerCards"
                     }
                 }
             }
@@ -13627,7 +13627,7 @@ var doc = `{
                 }
             }
         },
-        "v1.AIModuleEfficiencyCards": {
+        "v1.AIModuleBannerCards": {
             "type": "object",
             "properties": {
                 "ai_module_type": {
@@ -13638,12 +13638,17 @@ var doc = `{
                         "performance_engine"
                     ]
                 },
-                "efficiency_cards": {
-                    "description": "效能卡片列表",
+                "banner_cards": {
+                    "description": "Banner卡片列表",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/v1.EfficiencyCard"
+                        "$ref": "#/definitions/v1.BannerCard"
                     }
+                },
+                "is_enabled": {
+                    "description": "功能是否启用",
+                    "type": "boolean",
+                    "example": true
                 }
             }
         },
@@ -14552,6 +14557,26 @@ var doc = `{
                 },
                 "total_nums": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.BannerCard": {
+            "type": "object",
+            "properties": {
+                "evidence_value": {
+                    "description": "具体指标分值",
+                    "type": "string",
+                    "example": "22"
+                },
+                "metric_evaluation": {
+                    "description": "效能评价",
+                    "type": "string",
+                    "example": "高危风险消除率 79%"
+                },
+                "need_display": {
+                    "description": "是否需要展示",
+                    "type": "boolean",
+                    "example": true
                 }
             }
         },
@@ -15726,10 +15751,6 @@ var doc = `{
         "v1.EfficiencyCard": {
             "type": "object",
             "properties": {
-                "business_value": {
-                    "description": "业务价值描述（仅战略价值接口使用）",
-                    "type": "string"
-                },
                 "evidence_value": {
                     "description": "具体指标分值",
                     "type": "string",
