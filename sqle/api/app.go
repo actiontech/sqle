@@ -162,12 +162,6 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1Router.GET("/statistic/workflows/status_count", v1.GetWorkflowStatusCountV1, sqleMiddleware.ViewGlobalAllowed())
 		v1Router.GET("/statistic/workflows/instance_type_percent", v1.GetWorkflowPercentCountedByInstanceTypeV1, sqleMiddleware.ViewGlobalAllowed())
 
-		// operation record
-		v1Router.GET("/operation_records/operation_type_names", v1.GetOperationTypeNameList, sqleMiddleware.ViewGlobalAllowed())
-		v1Router.GET("/operation_records/operation_actions", v1.GetOperationActionList, sqleMiddleware.ViewGlobalAllowed())
-		v1Router.GET("/operation_records", v1.GetOperationRecordListV1, sqleMiddleware.ViewGlobalAllowed())
-		v1Router.GET("/operation_records/exports", v1.GetExportOperationRecordListV1, sqleMiddleware.ViewGlobalAllowed())
-
 		// 企业公告
 		v1Router.PATCH("/company_notice", v1.UpdateCompanyNotice, sqleMiddleware.OpGlobalAllowed())
 
