@@ -151,7 +151,6 @@ var autoMigrateList = []interface{}{
 	&FeishuInstance{},
 	&IM{},
 	&DingTalkInstance{},
-	&OperationRecord{},
 	&CustomRule{},
 	&RuleTemplateCustomRule{},
 	&SQLAuditRecord{},
