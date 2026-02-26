@@ -640,7 +640,7 @@ func (s *Storage) PushSQLToManagerSQLQueue(sqls []*SQLManageQueue) error {
 	if len(sqls) == 0 {
 		return nil
 	}
-	return s.db.Create(sqls).Error
+	return s.db.CreateInBatches(sqls, 50).Error
 }
 
 type SqlManageMetricRecord struct {
