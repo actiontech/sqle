@@ -1113,7 +1113,7 @@ func AuditTaskGroupV1(c echo.Context) error {
 		}
 	}
 
-	if err := s.Save(taskGroup.Tasks); err != nil {
+	if err := s.SaveTasksWithoutAssociationsAndBatchCreateSQLs(taskGroup.Tasks, 50); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
