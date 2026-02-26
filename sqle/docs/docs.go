@@ -1691,188 +1691,6 @@ var doc = `{
                 }
             }
         },
-        "/v1/operation_records": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Get operation record list",
-                "tags": [
-                    "OperationRecord"
-                ],
-                "summary": "获取操作记录列表",
-                "operationId": "getOperationRecordListV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "filter_operate_time_from",
-                        "name": "filter_operate_time_from",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter_operate_time_to",
-                        "name": "filter_operate_time_to",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter_operate_project_name",
-                        "name": "filter_operate_project_name",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "fuzzy_search_operate_user_name",
-                        "name": "fuzzy_search_operate_user_name",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter_operate_type_name",
-                        "name": "filter_operate_type_name",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter_operate_action",
-                        "name": "filter_operate_action",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page_index",
-                        "name": "page_index",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "page_size",
-                        "name": "page_size",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetOperationRecordListResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/operation_records/exports": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Export operation record list",
-                "tags": [
-                    "OperationRecord"
-                ],
-                "summary": "导出操作记录列表",
-                "operationId": "getExportOperationRecordListV1",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "filter_operate_time_from",
-                        "name": "filter_operate_time_from",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter_operate_time_to",
-                        "name": "filter_operate_time_to",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter_operate_project_name",
-                        "name": "filter_operate_project_name",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "fuzzy_search_operate_user_name",
-                        "name": "fuzzy_search_operate_user_name",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter_operate_type_name",
-                        "name": "filter_operate_type_name",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "filter_operate_action",
-                        "name": "filter_operate_action",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "get export operation record list",
-                        "schema": {
-                            "type": "file"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/operation_records/operation_actions": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Get operation action list",
-                "tags": [
-                    "OperationRecord"
-                ],
-                "summary": "获取操作内容列表",
-                "operationId": "getOperationActionList",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetOperationActionListResV1"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/operation_records/operation_type_names": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Get operation type name list",
-                "tags": [
-                    "OperationRecord"
-                ],
-                "summary": "获取操作类型名列表",
-                "operationId": "GetOperationTypeNameList",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/v1.GetOperationTypeNamesListResV1"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/operations": {
             "get": {
                 "security": [
@@ -15876,7 +15694,7 @@ var doc = `{
             "type": "object",
             "properties": {
                 "export_format": {
-                    "description": "导出格式：csv 或 excel，默认为 excel",
+                    "description": "导出格式：csv 或 excel",
                     "type": "string",
                     "enum": [
                         "csv",
@@ -16664,66 +16482,6 @@ var doc = `{
                 "data": {
                     "type": "object",
                     "$ref": "#/definitions/v1.ModuleStatusRes"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
-        "v1.GetOperationActionListResV1": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.OperationActionList"
-                    }
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
-        "v1.GetOperationRecordListResV1": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.OperationRecordList"
-                    }
-                },
-                "message": {
-                    "type": "string",
-                    "example": "ok"
-                },
-                "total_nums": {
-                    "type": "integer"
-                }
-            }
-        },
-        "v1.GetOperationTypeNamesListResV1": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 0
-                },
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/v1.OperationTypeNameList"
-                    }
                 },
                 "message": {
                     "type": "string",
@@ -18600,54 +18358,6 @@ var doc = `{
                 }
             }
         },
-        "v1.OperationActionList": {
-            "type": "object",
-            "properties": {
-                "desc": {
-                    "type": "string"
-                },
-                "operation_action": {
-                    "type": "string"
-                },
-                "operation_type": {
-                    "type": "string"
-                }
-            }
-        },
-        "v1.OperationRecordList": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "operation_action": {
-                    "type": "string"
-                },
-                "operation_content": {
-                    "type": "string"
-                },
-                "operation_time": {
-                    "type": "string"
-                },
-                "operation_type_name": {
-                    "type": "string"
-                },
-                "operation_user": {
-                    "type": "object",
-                    "$ref": "#/definitions/v1.OperationUser"
-                },
-                "project_name": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string",
-                    "enum": [
-                        "succeeded",
-                        "failed"
-                    ]
-                }
-            }
-        },
         "v1.OperationResV1": {
             "type": "object",
             "properties": {
@@ -18655,28 +18365,6 @@ var doc = `{
                     "type": "integer"
                 },
                 "op_desc": {
-                    "type": "string"
-                }
-            }
-        },
-        "v1.OperationTypeNameList": {
-            "type": "object",
-            "properties": {
-                "desc": {
-                    "type": "string"
-                },
-                "operation_type_name": {
-                    "type": "string"
-                }
-            }
-        },
-        "v1.OperationUser": {
-            "type": "object",
-            "properties": {
-                "ip": {
-                    "type": "string"
-                },
-                "user_name": {
                     "type": "string"
                 }
             }

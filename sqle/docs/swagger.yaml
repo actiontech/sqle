@@ -1837,7 +1837,7 @@ definitions:
   v1.GetAuditPlanSQLExportReqV1:
     properties:
       export_format:
-        description: 导出格式：csv 或 excel，默认为 excel
+        description: 导出格式：csv 或 excel
         enum:
         - csv
         - excel
@@ -2383,47 +2383,6 @@ definitions:
       data:
         $ref: '#/definitions/v1.ModuleStatusRes'
         type: object
-      message:
-        example: ok
-        type: string
-    type: object
-  v1.GetOperationActionListResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        items:
-          $ref: '#/definitions/v1.OperationActionList'
-        type: array
-      message:
-        example: ok
-        type: string
-    type: object
-  v1.GetOperationRecordListResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        items:
-          $ref: '#/definitions/v1.OperationRecordList'
-        type: array
-      message:
-        example: ok
-        type: string
-      total_nums:
-        type: integer
-    type: object
-  v1.GetOperationTypeNamesListResV1:
-    properties:
-      code:
-        example: 0
-        type: integer
-      data:
-        items:
-          $ref: '#/definitions/v1.OperationTypeNameList'
-        type: array
       message:
         example: ok
         type: string
@@ -3715,57 +3674,11 @@ definitions:
       object_name:
         type: string
     type: object
-  v1.OperationActionList:
-    properties:
-      desc:
-        type: string
-      operation_action:
-        type: string
-      operation_type:
-        type: string
-    type: object
-  v1.OperationRecordList:
-    properties:
-      id:
-        type: integer
-      operation_action:
-        type: string
-      operation_content:
-        type: string
-      operation_time:
-        type: string
-      operation_type_name:
-        type: string
-      operation_user:
-        $ref: '#/definitions/v1.OperationUser'
-        type: object
-      project_name:
-        type: string
-      status:
-        enum:
-        - succeeded
-        - failed
-        type: string
-    type: object
   v1.OperationResV1:
     properties:
       op_code:
         type: integer
       op_desc:
-        type: string
-    type: object
-  v1.OperationTypeNameList:
-    properties:
-      desc:
-        type: string
-      operation_type_name:
-        type: string
-    type: object
-  v1.OperationUser:
-    properties:
-      ip:
-        type: string
-      user_name:
         type: string
     type: object
   v1.OperatorResV1:
@@ -8497,122 +8410,6 @@ paths:
       summary: 获取知识库标签列表
       tags:
       - knowledge_base
-  /v1/operation_records:
-    get:
-      description: Get operation record list
-      operationId: getOperationRecordListV1
-      parameters:
-      - description: filter_operate_time_from
-        in: query
-        name: filter_operate_time_from
-        type: string
-      - description: filter_operate_time_to
-        in: query
-        name: filter_operate_time_to
-        type: string
-      - description: filter_operate_project_name
-        in: query
-        name: filter_operate_project_name
-        type: string
-      - description: fuzzy_search_operate_user_name
-        in: query
-        name: fuzzy_search_operate_user_name
-        type: string
-      - description: filter_operate_type_name
-        in: query
-        name: filter_operate_type_name
-        type: string
-      - description: filter_operate_action
-        in: query
-        name: filter_operate_action
-        type: string
-      - description: page_index
-        in: query
-        name: page_index
-        required: true
-        type: integer
-      - description: page_size
-        in: query
-        name: page_size
-        required: true
-        type: integer
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetOperationRecordListResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取操作记录列表
-      tags:
-      - OperationRecord
-  /v1/operation_records/exports:
-    get:
-      description: Export operation record list
-      operationId: getExportOperationRecordListV1
-      parameters:
-      - description: filter_operate_time_from
-        in: query
-        name: filter_operate_time_from
-        type: string
-      - description: filter_operate_time_to
-        in: query
-        name: filter_operate_time_to
-        type: string
-      - description: filter_operate_project_name
-        in: query
-        name: filter_operate_project_name
-        type: string
-      - description: fuzzy_search_operate_user_name
-        in: query
-        name: fuzzy_search_operate_user_name
-        type: string
-      - description: filter_operate_type_name
-        in: query
-        name: filter_operate_type_name
-        type: string
-      - description: filter_operate_action
-        in: query
-        name: filter_operate_action
-        type: string
-      responses:
-        "200":
-          description: get export operation record list
-          schema:
-            type: file
-      security:
-      - ApiKeyAuth: []
-      summary: 导出操作记录列表
-      tags:
-      - OperationRecord
-  /v1/operation_records/operation_actions:
-    get:
-      description: Get operation action list
-      operationId: getOperationActionList
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetOperationActionListResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取操作内容列表
-      tags:
-      - OperationRecord
-  /v1/operation_records/operation_type_names:
-    get:
-      description: Get operation type name list
-      operationId: GetOperationTypeNameList
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/v1.GetOperationTypeNamesListResV1'
-      security:
-      - ApiKeyAuth: []
-      summary: 获取操作类型名列表
-      tags:
-      - OperationRecord
   /v1/operations:
     get:
       description: get permission operations
