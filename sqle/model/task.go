@@ -787,6 +787,31 @@ type TaskGroup struct {
 	Tasks []*Task `json:"tasks" gorm:"foreignkey:GroupId"`
 }
 
+func (s *Storage) SaveTasksWithoutAssociationsAndBatchCreateSQLs(tasks []*Task, sqlBatchSize int) error {
+	if sqlBatchSize <= 0 {
+		sqlBatchSize = 50
+	}
+
+	return s.Tx(func(txDB *gorm.DB) error {
+		for _, task := range tasks {
+			if err := txDB.Session(&gorm.Session{FullSaveAssociations: true}).Omit("ExecuteSQLs").Save(task).Error; err != nil {
+				return err
+			}
+
+			if len(task.ExecuteSQLs) == 0 {
+				continue
+			}
+			for _, executeSQL := range task.ExecuteSQLs {
+				executeSQL.TaskId = task.ID
+			}
+			if err := txDB.CreateInBatches(task.ExecuteSQLs, sqlBatchSize).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
 func (s *Storage) GetTaskGroupByGroupId(groupId uint) (*TaskGroup, error) {
 	taskGroup := &TaskGroup{}
 	err := s.db.Preload("Tasks").
