@@ -1,9 +1,7 @@
 package server
 
 import (
-	"context"
 	"fmt"
-	"github.com/actiontech/dms/pkg/dms-common/dmsobject"
 	"os"
 	"strconv"
 	"strings"
@@ -33,7 +31,6 @@ func NewCleanJob(entry *logrus.Entry) ServerJob {
 func (j *CleanJob) job(entry *logrus.Entry) {
 	// j.CleanExpiredWorkflows(entry) /* 不再自动销毁工单（目前没有使用场景）*/
 	j.CleanExpiredTasks(entry)
-	j.CleanExpiredOperationLog(entry)
 	j.CleanExpiredSqlManageRawSql(entry)
 	j.CleanExpiredSqlManageInsightRecords(entry)
 }
@@ -89,28 +86,6 @@ func (j *CleanJob) CleanExpiredTasks(entry *logrus.Entry) {
 	}
 }
 
-func (j *CleanJob) CleanExpiredOperationLog(entry *logrus.Entry) {
-
-	st := model.GetStorage()
-	operationRecordExpiredHours := getOperationRecordExpiredHours(j.entry)
-	start := time.Now().Add(-time.Duration(operationRecordExpiredHours) * time.Hour)
-	idList, err := st.GetExpiredOperationRecordIDListByStartTime(start)
-
-	if err != nil {
-		entry.Errorf("get expired operation record id list error: %v", err)
-		return
-	}
-
-	if len(idList) > 0 {
-		if err := st.DeleteExpiredOperationRecordByIDList(idList); err != nil {
-			entry.Errorf("delete expired operation record error: %v", err)
-			return
-		}
-
-		entry.Infof("delete expired operation record succeeded, count: %d id: %s", len(idList), strings.Join(idList, ","))
-	}
-}
-
 func (j *CleanJob) CleanExpiredSqlManageRawSql(entry *logrus.Entry) {
 	st := model.GetStorage()
 
@@ -151,18 +126,6 @@ func (j *CleanJob) CleanExpiredSqlManageInsightRecords(entry *logrus.Entry) {
 	if rowsAffected > 0 {
 		entry.Infof("clean sql insight records success, rowsAffected: %d", rowsAffected)
 	}
-}
-
-func getOperationRecordExpiredHours(entry *logrus.Entry) (operationRecordExpiredHours int) {
-
-	operationRecordExpiredHours = dms.DefaultOperationRecordExpiredHours
-	systemVariables, err := dmsobject.GetSystemVariables(context.TODO(), dms.GetDMSServerAddress())
-	if err != nil {
-		entry.Warnf("get system variables failed, err: %s", err.Error())
-		return operationRecordExpiredHours
-	}
-
-	return systemVariables.Data.OperationRecordExpiredHours
 }
 
 type CleanJobForAllNodes struct {
