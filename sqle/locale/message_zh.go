@@ -210,10 +210,37 @@ var (
 	OprApprovingWorkflowWithName      = &i18n.Message{ID: "OprApprovingWorkflowWithName", Other: "审核通过工单，工单名称：%v"}
 	OprRejectingWorkflowWithName      = &i18n.Message{ID: "OprRejectingWorkflowWithName", Other: "驳回工单，工单名称：%v"}
 	OprCreatingWorkflowWithName       = &i18n.Message{ID: "OprCreatingWorkflowWithName", Other: "创建工单，工单名：%v"}
+	OprUpdatingWorkflowWithName       = &i18n.Message{ID: "OprUpdatingWorkflowWithName", Other: "修改工单，工单名：%v"}
 
-	OprEditProcedureTemplate = &i18n.Message{ID: "OprEditProcedureTemplate", Other: "编辑流程模板"}
-	OprEditDingConfig        = &i18n.Message{ID: "OprEditDingConfig", Other: "修改钉钉配置"}
-	OprEditGlobalConfig      = &i18n.Message{ID: "OprEditGlobalConfig", Other: "修改全局配置"}
+	OprEditProcedureTemplate            = &i18n.Message{ID: "OprEditProcedureTemplate", Other: "编辑流程模板"}
+	OprEditDingConfig                   = &i18n.Message{ID: "OprEditDingConfig", Other: "修改钉钉配置"}
+	OprEditGlobalConfig                 = &i18n.Message{ID: "OprEditGlobalConfig", Other: "修改全局配置"}
+	OprCloneGlobalRuleTemplateWithName  = &i18n.Message{ID: "OprCloneGlobalRuleTemplateWithName", Other: "克隆全局规则模板，源：%v"}
+	OprCloneProjectRuleTemplateWithName = &i18n.Message{ID: "OprCloneProjectRuleTemplateWithName", Other: "克隆规则模板，源模板：%v"}
+	OprEditFeishuAuditConfig            = &i18n.Message{ID: "OprEditFeishuAuditConfig", Other: "修改飞书审批配置"}
+	OprEditWechatAuditConfig            = &i18n.Message{ID: "OprEditWechatAuditConfig", Other: "修改企微审批配置"}
+	OprEditCodingConfig                 = &i18n.Message{ID: "OprEditCodingConfig", Other: "修改Coding配置"}
+	OprAddAuditWhitelist                = &i18n.Message{ID: "OprAddAuditWhitelist", Other: "添加审核SQL例外"}
+	OprEditAuditWhitelist               = &i18n.Message{ID: "OprEditAuditWhitelist", Other: "编辑审核SQL例外"}
+	OprDelAuditWhitelist                = &i18n.Message{ID: "OprDelAuditWhitelist", Other: "删除审核SQL例外"}
+	OprAddBlacklist                     = &i18n.Message{ID: "OprAddBlacklist", Other: "添加管控SQL例外"}
+	OprEditBlacklist                    = &i18n.Message{ID: "OprEditBlacklist", Other: "编辑管控SQL例外"}
+	OprDelBlacklist                     = &i18n.Message{ID: "OprDelBlacklist", Other: "删除管控SQL例外"}
+	OprEditReportPushConfig             = &i18n.Message{ID: "OprEditReportPushConfig", Other: "修改项目推送规则"}
+	OprAddCustomRuleWithName            = &i18n.Message{ID: "OprAddCustomRuleWithName", Other: "创建自定义规则，规则名：%v"}
+	OprEditCustomRuleWithName           = &i18n.Message{ID: "OprEditCustomRuleWithName", Other: "编辑自定义规则，规则ID：%v"}
+	OprDelCustomRuleWithName            = &i18n.Message{ID: "OprDelCustomRuleWithName", Other: "删除自定义规则，规则ID：%v"}
+	OprAddSqlVersionWithName            = &i18n.Message{ID: "OprAddSqlVersionWithName", Other: "创建SQL版本，版本名：%v"}
+	OprEditSqlVersionWithName           = &i18n.Message{ID: "OprEditSqlVersionWithName", Other: "编辑SQL版本，版本ID：%v"}
+	OprDelSqlVersionWithName            = &i18n.Message{ID: "OprDelSqlVersionWithName", Other: "删除SQL版本，版本ID：%v"}
+	OprLockSqlVersionWithName           = &i18n.Message{ID: "OprLockSqlVersionWithName", Other: "锁定SQL版本，版本ID：%v"}
+	OprAddInstanceAuditPlan             = &i18n.Message{ID: "OprAddInstanceAuditPlan", Other: "创建实例智能扫描任务"}
+	OprEditInstanceAuditPlan            = &i18n.Message{ID: "OprEditInstanceAuditPlan", Other: "编辑实例智能扫描任务"}
+	OprDelInstanceAuditPlan             = &i18n.Message{ID: "OprDelInstanceAuditPlan", Other: "删除实例智能扫描任务"}
+	OprAddPipelineWithName              = &i18n.Message{ID: "OprAddPipelineWithName", Other: "创建流水线，名称：%v"}
+	OprEditPipelineWithName             = &i18n.Message{ID: "OprEditPipelineWithName", Other: "编辑流水线，ID：%v"}
+	OprDelPipelineWithName              = &i18n.Message{ID: "OprDelPipelineWithName", Other: "删除流水线，ID：%v"}
+	OprGenSSHKey                        = &i18n.Message{ID: "OprGenSSHKey", Other: "生成SSH密钥"}
 
 	OprUpdateFilesOrderWithOrderAndName = &i18n.Message{ID: "OprUpdateFilesOrderWithOrderAndName", Other: "文件上线顺序调整：%s，工单名称：%s"}
 
