@@ -25,6 +25,110 @@ var doc = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/v1/ai_hub/banner": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "返回按模块分组的Banner卡片列表（模块类型、Banner卡片列表）",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ai_hub"
+                ],
+                "summary": "获取AI智能中心Banner",
+                "operationId": "GetAIHubBanner",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAIHubBannerResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/ai_hub/execution_data": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "返回最新10条执行数据记录（来源项目、SQL片段、功能模块、价值维度、处理状态、预估提升、时间）",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ai_hub"
+                ],
+                "summary": "获取AI智能中心执行数据",
+                "operationId": "GetAIHubExecutionData",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAIHubExecutionDataResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/ai_hub/management_view": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "返回按模块分组的分析数据（模块类型、项目组投入产出分析、Top问题分布）",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ai_hub"
+                ],
+                "summary": "获取AI智能中心管理视图",
+                "operationId": "GetAIHubManagementView",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAIHubManagementViewResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/ai_hub/strategic_value": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "返回AI战略洞察（标题、描述）和效能卡片列表（效能指标、效能评价、具体指标、价值描述）",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ai_hub"
+                ],
+                "summary": "获取AI智能中心战略价值",
+                "operationId": "GetAIHubStrategicValue",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetAIHubStrategicValueResp"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/audit_files": {
             "post": {
                 "security": [
@@ -13219,6 +13323,166 @@ var doc = `{
                 }
             }
         },
+        "v1.AIHubBannerData": {
+            "type": "object",
+            "properties": {
+                "modules": {
+                    "description": "按模块分组的Banner卡片",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.AIModuleBannerCards"
+                    }
+                }
+            }
+        },
+        "v1.AIHubExecutionRecord": {
+            "type": "object",
+            "properties": {
+                "estimated_upgrade": {
+                    "description": "预估提升",
+                    "type": "number"
+                },
+                "function_module": {
+                    "description": "功能模块",
+                    "type": "string",
+                    "enum": [
+                        "smart_correction",
+                        "performance_engine"
+                    ]
+                },
+                "id": {
+                    "description": "记录ID",
+                    "type": "integer"
+                },
+                "operation_time": {
+                    "description": "操作时间",
+                    "type": "string"
+                },
+                "process_status": {
+                    "description": "处理状态",
+                    "type": "string",
+                    "enum": [
+                        "pending",
+                        "running",
+                        "completed",
+                        "failed"
+                    ]
+                },
+                "source_project": {
+                    "description": "来源项目",
+                    "type": "string"
+                },
+                "sql_snippet": {
+                    "description": "SQL片段",
+                    "type": "string"
+                },
+                "value_dimension": {
+                    "description": "价值维度",
+                    "type": "string",
+                    "enum": [
+                        "security",
+                        "performance",
+                        "correction",
+                        "maintenance",
+                        "code_standard"
+                    ]
+                }
+            }
+        },
+        "v1.AIHubManagementViewData": {
+            "type": "object",
+            "properties": {
+                "modules": {
+                    "description": "按模块分组的分析数据",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.AIModuleAnalysis"
+                    }
+                }
+            }
+        },
+        "v1.AIHubStrategicValueData": {
+            "type": "object",
+            "properties": {
+                "ai_strategic_insight": {
+                    "description": "AI战略洞察",
+                    "type": "object",
+                    "$ref": "#/definitions/v1.AIStrategicInsight"
+                },
+                "efficiency_cards": {
+                    "description": "效能卡片列表",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.EfficiencyCard"
+                    }
+                }
+            }
+        },
+        "v1.AIModuleAnalysis": {
+            "type": "object",
+            "properties": {
+                "ai_module_type": {
+                    "description": "AI模块类型",
+                    "type": "string",
+                    "enum": [
+                        "smart_correction",
+                        "performance_engine"
+                    ]
+                },
+                "project_io_analysis": {
+                    "description": "项目组投入产出分析",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ProjectIOAnalysis"
+                    }
+                },
+                "top_problem_distribution": {
+                    "description": "Top问题分布",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.TopProblemDistribution"
+                    }
+                }
+            }
+        },
+        "v1.AIModuleBannerCards": {
+            "type": "object",
+            "properties": {
+                "ai_module_type": {
+                    "description": "AI模块类型",
+                    "type": "string",
+                    "enum": [
+                        "smart_correction",
+                        "performance_engine"
+                    ]
+                },
+                "banner_cards": {
+                    "description": "Banner卡片列表",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.BannerCard"
+                    }
+                },
+                "is_enabled": {
+                    "description": "功能是否启用",
+                    "type": "boolean",
+                    "example": true
+                }
+            }
+        },
+        "v1.AIStrategicInsight": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "description": "描述",
+                    "type": "string"
+                },
+                "title": {
+                    "description": "标题",
+                    "type": "string"
+                }
+            }
+        },
         "v1.AbnormalAuditPlanInstance": {
             "type": "object",
             "properties": {
@@ -14111,6 +14375,26 @@ var doc = `{
                 },
                 "total_nums": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.BannerCard": {
+            "type": "object",
+            "properties": {
+                "evidence_value": {
+                    "description": "具体指标分值",
+                    "type": "string",
+                    "example": "22"
+                },
+                "metric_evaluation": {
+                    "description": "效能评价",
+                    "type": "string",
+                    "example": "高危风险消除率 79%"
+                },
+                "need_display": {
+                    "description": "是否需要展示",
+                    "type": "boolean",
+                    "example": true
                 }
             }
         },
@@ -15282,6 +15566,32 @@ var doc = `{
                 }
             }
         },
+        "v1.EfficiencyCard": {
+            "type": "object",
+            "properties": {
+                "evidence_value": {
+                    "description": "具体指标分值",
+                    "type": "string",
+                    "example": "高危拦截35次"
+                },
+                "metric_evaluation": {
+                    "description": "效能评价",
+                    "type": "string",
+                    "example": "S级,+450%,123h"
+                },
+                "metric_title": {
+                    "description": "效能指标标题",
+                    "type": "string",
+                    "enum": [
+                        "security_defense",
+                        "resource_cost",
+                        "code_standard",
+                        "rd_efficiency",
+                        "query_performance"
+                    ]
+                }
+            }
+        },
         "v1.EnumsValueResV1": {
             "type": "object",
             "properties": {
@@ -15471,6 +15781,80 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v1.DatabaseSchemaObject"
                     }
+                }
+            }
+        },
+        "v1.GetAIHubBannerResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.AIHubBannerData"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetAIHubExecutionDataResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.AIHubExecutionRecord"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "description": "总数",
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.GetAIHubManagementViewResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.AIHubManagementViewData"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetAIHubStrategicValueResp": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.AIHubStrategicValueData"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },
@@ -18680,6 +19064,38 @@ var doc = `{
                 }
             }
         },
+        "v1.ProjectIOAnalysis": {
+            "type": "object",
+            "properties": {
+                "active_members": {
+                    "description": "活跃人数",
+                    "type": "integer"
+                },
+                "health_score": {
+                    "description": "健康分",
+                    "type": "number",
+                    "example": 92.3
+                },
+                "invoke_count": {
+                    "description": "调用频次",
+                    "type": "integer"
+                },
+                "performance_gain": {
+                    "description": "性能提升",
+                    "type": "string",
+                    "example": "+35%"
+                },
+                "project_name": {
+                    "description": "项目名称",
+                    "type": "string"
+                },
+                "time_saved": {
+                    "description": "节省工时",
+                    "type": "number",
+                    "example": 45.5
+                }
+            }
+        },
         "v1.ProjectRuleTemplateResV1": {
             "type": "object",
             "properties": {
@@ -20402,6 +20818,19 @@ var doc = `{
                 },
                 "minute": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.TopProblemDistribution": {
+            "type": "object",
+            "properties": {
+                "percentage": {
+                    "description": "占比",
+                    "type": "number"
+                },
+                "problem_type": {
+                    "description": "问题类型",
+                    "type": "string"
                 }
             }
         },

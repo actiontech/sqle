@@ -648,6 +648,11 @@ func CreateWorkflowV2(c echo.Context) error {
 
 	go im.CreateApprove(string(workflow.ProjectId), workflow.WorkflowId)
 
+	// 记录工单提交时的规则触发统计（用于代码规范遵从率计算）
+	if server.AfterWorkflowCreateHook != nil {
+		go server.AfterWorkflowCreateHook(w.Tasks, workflow.WorkflowId)
+	}
+
 	return c.JSON(http.StatusOK, &CreateWorkflowResV2{
 		BaseRes: controller.NewBaseReq(nil),
 		Data: &CreateWorkflowResV2Data{
