@@ -20,6 +20,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// AfterAuditHook 审核完成后的钩子函数，由 EE 版本注册实现
+// 用于记录代码规范规则触发统计等
+var AfterAuditHook func(task *model.Task)
+
+// AfterWorkflowCreateHook 工单创建后的钩子函数，由 EE 版本注册实现
+// 用于记录提交工单时的规则触发统计
+var AfterWorkflowCreateHook func(tasks []*model.Task, workflowID string)
+
 func Audit(l *logrus.Entry, task *model.Task, projectId *model.ProjectUID, ruleTemplateName string) (err error) {
 	return HookAudit(l, task, &EmptyAuditHook{}, projectId, ruleTemplateName)
 }
@@ -241,6 +249,12 @@ func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHoo
 	}
 
 	ReplenishTaskStatistics(task)
+
+	// 审核完成后，记录代码规范规则触发统计（异步，不影响审核主流程）
+	if AfterAuditHook != nil {
+		go AfterAuditHook(task)
+	}
+
 	return nil
 }
 
