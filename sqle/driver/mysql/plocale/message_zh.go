@@ -310,6 +310,9 @@ var (
 	DDLCheckAllIndexNotNullConstraintDesc                        = &i18n.Message{ID: "DDLCheckAllIndexNotNullConstraintDesc", Other: "建议为至少一个索引添加非空约束"}
 	DDLCheckAllIndexNotNullConstraintAnnotation                  = &i18n.Message{ID: "DDLCheckAllIndexNotNullConstraintAnnotation", Other: "所有索引字段均未做非空约束，请确认下表索引规划的合理性。"}
 	DDLCheckAllIndexNotNullConstraintMessage                     = &i18n.Message{ID: "DDLCheckAllIndexNotNullConstraintMessage", Other: "建议为至少一个索引添加非空约束"}
+	DDLCheckTransactionNotCommittedDesc                          = &i18n.Message{ID: "DDLCheckTransactionNotCommittedDesc", Other: "DDL执行前存在事务未提交"}
+	DDLCheckTransactionNotCommittedAnnotation                    = &i18n.Message{ID: "DDLCheckTransactionNotCommittedAnnotation", Other: "检查可能产生锁冲突的DDL操作执行前是否存在事务未提交，避免DDL操作与未提交事务产生冲突，导致锁等待或死锁问题。MySQL8之前版本会查询information_schema.innodb_trx所有记录，MySQL8版本会查询performance_schema.data_locks相关记录。"}
+	DDLCheckTransactionNotCommittedMessage                       = &i18n.Message{ID: "DDLCheckTransactionNotCommittedMessage", Other: "DDL执行前存在事务未提交, %s"}
 	DMLCheckWithLimitDesc                                        = &i18n.Message{ID: "DMLCheckWithLimitDesc", Other: "DELETE/UPDATE 语句不能有LIMIT条件"}
 	DMLCheckWithLimitAnnotation                                  = &i18n.Message{ID: "DMLCheckWithLimitAnnotation", Other: "DELETE/UPDATE 语句使用LIMIT条件将随机选取数据进行删除或者更新，业务无法预期"}
 	DMLCheckWithLimitMessage                                     = &i18n.Message{ID: "DMLCheckWithLimitMessage", Other: "DELETE/UPDATE 语句不能有LIMIT条件"}

@@ -50,6 +50,7 @@ const (
 
 // inspector DDL rules
 const (
+	DDLCheckTransactionNotCommitted                    = "ddl_check_transactions_not_committed"
 	DDLCheckPKWithoutIfNotExists                       = "ddl_check_table_without_if_not_exists"
 	DDLCheckObjectNameLength                           = "ddl_check_object_name_length"
 	DDLCheckObjectNameUsingKeyword                     = "ddl_check_object_name_using_keyword"
@@ -4894,6 +4895,133 @@ func checkAllIndexNotNullConstraint(input *RuleHandlerInput) error {
 		addResult(input.Res, input.Rule, input.Rule.Name)
 	}
 	return nil
+}
+
+type checkTransactionNotCommittedBeforeDDLTableInfo struct {
+	Schema string
+	Table  string
+}
+
+func (c checkTransactionNotCommittedBeforeDDLTableInfo) String() string {
+	if c.Table == "" {
+		return c.Schema
+	}
+	if c.Schema == "" {
+		return c.Table
+	}
+	return fmt.Sprintf("%s.%s", c.Schema, c.Table)
+}
+
+func checkTransactionNotCommittedBeforeDDL(input *RuleHandlerInput) error {
+	switch input.Node.(type) {
+	case ast.DDLNode:
+	default:
+		return nil
+	}
+
+	tables := extractDDLSchemaAndTable(input.Node)
+	if len(tables) == 0 {
+		return nil
+	}
+
+	const transactionExecSecs = 600
+
+	version, err := input.Ctx.GetMySQLMajorVersion()
+	if err != nil {
+		return err
+	}
+
+	for _, table := range tables {
+		if table.Schema == "" {
+			table.Schema = input.Ctx.CurrentSchema()
+		}
+		if table.Schema == "" {
+			continue
+		}
+
+		if input.Ctx.IsLowerCaseTableName() {
+			table.Schema, table.Table = strings.ToLower(table.Schema), strings.ToLower(table.Table)
+		}
+
+		if version >= 8 {
+			count, err := input.Ctx.CheckTableRelatedTransactionNotCommittedMySQL8(table.Schema, table.Table)
+			if err != nil {
+				return err
+			}
+			if count > 0 {
+				addResult(input.Res, input.Rule, input.Rule.Name,
+					fmt.Sprintf("performance_schema.data_locks存在%d条%s的相关记录", count, table))
+				return nil
+			}
+		} else {
+			count, ExecTimeoutCount, err := input.Ctx.CheckTransactionNotCommittedMySQL5(transactionExecSecs)
+			if err != nil {
+				return err
+			}
+			if count > 0 || ExecTimeoutCount > 0 {
+				addResult(input.Res, input.Rule, input.Rule.Name,
+					fmt.Sprintf("information_schema.innodb_trx存在%d条记录, %d条执行时长超过%d秒", count, ExecTimeoutCount, transactionExecSecs))
+				return nil
+			}
+		}
+	}
+
+	return nil
+}
+
+// extractDDLSchemaAndTable 从DDL语句中提取schema和table name
+func extractDDLSchemaAndTable(node ast.Node) []checkTransactionNotCommittedBeforeDDLTableInfo {
+	var tables []checkTransactionNotCommittedBeforeDDLTableInfo
+
+	switch stmt := node.(type) {
+	case *ast.CreateTableStmt, *ast.CreateIndexStmt, *ast.CreateViewStmt, *ast.CreateSequenceStmt, *ast.CreateDatabaseStmt:
+		return nil
+	case *ast.AlterTableStmt:
+		tables = append(tables, checkTransactionNotCommittedBeforeDDLTableInfo{
+			Schema: stmt.Table.Schema.O,
+			Table:  stmt.Table.Name.O,
+		})
+	case *ast.DropTableStmt:
+		for _, table := range stmt.Tables {
+			tables = append(tables, checkTransactionNotCommittedBeforeDDLTableInfo{
+				Schema: table.Schema.O,
+				Table:  table.Name.O,
+			})
+		}
+	case *ast.DropIndexStmt:
+		tables = append(tables, checkTransactionNotCommittedBeforeDDLTableInfo{
+			Schema: stmt.Table.Schema.O,
+			Table:  stmt.Table.Name.O,
+		})
+	case *ast.DropSequenceStmt:
+		for _, sequence := range stmt.Sequences {
+			tables = append(tables, checkTransactionNotCommittedBeforeDDLTableInfo{
+				Schema: sequence.Schema.O,
+				Table:  sequence.Name.O,
+			})
+		}
+	case *ast.RenameTableStmt:
+		tables = append(tables, checkTransactionNotCommittedBeforeDDLTableInfo{
+			Schema: stmt.OldTable.Schema.O,
+			Table:  stmt.OldTable.Name.O,
+		})
+	case *ast.TruncateTableStmt:
+		tables = append(tables, checkTransactionNotCommittedBeforeDDLTableInfo{
+			Schema: stmt.Table.Schema.O,
+			Table:  stmt.Table.Name.O,
+		})
+	case *ast.RepairTableStmt:
+		tables = append(tables, checkTransactionNotCommittedBeforeDDLTableInfo{
+			Schema: stmt.Table.Schema.O,
+			Table:  stmt.Table.Name.O,
+		})
+	case *ast.DropDatabaseStmt:
+		tables = append(tables, checkTransactionNotCommittedBeforeDDLTableInfo{
+			Schema: stmt.Name,
+		})
+	}
+
+	return tables
 }
 
 func checkInsertSelect(input *RuleHandlerInput) error {
