@@ -717,6 +717,18 @@ var sourceRuleHandlers = []*SourceHandler{
 	},
 	{
 		Rule: SourceRule{
+			Name:         DDLCheckTransactionNotCommitted,
+			Desc:         plocale.DDLCheckTransactionNotCommittedDesc,
+			Annotation:   plocale.DDLCheckTransactionNotCommittedAnnotation,
+			Level:        driverV2.RuleLevelWarn,
+			Category:     plocale.RuleTypeUsageSuggestion,
+			AllowOffline: false,
+		},
+		Message: plocale.DDLCheckTransactionNotCommittedMessage,
+		Func:    checkTransactionNotCommittedBeforeDDL,
+	},
+	{
+		Rule: SourceRule{
 			Name:         DMLCheckWithLimit,
 			Desc:         plocale.DMLCheckWithLimitDesc,
 			Annotation:   plocale.DMLCheckWithLimitAnnotation,

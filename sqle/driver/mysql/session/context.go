@@ -1358,3 +1358,81 @@ func (c *Context) fetchExecutionPlanWithWarnings(sql string) (*executor.ExplainW
 		Warnings: WarningsRecords,
 	}, nil
 }
+
+// GetMySQLMajorVersion 返回 MySQL 主版本号（如 5、8），离线或无 executor 时返回 0。
+func (c *Context) GetMySQLMajorVersion() (int, error) {
+	if c.e == nil {
+		return 0, nil
+	}
+	results, err := c.e.Db.Query("SELECT @@version AS version")
+	if err != nil {
+		return 0, err
+	}
+	if len(results) == 0 {
+		return 0, nil
+	}
+	v, ok := results[0]["version"]
+	if !ok || !v.Valid {
+		return 0, nil
+	}
+	parts := strings.SplitN(v.String, ".", 2)
+	if len(parts) == 0 {
+		return 0, nil
+	}
+	major, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return 0, err
+	}
+	return major, nil
+}
+
+// CheckTableRelatedTransactionNotCommittedMySQL8 查询 performance_schema.data_locks 中与指定表相关的未提交事务/锁记录数（MySQL 8+）。
+func (c *Context) CheckTableRelatedTransactionNotCommittedMySQL8(schema, table string) (int, error) {
+	if c.e == nil {
+		return 0, nil
+	}
+	query := "SELECT COUNT(*) AS cnt FROM performance_schema.data_locks WHERE OBJECT_SCHEMA = ? AND OBJECT_NAME = ?"
+	results, err := c.e.Db.Query(query, schema, table)
+	if err != nil {
+		return 0, err
+	}
+	if len(results) == 0 {
+		return 0, nil
+	}
+	cntStr, ok := results[0]["cnt"]
+	if !ok || !cntStr.Valid {
+		return 0, nil
+	}
+	cnt, err := strconv.Atoi(cntStr.String)
+	if err != nil {
+		return 0, err
+	}
+	return cnt, nil
+}
+
+// CheckTransactionNotCommittedMySQL5 查询 information_schema.innodb_trx 中未提交事务数，以及执行超过 execTimeoutSecs 秒的事务数（MySQL 5）。
+func (c *Context) CheckTransactionNotCommittedMySQL5(execTimeoutSecs int) (count int, execTimeoutCount int, err error) {
+	if c.e == nil {
+		return 0, 0, nil
+	}
+	results, err := c.e.Db.Query("SELECT trx_id, trx_started FROM information_schema.innodb_trx")
+	if err != nil {
+		return 0, 0, err
+	}
+	count = len(results)
+	if execTimeoutSecs <= 0 {
+		return count, 0, nil
+	}
+	// 统计执行超过 execTimeoutSecs 秒的事务需要按 trx_started 与当前时间比较，这里简化：仅返回总数，execTimeoutCount 由调用方用额外查询或在此用原生 SQL 计算
+	timeoutQuery := fmt.Sprintf("SELECT COUNT(*) AS cnt FROM information_schema.innodb_trx WHERE TIMESTAMPDIFF(SECOND, trx_started, NOW()) > %d", execTimeoutSecs)
+	timeoutResults, err := c.e.Db.Query(timeoutQuery)
+	if err != nil {
+		return count, 0, nil
+	}
+	if len(timeoutResults) > 0 {
+		if n, ok := timeoutResults[0]["cnt"]; ok && n.Valid {
+			execTimeoutCount, _ = strconv.Atoi(n.String)
+		}
+	}
+	return count, execTimeoutCount, nil
+}
