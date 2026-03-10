@@ -12067,6 +12067,159 @@
                 }
             }
         },
+        "/v2/projects/{project_name}/sql_optimization_records/{optimization_record_id}/feedback": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "add optimized sql feedback",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sql_optimization"
+                ],
+                "summary": "添加SQL优化语句反馈",
+                "operationId": "AddOptimizedSQLFeedback",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "sql optimization record id",
+                        "name": "optimization_record_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "add optimized sql feedback req",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v2.OptimizedSQLFeedbackReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/projects/{project_name}/sql_optimization_records/{optimization_record_id}/feedback/{feedback_id}/": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "delete optimized sql feedback",
+                "tags": [
+                    "sql_optimization"
+                ],
+                "summary": "删除SQL优化语句反馈",
+                "operationId": "DeleteOptimizedSQLFeedback",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "sql optimization record id",
+                        "name": "optimization_record_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "feedback id",
+                        "name": "feedback_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update optimized sql feedback",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sql_optimization"
+                ],
+                "summary": "更新SQL优化语句反馈",
+                "operationId": "UpdateOptimizedSQLFeedback",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "sql optimization record id",
+                        "name": "optimization_record_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "feedback id",
+                        "name": "feedback_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "update optimized sql feedback req",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v2.UpdateOptimizedSQLFeedbackReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/projects/{project_name}/workflows": {
             "post": {
                 "security": [
@@ -23449,6 +23602,10 @@
         "v2.OptimizationRecord": {
             "type": "object",
             "properties": {
+                "adoption_rate": {
+                    "description": "优化采纳率",
+                    "type": "number"
+                },
                 "created_time": {
                     "description": "创建时间",
                     "type": "string"
@@ -23521,6 +23678,13 @@
                     "description": "优化详情",
                     "type": "object",
                     "$ref": "#/definitions/sql_flash.OptimizeDetail"
+                },
+                "optimized_sql_feedbacks": {
+                    "description": "优化后的SQL反馈",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.OptimizedSQLFeedback"
+                    }
                 },
                 "origin_query_plan": {
                     "description": "原始SQL查询计划",
@@ -23612,6 +23776,47 @@
             "properties": {
                 "sql_optimization_record_id": {
                     "type": "string"
+                }
+            }
+        },
+        "v2.OptimizedSQLFeedback": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "creator": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "vote": {
+                    "type": "string",
+                    "enum": [
+                        "agree",
+                        "disagree"
+                    ]
+                }
+            }
+        },
+        "v2.OptimizedSQLFeedbackReq": {
+            "type": "object",
+            "properties": {
+                "reason": {
+                    "type": "string",
+                    "example": "the sql is not optimized"
+                },
+                "vote": {
+                    "type": "string",
+                    "enum": [
+                        "agree",
+                        "disagree"
+                    ],
+                    "example": "agree"
                 }
             }
         },
@@ -23784,6 +23989,23 @@
                 "table_metas": {
                     "type": "object",
                     "$ref": "#/definitions/v2.TableMetas"
+                }
+            }
+        },
+        "v2.UpdateOptimizedSQLFeedbackReq": {
+            "type": "object",
+            "properties": {
+                "reason": {
+                    "type": "string",
+                    "example": "the sql is not optimized"
+                },
+                "vote": {
+                    "type": "string",
+                    "enum": [
+                        "agree",
+                        "disagree"
+                    ],
+                    "example": "agree"
                 }
             }
         },
