@@ -322,7 +322,9 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v2ProjectRouter.POST("/:project_name/sql_optimization_records", v2.SQLOptimize)
 		v2ProjectRouter.GET("/:project_name/sql_optimization_records", v2.GetOptimizationRecords)
 		v2ProjectRouter.GET("/:project_name/sql_optimization_records/:optimization_record_id/detail", v2.GetOptimizationSQLDetail)
-
+		v2ProjectRouter.POST("/:project_name/sql_optimization_records/:optimization_record_id/feedback", v2.AddOptimizedSQLFeedback)
+		v2ProjectRouter.PATCH("/:project_name/sql_optimization_records/:optimization_record_id/feedback/:feedback_id", v2.UpdateOptimizedSQLFeedback)
+		v2ProjectRouter.DELETE("/:project_name/sql_optimization_records/:optimization_record_id/feedback/:feedback_id", v2.DeleteOptimizedSQLFeedback)
 	}
 
 	{

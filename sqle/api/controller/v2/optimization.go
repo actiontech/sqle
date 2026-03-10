@@ -90,6 +90,7 @@ type OptimizationRecord struct {
 	PerformanceImprove float64   `json:"performance_improve"`                     // 优化提升性能
 	NumberOfRule       int       `json:"number_of_rule"`                          // 优化规则数量
 	NumberOfIndex      int       `json:"number_of_index"`                         // 优化索引数量
+	AdoptionRate       *float64  `json:"adoption_rate"`                           // 优化采纳率
 }
 
 type GetOptimizationRecordsRes struct {
@@ -142,6 +143,16 @@ type OptimizationSQLDetail struct {
 	TotalAnalysis   *sql_flash.TotalAnalysis  `json:"total_analysis"`    // 总体分析
 	AdvisedIndex    *sql_flash.AdvisedIndex   `json:"advised_index"`     // 索引建议详情
 
+	OptimizedSQLFeedbacks []*OptimizedSQLFeedback `json:"optimized_sql_feedbacks,omitempty"` // 优化后的SQL反馈
+
+}
+
+type OptimizedSQLFeedback struct {
+	ID        uint      `json:"id"`
+	Vote      string    `json:"vote" enums:"agree,disagree"`
+	Reason    string    `json:"reason"`
+	Creator   string    `json:"creator"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 // GetOptimizationSQLDetail
@@ -156,4 +167,62 @@ type OptimizationSQLDetail struct {
 // @router /v2/projects/{project_name}/sql_optimization_records/{optimization_record_id}/detail [get]
 func GetOptimizationSQLDetail(c echo.Context) error {
 	return getOptimizationSQL(c)
+}
+
+type OptimizedSQLFeedbackReq struct {
+	Vote   string `json:"vote" example:"agree" enums:"agree,disagree" valid:"required,oneof=agree disagree"`
+	Reason string `json:"reason" example:"the sql is not optimized"`
+}
+
+// AddOptimizedSQLFeedback
+// @Summary 添加SQL优化语句反馈
+// @Description add optimized sql feedback
+// @Accept json
+// @Id AddOptimizedSQLFeedback
+// @Tags sql_optimization
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Param optimization_record_id path string true "sql optimization record id"
+// @Param instance body v2.OptimizedSQLFeedbackReq true "add optimized sql feedback req"
+// @Success 200 {object} controller.BaseRes
+// @router /v2/projects/{project_name}/sql_optimization_records/{optimization_record_id}/feedback [post]
+func AddOptimizedSQLFeedback(c echo.Context) error {
+	return addOptimizedSQLFeedback(c)
+}
+
+type UpdateOptimizedSQLFeedbackReq struct {
+	Vote   string `json:"vote" example:"agree" enums:"agree,disagree"`
+	Reason string `json:"reason" example:"the sql is not optimized"`
+}
+
+// UpdateOptimizedSQLFeedback
+// @Summary 更新SQL优化语句反馈
+// @Description update optimized sql feedback
+// @Accept json
+// @Id UpdateOptimizedSQLFeedback
+// @Tags sql_optimization
+// @Param project_name path string true "project name"
+// @Param optimization_record_id path string true "sql optimization record id"
+// @Param feedback_id path string true "feedback id"
+// @Param instance body v2.UpdateOptimizedSQLFeedbackReq true "update optimized sql feedback req"
+// @Security ApiKeyAuth
+// @Success 200 {object} controller.BaseRes
+// @router /v2/projects/{project_name}/sql_optimization_records/{optimization_record_id}/feedback/{feedback_id}/ [patch]
+func UpdateOptimizedSQLFeedback(c echo.Context) error {
+	return updateOptimizedSQLFeedback(c)
+}
+
+// DeleteOptimizedSQLFeedback
+// @Summary 删除SQL优化语句反馈
+// @Description delete optimized sql feedback
+// @Id DeleteOptimizedSQLFeedback
+// @Tags sql_optimization
+// @Param project_name path string true "project name"
+// @Param optimization_record_id path string true "sql optimization record id"
+// @Param feedback_id path string true "feedback id"
+// @Security ApiKeyAuth
+// @Success 200 {object} controller.BaseRes
+// @router /v2/projects/{project_name}/sql_optimization_records/{optimization_record_id}/feedback/{feedback_id}/ [delete]
+func DeleteOptimizedSQLFeedback(c echo.Context) error {
+	return deleteOptimizedSQLFeedback(c)
 }
