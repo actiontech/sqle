@@ -222,6 +222,7 @@ func runDefaultRulesInspectCase(t *testing.T, desc string, i *MysqlDriverImpl, s
 		rulepkg.DMLCheckAffectedRows:                        {},
 		rulepkg.DMLCheckSortColumnLength:                    {},
 		rulepkg.DDLCheckAllIndexNotNullConstraint:           {},
+		rulepkg.DDLCheckTransactionNotCommitted:             {},
 		rulepkg.DMLCheckAggregate:                           {},
 		rulepkg.DDLCheckColumnNotNULL:                       {},
 		rulepkg.DDLCheckTableRows:                           {},
