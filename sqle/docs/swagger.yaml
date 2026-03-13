@@ -4067,6 +4067,9 @@ definitions:
     type: object
   v2.OptimizationRecord:
     properties:
+      adoption_rate:
+        description: 优化采纳率
+        type: number
       created_time:
         description: 创建时间
         type: string
@@ -4121,6 +4124,11 @@ definitions:
         $ref: '#/definitions/sql_flash.OptimizeDetail'
         description: 优化详情
         type: object
+      optimized_sql_feedbacks:
+        description: 优化后的SQL反馈
+        items:
+          $ref: '#/definitions/v2.OptimizedSQLFeedback'
+        type: array
       origin_query_plan:
         $ref: '#/definitions/sql_flash.QueryPlan'
         description: 原始SQL查询计划
@@ -4186,6 +4194,34 @@ definitions:
   v2.OptimizeSQLResData:
     properties:
       sql_optimization_record_id:
+        type: string
+    type: object
+  v2.OptimizedSQLFeedback:
+    properties:
+      created_at:
+        type: string
+      creator:
+        type: string
+      id:
+        type: integer
+      reason:
+        type: string
+      vote:
+        enum:
+        - agree
+        - disagree
+        type: string
+    type: object
+  v2.OptimizedSQLFeedbackReq:
+    properties:
+      reason:
+        example: the sql is not optimized
+        type: string
+      vote:
+        enum:
+        - agree
+        - disagree
+        example: agree
         type: string
     type: object
   v2.PartialSyncAuditPlanSQLsReqV2:
@@ -4286,6 +4322,18 @@ definitions:
       table_metas:
         $ref: '#/definitions/v2.TableMetas'
         type: object
+    type: object
+  v2.UpdateOptimizedSQLFeedbackReq:
+    properties:
+      reason:
+        example: the sql is not optimized
+        type: string
+      vote:
+        enum:
+        - agree
+        - disagree
+        example: agree
+        type: string
     type: object
   v2.UpdateWorkflowReqV2:
     properties:
@@ -9398,6 +9446,106 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取SQL优化语句详情
+      tags:
+      - sql_optimization
+  /v2/projects/{project_name}/sql_optimization_records/{optimization_record_id}/feedback:
+    post:
+      consumes:
+      - application/json
+      description: add optimized sql feedback
+      operationId: AddOptimizedSQLFeedback
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: sql optimization record id
+        in: path
+        name: optimization_record_id
+        required: true
+        type: string
+      - description: add optimized sql feedback req
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v2.OptimizedSQLFeedbackReq'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 添加SQL优化语句反馈
+      tags:
+      - sql_optimization
+  /v2/projects/{project_name}/sql_optimization_records/{optimization_record_id}/feedback/{feedback_id}/:
+    delete:
+      description: delete optimized sql feedback
+      operationId: DeleteOptimizedSQLFeedback
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: sql optimization record id
+        in: path
+        name: optimization_record_id
+        required: true
+        type: string
+      - description: feedback id
+        in: path
+        name: feedback_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 删除SQL优化语句反馈
+      tags:
+      - sql_optimization
+    patch:
+      consumes:
+      - application/json
+      description: update optimized sql feedback
+      operationId: UpdateOptimizedSQLFeedback
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: sql optimization record id
+        in: path
+        name: optimization_record_id
+        required: true
+        type: string
+      - description: feedback id
+        in: path
+        name: feedback_id
+        required: true
+        type: string
+      - description: update optimized sql feedback req
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v2.UpdateOptimizedSQLFeedbackReq'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 更新SQL优化语句反馈
       tags:
       - sql_optimization
   /v2/projects/{project_name}/workflows:
