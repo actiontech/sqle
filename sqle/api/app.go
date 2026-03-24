@@ -120,7 +120,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 	// v1 admin api, just admin user can access.
 	{
 		// AI 智能中心
-		v1Router.GET("/ai_hub/banner", v1.GetAIHubBanner, sqleMiddleware.ViewGlobalAllowed())
+		v1Router.GET("/ai_hub/banner", v1.GetAIHubBanner)
 		v1Router.GET("/ai_hub/strategic_value", v1.GetAIHubStrategicValue, sqleMiddleware.ViewGlobalAllowed())
 		v1Router.GET("/ai_hub/management_view", v1.GetAIHubManagementView, sqleMiddleware.ViewGlobalAllowed())
 		v1Router.GET("/ai_hub/execution_data", v1.GetAIHubExecutionData, sqleMiddleware.ViewGlobalAllowed())
