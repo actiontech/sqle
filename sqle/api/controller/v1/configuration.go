@@ -477,19 +477,12 @@ func CloneGitRepository(ctx context.Context, url, username, password, branch str
 		return os.RemoveAll(directory)
 	}
 
-	cloneOpts := &git.CloneOptions{
-		URL:             url,
-		InsecureSkipTLS: true, // 跳过 SSL 证书验证,支持自签名证书
-	}
-	if branch != "" {
-		cloneOpts.ReferenceName = plumbing.ReferenceName(branch)
-	}
-
 	auth, err := getGitAuthMethod(url, username, password)
 	if err != nil {
 		return nil, "", cleanup, err
 	}
-	cloneOpts.Auth = auth
+
+	cloneOpts := newCloneOptions(url, branch, auth)
 
 	repository, err = git.PlainCloneContext(ctx, directory, false, cloneOpts)
 	if err != nil {
@@ -497,6 +490,23 @@ func CloneGitRepository(ctx context.Context, url, username, password, branch str
 	}
 
 	return repository, directory, cleanup, nil
+}
+
+const shallowCloneDepth = 1
+
+func newCloneOptions(url, branch string, auth transport.AuthMethod) *git.CloneOptions {
+	cloneOpts := &git.CloneOptions{
+		URL:             url,
+		Auth:            auth,
+		Depth:           shallowCloneDepth,
+		InsecureSkipTLS: true, // 跳过 SSL 证书验证,支持自签名证书
+	}
+	if branch != "" {
+		cloneOpts.ReferenceName = plumbing.ReferenceName(branch)
+		cloneOpts.SingleBranch = true
+	}
+
+	return cloneOpts
 }
 
 type TestGitConnectionReqV1 struct {
