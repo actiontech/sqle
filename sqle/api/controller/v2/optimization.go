@@ -131,8 +131,9 @@ type GetOptimizationDetailRes struct {
 type OptimizationSQLDetail struct {
 	OptimizationId string `json:"optimization_id"`
 	ID             uint   `json:"id"`
-	Status         string `json:"status" enums:"optimizing,failed,finish"` // SQLe 维护的状态
-	StatusDetail   string `json:"status_detail"`                           // SQLe 维护的状态详情
+	Status         string `json:"status" enums:"rewriting,rewrite_done,advise_indexing,advise_index_done,finish,failed"` // SQLe 维护的状态
+	StatusDetail   string `json:"status_detail"`                                                                         // SQLe 维护的状态详情
+	OptimizeStatus string `json:"optimize_status" enums:"optimizing,failed,finish"`                                      // 优化状态
 
 	// SQL Flash相关字段
 	OriginSQL       string                    `json:"origin_sql"`        // 原始SQL
