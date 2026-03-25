@@ -283,46 +283,39 @@ func (i *MysqlDriverImpl) ExtractSchemaTableList(sql string) ([]SchemaTable, err
 		}
 	}
 
-	getMultiTables := func(stmt *ast.Join) {
-		tables := util.GetTables(stmt)
-		for _, t := range tables {
-			addTable(t)
-		}
-	}
-
-	switch stmt := node.(type) {
-	case *ast.SelectStmt:
-		if stmt.From == nil {
-			break
-		}
-		getMultiTables(stmt.From.TableRefs)
-	case *ast.UnionStmt:
-		for _, selectStmt := range stmt.SelectList.Selects {
-			if selectStmt.From == nil {
-				continue
-			}
-			getMultiTables(selectStmt.From.TableRefs)
-		}
-	case *ast.UpdateStmt:
-		getMultiTables(stmt.TableRefs.TableRefs)
-	case *ast.InsertStmt:
-		getMultiTables(stmt.Table.TableRefs)
-		if stmt.Select != nil {
-			getMultiTables(stmt.Select.(*ast.SelectStmt).From.TableRefs)
-		}
-	case *ast.DeleteStmt:
-		getMultiTables(stmt.TableRefs.TableRefs)
-	case *ast.LoadDataStmt:
-		addTable(stmt.Table)
-	case *ast.ShowStmt:
-		if stmt.Table != nil {
-			addTable(stmt.Table)
-		}
-	default:
-		return nil, fmt.Errorf("the sql is `%v`, we don't support analysing this sql", sql)
+	tables := GetTableNames(node)
+	for _, t := range tables {
+		addTable(t)
 	}
 
 	return schemaTables, nil
+}
+
+// a helper function to extract all table name from a given AST Node
+func GetTableNames(stmt ast.Node) []*ast.TableName {
+	if stmt == nil {
+		return nil
+	}
+	e := tableNameExtractor{}
+	stmt.Accept(&e)
+	return e.tableNames
+}
+
+// tableNameExtractor implements ast.Visitor interface.
+type tableNameExtractor struct {
+	tableNames []*ast.TableName
+}
+
+func (te *tableNameExtractor) Enter(in ast.Node) (node ast.Node, skipChildren bool) {
+	switch stmt := in.(type) {
+	case *ast.TableName:
+		te.tableNames = append(te.tableNames, stmt)
+	}
+	return in, false
+}
+
+func (te *tableNameExtractor) Leave(in ast.Node) (node ast.Node, ok bool) {
+	return in, true
 }
 
 func (i *MysqlDriverImpl) isDML(sql string) (bool, error) {

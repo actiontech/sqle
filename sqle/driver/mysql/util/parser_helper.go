@@ -875,6 +875,22 @@ func Fingerprint(oneSql string, isCaseSensitive bool) (fingerprint string, err e
 	return
 }
 
+func FingerprintByParser(oneSql ast.Node, isCaseSensitive bool) (fingerprint string, err error) {
+	oneSql.Accept(&FingerprintVisitor{})
+	if !isCaseSensitive {
+		oneSql.Accept(&CapitalizeProcessor{
+			capitalizeTableName:      true,
+			capitalizeTableAliasName: true,
+			capitalizeDatabaseName:   true,
+		})
+	}
+	fingerprint, err = restoreToSqlWithFlag(format.RestoreKeyWordUppercase|format.RestoreNameBackQuotes, oneSql)
+	if err != nil {
+		return "", err
+	}
+	return
+}
+
 // ExtractIndexFromCreateTableStmt extract index from create table statement.
 func ExtractIndexFromCreateTableStmt(table *ast.CreateTableStmt) map[string] /*index name*/ []string /*indexed column*/ {
 	var result = make(map[string][]string)
