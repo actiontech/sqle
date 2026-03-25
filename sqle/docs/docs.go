@@ -14604,6 +14604,15 @@ var doc = `{
                     "type": "object",
                     "$ref": "#/definitions/sql_flash.OptimizeDetail"
                 },
+                "optimize_status": {
+                    "description": "优化状态",
+                    "type": "string",
+                    "enum": [
+                        "optimizing",
+                        "failed",
+                        "finish"
+                    ]
+                },
                 "optimized_sql_feedbacks": {
                     "description": "优化后的SQL反馈",
                     "type": "array",
@@ -14624,9 +14633,12 @@ var doc = `{
                     "description": "SQLe 维护的状态",
                     "type": "string",
                     "enum": [
-                        "optimizing",
-                        "failed",
-                        "finish"
+                        "rewriting",
+                        "rewrite_done",
+                        "advise_indexing",
+                        "advise_index_done",
+                        "finish",
+                        "failed"
                     ]
                 },
                 "status_detail": {
