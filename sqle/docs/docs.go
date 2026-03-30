@@ -9673,6 +9673,40 @@ var doc = `{
                 }
             }
         },
+        "/v1/sql_lineage_analysis": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Analyze SQL and return column-level lineage",
+                "tags": [
+                    "sql_analysis"
+                ],
+                "summary": "SQL列级血缘分析",
+                "operationId": "sqlLineageAnalyzeV1",
+                "parameters": [
+                    {
+                        "description": "sql lineage analyze request",
+                        "name": "req",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.SQLLineageAnalyzeReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.SQLLineageAnalyzeResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/statistic/instances/resource_overview_statistics": {
             "get": {
                 "security": [
@@ -19969,6 +20003,184 @@ var doc = `{
                     "type": "string"
                 },
                 "sql": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.SQLLineageAnalyzeReqV1": {
+            "type": "object",
+            "properties": {
+                "default_schema": {
+                    "type": "string"
+                },
+                "instance_type": {
+                    "type": "string"
+                },
+                "result_columns": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "sql": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.SQLLineageAnalyzeResDataV1": {
+            "type": "object",
+            "properties": {
+                "result": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.SQLLineageAnalyzeResultV1"
+                }
+            }
+        },
+        "v1.SQLLineageAnalyzeResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.SQLLineageAnalyzeResDataV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.SQLLineageAnalyzeResultV1": {
+            "type": "object",
+            "properties": {
+                "edges": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.SQLLineageEdgeV1"
+                    }
+                },
+                "nodes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.SQLLineageNodeV1"
+                    }
+                },
+                "original_sql": {
+                    "type": "string"
+                },
+                "result_columns": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.SQLLineageResultColumnV1"
+                    }
+                },
+                "source_columns": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.SQLLineageColumnRefV1"
+                    }
+                },
+                "tables": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.SQLLineageTableRefV1"
+                    }
+                },
+                "title": {
+                    "type": "string"
+                },
+                "warnings": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "v1.SQLLineageColumnRefV1": {
+            "type": "object",
+            "properties": {
+                "column": {
+                    "type": "string"
+                },
+                "schema": {
+                    "type": "string"
+                },
+                "table": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.SQLLineageEdgeV1": {
+            "type": "object",
+            "properties": {
+                "from_id": {
+                    "type": "string"
+                },
+                "to_id": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.SQLLineageNodeV1": {
+            "type": "object",
+            "properties": {
+                "column": {
+                    "type": "string"
+                },
+                "expr": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "schema": {
+                    "type": "string"
+                },
+                "table": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.SQLLineageResultColumnV1": {
+            "type": "object",
+            "properties": {
+                "expression": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "sources": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.SQLLineageColumnRefV1"
+                    }
+                }
+            }
+        },
+        "v1.SQLLineageTableRefV1": {
+            "type": "object",
+            "properties": {
+                "alias": {
+                    "type": "string"
+                },
+                "schema": {
+                    "type": "string"
+                },
+                "table": {
                     "type": "string"
                 }
             }
