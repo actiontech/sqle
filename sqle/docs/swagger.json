@@ -10458,11 +10458,18 @@
                         "description": "select unique (fingerprint and audit result) for task sql",
                         "name": "no_duplicate",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "export format: csv, html, pdf, word",
+                        "name": "export_format",
+                        "in": "query",
+                        "default": "csv"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "sql report csv file",
+                        "description": "sql report file",
                         "schema": {
                             "type": "file"
                         }

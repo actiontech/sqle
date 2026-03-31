@@ -14559,9 +14559,14 @@ paths:
         in: query
         name: no_duplicate
         type: boolean
+      - default: csv
+        description: 'export format: csv, html, pdf, word'
+        in: query
+        name: export_format
+        type: string
       responses:
         "200":
-          description: sql report csv file
+          description: sql report file
           schema:
             type: file
       security:
