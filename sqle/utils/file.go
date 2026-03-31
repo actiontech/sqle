@@ -5,6 +5,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -80,6 +81,9 @@ type ExportFormat string
 const (
 	CsvExportFormat   ExportFormat = "csv"
 	ExcelExportFormat ExportFormat = "excel"
+	ExportFormatHTML  ExportFormat = "html"
+	ExportFormatPDF   ExportFormat = "pdf"
+	ExportFormatWORD  ExportFormat = "word"
 )
 
 // ExportDataResult 导出数据的结果
@@ -166,6 +170,25 @@ func NormalizeExportFormat(format *ExportFormat) ExportFormat {
 		return CsvExportFormat
 	}
 	return *format
+}
+
+// NormalizeExportFormatStr 规范化导出格式参数（字符串版本），默认返回 CSV（向后兼容）
+// 支持 html/pdf/word/docx/excel/xlsx/csv 等输入的规范化，空字符串和无效值默认返回 CSV。
+func NormalizeExportFormatStr(format string) ExportFormat {
+	switch strings.ToLower(strings.TrimSpace(format)) {
+	case "html":
+		return ExportFormatHTML
+	case "pdf":
+		return ExportFormatPDF
+	case "word", "docx":
+		return ExportFormatWORD
+	case "excel", "xlsx":
+		return ExcelExportFormat
+	case "csv", "":
+		return CsvExportFormat
+	default:
+		return CsvExportFormat
+	}
 }
 
 // ExportData 根据导出格式导出数据
