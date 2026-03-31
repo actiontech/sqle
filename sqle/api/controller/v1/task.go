@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
@@ -21,7 +20,6 @@ import (
 	"github.com/actiontech/sqle/sqle/config"
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/errors"
-	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/server"
@@ -599,7 +597,8 @@ type DownloadAuditTaskSQLsFileReqV1 struct {
 // @Security ApiKeyAuth
 // @Param task_id path string true "task id"
 // @Param no_duplicate query boolean false "select unique (fingerprint and audit result) for task sql"
-// @Success 200 file 1 "sql report csv file"
+// @Param export_format query string false "export format: csv, html, pdf, word" default(csv)
+// @Success 200 file 1 "sql report file"
 // @router /v1/tasks/audits/{task_id}/sql_report [get]
 func DownloadTaskSQLReportFile(c echo.Context) error {
 	req := new(DownloadAuditTaskSQLsFileReqV1)
@@ -618,59 +617,27 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	data := map[string]interface{}{
-		"task_id":      taskId,
-		"no_duplicate": req.NoDuplicate,
-	}
-
-	taskSQLsDetail, _, err := s.GetTaskSQLsByReq(data)
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, err)
-	}
-
 	ctx := c.Request().Context()
-	csvBuilder := utils.NewCSVBuilder()
-	err = csvBuilder.WriteHeader([]string{
-		locale.Bundle.LocalizeMsgByCtx(ctx, locale.TaskSQLReportIndex),       // "序号",
-		locale.Bundle.LocalizeMsgByCtx(ctx, locale.TaskSQLReportSQL),         // "SQL",
-		locale.Bundle.LocalizeMsgByCtx(ctx, locale.TaskSQLReportAuditStatus), // "SQL审核状态",
-		locale.Bundle.LocalizeMsgByCtx(ctx, locale.TaskSQLReportAuditResult), // "SQL审核结果",
-		locale.Bundle.LocalizeMsgByCtx(ctx, locale.TaskSQLReportExecStatus),  // "SQL执行状态",
-		locale.Bundle.LocalizeMsgByCtx(ctx, locale.TaskSQLReportExecResult),  // "SQL执行结果",
-		locale.Bundle.LocalizeMsgByCtx(ctx, locale.TaskSQLReportRollbackSQL), // "SQL对应的回滚语句",
-		locale.Bundle.LocalizeMsgByCtx(ctx, locale.TaskSQLReportDescription), // "SQL描述",
-	})
-	if err != nil {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.WriteDataToTheFileError, err))
-	}
-	rollbackSqlMap, err := server.BackupService{}.GetRollbackSqlsMap(task.ID)
+
+	// 解析导出格式参数，缺失时默认返回 CSV（向后兼容）
+	exportFormat := utils.NormalizeExportFormatStr(c.QueryParam("export_format"))
+
+	// 构建报告数据
+	reportData, err := BuildAuditReportData(task, s, req.NoDuplicate, ctx)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	for _, td := range taskSQLsDetail {
-		taskSql := &model.ExecuteSQL{
-			AuditResults: td.AuditResults,
-			AuditStatus:  td.AuditStatus,
-		}
-		taskSql.ExecStatus = td.ExecStatus
-		err := csvBuilder.WriteRow([]string{
-			strconv.FormatUint(uint64(td.Number), 10),
-			td.ExecSQL,
-			taskSql.GetAuditStatusDesc(ctx),
-			taskSql.GetAuditResultDesc(ctx),
-			taskSql.GetExecStatusDesc(ctx),
-			td.ExecResult,
-			strings.Join(rollbackSqlMap[taskSql.ID], "\n"),
-			td.Description,
-		})
-		if err != nil {
-			return controller.JSONBaseErrorReq(c, errors.New(errors.WriteDataToTheFileError, err))
-		}
+
+	// 根据格式生成报告
+	result, err := utils.ExportAuditReport(exportFormat, reportData)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
 	}
-	fileName := fmt.Sprintf("SQL_audit_report_%v_%v.csv", task.InstanceName(), taskId)
+
+	// 设置响应头并返回
 	c.Response().Header().Set(echo.HeaderContentDisposition,
-		mime.FormatMediaType("attachment", map[string]string{"filename": fileName}))
-	return c.Blob(http.StatusOK, "text/csv", csvBuilder.FlushAndGetBuffer().Bytes())
+		mime.FormatMediaType("attachment", map[string]string{"filename": result.FileName}))
+	return c.Blob(http.StatusOK, result.ContentType, result.Content)
 }
 
 // @Summary 下载指定扫描任务的SQL文件
