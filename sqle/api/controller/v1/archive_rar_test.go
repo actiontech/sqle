@@ -97,7 +97,7 @@ func TestProcessRarContent(t *testing.T) {
 			f := openTestRar(t, tc.rarFile)
 			defer f.Close()
 
-			sqlFiles, xmlFiles, err := processRarContent(f)
+			sqlFiles, xmlFiles, _, err := processRarContent(f)
 
 			// Check error
 			if tc.expectErr {
@@ -204,7 +204,7 @@ func TestProcessRarContentFileCountLimit(t *testing.T) {
 func TestProcessRarContentInvalidRar(t *testing.T) {
 	// Test with invalid RAR data
 	invalidData := bytes.NewReader([]byte("this is not a rar file"))
-	_, _, err := processRarContent(invalidData)
+	_, _, _, err := processRarContent(invalidData)
 	if err == nil {
 		t.Error("expected error for invalid RAR data, got nil")
 	}

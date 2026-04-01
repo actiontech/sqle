@@ -97,7 +97,7 @@ func TestProcess7zContent(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			r, size := openTest7z(t, tc.szFile)
 
-			sqlFiles, xmlFiles, err := process7zContent(r, size)
+			sqlFiles, xmlFiles, _, err := process7zContent(r, size)
 
 			// Check error
 			if tc.expectErr {
@@ -198,7 +198,7 @@ func TestProcess7zContentFileCountLimit(t *testing.T) {
 func TestProcess7zContentInvalid7z(t *testing.T) {
 	// Test with invalid 7z data
 	invalidData := bytes.NewReader([]byte("this is not a 7z file"))
-	_, _, err := process7zContent(invalidData, int64(len("this is not a 7z file")))
+	_, _, _, err := process7zContent(invalidData, int64(len("this is not a 7z file")))
 	if err == nil {
 		t.Error("expected error for invalid 7z data, got nil")
 	}
