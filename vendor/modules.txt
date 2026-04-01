@@ -548,6 +548,9 @@ github.com/nicksnyder/go-i18n/v2/i18n
 github.com/nicksnyder/go-i18n/v2/i18n/template
 github.com/nicksnyder/go-i18n/v2/internal
 github.com/nicksnyder/go-i18n/v2/internal/plural
+# github.com/nwaples/rardecode v1.1.3
+## explicit; go 1.13
+github.com/nwaples/rardecode
 # github.com/oklog/run v1.0.0
 ## explicit
 github.com/oklog/run

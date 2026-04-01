@@ -44,6 +44,7 @@ require (
 	github.com/larksuite/oapi-sdk-go/v3 v3.0.23
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
+	github.com/nwaples/rardecode v1.1.3
 	github.com/openark/golib v0.0.0-20210531070646-355f37940af8
 	github.com/pingcap/parser v3.0.12+incompatible
 	github.com/pingcap/tidb v1.1.0-beta.0.20200630082100-328b6d0a955c
