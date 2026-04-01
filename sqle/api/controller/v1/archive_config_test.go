@@ -143,16 +143,11 @@ func TestSupportedArchiveExts(t *testing.T) {
 }
 
 func TestSupportedTextExts(t *testing.T) {
-	expectedExts := []string{".sql", ".txt", ".java"}
+	expectedExts := []string{".sql", ".txt", ".java", ".xlsx"}
 	for _, ext := range expectedExts {
 		if !supportedTextExts[ext] {
 			t.Errorf("expected %s to be in supportedTextExts", ext)
 		}
-	}
-
-	// .xlsx is second phase, should not be included
-	if supportedTextExts[".xlsx"] {
-		t.Errorf("expected .xlsx to NOT be in supportedTextExts (second phase feature)")
 	}
 
 	unexpectedExts := []string{".png", ".jpg", ".pdf"}

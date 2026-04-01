@@ -40,9 +40,9 @@ var supportedArchiveExts = map[string]bool{
 }
 
 // supportedTextExts 支持的文本文件扩展名（用于压缩包内部文件处理和单文件上传）
-// 注意：.xlsx 为第二期功能，暂不加入
 var supportedTextExts = map[string]bool{
 	".sql":  true,
 	".txt":  true,
 	".java": true,
+	".xlsx": true,
 }

@@ -373,6 +373,7 @@ func getSqlsFromZip(c echo.Context) (sqlsFromSQLFile []SQLsFromSQLFile, sqlsFrom
 	}
 
 	var xmlContents []xmlParser.XmlFile
+	var totalSize int64
 	var fileCount int
 	for i := range r.File {
 		srcFile := r.File[i]
@@ -386,14 +387,27 @@ func getSqlsFromZip(c echo.Context) (sqlsFromSQLFile []SQLsFromSQLFile, sqlsFrom
 			return nil, nil, false, err
 		}
 
+		// 嵌套压缩包检查：depth=1 时跳过内层压缩包
+		ext := strings.ToLower(filepath.Ext(srcFile.Name))
+		if supportedArchiveExts[ext] {
+			continue
+		}
+
 		// 读取文件内容
 		rc, err := srcFile.Open()
 		if err != nil {
 			return nil, nil, false, fmt.Errorf("open src file failed:  %v", err)
 		}
 		content, err := io.ReadAll(rc)
+		rc.Close()
 		if err != nil {
 			return nil, nil, false, fmt.Errorf("read src file failed:  %v", err)
+		}
+
+		// 累计大小限制检查
+		totalSize += int64(len(content))
+		if err := defaultArchiveConfig.checkSize(0, totalSize); err != nil {
+			return nil, nil, false, err
 		}
 
 		// 委托 processArchiveEntry 按扩展名分发处理
