@@ -52,6 +52,7 @@ type SQLAuditRecordResData struct {
 }
 
 // 10M
+// maxZipFileSize 保留用于向后兼容，实际限制检查已迁移到 defaultArchiveConfig.checkSize()
 var maxZipFileSize int64 = 1024 * 1024 * 10
 
 // CreateSQLAuditRecord
@@ -362,8 +363,9 @@ func getSqlsFromZip(c echo.Context) (sqlsFromSQLFile []SQLsFromSQLFile, sqlsFrom
 	}
 	defer f.Close()
 
-	if file.Size > maxZipFileSize {
-		return nil, nil, false, fmt.Errorf("file can't be bigger than %vM", maxZipFileSize/1024/1024)
+	// 使用 archiveConfig 进行压缩包总大小限制检查
+	if err := defaultArchiveConfig.checkSize(0, file.Size); err != nil {
+		return nil, nil, false, err
 	}
 	r, err := zip.NewReader(f, file.Size)
 	if err != nil {
@@ -371,42 +373,48 @@ func getSqlsFromZip(c echo.Context) (sqlsFromSQLFile []SQLsFromSQLFile, sqlsFrom
 	}
 
 	var xmlContents []xmlParser.XmlFile
+	var fileCount int
 	for i := range r.File {
 		srcFile := r.File[i]
 		if srcFile == nil {
 			continue
 		}
-		if !strings.HasSuffix(srcFile.Name, ".xml") && !strings.HasSuffix(srcFile.Name, ".sql") {
-			continue
+
+		// 使用 archiveConfig 进行文件数量限制检查
+		fileCount++
+		if err := defaultArchiveConfig.checkFileCount(fileCount); err != nil {
+			return nil, nil, false, err
 		}
 
-		r, err := srcFile.Open()
+		// 读取文件内容
+		rc, err := srcFile.Open()
 		if err != nil {
 			return nil, nil, false, fmt.Errorf("open src file failed:  %v", err)
 		}
-		content, err := io.ReadAll(r)
+		content, err := io.ReadAll(rc)
 		if err != nil {
 			return nil, nil, false, fmt.Errorf("read src file failed:  %v", err)
 		}
 
-		content, err = utils.ConvertToUtf8(content)
+		// 委托 processArchiveEntry 按扩展名分发处理
+		sqlContent, xmlContent, isSupported, err := processArchiveEntry(srcFile.Name, content)
 		if err != nil {
 			if e.Is(err, utils.ErrUnknownEncoding) {
 				log.NewEntry().WithField("convert_to_utf8", srcFile.Name).Errorf("convert to utf8 failed: %v", err)
 				continue
 			}
-			return nil, nil, false, fmt.Errorf("convert to utf8 failed:  %v", err)
+			return nil, nil, false, err
+		}
+		if !isSupported {
+			continue
 		}
 
-		if strings.HasSuffix(srcFile.Name, ".xml") {
-			xmlContents = append(xmlContents, xmlParser.XmlFile{
-				FilePath: srcFile.Name,
-				Content:  string(content),
-			})
-		} else if strings.HasSuffix(srcFile.Name, ".sql") {
+		if xmlContent != nil {
+			xmlContents = append(xmlContents, *xmlContent)
+		} else if sqlContent != "" {
 			sqlsFromSQLFile = append(sqlsFromSQLFile, SQLsFromSQLFile{
 				FilePath: srcFile.Name,
-				SQLs:     string(content),
+				SQLs:     sqlContent,
 			})
 		}
 	}
