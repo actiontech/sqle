@@ -16,12 +16,12 @@ require (
 	github.com/alibabacloud-go/tea-utils v1.4.3
 	github.com/andybalholm/brotli v1.0.4 // indirect
 	github.com/baidubce/bce-sdk-go v0.9.151
-	github.com/bodgit/plumbing v1.2.0
+	github.com/bodgit/plumbing v1.2.0 // indirect
 	github.com/bodgit/sevenzip v1.3.0
-	github.com/bodgit/windows v1.0.0
-	github.com/connesc/cipherio v0.2.1
+	github.com/bodgit/windows v1.0.0 // indirect
 	github.com/bwmarrin/snowflake v0.3.0
 	github.com/clbanning/mxj/v2 v2.5.6 // indirect
+	github.com/connesc/cipherio v0.2.1 // indirect
 	github.com/cznic/mathutil v0.0.0-20181122101859-297441e03548
 	github.com/cznic/parser v0.0.0-20181122101858-d773202d5b1f
 	github.com/cznic/sortutil v0.0.0-20181122101858-f5f958428db8
@@ -41,13 +41,13 @@ require (
 	github.com/go-sql-driver/mysql v1.7.0
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang/protobuf v1.5.3
-	github.com/hashicorp/errwrap v1.0.0
+	github.com/hashicorp/errwrap v1.0.0 // indirect
 	github.com/hashicorp/go-hclog v0.14.1
-	github.com/hashicorp/go-multierror v1.1.1
+	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-plugin v1.4.2
 	github.com/jackc/pgx/v4 v4.13.0
 	github.com/jmoiron/sqlx v1.3.3
-	github.com/klauspost/compress v1.15.9
+	github.com/klauspost/compress v1.15.9 // indirect
 	github.com/labstack/echo/v4 v4.10.2
 	github.com/larksuite/oapi-sdk-go/v3 v3.0.23
 	github.com/mattn/go-runewidth v0.0.9 // indirect
@@ -75,20 +75,20 @@ require (
 )
 
 require (
+	github.com/360EntSecGroup-Skylar/excelize v1.4.1
 	github.com/aliyun/credentials-go v1.1.2
 	github.com/hashicorp/go-version v1.7.0
 	github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.1.69
 	github.com/nicksnyder/go-i18n/v2 v2.4.0
+	github.com/xuri/excelize/v2 v2.7.1
 	golang.org/x/crypto v0.14.0
 	golang.org/x/text v0.14.0
-	go4.org v0.0.0-20200411211856-f5505b9728dd
 	gorm.io/driver/mysql v1.4.7
 	gorm.io/gorm v1.24.3
 )
 
 require (
 	dario.cat/mergo v1.0.0 // indirect
-	github.com/360EntSecGroup-Skylar/excelize v1.4.1 // indirect
 	github.com/BurntSushi/toml v1.3.2 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
@@ -163,6 +163,8 @@ require (
 	github.com/pjbgf/sha1cd v0.3.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20190728182440-6a916e37a237 // indirect
+	github.com/richardlehane/mscfb v1.0.4 // indirect
+	github.com/richardlehane/msoleps v1.0.3 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/sergi/go-diff v1.1.0 // indirect
@@ -177,10 +179,13 @@ require (
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
+	github.com/xuri/efp v0.0.0-20220603152613-6918739fd470 // indirect
+	github.com/xuri/nfp v0.0.0-20220409054826-5e722a1d9e22 // indirect
 	go.mongodb.org/mongo-driver v1.12.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.17.0 // indirect
+	go4.org v0.0.0-20200411211856-f5505b9728dd // indirect
 	golang.org/x/exp v0.0.0-20230515195305-f3d0a9c9a5cc // indirect
 	golang.org/x/mod v0.12.0 // indirect
 	golang.org/x/sys v0.15.0 // indirect

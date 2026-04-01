@@ -121,15 +121,15 @@ github.com/aliyun/credentials-go/credentials
 github.com/aliyun/credentials-go/credentials/request
 github.com/aliyun/credentials-go/credentials/response
 github.com/aliyun/credentials-go/credentials/utils
+# github.com/andybalholm/brotli v1.0.4
+## explicit; go 1.12
+github.com/andybalholm/brotli
 # github.com/antlr4-go/antlr/v4 v4.13.0
 ## explicit; go 1.20
 github.com/antlr4-go/antlr/v4
 # github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
 ## explicit; go 1.13
 github.com/asaskevich/govalidator
-# github.com/andybalholm/brotli v1.0.4
-## explicit; go 1.12
-github.com/andybalholm/brotli
 # github.com/baidubce/bce-sdk-go v0.9.151
 ## explicit; go 1.11
 github.com/baidubce/bce-sdk-go/auth
@@ -141,7 +141,7 @@ github.com/baidubce/bce-sdk-go/util
 github.com/baidubce/bce-sdk-go/util/crypto
 github.com/baidubce/bce-sdk-go/util/log
 # github.com/bodgit/plumbing v1.2.0
-## explicit; go 1.15
+## explicit; go 1.13
 github.com/bodgit/plumbing
 # github.com/bodgit/sevenzip v1.3.0
 ## explicit; go 1.17
@@ -159,7 +159,7 @@ github.com/bodgit/sevenzip/internal/pool
 github.com/bodgit/sevenzip/internal/util
 github.com/bodgit/sevenzip/internal/zstd
 # github.com/bodgit/windows v1.0.0
-## explicit; go 1.15
+## explicit; go 1.13
 github.com/bodgit/windows
 # github.com/bwmarrin/snowflake v0.3.0
 ## explicit
@@ -182,7 +182,7 @@ github.com/cloudflare/circl/sign
 github.com/cloudflare/circl/sign/ed25519
 github.com/cloudflare/circl/sign/ed448
 # github.com/connesc/cipherio v0.2.1
-## explicit; go 1.11
+## explicit; go 1.14
 github.com/connesc/cipherio
 # github.com/cpuguy83/go-md2man/v2 v2.0.2
 ## explicit; go 1.11
@@ -394,7 +394,7 @@ github.com/hashicorp/errwrap
 ## explicit; go 1.13
 github.com/hashicorp/go-hclog
 # github.com/hashicorp/go-multierror v1.1.1
-## explicit; go 1.14
+## explicit; go 1.13
 github.com/hashicorp/go-multierror
 # github.com/hashicorp/go-plugin v1.4.2
 ## explicit; go 1.13
@@ -492,9 +492,10 @@ github.com/json-iterator/go
 ## explicit
 github.com/kevinburke/ssh_config
 # github.com/klauspost/compress v1.15.9
-## explicit; go 1.17
+## explicit; go 1.16
 github.com/klauspost/compress
 github.com/klauspost/compress/flate
+github.com/klauspost/compress/fse
 github.com/klauspost/compress/huff0
 github.com/klauspost/compress/internal/cpuinfo
 github.com/klauspost/compress/internal/snapref
@@ -591,7 +592,7 @@ github.com/nicksnyder/go-i18n/v2/i18n/template
 github.com/nicksnyder/go-i18n/v2/internal
 github.com/nicksnyder/go-i18n/v2/internal/plural
 # github.com/nwaples/rardecode v1.1.3
-## explicit; go 1.13
+## explicit
 github.com/nwaples/rardecode
 # github.com/oklog/run v1.0.0
 ## explicit
@@ -607,6 +608,13 @@ github.com/openark/golib/sqlutils
 ## explicit
 github.com/opentracing/opentracing-go
 github.com/opentracing/opentracing-go/log
+# github.com/pierrec/lz4/v4 v4.1.15
+## explicit; go 1.14
+github.com/pierrec/lz4/v4
+github.com/pierrec/lz4/v4/internal/lz4block
+github.com/pierrec/lz4/v4/internal/lz4errors
+github.com/pierrec/lz4/v4/internal/lz4stream
+github.com/pierrec/lz4/v4/internal/xxh32
 # github.com/pingcap/errors v0.11.5-0.20201126102027-b0a155152ca3
 ## explicit; go 1.14
 github.com/pingcap/errors
@@ -645,13 +653,6 @@ github.com/pingcap/tidb/util/stringutil
 ## explicit
 github.com/pingcap/tipb/go-tipb
 github.com/pingcap/tipb/sharedbytes
-# github.com/pierrec/lz4/v4 v4.1.15
-## explicit; go 1.14
-github.com/pierrec/lz4/v4
-github.com/pierrec/lz4/v4/internal/lz4block
-github.com/pierrec/lz4/v4/internal/lz4errors
-github.com/pierrec/lz4/v4/internal/lz4stream
-github.com/pierrec/lz4/v4/internal/xxh32
 # github.com/pjbgf/sha1cd v0.3.0
 ## explicit; go 1.19
 github.com/pjbgf/sha1cd
@@ -666,6 +667,12 @@ github.com/pmezard/go-difflib/difflib
 # github.com/remyoudompheng/bigfft v0.0.0-20190728182440-6a916e37a237
 ## explicit; go 1.12
 github.com/remyoudompheng/bigfft
+# github.com/richardlehane/mscfb v1.0.4
+## explicit
+github.com/richardlehane/mscfb
+# github.com/richardlehane/msoleps v1.0.3
+## explicit
+github.com/richardlehane/msoleps/types
 # github.com/robfig/cron/v3 v3.0.1
 ## explicit; go 1.12
 github.com/robfig/cron/v3
@@ -724,8 +731,7 @@ github.com/swaggo/swag/gen
 github.com/tjfoc/gmsm/sm2
 github.com/tjfoc/gmsm/sm3
 # github.com/ulikunitz/xz v0.5.10
-## explicit; go 1.13
-github.com/ulikunitz/xz
+## explicit; go 1.12
 github.com/ulikunitz/xz/internal/hash
 github.com/ulikunitz/xz/internal/xlog
 github.com/ulikunitz/xz/lzma
@@ -747,6 +753,15 @@ github.com/xanzy/ssh-agent
 # github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673
 ## explicit
 github.com/xrash/smetrics
+# github.com/xuri/efp v0.0.0-20220603152613-6918739fd470
+## explicit; go 1.11
+github.com/xuri/efp
+# github.com/xuri/excelize/v2 v2.7.1
+## explicit; go 1.16
+github.com/xuri/excelize/v2
+# github.com/xuri/nfp v0.0.0-20220409054826-5e722a1d9e22
+## explicit; go 1.15
+github.com/xuri/nfp
 # go.mongodb.org/mongo-driver v1.12.0
 ## explicit; go 1.13
 go.mongodb.org/mongo-driver/bson
@@ -789,6 +804,7 @@ golang.org/x/crypto/internal/alias
 golang.org/x/crypto/internal/poly1305
 golang.org/x/crypto/md4
 golang.org/x/crypto/pbkdf2
+golang.org/x/crypto/ripemd160
 golang.org/x/crypto/sha3
 golang.org/x/crypto/ssh
 golang.org/x/crypto/ssh/agent
@@ -806,6 +822,7 @@ golang.org/x/mod/semver
 golang.org/x/net/context
 golang.org/x/net/html
 golang.org/x/net/html/atom
+golang.org/x/net/html/charset
 golang.org/x/net/http/httpguts
 golang.org/x/net/http2
 golang.org/x/net/http2/h2c
@@ -826,6 +843,7 @@ golang.org/x/sys/windows
 golang.org/x/text/cases
 golang.org/x/text/encoding
 golang.org/x/text/encoding/charmap
+golang.org/x/text/encoding/htmlindex
 golang.org/x/text/encoding/internal
 golang.org/x/text/encoding/internal/identifier
 golang.org/x/text/encoding/japanese
@@ -833,12 +851,19 @@ golang.org/x/text/encoding/korean
 golang.org/x/text/encoding/simplifiedchinese
 golang.org/x/text/encoding/traditionalchinese
 golang.org/x/text/encoding/unicode
+golang.org/x/text/feature/plural
 golang.org/x/text/internal
+golang.org/x/text/internal/catmsg
+golang.org/x/text/internal/format
 golang.org/x/text/internal/language
 golang.org/x/text/internal/language/compact
+golang.org/x/text/internal/number
+golang.org/x/text/internal/stringset
 golang.org/x/text/internal/tag
 golang.org/x/text/internal/utf8internal
 golang.org/x/text/language
+golang.org/x/text/message
+golang.org/x/text/message/catalog
 golang.org/x/text/runes
 golang.org/x/text/secure/bidirule
 golang.org/x/text/secure/precis

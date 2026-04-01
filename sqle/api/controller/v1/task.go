@@ -147,6 +147,18 @@ func GetSQLFromFile(c echo.Context) (GetSQLFromFileResp, error) {
 					FilePath: fileName,
 					SQLs:     sqlContent}},
 			}, nil
+		case ".xlsx":
+			// .xlsx: extract SQL from XLSX template (second phase)
+			sqlContent, _, err := getSqlsFromXlsx(c)
+			if err != nil {
+				return GetSQLFromFileResp{}, errors.New(errors.DataConflict, err)
+			}
+			return GetSQLFromFileResp{
+				SourceType: model.TaskSQLSourceFromSQLFile,
+				SQLsFromSQLFiles: []SQLsFromSQLFile{{
+					FilePath: fileName,
+					SQLs:     sqlContent}},
+			}, nil
 		default:
 			// For unrecognized extensions uploaded via input_sql_file,
 			// fall back to original behavior (treat as SQL content).

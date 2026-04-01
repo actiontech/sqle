@@ -89,20 +89,3 @@ func (m *multiRA) ReadAt(p []byte, off int64) (n int, err error) {
 	}
 	return
 }
-
-// ZeroSizeReaderAt returns a SizeReaderAt that's size bytes
-// of all zeros.
-func ZeroSizeReaderAt(size int64) SizeReaderAt {
-	return allZeros{n: size}
-}
-
-type allZeros struct{ n int64 }
-
-func (a allZeros) ReadAt(p []byte, off int64) (n int, err error) {
-	for i := range p {
-		p[i] = 0
-	}
-	return len(p), nil
-}
-
-func (a allZeros) Size() int64 { return a.n }
