@@ -127,16 +127,24 @@ func GetSQLFromFile(c echo.Context) (GetSQLFromFileResp, error) {
 		ext := strings.ToLower(filepath.Ext(fileName))
 		switch ext {
 		case ".sql", ".txt":
-			// .sql and .txt: use original logic (read content directly)
+			// .sql and .txt: convert encoding to UTF-8 before use
+			utf8Content, err := utils.ConvertToUtf8([]byte(sqlsFromSQLFile))
+			if err != nil {
+				return GetSQLFromFileResp{}, errors.New(errors.DataConflict, err)
+			}
 			return GetSQLFromFileResp{
 				SourceType: model.TaskSQLSourceFromSQLFile,
 				SQLsFromSQLFiles: []SQLsFromSQLFile{{
 					FilePath: fileName,
-					SQLs:     sqlsFromSQLFile}},
+					SQLs:     string(utf8Content)}},
 			}, nil
 		case ".java":
-			// .java: extract SQL statements from Java source code
-			sqls, err := getSqlFromJavaContent(sqlsFromSQLFile)
+			// .java: convert encoding to UTF-8, then extract SQL statements from Java source code
+			utf8Content, err := utils.ConvertToUtf8([]byte(sqlsFromSQLFile))
+			if err != nil {
+				return GetSQLFromFileResp{}, errors.New(errors.DataConflict, err)
+			}
+			sqls, err := getSqlFromJavaContent(string(utf8Content))
 			if err != nil {
 				return GetSQLFromFileResp{}, errors.New(errors.DataConflict, err)
 			}
