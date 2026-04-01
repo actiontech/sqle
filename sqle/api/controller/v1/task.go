@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -117,18 +118,45 @@ const (
 )
 
 func GetSQLFromFile(c echo.Context) (GetSQLFromFileResp, error) {
-	// Read it from sql file.
+	// Read it from sql file (.sql, .txt, .java).
 	fileName, sqlsFromSQLFile, exist, err := controller.ReadFile(c, InputSQLFileName)
 	if err != nil {
 		return GetSQLFromFileResp{}, err
 	}
 	if exist {
-		return GetSQLFromFileResp{
-			SourceType: model.TaskSQLSourceFromSQLFile,
-			SQLsFromSQLFiles: []SQLsFromSQLFile{{
-				FilePath: fileName,
-				SQLs:     sqlsFromSQLFile}},
-		}, nil
+		ext := strings.ToLower(filepath.Ext(fileName))
+		switch ext {
+		case ".sql", ".txt":
+			// .sql and .txt: use original logic (read content directly)
+			return GetSQLFromFileResp{
+				SourceType: model.TaskSQLSourceFromSQLFile,
+				SQLsFromSQLFiles: []SQLsFromSQLFile{{
+					FilePath: fileName,
+					SQLs:     sqlsFromSQLFile}},
+			}, nil
+		case ".java":
+			// .java: extract SQL statements from Java source code
+			sqls, err := getSqlFromJavaContent(sqlsFromSQLFile)
+			if err != nil {
+				return GetSQLFromFileResp{}, errors.New(errors.DataConflict, err)
+			}
+			sqlContent := strings.Join(sqls, ";\n")
+			return GetSQLFromFileResp{
+				SourceType: model.TaskSQLSourceFromSQLFile,
+				SQLsFromSQLFiles: []SQLsFromSQLFile{{
+					FilePath: fileName,
+					SQLs:     sqlContent}},
+			}, nil
+		default:
+			// For unrecognized extensions uploaded via input_sql_file,
+			// fall back to original behavior (treat as SQL content).
+			return GetSQLFromFileResp{
+				SourceType: model.TaskSQLSourceFromSQLFile,
+				SQLsFromSQLFiles: []SQLsFromSQLFile{{
+					FilePath: fileName,
+					SQLs:     sqlsFromSQLFile}},
+			}, nil
+		}
 	}
 
 	// If sql_file is not exist, read it from mybatis xml file.
@@ -155,15 +183,15 @@ func GetSQLFromFile(c echo.Context) (GetSQLFromFileResp, error) {
 		}, nil
 	}
 
-	// If mybatis xml file is not exist, read it from zip file.
-	sqlsFromSQLFiles, sqlsFromXML, exist, err := getSqlsFromZip(c)
+	// If mybatis xml file is not exist, read it from archive file (.zip, .rar, .7z).
+	sqlsFromArchive, sqlsFromXML, exist, err := getSqlsFromArchive(c)
 	if err != nil {
 		return GetSQLFromFileResp{}, err
 	}
 	if exist {
 		return GetSQLFromFileResp{
 			SourceType:       model.TaskSQLSourceFromZipFile,
-			SQLsFromSQLFiles: sqlsFromSQLFiles,
+			SQLsFromSQLFiles: sqlsFromArchive,
 			SQLsFromXMLs:     sqlsFromXML,
 		}, nil
 	}
@@ -181,6 +209,31 @@ func GetSQLFromFile(c echo.Context) (GetSQLFromFileResp, error) {
 		}, nil
 	}
 	return GetSQLFromFileResp{}, errors.New(errors.DataInvalid, fmt.Errorf("input sql is empty"))
+}
+
+// getSqlsFromArchive dispatches archive file processing based on file extension.
+// It checks the uploaded file's extension and calls the appropriate handler:
+// .zip -> getSqlsFromZip, .rar -> getSqlsFromRar, .7z -> getSqlsFrom7z.
+func getSqlsFromArchive(c echo.Context) (sqlsFromSQLFile []SQLsFromSQLFile, sqlsFromXML []SQLFromXML, exist bool, err error) {
+	file, err := c.FormFile(InputZipFileName)
+	if err == http.ErrMissingFile {
+		return nil, nil, false, nil
+	}
+	if err != nil {
+		return nil, nil, false, err
+	}
+
+	ext := strings.ToLower(filepath.Ext(file.Filename))
+	switch ext {
+	case ".zip":
+		return getSqlsFromZip(c)
+	case ".rar":
+		return getSqlsFromRar(c)
+	case ".7z":
+		return getSqlsFrom7z(c)
+	default:
+		return nil, nil, false, fmt.Errorf("unsupported archive file type: %s", ext)
+	}
 }
 
 func saveFileFromContext(c echo.Context) ([]*model.AuditFile, error) {
