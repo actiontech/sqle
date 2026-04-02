@@ -4612,6 +4612,123 @@ definitions:
       sql:
         type: string
     type: object
+  v1.SQLLineageAnalyzeReqV1:
+    properties:
+      default_schema:
+        type: string
+      instance_type:
+        type: string
+      result_columns:
+        items:
+          type: string
+        type: array
+      sql:
+        type: string
+    type: object
+  v1.SQLLineageAnalyzeResDataV1:
+    properties:
+      result:
+        $ref: '#/definitions/v1.SQLLineageAnalyzeResultV1'
+        type: object
+    type: object
+  v1.SQLLineageAnalyzeResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.SQLLineageAnalyzeResDataV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.SQLLineageAnalyzeResultV1:
+    properties:
+      edges:
+        items:
+          $ref: '#/definitions/v1.SQLLineageEdgeV1'
+        type: array
+      nodes:
+        items:
+          $ref: '#/definitions/v1.SQLLineageNodeV1'
+        type: array
+      original_sql:
+        type: string
+      result_columns:
+        items:
+          $ref: '#/definitions/v1.SQLLineageResultColumnV1'
+        type: array
+      source_columns:
+        items:
+          $ref: '#/definitions/v1.SQLLineageColumnRefV1'
+        type: array
+      tables:
+        items:
+          $ref: '#/definitions/v1.SQLLineageTableRefV1'
+        type: array
+      title:
+        type: string
+      warnings:
+        items:
+          type: string
+        type: array
+    type: object
+  v1.SQLLineageColumnRefV1:
+    properties:
+      column:
+        type: string
+      schema:
+        type: string
+      table:
+        type: string
+    type: object
+  v1.SQLLineageEdgeV1:
+    properties:
+      from_id:
+        type: string
+      to_id:
+        type: string
+      type:
+        type: string
+    type: object
+  v1.SQLLineageNodeV1:
+    properties:
+      column:
+        type: string
+      expr:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      schema:
+        type: string
+      table:
+        type: string
+      type:
+        type: string
+    type: object
+  v1.SQLLineageResultColumnV1:
+    properties:
+      expression:
+        type: string
+      name:
+        type: string
+      sources:
+        items:
+          $ref: '#/definitions/v1.SQLLineageColumnRefV1'
+        type: array
+    type: object
+  v1.SQLLineageTableRefV1:
+    properties:
+      alias:
+        type: string
+      schema:
+        type: string
+      table:
+        type: string
+    type: object
   v1.SQLQueryConfigResV1:
     properties:
       allow_query_when_less_than_audit_level:
@@ -13931,6 +14048,27 @@ paths:
       summary: 直接审核SQL
       tags:
       - sql_audit
+  /v1/sql_lineage_analysis:
+    post:
+      description: Analyze SQL and return column-level lineage
+      operationId: sqlLineageAnalyzeV1
+      parameters:
+      - description: sql lineage analyze request
+        in: body
+        name: req
+        required: true
+        schema:
+          $ref: '#/definitions/v1.SQLLineageAnalyzeReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.SQLLineageAnalyzeResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: SQL列级血缘分析
+      tags:
+      - sql_analysis
   /v1/statistic/instances/resource_overview_statistics:
     get:
       description: get instance overview statistics including average score, high
