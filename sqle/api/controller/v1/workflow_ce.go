@@ -35,8 +35,15 @@ func getWorkflowTemplate(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	td := model.DefaultWorkflowTemplate(projectUid)
-	td.Desc = fmt.Sprintf(locale.Bundle.LocalizeMsgByCtx(c.Request().Context(), locale.DefaultTemplatesDesc), projectUid)
+	workflowType := c.QueryParam("workflow_type")
+
+	var td *model.WorkflowTemplate
+	if workflowType == model.WorkflowTypeDataExport {
+		td = model.DefaultDataExportWorkflowTemplate(model.ProjectUID(projectUid))
+	} else {
+		td = model.DefaultWorkflowTemplate(projectUid)
+		td.Desc = fmt.Sprintf(locale.Bundle.LocalizeMsgByCtx(c.Request().Context(), locale.DefaultTemplatesDesc), projectUid)
+	}
 
 	return c.JSON(http.StatusOK, &GetWorkflowTemplateResV1{
 		BaseRes: controller.NewBaseReq(nil),
