@@ -5342,18 +5342,66 @@ func TestDMLCheckSpacesAroundTheString(t *testing.T) {
 }
 
 func TestDDLCheckFullWidthQuotationMarks(t *testing.T) {
-	for _, sql := range []string{
-		`alter table exist_tb_1 add column a int comment '”a“'`,
-		`create table t (id int comment '”aaa“')`,
-		//TODO　`alter table exist_tb_1 add column a int comment '‘'`,
-		//TODO　`create table t (id int comment '’')`,
+	// 全角双引号 “ ”（Unicode U+201C / U+201D）。下面 SQL 用反引号引用标识符，无法用反引号包裹整段 Go raw string，故用变量 + fmt.Sprintf 拼接。
+	lq, rq := "“", "”"
+	rule := rulepkg.RuleHandlerMap[rulepkg.DDLCheckFullWidthQuotationMarks].Rule
+	expectViolation := newTestResult().addResult(rulepkg.DDLCheckFullWidthQuotationMarks)
+	expectClean := newTestResult()
+
+	// Should trigger: full-width quotation marks appear in identifier names
+	for _, tc := range []struct {
+		name string
+		sql  string
+	}{
+		{"trigger_create_table_table_name", fmt.Sprintf("CREATE TABLE `%st1%s` (id int)", lq, rq)},
+		{"trigger_create_table_column_name", fmt.Sprintf("CREATE TABLE t (`%scol1%s` int)", lq, rq)},
+		{"trigger_create_table_column_name_mid", fmt.Sprintf("CREATE TABLE t (`col%smid%sx` int)", lq, rq)},
+		{"trigger_create_table_table_name_mid", fmt.Sprintf("CREATE TABLE `t%smid%ssuf` (id int)", lq, rq)},
+		{"trigger_create_table_inline_index_name", fmt.Sprintf("CREATE TABLE t (id int, INDEX `%sidx1%s` (id))", lq, rq)},
+		{"trigger_alter_add_column_name", fmt.Sprintf("ALTER TABLE exist_tb_1 ADD COLUMN `%scol1%s` int", lq, rq)},
+		{"trigger_alter_add_column_name_mid", fmt.Sprintf("ALTER TABLE exist_tb_1 ADD COLUMN `a%sb%s` int", lq, rq)},
+		{"trigger_alter_change_column_rename", fmt.Sprintf("ALTER TABLE exist_tb_1 CHANGE COLUMN v1 `%sv1_new%s` varchar(255)", lq, rq)},
+		{"trigger_alter_rename_table", fmt.Sprintf("ALTER TABLE exist_tb_1 RENAME TO `%st2%s`", lq, rq)},
+		{"trigger_alter_add_index_name", fmt.Sprintf("ALTER TABLE exist_tb_1 ADD INDEX `%sidx_new%s` (v1)", lq, rq)},
+		{"trigger_create_index_name", fmt.Sprintf("CREATE INDEX `%sidx1%s` ON exist_tb_1 (v1)", lq, rq)},
 	} {
-		runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckFullWidthQuotationMarks].Rule, t, "", DefaultMysqlInspect(), sql, newTestResult().addResult(rulepkg.DDLCheckFullWidthQuotationMarks))
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			runSingleRuleInspectCase(rule, t, tc.name, DefaultMysqlInspect(), tc.sql, expectViolation)
+		})
 	}
 
-	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLCheckFullWidthQuotationMarks].Rule, t, "success", DefaultMysqlInspect(),
-		`select "1"`,
-		newTestResult())
+	// Should NOT trigger: identifiers are normal; full-width marks appear only in COMMENT values (if at all).
+	// This group directly verifies the reported false-positive bug: COMMENT content must be ignored.
+	// MySQL accepts both single-quoted ('') and double-quoted ("") string literals for COMMENT values,
+	// so we test both forms.
+	for _, tc := range []struct {
+		name string
+		sql  string
+	}{
+		{"no_trigger_alter_column_comment_single_quote", fmt.Sprintf("alter table exist_tb_1 add column a int comment '%sa%s'", lq, rq)},
+		{"no_trigger_create_column_comment_single_quote", fmt.Sprintf("create table t (id int comment '%saaa%s')", lq, rq)},
+		{"no_trigger_create_table_comment_single_quote", fmt.Sprintf("create table t (id int) comment '%stable comment%s'", lq, rq)},
+		{"no_trigger_create_index_comment_single_quote", fmt.Sprintf("create index idx1 on exist_tb_1 (v1) comment '%sidx comment%s'", lq, rq)},
+		{"no_trigger_alter_column_comment_double_quote", fmt.Sprintf(`alter table exist_tb_1 add column a int comment "%sa%s"`, lq, rq)},
+		{"no_trigger_create_column_comment_double_quote", fmt.Sprintf(`create table t (id int comment "%saaa%s")`, lq, rq)},
+		{"no_trigger_create_table_comment_double_quote", fmt.Sprintf(`create table t (id int) comment "%stable comment%s"`, lq, rq)},
+		{"no_trigger_create_index_comment_double_quote", fmt.Sprintf(`create index idx1 on exist_tb_1 (v1) comment "%sidx comment%s"`, lq, rq)},
+		{"no_trigger_create_table_ascii_comment", `create table t (id int comment 'normal comment')`},
+		{"no_trigger_alter_ascii_comment", `alter table exist_tb_1 add column a int comment 'some normal comment'`},
+		{"no_trigger_create_table_no_comment", `create table t (id int)`},
+	} {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			runSingleRuleInspectCase(rule, t, tc.name, DefaultMysqlInspect(), tc.sql, expectClean)
+		})
+	}
+
+	t.Run("no_trigger_select_non_ddl", func(t *testing.T) {
+		runSingleRuleInspectCase(rule, t, "no_trigger_select_non_ddl", DefaultMysqlInspect(),
+			`select "1"`,
+			expectClean)
+	})
 }
 
 func TestDMLNotRecommendOrderByRand(t *testing.T) {
