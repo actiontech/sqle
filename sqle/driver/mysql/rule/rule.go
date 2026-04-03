@@ -3734,8 +3734,11 @@ func (g *checkSpacesAroundTheStringVisitor) Leave(n ast.Node) (node ast.Node, ok
 func checkFullWidthQuotationMarks(input *RuleHandlerInput) error {
 	switch input.Node.(type) {
 	case ast.DDLNode:
-		if strings.Contains(input.Node.Text(), "“") {
-			addResult(input.Res, input.Rule, input.Rule.Name)
+		for _, name := range getObjectNames(input.Node) {
+			if strings.ContainsAny(name, `“”`) { // “” are the full-width double quotation marks (U+201C and U+201D)
+				addResult(input.Res, input.Rule, input.Rule.Name)
+				return nil
+			}
 		}
 	}
 	return nil
