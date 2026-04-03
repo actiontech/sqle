@@ -5548,77 +5548,169 @@ func TestDDLCheckColumnQuantity(t *testing.T) {
 }
 
 func TestDDLRecommendTableColumnCharsetSame(t *testing.T) {
-	// 无需连库
+	rule := rulepkg.RuleHandlerMap[rulepkg.DDLRecommendTableColumnCharsetSame].Rule
+	expectClean := newTestResult()
+	expectViolation := newTestResult().addResult(rulepkg.DDLRecommendTableColumnCharsetSame)
 
-	// 需要查询数据库 获取数据库默认字符集
+	// 无需连库
+	for _, tc := range []struct {
+		name   string
+		sql    string
+		expect *testResult
+	}{
+		{"offline_create_table_column_charset_matches_table", "CREATE TABLE `t` ( `id` varchar(10) CHARACTER SET utf8 ) CHARACTER SET utf8", expectClean},
+		{"offline_create_table_no_column_charset_declared", "CREATE TABLE `t` ( `id` int(11), `col` char(10) DEFAULT NULL) CHARACTER SET gbk COLLATE gbk_chinese_ci", expectClean},
+		{"offline_create_table_blob_json_types", "CREATE TABLE `t` (`id` int(11), `col1` tinyblob, `col2` blob, `col3` mediumblob, `col4` longblob, `col5` json) CHARACTER SET utf8mb4", expectClean},
+		{"offline_create_table_blob_and_matching_varchar", "CREATE TABLE `t` (`id` int(11), `col1` blob, `col2` varchar(10) CHARACTER SET utf8mb4) CHARACTER SET utf8mb4", expectClean},
+		{"offline_create_table_column_charset_mismatch", "CREATE TABLE `t` (`id` int(11) DEFAULT NULL, `col` char(10) CHARACTER SET utf8 DEFAULT NULL) DEFAULT CHARSET=utf8mb4", expectViolation},
+		{"offline_create_table_blob_json_and_mismatch_varchar", "CREATE TABLE `t` (`id` int(11), `col1` blob, `col2` json, `col3` varchar(10) CHARACTER SET gbk) CHARACTER SET utf8mb4", expectViolation},
+	} {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			runSingleRuleInspectCase(rule, t, tc.name, DefaultMysqlInspect(), tc.sql, tc.expect)
+		})
+	}
+
+	// 需要连库（mock executor）
 	e, handler, err := executor.NewMockExecutor()
 	assert.NoError(t, err)
-	// 为视图查询添加 mock 期望
 	setupMockViewQueryExpectations(handler)
 	inspect1 := NewMockInspect(e)
 
-	// 不触发规则
-	// 创建表 声明列字符集与表字符集 二者一致
-	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLRecommendTableColumnCharsetSame].Rule, t, "success", DefaultMysqlInspect(), "CREATE TABLE `t` ( `id` varchar(10) CHARACTER SET utf8 ) CHARACTER SET utf8", newTestResult())
-	// 创建表 未声明列字符集
-	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLRecommendTableColumnCharsetSame].Rule, t, "success", DefaultMysqlInspect(), "CREATE TABLE `t` ( `id` int(11), `col` char(10) DEFAULT NULL) CHARACTER SET gbk COLLATE gbk_chinese_ci", newTestResult())
-	// 触发规则
-	// 创建表 声明列字符集与表字符集 二者不一致
-	runSingleRuleInspectCase(rulepkg.RuleHandlerMap[rulepkg.DDLRecommendTableColumnCharsetSame].Rule, t, "", DefaultMysqlInspect(), "CREATE TABLE `t` (`id` int(11) DEFAULT NULL, `col` char(10) CHARACTER SET utf8 DEFAULT NULL) DEFAULT CHARSET=utf8mb4", newTestResult().addResult(rulepkg.DDLRecommendTableColumnCharsetSame))
-
-	// 需要连库
-
-	// 不触发规则
-	// 先修改列的字符集，再修改表的字符集
-	runSingleRuleInspectCase(
-		rulepkg.RuleHandlerMap[rulepkg.DDLRecommendTableColumnCharsetSame].Rule, t, "success", inspect1, `ALTER TABLE exist_tb_1 MODIFY column_1 VARCHAR(255) CHARACTER SET cp850,
-		CONVERT TO CHARACTER SET gbk COLLATE gbk_chinese_ci;`, newTestResult())
-	// 先修改表的字符集，再修改列的字符集，二者字符集一致
-	runSingleRuleInspectCase(
-		rulepkg.RuleHandlerMap[rulepkg.DDLRecommendTableColumnCharsetSame].Rule, t, "success", inspect1, `ALTER TABLE exist_tb_1 CONVERT TO CHARACTER SET latin1 COLLATE latin1_general_ci,
-		MODIFY column_1 VARCHAR(255) CHARACTER SET latin1;`, newTestResult())
-	// 修改列的字符集和原表字符集一致
-	runSingleRuleInspectCase(
-		rulepkg.RuleHandlerMap[rulepkg.DDLRecommendTableColumnCharsetSame].Rule, t, "success", inspect1, `ALTER TABLE exist_tb_1 MODIFY column_1 VARCHAR(255) CHARACTER SET utf8mb4;`, newTestResult())
-	// 创建表未声明字符集和排序 列字符集与默认字符集一致
-	runSingleRuleInspectCase(
-		rulepkg.RuleHandlerMap[rulepkg.DDLRecommendTableColumnCharsetSame].Rule, t, "success", inspect1, "CREATE TABLE `t0` ( `col` char(10) CHARACTER SET utf8mb4 DEFAULT NULL)", newTestResult())
-	// 创建表只声明排序 列字符集与排序对应字符集一致
-	handler.ExpectQuery(regexp.QuoteMeta(`SELECT CHARACTER_SET_NAME FROM INFORMATION_SCHEMA.COLLATIONS WHERE COLLATION_NAME = "gbk_chinese_ci"`)).
-		WillReturnRows(sqlmock.NewRows([]string{"CHARACTER_SET_NAME"}).AddRow("gbk"))
-	runSingleRuleInspectCase(
-		rulepkg.RuleHandlerMap[rulepkg.DDLRecommendTableColumnCharsetSame].Rule, t, "success", inspect1, "CREATE TABLE `t1` ( `col` char(10) CHARACTER SET gbk DEFAULT NULL) DEFAULT COLLATE=gbk_chinese_ci", newTestResult())
-	// 创建表声明列排序 列字符集与排序对应字符集一致
-	handler.ExpectQuery(regexp.QuoteMeta(`SELECT CHARACTER_SET_NAME FROM INFORMATION_SCHEMA.COLLATIONS WHERE COLLATION_NAME = "gbk_chinese_ci"`)).
-		WillReturnRows(sqlmock.NewRows([]string{"CHARACTER_SET_NAME"}).AddRow("gbk"))
-	runSingleRuleInspectCase(
-		rulepkg.RuleHandlerMap[rulepkg.DDLRecommendTableColumnCharsetSame].Rule, t, "success", inspect1, "CREATE TABLE `t4` ( `col` char(10) COLLATE gbk_chinese_ci DEFAULT NULL) CHARACTER SET gbk COLLATE gbk_chinese_ci", newTestResult())
-
-	// 修改列, 未声明字符集
-	runSingleRuleInspectCase(
-		rulepkg.RuleHandlerMap[rulepkg.DDLRecommendTableColumnCharsetSame].Rule, t, "success", inspect1, `ALTER TABLE exist_tb_1 ALTER v1 SET DEFAULT NULL;`, newTestResult())
-	// 触发规则
-	// 创建表未声明字符集和排序 列字符集与默认字符集不一致
-	runSingleRuleInspectCase(
-		rulepkg.RuleHandlerMap[rulepkg.DDLRecommendTableColumnCharsetSame].Rule, t, "success", inspect1, "CREATE TABLE `t2` ( `col` char(10) CHARACTER SET gbk DEFAULT NULL)", newTestResult().addResult(rulepkg.DDLRecommendTableColumnCharsetSame))
-	// 创建表只声明排序 列字符集与排序对应字符集不一致
-	handler.ExpectQuery(regexp.QuoteMeta(`SELECT CHARACTER_SET_NAME FROM INFORMATION_SCHEMA.COLLATIONS WHERE COLLATION_NAME = "gbk_chinese_ci"`)).
-		WillReturnRows(sqlmock.NewRows([]string{"CHARACTER_SET_NAME"}).AddRow("gbk"))
-	runSingleRuleInspectCase(
-		rulepkg.RuleHandlerMap[rulepkg.DDLRecommendTableColumnCharsetSame].Rule, t, "success", inspect1, "CREATE TABLE `t3` ( `col` char(10) CHARACTER SET utf8mb4 DEFAULT NULL) DEFAULT COLLATE=gbk_chinese_ci", newTestResult().addResult(rulepkg.DDLRecommendTableColumnCharsetSame))
-
-	// 先修改表的字符集，再修改列的字符集，二者字符集不一致
-	runSingleRuleInspectCase(
-		rulepkg.RuleHandlerMap[rulepkg.DDLRecommendTableColumnCharsetSame].Rule, t, "success", inspect1, `ALTER TABLE exist_tb_1 CONVERT TO CHARACTER SET latin1 COLLATE latin1_general_ci,
-		MODIFY column_1 VARCHAR(255) CHARACTER SET gbk;`, newTestResult().addResult(rulepkg.DDLRecommendTableColumnCharsetSame))
-	// 修改列的字符集和原表字符集一致
-	runSingleRuleInspectCase(
-		rulepkg.RuleHandlerMap[rulepkg.DDLRecommendTableColumnCharsetSame].Rule, t, "success", inspect1, `ALTER TABLE exist_tb_1 MODIFY column_1 VARCHAR(255) CHARACTER SET gbk;`, newTestResult().addResult(rulepkg.DDLRecommendTableColumnCharsetSame))
-	// 创建表声明列排序 列字符集与排序对应字符集一致
-	handler.ExpectQuery(regexp.QuoteMeta(`SELECT CHARACTER_SET_NAME FROM INFORMATION_SCHEMA.COLLATIONS WHERE COLLATION_NAME = "latin1_general_ci"`)).
-		WillReturnRows(sqlmock.NewRows([]string{"CHARACTER_SET_NAME"}).AddRow("latin1"))
-	runSingleRuleInspectCase(
-		rulepkg.RuleHandlerMap[rulepkg.DDLRecommendTableColumnCharsetSame].Rule, t, "success", inspect1, "CREATE TABLE `t5` ( `col` char(10) COLLATE latin1_general_ci DEFAULT NULL,`col2` char(10)) CHARACTER SET gbk COLLATE gbk_chinese_ci", newTestResult().addResult(rulepkg.DDLRecommendTableColumnCharsetSame))
+	for _, tc := range []struct {
+		name  string
+		sql   string
+		setup func()
+		want  *testResult
+	}{
+		{
+			name: "mock_alter_modify_column_then_convert_table_charset",
+			sql: `ALTER TABLE exist_tb_1 MODIFY column_1 VARCHAR(255) CHARACTER SET cp850,
+		CONVERT TO CHARACTER SET gbk COLLATE gbk_chinese_ci;`,
+			want: expectClean,
+		},
+		{
+			name: "mock_alter_convert_table_then_modify_column_same_charset",
+			sql: `ALTER TABLE exist_tb_1 CONVERT TO CHARACTER SET latin1 COLLATE latin1_general_ci,
+		MODIFY column_1 VARCHAR(255) CHARACTER SET latin1;`,
+			want: expectClean,
+		},
+		{
+			name: "mock_alter_modify_column_matches_table_utf8mb4",
+			sql:  `ALTER TABLE exist_tb_1 MODIFY column_1 VARCHAR(255) CHARACTER SET utf8mb4;`,
+			want: expectClean,
+		},
+		{
+			name: "mock_create_t0_column_charset_matches_default",
+			sql:  "CREATE TABLE `t0` ( `col` char(10) CHARACTER SET utf8mb4 DEFAULT NULL)",
+			want: expectClean,
+		},
+		{
+			name: "mock_create_t1_table_collation_maps_to_column_charset",
+			sql:  "CREATE TABLE `t1` ( `col` char(10) CHARACTER SET gbk DEFAULT NULL) DEFAULT COLLATE=gbk_chinese_ci",
+			setup: func() {
+				handler.ExpectQuery(regexp.QuoteMeta(`SELECT CHARACTER_SET_NAME FROM INFORMATION_SCHEMA.COLLATIONS WHERE COLLATION_NAME = "gbk_chinese_ci"`)).
+					WillReturnRows(sqlmock.NewRows([]string{"CHARACTER_SET_NAME"}).AddRow("gbk"))
+			},
+			want: expectClean,
+		},
+		{
+			name: "mock_create_t4_column_collation_matches_table",
+			sql:  "CREATE TABLE `t4` ( `col` char(10) COLLATE gbk_chinese_ci DEFAULT NULL) CHARACTER SET gbk COLLATE gbk_chinese_ci",
+			setup: func() {
+				handler.ExpectQuery(regexp.QuoteMeta(`SELECT CHARACTER_SET_NAME FROM INFORMATION_SCHEMA.COLLATIONS WHERE COLLATION_NAME = "gbk_chinese_ci"`)).
+					WillReturnRows(sqlmock.NewRows([]string{"CHARACTER_SET_NAME"}).AddRow("gbk"))
+			},
+			want: expectClean,
+		},
+		{
+			name: "mock_alter_column_set_default_no_charset",
+			sql:  `ALTER TABLE exist_tb_1 ALTER v1 SET DEFAULT NULL;`,
+			want: expectClean,
+		},
+		{
+			name: "mock_alter_modify_tinyblob",
+			sql:  `ALTER TABLE exist_tb_1 MODIFY column_1 TINYBLOB;`,
+			want: expectClean,
+		},
+		{
+			name: "mock_alter_modify_blob",
+			sql:  `ALTER TABLE exist_tb_1 MODIFY column_1 BLOB;`,
+			want: expectClean,
+		},
+		{
+			name: "mock_alter_modify_mediumblob",
+			sql:  `ALTER TABLE exist_tb_1 MODIFY column_1 MEDIUMBLOB;`,
+			want: expectClean,
+		},
+		{
+			name: "mock_alter_modify_longblob",
+			sql:  `ALTER TABLE exist_tb_1 MODIFY column_1 LONGBLOB;`,
+			want: expectClean,
+		},
+		{
+			name: "mock_alter_modify_json",
+			sql:  `ALTER TABLE exist_tb_1 MODIFY column_1 JSON;`,
+			want: expectClean,
+		},
+		{
+			name: "mock_alter_add_blob_column",
+			sql:  `ALTER TABLE exist_tb_1 ADD COLUMN new_col BLOB;`,
+			want: expectClean,
+		},
+		{
+			name: "mock_alter_blob_and_varchar_utf8mb4_ok",
+			sql:  `ALTER TABLE exist_tb_1 MODIFY column_1 BLOB, MODIFY v1 VARCHAR(255) CHARACTER SET utf8mb4;`,
+			want: expectClean,
+		},
+		{
+			name: "mock_alter_blob_and_varchar_gbk_mismatch",
+			sql:  `ALTER TABLE exist_tb_1 MODIFY column_1 BLOB, MODIFY v1 VARCHAR(255) CHARACTER SET gbk;`,
+			want: expectViolation,
+		},
+		{
+			name: "mock_create_t2_column_gbk_vs_default_mismatch",
+			sql:  "CREATE TABLE `t2` ( `col` char(10) CHARACTER SET gbk DEFAULT NULL)",
+			want: expectViolation,
+		},
+		{
+			name: "mock_create_t3_utf8mb4_column_vs_gbk_table_collation",
+			sql:  "CREATE TABLE `t3` ( `col` char(10) CHARACTER SET utf8mb4 DEFAULT NULL) DEFAULT COLLATE=gbk_chinese_ci",
+			setup: func() {
+				handler.ExpectQuery(regexp.QuoteMeta(`SELECT CHARACTER_SET_NAME FROM INFORMATION_SCHEMA.COLLATIONS WHERE COLLATION_NAME = "gbk_chinese_ci"`)).
+					WillReturnRows(sqlmock.NewRows([]string{"CHARACTER_SET_NAME"}).AddRow("gbk"))
+			},
+			want: expectViolation,
+		},
+		{
+			name: "mock_alter_convert_latin1_modify_column_gbk",
+			sql: `ALTER TABLE exist_tb_1 CONVERT TO CHARACTER SET latin1 COLLATE latin1_general_ci,
+		MODIFY column_1 VARCHAR(255) CHARACTER SET gbk;`,
+			want: expectViolation,
+		},
+		{
+			name: "mock_alter_modify_column_gbk_vs_table",
+			sql:  `ALTER TABLE exist_tb_1 MODIFY column_1 VARCHAR(255) CHARACTER SET gbk;`,
+			want: expectViolation,
+		},
+		{
+			name: "mock_create_t5_column_collation_vs_table_mismatch",
+			sql:  "CREATE TABLE `t5` ( `col` char(10) COLLATE latin1_general_ci DEFAULT NULL,`col2` char(10)) CHARACTER SET gbk COLLATE gbk_chinese_ci",
+			setup: func() {
+				handler.ExpectQuery(regexp.QuoteMeta(`SELECT CHARACTER_SET_NAME FROM INFORMATION_SCHEMA.COLLATIONS WHERE COLLATION_NAME = "latin1_general_ci"`)).
+					WillReturnRows(sqlmock.NewRows([]string{"CHARACTER_SET_NAME"}).AddRow("latin1"))
+			},
+			want: expectViolation,
+		},
+	} {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.setup != nil {
+				tc.setup()
+			}
+			runSingleRuleInspectCase(rule, t, tc.name, inspect1, tc.sql, tc.want)
+		})
+	}
 }
 
 func TestDDLCheckColumnTypeInteger(t *testing.T) {
