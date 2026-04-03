@@ -3959,7 +3959,7 @@ func recommendTableColumnCharsetSame(input *RuleHandlerInput) error {
 			}
 		}
 	case *ast.AlterTableStmt:
-		var columnWithCharset []*ast.ColumnDef
+		var columnWithCharset []*ast.ColumnDef                           
 		var newCharset *ast.TableOption
 		var useConvert bool
 		for _, spec := range stmt.Specs {
@@ -3968,7 +3968,9 @@ func recommendTableColumnCharsetSame(input *RuleHandlerInput) error {
 				if col.Tp == nil {
 					continue
 				}
-				if col.Tp.Charset != "" {
+				// blob/json 等二进制类型的 Charset 由解析器自动设置为 "binary"，
+				// 与表字符集比较没有意义，跳过
+				if col.Tp.Charset != "" && col.Tp.Charset != "binary" {
 					columnWithCharset = append(columnWithCharset, col)
 				}
 			}
