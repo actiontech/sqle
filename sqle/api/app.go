@@ -329,6 +329,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 
 		// workflow template
 		v1ProjectViewRouter.GET("/:project_name/workflow_template", v1.GetWorkflowTemplate)
+		v1ProjectViewRouter.GET("/:project_name/workflow_templates", v1.GetWorkflowTemplates)
 		v1ProjectViewRouter.GET("/:project_name/workflows/:workflow_name/", DeprecatedBy(apiV2))
 		v1ProjectViewRouter.GET("/:project_name/workflows", v1.GetWorkflowsV1)
 		v1ProjectViewRouter.GET("/:project_name/workflows/:workflow_name/tasks", DeprecatedBy(apiV2))

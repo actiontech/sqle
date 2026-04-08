@@ -44,6 +44,10 @@ func getWorkflowTemplate(c echo.Context) error {
 	})
 }
 
+func getWorkflowTemplates(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportWorkflowTemplate)
+}
+
 func updateWorkflowTemplate(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportWorkflowTemplate)
 }
