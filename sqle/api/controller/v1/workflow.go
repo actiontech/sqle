@@ -49,9 +49,19 @@ type GetWorkflowTemplateResV1 struct {
 	Data *WorkflowTemplateDetailResV1 `json:"data"`
 }
 
+type GetWorkflowTemplatesResV1 struct {
+	controller.BaseRes
+	Data *WorkflowTemplateListDataV1 `json:"data"`
+}
+
+type WorkflowTemplateListDataV1 struct {
+	WorkflowTemplateList []*WorkflowTemplateDetailResV1 `json:"workflow_template_list"`
+}
+
 type WorkflowTemplateDetailResV1 struct {
 	Name                          string                       `json:"workflow_template_name"`
 	Desc                          string                       `json:"desc,omitempty"`
+	WorkflowType                  string                       `json:"workflow_type" enums:"workflow,data_export"`
 	AllowSubmitWhenLessAuditLevel string                       `json:"allow_submit_when_less_audit_level" enums:"normal,notice,warn,error"`
 	Steps                         []*WorkFlowStepTemplateResV1 `json:"workflow_step_template_list"`
 	UpdateTime                    time.Time                    `json:"update_time"`
@@ -72,16 +82,30 @@ type WorkFlowStepTemplateResV1 struct {
 // @Id getWorkflowTemplateV1
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
+// @Param workflow_type query string false "workflow type" Enums(workflow, data_export)
 // @Success 200 {object} v1.GetWorkflowTemplateResV1
 // @router /v1/projects/{project_name}/workflow_template [get]
 func GetWorkflowTemplate(c echo.Context) error {
 	return getWorkflowTemplate(c)
 }
 
+// @Summary 获取审批流程模板列表
+// @Description get workflow template list
+// @Tags workflow
+// @Id getWorkflowTemplatesV1
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Success 200 {object} v1.GetWorkflowTemplatesResV1
+// @router /v1/projects/{project_name}/workflow_templates [get]
+func GetWorkflowTemplates(c echo.Context) error {
+	return getWorkflowTemplates(c)
+}
+
 func convertWorkflowTemplateToRes(template *model.WorkflowTemplate) *WorkflowTemplateDetailResV1 {
 	res := &WorkflowTemplateDetailResV1{
 		Name:                          template.Name,
 		Desc:                          template.Desc,
+		WorkflowType:                  template.WorkflowType,
 		AllowSubmitWhenLessAuditLevel: template.AllowSubmitWhenLessAuditLevel,
 		UpdateTime:                    template.UpdatedAt,
 	}
