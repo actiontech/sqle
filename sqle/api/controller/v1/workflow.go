@@ -143,6 +143,7 @@ type WorkFlowStepTemplateReqV1 struct {
 }
 
 type UpdateWorkflowTemplateReqV1 struct {
+	WorkflowType                  string                       `json:"workflow_type" form:"workflow_type"`
 	Desc                          *string                      `json:"desc" form:"desc"`
 	AllowSubmitWhenLessAuditLevel *string                      `json:"allow_submit_when_less_audit_level" enums:"normal,notice,warn,error"`
 	Steps                         []*WorkFlowStepTemplateReqV1 `json:"workflow_step_template_list" form:"workflow_step_template_list"`
