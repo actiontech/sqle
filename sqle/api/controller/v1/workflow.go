@@ -111,7 +111,7 @@ func convertWorkflowTemplateToRes(template *model.WorkflowTemplate) *WorkflowTem
 }
 
 type WorkFlowStepTemplateReqV1 struct {
-	Type                 string   `json:"type" form:"type" valid:"oneof=sql_review sql_execute" enums:"sql_review,sql_execute"`
+	Type                 string   `json:"type" form:"type" valid:"oneof=sql_review sql_execute export_review export_execute" enums:"sql_review,sql_execute,export_review,export_execute"`
 	Desc                 string   `json:"desc" form:"desc"`
 	ApprovedByAuthorized bool     `json:"approved_by_authorized"`
 	ExecuteByAuthorized  bool     `json:"execute_by_authorized"`
