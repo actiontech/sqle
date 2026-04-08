@@ -10952,6 +10952,335 @@
                 }
             }
         },
+        "/v2/dashboard/accounts": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get global account list with filtering and pagination.\nPagination: page_index is 1-based; offset is (page_index-1)*page_size. Values of page_index less than 1 are normalized to 1; page_size less than 1 may fall back to a default on the server.",
+                "tags": [
+                    "GlobalDashboard"
+                ],
+                "summary": "获取全局账号管理列表",
+                "operationId": "GetGlobalAccountListV2",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "1-based page index",
+                        "name": "page_index",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Number of items per page",
+                        "name": "page_size",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "expiring_soon",
+                            "active"
+                        ],
+                        "type": "string",
+                        "description": "filter by card; expiring_soon 即将过期, active 我的可用账号",
+                        "name": "filter_card",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy search keyword",
+                        "name": "keyword",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter by project uid",
+                        "name": "filter_project_uid",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter by instance id",
+                        "name": "filter_instance_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dashboard.GlobalAccountListResV2"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/dashboard/accounts/statistics": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get global account statistics;",
+                "tags": [
+                    "GlobalDashboard"
+                ],
+                "summary": "获取全局账号管理统计数据",
+                "operationId": "GetGlobalAccountStatisticsV2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "filter by project uid",
+                        "name": "filter_project_uid",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter by instance id",
+                        "name": "filter_instance_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dashboard.GlobalAccountStatisticsResV2"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/dashboard/sql_manage/statistics": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get global sql manage statistics;",
+                "tags": [
+                    "GlobalDashboard"
+                ],
+                "summary": "获取全局 SQL 治理统计看板",
+                "operationId": "GetGlobalSqlManageStatisticsV2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "filter by project uid",
+                        "name": "filter_project_uid",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter by instance id",
+                        "name": "filter_instance_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dashboard.GlobalSqlManageStatisticsResV2"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/dashboard/sql_manage/tasks": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get global sql manage task list with filtering and pagination.\nPagination: 1-based page_index with offset (page_index-1)*page_size; page_index and page_size are required query parameters (non-zero).",
+                "tags": [
+                    "GlobalDashboard"
+                ],
+                "summary": "获取全局 SQL 治理任务列表",
+                "operationId": "GetGlobalSqlManageTaskListV2",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "1-based page index",
+                        "name": "page_index",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Number of items per page",
+                        "name": "page_size",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "pending",
+                            "optimized"
+                        ],
+                        "type": "string",
+                        "description": "filter by card; pending 待我优化, optimized 优化完成",
+                        "name": "filter_card",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy search keyword",
+                        "name": "keyword",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter by project uid",
+                        "name": "filter_project_uid",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter by instance id",
+                        "name": "filter_instance_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dashboard.GlobalSqlManageTaskListResV2"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/dashboard/workflows": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get global workflow list with filtering and pagination.\nPagination uses two mutually exclusive modes. Aggregate mode (omit workflow_type): merge sql_release and data_export ordered by time; use cursor (empty on first request, then data.next_cursor from the previous response) and page_size; page_index is not used for paging. Single-type mode (workflow_type set): list only that type with standard page_index (1-based) and page_size; cursor is ignored. Do not rely on mixing cursor tokens with workflow_type in one flow.",
+                "tags": [
+                    "GlobalDashboard"
+                ],
+                "summary": "获取全局工单管理列表",
+                "operationId": "GetGlobalWorkflowListV2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Aggregate mode only (omit workflow_type): opaque cursor string; leave empty on the first request, then pass the previous response's data.next_cursor. Ignored when workflow_type is set.",
+                        "name": "cursor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size; required in both aggregate and single-type modes.",
+                        "name": "page_size",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Single-type mode only (workflow_type set): 1-based page index. When workflow_type is omitted, this value is ignored for pagination (use cursor instead).",
+                        "name": "page_index",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy search keyword",
+                        "name": "keyword",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter by project uid",
+                        "name": "filter_project_uid",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter by instance id",
+                        "name": "filter_instance_id",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "archived",
+                            "pending_for_me",
+                            "initiated_by_me"
+                        ],
+                        "type": "string",
+                        "description": "filter by card type; archived 已完成工单, pending_for_me 待我处理, initiated_by_me 我发起",
+                        "name": "filter_card",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "sql_release",
+                            "data_export"
+                        ],
+                        "type": "string",
+                        "description": "filter by workflow type; sql_release SQL上线工单, data_export 数据导出工单",
+                        "name": "workflow_type",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dashboard.GlobalWorkflowListResV2"
+                        }
+                    }
+                }
+            }
+        },
+        "/v2/dashboard/workflows/statistics": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get global workflow statistics, returns archived, pending_for_me, and initiated_by_me counts",
+                "tags": [
+                    "GlobalDashboard"
+                ],
+                "summary": "获取全局工单管理统计数据",
+                "operationId": "GetGlobalWorkflowStatisticsV2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "filter by project uid",
+                        "name": "filter_project_uid",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter by instance id",
+                        "name": "filter_instance_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dashboard.GlobalWorkflowStatisticsResV2"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/projects/{project_name}/audit_plans": {
             "get": {
                 "security": [
@@ -13287,6 +13616,366 @@
                 "message": {
                     "type": "string",
                     "example": "ok"
+                }
+            }
+        },
+        "dashboard.GlobalAccountListDataV2": {
+            "type": "object",
+            "properties": {
+                "accounts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dashboard.GlobalAccountListItemV2"
+                    }
+                },
+                "can_manage": {
+                    "description": "是否有管理权限",
+                    "type": "boolean"
+                }
+            }
+        },
+        "dashboard.GlobalAccountListItemV2": {
+            "type": "object",
+            "properties": {
+                "account_name": {
+                    "description": "账号名称",
+                    "type": "string"
+                },
+                "account_uid": {
+                    "description": "账号ID",
+                    "type": "string"
+                },
+                "expired_time": {
+                    "description": "过期时间，前端应显示剩余时间，若小于7天则需要用警告图标配合加粗红色文字警示",
+                    "type": "string"
+                },
+                "instance_id": {
+                    "description": "实例ID",
+                    "type": "string"
+                },
+                "instance_name": {
+                    "description": "实例名称",
+                    "type": "string"
+                },
+                "project_name": {
+                    "description": "项目名称",
+                    "type": "string"
+                },
+                "project_uid": {
+                    "description": "项目ID",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "状态展示: 活跃，临期，已过期，已锁定",
+                    "type": "string",
+                    "enum": [
+                        "active",
+                        "expiring",
+                        "expired",
+                        "locked"
+                    ]
+                }
+            }
+        },
+        "dashboard.GlobalAccountListResV2": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/dashboard.GlobalAccountListDataV2"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dashboard.GlobalAccountStatisticsData": {
+            "type": "object",
+            "properties": {
+                "active_account_count": {
+                    "description": "我的可用账号卡片，展示我的可用账号数量",
+                    "type": "integer"
+                },
+                "expiring_soon_count": {
+                    "description": "即将过期卡片，展示即将过期的账号数量",
+                    "type": "integer"
+                }
+            }
+        },
+        "dashboard.GlobalAccountStatisticsResV2": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "description": "统计数据",
+                    "type": "object",
+                    "$ref": "#/definitions/dashboard.GlobalAccountStatisticsData"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "dashboard.GlobalSqlManageStatisticsResV2": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/dashboard.GlobalSqlManageStatisticsV2"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "dashboard.GlobalSqlManageStatisticsV2": {
+            "type": "object",
+            "properties": {
+                "optimized_this_week_count": {
+                    "description": "优化完成卡片，展示历史优化完成的SQL数量",
+                    "type": "integer"
+                },
+                "pending_sql_count": {
+                    "description": "待我优化卡片，展示需要我处理的SQL数量",
+                    "type": "integer"
+                }
+            }
+        },
+        "dashboard.GlobalSqlManageTaskItemV2": {
+            "type": "object",
+            "properties": {
+                "avg_time": {
+                    "description": "平均耗时(秒)，来自采集 info；无慢日志等指标时 JSON 为 null（非 0）",
+                    "type": "number"
+                },
+                "count": {
+                    "description": "执行频次；info 中无 counter 等时为 null（非 0）",
+                    "type": "integer"
+                },
+                "instance_id": {
+                    "description": "实例ID",
+                    "type": "string"
+                },
+                "instance_name": {
+                    "description": "实例名称",
+                    "type": "string"
+                },
+                "last_seen_at": {
+                    "description": "最后一次捕捉时间",
+                    "type": "string"
+                },
+                "project_name": {
+                    "description": "项目名称",
+                    "type": "string"
+                },
+                "project_uid": {
+                    "description": "项目ID",
+                    "type": "string"
+                },
+                "source": {
+                    "description": "来源，如：慢日志、库表元数据等，根据数据源id和项目id跳转到智能扫描详情",
+                    "type": "string"
+                },
+                "sql_fingerprint": {
+                    "description": "SQL 指纹",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "SQL治理任务状态：待处理，已优化，已忽略，人工审核中，已分配",
+                    "type": "string",
+                    "enum": [
+                        "unhandled",
+                        "solved",
+                        "ignored",
+                        "manual_audited",
+                        "sent"
+                    ]
+                },
+                "suggestion": {
+                    "description": "管理员派单备注；无备注时为空字符串",
+                    "type": "string"
+                }
+            }
+        },
+        "dashboard.GlobalSqlManageTaskListResV2": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dashboard.GlobalSqlManageTaskItemV2"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dashboard.GlobalWorkflowListData": {
+            "type": "object",
+            "properties": {
+                "has_more": {
+                    "description": "是否还有更多数据",
+                    "type": "boolean"
+                },
+                "next_cursor": {
+                    "description": "游标分页：下一页游标",
+                    "type": "string"
+                },
+                "total_nums": {
+                    "description": "总条数",
+                    "type": "integer"
+                },
+                "workflows": {
+                    "description": "工单列表",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dashboard.GlobalWorkflowListItem"
+                    }
+                }
+            }
+        },
+        "dashboard.GlobalWorkflowListItem": {
+            "type": "object",
+            "properties": {
+                "assignee": {
+                    "description": "当前处理人姓名",
+                    "type": "string"
+                },
+                "created_at": {
+                    "description": "创建时间",
+                    "type": "string"
+                },
+                "instance_id": {
+                    "description": "实例ID",
+                    "type": "string"
+                },
+                "instance_name": {
+                    "description": "实例名称",
+                    "type": "string"
+                },
+                "priority": {
+                    "description": "High, Medium, Low",
+                    "type": "string"
+                },
+                "project_name": {
+                    "description": "项目名称",
+                    "type": "string"
+                },
+                "project_uid": {
+                    "description": "项目ID",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "工单状态",
+                    "type": "string",
+                    "enum": [
+                        "pending_approval",
+                        "pending_action",
+                        "in_progress",
+                        "exporting",
+                        "rejected",
+                        "cancelled",
+                        "failed",
+                        "completed",
+                        "unknown"
+                    ]
+                },
+                "workflow_desc": {
+                    "description": "工单描述",
+                    "type": "string"
+                },
+                "workflow_id": {
+                    "description": "工单ID",
+                    "type": "string"
+                },
+                "workflow_name": {
+                    "description": "工单名称",
+                    "type": "string"
+                },
+                "workflow_type": {
+                    "description": "工单类型",
+                    "type": "string",
+                    "enum": [
+                        "sql_release",
+                        "data_export"
+                    ]
+                }
+            }
+        },
+        "dashboard.GlobalWorkflowListResV2": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/dashboard.GlobalWorkflowListData"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "dashboard.GlobalWorkflowStatisticsResV2": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/dashboard.GlobalWorkflowStatisticsV2"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "dashboard.GlobalWorkflowStatisticsV2": {
+            "type": "object",
+            "properties": {
+                "archived_count": {
+                    "description": "已完成的工单数量",
+                    "type": "integer"
+                },
+                "initiated_by_me_count": {
+                    "description": "我发起的工单数量",
+                    "type": "integer"
+                },
+                "pending_for_me_count": {
+                    "description": "待我处理的工单数量",
+                    "type": "integer"
                 }
             }
         },
