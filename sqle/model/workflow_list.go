@@ -2,6 +2,7 @@ package model
 
 import (
 	"database/sql"
+	"strings"
 	"time"
 )
 
@@ -21,6 +22,16 @@ type WorkflowListDetail struct {
 	InstanceIds                RowList        `json:"instance_ids"`
 }
 
+func (w *WorkflowListDetail) CurrentAssigneeUser() []string {
+	if w.Status == WorkflowStatusReject {
+		return []string{w.CreateUser.String}
+	}
+	if !w.CurrentStepAssigneeUserIds.Valid || w.CurrentStepAssigneeUserIds.String == "" {
+		return []string{}
+	}
+	return strings.Split(w.CurrentStepAssigneeUserIds.String, ",")
+}
+
 var workflowsQueryTpl = `
 SELECT 
 	   w.project_id,
@@ -31,7 +42,7 @@ SELECT
 	   CAST("" AS DATETIME)											 AS create_user_deleted_at,
        w.created_at                                                  AS create_time,
        curr_wst.type                                                 AS current_step_type,
-       curr_ws.assignees											 AS current_step_assignee_user_id_list,
+       IF(wr.status = 'rejected', w.create_user_id, curr_ws.assignees) AS current_step_assignee_user_id_list,
        wr.status,
 	   GROUP_CONCAT(DISTINCT wir.instance_id SEPARATOR ',') AS instance_ids,
 	   GROUP_CONCAT(DISTINCT versions.version SEPARATOR ',') AS versions
@@ -129,6 +140,7 @@ AND wr.status IN (:filter_status)
 
 {{- if .filter_current_step_assignee_user_id }}
 AND (curr_ws.assignees REGEXP :filter_current_step_assignee_user_id
+OR (wr.status = 'rejected' AND w.create_user_id = :filter_current_step_assignee_user_id)
 OR IF(wr.status = 'wait_for_execution'
                 , wir.execution_assignees REGEXP :filter_current_step_assignee_user_id
                 , '')

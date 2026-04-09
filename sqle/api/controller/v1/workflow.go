@@ -839,10 +839,7 @@ func toGlobalWorkflowRes(workflows []*model.WorkflowListDetail, projectMap Proje
 		}
 
 		CurrentStepAssigneeUserNames := make([]string, 0)
-		for _, currentStepAssigneeUser := range strings.Split(workflow.CurrentStepAssigneeUserIds.String, ",") {
-			if currentStepAssigneeUser == "" {
-				continue
-			}
+		for _, currentStepAssigneeUser := range workflow.CurrentAssigneeUser() {
 			CurrentStepAssigneeUserNames = append(CurrentStepAssigneeUserNames, dms.GetUserNameWithDelTag(currentStepAssigneeUser))
 		}
 		workflowRes := &WorkflowDetailResV1{
@@ -1256,10 +1253,7 @@ func GetWorkflowsV1(c echo.Context) error {
 	for _, workflow := range workflows {
 		// TODO DMS提供根据ID批量查询用户接口，demo阶段使用GetUser实现
 		CurrentStepAssigneeUserNames := make([]string, 0)
-		for _, currentStepAssigneeUser := range strings.Split(workflow.CurrentStepAssigneeUserIds.String, ",") {
-			if currentStepAssigneeUser == "" {
-				continue
-			}
+		for _, currentStepAssigneeUser := range workflow.CurrentAssigneeUser() {
 			CurrentStepAssigneeUserNames = append(CurrentStepAssigneeUserNames, dms.GetUserNameWithDelTag(currentStepAssigneeUser))
 		}
 		workflowRes := &WorkflowDetailResV1{
