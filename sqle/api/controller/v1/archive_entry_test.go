@@ -15,10 +15,17 @@ func TestProcessArchiveEntry(t *testing.T) {
 		t.Fatalf("failed to encode GBK test data: %v", err)
 	}
 
-	// Prepare Java content that contains SQL
-	javaWithSQL := []byte(`public class Test {
-    public void query() {
+	// Prepare Java content that contains SQL.
+	// Keep it close to real-world usage so java-sql-extractor can capture it reliably.
+	javaWithSQL := []byte(`import java.sql.Connection;
+import java.sql.PreparedStatement;
+
+public class Test {
+    public void query(Connection conn) throws Exception {
         String sql = "SELECT * FROM users";
+        PreparedStatement ps = conn.prepareStatement(sql);
+        ps.executeQuery();
+        ps.close();
     }
 }`)
 

@@ -51,10 +51,6 @@ type SQLAuditRecordResData struct {
 	Task *AuditTaskResV1 `json:"task"`
 }
 
-// 10M
-// maxZipFileSize 保留用于向后兼容，实际限制检查已迁移到 defaultArchiveConfig.checkSize()
-var maxZipFileSize int64 = 1024 * 1024 * 10
-
 // CreateSQLAuditRecord
 // @Summary SQL审核
 // @Id CreateSQLAuditRecordV1

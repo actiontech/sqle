@@ -86,7 +86,7 @@ func processXlsxContent(r io.Reader) (string, error) {
 	}
 
 	// 逐行读取 SQL 列内容，跳过空行
-	var sqls []string
+	sqls := make([]string, 0, len(rows)-1)
 	for _, row := range rows[1:] {
 		// 行的列数可能小于 SQL 列索引（excelize 对尾部空列会截断）
 		if sqlColIdx >= len(row) {
