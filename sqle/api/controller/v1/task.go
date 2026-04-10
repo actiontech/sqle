@@ -619,8 +619,11 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 
 	ctx := c.Request().Context()
 
-	// 解析导出格式参数，缺失时默认返回 CSV（向后兼容）
-	exportFormat := utils.NormalizeExportFormatStr(c.QueryParam("export_format"))
+	// 解析导出格式参数，缺失时默认返回 CSV（向后兼容），无效格式返回 400 错误
+	exportFormat, err := utils.NormalizeExportFormatStr(c.QueryParam("export_format"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
 
 	// 构建报告数据
 	reportData, err := BuildAuditReportData(task, s, req.NoDuplicate, ctx)

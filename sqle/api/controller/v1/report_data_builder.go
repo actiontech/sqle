@@ -95,20 +95,25 @@ func BuildAuditReportData(task *model.Task, s *model.Storage, noDuplicate bool, 
 		auditTime = task.CreatedAt.Format("2006-01-02 15:04:05")
 	}
 
+	instanceName := task.InstanceName()
+	if instanceName == "" {
+		instanceName = "unknown"
+	}
+
 	return &utils.AuditReportData{
 		TaskID:       uint64(task.ID),
 		Title:        locale.Bundle.LocalizeMsgByCtx(ctx, locale.ReportLabelTitle),
-		InstanceName: task.InstanceName(),
+		InstanceName: instanceName,
 		Schema:       task.Schema,
 		GeneratedAt:  time.Now(),
 		Lang:         locale.Bundle.GetLangTagFromCtx(ctx).String(),
 		LogoBase64:   "",
 		Summary: utils.AuditSummary{
 			AuditTime:    auditTime,
-			InstanceName: task.InstanceName(),
+			InstanceName: instanceName,
 			Schema:       task.Schema,
 			TotalSQL:     len(sqlList),
-			PassRate:     task.PassRate,
+			PassRate:     task.PassRate * 100,
 			Score:        task.Score,
 			AuditLevel:   task.AuditLevel,
 		},

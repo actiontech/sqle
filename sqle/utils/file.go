@@ -172,22 +172,23 @@ func NormalizeExportFormat(format *ExportFormat) ExportFormat {
 	return *format
 }
 
-// NormalizeExportFormatStr 规范化导出格式参数（字符串版本），默认返回 CSV（向后兼容）
-// 支持 html/pdf/word/docx/excel/xlsx/csv 等输入的规范化，空字符串和无效值默认返回 CSV。
-func NormalizeExportFormatStr(format string) ExportFormat {
+// NormalizeExportFormatStr 规范化导出格式参数（字符串版本）。
+// 空字符串默认返回 CSV（向后兼容）；无效格式返回错误。
+// 支持 html/pdf/word/docx/excel/xlsx/csv 等输入的规范化。
+func NormalizeExportFormatStr(format string) (ExportFormat, error) {
 	switch strings.ToLower(strings.TrimSpace(format)) {
 	case "html":
-		return ExportFormatHTML
+		return ExportFormatHTML, nil
 	case "pdf":
-		return ExportFormatPDF
+		return ExportFormatPDF, nil
 	case "word", "docx":
-		return ExportFormatWORD
+		return ExportFormatWORD, nil
 	case "excel", "xlsx":
-		return ExcelExportFormat
+		return ExcelExportFormat, nil
 	case "csv", "":
-		return CsvExportFormat
+		return CsvExportFormat, nil
 	default:
-		return CsvExportFormat
+		return "", fmt.Errorf("unsupported export format: %s", format)
 	}
 }
 

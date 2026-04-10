@@ -9,8 +9,9 @@ import (
 
 func TestNormalizeExportFormatStr(t *testing.T) {
 	testCases := map[string]struct {
-		input    string
-		expected ExportFormat
+		input       string
+		expected    ExportFormat
+		expectError bool
 	}{
 		"empty string defaults to csv": {
 			input:    "",
@@ -64,13 +65,13 @@ func TestNormalizeExportFormatStr(t *testing.T) {
 			input:    "DOCX",
 			expected: ExportFormatWORD,
 		},
-		"invalid value defaults to csv": {
-			input:    "invalid",
-			expected: CsvExportFormat,
+		"invalid value returns error": {
+			input:       "invalid",
+			expectError: true,
 		},
-		"unknown format defaults to csv": {
-			input:    "json",
-			expected: CsvExportFormat,
+		"unknown format returns error": {
+			input:       "json",
+			expectError: true,
 		},
 		"whitespace-only defaults to csv": {
 			input:    "   ",
@@ -84,7 +85,17 @@ func TestNormalizeExportFormatStr(t *testing.T) {
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-			result := NormalizeExportFormatStr(tc.input)
+			result, err := NormalizeExportFormatStr(tc.input)
+			if tc.expectError {
+				if err == nil {
+					t.Errorf("NormalizeExportFormatStr(%q) expected error, got nil", tc.input)
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("NormalizeExportFormatStr(%q) unexpected error: %v", tc.input, err)
+				return
+			}
 			if result != tc.expected {
 				t.Errorf("NormalizeExportFormatStr(%q) = %q, want %q", tc.input, result, tc.expected)
 			}
