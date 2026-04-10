@@ -768,3 +768,189 @@ func TestHTMLReportGenerator_LargeData(t *testing.T) {
 		})
 	}
 }
+
+// =========================================================================
+// ExportAuditReport CE 版测试
+// 以下测试在默认（非 enterprise）构建条件下运行，验证 CE 版格式分发逻辑。
+// =========================================================================
+
+func TestExportAuditReport_CSVFormat(t *testing.T) {
+	testCases := map[string]struct {
+		format          ExportFormat
+		wantContentType string
+		wantFileSuffix  string
+	}{
+		"CSV format returns valid CSV result": {
+			format:          CsvExportFormat,
+			wantContentType: "text/csv",
+			wantFileSuffix:  ".csv",
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			data := buildTestReportData()
+			result, err := ExportAuditReport(tc.format, data)
+			if err != nil {
+				t.Fatalf("ExportAuditReport(%q) returned unexpected error: %v", tc.format, err)
+			}
+			if result == nil {
+				t.Fatal("ExportAuditReport() returned nil result")
+			}
+			if result.ContentType != tc.wantContentType {
+				t.Errorf("ContentType = %q, want %q", result.ContentType, tc.wantContentType)
+			}
+			if !strings.HasSuffix(result.FileName, tc.wantFileSuffix) {
+				t.Errorf("FileName %q does not end with %q", result.FileName, tc.wantFileSuffix)
+			}
+			if len(result.Content) == 0 {
+				t.Error("ExportAuditReport() returned empty content")
+			}
+		})
+	}
+}
+
+func TestExportAuditReport_HTMLFormat(t *testing.T) {
+	testCases := map[string]struct {
+		format          ExportFormat
+		wantContentType string
+		wantFileSuffix  string
+		wantHTMLTags    []string
+	}{
+		"HTML format returns valid HTML result": {
+			format:          ExportFormatHTML,
+			wantContentType: "text/html",
+			wantFileSuffix:  ".html",
+			wantHTMLTags:    []string{"<!DOCTYPE html>", "</html>", "<table>"},
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			data := buildTestReportData()
+			result, err := ExportAuditReport(tc.format, data)
+			if err != nil {
+				t.Fatalf("ExportAuditReport(%q) returned unexpected error: %v", tc.format, err)
+			}
+			if result == nil {
+				t.Fatal("ExportAuditReport() returned nil result")
+			}
+			if result.ContentType != tc.wantContentType {
+				t.Errorf("ContentType = %q, want %q", result.ContentType, tc.wantContentType)
+			}
+			if !strings.HasSuffix(result.FileName, tc.wantFileSuffix) {
+				t.Errorf("FileName %q does not end with %q", result.FileName, tc.wantFileSuffix)
+			}
+			content := string(result.Content)
+			for _, tag := range tc.wantHTMLTags {
+				if !strings.Contains(content, tag) {
+					t.Errorf("Content does not contain expected HTML tag %q", tag)
+				}
+			}
+		})
+	}
+}
+
+func TestExportAuditReport_CEEdition_PDFBlocked(t *testing.T) {
+	testCases := map[string]struct {
+		format        ExportFormat
+		wantErrSubstr string
+	}{
+		"PDF format is blocked in CE edition": {
+			format:        ExportFormatPDF,
+			wantErrSubstr: "enterprise edition",
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			data := buildTestReportData()
+			result, err := ExportAuditReport(tc.format, data)
+			if err == nil {
+				t.Fatal("ExportAuditReport(PDF) should return error in CE edition, got nil")
+			}
+			if result != nil {
+				t.Errorf("ExportAuditReport(PDF) should return nil result in CE edition, got %+v", result)
+			}
+			if !strings.Contains(err.Error(), tc.wantErrSubstr) {
+				t.Errorf("error message %q does not contain %q", err.Error(), tc.wantErrSubstr)
+			}
+			// Verify the error message includes the format name
+			if !strings.Contains(err.Error(), string(tc.format)) {
+				t.Errorf("error message %q does not contain format name %q", err.Error(), tc.format)
+			}
+		})
+	}
+}
+
+func TestExportAuditReport_CEEdition_WORDBlocked(t *testing.T) {
+	testCases := map[string]struct {
+		format        ExportFormat
+		wantErrSubstr string
+	}{
+		"WORD format is blocked in CE edition": {
+			format:        ExportFormatWORD,
+			wantErrSubstr: "enterprise edition",
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			data := buildTestReportData()
+			result, err := ExportAuditReport(tc.format, data)
+			if err == nil {
+				t.Fatal("ExportAuditReport(WORD) should return error in CE edition, got nil")
+			}
+			if result != nil {
+				t.Errorf("ExportAuditReport(WORD) should return nil result in CE edition, got %+v", result)
+			}
+			if !strings.Contains(err.Error(), tc.wantErrSubstr) {
+				t.Errorf("error message %q does not contain %q", err.Error(), tc.wantErrSubstr)
+			}
+			// Verify the error message includes the format name
+			if !strings.Contains(err.Error(), string(tc.format)) {
+				t.Errorf("error message %q does not contain format name %q", err.Error(), tc.format)
+			}
+		})
+	}
+}
+
+func TestExportAuditReport_DefaultCSV(t *testing.T) {
+	testCases := map[string]struct {
+		format        ExportFormat
+		wantErrSubstr string
+	}{
+		"invalid format returns error": {
+			format:        ExportFormat("invalid"),
+			wantErrSubstr: "unsupported export format",
+		},
+		"empty format returns error": {
+			format:        ExportFormat(""),
+			wantErrSubstr: "unsupported export format",
+		},
+		"unknown format returns error": {
+			format:        ExportFormat("json"),
+			wantErrSubstr: "unsupported export format",
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			data := buildTestReportData()
+			result, err := ExportAuditReport(tc.format, data)
+			if err == nil {
+				t.Fatalf("ExportAuditReport(%q) expected error, got nil", tc.format)
+			}
+			if result != nil {
+				t.Errorf("ExportAuditReport(%q) expected nil result, got %+v", tc.format, result)
+			}
+			if !strings.Contains(err.Error(), tc.wantErrSubstr) {
+				t.Errorf("error message %q does not contain %q", err.Error(), tc.wantErrSubstr)
+			}
+			// Verify the error message includes the format name
+			if !strings.Contains(err.Error(), string(tc.format)) {
+				t.Errorf("error message %q does not contain format name %q", err.Error(), tc.format)
+			}
+		})
+	}
+}
