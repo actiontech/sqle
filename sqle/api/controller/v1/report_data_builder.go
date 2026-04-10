@@ -9,14 +9,14 @@ import (
 
 	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/server/auditreport"
 	"github.com/actiontech/sqle/sqle/server"
-	"github.com/actiontech/sqle/sqle/utils"
 )
 
 // BuildAuditReportData 从 Task 和数据库查询构建报告数据。
-// 该函数放在 controller 层而非 utils 层，因为 utils 被 model 引用，
+// 该函数放在 controller 层；报告数据模型在 server/auditreport。utils 被 model 引用，
 // 若 utils 反向引用 model 会产生循环依赖。
-func BuildAuditReportData(task *model.Task, s *model.Storage, noDuplicate bool, ctx context.Context) (*utils.AuditReportData, error) {
+func BuildAuditReportData(task *model.Task, s *model.Storage, noDuplicate bool, ctx context.Context) (*auditreport.AuditReportData, error) {
 	// 1. 获取 SQL 列表
 	data := map[string]interface{}{
 		"task_id":      fmt.Sprintf("%d", task.ID),
@@ -37,8 +37,8 @@ func BuildAuditReportData(task *model.Task, s *model.Storage, noDuplicate bool, 
 	// 3. 构建 SQL 列表和统计数据
 	levelDist := make(map[string]int)
 	ruleHits := make(map[string]int)
-	var sqlList []utils.AuditSQLItem
-	var problemSQLs []utils.AuditSQLItem
+	var sqlList []auditreport.AuditSQLItem
+	var problemSQLs []auditreport.AuditSQLItem
 
 	for _, td := range taskSQLsDetail {
 		// 构造临时 ExecuteSQL 对象以复用状态描述方法
@@ -51,7 +51,7 @@ func BuildAuditReportData(task *model.Task, s *model.Storage, noDuplicate bool, 
 		// 提取规则名称和审核建议
 		ruleName, suggestion := extractRuleInfo(td.AuditResults, ctx)
 
-		item := utils.AuditSQLItem{
+		item := auditreport.AuditSQLItem{
 			Number:      td.Number,
 			SQL:         td.ExecSQL,
 			AuditLevel:  td.AuditLevel,
@@ -100,7 +100,7 @@ func BuildAuditReportData(task *model.Task, s *model.Storage, noDuplicate bool, 
 		instanceName = "unknown"
 	}
 
-	return &utils.AuditReportData{
+	return &auditreport.AuditReportData{
 		TaskID:       uint64(task.ID),
 		Title:        locale.Bundle.LocalizeMsgByCtx(ctx, locale.ReportLabelTitle),
 		InstanceName: instanceName,
@@ -108,7 +108,7 @@ func BuildAuditReportData(task *model.Task, s *model.Storage, noDuplicate bool, 
 		GeneratedAt:  time.Now(),
 		Lang:         locale.Bundle.GetLangTagFromCtx(ctx).String(),
 		LogoBase64:   "",
-		Summary: utils.AuditSummary{
+		Summary: auditreport.AuditSummary{
 			AuditTime:    auditTime,
 			InstanceName: instanceName,
 			Schema:       task.Schema,
@@ -117,7 +117,7 @@ func BuildAuditReportData(task *model.Task, s *model.Storage, noDuplicate bool, 
 			Score:        task.Score,
 			AuditLevel:   task.AuditLevel,
 		},
-		Statistics: utils.AuditStatistics{
+		Statistics: auditreport.AuditStatistics{
 			LevelDistribution: toLevelCounts(levelDist),
 			RuleHits:          toRuleHits(ruleHits),
 		},
@@ -153,9 +153,9 @@ func extractRuleInfo(auditResults model.AuditResults, ctx context.Context) (rule
 
 // toLevelCounts 将等级分布 map 转换为有序的 LevelCount 切片。
 // 按 error > warn > notice > normal 顺序排列。
-func toLevelCounts(dist map[string]int) []utils.LevelCount {
+func toLevelCounts(dist map[string]int) []auditreport.LevelCount {
 	if len(dist) == 0 {
-		return []utils.LevelCount{}
+		return []auditreport.LevelCount{}
 	}
 
 	levelOrder := map[string]int{
@@ -165,9 +165,9 @@ func toLevelCounts(dist map[string]int) []utils.LevelCount {
 		"normal": 3,
 	}
 
-	result := make([]utils.LevelCount, 0, len(dist))
+	result := make([]auditreport.LevelCount, 0, len(dist))
 	for level, count := range dist {
-		result = append(result, utils.LevelCount{
+		result = append(result, auditreport.LevelCount{
 			Level: level,
 			Count: count,
 		})
@@ -189,14 +189,14 @@ func toLevelCounts(dist map[string]int) []utils.LevelCount {
 }
 
 // toRuleHits 将规则命中 map 转换为按命中次数降序排列的 RuleHit 切片。
-func toRuleHits(hits map[string]int) []utils.RuleHit {
+func toRuleHits(hits map[string]int) []auditreport.RuleHit {
 	if len(hits) == 0 {
-		return []utils.RuleHit{}
+		return []auditreport.RuleHit{}
 	}
 
-	result := make([]utils.RuleHit, 0, len(hits))
+	result := make([]auditreport.RuleHit, 0, len(hits))
 	for name, count := range hits {
-		result = append(result, utils.RuleHit{
+		result = append(result, auditreport.RuleHit{
 			RuleName: name,
 			HitCount: count,
 		})
@@ -212,8 +212,8 @@ func toRuleHits(hits map[string]int) []utils.RuleHit {
 // buildReportLabels 构建报告中使用的国际化标签。
 // 当前版本使用 locale 包已有的国际化消息和硬编码中文标签，
 // 后续阶段 8 将接入 go-i18n 框架实现完整国际化。
-func buildReportLabels(ctx context.Context) utils.ReportLabels {
-	return utils.ReportLabels{
+func buildReportLabels(ctx context.Context) auditreport.ReportLabels {
+	return auditreport.ReportLabels{
 		AuditSummary:      locale.Bundle.LocalizeMsgByCtx(ctx, locale.ReportLabelAuditSummary),
 		ResultStatistics:  locale.Bundle.LocalizeMsgByCtx(ctx, locale.ReportLabelResultStatistics),
 		ProblemSQLList:    locale.Bundle.LocalizeMsgByCtx(ctx, locale.ReportLabelProblemSQLList),

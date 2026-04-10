@@ -22,6 +22,7 @@ import (
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/server/auditreport"
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/utils"
 
@@ -632,7 +633,7 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 	}
 
 	// 根据格式生成报告
-	result, err := utils.ExportAuditReport(exportFormat, reportData)
+	result, err := auditreport.ExportAuditReport(exportFormat, reportData)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}

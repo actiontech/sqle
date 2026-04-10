@@ -1,8 +1,9 @@
-package utils
+package auditreport
 
 import (
-	"fmt"
 	"time"
+
+	"github.com/actiontech/sqle/sqle/utils"
 )
 
 // AuditReportData 审核报告完整数据模型
@@ -30,20 +31,6 @@ type AuditReportData struct {
 	Labels ReportLabels `json:"labels"`
 }
 
-// CSVHeaders 返回 CSV 报告的表头列表
-func (d *AuditReportData) CSVHeaders() []string {
-	return []string{
-		d.Labels.Number,
-		d.Labels.SQL,
-		d.Labels.AuditStatus,
-		d.Labels.AuditResult,
-		d.Labels.ExecStatus,
-		d.Labels.ExecResult,
-		d.Labels.RollbackSQL,
-		d.Labels.Description,
-	}
-}
-
 // AuditSummary 审核概要
 type AuditSummary struct {
 	AuditTime    string  `json:"audit_time"`
@@ -58,7 +45,7 @@ type AuditSummary struct {
 // AuditStatistics 审核结果统计
 type AuditStatistics struct {
 	LevelDistribution []LevelCount `json:"level_distribution"` // 按等级分布
-	RuleHits          []RuleHit    `json:"rule_hits"`          // 规则命中统计
+	RuleHits          []RuleHit    `json:"rule_hits"`            // 规则命中统计
 }
 
 // LevelCount 等级统计
@@ -87,20 +74,6 @@ type AuditSQLItem struct {
 	// HTML/PDF/WORD 报告扩展字段
 	RuleName   string `json:"rule_name"`   // 触发的规则名称
 	Suggestion string `json:"suggestion"` // 优化建议
-}
-
-// ToCSVRow 将审核 SQL 项转换为 CSV 行数据
-func (item *AuditSQLItem) ToCSVRow() []string {
-	return []string{
-		fmt.Sprintf("%d", item.Number),
-		item.SQL,
-		item.AuditStatus,
-		item.AuditResult,
-		item.ExecStatus,
-		item.ExecResult,
-		item.RollbackSQL,
-		item.Description,
-	}
 }
 
 // ReportLabels 报告中的国际化标签
@@ -133,12 +106,7 @@ type ReportLabels struct {
 // ReportGenerator 报告生成器接口
 type ReportGenerator interface {
 	// Generate 根据报告数据生成指定格式的文件
-	Generate(data *AuditReportData) (*ExportDataResult, error)
-	// Format 返回生成器支持的格式
-	Format() ExportFormat
+	Generate(data *AuditReportData) (*utils.ExportDataResult, error)
+	// ReportType 返回生成器对应的导出格式
+	ReportType() utils.ExportFormat
 }
-
-// ExportAuditReport 统一导出入口（CE/EE 通过 build tags 区分实现）
-// CE 版本支持 CSV 和 HTML 格式，EE 版本额外支持 PDF 和 WORD 格式。
-// 函数签名：func ExportAuditReport(format ExportFormat, data *AuditReportData) (*ExportDataResult, error)
-// 实现分别位于 report_generator_ce.go 和 report_generator_ee.go 中。

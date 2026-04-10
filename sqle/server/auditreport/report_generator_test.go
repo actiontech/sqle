@@ -1,107 +1,13 @@
-package utils
+package auditreport
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/actiontech/sqle/sqle/utils"
 )
-
-func TestNormalizeExportFormatStr(t *testing.T) {
-	testCases := map[string]struct {
-		input       string
-		expected    ExportFormat
-		expectError bool
-	}{
-		"empty string defaults to csv": {
-			input:    "",
-			expected: CsvExportFormat,
-		},
-		"csv returns csv": {
-			input:    "csv",
-			expected: CsvExportFormat,
-		},
-		"CSV uppercase returns csv": {
-			input:    "CSV",
-			expected: CsvExportFormat,
-		},
-		"excel returns excel": {
-			input:    "excel",
-			expected: ExcelExportFormat,
-		},
-		"xlsx returns excel": {
-			input:    "xlsx",
-			expected: ExcelExportFormat,
-		},
-		"html returns html": {
-			input:    "html",
-			expected: ExportFormatHTML,
-		},
-		"HTML uppercase returns html": {
-			input:    "HTML",
-			expected: ExportFormatHTML,
-		},
-		"pdf returns pdf": {
-			input:    "pdf",
-			expected: ExportFormatPDF,
-		},
-		"PDF uppercase returns pdf": {
-			input:    "PDF",
-			expected: ExportFormatPDF,
-		},
-		"word returns word": {
-			input:    "word",
-			expected: ExportFormatWORD,
-		},
-		"WORD uppercase returns word": {
-			input:    "WORD",
-			expected: ExportFormatWORD,
-		},
-		"docx returns word": {
-			input:    "docx",
-			expected: ExportFormatWORD,
-		},
-		"DOCX uppercase returns word": {
-			input:    "DOCX",
-			expected: ExportFormatWORD,
-		},
-		"invalid value returns error": {
-			input:       "invalid",
-			expectError: true,
-		},
-		"unknown format returns error": {
-			input:       "json",
-			expectError: true,
-		},
-		"whitespace-only defaults to csv": {
-			input:    "   ",
-			expected: CsvExportFormat,
-		},
-		"leading and trailing spaces are trimmed": {
-			input:    "  pdf  ",
-			expected: ExportFormatPDF,
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			result, err := NormalizeExportFormatStr(tc.input)
-			if tc.expectError {
-				if err == nil {
-					t.Errorf("NormalizeExportFormatStr(%q) expected error, got nil", tc.input)
-				}
-				return
-			}
-			if err != nil {
-				t.Errorf("NormalizeExportFormatStr(%q) unexpected error: %v", tc.input, err)
-				return
-			}
-			if result != tc.expected {
-				t.Errorf("NormalizeExportFormatStr(%q) = %q, want %q", tc.input, result, tc.expected)
-			}
-		})
-	}
-}
 
 // buildTestReportData 构建测试用的 AuditReportData
 func buildTestReportData() *AuditReportData {
@@ -442,10 +348,10 @@ func TestCSVReportGenerator_SpecialChars(t *testing.T) {
 	}
 }
 
-func TestCSVReportGenerator_Format(t *testing.T) {
+func TestCSVReportGenerator_ReportType(t *testing.T) {
 	gen := NewCSVReportGenerator()
-	if gen.Format() != CsvExportFormat {
-		t.Errorf("Format() = %q, want %q", gen.Format(), CsvExportFormat)
+	if gen.ReportType() != utils.CsvExportFormat {
+		t.Errorf("ReportType() = %q, want %q", gen.ReportType(), utils.CsvExportFormat)
 	}
 }
 
@@ -529,9 +435,9 @@ func TestHTMLReportGenerator_Normal(t *testing.T) {
 				}
 			}
 
-			// Verify Format() returns ExportFormatHTML
-			if gen.Format() != ExportFormatHTML {
-				t.Errorf("Format() = %q, want %q", gen.Format(), ExportFormatHTML)
+			// Verify ReportType() returns ExportFormatHTML
+			if gen.ReportType() != utils.ExportFormatHTML {
+				t.Errorf("ReportType() = %q, want %q", gen.ReportType(), utils.ExportFormatHTML)
 			}
 		})
 	}
@@ -769,19 +675,14 @@ func TestHTMLReportGenerator_LargeData(t *testing.T) {
 	}
 }
 
-// =========================================================================
-// ExportAuditReport CE 版测试
-// 以下测试在默认（非 enterprise）构建条件下运行，验证 CE 版格式分发逻辑。
-// =========================================================================
-
 func TestExportAuditReport_CSVFormat(t *testing.T) {
 	testCases := map[string]struct {
-		format          ExportFormat
+		format          utils.ExportFormat
 		wantContentType string
 		wantFileSuffix  string
 	}{
 		"CSV format returns valid CSV result": {
-			format:          CsvExportFormat,
+			format:          utils.CsvExportFormat,
 			wantContentType: "text/csv",
 			wantFileSuffix:  ".csv",
 		},
@@ -812,13 +713,13 @@ func TestExportAuditReport_CSVFormat(t *testing.T) {
 
 func TestExportAuditReport_HTMLFormat(t *testing.T) {
 	testCases := map[string]struct {
-		format          ExportFormat
+		format          utils.ExportFormat
 		wantContentType string
 		wantFileSuffix  string
 		wantHTMLTags    []string
 	}{
 		"HTML format returns valid HTML result": {
-			format:          ExportFormatHTML,
+			format:          utils.ExportFormatHTML,
 			wantContentType: "text/html",
 			wantFileSuffix:  ".html",
 			wantHTMLTags:    []string{"<!DOCTYPE html>", "</html>", "<table>"},
@@ -851,106 +752,3 @@ func TestExportAuditReport_HTMLFormat(t *testing.T) {
 	}
 }
 
-func TestExportAuditReport_CEEdition_PDFBlocked(t *testing.T) {
-	testCases := map[string]struct {
-		format        ExportFormat
-		wantErrSubstr string
-	}{
-		"PDF format is blocked in CE edition": {
-			format:        ExportFormatPDF,
-			wantErrSubstr: "enterprise edition",
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			data := buildTestReportData()
-			result, err := ExportAuditReport(tc.format, data)
-			if err == nil {
-				t.Fatal("ExportAuditReport(PDF) should return error in CE edition, got nil")
-			}
-			if result != nil {
-				t.Errorf("ExportAuditReport(PDF) should return nil result in CE edition, got %+v", result)
-			}
-			if !strings.Contains(err.Error(), tc.wantErrSubstr) {
-				t.Errorf("error message %q does not contain %q", err.Error(), tc.wantErrSubstr)
-			}
-			// Verify the error message includes the format name
-			if !strings.Contains(err.Error(), string(tc.format)) {
-				t.Errorf("error message %q does not contain format name %q", err.Error(), tc.format)
-			}
-		})
-	}
-}
-
-func TestExportAuditReport_CEEdition_WORDBlocked(t *testing.T) {
-	testCases := map[string]struct {
-		format        ExportFormat
-		wantErrSubstr string
-	}{
-		"WORD format is blocked in CE edition": {
-			format:        ExportFormatWORD,
-			wantErrSubstr: "enterprise edition",
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			data := buildTestReportData()
-			result, err := ExportAuditReport(tc.format, data)
-			if err == nil {
-				t.Fatal("ExportAuditReport(WORD) should return error in CE edition, got nil")
-			}
-			if result != nil {
-				t.Errorf("ExportAuditReport(WORD) should return nil result in CE edition, got %+v", result)
-			}
-			if !strings.Contains(err.Error(), tc.wantErrSubstr) {
-				t.Errorf("error message %q does not contain %q", err.Error(), tc.wantErrSubstr)
-			}
-			// Verify the error message includes the format name
-			if !strings.Contains(err.Error(), string(tc.format)) {
-				t.Errorf("error message %q does not contain format name %q", err.Error(), tc.format)
-			}
-		})
-	}
-}
-
-func TestExportAuditReport_DefaultCSV(t *testing.T) {
-	testCases := map[string]struct {
-		format        ExportFormat
-		wantErrSubstr string
-	}{
-		"invalid format returns error": {
-			format:        ExportFormat("invalid"),
-			wantErrSubstr: "unsupported export format",
-		},
-		"empty format returns error": {
-			format:        ExportFormat(""),
-			wantErrSubstr: "unsupported export format",
-		},
-		"unknown format returns error": {
-			format:        ExportFormat("json"),
-			wantErrSubstr: "unsupported export format",
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
-			data := buildTestReportData()
-			result, err := ExportAuditReport(tc.format, data)
-			if err == nil {
-				t.Fatalf("ExportAuditReport(%q) expected error, got nil", tc.format)
-			}
-			if result != nil {
-				t.Errorf("ExportAuditReport(%q) expected nil result, got %+v", tc.format, result)
-			}
-			if !strings.Contains(err.Error(), tc.wantErrSubstr) {
-				t.Errorf("error message %q does not contain %q", err.Error(), tc.wantErrSubstr)
-			}
-			// Verify the error message includes the format name
-			if !strings.Contains(err.Error(), string(tc.format)) {
-				t.Errorf("error message %q does not contain format name %q", err.Error(), tc.format)
-			}
-		})
-	}
-}

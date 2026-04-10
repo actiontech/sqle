@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/actiontech/sqle/sqle/model"
-	"github.com/actiontech/sqle/sqle/utils"
+	"github.com/actiontech/sqle/sqle/server/auditreport"
 	"golang.org/x/text/language"
 )
 
@@ -423,8 +423,8 @@ func TestExtractRuleInfoNilResults(t *testing.T) {
 // TestCSVHeaders verifies that CSVHeaders returns the correct number of columns
 // based on the report labels.
 func TestCSVHeaders(t *testing.T) {
-	data := &utils.AuditReportData{
-		Labels: utils.ReportLabels{
+	data := &auditreport.AuditReportData{
+		Labels: auditreport.ReportLabels{
 			Number:      "Number",
 			SQL:         "SQL",
 			AuditStatus: "Audit Status",
@@ -436,7 +436,8 @@ func TestCSVHeaders(t *testing.T) {
 		},
 	}
 
-	headers := data.CSVHeaders()
+	gen := auditreport.NewCSVReportGenerator()
+	headers := gen.CSVHeaders(data)
 	if len(headers) != 8 {
 		t.Errorf("CSVHeaders() returned %d columns, want 8", len(headers))
 	}

@@ -1,9 +1,11 @@
-package utils
+package auditreport
 
 import (
 	"bytes"
 	"fmt"
 	"html/template"
+
+	"github.com/actiontech/sqle/sqle/utils"
 )
 
 // HTMLReportGenerator HTML 格式报告生成器
@@ -29,28 +31,19 @@ func NewHTMLReportGenerator() (*HTMLReportGenerator, error) {
 	return &HTMLReportGenerator{tmpl: tmpl}, nil
 }
 
-// Format 返回生成器支持的导出格式
-func (g *HTMLReportGenerator) Format() ExportFormat {
-	return ExportFormatHTML
+// ReportType 返回生成器支持的导出格式
+func (g *HTMLReportGenerator) ReportType() utils.ExportFormat {
+	return utils.ExportFormatHTML
 }
 
 // Generate 根据审核报告数据生成 HTML 格式的文件
-//
-// 参数：
-//
-//	data: 审核报告完整数据模型
-//
-// 返回：
-//
-//	*ExportDataResult: 包含 HTML 文件内容、ContentType 和文件名
-//	error: 生成过程中的错误
-func (g *HTMLReportGenerator) Generate(data *AuditReportData) (*ExportDataResult, error) {
+func (g *HTMLReportGenerator) Generate(data *AuditReportData) (*utils.ExportDataResult, error) {
 	var buf bytes.Buffer
 	if err := g.tmpl.Execute(&buf, data); err != nil {
 		return nil, fmt.Errorf("render HTML report failed: %w", err)
 	}
 
-	return &ExportDataResult{
+	return &utils.ExportDataResult{
 		Content:     buf.Bytes(),
 		ContentType: "text/html",
 		FileName:    fmt.Sprintf("SQL_audit_report_%s_%d.html", data.InstanceName, data.TaskID),
