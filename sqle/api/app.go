@@ -16,6 +16,7 @@ import (
 	"github.com/actiontech/sqle/sqle/api/controller"
 	v1 "github.com/actiontech/sqle/sqle/api/controller/v1"
 	v2 "github.com/actiontech/sqle/sqle/api/controller/v2"
+	v2Dashboard "github.com/actiontech/sqle/sqle/api/controller/v2/dashboard"
 	v3 "github.com/actiontech/sqle/sqle/api/controller/v3"
 	sqleMiddleware "github.com/actiontech/sqle/sqle/api/middleware"
 	"github.com/actiontech/sqle/sqle/config"
@@ -539,6 +540,17 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		// 系统功能开关
 		v1Router.GET("/system/module_status", v1.GetSystemModuleStatus)
 		v1Router.GET("/system/module_red_dots", v1.GetSystemModuleRedDots)
+	}
+	{
+		// 全局Dashboard V2
+		v2Router.GET("/dashboard/workflows/statistics", v2Dashboard.GetGlobalWorkflowStatisticsV2)
+		v2Router.GET("/dashboard/workflows", v2Dashboard.GetGlobalWorkflowListV2)
+
+		v2Router.GET("/dashboard/sql_manage/statistics", v2Dashboard.GetGlobalSqlManageStatisticsV2)
+		v2Router.GET("/dashboard/sql_manage/tasks", v2Dashboard.GetGlobalSqlManageTaskListV2)
+
+		v2Router.GET("/dashboard/accounts/statistics", v2Dashboard.GetGlobalAccountStatisticsV2)
+		v2Router.GET("/dashboard/accounts", v2Dashboard.GetGlobalAccountListV2)
 	}
 
 	{ // scanner token auth

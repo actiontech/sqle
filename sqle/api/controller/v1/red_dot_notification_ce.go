@@ -7,13 +7,31 @@ import (
 	"github.com/actiontech/dms/pkg/dms-common/dmsobject"
 	"github.com/actiontech/sqle/sqle/api/controller"
 	dms "github.com/actiontech/sqle/sqle/dms"
+	dashboardsvc "github.com/actiontech/sqle/sqle/server/dashboard"
 	"github.com/labstack/echo/v4"
 )
 
 func init() {
-	RegisterRedDotModules(GlobalDashBoardModule{})
+	RegisterRedDotModules(GlobalDashBoardModuleV2{})
 }
 
+// GlobalDashBoardModuleV2 is the V2 version of the dashboard red dot notification.
+type GlobalDashBoardModuleV2 struct{}
+
+func (m GlobalDashBoardModuleV2) Name() string {
+	return "global_dashboard"
+}
+
+func (m GlobalDashBoardModuleV2) HasRedDot(ctx echo.Context) (bool, error) {
+	user, err := controller.GetCurrentUser(ctx, dms.GetUser)
+	if err != nil {
+		return false, err
+	}
+
+	return dashboardsvc.GetDashboardRedDotV2(ctx.Request().Context(), user.GetIDStr())
+}
+
+// Deprecated: GlobalDashBoardModule is the V1 version of the dashboard red dot notification.
 type GlobalDashBoardModule struct{}
 
 func (m GlobalDashBoardModule) Name() string {

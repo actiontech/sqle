@@ -537,6 +537,8 @@ func GetSummaryOfWorkflowTasksV2(c echo.Context) error {
 		}
 	}
 
+	res := make([]*GetWorkflowTasksItemV2, len(taskDetails))
+	currentAssigneeUserIds := workflow.CurrentAssigneeUser()
 	for i, detail := range taskDetails {
 		instance, exist, err := dms.GetInstanceInProjectById(c.Request().Context(), projectUid, detail.InstanceId)
 		if err != nil {
@@ -546,20 +548,16 @@ func GetSummaryOfWorkflowTasksV2(c echo.Context) error {
 			taskDetails[i].InstanceName = instance.Name
 			taskDetails[i].InstanceMaintenancePeriod = instance.MaintenancePeriod
 		}
-	}
 
-	return c.JSON(http.StatusOK, &GetWorkflowTasksResV2{
-		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertWorkflowToTasksSummaryRes(taskDetails),
-	})
-}
-
-func convertWorkflowToTasksSummaryRes(taskDetails []*model.WorkflowTasksSummaryDetail) []*GetWorkflowTasksItemV2 {
-	res := make([]*GetWorkflowTasksItemV2, len(taskDetails))
-
-	for i, taskDetail := range taskDetails {
 		userNames := make([]string, 0)
-		for _, userId := range strings.Split(taskDetail.CurrentStepAssigneeUserIds.String, ",") {
+		var assigneeUserIds []string
+		if workflowStatus == model.WorkflowStatusExecuting || workflowStatus == model.WorkflowStatusWaitForExecution {
+			assigneeUserIds = strings.Split(detail.CurrentStepAssigneeUserIds.String, ",")
+		} else {
+			assigneeUserIds = currentAssigneeUserIds
+		}
+
+		for _, userId := range assigneeUserIds {
 			if userId == "" {
 				continue
 			}
@@ -567,21 +565,24 @@ func convertWorkflowToTasksSummaryRes(taskDetails []*model.WorkflowTasksSummaryD
 		}
 
 		res[i] = &GetWorkflowTasksItemV2{
-			TaskId:                   taskDetail.TaskId,
-			InstanceName:             utils.AddDelTag(taskDetail.InstanceDeletedAt, taskDetail.InstanceName),
-			Status:                   v1.GetTaskStatusRes(taskDetail.WorkflowRecordStatus, taskDetail.TaskStatus, taskDetail.InstanceScheduledAt),
-			ExecStartTime:            taskDetail.TaskExecStartAt,
-			ExecEndTime:              taskDetail.TaskExecEndAt,
-			ScheduleTime:             taskDetail.InstanceScheduledAt,
+			TaskId:                   detail.TaskId,
+			InstanceName:             utils.AddDelTag(detail.InstanceDeletedAt, detail.InstanceName),
+			Status:                   v1.GetTaskStatusRes(detail.WorkflowRecordStatus, detail.TaskStatus, detail.InstanceScheduledAt),
+			ExecStartTime:            detail.TaskExecStartAt,
+			ExecEndTime:              detail.TaskExecEndAt,
+			ScheduleTime:             detail.InstanceScheduledAt,
 			CurrentStepAssigneeUser:  userNames,
-			TaskPassRate:             taskDetail.TaskPassRate,
-			TaskScore:                taskDetail.TaskScore,
-			InstanceMaintenanceTimes: v1.ConvertPeriodToMaintenanceTimeResV1(taskDetail.InstanceMaintenancePeriod),
-			ExecutionUserName:        dms.GetUserNameWithDelTag(taskDetail.ExecutionUserId),
+			TaskPassRate:             detail.TaskPassRate,
+			TaskScore:                detail.TaskScore,
+			InstanceMaintenanceTimes: v1.ConvertPeriodToMaintenanceTimeResV1(detail.InstanceMaintenancePeriod),
+			ExecutionUserName:        dms.GetUserNameWithDelTag(detail.ExecutionUserId),
 		}
 	}
 
-	return res
+	return c.JSON(http.StatusOK, &GetWorkflowTasksResV2{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    res,
+	})
 }
 
 type CreateWorkflowReqV2 struct {
@@ -990,6 +991,7 @@ type WorkflowRecordResV2 struct {
 	Executable        bool                 `json:"executable"`
 	ExecutableReason  string               `json:"executable_reason"`
 	Steps             []*WorkflowStepResV2 `json:"workflow_step_list,omitempty"`
+	Assignees         []string             `json:"assignee_user_name_list,omitempty"`
 }
 
 type WorkflowResV2 struct {
@@ -1181,6 +1183,14 @@ func convertWorkflowRecordToRes(ctx context.Context, workflow *model.Workflow, r
 		}
 	}
 
+	assignees := make([]string, 0)
+	for _, id := range workflow.CurrentAssigneeUser() {
+		if id == "" {
+			continue
+		}
+		assignees = append(assignees, dms.GetUserNameWithDelTag(id))
+	}
+
 	tasksRes := make([]*WorkflowTaskItem, len(record.InstanceRecords))
 	for i, inst := range record.InstanceRecords {
 		tasksRes[i] = &WorkflowTaskItem{Id: inst.TaskId}
@@ -1203,6 +1213,7 @@ func convertWorkflowRecordToRes(ctx context.Context, workflow *model.Workflow, r
 		Steps:             steps,
 		Executable:        executable,
 		ExecutableReason:  reason,
+		Assignees:         assignees,
 	}
 }
 

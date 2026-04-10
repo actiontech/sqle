@@ -375,6 +375,9 @@ func (w *Workflow) CurrentStep() *WorkflowStep {
 }
 
 func (w *Workflow) CurrentAssigneeUser() []string {
+	if w.Record != nil && w.Record.Status == WorkflowStatusReject {
+		return []string{w.CreateUserId}
+	}
 	currentStep := w.CurrentStep()
 	if currentStep == nil {
 		return []string{}
@@ -1435,7 +1438,7 @@ SELECT wr.status                                                     AS workflow
        tasks.instance_id                                             AS instance_id,
        wir.scheduled_at                                              AS instance_scheduled_at,
        wir.execution_user_id			                             AS execution_user_id,
-       curr_ws.assignees											 AS current_step_assignee_user_ids
+       IF(wr.status = 'rejected', w.create_user_id, curr_ws.assignees) AS current_step_assignee_user_ids
 
 {{- template "body" . -}}
 {{- if .is_executing }}
