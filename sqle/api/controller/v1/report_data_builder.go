@@ -37,8 +37,9 @@ func BuildAuditReportData(task *model.Task, s *model.Storage, noDuplicate bool, 
 	// 3. 构建 SQL 列表和统计数据
 	levelDist := make(map[string]int)
 	ruleHits := make(map[string]int)
-	var sqlList []auditreport.AuditSQLItem
-	var problemSQLs []auditreport.AuditSQLItem
+	n := len(taskSQLsDetail)
+	sqlList := make([]auditreport.AuditSQLItem, 0, n)
+	problemSQLs := make([]auditreport.AuditSQLItem, 0, n)
 
 	for _, td := range taskSQLsDetail {
 		// 构造临时 ExecuteSQL 对象以复用状态描述方法
