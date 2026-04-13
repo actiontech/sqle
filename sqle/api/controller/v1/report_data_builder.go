@@ -9,8 +9,8 @@ import (
 
 	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/model"
-	"github.com/actiontech/sqle/sqle/server/auditreport"
 	"github.com/actiontech/sqle/sqle/server"
+	"github.com/actiontech/sqle/sqle/server/auditreport"
 )
 
 // BuildAuditReportData 从 Task 和数据库查询构建报告数据。
@@ -34,8 +34,9 @@ func BuildAuditReportData(task *model.Task, s *model.Storage, noDuplicate bool, 
 		return nil, fmt.Errorf("get rollback SQLs failed: %w", err)
 	}
 
-	// 3. 构建 SQL 列表和统计数据
-	levelDist := make(map[string]int)
+	// 3. 构建 SQL 列表和统计数据（等级：固定顺序 normal/notice/warn/error，其余等级单独统计）
+	var levelCounts [4]int
+	extrasLevel := make(map[string]int)
 	ruleHits := make(map[string]int)
 	n := len(taskSQLsDetail)
 	sqlList := make([]auditreport.AuditSQLItem, 0, n)
@@ -72,7 +73,18 @@ func BuildAuditReportData(task *model.Task, s *model.Storage, noDuplicate bool, 
 		if level == "" {
 			level = "normal"
 		}
-		levelDist[level]++
+		switch level {
+		case "normal":
+			levelCounts[0]++
+		case "notice":
+			levelCounts[1]++
+		case "warn":
+			levelCounts[2]++
+		case "error":
+			levelCounts[3]++
+		default:
+			extrasLevel[level]++
+		}
 
 		// 区分问题 SQL（AuditLevel 不是 normal 且不为空）
 		if level != "normal" {
@@ -90,8 +102,8 @@ func BuildAuditReportData(task *model.Task, s *model.Storage, noDuplicate bool, 
 	// 4. 构建国际化标签（当前使用 locale 包提供的 i18n 标签）
 	labels := buildReportLabels(ctx)
 
-	// 5. 构建审核时间
-	auditTime := time.Now().Format("2006-01-02 15:04:05")
+	now := time.Now()
+	auditTime := now.Format("2006-01-02 15:04:05")
 	if task.CreatedAt.Year() > 1 {
 		auditTime = task.CreatedAt.Format("2006-01-02 15:04:05")
 	}
@@ -106,7 +118,7 @@ func BuildAuditReportData(task *model.Task, s *model.Storage, noDuplicate bool, 
 		Title:        locale.Bundle.LocalizeMsgByCtx(ctx, locale.ReportLabelTitle),
 		InstanceName: instanceName,
 		Schema:       task.Schema,
-		GeneratedAt:  time.Now(),
+		GeneratedAt:  now,
 		Lang:         locale.Bundle.GetLangTagFromCtx(ctx).String(),
 		LogoBase64:   "",
 		Summary: auditreport.AuditSummary{
@@ -119,7 +131,7 @@ func BuildAuditReportData(task *model.Task, s *model.Storage, noDuplicate bool, 
 			AuditLevel:   task.AuditLevel,
 		},
 		Statistics: auditreport.AuditStatistics{
-			LevelDistribution: toLevelCounts(levelDist),
+			LevelDistribution: formatLevelDistribution(levelCounts, extrasLevel),
 			RuleHits:          toRuleHits(ruleHits),
 		},
 		SQLList:     sqlList,
@@ -152,41 +164,52 @@ func extractRuleInfo(auditResults model.AuditResults, ctx context.Context) (rule
 	return strings.Join(ruleNames, ", "), strings.Join(suggestions, "; ")
 }
 
-// toLevelCounts 将等级分布 map 转换为有序的 LevelCount 切片。
-// 按 error > warn > notice > normal 顺序排列。
+// formatLevelDistribution 将各等级计数转为 LevelCount 切片：先按固定顺序输出非零的标准等级，
+// 再按名字排序输出其余等级。
+func formatLevelDistribution(counts [4]int, extras map[string]int) []auditreport.LevelCount {
+	names := []string{"normal", "notice", "warn", "error"}
+	out := make([]auditreport.LevelCount, 0, 4+len(extras))
+	for i, name := range names {
+		if counts[i] > 0 {
+			out = append(out, auditreport.LevelCount{Level: name, Count: counts[i]})
+		}
+	}
+	if len(extras) == 0 {
+		return out
+	}
+	keys := make([]string, 0, len(extras))
+	for k := range extras {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		out = append(out, auditreport.LevelCount{Level: k, Count: extras[k]})
+	}
+	return out
+}
+
+// toLevelCounts 将等级分布 map 转为 LevelCount 切片（供测试与 map 输入场景）。
 func toLevelCounts(dist map[string]int) []auditreport.LevelCount {
 	if len(dist) == 0 {
 		return []auditreport.LevelCount{}
 	}
-
-	levelOrder := map[string]int{
-		"error":  0,
-		"warn":   1,
-		"notice": 2,
-		"normal": 3,
-	}
-
-	result := make([]auditreport.LevelCount, 0, len(dist))
-	for level, count := range dist {
-		result = append(result, auditreport.LevelCount{
-			Level: level,
-			Count: count,
-		})
-	}
-
-	sort.Slice(result, func(i, j int) bool {
-		oi, ok := levelOrder[result[i].Level]
-		if !ok {
-			oi = 99
+	var counts [4]int
+	extras := make(map[string]int)
+	for level, c := range dist {
+		switch level {
+		case "normal":
+			counts[0] += c
+		case "notice":
+			counts[1] += c
+		case "warn":
+			counts[2] += c
+		case "error":
+			counts[3] += c
+		default:
+			extras[level] += c
 		}
-		oj, ok := levelOrder[result[j].Level]
-		if !ok {
-			oj = 99
-		}
-		return oi < oj
-	})
-
-	return result
+	}
+	return formatLevelDistribution(counts, extras)
 }
 
 // toRuleHits 将规则命中 map 转换为按命中次数降序排列的 RuleHit 切片。

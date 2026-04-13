@@ -17,7 +17,7 @@ func TestToLevelCounts(t *testing.T) {
 		wantLast    string // expected last level (lowest priority)
 		description string
 	}{
-		"mixed levels sorted by severity": {
+		"mixed levels in fixed order": {
 			input: map[string]int{
 				"normal": 5,
 				"error":  2,
@@ -25,9 +25,9 @@ func TestToLevelCounts(t *testing.T) {
 				"notice": 1,
 			},
 			wantLen:     4,
-			wantFirst:   "error",
-			wantLast:    "normal",
-			description: "should sort error > warn > notice > normal",
+			wantFirst:   "normal",
+			wantLast:    "error",
+			description: "should list normal, notice, warn, error when all present",
 		},
 		"empty map returns empty slice": {
 			input:       map[string]int{},
@@ -52,16 +52,16 @@ func TestToLevelCounts(t *testing.T) {
 			wantLast:    "normal",
 			description: "all normal should return single entry",
 		},
-		"unknown level sorted after known levels": {
+		"unknown level after standard levels": {
 			input: map[string]int{
 				"normal":  1,
 				"error":   1,
 				"unknown": 1,
 			},
 			wantLen:     3,
-			wantFirst:   "error",
+			wantFirst:   "normal",
 			wantLast:    "unknown",
-			description: "unknown levels should be sorted after known levels",
+			description: "unknown levels should follow standard levels, sorted by name",
 		},
 	}
 
@@ -354,8 +354,8 @@ func TestLevelCountsPreserveAllLevels(t *testing.T) {
 		}
 	}
 
-	// Verify ordering: error=0, warn=1, notice=2, normal=3
-	expectedOrder := []string{"error", "warn", "notice", "normal"}
+	// Verify ordering: normal, notice, warn, error
+	expectedOrder := []string{"normal", "notice", "warn", "error"}
 	for i, expected := range expectedOrder {
 		if result[i].Level != expected {
 			t.Errorf("position %d: level = %q, want %q", i, result[i].Level, expected)
