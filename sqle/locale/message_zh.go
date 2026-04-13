@@ -414,6 +414,7 @@ var (
 	ApMetaSchemaMeta                   = &i18n.Message{ID: "ApMetaSchemaMeta", Other: "库表元数据"}
 	ApMetaDistributedLock              = &i18n.Message{ID: "ApMetaDistributedLock", Other: "分布式锁"}
 	ApMetaDmTopSQL                     = &i18n.Message{ID: "ApMetaDmTopSQL", Other: "DM TOP SQL"}
+	ApMetaDmSlowLog                    = &i18n.Message{ID: "ApMetaDmSlowLog", Other: "DM 慢SQL日志"}
 	ApMetaObForOracleTopSQL            = &i18n.Message{ID: "ApMetaObForOracleTopSQL", Other: "OceanBase For Oracle TOP SQL"}
 	ApMetaOceanBaseForMySQLFullCollect = &i18n.Message{ID: "ApMetaOceanBaseForMySQLFullCollect", Other: "全量采集"}
 	ApMetaPostgreSQLTopSQL             = &i18n.Message{ID: "ApMetaPostgreSQLTopSQL", Other: "TOP SQL"}
@@ -437,7 +438,9 @@ var (
 	ParamCollectIntervalMinuteMySQL      = &i18n.Message{ID: "ParamCollectIntervalMinuteMySQL", Other: "采集周期（分钟，仅对 mysql.slow_log 有效）"}
 	ParamSlowLogCollectInput             = &i18n.Message{ID: "ParamSlowLogCollectInput", Other: "采集来源"}
 	ParamFirstSqlsScrappedHours          = &i18n.Message{ID: "ParamFirstSqlsScrappedHours", Other: "启动任务时拉取慢日志时间范围(单位:小时，仅对 mysql.slow_log 有效)"}
+	ParamFirstSqlsScrappedHoursDM        = &i18n.Message{ID: "ParamFirstSqlsScrappedHoursDM", Other: "启动任务时拉取慢日志时间范围(单位:小时)"}
 	ParamCollectIntervalMinuteOracle     = &i18n.Message{ID: "ParamCollectIntervalMinuteOracle", Other: "采集周期（分钟）"}
+	ParamDmSlowSqlThresholdSecond        = &i18n.Message{ID: "ParamDmSlowSqlThresholdSecond", Other: "慢SQL阈值(秒)"}
 	ParamOrderByColumn                   = &i18n.Message{ID: "ParamOrderByColumn", Other: "V$SQLAREA中的排序字段"}
 	ParamOrderByColumnGeneric            = &i18n.Message{ID: "ParamOrderByColumnGeneric", Other: "排序字段"}
 	ParamCollectIntervalSecond           = &i18n.Message{ID: "ParamCollectIntervalSecond", Other: "采集周期（秒）"}
