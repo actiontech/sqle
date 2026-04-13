@@ -45,6 +45,8 @@ func (at *OracleTopSQLTaskV2) Params(instanceId ...string) params.Params {
 func (at *OracleTopSQLTaskV2) Metrics() []string {
 	return []string{
 		MetricNameCounter,
+		MetricNameLastReceiveTimestamp,
+		MetricNameQueryTimeAvg,
 		MetricNameQueryTimeTotal,
 		MetricNameUserIOWaitTimeTotal,
 		MetricNameCPUTimeTotal,
@@ -124,13 +126,16 @@ func (at *OracleTopSQLTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, pe
 	for _, blacklist := range dbUserBlacklists {
 		notInUser = append(notInUser, blacklist.FilterContent)
 	}
-	// filter db user by
+	// NOTE: top_n and order_by_column are not defined in Params(), GetParam returns zero values.
+	// top_n=0 defaults to 10 in QueryTopSQLs, order_by_column="" iterates multiple metrics.
+	// This is a known issue, kept as-is to avoid introducing risk. See design doc risk item 8.
 	sqls, err := db.QueryTopSQLs(ctx, ap.Params.GetParam("collect_interval_minute").String(), ap.Params.GetParam("top_n").Int(), notInUser, ap.Params.GetParam("order_by_column").String())
 	if err != nil {
 		return nil, fmt.Errorf("query top sql fail, error: %v", err)
 	}
 
 	cache := NewSQLV2Cache()
+	rawSQLs := make([]*model.SQLManageRawSQL, 0, len(sqls))
 	for _, sql := range sqls {
 		info := NewMetrics()
 		sqlV2 := &SQLV2{
@@ -151,13 +156,24 @@ func (at *OracleTopSQLTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, pe
 		info.SetInt(MetricNameDiskReadTotal, sql.DiskReads)
 		info.SetInt(MetricNameBufferGetCounter, sql.BufferGets)
 		info.SetString(MetricNameDBUser, sql.UserName)
+		info.SetString(MetricNameLastReceiveTimestamp, time.Now().Format(time.RFC3339))
+		if sql.Executions > 0 {
+			avgQueryTime := float64(sql.ElapsedTime) / float64(sql.Executions) / 1e6 // 微秒转秒
+			info.SetFloat(MetricNameQueryTimeAvg, avgQueryTime)
+		}
 		sqlV2.GenSQLId()
+		rawSQLs = append(rawSQLs, ConvertSQLV2ToMangerRawSQL(sqlV2))
 		err = at.AggregateSQL(cache, sqlV2)
 		if err != nil {
 			logger.Warnf("aggregate sql failed,error : %v", err)
 			continue
 		}
 	}
+
+	if err := persist.CreateSqlManageRawSQLs(rawSQLs); err != nil {
+		logger.Errorf("OracleTopSQLTaskV2 create sql manage raw sql failed, error: %v", err)
+	}
+
 	return cache.GetSQLs(), nil
 }
 
