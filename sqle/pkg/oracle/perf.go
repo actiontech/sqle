@@ -47,4 +47,31 @@ WHERE
 	DynPerformanceViewSQLAreaColumnDiskReads      = "disk_reads"
 	DynPerformanceViewSQLAreaColumnBufferGets     = "buffer_gets"
 	DynPerformanceViewSQLAreaColumnUserIOWaitTime = "user_io_wait_time"
+
+	// QueryActiveSessionCount queries the number of active user sessions from V$SESSION.
+	QueryActiveSessionCount = `SELECT COUNT(*) AS active_sessions FROM V$SESSION WHERE STATUS = 'ACTIVE' AND TYPE = 'USER'`
+
+	// QueryActiveSessions queries active user session details along with the executing SQL.
+	// The %s placeholder is for an optional user filter clause, e.g. AND s.USERNAME NOT IN ('SYS','SYSTEM').
+	QueryActiveSessions = `
+SELECT s.sql_id, s.username, s.status, s.event, q.sql_fulltext
+FROM V$SESSION s
+LEFT JOIN V$SQL q ON s.sql_id = q.sql_id AND s.sql_child_number = q.child_number
+WHERE s.STATUS = 'ACTIVE' AND s.TYPE = 'USER'
+    AND s.sql_id IS NOT NULL
+    AND s.EVENT != 'SQL*Net message from client'
+    %s
+`
+
+	// QuerySysstatExecuteCount queries the cumulative execute count from V$SYSSTAT.
+	QuerySysstatExecuteCount = `SELECT VALUE FROM V$SYSSTAT WHERE NAME = 'execute count'`
 )
+
+// ActiveSession represents an active Oracle session with its executing SQL information.
+type ActiveSession struct {
+	SQLID       string
+	Username    string
+	Status      string
+	Event       string
+	SQLFullText string
+}

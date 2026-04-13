@@ -110,3 +110,58 @@ func (o *DB) QueryTopSQLs(ctx context.Context, collectIntervalMinute string, top
 	}
 	return ret, nil
 }
+
+func (o *DB) QueryActiveSessionCount(ctx context.Context) (int64, error) {
+	var count int64
+	err := o.db.QueryRowContext(ctx, QueryActiveSessionCount).Scan(&count)
+	if err != nil {
+		return 0, errors.Wrap(err, "failed to query active session count")
+	}
+	return count, nil
+}
+
+func (o *DB) QueryActiveSessions(ctx context.Context, notInUsers []string) ([]*ActiveSession, error) {
+	var notInUsersStr string
+	if len(notInUsers) > 0 {
+		var notInUsersFormatted []string
+		for _, user := range notInUsers {
+			notInUsersFormatted = append(notInUsersFormatted, fmt.Sprintf("'%s'", user))
+		}
+		notInUsersStr = fmt.Sprintf("AND s.USERNAME NOT IN (%v)", strings.Join(notInUsersFormatted, ","))
+	}
+
+	query := fmt.Sprintf(QueryActiveSessions, notInUsersStr)
+	rows, err := o.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to query active sessions")
+	}
+	defer rows.Close()
+
+	var ret []*ActiveSession
+	for rows.Next() {
+		session := &ActiveSession{}
+		if err := rows.Scan(
+			&session.SQLID,
+			&session.Username,
+			&session.Status,
+			&session.Event,
+			&session.SQLFullText,
+		); err != nil {
+			return nil, errors.Wrapf(err, "failed to scan active session")
+		}
+		ret = append(ret, session)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrapf(err, "failed to iterate active sessions")
+	}
+	return ret, nil
+}
+
+func (o *DB) QueryExecuteCount(ctx context.Context) (int64, error) {
+	var count int64
+	err := o.db.QueryRowContext(ctx, QuerySysstatExecuteCount).Scan(&count)
+	if err != nil {
+		return 0, errors.Wrap(err, "failed to query execute count from V$SYSSTAT")
+	}
+	return count, nil
+}

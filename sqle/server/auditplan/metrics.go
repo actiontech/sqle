@@ -74,6 +74,11 @@ const MetricNameSqlInsightThreadsConnected = "Threads_connected"
 const MetricNameSqlInsightQueries = "Queries"
 const MetricNameSqlInsightQPS = "QPS"
 
+// sql insight - Oracle
+const MetricNameSqlInsightActiveSessions = "Active_sessions"
+const MetricNameSqlInsightExecuteCount = "Execute_count"
+const MetricNameSqlInsightExecutionsPerSecond = "Executions_per_second"
+
 const MetricNameInstance = "instance"
 const MetricNameMemMax = "mem_max"
 const MetricNameDiskMax = "disk_max"
@@ -131,6 +136,10 @@ var ALLMetric = map[string]MetricType{
 	MetricNameSqlInsightThreadsConnected: MetricTypeInt,
 	MetricNameSqlInsightQueries:          MetricTypeInt,
 	MetricNameSqlInsightQPS:              MetricTypeFloat,
+
+	MetricNameSqlInsightActiveSessions:      MetricTypeInt,
+	MetricNameSqlInsightExecuteCount:        MetricTypeInt,
+	MetricNameSqlInsightExecutionsPerSecond: MetricTypeFloat,
 
 	MetricNameMemMax:             MetricTypeInt,
 	MetricNameDiskMax:            MetricTypeInt,
