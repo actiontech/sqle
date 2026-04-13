@@ -14560,7 +14560,12 @@ paths:
         name: no_duplicate
         type: boolean
       - default: csv
-        description: 'export format: csv, html, pdf, word'
+        description: export format
+        enum:
+        - csv
+        - html
+        - pdf
+        - word
         in: query
         name: export_format
         type: string

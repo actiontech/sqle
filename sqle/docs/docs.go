@@ -10476,11 +10476,17 @@ var doc = `{
                         "in": "query"
                     },
                     {
+                        "enum": [
+                            "csv",
+                            "html",
+                            "pdf",
+                            "word"
+                        ],
                         "type": "string",
-                        "description": "export format: csv, html, pdf, word",
+                        "default": "csv",
+                        "description": "export format",
                         "name": "export_format",
-                        "in": "query",
-                        "default": "csv"
+                        "in": "query"
                     }
                 ],
                 "responses": {

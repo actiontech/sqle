@@ -22,8 +22,8 @@ import (
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
-	"github.com/actiontech/sqle/sqle/server/auditreport"
 	"github.com/actiontech/sqle/sqle/server"
+	"github.com/actiontech/sqle/sqle/server/auditreport"
 	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/labstack/echo/v4"
@@ -598,7 +598,7 @@ type DownloadAuditTaskSQLsFileReqV1 struct {
 // @Security ApiKeyAuth
 // @Param task_id path string true "task id"
 // @Param no_duplicate query boolean false "select unique (fingerprint and audit result) for task sql"
-// @Param export_format query string false "export format: csv, html, pdf, word" default(csv)
+// @Param export_format query string false "export format" Enums(csv,html,pdf,word) default(csv)
 // @Success 200 file 1 "sql report file"
 // @router /v1/tasks/audits/{task_id}/sql_report [get]
 func DownloadTaskSQLReportFile(c echo.Context) error {
@@ -621,7 +621,7 @@ func DownloadTaskSQLReportFile(c echo.Context) error {
 	ctx := c.Request().Context()
 
 	// 解析导出格式参数，缺失时默认返回 CSV（向后兼容），无效格式返回 400 错误
-	exportFormat, err := utils.NormalizeExportFormatStr(c.QueryParam("export_format"))
+	exportFormat, err := auditreport.NormalizeExportFormatStr(c.QueryParam("export_format"))
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
