@@ -12,17 +12,17 @@ import (
 // CE 版仅支持 CSV 和 HTML 两种格式。
 // 请求 PDF 或 WORD 格式时返回错误提示，提醒用户需要企业版。
 // 无效格式返回错误（REQ-6.3）。
-func ExportAuditReport(format utils.ExportFormat, data *AuditReportData) (*utils.ExportDataResult, error) {
+func ExportAuditReport(format ExportFormat, data *AuditReportData) (*utils.ExportDataResult, error) {
 	switch format {
-	case utils.CsvExportFormat:
+	case CsvExportFormat:
 		return NewCSVReportGenerator().Generate(data)
-	case utils.ExportFormatHTML:
+	case ExportFormatHTML:
 		gen, err := NewHTMLReportGenerator()
 		if err != nil {
 			return nil, err
 		}
 		return gen.Generate(data)
-	case utils.ExportFormatPDF, utils.ExportFormatWORD:
+	case ExportFormatPDF, ExportFormatWORD:
 		return nil, fmt.Errorf("export format %s is only supported in enterprise edition", format)
 	default:
 		return nil, fmt.Errorf("unsupported export format: %s", format)

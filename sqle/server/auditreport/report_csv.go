@@ -16,8 +16,8 @@ func NewCSVReportGenerator() *CSVReportGenerator {
 }
 
 // ReportType 返回生成器支持的导出格式
-func (g *CSVReportGenerator) ReportType() utils.ExportFormat {
-	return utils.CsvExportFormat
+func (g *CSVReportGenerator) ReportType() ExportFormat {
+	return CsvExportFormat
 }
 
 // CSVHeaders 返回 CSV 报告的表头列表

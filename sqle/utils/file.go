@@ -5,7 +5,6 @@ import (
 	"io"
 	"io/fs"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -75,15 +74,12 @@ func SaveFile(file io.ReadSeeker, targetPath string) (err error) {
 	return nil
 }
 
-// ExportFormat 导出格式枚举类型
+// ExportFormat 通用数据导出格式（如工单/审计计划导出表格），与审核报告多格式导出见 server/auditreport。
 type ExportFormat string
 
 const (
 	CsvExportFormat   ExportFormat = "csv"
 	ExcelExportFormat ExportFormat = "excel"
-	ExportFormatHTML  ExportFormat = "html"
-	ExportFormatPDF   ExportFormat = "pdf"
-	ExportFormatWORD  ExportFormat = "word"
 )
 
 // ExportDataResult 导出数据的结果
@@ -170,26 +166,6 @@ func NormalizeExportFormat(format *ExportFormat) ExportFormat {
 		return CsvExportFormat
 	}
 	return *format
-}
-
-// NormalizeExportFormatStr 规范化导出格式参数（字符串版本）。
-// 空字符串默认返回 CSV（向后兼容）；无效格式返回错误。
-// 支持 html/pdf/word/docx/excel/xlsx/csv 等输入的规范化。
-func NormalizeExportFormatStr(format string) (ExportFormat, error) {
-	switch strings.ToLower(strings.TrimSpace(format)) {
-	case "html":
-		return ExportFormatHTML, nil
-	case "pdf":
-		return ExportFormatPDF, nil
-	case "word", "docx":
-		return ExportFormatWORD, nil
-	case "excel", "xlsx":
-		return ExcelExportFormat, nil
-	case "csv", "":
-		return CsvExportFormat, nil
-	default:
-		return "", fmt.Errorf("unsupported export format: %s", format)
-	}
 }
 
 // ExportData 根据导出格式导出数据

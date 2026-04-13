@@ -32,8 +32,8 @@ func NewHTMLReportGenerator() (*HTMLReportGenerator, error) {
 }
 
 // ReportType 返回生成器支持的导出格式
-func (g *HTMLReportGenerator) ReportType() utils.ExportFormat {
-	return utils.ExportFormatHTML
+func (g *HTMLReportGenerator) ReportType() ExportFormat {
+	return ExportFormatHTML
 }
 
 // Generate 根据审核报告数据生成 HTML 格式的文件

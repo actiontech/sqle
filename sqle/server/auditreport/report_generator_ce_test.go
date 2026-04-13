@@ -5,17 +5,15 @@ package auditreport
 import (
 	"strings"
 	"testing"
-
-	"github.com/actiontech/sqle/sqle/utils"
 )
 
 func TestExportAuditReport_CEEdition_PDFBlocked(t *testing.T) {
 	testCases := map[string]struct {
-		format        utils.ExportFormat
+		format        ExportFormat
 		wantErrSubstr string
 	}{
 		"PDF format is blocked in CE edition": {
-			format:        utils.ExportFormatPDF,
+			format:        ExportFormatPDF,
 			wantErrSubstr: "enterprise edition",
 		},
 	}
@@ -42,11 +40,11 @@ func TestExportAuditReport_CEEdition_PDFBlocked(t *testing.T) {
 
 func TestExportAuditReport_CEEdition_WORDBlocked(t *testing.T) {
 	testCases := map[string]struct {
-		format        utils.ExportFormat
+		format        ExportFormat
 		wantErrSubstr string
 	}{
 		"WORD format is blocked in CE edition": {
-			format:        utils.ExportFormatWORD,
+			format:        ExportFormatWORD,
 			wantErrSubstr: "enterprise edition",
 		},
 	}
@@ -73,19 +71,19 @@ func TestExportAuditReport_CEEdition_WORDBlocked(t *testing.T) {
 
 func TestExportAuditReport_DefaultCSV(t *testing.T) {
 	testCases := map[string]struct {
-		format        utils.ExportFormat
+		format        ExportFormat
 		wantErrSubstr string
 	}{
 		"invalid format returns error": {
-			format:        utils.ExportFormat("invalid"),
+			format:        ExportFormat("invalid"),
 			wantErrSubstr: "unsupported export format",
 		},
 		"empty format returns error": {
-			format:        utils.ExportFormat(""),
+			format:        ExportFormat(""),
 			wantErrSubstr: "unsupported export format",
 		},
 		"unknown format returns error": {
-			format:        utils.ExportFormat("json"),
+			format:        ExportFormat("json"),
 			wantErrSubstr: "unsupported export format",
 		},
 	}

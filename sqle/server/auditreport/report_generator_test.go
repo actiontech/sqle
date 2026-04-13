@@ -5,8 +5,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/actiontech/sqle/sqle/utils"
 )
 
 // buildTestReportData 构建测试用的 AuditReportData
@@ -350,8 +348,8 @@ func TestCSVReportGenerator_SpecialChars(t *testing.T) {
 
 func TestCSVReportGenerator_ReportType(t *testing.T) {
 	gen := NewCSVReportGenerator()
-	if gen.ReportType() != utils.CsvExportFormat {
-		t.Errorf("ReportType() = %q, want %q", gen.ReportType(), utils.CsvExportFormat)
+	if gen.ReportType() != CsvExportFormat {
+		t.Errorf("ReportType() = %q, want %q", gen.ReportType(), CsvExportFormat)
 	}
 }
 
@@ -365,13 +363,13 @@ func TestHTMLReportGenerator_Normal(t *testing.T) {
 	var _ ReportGenerator = gen
 
 	testCases := map[string]struct {
-		data             *AuditReportData
-		wantContentType  string
-		wantFilePrefix   string
-		wantFileSuffix   string
-		wantHTMLTags     []string
-		wantSQLContents  []string
-		wantLabels       []string
+		data            *AuditReportData
+		wantContentType string
+		wantFilePrefix  string
+		wantFileSuffix  string
+		wantHTMLTags    []string
+		wantSQLContents []string
+		wantLabels      []string
 	}{
 		"normal data generates valid HTML report": {
 			data:            buildTestReportData(),
@@ -436,8 +434,8 @@ func TestHTMLReportGenerator_Normal(t *testing.T) {
 			}
 
 			// Verify ReportType() returns ExportFormatHTML
-			if gen.ReportType() != utils.ExportFormatHTML {
-				t.Errorf("ReportType() = %q, want %q", gen.ReportType(), utils.ExportFormatHTML)
+			if gen.ReportType() != ExportFormatHTML {
+				t.Errorf("ReportType() = %q, want %q", gen.ReportType(), ExportFormatHTML)
 			}
 		})
 	}
@@ -455,18 +453,18 @@ func TestHTMLReportGenerator_XSSPrevention(t *testing.T) {
 		wantDescription string
 	}{
 		"script tag in SQL is escaped": {
-			maliciousSQL: "<script>alert('xss')</script>",
-			wantAbsent:   []string{"<script>", "</script>"},
+			maliciousSQL:    "<script>alert('xss')</script>",
+			wantAbsent:      []string{"<script>", "</script>"},
 			wantDescription: "script tags should be HTML-escaped by html/template",
 		},
 		"img onerror in SQL is escaped": {
-			maliciousSQL: `<img src=x onerror="alert('xss')">`,
-			wantAbsent:   []string{`onerror="alert`},
+			maliciousSQL:    `<img src=x onerror="alert('xss')">`,
+			wantAbsent:      []string{`onerror="alert`},
 			wantDescription: "event handler attributes should be HTML-escaped",
 		},
 		"script tag in description is escaped": {
-			maliciousSQL: "SELECT 1",
-			wantAbsent:   []string{"<script>"},
+			maliciousSQL:    "SELECT 1",
+			wantAbsent:      []string{"<script>"},
 			wantDescription: "script tags in other fields are also escaped",
 		},
 	}
@@ -677,12 +675,12 @@ func TestHTMLReportGenerator_LargeData(t *testing.T) {
 
 func TestExportAuditReport_CSVFormat(t *testing.T) {
 	testCases := map[string]struct {
-		format          utils.ExportFormat
+		format          ExportFormat
 		wantContentType string
 		wantFileSuffix  string
 	}{
 		"CSV format returns valid CSV result": {
-			format:          utils.CsvExportFormat,
+			format:          CsvExportFormat,
 			wantContentType: "text/csv",
 			wantFileSuffix:  ".csv",
 		},
@@ -713,13 +711,13 @@ func TestExportAuditReport_CSVFormat(t *testing.T) {
 
 func TestExportAuditReport_HTMLFormat(t *testing.T) {
 	testCases := map[string]struct {
-		format          utils.ExportFormat
+		format          ExportFormat
 		wantContentType string
 		wantFileSuffix  string
 		wantHTMLTags    []string
 	}{
 		"HTML format returns valid HTML result": {
-			format:          utils.ExportFormatHTML,
+			format:          ExportFormatHTML,
 			wantContentType: "text/html",
 			wantFileSuffix:  ".html",
 			wantHTMLTags:    []string{"<!DOCTYPE html>", "</html>", "<table>"},
@@ -751,4 +749,3 @@ func TestExportAuditReport_HTMLFormat(t *testing.T) {
 		})
 	}
 }
-

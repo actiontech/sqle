@@ -45,7 +45,7 @@ type AuditSummary struct {
 // AuditStatistics 审核结果统计
 type AuditStatistics struct {
 	LevelDistribution []LevelCount `json:"level_distribution"` // 按等级分布
-	RuleHits          []RuleHit    `json:"rule_hits"`            // 规则命中统计
+	RuleHits          []RuleHit    `json:"rule_hits"`          // 规则命中统计
 }
 
 // LevelCount 等级统计
@@ -72,7 +72,7 @@ type AuditSQLItem struct {
 	RollbackSQL string `json:"rollback_sql"`
 	Description string `json:"description"`
 	// HTML/PDF/WORD 报告扩展字段
-	RuleName   string `json:"rule_name"`   // 触发的规则名称
+	RuleName   string `json:"rule_name"`  // 触发的规则名称
 	Suggestion string `json:"suggestion"` // 优化建议
 }
 
@@ -108,5 +108,5 @@ type ReportGenerator interface {
 	// Generate 根据报告数据生成指定格式的文件
 	Generate(data *AuditReportData) (*utils.ExportDataResult, error)
 	// ReportType 返回生成器对应的导出格式
-	ReportType() utils.ExportFormat
+	ReportType() ExportFormat
 }
