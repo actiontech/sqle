@@ -66,3 +66,17 @@ func (s *Storage) GetSQLAuditRecordById(projectId string, SQLAuditRecordId strin
 	}
 	return record, true, nil
 }
+
+func (s *Storage) HandleSQLAuditFailure(record *SQLAuditRecord) error {
+	if record == nil {
+		return errors.New(errors.DataInvalid, fmt.Errorf("sql audit record is nil"))
+	}
+
+	if err := s.Delete(record); err != nil {
+		return err
+	}
+	if err := s.UpdateTaskStatusById(record.TaskId, TaskStatusExecuteFailed); err != nil {
+		return err
+	}
+	return nil
+}

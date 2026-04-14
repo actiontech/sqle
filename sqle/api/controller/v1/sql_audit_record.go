@@ -167,6 +167,9 @@ func CreateSQLAuditRecord(c echo.Context) error {
 
 	task, err = server.GetSqled().AddTaskWaitResult(projectUid, fmt.Sprintf("%d", task.ID), server.ActionTypeAudit)
 	if err != nil {
+		if txrr := s.HandleSQLAuditFailure(&record); txrr != nil {
+			return controller.JSONBaseErrorReq(c, fmt.Errorf("audit task execute failed %v, rollback sql audit record failed: %v", err, txrr))
+		}
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
