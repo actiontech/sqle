@@ -425,6 +425,9 @@ var (
 	ApMetricRowExaminedAvg             = &i18n.Message{ID: "ApMetricRowExaminedAvg", Other: "平均扫描行数"}
 	ApMetaPerformanceCollect           = &i18n.Message{ID: "ApMetaPerformanceCollect", Other: "数据源性能指标"}
 	ApMetaPerformanceCollectTips       = &i18n.Message{ID: "ApMetaPerformanceCollectTips", Other: "性能指标采集将产生较大性能开销,请谨慎开启。开启后,系统将持续采集该数据源的性能数据(如QPS、连接数等)，并生成性能趋势图表，体现在性能洞察页面。"}
+	ApMetaOraclePerformanceCollect     = &i18n.Message{ID: "ApMetaOraclePerformanceCollect", Other: "Oracle 数据源性能指标"}
+	ApMetaOracleProcesslist            = &i18n.Message{ID: "ApMetaOracleProcesslist", Other: "Oracle 活跃会话采集"}
+	ApMetaOracleLogonsCurrent          = &i18n.Message{ID: "ApMetaOracleLogonsCurrent", Other: "会话数"}
 	ApMetaCollectTime                  = &i18n.Message{ID: "ApMetaCollectTime", Other: "采集时间"}
 	ApMetaThreadsConnected             = &i18n.Message{ID: "ApMetaThreadsConnected", Other: "线程数"}
 	ApMetaQPS                          = &i18n.Message{ID: "ApMetaQueries", Other: "QPS"}

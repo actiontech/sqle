@@ -41,8 +41,10 @@ const (
 	TypeAliRdsMySQLSlowLog      = "ali_rds_mysql_slow_log"
 	TypeAliRdsMySQLAuditLog     = "ali_rds_mysql_audit_log"
 	TypeHuaweiRdsMySQLSlowLog   = "huawei_rds_mysql_slow_log"
-	TypeOracleTopSQL            = "oracle_top_sql"
-	TypeAllAppExtract           = "all_app_extract"
+	TypeOracleTopSQL             = "oracle_top_sql"
+	TypeOraclePerformanceCollect = "oracle_performance_collect"
+	TypeOracleProcesslist        = "oracle_processlist"
+	TypeAllAppExtract            = "all_app_extract"
 	TypeBaiduRdsMySQLSlowLog    = "baidu_rds_mysql_slow_log"
 	TypeTDMySQLDistributedLock  = "tdsql_for_innodb_distributed_lock"
 	TypeSQLFile                 = scannerCmd.TypeSQLFile
