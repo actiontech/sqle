@@ -48,3 +48,39 @@ WHERE
 	DynPerformanceViewSQLAreaColumnBufferGets     = "buffer_gets"
 	DynPerformanceViewSQLAreaColumnUserIOWaitTime = "user_io_wait_time"
 )
+
+// DynPerformanceSysStat V$SYSSTAT 采集结果
+type DynPerformanceSysStat struct {
+	LogonsCurrent int64 `json:"logons_current"`
+	ExecuteCount  int64 `json:"execute_count"`
+}
+
+const DynPerformanceViewSysStatQuery = `SELECT name, value FROM V$SYSSTAT WHERE name IN ('logons current', 'execute count')`
+
+// DynPerformanceSession V$SESSION 活跃会话
+type DynPerformanceSession struct {
+	SID        int64  `json:"sid"`
+	Username   string `json:"username"`
+	SchemaName string `json:"schema_name"`
+	SQLText    string `json:"sql_text"`
+	LastCallET int64  `json:"last_call_et"` // 当前状态持续秒数
+}
+
+const DynPerformanceViewActiveSessionQuery = `
+SELECT
+    s.sid,
+    s.username,
+    s.schemaname,
+    sq.sql_text,
+    s.last_call_et
+FROM V$SESSION s
+LEFT JOIN V$SQL sq ON s.sql_id = sq.sql_id AND s.sql_child_number = sq.child_number
+WHERE s.status = 'ACTIVE'
+  AND s.type = 'USER'
+  AND s.username IS NOT NULL
+  AND ROWNUM <= 1000
+`
+
+const DynPerformanceViewActiveSessionCountQuery = `
+SELECT COUNT(*) FROM V$SESSION WHERE STATUS = 'ACTIVE' AND TYPE = 'USER' AND USERNAME IS NOT NULL
+`

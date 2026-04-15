@@ -110,3 +110,62 @@ func (o *DB) QueryTopSQLs(ctx context.Context, collectIntervalMinute string, top
 	}
 	return ret, nil
 }
+
+// QuerySysStats 查询 V$SYSSTAT 获取系统统计信息
+func (o *DB) QuerySysStats(ctx context.Context) (*DynPerformanceSysStat, error) {
+	rows, err := o.db.QueryContext(ctx, DynPerformanceViewSysStatQuery)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to query V$SYSSTAT")
+	}
+	defer rows.Close()
+
+	result := &DynPerformanceSysStat{}
+	for rows.Next() {
+		var name string
+		var value int64
+		if err := rows.Scan(&name, &value); err != nil {
+			return nil, errors.Wrapf(err, "failed to scan V$SYSSTAT row")
+		}
+		switch name {
+		case "logons current":
+			result.LogonsCurrent = value
+		case "execute count":
+			result.ExecuteCount = value
+		}
+	}
+	return result, rows.Err()
+}
+
+// QueryActiveSessions 查询 V$SESSION 获取活跃用户会话
+func (o *DB) QueryActiveSessions(ctx context.Context) ([]*DynPerformanceSession, error) {
+	rows, err := o.db.QueryContext(ctx, DynPerformanceViewActiveSessionQuery)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to query V$SESSION")
+	}
+	defer rows.Close()
+
+	var sessions []*DynPerformanceSession
+	for rows.Next() {
+		sess := &DynPerformanceSession{}
+		var sqlText sql.NullString
+		var username, schemaName sql.NullString
+		if err := rows.Scan(&sess.SID, &username, &schemaName, &sqlText, &sess.LastCallET); err != nil {
+			return nil, errors.Wrapf(err, "failed to scan V$SESSION row")
+		}
+		sess.Username = username.String
+		sess.SchemaName = schemaName.String
+		sess.SQLText = sqlText.String
+		sessions = append(sessions, sess)
+	}
+	return sessions, rows.Err()
+}
+
+// QueryActiveSessionCount 查询活跃用户会话数量
+func (o *DB) QueryActiveSessionCount(ctx context.Context) (int64, error) {
+	var count int64
+	err := o.db.QueryRowContext(ctx, DynPerformanceViewActiveSessionCountQuery).Scan(&count)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to query active session count")
+	}
+	return count, nil
+}
