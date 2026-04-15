@@ -35,7 +35,7 @@ func getInstances(ctx context.Context, req dmsV2.ListDBServiceReq) ([]*model.Ins
 		}
 
 		for _, item := range dbServices {
-			if item.SQLEConfig == nil || item.SQLEConfig.RuleTemplateID == "" {
+			if item.SQLEConfig == nil {
 				continue
 			}
 
@@ -83,9 +83,16 @@ func convertInstance(instance *dmsV2.ListDBService) (*model.Instance, error) {
 		return nil, err
 	}
 
-	ruleTemplateId, err := strconv.ParseInt(instance.SQLEConfig.RuleTemplateID, 0, 64)
-	if err != nil {
-		return nil, err
+	var ruleTemplateId int64
+	var ruleTemplateName string
+	if instance.SQLEConfig != nil {
+		ruleTemplateName = instance.SQLEConfig.RuleTemplateName
+		if instance.SQLEConfig.RuleTemplateID != "" {
+			ruleTemplateId, err = strconv.ParseInt(instance.SQLEConfig.RuleTemplateID, 0, 64)
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	var maintenancePeriod = make(model.Periods, 0)
@@ -114,7 +121,7 @@ func convertInstance(instance *dmsV2.ListDBService) (*model.Instance, error) {
 	}
 
 	sqlQueryConfig := model.SqlQueryConfig{}
-	if instance.SQLEConfig != nil {
+	if instance.SQLEConfig != nil && instance.SQLEConfig.SQLQueryConfig != nil {
 		sqlQueryConfig = model.SqlQueryConfig{
 			MaxPreQueryRows:                  instance.SQLEConfig.SQLQueryConfig.MaxPreQueryRows,
 			QueryTimeoutSecond:               instance.SQLEConfig.SQLQueryConfig.QueryTimeoutSecond,
@@ -132,7 +139,7 @@ func convertInstance(instance *dmsV2.ListDBService) (*model.Instance, error) {
 		Name:               instance.Name,
 		DbType:             instance.DBType,
 		RuleTemplateId:     uint64(ruleTemplateId),
-		RuleTemplateName:   instance.SQLEConfig.RuleTemplateName,
+		RuleTemplateName:   ruleTemplateName,
 		ProjectId:          instance.ProjectUID,
 		MaintenancePeriod:  maintenancePeriod,
 		Host:               instance.Host,
