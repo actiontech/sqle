@@ -425,6 +425,10 @@ var (
 	ApMetricRowExaminedAvg             = &i18n.Message{ID: "ApMetricRowExaminedAvg", Other: "平均扫描行数"}
 	ApMetaPerformanceCollect           = &i18n.Message{ID: "ApMetaPerformanceCollect", Other: "数据源性能指标"}
 	ApMetaPerformanceCollectTips       = &i18n.Message{ID: "ApMetaPerformanceCollectTips", Other: "性能指标采集将产生较大性能开销,请谨慎开启。开启后,系统将持续采集该数据源的性能数据(如QPS、连接数等)，并生成性能趋势图表，体现在性能洞察页面。"}
+	ApMetaSQLServerPerformanceCollect     = &i18n.Message{ID: "ApMetaSQLServerPerformanceCollect", Other: "SQLServer性能采集"}
+	ApMetaSQLServerPerformanceCollectTips = &i18n.Message{ID: "ApMetaSQLServerPerformanceCollectTips", Other: "定时采集SQLServer实例的连接数和QPS等性能指标"}
+	ApMetaSQLServerSlowLog                = &i18n.Message{ID: "ApMetaSQLServerSlowLog", Other: "SQLServer慢SQL采集"}
+	ApMetaSQLServerProcesslist            = &i18n.Message{ID: "ApMetaSQLServerProcesslist", Other: "SQLServer活跃会话采集"}
 	ApMetaCollectTime                  = &i18n.Message{ID: "ApMetaCollectTime", Other: "采集时间"}
 	ApMetaThreadsConnected             = &i18n.Message{ID: "ApMetaThreadsConnected", Other: "线程数"}
 	ApMetaQPS                          = &i18n.Message{ID: "ApMetaQueries", Other: "QPS"}
@@ -444,6 +448,8 @@ var (
 	ParamOrderByColumnGeneric            = &i18n.Message{ID: "ParamOrderByColumnGeneric", Other: "排序字段"}
 	ParamCollectIntervalSecond           = &i18n.Message{ID: "ParamCollectIntervalSecond", Other: "采集周期（秒）"}
 	ParamSQLMinSecond                    = &i18n.Message{ID: "ParamSQLMinSecond", Other: "SQL 最小执行时间（秒）"}
+	ParamSlowSqlThreshold                = &i18n.Message{ID: "ParamSlowSqlThreshold", Other: "慢SQL判定时间阈值（秒）"}
+	ParamFirstSqlsScrappedHoursGeneric   = &i18n.Message{ID: "ParamFirstSqlsScrappedHoursGeneric", Other: "启动任务时拉取慢日志时间范围(单位:小时)"}
 	ParamCollectView                     = &i18n.Message{ID: "ParamCollectView", Other: "是否采集视图信息"}
 	ParamDBInstanceId                    = &i18n.Message{ID: "ParamDBInstanceId", Other: "实例ID"}
 	ParamAccessKeyId                     = &i18n.Message{ID: "ParamAccessKeyId", Other: "Access Key ID"}
