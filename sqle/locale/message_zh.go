@@ -417,6 +417,7 @@ var (
 	ApMetaObForOracleTopSQL            = &i18n.Message{ID: "ApMetaObForOracleTopSQL", Other: "OceanBase For Oracle TOP SQL"}
 	ApMetaOceanBaseForMySQLFullCollect = &i18n.Message{ID: "ApMetaOceanBaseForMySQLFullCollect", Other: "全量采集"}
 	ApMetaPostgreSQLTopSQL             = &i18n.Message{ID: "ApMetaPostgreSQLTopSQL", Other: "TOP SQL"}
+	ApMetaPostgreSQLSlowLog            = &i18n.Message{ID: "ApMetaPostgreSQLSlowLog", Other: "慢日志"}
 	ApMetaGoldenDBTopSQL               = &i18n.Message{ID: "ApMetaGoldenDBTopSQL", Other: "GoldenDB TOP SQL"}
 	ApMetaTiDBTopSQL                   = &i18n.Message{ID: "ApMetaTiDBTopSQL", Other: "TiDB TOP SQL"}
 	ApMetaMySQLTopSQL                  = &i18n.Message{ID: "ApMetaMySQLTopSQL", Other: "MySQL TOP SQL"}
@@ -433,6 +434,7 @@ var (
 
 	ParamCollectIntervalMinute           = &i18n.Message{ID: "ParamCollectIntervalMinute", Other: "采集周期（分钟）"}
 	ParamTopN                            = &i18n.Message{ID: "ParamTopN", Other: "Top N"}
+	ParamPgSlowSQLMinSecond              = &i18n.Message{ID: "ParamPgSlowSQLMinSecond", Other: "慢SQL阈值（秒）"}
 	ParamIndicator                       = &i18n.Message{ID: "ParamIndicator", Other: "关注指标"}
 	ParamCollectIntervalMinuteMySQL      = &i18n.Message{ID: "ParamCollectIntervalMinuteMySQL", Other: "采集周期（分钟，仅对 mysql.slow_log 有效）"}
 	ParamSlowLogCollectInput             = &i18n.Message{ID: "ParamSlowLogCollectInput", Other: "采集来源"}
