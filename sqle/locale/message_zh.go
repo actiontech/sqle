@@ -421,6 +421,7 @@ var (
 	ApMetaGoldenDBTopSQL               = &i18n.Message{ID: "ApMetaGoldenDBTopSQL", Other: "GoldenDB TOP SQL"}
 	ApMetaTiDBTopSQL                   = &i18n.Message{ID: "ApMetaTiDBTopSQL", Other: "TiDB TOP SQL"}
 	ApMetaMySQLTopSQL                  = &i18n.Message{ID: "ApMetaMySQLTopSQL", Other: "MySQL TOP SQL"}
+	ApMetaMSSQLTopSQL                  = &i18n.Message{ID: "ApMetaMSSQLTopSQL", Other: "SQL Server TOP SQL"}
 	ApMetricQueryTimeAvg               = &i18n.Message{ID: "ApMetricQueryTimeAvg", Other: "平均查询时间(s)"}
 	ApMetricRowExaminedAvg             = &i18n.Message{ID: "ApMetricRowExaminedAvg", Other: "平均扫描行数"}
 	ApMetaPerformanceCollect           = &i18n.Message{ID: "ApMetaPerformanceCollect", Other: "数据源性能指标"}
