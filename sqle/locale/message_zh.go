@@ -416,6 +416,7 @@ var (
 	ApMetaDmTopSQL                     = &i18n.Message{ID: "ApMetaDmTopSQL", Other: "DM TOP SQL"}
 	ApMetaObForOracleTopSQL            = &i18n.Message{ID: "ApMetaObForOracleTopSQL", Other: "OceanBase For Oracle TOP SQL"}
 	ApMetaOceanBaseForMySQLFullCollect = &i18n.Message{ID: "ApMetaOceanBaseForMySQLFullCollect", Other: "全量采集"}
+	ApMetaOceanBaseForMySQLSlowLog    = &i18n.Message{ID: "ApMetaOceanBaseForMySQLSlowLog", Other: "慢日志"}
 	ApMetaPostgreSQLTopSQL             = &i18n.Message{ID: "ApMetaPostgreSQLTopSQL", Other: "TOP SQL"}
 	ApMetaPostgreSQLSlowLog            = &i18n.Message{ID: "ApMetaPostgreSQLSlowLog", Other: "慢日志"}
 	ApMetaGoldenDBTopSQL               = &i18n.Message{ID: "ApMetaGoldenDBTopSQL", Other: "GoldenDB TOP SQL"}
