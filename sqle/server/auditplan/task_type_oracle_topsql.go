@@ -39,6 +39,12 @@ func (at *OracleTopSQLTaskV2) Params(instanceId ...string) params.Params {
 			Type:     params.ParamTypeInt,
 			I18nDesc: locale.Bundle.LocalizeAll(locale.ParamCollectIntervalMinuteOracle),
 		},
+		{
+			Key:      "top_n",
+			Value:    "10",
+			Type:     params.ParamTypeInt,
+			I18nDesc: locale.Bundle.LocalizeAll(locale.ParamTopN),
+		},
 	}
 }
 
@@ -125,7 +131,7 @@ func (at *OracleTopSQLTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, pe
 		notInUser = append(notInUser, blacklist.FilterContent)
 	}
 	// filter db user by
-	sqls, err := db.QueryTopSQLs(ctx, ap.Params.GetParam("collect_interval_minute").String(), ap.Params.GetParam("top_n").Int(), notInUser, ap.Params.GetParam("order_by_column").String())
+	sqls, err := db.QueryTopSQLs(ctx, ap.Params.GetParam(paramKeyCollectIntervalMinute).String(), ap.Params.GetParam("top_n").Int(), notInUser, ap.Params.GetParam("order_by_column").String())
 	if err != nil {
 		return nil, fmt.Errorf("query top sql fail, error: %v", err)
 	}
@@ -226,6 +232,38 @@ func (at *OracleTopSQLTaskV2) Head(ap *AuditPlan) []Head {
 		{
 			Name: MetricNameDBUser,
 			Desc: locale.ApMetricNameDBUser,
+		},
+	}
+}
+
+func (at *OracleTopSQLTaskV2) Filters(ctx context.Context, logger *logrus.Entry, ap *AuditPlan, persist *model.Storage) []FilterMeta {
+	return []FilterMeta{
+		{
+			Name:            "sql",
+			Desc:            locale.ApSQLStatement,
+			FilterInputType: FilterInputTypeString,
+			FilterOpType:    FilterOpTypeEqual,
+		},
+		{
+			Name:            "rule_name",
+			Desc:            locale.ApRuleName,
+			FilterInputType: FilterInputTypeString,
+			FilterOpType:    FilterOpTypeEqual,
+			FilterTips:      GetSqlManagerRuleTips(ctx, logger, ap.ID, persist),
+		},
+		{
+			Name:            "priority",
+			Desc:            locale.ApPriority,
+			FilterInputType: FilterInputTypeString,
+			FilterOpType:    FilterOpTypeEqual,
+			FilterTips:      GetSqlManagerPriorityTips(ctx, logger),
+		},
+		{
+			Name:            MetricNameDBUser,
+			Desc:            locale.ApMetricNameDBUser,
+			FilterInputType: FilterInputTypeString,
+			FilterOpType:    FilterOpTypeEqual,
+			FilterTips:      GetSqlManagerMetricTips(logger, ap.ID, persist, MetricNameDBUser),
 		},
 	}
 }
