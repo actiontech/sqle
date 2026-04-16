@@ -324,13 +324,20 @@ func ConvertAuditPlanTypeToResByID(ctx context.Context, id string, token string)
 	}
 	for _, meta := range auditplan.Metas {
 		if meta.Type == auditPlan.Type {
+			// AuditPlanTaskInfo 通过 Preload 加载，若采集任务尚未执行过（如新创建的扫描任务），
+			// 对应的 audit_plan_task_infos 记录可能不存在，AuditPlanTaskInfo 指针为 nil。
+			// 直接访问其字段会触发 nil pointer dereference 导致 API panic（HTTP 500）。
+			var lastCollectionStatus string
+			if auditPlan.AuditPlanTaskInfo != nil {
+				lastCollectionStatus = auditPlan.AuditPlanTaskInfo.LastCollectionStatus
+			}
 			return AuditPlanTypeResBase{
 				AuditPlanType:        auditPlan.Type,
 				AuditPlanTypeDesc:    locale.Bundle.LocalizeMsgByCtx(ctx, meta.Desc),
 				AuditPlanId:          auditPlan.ID,
 				Token:                token,
 				ActiveStatus:         auditPlan.ActiveStatus,
-				LastCollectionStatus: auditPlan.AuditPlanTaskInfo.LastCollectionStatus,
+				LastCollectionStatus: lastCollectionStatus,
 			}, nil
 		}
 	}
