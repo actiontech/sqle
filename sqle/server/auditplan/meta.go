@@ -46,13 +46,15 @@ const (
 	TypeBaiduRdsMySQLSlowLog    = "baidu_rds_mysql_slow_log"
 	TypeTDMySQLDistributedLock  = "tdsql_for_innodb_distributed_lock"
 	TypeSQLFile                 = scannerCmd.TypeSQLFile
+	TypeMSSQLTopSQL             = "mssql_top_sql"
 )
 
 const (
-	InstanceTypeAll    = ""
-	InstanceTypeMySQL  = "MySQL"
-	InstanceTypeOracle = "Oracle"
-	InstanceTypeTiDB   = "TiDB"
+	InstanceTypeAll       = ""
+	InstanceTypeMySQL     = "MySQL"
+	InstanceTypeOracle    = "Oracle"
+	InstanceTypeTiDB      = "TiDB"
+	InstanceTypeSQLServer = "SQL Server"
 )
 
 const (
