@@ -181,6 +181,18 @@ func (s *Storage) GetLatestStartTimeAuditPlanSQLV2(sourceId uint, typ string) (s
 	return info.StartTime, err
 }
 
+// GetLatestStartTimeAuditPlanSQLV2ForSQLServer returns the latest start time
+// by max string comparison. SQLServer slow log stores a fixed-width datetime
+// layout, so lexicographic order matches chronological order.
+func (s *Storage) GetLatestStartTimeAuditPlanSQLV2ForSQLServer(sourceId uint, typ string) (string, error) {
+	info := struct {
+		StartTime string `gorm:"column:max_start_time"`
+	}{}
+	err := s.db.Raw(`SELECT MAX(JSON_UNQUOTE(JSON_EXTRACT(info, '$.start_time_of_last_scraped_sql')))
+					AS max_start_time FROM sql_manage_records WHERE source_id = ? AND source = ? AND deleted_at is NULL`, sourceId, typ).Scan(&info).Error
+	return info.StartTime, err
+}
+
 // HasSQLManageRecords 检查是否存在指定 source_id 和 source 的 SQL 记录
 func (s *Storage) HasSQLManageRecords(sourceId string, source string) (bool, error) {
 	info := struct {

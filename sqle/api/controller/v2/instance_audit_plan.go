@@ -114,6 +114,12 @@ func GetInstanceTips(c echo.Context) error {
 	instanceTipsResV1 := make([]InstanceTipResV2, 0, len(instances))
 	svc := server.BackupService{}
 	for _, inst := range instances {
+		// When functional_module is view_sql_insight, only return instances
+		// that have SQL audit enabled. Instances without audit cannot provide
+		// performance insight data.
+		if req.FunctionalModule == v1.FunctionalModuleViewSQLInsight && !inst.SqlQueryConfig.AuditEnabled {
+			continue
+		}
 		instanceTipRes := InstanceTipResV2{
 			ID:                      inst.GetIDStr(),
 			Name:                    inst.Name,
