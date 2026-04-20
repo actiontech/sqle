@@ -411,6 +411,7 @@ var (
 	ApMetaMDBSlowLog                   = &i18n.Message{ID: "ApMetaMDBSlowLog", Other: "慢日志（监控库）"}
 	ApMetaTopSQL                       = &i18n.Message{ID: "ApMetaTopSQL", Other: "Top SQL"}
 	ApMetaDB2TopSQL                    = &i18n.Message{ID: "ApMetaDB2TopSQL", Other: "DB2 Top SQL"}
+	ApMetaDB2SlowLog                   = &i18n.Message{ID: "ApMetaDB2SlowLog", Other: "DB2慢日志"}
 	ApMetaSchemaMeta                   = &i18n.Message{ID: "ApMetaSchemaMeta", Other: "库表元数据"}
 	ApMetaDistributedLock              = &i18n.Message{ID: "ApMetaDistributedLock", Other: "分布式锁"}
 	ApMetaDmTopSQL                     = &i18n.Message{ID: "ApMetaDmTopSQL", Other: "DM TOP SQL"}
