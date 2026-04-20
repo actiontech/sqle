@@ -414,6 +414,7 @@ var (
 	ApMetaSchemaMeta                   = &i18n.Message{ID: "ApMetaSchemaMeta", Other: "库表元数据"}
 	ApMetaDistributedLock              = &i18n.Message{ID: "ApMetaDistributedLock", Other: "分布式锁"}
 	ApMetaDmTopSQL                     = &i18n.Message{ID: "ApMetaDmTopSQL", Other: "DM TOP SQL"}
+	ApMetaDmSlowLog                    = &i18n.Message{ID: "ApMetaDmSlowLog", Other: "DM慢日志"}
 	ApMetaObForOracleTopSQL            = &i18n.Message{ID: "ApMetaObForOracleTopSQL", Other: "OceanBase For Oracle TOP SQL"}
 	ApMetaOceanBaseForMySQLFullCollect = &i18n.Message{ID: "ApMetaOceanBaseForMySQLFullCollect", Other: "全量采集"}
 	ApMetaOceanBaseForMySQLSlowLog    = &i18n.Message{ID: "ApMetaOceanBaseForMySQLSlowLog", Other: "慢日志"}
