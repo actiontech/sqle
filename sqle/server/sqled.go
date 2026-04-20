@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/utils"
-	"github.com/go-sql-driver/mysql"
 
 	_ "github.com/actiontech/sqle/sqle/driver/mysql"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
@@ -264,6 +264,37 @@ func (a *action) terminatedFailed() {
 	a.Lock()
 	a.terminateStatus = statusTerminateFailed
 	a.Unlock()
+}
+
+// isConnectionTerminatedError 判断执行错误是否由连接终止操作导致。
+// 该函数通过匹配错误消息字符串来识别各种数据库驱动的连接终止错误。
+// 支持的错误模式：
+//   - MySQL: "invalid connection" (mysql.ErrInvalidConn 的 Error() 输出)
+//   - PostgreSQL: "57P01" (SQLSTATE admin_shutdown，pg_terminate_backend 触发)
+//   - PostgreSQL: "conn closed" (pgconn 连接已关闭状态)
+func isConnectionTerminatedError(err error) bool {
+	if err == nil {
+		return false
+	}
+	errMsg := err.Error()
+	// MySQL: 连接被 KILL 命令终止后，mysql 驱动返回 ErrInvalidConn，
+	// 其 Error() 为 "invalid connection"。错误可能经过 CodeError 或 fmt.Errorf 包装，
+	// 但包装后的字符串仍包含 "invalid connection"。
+	if strings.Contains(errMsg, "invalid connection") {
+		return true
+	}
+	// PostgreSQL: 连接被 pg_terminate_backend 终止后，pgx 驱动返回 PgError，
+	// 其 SQLSTATE 为 57P01 (admin_shutdown)。错误经过 gRPC 传输后以字符串形式保留。
+	// 典型格式: "FATAL: terminating connection due to administrator command (SQLSTATE 57P01)"
+	if strings.Contains(errMsg, "57P01") {
+		return true
+	}
+	// PostgreSQL: 连接已被标记为关闭状态后，后续操作返回 "conn closed"。
+	// 这是 pgconn 的 connLockError 错误，在连接被终止后尝试复用时出现。
+	if strings.Contains(errMsg, "conn closed") {
+		return true
+	}
+	return false
 }
 
 var (
@@ -653,7 +684,7 @@ func (a *action) executeSQLBatch(executeSQLs []*model.ExecuteSQL) error {
 		for idx, executeSQL := range executeSQLs {
 			executeSQL.ExecStatus = model.SQLExecuteStatusFailed
 			executeSQL.ExecResult = execErr.Error()
-			if a.hasTermination() && _errors.Is(mysql.ErrInvalidConn, execErr) {
+			if a.hasTermination() && isConnectionTerminatedError(execErr) {
 				executeSQL.ExecStatus = model.SQLExecuteStatusTerminateSucc
 				if idx >= len(results) || results[idx] == nil {
 					continue
@@ -690,7 +721,7 @@ func (a *action) execSQL(executeSQL *model.ExecuteSQL) error {
 	if execErr != nil {
 		executeSQL.ExecStatus = model.SQLExecuteStatusFailed
 		executeSQL.ExecResult = execErr.Error()
-		if a.hasTermination() && _errors.Is(mysql.ErrInvalidConn, execErr) {
+		if a.hasTermination() && isConnectionTerminatedError(execErr) {
 			executeSQL.ExecStatus = model.SQLExecuteStatusTerminateSucc
 		}
 	} else {
@@ -731,7 +762,7 @@ func (a *action) execSQLs(executeSQLs []*model.ExecuteSQL) error {
 		if txErr != nil {
 			executeSQL.ExecStatus = model.SQLExecuteStatusFailed
 			executeSQL.ExecResult = txErr.Error()
-			if a.hasTermination() && _errors.Is(mysql.ErrInvalidConn, txErr) {
+			if a.hasTermination() && isConnectionTerminatedError(txErr) {
 				executeSQL.ExecStatus = model.SQLExecuteStatusTerminateSucc
 			}
 			continue
@@ -740,6 +771,9 @@ func (a *action) execSQLs(executeSQLs []*model.ExecuteSQL) error {
 			if results.ExecErr.ErrSqlIndex == uint32(idx) {
 				executeSQL.ExecStatus = model.SQLExecuteStatusFailed
 				executeSQL.ExecResult = results.ExecErr.SqlExecErrMsg
+				if a.hasTermination() && isConnectionTerminatedError(fmt.Errorf(results.ExecErr.SqlExecErrMsg)) {
+					executeSQL.ExecStatus = model.SQLExecuteStatusTerminateSucc
+				}
 			} else {
 				executeSQL.ExecStatus = model.SQLExecuteStatusFailed
 				executeSQL.ExecResult = model.TaskExecResultRollback
