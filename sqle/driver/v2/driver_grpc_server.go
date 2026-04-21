@@ -115,7 +115,7 @@ func (d *DriverGrpcServer) Backup(ctx context.Context, req *protoV2.BackupReq) (
 		return &protoV2.BackupRes{}, err
 	}
 	res, err := driver.Backup(ctx, &BackupReq{
-		BackupStrategy: req.BackupStrategy.String(),
+		BackupStrategy: ConvertProtoBackupStrategyToDriver(req.BackupStrategy),
 		Sql:            req.Sql,
 		BackupMaxRows:  req.BackupMaxRows,
 	})
