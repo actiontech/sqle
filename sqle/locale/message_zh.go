@@ -422,6 +422,7 @@ var (
 	ApMetaPostgreSQLSlowLog            = &i18n.Message{ID: "ApMetaPostgreSQLSlowLog", Other: "慢日志"}
 	ApMetaGoldenDBTopSQL               = &i18n.Message{ID: "ApMetaGoldenDBTopSQL", Other: "GoldenDB TOP SQL"}
 	ApMetaTiDBTopSQL                   = &i18n.Message{ID: "ApMetaTiDBTopSQL", Other: "TiDB TOP SQL"}
+	ApMetaTiDBSlowLog                  = &i18n.Message{ID: "ApMetaTiDBSlowLog", Other: "TiDB慢日志"}
 	ApMetaMySQLTopSQL                  = &i18n.Message{ID: "ApMetaMySQLTopSQL", Other: "MySQL TOP SQL"}
 	ApMetaMSSQLTopSQL                  = &i18n.Message{ID: "ApMetaMSSQLTopSQL", Other: "SQL Server TOP SQL"}
 	ApMetricQueryTimeAvg               = &i18n.Message{ID: "ApMetricQueryTimeAvg", Other: "平均查询时间(s)"}
