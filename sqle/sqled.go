@@ -100,6 +100,12 @@ func Run(options *config.SqleOptions) error {
 			if err != nil {
 				return fmt.Errorf("create workflow template failed: %v", err)
 			}
+			if err := s.MigrateWorkflowTemplateType(); err != nil {
+				return fmt.Errorf("migrate workflow template type failed: %v", err)
+			}
+			if err := s.CreateDefaultDataExportTemplatesIfNotExist(); err != nil {
+				return fmt.Errorf("create default data export templates failed: %v", err)
+			}
 			if err := s.CreateRuleCategoriesRelated(); err != nil {
 				return fmt.Errorf("create rule categories related failed while auto migrating table: %v", err)
 			}
