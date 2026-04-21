@@ -10474,11 +10474,24 @@ var doc = `{
                         "description": "select unique (fingerprint and audit result) for task sql",
                         "name": "no_duplicate",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "csv",
+                            "html",
+                            "pdf",
+                            "word"
+                        ],
+                        "type": "string",
+                        "default": "csv",
+                        "description": "export format",
+                        "name": "export_format",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "sql report csv file",
+                        "description": "sql report file",
                         "schema": {
                             "type": "file"
                         }

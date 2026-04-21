@@ -74,7 +74,7 @@ func SaveFile(file io.ReadSeeker, targetPath string) (err error) {
 	return nil
 }
 
-// ExportFormat 导出格式枚举类型
+// ExportFormat 通用数据导出格式（如工单/审计计划导出表格），与审核报告多格式导出见 server/auditreport。
 type ExportFormat string
 
 const (
