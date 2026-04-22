@@ -41,6 +41,31 @@ SELECT * FROM (
 WHERE
     rownum <= %v
 `
+	DynPerformanceViewSQLAreaSlowLogTpl = `
+SELECT * FROM (
+    SELECT
+        s.sql_fulltext,
+        s.executions,
+        s.elapsed_time,
+        s.user_io_wait_time,
+        s.cpu_time,
+        s.disk_reads,
+        s.buffer_gets,
+        u.username
+    FROM
+        V$SQLAREA s
+    JOIN
+        DBA_USERS u ON s.parsing_user_id = u.user_id
+    WHERE
+        last_active_time >= SYSDATE - INTERVAL '%v' MINUTE
+        AND s.EXECUTIONS > 0
+        AND s.elapsed_time / s.executions > %v
+        %v
+    ORDER BY s.elapsed_time / s.executions DESC
+)
+WHERE
+    rownum <= %v
+`
 	DynPerformanceViewSQLAreaColumnExecutions     = "executions"
 	DynPerformanceViewSQLAreaColumnElapsedTime    = "elapsed_time"
 	DynPerformanceViewSQLAreaColumnCPUTime        = "cpu_time"
