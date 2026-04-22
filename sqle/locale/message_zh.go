@@ -405,6 +405,7 @@ var (
 	ApMetaBaiduRdsMySQLSlowLog         = &i18n.Message{ID: "ApMetaBaiduRdsMySQLSlowLog", Other: "百度云RDS MySQL慢日志"}
 	ApMetaHuaweiRdsMySQLSlowLog        = &i18n.Message{ID: "ApMetaHuaweiRdsMySQLSlowLog", Other: "华为云RDS MySQL慢日志"}
 	ApMetaOracleTopSQL                 = &i18n.Message{ID: "ApMetaOracleTopSQL", Other: "Oracle TOP SQL"}
+	ApMetaOracleSlowLog                = &i18n.Message{ID: "ApMetaOracleSlowLog", Other: "Oracle慢日志"}
 	ApMetaAllAppExtract                = &i18n.Message{ID: "ApMetaAllAppExtract", Other: "应用程序SQL抓取"}
 	ApMetaTiDBAuditLog                 = &i18n.Message{ID: "ApMetaTiDBAuditLog", Other: "TiDB审计日志"}
 	ApMetaSlowLog                      = &i18n.Message{ID: "ApMetaSlowLog", Other: "慢日志"}
