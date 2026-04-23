@@ -744,15 +744,20 @@ func GetGlobalWorkflowsV1(c echo.Context) error {
 	// 3. 将用户可视范围、接口请求以及用户的权限范围，构造为全局工单的基础的过滤器，满足全局工单统一的过滤逻辑
 	filter, err := constructGlobalWorkflowBasicFilter(c.Request().Context(), user, userVisibility,
 		&globalWorkflowBasicFilter{
-			FilterCreateUserId:              req.FilterCreateUserId,
-			FilterStatusList:                req.FilterStatusList,
-			FilterProjectUid:                req.FilterProjectUid,
-			FilterInstanceId:                req.FilterInstanceId,
-			FilterProjectPriority:           req.FilterProjectPriority,
-			FilterCurrentStepAssigneeUserId: req.FilterCurrentStepAssigneeUserId,
+			FilterCreateUserId:    req.FilterCreateUserId,
+			FilterStatusList:      req.FilterStatusList,
+			FilterProjectUid:      req.FilterProjectUid,
+			FilterInstanceId:      req.FilterInstanceId,
+			FilterProjectPriority: req.FilterProjectPriority,
 		})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
+	}
+	if req.FilterCurrentStepAssigneeUserId != "" {
+		// 由于可视范围为“多项目”和“受让人”冲突，因为“多项目”针对指定项目有可视权限，且权限大于“受让人”，但“受让人”筛选是针对所有项目
+		// 如果指定了待操作人筛选，则不筛选项目ID，
+		delete(filter, "filter_project_id_list")
+		filter["filter_current_step_assignee_user_id"] = req.FilterCurrentStepAssigneeUserId
 	}
 	// 4. 过滤器增加分页
 	limit, offset := controller.GetLimitAndOffset(req.PageIndex, req.PageSize)
@@ -909,15 +914,20 @@ func GetGlobalWorkflowStatistics(c echo.Context) error {
 	// 3. 将用户可视范围、接口请求以及用户的权限范围，构造为全局工单的基础的过滤器，满足全局工单统一的过滤逻辑
 	filter, err := constructGlobalWorkflowBasicFilter(c.Request().Context(), user, userVisibility,
 		&globalWorkflowBasicFilter{
-			FilterCreateUserId:              req.FilterCreateUserId,
-			FilterStatusList:                req.FilterStatusList,
-			FilterProjectUid:                req.FilterProjectUid,
-			FilterInstanceId:                req.FilterInstanceId,
-			FilterProjectPriority:           req.FilterProjectPriority,
-			FilterCurrentStepAssigneeUserId: req.FilterCurrentStepAssigneeUserId,
+			FilterCreateUserId:    req.FilterCreateUserId,
+			FilterStatusList:      req.FilterStatusList,
+			FilterProjectUid:      req.FilterProjectUid,
+			FilterInstanceId:      req.FilterInstanceId,
+			FilterProjectPriority: req.FilterProjectPriority,
 		})
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
+	}
+	if req.FilterCurrentStepAssigneeUserId != "" {
+		// 由于可视范围为“多项目”和“受让人”冲突，因为“多项目”针对指定项目有可视权限，且权限大于“受让人”，但“受让人”筛选是针对所有项目
+		// 如果指定了待操作人筛选，则不筛选项目ID，
+		delete(filter, "filter_project_id_list")
+		filter["filter_current_step_assignee_user_id"] = req.FilterCurrentStepAssigneeUserId
 	}
 	// 4. 根据筛选项获取工单数量
 	s := model.GetStorage()
@@ -987,10 +997,6 @@ func constructGlobalWorkflowBasicFilter(ctx context.Context, user *model.User, u
 		"filter_status_list":    req.FilterStatusList,   // 根据SQL工单的状态筛选多个状态的工单
 		"filter_project_id":     req.FilterProjectUid,   // 根据项目id筛选某些一个项目下的多个工单
 		"filter_instance_id":    req.FilterInstanceId,   // 根据工单记录的数据源id，筛选包含该数据源的工单，多数据源情况下，一旦包含该数据源，则被选中
-	}
-	// 1.0 如果指定了待操作人筛选，则使用指定的待操作人ID
-	if req.FilterCurrentStepAssigneeUserId != "" {
-		data["filter_current_step_assignee_user_id"] = req.FilterCurrentStepAssigneeUserId
 	}
 	// 1.1 页面筛选项：如果根据项目优先级筛选，则先筛选出对应优先级下的项目
 	var projectIdsByPriority []string
@@ -2259,8 +2265,10 @@ func validateBackupForNonDQLSQLs(s *model.Storage, tasks []*model.Task) error {
 // 此函数专门用于自动创建工单的执行流程，与普通工单执行的区别在于：
 //   - 使用特殊的通知类型（auto_exec_success/auto_exec_failed）来区分自动创建和普通创建的工单
 //   - 通过传递 isAutoCreated=true 给 ExecuteTasksProcess，确保 webhook 通知中的 action 字段为 "auto_exec_success" 或 "auto_exec_failed"
+//
 // 使用场景:
 //   - AutoCreateAndExecuteWorkflowV1: 通过工作台执行非DQL类型SQL时自动创建的工单
+//
 // 注意: 此函数不应用于普通工单的执行，普通工单应使用其他执行流程
 func executeWorkflowForAuto(projectUid string, workflow *model.Workflow, user *model.User) (string, error) {
 	needExecTaskIds, err := GetNeedExecTaskIds(workflow, user)
