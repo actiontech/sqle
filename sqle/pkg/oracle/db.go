@@ -110,3 +110,48 @@ func (o *DB) QueryTopSQLs(ctx context.Context, collectIntervalMinute string, top
 	}
 	return ret, nil
 }
+
+func (o *DB) QuerySlowSQLs(ctx context.Context, collectIntervalMinute string, topN int, slowSQLThresholdMicroseconds int64, notInUsers []string) ([]*DynPerformanceSQLArea, error) {
+	var notInUsersStr string
+	if len(notInUsers) > 0 {
+		var notInUsersFormatted []string
+		var notInUserSqlTpl = `AND u.username NOT IN (%v)`
+		for _, user := range notInUsers {
+			notInUsersFormatted = append(notInUsersFormatted, fmt.Sprintf("'%s'", user))
+		}
+		notInUsersStr = strings.Join(notInUsersFormatted, ",")
+		notInUsersStr = fmt.Sprintf(notInUserSqlTpl, notInUsersStr)
+	}
+	if topN == 0 {
+		topN = 100
+	}
+
+	query := fmt.Sprintf(DynPerformanceViewSQLAreaSlowLogTpl, collectIntervalMinute, slowSQLThresholdMicroseconds, notInUsersStr, topN)
+	rows, err := o.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to query %s", query)
+	}
+	defer rows.Close()
+
+	var ret []*DynPerformanceSQLArea
+	for rows.Next() {
+		res := DynPerformanceSQLArea{}
+		if err := rows.Scan(
+			&res.SQLFullText,
+			&res.Executions,
+			&res.ElapsedTime,
+			&res.UserIOWaitTime,
+			&res.CPUTime,
+			&res.DiskReads,
+			&res.BufferGets,
+			&res.UserName,
+		); err != nil {
+			return nil, errors.Wrapf(err, "failed to scan %s", query)
+		}
+		ret = append(ret, &res)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrapf(err, "failed to iterate %s", query)
+	}
+	return ret, nil
+}
