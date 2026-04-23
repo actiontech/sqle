@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 )
@@ -12,6 +13,12 @@ import (
 func CheckInstanceIsConnectable(instance *model.Instance) error {
 	plugin, err := NewDriverManagerWithoutAudit(log.NewEntry(), instance, "")
 	if err != nil {
+		// If sqle has no plugin for this DB type, skip the connectivity check.
+		// DMS aggregates connection checks from multiple components (sqle,
+		// provision, etc.). Not every component needs a plugin for every DB type.
+		if errors.Is(err, driver.ErrPluginNotFound) {
+			return nil
+		}
 		return err
 	}
 	defer plugin.Close(context.TODO())
