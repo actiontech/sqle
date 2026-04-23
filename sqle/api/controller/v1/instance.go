@@ -243,7 +243,10 @@ func CheckInstanceIsConnectable(c echo.Context) error {
 	for _, additionalParam := range req.AdditionalParams {
 		err := additionalParams.SetParamValue(additionalParam.Name, additionalParam.Value)
 		if err != nil {
-			return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
+			// Skip params not recognized by this plugin. DMS aggregates
+			// additional params from multiple plugins (sqle, provision,
+			// etc.), so each plugin should ignore params it doesn't own.
+			continue
 		}
 	}
 
