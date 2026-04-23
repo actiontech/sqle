@@ -27,19 +27,28 @@ func TestDefaultDataExportWorkflowTemplate(t *testing.T) {
 			},
 		},
 		{
-			name:      "has single export_review step",
+			name:      "has export_review and export_execute steps",
 			projectId: "proj-789",
 			checks: func(t *testing.T, tmpl *WorkflowTemplate) {
-				assert.Len(t, tmpl.Steps, 1)
+				assert.Len(t, tmpl.Steps, 2)
 				assert.Equal(t, WorkflowStepTypeExportReview, tmpl.Steps[0].Typ)
+				assert.Equal(t, WorkflowStepTypeExportExecute, tmpl.Steps[1].Typ)
 			},
 		},
 		{
-			name:      "step has ApprovedByAuthorized true",
+			name:      "review step has ApprovedByAuthorized true",
 			projectId: "proj-abc",
 			checks: func(t *testing.T, tmpl *WorkflowTemplate) {
 				assert.True(t, tmpl.Steps[0].ApprovedByAuthorized.Valid)
 				assert.True(t, tmpl.Steps[0].ApprovedByAuthorized.Bool)
+			},
+		},
+		{
+			name:      "execute step has ExecuteByAuthorized true",
+			projectId: "proj-exec",
+			checks: func(t *testing.T, tmpl *WorkflowTemplate) {
+				assert.True(t, tmpl.Steps[1].ExecuteByAuthorized.Valid)
+				assert.True(t, tmpl.Steps[1].ExecuteByAuthorized.Bool)
 			},
 		},
 		{
@@ -50,10 +59,11 @@ func TestDefaultDataExportWorkflowTemplate(t *testing.T) {
 			},
 		},
 		{
-			name:      "step number is 1",
+			name:      "step numbers are sequential",
 			projectId: "proj-num",
 			checks: func(t *testing.T, tmpl *WorkflowTemplate) {
 				assert.Equal(t, uint(1), tmpl.Steps[0].Number)
+				assert.Equal(t, uint(2), tmpl.Steps[1].Number)
 			},
 		},
 		{

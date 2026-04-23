@@ -105,6 +105,14 @@ func DefaultDataExportWorkflowTemplate(projectId string) *WorkflowTemplate {
 					Valid: true,
 				},
 			},
+			{
+				Number: 2,
+				Typ:    WorkflowStepTypeExportExecute,
+				ExecuteByAuthorized: sql.NullBool{
+					Bool:  true,
+					Valid: true,
+				},
+			},
 		},
 	}
 }
