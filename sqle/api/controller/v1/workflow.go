@@ -52,9 +52,15 @@ type GetWorkflowTemplateResV1 struct {
 type WorkflowTemplateDetailResV1 struct {
 	Name                          string                       `json:"workflow_template_name"`
 	Desc                          string                       `json:"desc,omitempty"`
+	WorkflowType                  string                       `json:"workflow_type" enums:"workflow,data_export"`
 	AllowSubmitWhenLessAuditLevel string                       `json:"allow_submit_when_less_audit_level" enums:"normal,notice,warn,error"`
 	Steps                         []*WorkFlowStepTemplateResV1 `json:"workflow_step_template_list"`
 	UpdateTime                    time.Time                    `json:"update_time"`
+}
+
+type GetWorkflowTemplateListResV1 struct {
+	controller.BaseRes
+	Data []*WorkflowTemplateDetailResV1 `json:"data"`
 }
 
 type WorkFlowStepTemplateResV1 struct {
@@ -72,16 +78,30 @@ type WorkFlowStepTemplateResV1 struct {
 // @Id getWorkflowTemplateV1
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
+// @Param workflow_type query string true "filter workflow type" Enums(workflow,data_export)
 // @Success 200 {object} v1.GetWorkflowTemplateResV1
 // @router /v1/projects/{project_name}/workflow_template [get]
 func GetWorkflowTemplate(c echo.Context) error {
 	return getWorkflowTemplate(c)
 }
 
+// @Summary 获取审批流程模板列表
+// @Description get workflow template list
+// @Tags workflow
+// @Id getWorkflowTemplateListV1
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Success 200 {object} v1.GetWorkflowTemplateListResV1
+// @router /v1/projects/{project_name}/workflow_templates [get]
+func GetWorkflowTemplateList(c echo.Context) error {
+	return getWorkflowTemplateList(c)
+}
+
 func convertWorkflowTemplateToRes(template *model.WorkflowTemplate) *WorkflowTemplateDetailResV1 {
 	res := &WorkflowTemplateDetailResV1{
 		Name:                          template.Name,
 		Desc:                          template.Desc,
+		WorkflowType:                  template.WorkflowType,
 		AllowSubmitWhenLessAuditLevel: template.AllowSubmitWhenLessAuditLevel,
 		UpdateTime:                    template.UpdatedAt,
 	}
@@ -111,7 +131,7 @@ func convertWorkflowTemplateToRes(template *model.WorkflowTemplate) *WorkflowTem
 }
 
 type WorkFlowStepTemplateReqV1 struct {
-	Type                 string   `json:"type" form:"type" valid:"oneof=sql_review sql_execute" enums:"sql_review,sql_execute"`
+	Type                 string   `json:"type" form:"type" valid:"oneof=sql_review sql_execute export_review export_execute" enums:"sql_review,sql_execute,export_review,export_execute"`
 	Desc                 string   `json:"desc" form:"desc"`
 	ApprovedByAuthorized bool     `json:"approved_by_authorized"`
 	ExecuteByAuthorized  bool     `json:"execute_by_authorized"`
@@ -132,6 +152,7 @@ type UpdateWorkflowTemplateReqV1 struct {
 // @Accept json
 // @Produce json
 // @Param project_name path string true "project name"
+// @Param workflow_type query string true "update by workflow or data export" Enums(workflow,data_export)
 // @Param instance body v1.UpdateWorkflowTemplateReqV1 true "create workflow template"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/workflow_template [patch]

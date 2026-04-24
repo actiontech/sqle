@@ -491,6 +491,48 @@ func (s *Storage) CreateDefaultWorkflowTemplateIfNotExist() error {
 	return nil
 }
 
+// CreateDefaultWorkflowTemplatesIfNotExist initializes default workflow-related templates.
+func (s *Storage) CreateDefaultWorkflowTemplatesIfNotExist() error {
+	if err := s.CreateDefaultWorkflowTemplateIfNotExist(); err != nil {
+		return fmt.Errorf("create workflow template failed: %v", err)
+	}
+	if err := s.CreateDefaultDataExportTemplatesIfNotExist(); err != nil {
+		return fmt.Errorf("create default data export templates failed: %v", err)
+	}
+	return nil
+}
+
+// CreateDefaultDataExportTemplatesIfNotExist creates a default data_export workflow template
+// for each project that has a workflow-type template but lacks a data_export template.
+// This migration is idempotent and can be safely re-run.
+func (s *Storage) CreateDefaultDataExportTemplatesIfNotExist() error {
+	// Find all distinct project_ids that have workflow-type templates
+	var projectIds []string
+	err := s.db.Model(&WorkflowTemplate{}).
+		Where("workflow_type = ?", WorkflowTemplateTypeWorkflow).
+		Distinct("project_id").
+		Pluck("project_id", &projectIds).Error
+	if err != nil {
+		return fmt.Errorf("query project ids failed: %v", err)
+	}
+
+	for _, projectId := range projectIds {
+		_, exist, err := s.GetWorkflowTemplateByProjectIdAndType(ProjectUID(projectId), WorkflowTemplateTypeDataExport)
+		if err != nil {
+			return fmt.Errorf("check data export template for project %s failed: %v", projectId, err)
+		}
+		if exist {
+			continue
+		}
+		deTd := DefaultDataExportWorkflowTemplate(projectId)
+		if err := s.SaveWorkflowTemplate(deTd); err != nil {
+			return fmt.Errorf("create default data export template for project %s failed: %v", projectId, err)
+		}
+		log.NewEntry().Infof("created default data export workflow template for project %s", projectId)
+	}
+	return nil
+}
+
 func (s *Storage) CreateDefaultTemplateIfNotExist(projectId ProjectUID, rules map[string][]*driverV2.Rule) error {
 	for dbType, dbRules := range rules {
 		versionRules := make(map[uint32][]*driverV2.Rule)

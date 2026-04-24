@@ -3639,6 +3639,19 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.GetWorkflowTemplateListResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.WorkflowTemplateDetailResV1'
+        type: array
+      message:
+        example: ok
+        type: string
+    type: object
   v1.GetWorkflowTemplateResV1:
     properties:
       code:
@@ -6158,6 +6171,8 @@ definitions:
         enum:
         - sql_review
         - sql_execute
+        - export_review
+        - export_execute
         type: string
     type: object
   v1.WorkFlowStepTemplateResV1:
@@ -6477,6 +6492,11 @@ definitions:
           $ref: '#/definitions/v1.WorkFlowStepTemplateResV1'
         type: array
       workflow_template_name:
+        type: string
+      workflow_type:
+        enum:
+        - workflow
+        - data_export
         type: string
     type: object
   v1.createPipelineResData:
@@ -7826,6 +7846,10 @@ definitions:
     type: object
   v2.WorkflowRecordResV2:
     properties:
+      assignee_user_name_list:
+        items:
+          type: string
+        type: array
       current_step_number:
         type: integer
       executable:
@@ -12932,6 +12956,14 @@ paths:
         name: project_name
         required: true
         type: string
+      - description: filter workflow type
+        enum:
+        - workflow
+        - data_export
+        in: query
+        name: workflow_type
+        required: true
+        type: string
       responses:
         "200":
           description: OK
@@ -12953,6 +12985,14 @@ paths:
         name: project_name
         required: true
         type: string
+      - description: update by workflow or data export
+        enum:
+        - workflow
+        - data_export
+        in: query
+        name: workflow_type
+        required: true
+        type: string
       - description: create workflow template
         in: body
         name: instance
@@ -12969,6 +13009,26 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 更新Sql审批流程模板
+      tags:
+      - workflow
+  /v1/projects/{project_name}/workflow_templates:
+    get:
+      description: get workflow template list
+      operationId: getWorkflowTemplateListV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetWorkflowTemplateListResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取审批流程模板列表
       tags:
       - workflow
   /v1/projects/{project_name}/workflows:

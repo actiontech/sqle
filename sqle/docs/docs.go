@@ -7570,6 +7570,17 @@ var doc = `{
                         "name": "project_name",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "enum": [
+                            "workflow",
+                            "data_export"
+                        ],
+                        "type": "string",
+                        "description": "filter workflow type",
+                        "name": "workflow_type",
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -7608,6 +7619,17 @@ var doc = `{
                         "required": true
                     },
                     {
+                        "enum": [
+                            "workflow",
+                            "data_export"
+                        ],
+                        "type": "string",
+                        "description": "update by workflow or data export",
+                        "name": "workflow_type",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
                         "description": "create workflow template",
                         "name": "instance",
                         "in": "body",
@@ -7622,6 +7644,38 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/workflow_templates": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get workflow template list",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "获取审批流程模板列表",
+                "operationId": "getWorkflowTemplateListV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetWorkflowTemplateListResV1"
                         }
                     }
                 }
@@ -18888,6 +18942,25 @@ var doc = `{
                 }
             }
         },
+        "v1.GetWorkflowTemplateListResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.WorkflowTemplateDetailResV1"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.GetWorkflowTemplateResV1": {
             "type": "object",
             "properties": {
@@ -22582,7 +22655,9 @@ var doc = `{
                     "type": "string",
                     "enum": [
                         "sql_review",
-                        "sql_execute"
+                        "sql_execute",
+                        "export_review",
+                        "export_execute"
                     ]
                 }
             }
@@ -23054,6 +23129,13 @@ var doc = `{
                 },
                 "workflow_template_name": {
                     "type": "string"
+                },
+                "workflow_type": {
+                    "type": "string",
+                    "enum": [
+                        "workflow",
+                        "data_export"
+                    ]
                 }
             }
         },
@@ -24984,6 +25066,12 @@ var doc = `{
         "v2.WorkflowRecordResV2": {
             "type": "object",
             "properties": {
+                "assignee_user_name_list": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "current_step_number": {
                     "type": "integer"
                 },

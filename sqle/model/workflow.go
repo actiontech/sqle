@@ -22,6 +22,7 @@ type WorkflowTemplate struct {
 	Model
 	ProjectId                     ProjectUID `gorm:"index; not null; type:varchar(255)"`
 	Name                          string     `gorm:"type:varchar(255)"`
+	WorkflowType                  string     `json:"workflow_type" gorm:"type:varchar(64); not null; default:'workflow'; column:workflow_type"`
 	Desc                          string     `gorm:"type:varchar(255)"`
 	AllowSubmitWhenLessAuditLevel string     `gorm:"type:varchar(255)"`
 
@@ -29,12 +30,27 @@ type WorkflowTemplate struct {
 	// Instances []*Instance             `gorm:"foreignkey:WorkflowTemplateId"`
 }
 
+// WorkflowTemplate type constants
+const (
+	WorkflowTemplateTypeWorkflow   = "workflow"
+	WorkflowTemplateTypeDataExport = "data_export"
+)
+
 const (
 	WorkflowStepTypeSQLReview      = "sql_review"
 	WorkflowStepTypeSQLExecute     = "sql_execute"
 	WorkflowStepTypeCreateWorkflow = "create_workflow"
 	WorkflowStepTypeUpdateWorkflow = "update_workflow"
+	// Data export step types
+	WorkflowStepTypeExportReview  = "export_review"
+	WorkflowStepTypeExportExecute = "export_execute"
 )
+
+// WorkflowStepTypesByWorkflowType defines allowed step types for each workflow template type
+var WorkflowStepTypesByWorkflowType = map[string][]string{
+	WorkflowTemplateTypeWorkflow:   {WorkflowStepTypeSQLReview, WorkflowStepTypeSQLExecute},
+	WorkflowTemplateTypeDataExport: {WorkflowStepTypeExportReview, WorkflowStepTypeExportExecute},
+}
 
 type WorkflowStepTemplate struct {
 	Model
@@ -52,6 +68,7 @@ func DefaultWorkflowTemplate(projectId string) *WorkflowTemplate {
 	return &WorkflowTemplate{
 		ProjectId:                     ProjectUID(projectId),
 		Name:                          fmt.Sprintf("%s-WorkflowTemplate", projectId),
+		WorkflowType:                  WorkflowTemplateTypeWorkflow,
 		AllowSubmitWhenLessAuditLevel: string(driverV2.RuleLevelWarn),
 		Steps: []*WorkflowStepTemplate{
 			{
@@ -65,6 +82,32 @@ func DefaultWorkflowTemplate(projectId string) *WorkflowTemplate {
 			{
 				Number: 2,
 				Typ:    WorkflowStepTypeSQLExecute,
+				ExecuteByAuthorized: sql.NullBool{
+					Bool:  true,
+					Valid: true,
+				},
+			},
+		},
+	}
+}
+
+func DefaultDataExportWorkflowTemplate(projectId string) *WorkflowTemplate {
+	return &WorkflowTemplate{
+		ProjectId:    ProjectUID(projectId),
+		Name:         fmt.Sprintf("%s-DataExportWorkflowTemplate", projectId),
+		WorkflowType: WorkflowTemplateTypeDataExport,
+		Steps: []*WorkflowStepTemplate{
+			{
+				Number: 1,
+				Typ:    WorkflowStepTypeExportReview,
+				ApprovedByAuthorized: sql.NullBool{
+					Bool:  true,
+					Valid: true,
+				},
+			},
+			{
+				Number: 2,
+				Typ:    WorkflowStepTypeExportExecute,
 				ExecuteByAuthorized: sql.NullBool{
 					Bool:  true,
 					Valid: true,
@@ -101,6 +144,21 @@ func (s *Storage) GetWorkflowTemplateByProjectId(projectId ProjectUID) (*Workflo
 	return workflowTemplate, true, errors.New(errors.ConnectStorageError, err)
 }
 
+func (s *Storage) GetWorkflowTemplateByProjectIdAndType(projectId ProjectUID, workflowType string) (*WorkflowTemplate, bool, error) {
+	workflowTemplate := &WorkflowTemplate{}
+	err := s.db.Where("project_id = ? AND workflow_type = ?", projectId, workflowType).First(workflowTemplate).Error
+	if err == gorm.ErrRecordNotFound {
+		return workflowTemplate, false, nil
+	}
+	return workflowTemplate, true, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetWorkflowTemplatesByProjectId(projectId ProjectUID) ([]*WorkflowTemplate, error) {
+	templates := []*WorkflowTemplate{}
+	err := s.db.Where("project_id = ?", projectId).Find(&templates).Error
+	return templates, errors.New(errors.ConnectStorageError, err)
+}
+
 func (s *Storage) GetWorkflowStepsByTemplateId(id uint) ([]*WorkflowStepTemplate, error) {
 	steps := []*WorkflowStepTemplate{}
 	err := s.db.Where("workflow_template_id = ?", id).Find(&steps).Error
@@ -121,8 +179,8 @@ func (s *Storage) SaveWorkflowTemplate(template *WorkflowTemplate) error {
 }
 
 func saveWorkflowTemplate(template *WorkflowTemplate, tx *sql.Tx) (templateId int64, err error) {
-	result, err := tx.Exec("INSERT INTO workflow_templates (name, `desc`, `allow_submit_when_less_audit_level`, `project_id`) values (?, ?, ?, ?)",
-		template.Name, template.Desc, template.AllowSubmitWhenLessAuditLevel, template.ProjectId)
+	result, err := tx.Exec("INSERT INTO workflow_templates (name, `desc`, `allow_submit_when_less_audit_level`, `project_id`, `workflow_type`) values (?, ?, ?, ?, ?)",
+		template.Name, template.Desc, template.AllowSubmitWhenLessAuditLevel, template.ProjectId, template.WorkflowType)
 	if err != nil {
 		return 0, err
 	}
