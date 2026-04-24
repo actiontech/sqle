@@ -78,6 +78,7 @@ type WorkFlowStepTemplateResV1 struct {
 // @Id getWorkflowTemplateV1
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
+// @Param workflow_type query string true "filter workflow type" Enums(workflow,data_export)
 // @Success 200 {object} v1.GetWorkflowTemplateResV1
 // @router /v1/projects/{project_name}/workflow_template [get]
 func GetWorkflowTemplate(c echo.Context) error {
@@ -151,6 +152,7 @@ type UpdateWorkflowTemplateReqV1 struct {
 // @Accept json
 // @Produce json
 // @Param project_name path string true "project name"
+// @Param workflow_type query string true "update by workflow or data export" Enums(workflow,data_export)
 // @Param instance body v1.UpdateWorkflowTemplateReqV1 true "create workflow template"
 // @Success 200 {object} controller.BaseRes
 // @router /v1/projects/{project_name}/workflow_template [patch]

@@ -7570,6 +7570,17 @@ var doc = `{
                         "name": "project_name",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "enum": [
+                            "workflow",
+                            "data_export"
+                        ],
+                        "type": "string",
+                        "description": "filter workflow type",
+                        "name": "workflow_type",
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -7605,6 +7616,17 @@ var doc = `{
                         "description": "project name",
                         "name": "project_name",
                         "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "workflow",
+                            "data_export"
+                        ],
+                        "type": "string",
+                        "description": "update by workflow or data export",
+                        "name": "workflow_type",
+                        "in": "query",
                         "required": true
                     },
                     {

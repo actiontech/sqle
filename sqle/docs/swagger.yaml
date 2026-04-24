@@ -12956,6 +12956,14 @@ paths:
         name: project_name
         required: true
         type: string
+      - description: filter workflow type
+        enum:
+        - workflow
+        - data_export
+        in: query
+        name: workflow_type
+        required: true
+        type: string
       responses:
         "200":
           description: OK
@@ -12975,6 +12983,14 @@ paths:
       - description: project name
         in: path
         name: project_name
+        required: true
+        type: string
+      - description: update by workflow or data export
+        enum:
+        - workflow
+        - data_export
+        in: query
+        name: workflow_type
         required: true
         type: string
       - description: create workflow template
