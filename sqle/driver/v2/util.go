@@ -82,6 +82,10 @@ func (m OptionalModule) String() string {
 		return "ExecBatch"
 	case OptionalModuleI18n:
 		return "I18n"
+	case OptionalGetDatabaseObjectDDL:
+		return "GetDatabaseObjectDDL"
+	case OptionalGetDatabaseDiffModifySQL:
+		return "GetDatabaseDiffModifySQL"
 	case OptionalBackup:
 		return "Backup"
 	default:
