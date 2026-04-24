@@ -23109,7 +23109,11 @@ var doc = `{
                     "type": "string"
                 },
                 "workflow_type": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "workflow",
+                        "data_export"
+                    ]
                 }
             }
         },

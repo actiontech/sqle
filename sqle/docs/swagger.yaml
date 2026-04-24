@@ -6494,6 +6494,9 @@ definitions:
       workflow_template_name:
         type: string
       workflow_type:
+        enum:
+        - workflow
+        - data_export
         type: string
     type: object
   v1.createPipelineResData:

@@ -52,7 +52,7 @@ type GetWorkflowTemplateResV1 struct {
 type WorkflowTemplateDetailResV1 struct {
 	Name                          string                       `json:"workflow_template_name"`
 	Desc                          string                       `json:"desc,omitempty"`
-	WorkflowType                  string                       `json:"workflow_type"`
+	WorkflowType                  string                       `json:"workflow_type" enums:"workflow,data_export"`
 	AllowSubmitWhenLessAuditLevel string                       `json:"allow_submit_when_less_audit_level" enums:"normal,notice,warn,error"`
 	Steps                         []*WorkFlowStepTemplateResV1 `json:"workflow_step_template_list"`
 	UpdateTime                    time.Time                    `json:"update_time"`
