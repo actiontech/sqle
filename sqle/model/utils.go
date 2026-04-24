@@ -491,13 +491,13 @@ func (s *Storage) CreateDefaultWorkflowTemplateIfNotExist() error {
 	return nil
 }
 
-// MigrateWorkflowTemplateType sets workflow_type to 'workflow' for all existing templates
-// where workflow_type is NULL or empty. This ensures backward compatibility during upgrade.
-func (s *Storage) MigrateWorkflowTemplateType() error {
-	err := s.db.Exec("UPDATE workflow_templates SET workflow_type = ? WHERE workflow_type IS NULL OR workflow_type = ''",
-		WorkflowTemplateTypeWorkflow).Error
-	if err != nil {
-		return fmt.Errorf("migrate workflow template type failed: %v", err)
+// CreateDefaultWorkflowTemplatesIfNotExist initializes default workflow-related templates.
+func (s *Storage) CreateDefaultWorkflowTemplatesIfNotExist() error {
+	if err := s.CreateDefaultWorkflowTemplateIfNotExist(); err != nil {
+		return fmt.Errorf("create workflow template failed: %v", err)
+	}
+	if err := s.CreateDefaultDataExportTemplatesIfNotExist(); err != nil {
+		return fmt.Errorf("create default data export templates failed: %v", err)
 	}
 	return nil
 }
