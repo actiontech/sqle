@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -116,19 +117,76 @@ const (
 	ZIPFileExtension        = ".zip"
 )
 
+// newBaseResWithMessage creates a success BaseRes, appending an optional message.
+// If message is empty, the response message is "ok"; otherwise "ok, <message>".
+func newBaseResWithMessage(message string) controller.BaseRes {
+	res := controller.NewBaseReq(nil)
+	if message != "" {
+		res.Message = res.Message + ", " + message
+	}
+	return res
+}
+
 func GetSQLFromFile(c echo.Context) (GetSQLFromFileResp, error) {
-	// Read it from sql file.
+	// Read it from sql file (.sql, .txt, .java).
 	fileName, sqlsFromSQLFile, exist, err := controller.ReadFile(c, InputSQLFileName)
 	if err != nil {
 		return GetSQLFromFileResp{}, err
 	}
 	if exist {
-		return GetSQLFromFileResp{
-			SourceType: model.TaskSQLSourceFromSQLFile,
-			SQLsFromSQLFiles: []SQLsFromSQLFile{{
-				FilePath: fileName,
-				SQLs:     sqlsFromSQLFile}},
-		}, nil
+		ext := strings.ToLower(filepath.Ext(fileName))
+		switch ext {
+		case ".sql", ".txt":
+			// .sql and .txt: convert encoding to UTF-8 before use
+			utf8Content, err := utils.ConvertToUtf8([]byte(sqlsFromSQLFile))
+			if err != nil {
+				return GetSQLFromFileResp{}, errors.New(errors.DataConflict, err)
+			}
+			return GetSQLFromFileResp{
+				SourceType: model.TaskSQLSourceFromSQLFile,
+				SQLsFromSQLFiles: []SQLsFromSQLFile{{
+					FilePath: fileName,
+					SQLs:     string(utf8Content)}},
+			}, nil
+		case ".java":
+			// .java: convert encoding to UTF-8, then extract SQL statements from Java source code
+			utf8Content, err := utils.ConvertToUtf8([]byte(sqlsFromSQLFile))
+			if err != nil {
+				return GetSQLFromFileResp{}, errors.New(errors.DataConflict, err)
+			}
+			sqls, err := getSqlFromJavaContent(string(utf8Content))
+			if err != nil {
+				return GetSQLFromFileResp{}, errors.New(errors.DataConflict, err)
+			}
+			sqlContent := strings.Join(sqls, ";\n")
+			return GetSQLFromFileResp{
+				SourceType: model.TaskSQLSourceFromSQLFile,
+				SQLsFromSQLFiles: []SQLsFromSQLFile{{
+					FilePath: fileName,
+					SQLs:     sqlContent}},
+			}, nil
+		case ".xlsx":
+			// .xlsx: extract SQL from XLSX template (second phase)
+			sqlContent, _, err := getSqlsFromXlsx(c)
+			if err != nil {
+				return GetSQLFromFileResp{}, errors.New(errors.DataConflict, err)
+			}
+			return GetSQLFromFileResp{
+				SourceType: model.TaskSQLSourceFromSQLFile,
+				SQLsFromSQLFiles: []SQLsFromSQLFile{{
+					FilePath: fileName,
+					SQLs:     sqlContent}},
+			}, nil
+		default:
+			// For unrecognized extensions uploaded via input_sql_file,
+			// fall back to original behavior (treat as SQL content).
+			return GetSQLFromFileResp{
+				SourceType: model.TaskSQLSourceFromSQLFile,
+				SQLsFromSQLFiles: []SQLsFromSQLFile{{
+					FilePath: fileName,
+					SQLs:     sqlsFromSQLFile}},
+			}, nil
+		}
 	}
 
 	// If sql_file is not exist, read it from mybatis xml file.
@@ -155,16 +213,26 @@ func GetSQLFromFile(c echo.Context) (GetSQLFromFileResp, error) {
 		}, nil
 	}
 
-	// If mybatis xml file is not exist, read it from zip file.
-	sqlsFromSQLFiles, sqlsFromXML, exist, err := getSqlsFromZip(c)
+	// If mybatis xml file is not exist, read it from archive file (.zip, .rar, .7z).
+	sqlsFromArchive, sqlsFromXML, skippedCount, exist, err := getSqlsFromArchive(c)
 	if err != nil {
 		return GetSQLFromFileResp{}, err
 	}
 	if exist {
+		// BUG-003: 压缩包内无可审核文件时返回错误提示
+		if len(sqlsFromArchive) == 0 && len(sqlsFromXML) == 0 {
+			return GetSQLFromFileResp{}, errors.New(errors.DataInvalid, fmt.Errorf("no auditable files in the archive"))
+		}
+		// OBS-004: 跳过不支持格式文件时在 Message 中包含提示
+		var message string
+		if skippedCount > 0 {
+			message = fmt.Sprintf("skipped %d unsupported format file(s)", skippedCount)
+		}
 		return GetSQLFromFileResp{
 			SourceType:       model.TaskSQLSourceFromZipFile,
-			SQLsFromSQLFiles: sqlsFromSQLFiles,
+			SQLsFromSQLFiles: sqlsFromArchive,
 			SQLsFromXMLs:     sqlsFromXML,
+			Message:          message,
 		}, nil
 	}
 
@@ -181,6 +249,32 @@ func GetSQLFromFile(c echo.Context) (GetSQLFromFileResp, error) {
 		}, nil
 	}
 	return GetSQLFromFileResp{}, errors.New(errors.DataInvalid, fmt.Errorf("input sql is empty"))
+}
+
+// getSqlsFromArchive dispatches archive file processing based on file extension.
+// It checks the uploaded file's extension and calls the appropriate handler:
+// .zip -> getSqlsFromZip, .rar -> getSqlsFromRar, .7z -> getSqlsFrom7z.
+// Returns skippedCount: the number of unsupported format files that were skipped.
+func getSqlsFromArchive(c echo.Context) (sqlsFromSQLFile []SQLsFromSQLFile, sqlsFromXML []SQLFromXML, skippedCount int, exist bool, err error) {
+	file, err := c.FormFile(InputZipFileName)
+	if err == http.ErrMissingFile {
+		return nil, nil, 0, false, nil
+	}
+	if err != nil {
+		return nil, nil, 0, false, err
+	}
+
+	ext := strings.ToLower(filepath.Ext(file.Filename))
+	switch ext {
+	case ".zip":
+		return getSqlsFromZip(c)
+	case ".rar":
+		return getSqlsFromRar(c)
+	case ".7z":
+		return getSqlsFrom7z(c)
+	default:
+		return nil, nil, 0, false, fmt.Errorf("unsupported archive file type: %s", ext)
+	}
 }
 
 func saveFileFromContext(c echo.Context) ([]*model.AuditFile, error) {
@@ -409,7 +503,7 @@ func CreateAndAuditTask(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	return c.JSON(http.StatusOK, &GetAuditTaskResV1{
-		BaseRes: controller.NewBaseReq(nil),
+		BaseRes: newBaseResWithMessage(sqls.Message),
 		Data:    convertTaskToRes(task),
 	})
 }
@@ -1148,7 +1242,7 @@ func AuditTaskGroupV1(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, AuditTaskGroupResV1{
-		BaseRes: controller.NewBaseReq(nil),
+		BaseRes: newBaseResWithMessage(sqls.Message),
 		Data: AuditTaskGroupRes{
 			TaskGroupId: taskGroup.ID,
 			Tasks:       tasksRes,
