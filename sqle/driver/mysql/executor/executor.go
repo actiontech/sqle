@@ -307,19 +307,27 @@ func (c *Executor) ShowCreateTable(schema, tableName string) (string, error) {
 		return "", errors.New(errors.ConnectRemoteDatabaseError, err)
 	}
 
-	var queryCreate sql.NullString
-	var ok bool
-	if queryCreate, ok = result[0]["Create Table"]; ok {
-		return queryCreate.String, nil
+	// Different databases may return different column names for SHOW CREATE TABLE.
+	// For example, MySQL returns "Create Table" / "Create View", while GoldenDB returns
+	// "CREATE TABLE" / "CREATE VIEW". Use case-insensitive matching to handle all variants.
+	for key, val := range result[0] {
+		upperKey := strings.ToUpper(key)
+		if upperKey == "CREATE TABLE" || upperKey == "CREATE VIEW" {
+			return val.String, nil
+		}
 	}
 
-	if queryCreate, ok = result[0]["Create View"]; ok {
-		return queryCreate.String, nil
-	}
-
-	err = fmt.Errorf("show create table error, column \"Create Table\" or \"Create View\" not found")
+	err = fmt.Errorf("show create table error, column \"Create Table\" or \"Create View\" not found, available columns: %v", getResultKeys(result[0]))
 	c.Db.Logger().Error(err)
 	return "", errors.New(errors.ConnectRemoteDatabaseError, err)
+}
+
+func getResultKeys(row map[string]sql.NullString) []string {
+	keys := make([]string, 0, len(row))
+	for k := range row {
+		keys = append(keys, k)
+	}
+	return keys
 }
 
 /*
@@ -484,13 +492,15 @@ func (c *Executor) ShowCreateView(tableName string) (string, error) {
 		c.Db.Logger().Error(err)
 		return "", errors.New(errors.ConnectRemoteDatabaseError, err)
 	}
-	if query, ok := result[0]["Create View"]; !ok {
-		err := fmt.Errorf("show create view error, column \"Create View\" not found")
-		c.Db.Logger().Error(err)
-		return "", errors.New(errors.ConnectRemoteDatabaseError, err)
-	} else {
-		return query.String, nil
+	for key, val := range result[0] {
+		if strings.ToUpper(key) == "CREATE VIEW" {
+			return val.String, nil
+		}
 	}
+
+	err = fmt.Errorf("show create view error, column \"Create View\" not found, available columns: %v", getResultKeys(result[0]))
+	c.Db.Logger().Error(err)
+	return "", errors.New(errors.ConnectRemoteDatabaseError, err)
 }
 
 func (c *Executor) ShowCurrentMaxColumnWidth(tableName, columnName string) (int, error) {
