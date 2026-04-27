@@ -272,6 +272,7 @@ func (a *action) terminatedFailed() {
 //   - MySQL: "invalid connection" (mysql.ErrInvalidConn 的 Error() 输出)
 //   - PostgreSQL: "57P01" (SQLSTATE admin_shutdown，pg_terminate_backend 触发)
 //   - PostgreSQL: "conn closed" (pgconn 连接已关闭状态)
+//   - SQL Server: "connection is broken" (SqlException，连接被 KILL 后抛出)
 func isConnectionTerminatedError(err error) bool {
 	if err == nil {
 		return false
@@ -292,6 +293,11 @@ func isConnectionTerminatedError(err error) bool {
 	// PostgreSQL: 连接已被标记为关闭状态后，后续操作返回 "conn closed"。
 	// 这是 pgconn 的 connLockError 错误，在连接被终止后尝试复用时出现。
 	if strings.Contains(errMsg, "conn closed") {
+		return true
+	}
+	// SQL Server: 连接被 KILL 命令终止后，System.Data.SqlClient 抛出 SqlException，
+	// 经过 C# gRPC 插件包装后，错误消息中包含 "connection is broken"。
+	if strings.Contains(errMsg, "connection is broken") {
 		return true
 	}
 	return false

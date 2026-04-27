@@ -52,6 +52,30 @@ func Test_isConnectionTerminatedError(t *testing.T) {
 			expected: true,
 		},
 
+		// ===== SQL Server 终止错误 (正向匹配) =====
+		"SQL Server: connection is broken from exec failed": {
+			err:      fmt.Errorf("rpc error: code = Internal desc = exec failed:The connection is broken and recovery is not possible.  The client driver attempted to recover the connection one or more times and all attempts failed."),
+			expected: true,
+		},
+		"SQL Server: connection is broken from exec batch failed": {
+			err:      fmt.Errorf("rpc error: code = Internal desc = exec batch failed:A severe error occurred on the current command. The connection is broken and recovery is not possible."),
+			expected: true,
+		},
+		"SQL Server: connection is broken from tx failed": {
+			err:      fmt.Errorf("rpc error: code = Internal desc = tx failed:The connection is broken and recovery is not possible."),
+			expected: true,
+		},
+
+		// ===== SQL Server 非终止错误 (反向匹配，不应误判) =====
+		"SQL Server: login failed": {
+			err:      fmt.Errorf("rpc error: code = Internal desc = exec failed:Login failed for user 'sa'."),
+			expected: false,
+		},
+		"SQL Server: syntax error": {
+			err:      fmt.Errorf("rpc error: code = Internal desc = exec failed:Incorrect syntax near 'SELECTT'."),
+			expected: false,
+		},
+
 		// ===== 非终止错误 (反向匹配，不应误判) =====
 		"nil error": {
 			err:      nil,
