@@ -199,7 +199,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1OpProjectRouter.POST("/:project_name/rule_templates/:rule_template_name/clone", v1.CloneProjectRuleTemplate)
 
 		// workflow template
-		v1OpProjectRouter.PATCH("/:project_name/workflow_template", v1.UpdateWorkflowTemplate)
+		v1OpProjectRouter.PATCH("/:project_name/workflow_template/:workflow_type/", v1.UpdateWorkflowTemplate)
 
 		// report push
 		v1OpProjectRouter.PUT("/:project_name/report_push_configs/:report_push_config_id/", v1.UpdateReportPushConfig)

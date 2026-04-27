@@ -12974,6 +12974,7 @@ paths:
       summary: 获取审批流程模板详情
       tags:
       - workflow
+  /v1/projects/{project_name}/workflow_template/{workflow_type}/:
     patch:
       consumes:
       - application/json
@@ -12985,11 +12986,11 @@ paths:
         name: project_name
         required: true
         type: string
-      - description: update by workflow or data export
+      - description: workflow type
         enum:
         - workflow
         - data_export
-        in: query
+        in: path
         name: workflow_type
         required: true
         type: string

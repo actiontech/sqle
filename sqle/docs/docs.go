@@ -7591,7 +7591,9 @@ var doc = `{
                         }
                     }
                 }
-            },
+            }
+        },
+        "/v1/projects/{project_name}/workflow_template/{workflow_type}/": {
             "patch": {
                 "security": [
                     {
@@ -7624,9 +7626,9 @@ var doc = `{
                             "data_export"
                         ],
                         "type": "string",
-                        "description": "update by workflow or data export",
+                        "description": "workflow type",
                         "name": "workflow_type",
-                        "in": "query",
+                        "in": "path",
                         "required": true
                     },
                     {
