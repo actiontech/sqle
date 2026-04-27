@@ -152,10 +152,10 @@ type UpdateWorkflowTemplateReqV1 struct {
 // @Accept json
 // @Produce json
 // @Param project_name path string true "project name"
-// @Param workflow_type query string true "update by workflow or data export" Enums(workflow,data_export)
+// @Param workflow_type path string true "workflow type" Enums(workflow,data_export)
 // @Param instance body v1.UpdateWorkflowTemplateReqV1 true "create workflow template"
 // @Success 200 {object} controller.BaseRes
-// @router /v1/projects/{project_name}/workflow_template [patch]
+// @router /v1/projects/{project_name}/workflow_template/{workflow_type}/ [patch]
 func UpdateWorkflowTemplate(c echo.Context) error {
 	return updateWorkflowTemplate(c)
 }
