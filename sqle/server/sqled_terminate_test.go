@@ -65,6 +65,18 @@ func Test_isConnectionTerminatedError(t *testing.T) {
 			err:      fmt.Errorf("rpc error: code = Internal desc = tx failed:The connection is broken and recovery is not possible."),
 			expected: true,
 		},
+		"SQL Server: Timeout expired from exec failed": {
+			err:      fmt.Errorf("rpc error: code = Internal desc = exec failed:Timeout expired. The timeout period elapsed prior to completion of the operation or the server is not responding."),
+			expected: true,
+		},
+		"SQL Server: Timeout expired from exec batch failed": {
+			err:      fmt.Errorf("rpc error: code = Internal desc = exec batch failed:Timeout expired. The timeout period elapsed prior to completion of the operation or the server is not responding."),
+			expected: true,
+		},
+		"SQL Server: Timeout expired from tx failed": {
+			err:      fmt.Errorf("rpc error: code = Internal desc = tx failed:Timeout expired. The timeout period elapsed prior to completion of the operation or the server is not responding."),
+			expected: true,
+		},
 
 		// ===== SQL Server 非终止错误 (反向匹配，不应误判) =====
 		"SQL Server: login failed": {

@@ -273,6 +273,7 @@ func (a *action) terminatedFailed() {
 //   - PostgreSQL: "57P01" (SQLSTATE admin_shutdown，pg_terminate_backend 触发)
 //   - PostgreSQL: "conn closed" (pgconn 连接已关闭状态)
 //   - SQL Server: "connection is broken" (SqlException，连接被 KILL 后抛出)
+//   - SQL Server: "Timeout expired" (KILL 后执行中的命令收到超时异常)
 func isConnectionTerminatedError(err error) bool {
 	if err == nil {
 		return false
@@ -298,6 +299,12 @@ func isConnectionTerminatedError(err error) bool {
 	// SQL Server: 连接被 KILL 命令终止后，System.Data.SqlClient 抛出 SqlException，
 	// 经过 C# gRPC 插件包装后，错误消息中包含 "connection is broken"。
 	if strings.Contains(errMsg, "connection is broken") {
+		return true
+	}
+	// SQL Server: 连接被 KILL 后，正在执行的命令可能收到超时异常而非连接断开异常。
+	// 典型消息: "Timeout expired. The timeout period elapsed prior to completion of the operation or the server is not responding."
+	// 经过 C# gRPC 插件的 "exec failed:" 前缀包装后仍可通过子串匹配识别。
+	if strings.Contains(errMsg, "Timeout expired") {
 		return true
 	}
 	return false
