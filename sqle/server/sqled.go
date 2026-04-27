@@ -307,6 +307,11 @@ func isConnectionTerminatedError(err error) bool {
 	if strings.Contains(errMsg, "Timeout expired") {
 		return true
 	}
+	// SQL Server: KILL 完成后，会话进入 kill 状态，后续操作返回:
+	// "Cannot continue the execution because the session is in the kill state."
+	if strings.Contains(errMsg, "session is in the kill state") {
+		return true
+	}
 	return false
 }
 

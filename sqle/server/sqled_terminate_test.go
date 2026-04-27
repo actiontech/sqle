@@ -77,6 +77,18 @@ func Test_isConnectionTerminatedError(t *testing.T) {
 			err:      fmt.Errorf("rpc error: code = Internal desc = tx failed:Timeout expired. The timeout period elapsed prior to completion of the operation or the server is not responding."),
 			expected: true,
 		},
+		"SQL Server: session is in the kill state from exec failed": {
+			err:      fmt.Errorf("rpc error: code = Internal desc = exec failed:Cannot continue the execution because the session is in the kill state."),
+			expected: true,
+		},
+		"SQL Server: session is in the kill state from exec batch failed": {
+			err:      fmt.Errorf("rpc error: code = Internal desc = exec batch failed:Cannot continue the execution because the session is in the kill state."),
+			expected: true,
+		},
+		"SQL Server: session is in the kill state from tx failed": {
+			err:      fmt.Errorf("rpc error: code = Internal desc = tx failed:Cannot continue the execution because the session is in the kill state."),
+			expected: true,
+		},
 
 		// ===== SQL Server 非终止错误 (反向匹配，不应误判) =====
 		"SQL Server: login failed": {
