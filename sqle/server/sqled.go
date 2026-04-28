@@ -272,6 +272,8 @@ func (a *action) terminatedFailed() {
 //   - MySQL: "invalid connection" (mysql.ErrInvalidConn 的 Error() 输出)
 //   - PostgreSQL: "57P01" (SQLSTATE admin_shutdown，pg_terminate_backend 触发)
 //   - PostgreSQL: "conn closed" (pgconn 连接已关闭状态)
+//   - SQL Server: "connection is broken" (SqlException，连接被 KILL 后抛出)
+//   - SQL Server: "Timeout expired" (KILL 后执行中的命令收到超时异常)
 func isConnectionTerminatedError(err error) bool {
 	if err == nil {
 		return false
@@ -292,6 +294,22 @@ func isConnectionTerminatedError(err error) bool {
 	// PostgreSQL: 连接已被标记为关闭状态后，后续操作返回 "conn closed"。
 	// 这是 pgconn 的 connLockError 错误，在连接被终止后尝试复用时出现。
 	if strings.Contains(errMsg, "conn closed") {
+		return true
+	}
+	// SQL Server: 连接被 KILL 命令终止后，System.Data.SqlClient 抛出 SqlException，
+	// 经过 C# gRPC 插件包装后，错误消息中包含 "connection is broken"。
+	if strings.Contains(errMsg, "connection is broken") {
+		return true
+	}
+	// SQL Server: 连接被 KILL 后，正在执行的命令可能收到超时异常而非连接断开异常。
+	// 典型消息: "Timeout expired. The timeout period elapsed prior to completion of the operation or the server is not responding."
+	// 经过 C# gRPC 插件的 "exec failed:" 前缀包装后仍可通过子串匹配识别。
+	if strings.Contains(errMsg, "Timeout expired") {
+		return true
+	}
+	// SQL Server: KILL 完成后，会话进入 kill 状态，后续操作返回:
+	// "Cannot continue the execution because the session is in the kill state."
+	if strings.Contains(errMsg, "session is in the kill state") {
 		return true
 	}
 	return false
