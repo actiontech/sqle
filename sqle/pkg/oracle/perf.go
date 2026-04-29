@@ -73,3 +73,35 @@ WHERE
 	DynPerformanceViewSQLAreaColumnBufferGets     = "buffer_gets"
 	DynPerformanceViewSQLAreaColumnUserIOWaitTime = "user_io_wait_time"
 )
+
+// ProcessListSession represents an active session from V$SESSION joined with V$SQL.
+type ProcessListSession struct {
+	SID         int64  `json:"sid"`
+	Username    string `json:"username"`
+	SchemaName  string `json:"schema_name"`
+	SQLFullText string `json:"sql_fulltext"`
+	LastCallET  int64  `json:"last_call_et"`
+}
+
+// DynPerformanceViewSessionTpl is a Go template for querying active sessions
+// from V$SESSION joined with V$SQL. It filters user sessions that are active,
+// have a SQL_ID, a USERNAME, and excludes the current session.
+// When .MinSecond > 0, it additionally filters by LAST_CALL_ET >= .MinSecond.
+const DynPerformanceViewSessionTpl = `
+SELECT
+    s.SID,
+    s.USERNAME,
+    s.SCHEMANAME,
+    q.SQL_FULLTEXT,
+    s.LAST_CALL_ET
+FROM V$SESSION s
+LEFT JOIN V$SQL q ON s.SQL_ID = q.SQL_ID AND s.SQL_CHILD_NUMBER = q.CHILD_NUMBER
+WHERE s.TYPE = 'USER'
+  AND s.STATUS = 'ACTIVE'
+  AND s.SQL_ID IS NOT NULL
+  AND s.USERNAME IS NOT NULL
+  AND s.SID != SYS_CONTEXT('USERENV', 'SID')
+{{- if gt .MinSecond 0 }}
+  AND s.LAST_CALL_ET >= {{ .MinSecond }}
+{{- end }}
+`

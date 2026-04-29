@@ -1,11 +1,13 @@
 package oracle
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"fmt"
 	"net/url"
 	"strings"
+	"text/template"
 
 	"github.com/pkg/errors"
 
@@ -152,6 +154,52 @@ func (o *DB) QuerySlowSQLs(ctx context.Context, collectIntervalMinute string, to
 	}
 	if err := rows.Err(); err != nil {
 		return nil, errors.Wrapf(err, "failed to iterate %s", query)
+	}
+	return ret, nil
+}
+
+// QueryProcessList queries active sessions from V$SESSION joined with V$SQL.
+// sqlMinSecond filters sessions whose LAST_CALL_ET >= sqlMinSecond (0 means no filter).
+func (o *DB) QueryProcessList(ctx context.Context, sqlMinSecond int) ([]*ProcessListSession, error) {
+	tpl, err := template.New("processlist").Parse(DynPerformanceViewSessionTpl)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse process list sql template")
+	}
+
+	var buf bytes.Buffer
+	if err := tpl.Execute(&buf, struct{ MinSecond int }{MinSecond: sqlMinSecond}); err != nil {
+		return nil, errors.Wrap(err, "failed to execute process list sql template")
+	}
+
+	query := buf.String()
+	rows, err := o.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to query process list")
+	}
+	defer rows.Close()
+
+	var ret []*ProcessListSession
+	for rows.Next() {
+		var (
+			sid         sql.NullInt64
+			username    sql.NullString
+			schemaName  sql.NullString
+			sqlFullText sql.NullString
+			lastCallET  sql.NullInt64
+		)
+		if err := rows.Scan(&sid, &username, &schemaName, &sqlFullText, &lastCallET); err != nil {
+			return nil, errors.Wrapf(err, "failed to scan process list row")
+		}
+		ret = append(ret, &ProcessListSession{
+			SID:         sid.Int64,
+			Username:    username.String,
+			SchemaName:  schemaName.String,
+			SQLFullText: sqlFullText.String,
+			LastCallET:  lastCallET.Int64,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrapf(err, "failed to iterate process list rows")
 	}
 	return ret, nil
 }
