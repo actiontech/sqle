@@ -417,7 +417,7 @@ var (
 	ApMetaDistributedLock                 = &i18n.Message{ID: "ApMetaDistributedLock", Other: "分布式锁"}
 	ApMetaDmTopSQL                        = &i18n.Message{ID: "ApMetaDmTopSQL", Other: "DM TOP SQL"}
 	ApMetaDmSlowLog                       = &i18n.Message{ID: "ApMetaDmSlowLog", Other: "DM慢日志"}
-	ApMetaDmProcesslist                   = &i18n.Message{ID: "ApMetaDmProcesslist", Other: "DM抓取当前正在执行的SQL"}
+	ApMetaDmProcesslist                   = &i18n.Message{ID: "ApMetaDmProcesslist", Other: "DM ProcessList"}
 	ApMetaObForOracleTopSQL               = &i18n.Message{ID: "ApMetaObForOracleTopSQL", Other: "OceanBase For Oracle TOP SQL"}
 	ApMetaObForOracleSlowLog              = &i18n.Message{ID: "ApMetaObForOracleSlowLog", Other: "OceanBase For Oracle 慢日志"}
 	ApMetaOceanBaseForMySQLFullCollect    = &i18n.Message{ID: "ApMetaOceanBaseForMySQLFullCollect", Other: "全量采集"}
