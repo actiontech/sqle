@@ -37,6 +37,8 @@ const (
 	GlobalWorkflowFilterCardPendingForMe GlobalWorkflowFilterCard = "pending_for_me"
 	// GlobalWorkflowFilterCardInitiatedByMe: 我发起的
 	GlobalWorkflowFilterCardInitiatedByMe GlobalWorkflowFilterCard = "initiated_by_me"
+	// GlobalWorkflowFilterCardViewAll: 查看全部
+	GlobalWorkflowFilterCardViewAll GlobalWorkflowFilterCard = "view_all"
 )
 
 // WorkflowType is the dashboard/API identifier for a workflow business line.
