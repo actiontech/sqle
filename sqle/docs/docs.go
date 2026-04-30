@@ -11288,10 +11288,11 @@ var doc = `{
                         "enum": [
                             "archived",
                             "pending_for_me",
-                            "initiated_by_me"
+                            "initiated_by_me",
+                            "view_all"
                         ],
                         "type": "string",
-                        "description": "filter by card type; archived 已完成工单, pending_for_me 待我处理, initiated_by_me 我发起",
+                        "description": "filter by card type; archived 已完成工单, pending_for_me 待我处理, initiated_by_me 我发起, view_all 查看全部",
                         "name": "filter_card",
                         "in": "query"
                     },
@@ -11323,7 +11324,7 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "get global workflow statistics, returns archived, pending_for_me, and initiated_by_me counts",
+                "description": "get global workflow statistics, returns archived, pending_for_me, initiated_by_me, and view_all counts",
                 "tags": [
                     "GlobalDashboard"
                 ],
@@ -14047,6 +14048,10 @@ var doc = `{
                 },
                 "pending_for_me_count": {
                     "description": "待我处理的工单数量",
+                    "type": "integer"
+                },
+                "view_all_count": {
+                    "description": "查看全部的工单数量",
                     "type": "integer"
                 }
             }

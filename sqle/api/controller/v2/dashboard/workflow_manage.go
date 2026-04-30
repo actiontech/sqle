@@ -22,6 +22,7 @@ type GlobalWorkflowStatisticsV2 struct {
 	ArchivedCount      uint64 `json:"archived_count"`        // 已完成的工单数量
 	PendingForMeCount  uint64 `json:"pending_for_me_count"`  // 待我处理的工单数量
 	InitiatedByMeCount uint64 `json:"initiated_by_me_count"` // 我发起的工单数量
+	ViewAllCount       uint64 `json:"view_all_count"`        // 查看全部的工单数量
 }
 
 type GetGlobalWorkflowListReqV2 struct {
@@ -36,7 +37,7 @@ type GetGlobalWorkflowListReqV2 struct {
 	FilterInstanceId string `json:"filter_instance_id" query:"filter_instance_id"` // 实例ID
 
 	// 卡片过滤类型
-	FilterCard dashboard_svc.GlobalWorkflowFilterCard `json:"filter_card" query:"filter_card" valid:"omitempty,oneof=archived pending_for_me initiated_by_me" enums:"archived,pending_for_me,initiated_by_me"`
+	FilterCard dashboard_svc.GlobalWorkflowFilterCard `json:"filter_card" query:"filter_card" valid:"omitempty,oneof=archived pending_for_me initiated_by_me view_all" enums:"archived,pending_for_me,initiated_by_me,view_all"`
 
 	// 工单类型，sql_release: SQL上线工单，data_export: 数据导出工单
 	WorkflowType dashboard_svc.WorkflowType `json:"workflow_type" query:"workflow_type" valid:"omitempty,oneof=sql_release data_export" enums:"sql_release,data_export"`
@@ -58,7 +59,7 @@ type GlobalWorkflowListData struct {
 
 // GetGlobalWorkflowStatisticsV2
 // @Summary 获取全局工单管理统计数据
-// @Description get global workflow statistics, returns archived, pending_for_me, and initiated_by_me counts
+// @Description get global workflow statistics, returns archived, pending_for_me, initiated_by_me, and view_all counts
 // @Tags GlobalDashboard
 // @Id GetGlobalWorkflowStatisticsV2
 // @Security ApiKeyAuth
@@ -83,7 +84,7 @@ func GetGlobalWorkflowStatisticsV2(c echo.Context) error {
 // @Param keyword query string false "fuzzy search keyword"
 // @Param filter_project_uid query string false "filter by project uid"
 // @Param filter_instance_id query string false "filter by instance id"
-// @Param filter_card query string false "filter by card type; archived 已完成工单, pending_for_me 待我处理, initiated_by_me 我发起" Enums(archived,pending_for_me,initiated_by_me)
+// @Param filter_card query string false "filter by card type; archived 已完成工单, pending_for_me 待我处理, initiated_by_me 我发起, view_all 查看全部" Enums(archived,pending_for_me,initiated_by_me,view_all)
 // @Param workflow_type query string false "filter by workflow type; sql_release SQL上线工单, data_export 数据导出工单" Enums(sql_release,data_export)
 // @Success 200 {object} GlobalWorkflowListResV2
 // @Router /v2/dashboard/workflows [get]

@@ -269,6 +269,9 @@ definitions:
       pending_for_me_count:
         description: 待我处理的工单数量
         type: integer
+      view_all_count:
+        description: 查看全部的工单数量
+        type: integer
     type: object
   model.AuditResultInfo:
     properties:
@@ -15380,11 +15383,12 @@ paths:
         name: filter_instance_id
         type: string
       - description: filter by card type; archived 已完成工单, pending_for_me 待我处理, initiated_by_me
-          我发起
+          我发起, view_all 查看全部
         enum:
         - archived
         - pending_for_me
         - initiated_by_me
+        - view_all
         in: query
         name: filter_card
         type: string
@@ -15408,7 +15412,7 @@ paths:
   /v2/dashboard/workflows/statistics:
     get:
       description: get global workflow statistics, returns archived, pending_for_me,
-        and initiated_by_me counts
+        initiated_by_me, and view_all counts
       operationId: GetGlobalWorkflowStatisticsV2
       parameters:
       - description: filter by project uid
