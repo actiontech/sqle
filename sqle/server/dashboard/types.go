@@ -93,7 +93,7 @@ type GlobalWorkflowListItem struct {
 	ProjectName  string                `json:"project_name"`  // 项目名称
 	InstanceId   string                `json:"instance_id"`   // 实例ID
 	InstanceName string                `json:"instance_name"` // 实例名称
-	Assignee     string                `json:"assignee"`      // 当前处理人姓名
+	CurrentStepAssigneeUserNameList []string `json:"current_step_assignee_user_name_list"` // 当前处理人姓名列表
 	Priority     string                `json:"priority"`      // High, Medium, Low
 	Status       UnifiedWorkflowStatus `json:"status" enums:"pending_approval,pending_action,in_progress,exporting,rejected,cancelled,failed,completed,unknown"` // 工单状态
 	CreatedAt    string                `json:"created_at"`    // 创建时间

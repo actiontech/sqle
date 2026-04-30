@@ -13936,13 +13936,16 @@ var doc = `{
         "dashboard.GlobalWorkflowListItem": {
             "type": "object",
             "properties": {
-                "assignee": {
-                    "description": "当前处理人姓名",
-                    "type": "string"
-                },
                 "created_at": {
                     "description": "创建时间",
                     "type": "string"
+                },
+                "current_step_assignee_user_name_list": {
+                    "description": "当前处理人姓名列表",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "instance_id": {
                     "description": "实例ID",
