@@ -8,6 +8,7 @@ import (
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	hclog "github.com/hashicorp/go-hclog"
 	"github.com/pkg/errors"
+	"golang.org/x/text/language"
 )
 
 type RawSQLRuleHandler func(ctx context.Context, rule *driverV2.Rule, rawSQL string, nextSQL []string) (i18nPkg.I18nStr, error)
@@ -21,7 +22,9 @@ type AuditHandler struct {
 }
 
 func (a *AuditHandler) Audit(ctx context.Context, rule *driverV2.Rule, sql string, nextSQL []string) (*driverV2.AuditResult, error) {
-	result := &driverV2.AuditResult{}
+	result := &driverV2.AuditResult{
+		I18nAuditResultInfo: make(map[language.Tag]driverV2.AuditResultInfo),
+	}
 	message := i18nPkg.I18nStr{}
 	var err error
 
