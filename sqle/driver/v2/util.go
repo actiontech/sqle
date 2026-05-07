@@ -220,12 +220,15 @@ func ConvertI18nRuleFromProtoToDriver(rule *protoV2.Rule, dbtype string, isI18n 
 }
 
 func ConvertI18nRuleInfoFromProtoToDriver(ruleInfo *protoV2.I18NRuleInfo) *RuleInfo {
-	return &RuleInfo{
+	info := &RuleInfo{
 		Desc:       ruleInfo.Desc,
 		Category:   ruleInfo.Category,
 		Annotation: ruleInfo.Annotation,
-		Knowledge:  RuleKnowledge{Content: ruleInfo.Knowledge.Content},
 	}
+	if ruleInfo.Knowledge != nil {
+		info.Knowledge = RuleKnowledge{Content: ruleInfo.Knowledge.Content}
+	}
+	return info
 }
 
 func ConvertI18nRulesFromDriverToProto(rules []*Rule) []*protoV2.Rule {
