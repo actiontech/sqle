@@ -12,27 +12,49 @@ import (
 )
 
 type UserPermission struct {
-	userId           string
-	projectId        string
-	isAdmin          bool
-	opPermissionItem []v1.OpPermissionItem
+	userId                   string
+	projectId                string
+	isAdmin                  bool
+	opPermissionItem         []v1.OpPermissionItem
+	businessWritePermission  bool
 }
 
 func NewUserPermission(userId, projectId string) (*UserPermission, error) {
-	opPermissions, isAdmin, err := dmsobject.GetUserOpPermission(context.TODO(), projectId, userId, controller.GetDMSServerAddress())
+	opPermissions, isAdmin, businessWritePermission, err := dmsobject.GetUserOpPermissionWithBWP(context.TODO(), projectId, userId, controller.GetDMSServerAddress())
 	if err != nil {
 		return nil, fmt.Errorf("get user op permission from dms error: %v", err)
 	}
 	return &UserPermission{
-		userId:           userId,
-		projectId:        projectId,
-		isAdmin:          isAdmin,
-		opPermissionItem: opPermissions,
+		userId:                  userId,
+		projectId:               projectId,
+		isAdmin:                 isAdmin,
+		opPermissionItem:        opPermissions,
+		businessWritePermission: businessWritePermission,
 	}, nil
 }
 
 func (p *UserPermission) IsAdmin() bool {
 	return p.isAdmin
+}
+
+// IsBusinessWriteDisabled returns true when the user is an admin/sysAdmin with BWP=false.
+func (p *UserPermission) IsBusinessWriteDisabled() bool {
+	if !p.businessWritePermission && (p.isAdmin || p.CanOpGlobal()) {
+		return true
+	}
+	return false
+}
+
+// CanOpProjectForBusinessWrite checks project operation permission for business write operations.
+// When the user has BWP=false, this returns false even if they are admin/sysAdmin,
+// unless they have project-level authorization (project admin via explicit grant).
+func (p *UserPermission) CanOpProjectForBusinessWrite() bool {
+	if p.IsBusinessWriteDisabled() {
+		// BWP disabled: do not grant via global admin/sysAdmin identity;
+		// only grant if user has explicit project admin permission
+		return p.IsProjectAdmin()
+	}
+	return p.CanOpProject()
 }
 
 func (p *UserPermission) CanOpGlobal() bool {

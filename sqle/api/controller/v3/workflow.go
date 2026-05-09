@@ -70,7 +70,7 @@ func BatchCompleteWorkflowsV3(c echo.Context) error {
 
 		// 执行上线的人可以决定真的上线这个工单还是直接标记完成
 		lastStep := workflow.Record.Steps[len(workflow.Record.Steps)-1]
-		canFinishWorkflow := up.CanOpProject()
+		canFinishWorkflow := up.CanOpProjectForBusinessWrite()
 		if !canFinishWorkflow {
 			for _, assignee := range strings.Split(lastStep.Assignees, ",") {
 				if assignee == user.GetIDStr() {

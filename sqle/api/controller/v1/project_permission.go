@@ -22,7 +22,7 @@ func CheckCurrentUserCanOperateWorkflow(c echo.Context, projectUid string, workf
 	if err != nil {
 		return err
 	}
-	if up.CanOpProject() {
+	if up.CanOpProjectForBusinessWrite() {
 		return nil
 	}
 
@@ -82,7 +82,7 @@ func CheckCurrentUserCanOperateTasks(c echo.Context, projectUid string, workflow
 	if err != nil {
 		return err
 	}
-	if up.CanOpProject() {
+	if up.CanOpProjectForBusinessWrite() {
 		return nil
 	}
 
@@ -194,7 +194,7 @@ func checkCurrentUserCanOpTask(c echo.Context, task *model.Task, ops []dmsV1.OpP
 	if err != nil {
 		return err
 	}
-	if up.CanOpProject() {
+	if up.CanOpProjectForBusinessWrite() {
 		return nil
 	}
 	if userId == fmt.Sprintf("%d", task.CreateUserId) {
@@ -284,6 +284,15 @@ func GetAuditPlanIfCurrentUserCanOp(c echo.Context, projectId, auditPlanName str
 	user, err := controller.GetCurrentUser(c, dms.GetUser)
 	if err != nil {
 		return nil, false, err
+	}
+
+	// BWP check: audit plan operation is a business write
+	up, err := dms.NewUserPermission(user.GetIDStr(), projectId)
+	if err != nil {
+		return nil, false, err
+	}
+	if up.IsBusinessWriteDisabled() {
+		return ap, false, errors.NewUserNotPermissionError("business write permission is disabled")
 	}
 
 	if ap.CreateUserID == user.GetIDStr() {
@@ -382,6 +391,15 @@ func GetInstanceAuditPlanIfCurrentUserCanOp(c echo.Context, projectId, instanceA
 		return nil, false, err
 	}
 
+	// BWP check: audit plan operation is a business write
+	up, err := dms.NewUserPermission(user.GetIDStr(), projectId)
+	if err != nil {
+		return nil, false, err
+	}
+	if up.IsBusinessWriteDisabled() {
+		return ap, false, errors.NewUserNotPermissionError("business write permission is disabled")
+	}
+
 	if ap.CreateUserID == user.GetIDStr() {
 		return ap, true, nil
 	}
@@ -477,7 +495,7 @@ func CheckCurrentUserCanOpInstances(ctx context.Context, projectUID string, user
 	if err != nil {
 		return false, fmt.Errorf("get user op permission from dms error: %v", err)
 	}
-	if up.CanOpProject() {
+	if up.CanOpProjectForBusinessWrite() {
 		return true, nil
 	}
 	for _, instance := range instances {
@@ -492,6 +510,9 @@ func CheckCurrentUserCanCreateWorkflow(ctx context.Context, projectUID string, u
 	up, err := dms.NewUserPermission(user.GetIDStr(), projectUID)
 	if err != nil {
 		return false, err
+	}
+	if up.IsBusinessWriteDisabled() {
+		return false, nil
 	}
 	if up.CanOpProject() {
 		return true, nil
@@ -514,6 +535,9 @@ func CheckUserCanCreateAuditPlan(ctx context.Context, projectUID string, user *m
 	if err != nil {
 		return false, err
 	}
+	if up.IsBusinessWriteDisabled() {
+		return false, nil
+	}
 	if up.CanOpProject() {
 		return true, nil
 	}
@@ -529,6 +553,9 @@ func CheckUserCanCreateOptimization(ctx context.Context, projectUID string, user
 	up, err := dms.NewUserPermission(user.GetIDStr(), projectUID)
 	if err != nil {
 		return false, err
+	}
+	if up.IsBusinessWriteDisabled() {
+		return false, nil
 	}
 	if up.CanOpProject() {
 		return true, nil
