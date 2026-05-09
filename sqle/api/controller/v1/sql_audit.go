@@ -80,10 +80,7 @@ func DirectAudit(c echo.Context) error {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusForbidden)
 		}
-		if up.IsBusinessWriteDisabled() {
-			return controller.JSONBaseErrorReq(c, errors.New(errors.ErrAccessDeniedError, e.New("business write permission is disabled for this user")))
-		}
-		if !up.CanOpProject() && !up.IsProjectMember() {
+		if !up.CanOpProjectForBusinessWrite() && !up.IsProjectMember() {
 			return controller.JSONBaseErrorReq(c, errors.New(errors.ErrAccessDeniedError, e.New("you are not the project member")))
 		}
 	}
@@ -188,10 +185,7 @@ func DirectAuditFiles(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusForbidden)
 	}
-	if up.IsBusinessWriteDisabled() {
-		return controller.JSONBaseErrorReq(c, errors.New(errors.ErrAccessDeniedError, e.New("business write permission is disabled for this user")))
-	}
-	if !up.CanOpProject() && !up.IsProjectMember() {
+	if !up.CanOpProjectForBusinessWrite() && !up.IsProjectMember() {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.ErrAccessDeniedError, e.New("you are not the project member")))
 	}
 
