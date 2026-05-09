@@ -415,6 +415,7 @@ var (
 	ApMetaDB2SlowLog                   = &i18n.Message{ID: "ApMetaDB2SlowLog", Other: "DB2慢日志"}
 	ApMetaSchemaMeta                   = &i18n.Message{ID: "ApMetaSchemaMeta", Other: "库表元数据"}
 	ApMetaDistributedLock              = &i18n.Message{ID: "ApMetaDistributedLock", Other: "分布式锁"}
+	ApMetaTDSQLTopSQL                  = &i18n.Message{ID: "ApMetaTDSQLTopSQL", Other: "TDSQL For InnoDB TOP SQL"}
 	ApMetaDmTopSQL                     = &i18n.Message{ID: "ApMetaDmTopSQL", Other: "DM TOP SQL"}
 	ApMetaDmSlowLog                    = &i18n.Message{ID: "ApMetaDmSlowLog", Other: "DM慢日志"}
 	ApMetaObForOracleTopSQL            = &i18n.Message{ID: "ApMetaObForOracleTopSQL", Other: "OceanBase For Oracle TOP SQL"}
