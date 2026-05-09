@@ -229,6 +229,10 @@ func (p *DriverImpl) Parse(ctx context.Context, sql string) ([]driverV2.Node, er
 }
 
 func classifySQL(sql string) (sqlType string) {
+	if utils.HasPrefix(sql, "select", false) ||
+		utils.HasPrefix(sql, "union", false) {
+		return driverV2.SQLTypeDQL
+	}
 	if utils.HasPrefix(sql, "update", false) ||
 		utils.HasPrefix(sql, "insert", false) ||
 		utils.HasPrefix(sql, "delete", false) {
