@@ -630,20 +630,13 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 	canOptUsers = filterDisabledUsers(canOptUsers)
 	canExecUsers = filterDisabledUsers(canExecUsers)
 
-	if len(canOptUsers) == 0 || len(canExecUsers) == 0 {
-		// TODO 获取管理用户
-		adminUser := &User{
-			Model: Model{
-				ID: 700200,
-			},
-			Name: "admin",
-		}
-		if len(canOptUsers) == 0 {
-			canOptUsers = append(canOptUsers, adminUser)
-		}
-		if len(canExecUsers) == 0 {
-			canExecUsers = append(canExecUsers, adminUser)
-		}
+	if len(canOptUsers) == 0 {
+		tx.Rollback()
+		return errors.New(errors.DataInvalid, fmt.Errorf("no eligible approver found for the workflow template; please configure users with approval permission for the relevant data sources in project member settings"))
+	}
+	if len(canExecUsers) == 0 {
+		tx.Rollback()
+		return errors.New(errors.DataInvalid, fmt.Errorf("no eligible executor found for the workflow template; please configure users with execution permission for the relevant data sources in project member settings"))
 	}
 
 	{
