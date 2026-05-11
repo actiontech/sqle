@@ -432,6 +432,7 @@ var (
 	ApMetaTiDBSlowLog                     = &i18n.Message{ID: "ApMetaTiDBSlowLog", Other: "TiDB慢日志"}
 	ApMetaTiDBProcesslist                 = &i18n.Message{ID: "ApMetaTiDBProcesslist", Other: "TiDB Processlist"}
 	ApMetaMySQLTopSQL                     = &i18n.Message{ID: "ApMetaMySQLTopSQL", Other: "MySQL TOP SQL"}
+	ApMetaPolarDBForMySQLTopSQL           = &i18n.Message{ID: "ApMetaPolarDBForMySQLTopSQL", Other: "PolarDB For MySQL TOP SQL"}
 	ApMetaMSSQLTopSQL                     = &i18n.Message{ID: "ApMetaMSSQLTopSQL", Other: "SQL Server TOP SQL"}
 	ApMetricQueryTimeAvg                  = &i18n.Message{ID: "ApMetricQueryTimeAvg", Other: "平均查询时间(s)"}
 	ApMetricRowExaminedAvg                = &i18n.Message{ID: "ApMetricRowExaminedAvg", Other: "平均扫描行数"}
