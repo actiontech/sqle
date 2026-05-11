@@ -286,53 +286,28 @@ func GetAuditPlanIfCurrentUserCanOp(c echo.Context, projectId, auditPlanName str
 		return nil, false, err
 	}
 
-	// BWP check with project admin override (AC-1.4.3):
-	// Project admin can operate audit plans even when BWP=off.
 	up, err := dms.NewUserPermission(user.GetIDStr(), projectId)
 	if err != nil {
 		return nil, false, err
 	}
 
+	// Creator always has access
 	if ap.CreateUserID == user.GetIDStr() {
 		return ap, true, nil
 	}
 
-	// Project admin overrides BWP=off restriction
-	if up.IsProjectAdmin() {
+	// Project-level or global permission check (respects BWP via CanOpProjectForBusinessWrite)
+	if up.CanOpProjectForBusinessWrite() {
 		return ap, true, nil
 	}
 
-	// For global admin/sysAdmin: respect BWP setting
-	if up.IsBusinessWriteDisabled() {
-		return ap, false, errors.NewUserNotPermissionError("business write permission is disabled")
-	}
-
-	userOpPermissions, isAdmin, err := dmsobject.GetUserOpPermission(c.Request().Context(), projectId, user.GetIDStr(), controller.GetDMSServerAddress())
-	if err != nil {
-		return nil, false, err
-	}
-	if isAdmin {
-		return ap, true, nil
-	}
-
-	for _, permission := range userOpPermissions {
-		if permission.OpPermissionType == dmsV1.OpPermissionTypeGlobalManagement {
+	// Check instance-level permissions without admin privilege (AC-1.4.3:
+	// project-level authorization overrides BWP=off within the authorized scope).
+	// Use CanOpInstanceNoAdmin to avoid giving admin users blanket instance access
+	// when BWP=off -- only explicit data-source-level permissions should pass.
+	if opType != "" && ap.Instance != nil {
+		if up.CanOpInstanceNoAdmin(ap.Instance.GetIDStr(), opType) {
 			return ap, true, nil
-		}
-	}
-
-	if opType != "" {
-		dbServiceReq := &dmsV2.ListDBServiceReq{
-			ProjectUid: projectId,
-		}
-		instances, err := GetCanOperationInstances(c.Request().Context(), user, dbServiceReq, opType)
-		if err != nil {
-			return nil, false, errors.NewUserNotPermissionError(string(opType))
-		}
-		for _, instance := range instances {
-			if ap.InstanceName == instance.Name {
-				return ap, true, nil
-			}
 		}
 	}
 	return ap, false, errors.NewUserNotPermissionError(dmsV1.GetOperationTypeDesc(opType))
@@ -399,53 +374,29 @@ func GetInstanceAuditPlanIfCurrentUserCanOp(c echo.Context, projectId, instanceA
 		return nil, false, err
 	}
 
-	// BWP check with project admin override (AC-1.4.3):
-	// Project admin can operate audit plans even when BWP=off.
 	up, err := dms.NewUserPermission(user.GetIDStr(), projectId)
 	if err != nil {
 		return nil, false, err
 	}
 
+	// Creator always has access
 	if ap.CreateUserID == user.GetIDStr() {
 		return ap, true, nil
 	}
 
-	// Project admin overrides BWP=off restriction
-	if up.IsProjectAdmin() {
+	// Project-level or global permission check (respects BWP via CanOpProjectForBusinessWrite)
+	if up.CanOpProjectForBusinessWrite() {
 		return ap, true, nil
 	}
 
-	// For global admin/sysAdmin: respect BWP setting
-	if up.IsBusinessWriteDisabled() {
-		return ap, false, errors.NewUserNotPermissionError("business write permission is disabled")
-	}
-
-	permissionList, isAdmin, err := dmsobject.GetUserOpPermission(c.Request().Context(), projectId, user.GetIDStr(), controller.GetDMSServerAddress())
-	if err != nil {
-		return nil, false, err
-	}
-	if isAdmin {
-		return ap, true, nil
-	}
-
-	for _, permission := range permissionList {
-		if permission.OpPermissionType == dmsV1.OpPermissionTypeGlobalManagement {
+	// Check instance-level permissions without admin privilege (AC-1.4.3:
+	// project-level authorization overrides BWP=off within the authorized scope).
+	// Use CanOpInstanceNoAdmin to avoid giving admin users blanket instance access
+	// when BWP=off -- only explicit data-source-level permissions should pass.
+	if opType != "" && ap.InstanceID > 0 {
+		instanceIDStr := fmt.Sprintf("%d", ap.InstanceID)
+		if up.CanOpInstanceNoAdmin(instanceIDStr, opType) {
 			return ap, true, nil
-		}
-	}
-
-	if opType != "" {
-		dbServiceReq := &dmsV2.ListDBServiceReq{
-			ProjectUid: projectId,
-		}
-		instances, err := GetCanOperationInstances(c.Request().Context(), user, dbServiceReq, opType)
-		if err != nil {
-			return nil, false, errors.NewUserNotPermissionError(string(opType))
-		}
-		for _, instance := range instances {
-			if ap.InstanceID == instance.ID {
-				return ap, true, nil
-			}
 		}
 	}
 	return ap, false, errors.NewUserNotPermissionError(dmsV1.GetOperationTypeDesc(opType))
