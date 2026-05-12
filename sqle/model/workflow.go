@@ -658,17 +658,10 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 		tx.Rollback()
 		return errors.New(errors.DataInvalid, fmt.Errorf("no eligible approver found for the workflow template; please configure users with approval permission for the relevant data sources in project member settings"))
 	}
-	// When the execution step requires permission-matched users but none are found,
-	// fall back to the approval candidates. This handles the common case where
-	// approval-permitted users are configured but no separate execution-permitted
-	// users exist (e.g., admin BWP=off and no explicit execute_workflow role assigned).
+
 	if needExecutorFromPermission && len(canExecUsers) == 0 {
-		if len(canOptUsers) > 0 {
-			canExecUsers = canOptUsers
-		} else {
-			tx.Rollback()
-			return errors.New(errors.DataInvalid, fmt.Errorf("no eligible executor found for the workflow template; please configure users with execution permission for the relevant data sources in project member settings"))
-		}
+		tx.Rollback()
+		return errors.New(errors.DataInvalid, fmt.Errorf("no eligible executor found for the workflow template; please configure users with execution permission for the relevant data sources in project member settings"))
 	}
 
 	{
