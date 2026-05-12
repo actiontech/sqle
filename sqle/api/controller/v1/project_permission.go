@@ -555,24 +555,39 @@ func GetCanOpInstanceUsers(memberWithPermissions []*dmsV1.ListMembersForInternal
 	userUids := make([]string, 0)
 	userMap := make(map[string]*model.User)
 
+	addUser := func(memberWithPermission *dmsV1.ListMembersForInternalItem) error {
+		userId, err := strconv.Atoi(memberWithPermission.User.Uid)
+		if err != nil {
+			return err
+		}
+		userUid := memberWithPermission.User.Uid
+		if _, ok := userMap[userUid]; !ok {
+			userUids = append(userUids, userUid)
+			opUser := &model.User{
+				Model: model.Model{
+					ID: uint(userId),
+				},
+				Name: memberWithPermission.User.Name,
+			}
+			userMap[userUid] = opUser
+		}
+		return nil
+	}
+
 	// 收集所有有权限的用户ID
 	for _, memberWithPermission := range memberWithPermissions {
+		// 项目管理员可以操作项目内所有数据源的所有操作
+		if memberWithPermission.IsAdmin {
+			if err := addUser(memberWithPermission); err != nil {
+				return nil, err
+			}
+			continue
+		}
+
 		for _, memberOpPermission := range memberWithPermission.MemberOpPermissionList {
 			if CanOperationInstance([]dmsV1.OpPermissionItem{memberOpPermission}, opPermissions, instance) {
-				userId, err := strconv.Atoi(memberWithPermission.User.Uid)
-				if err != nil {
+				if err := addUser(memberWithPermission); err != nil {
 					return nil, err
-				}
-				userUid := memberWithPermission.User.Uid
-				if _, ok := userMap[userUid]; !ok {
-					userUids = append(userUids, userUid)
-					opUser := &model.User{
-						Model: model.Model{
-							ID: uint(userId),
-						},
-						Name: memberWithPermission.User.Name,
-					}
-					userMap[userUid] = opUser
 				}
 			}
 		}
