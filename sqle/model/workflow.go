@@ -630,11 +630,35 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 	canOptUsers = filterDisabledUsers(canOptUsers)
 	canExecUsers = filterDisabledUsers(canExecUsers)
 
-	if len(canOptUsers) == 0 {
+	// 检查是否有审批步骤需要按数据源权限匹配用户（ApprovedByAuthorized=true）
+	// 如果审批步骤指定了具体用户（ApprovedByAuthorized=false 且 Users 非空），则不需要 canOptUsers
+	needApproverFromPermission := false
+	for i, st := range stepTemplates {
+		if i == len(stepTemplates)-1 {
+			// 最后一步是执行步骤，不检查审批
+			continue
+		}
+		if st.ApprovedByAuthorized.Bool {
+			needApproverFromPermission = true
+			break
+		}
+	}
+
+	// 检查执行步骤是否需要按数据源权限匹配用户（ExecuteByAuthorized=true）
+	// 如果执行步骤指定了具体用户（ExecuteByAuthorized=false 且 Users 非空），则不需要 canExecUsers
+	needExecutorFromPermission := false
+	if len(stepTemplates) > 0 {
+		lastStep := stepTemplates[len(stepTemplates)-1]
+		if lastStep.ExecuteByAuthorized.Bool {
+			needExecutorFromPermission = true
+		}
+	}
+
+	if needApproverFromPermission && len(canOptUsers) == 0 {
 		tx.Rollback()
 		return errors.New(errors.DataInvalid, fmt.Errorf("no eligible approver found for the workflow template; please configure users with approval permission for the relevant data sources in project member settings"))
 	}
-	if len(canExecUsers) == 0 {
+	if needExecutorFromPermission && len(canExecUsers) == 0 {
 		tx.Rollback()
 		return errors.New(errors.DataInvalid, fmt.Errorf("no eligible executor found for the workflow template; please configure users with execution permission for the relevant data sources in project member settings"))
 	}
