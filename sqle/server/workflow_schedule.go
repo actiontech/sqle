@@ -396,7 +396,7 @@ func CheckCurrentUserCanOperateWorkflowByUser(user *model.User, projectUid strin
 	if err != nil {
 		return err
 	}
-	canOpProject := up.CanOpProject()
+	canOpProject := up.CanOpProjectForBusinessWrite()
 	if canOpProject {
 		return nil
 	}

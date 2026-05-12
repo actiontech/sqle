@@ -215,7 +215,7 @@ func CancelWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	if !(controller.GetUserID(c) == workflow.CreateUserId || up.CanOpProject()) {
+	if !(controller.GetUserID(c) == workflow.CreateUserId || up.CanOpProjectForBusinessWrite()) {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataNotExist,
 			fmt.Errorf("you are not allow to operate the workflow")))
 	}
@@ -354,7 +354,7 @@ func BatchCompleteWorkflowsV2(c echo.Context) error {
 
 		// 执行上线的人可以决定真的上线这个工单还是直接标记完成
 		lastStep := workflow.Record.Steps[len(workflow.Record.Steps)-1]
-		canFinishWorkflow := up.CanOpProject()
+		canFinishWorkflow := up.CanOpProjectForBusinessWrite()
 		if !canFinishWorkflow {
 			for _, assignee := range strings.Split(lastStep.Assignees, ",") {
 				if assignee == user.GetIDStr() {

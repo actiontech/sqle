@@ -7,12 +7,13 @@ import (
 	"encoding/json"
 	e "errors"
 	"fmt"
-	dmsv1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"io"
 	"mime"
 	"net/http"
 	"strconv"
 	"strings"
+
+	dmsv1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/dms"

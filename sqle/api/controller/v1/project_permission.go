@@ -22,7 +22,7 @@ func CheckCurrentUserCanOperateWorkflow(c echo.Context, projectUid string, workf
 	if err != nil {
 		return err
 	}
-	if up.CanOpProject() {
+	if up.CanOpProjectForBusinessWrite() {
 		return nil
 	}
 
@@ -82,7 +82,7 @@ func CheckCurrentUserCanOperateTasks(c echo.Context, projectUid string, workflow
 	if err != nil {
 		return err
 	}
-	if up.CanOpProject() {
+	if up.CanOpProjectForBusinessWrite() {
 		return nil
 	}
 
@@ -194,7 +194,7 @@ func checkCurrentUserCanOpTask(c echo.Context, task *model.Task, ops []dmsV1.OpP
 	if err != nil {
 		return err
 	}
-	if up.CanOpProject() {
+	if up.CanOpProjectForBusinessWrite() {
 		return nil
 	}
 	if userId == fmt.Sprintf("%d", task.CreateUserId) {
@@ -286,36 +286,28 @@ func GetAuditPlanIfCurrentUserCanOp(c echo.Context, projectId, auditPlanName str
 		return nil, false, err
 	}
 
+	up, err := dms.NewUserPermission(user.GetIDStr(), projectId)
+	if err != nil {
+		return nil, false, err
+	}
+
+	// Creator always has access
 	if ap.CreateUserID == user.GetIDStr() {
 		return ap, true, nil
 	}
 
-	userOpPermissions, isAdmin, err := dmsobject.GetUserOpPermission(c.Request().Context(), projectId, user.GetIDStr(), controller.GetDMSServerAddress())
-	if err != nil {
-		return nil, false, err
-	}
-	if isAdmin {
+	// Project-level or global permission check (respects BWP via CanOpProjectForBusinessWrite)
+	if up.CanOpProjectForBusinessWrite() {
 		return ap, true, nil
 	}
 
-	for _, permission := range userOpPermissions {
-		if permission.OpPermissionType == dmsV1.OpPermissionTypeGlobalManagement {
+	// Check instance-level permissions without admin privilege (AC-1.4.3:
+	// project-level authorization overrides BWP=off within the authorized scope).
+	// Use CanOpInstanceNoAdmin to avoid giving admin users blanket instance access
+	// when BWP=off -- only explicit data-source-level permissions should pass.
+	if opType != "" && ap.Instance != nil {
+		if up.CanOpInstanceNoAdmin(ap.Instance.GetIDStr(), opType) {
 			return ap, true, nil
-		}
-	}
-
-	if opType != "" {
-		dbServiceReq := &dmsV2.ListDBServiceReq{
-			ProjectUid: projectId,
-		}
-		instances, err := GetCanOperationInstances(c.Request().Context(), user, dbServiceReq, opType)
-		if err != nil {
-			return nil, false, errors.NewUserNotPermissionError(string(opType))
-		}
-		for _, instance := range instances {
-			if ap.InstanceName == instance.Name {
-				return ap, true, nil
-			}
 		}
 	}
 	return ap, false, errors.NewUserNotPermissionError(dmsV1.GetOperationTypeDesc(opType))
@@ -382,36 +374,29 @@ func GetInstanceAuditPlanIfCurrentUserCanOp(c echo.Context, projectId, instanceA
 		return nil, false, err
 	}
 
+	up, err := dms.NewUserPermission(user.GetIDStr(), projectId)
+	if err != nil {
+		return nil, false, err
+	}
+
+	// Creator always has access
 	if ap.CreateUserID == user.GetIDStr() {
 		return ap, true, nil
 	}
 
-	permissionList, isAdmin, err := dmsobject.GetUserOpPermission(c.Request().Context(), projectId, user.GetIDStr(), controller.GetDMSServerAddress())
-	if err != nil {
-		return nil, false, err
-	}
-	if isAdmin {
+	// Project-level or global permission check (respects BWP via CanOpProjectForBusinessWrite)
+	if up.CanOpProjectForBusinessWrite() {
 		return ap, true, nil
 	}
 
-	for _, permission := range permissionList {
-		if permission.OpPermissionType == dmsV1.OpPermissionTypeGlobalManagement {
+	// Check instance-level permissions without admin privilege (AC-1.4.3:
+	// project-level authorization overrides BWP=off within the authorized scope).
+	// Use CanOpInstanceNoAdmin to avoid giving admin users blanket instance access
+	// when BWP=off -- only explicit data-source-level permissions should pass.
+	if opType != "" && ap.InstanceID > 0 {
+		instanceIDStr := fmt.Sprintf("%d", ap.InstanceID)
+		if up.CanOpInstanceNoAdmin(instanceIDStr, opType) {
 			return ap, true, nil
-		}
-	}
-
-	if opType != "" {
-		dbServiceReq := &dmsV2.ListDBServiceReq{
-			ProjectUid: projectId,
-		}
-		instances, err := GetCanOperationInstances(c.Request().Context(), user, dbServiceReq, opType)
-		if err != nil {
-			return nil, false, errors.NewUserNotPermissionError(string(opType))
-		}
-		for _, instance := range instances {
-			if ap.InstanceID == instance.ID {
-				return ap, true, nil
-			}
 		}
 	}
 	return ap, false, errors.NewUserNotPermissionError(dmsV1.GetOperationTypeDesc(opType))
@@ -477,7 +462,7 @@ func CheckCurrentUserCanOpInstances(ctx context.Context, projectUID string, user
 	if err != nil {
 		return false, fmt.Errorf("get user op permission from dms error: %v", err)
 	}
-	if up.CanOpProject() {
+	if up.CanOpProjectForBusinessWrite() {
 		return true, nil
 	}
 	for _, instance := range instances {
@@ -493,7 +478,7 @@ func CheckCurrentUserCanCreateWorkflow(ctx context.Context, projectUID string, u
 	if err != nil {
 		return false, err
 	}
-	if up.CanOpProject() {
+	if up.CanOpProjectForBusinessWrite() {
 		return true, nil
 	}
 
@@ -514,7 +499,7 @@ func CheckUserCanCreateAuditPlan(ctx context.Context, projectUID string, user *m
 	if err != nil {
 		return false, err
 	}
-	if up.CanOpProject() {
+	if up.CanOpProjectForBusinessWrite() {
 		return true, nil
 	}
 	for _, instance := range instances {
@@ -530,7 +515,7 @@ func CheckUserCanCreateOptimization(ctx context.Context, projectUID string, user
 	if err != nil {
 		return false, err
 	}
-	if up.CanOpProject() {
+	if up.CanOpProjectForBusinessWrite() {
 		return true, nil
 	}
 	for _, instance := range instances {
@@ -570,24 +555,39 @@ func GetCanOpInstanceUsers(memberWithPermissions []*dmsV1.ListMembersForInternal
 	userUids := make([]string, 0)
 	userMap := make(map[string]*model.User)
 
+	addUser := func(memberWithPermission *dmsV1.ListMembersForInternalItem) error {
+		userId, err := strconv.Atoi(memberWithPermission.User.Uid)
+		if err != nil {
+			return err
+		}
+		userUid := memberWithPermission.User.Uid
+		if _, ok := userMap[userUid]; !ok {
+			userUids = append(userUids, userUid)
+			opUser := &model.User{
+				Model: model.Model{
+					ID: uint(userId),
+				},
+				Name: memberWithPermission.User.Name,
+			}
+			userMap[userUid] = opUser
+		}
+		return nil
+	}
+
 	// 收集所有有权限的用户ID
 	for _, memberWithPermission := range memberWithPermissions {
+		// 项目管理员可以操作项目内所有数据源的所有操作
+		if memberWithPermission.IsAdmin {
+			if err := addUser(memberWithPermission); err != nil {
+				return nil, err
+			}
+			continue
+		}
+
 		for _, memberOpPermission := range memberWithPermission.MemberOpPermissionList {
 			if CanOperationInstance([]dmsV1.OpPermissionItem{memberOpPermission}, opPermissions, instance) {
-				userId, err := strconv.Atoi(memberWithPermission.User.Uid)
-				if err != nil {
+				if err := addUser(memberWithPermission); err != nil {
 					return nil, err
-				}
-				userUid := memberWithPermission.User.Uid
-				if _, ok := userMap[userUid]; !ok {
-					userUids = append(userUids, userUid)
-					opUser := &model.User{
-						Model: model.Model{
-							ID: uint(userId),
-						},
-						Name: memberWithPermission.User.Name,
-					}
-					userMap[userUid] = opUser
 				}
 			}
 		}
