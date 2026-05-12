@@ -16291,9 +16291,6 @@ var doc = `{
                 "db_type": {
                     "type": "string"
                 },
-                "default_port": {
-                    "type": "integer"
-                },
                 "params": {
                     "type": "array",
                     "items": {
