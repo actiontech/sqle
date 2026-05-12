@@ -7,12 +7,13 @@ import (
 	"encoding/json"
 	e "errors"
 	"fmt"
-	dmsv1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"io"
 	"mime"
 	"net/http"
 	"strconv"
 	"strings"
+
+	dmsv1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/dms"
@@ -1272,23 +1273,6 @@ func hasManagePermission(userId, projectUid string, permissionType dmsv1.OpPermi
 		return false, fmt.Errorf("get permissions failed: %v", err)
 	}
 	canManage := up.CanOpGlobal() || up.HasOnePermission(permissionType)
-	if canManage {
-		return true, nil
-	}
-	return false, nil
-}
-
-// hasManagePermissionForBusinessWrite is like hasManagePermission but respects
-// BusinessWritePermission (BWP). When an admin/sysAdmin has BWP=off and is not
-// a project admin, this returns false even though CanOpGlobal() would return true.
-// Use this for business write operations (e.g. SQL version CRUD) instead of
-// hasManagePermission.
-func hasManagePermissionForBusinessWrite(userId, projectUid string, permissionType dmsv1.OpPermissionType) (bool, error) {
-	up, err := dms.NewUserPermission(userId, projectUid)
-	if err != nil {
-		return false, fmt.Errorf("get permissions failed: %v", err)
-	}
-	canManage := up.CanOpProjectForBusinessWrite() || up.HasOnePermission(permissionType)
 	if canManage {
 		return true, nil
 	}
