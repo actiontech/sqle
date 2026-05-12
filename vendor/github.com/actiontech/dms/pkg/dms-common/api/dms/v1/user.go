@@ -46,6 +46,8 @@ type GetUser struct {
 	AccessTokenInfo AccessTokenInfo `json:"access_token_info"`
 	// user system
 	System UserSystem `json:"system"`
+	// business write permission
+	BusinessWritePermission bool `json:"business_write_permission"`
 }
 
 type AccessTokenInfo struct {
@@ -95,6 +97,14 @@ const (
 	UserSystemManagement UserSystem = "MANAGEMENT"
 )
 
+// swagger:enum UserStatFilter
+type UserStatFilter string
+
+const (
+	UserStatFilterNormal   UserStatFilter = "Normal"   // normal
+	UserStatFilterDisabled UserStatFilter = "Disabled" // disabled
+)
+
 // swagger:model GetUserReply
 type GetUserReply struct {
 	// Get user reply
@@ -131,6 +141,8 @@ type GetUserOpPermissionReply struct {
 		IsAdmin bool `json:"is_admin"`
 		// user op permissions
 		OpPermissionList []OpPermissionItem `json:"op_permission_list"`
+		// business write permission
+		BusinessWritePermission bool `json:"business_write_permission"`
 	} `json:"data"`
 	// Generic reply
 	base.GenericResp
@@ -246,6 +258,8 @@ const (
 	OpPermissionManageRoleMange OpPermissionType = "manage_role_mange"
 	// 脱敏规则;脱敏规则配置权限
 	OpPermissionDesensitization OpPermissionType = "desensitization"
+	// 脱敏审核;拥有该权限的用户可以查看和处理脱敏审批请求
+	OpPermissionMaskingAudit OpPermissionType = "masking_audit"
 	// 无任何权限
 	OpPermissionTypeNone OpPermissionType = "none"
 )
@@ -322,6 +336,8 @@ func ParseOpPermissionType(typ string) (OpPermissionType, error) {
 		return OpPermissionManageRoleMange, nil
 	case string(OpPermissionDesensitization):
 		return OpPermissionDesensitization, nil
+	case string(OpPermissionMaskingAudit):
+		return OpPermissionMaskingAudit, nil
 	case string(OpPermissionTypeNone):
 		return OpPermissionTypeNone, nil
 	default:
@@ -361,6 +377,8 @@ func GetOperationTypeDesc(opType OpPermissionType) string {
 		return "查看他人创建的智能调优"
 	case OpPermissionTypeCreatePipeline:
 		return "配置流水线"
+	case OpPermissionMaskingAudit:
+		return "脱敏审核"
 	default:
 		return "未知操作类型"
 	}
@@ -389,7 +407,24 @@ type ListUserReq struct {
 	FilterDeletedUser bool `query:"filter_del_user" json:"filter_del_user"`
 	// fuzzy keyword
 	// in:query
+	// fuzzy keyword, search in name, uid, email, phone fields (OR relationship)
+	// in:query
 	FuzzyKeyword string `query:"fuzzy_keyword" json:"fuzzy_keyword"`
+	// filter the user email
+	// in:query
+	FilterByEmail string `query:"filter_by_email" json:"filter_by_email"`
+	// filter the user phone
+	// in:query
+	FilterByPhone string `query:"filter_by_phone" json:"filter_by_phone"`
+	// filter the user stat (0: normal, 1: disabled)
+	// in:query
+	FilterByStat UserStatFilter `query:"filter_by_stat" json:"filter_by_stat"`
+	// filter the user authentication type (ldap, dms, oauth2)
+	// in:query
+	FilterByAuthenticationType UserAuthenticationType `query:"filter_by_authentication_type" json:"filter_by_authentication_type"`
+	// filter the user system (WORKBENCH, MANAGEMENT)
+	// in:query
+	FilterBySystem UserSystem `query:"filter_by_system" json:"filter_by_system"`
 }
 
 // swagger:enum UserOrderByField
@@ -427,6 +462,8 @@ type ListUser struct {
 	ThirdPartyUserInfo string `json:"third_party_user_info"`
 	// user system
 	System UserSystem `json:"system"`
+	// business write permission
+	BusinessWritePermission bool `json:"business_write_permission"`
 }
 
 // swagger:model ListUserReply
