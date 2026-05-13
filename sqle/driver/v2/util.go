@@ -36,6 +36,7 @@ const (
 	DriverTypeTBase          = "TBase"
 	DriverTypeHANA           = "HANA"
 	DriverTypeGaussDB        = "GaussDB"
+	DriverTypeHive           = "Hive"
 )
 
 type DriverNotSupportedError struct {
