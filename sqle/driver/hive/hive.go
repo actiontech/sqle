@@ -207,7 +207,31 @@ func (h *HiveDriverImpl) KillProcess(ctx context.Context) error {
 }
 
 func (h *HiveDriverImpl) Schemas(ctx context.Context) ([]string, error) {
-	return nil, fmt.Errorf("hive plugin does not support Schemas")
+	if h.conn == nil {
+		return nil, fmt.Errorf("hive connection is not initialized")
+	}
+	cursor := h.conn.Cursor()
+	defer cursor.Close()
+
+	cursor.Exec(ctx, "SHOW DATABASES")
+	if cursor.Err != nil {
+		return nil, fmt.Errorf("failed to execute SHOW DATABASES: %v", cursor.Err)
+	}
+
+	var schemas []string
+	for cursor.HasMore(ctx) {
+		if cursor.Err != nil {
+			return nil, fmt.Errorf("failed to fetch schema row: %v", cursor.Err)
+		}
+		var dbName string
+		cursor.FetchOne(ctx, &dbName)
+		if cursor.Err != nil {
+			return nil, fmt.Errorf("failed to scan schema name: %v", cursor.Err)
+		}
+		schemas = append(schemas, dbName)
+	}
+
+	return schemas, nil
 }
 
 func (h *HiveDriverImpl) GetTableMetaBySQL(ctx context.Context, conf *sqleDriver.GetTableMetaBySQLConf) (*sqleDriver.GetTableMetaBySQLResult, error) {
