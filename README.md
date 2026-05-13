@@ -190,13 +190,7 @@ SQLE 提供了多种安装部署的方式，用户可以结合自己的环境和
 4. [Docker Compose部署](https://actiontech.github.io/sqle-docs/docs/deploy-manual/DockerCompose)
 
 ## 插件开发
-目前支持其他种类数据库的审核插件:
-* [PostgreSQL](https://github.com/actiontech/sqle-pg-plugin)
-* [Oracle](https://github.com/actiontech/sqle-oracle-plugin)
-* [SQL Server](https://github.com/actiontech/sqle-ms-plugin)
-* [DB2](https://github.com/actiontech/sqle-db2-plugin)
-
-更多了解：《[功能说明及开发手册](https://actiontech.github.io/sqle-docs/docs/dev-manual/plugins/intro) 》
+《[功能说明及开发手册](https://actiontech.github.io/sqle-docs/docs/dev-manual/plugins/intro) 》
 
 
 # 🧑🏻‍💻社区支持
