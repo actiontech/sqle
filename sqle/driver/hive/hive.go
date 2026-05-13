@@ -4,12 +4,14 @@ import (
 	"context"
 	databaseDriver "database/sql/driver"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
 	sqleDriver "github.com/actiontech/sqle/sqle/driver"
 	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/pkg/params"
+	"github.com/beltran/gohive"
 	"github.com/sirupsen/logrus"
 )
 
@@ -22,8 +24,9 @@ type PluginProcessor struct{}
 
 // HiveDriverImpl implements driver.Plugin for Hive.
 type HiveDriverImpl struct {
-	log *logrus.Entry
-	dsn *driverV2.DSN
+	log  *logrus.Entry
+	dsn  *driverV2.DSN
+	conn *gohive.Connection
 }
 
 func (p *PluginProcessor) GetDriverMetas() (*driverV2.DriverMetas, error) {
@@ -43,6 +46,11 @@ func (p *PluginProcessor) Open(l *logrus.Entry, cfg *driverV2.Config) (sqleDrive
 	}
 	if cfg.DSN != nil {
 		impl.dsn = cfg.DSN
+		conn, err := newHiveConnection(cfg.DSN)
+		if err != nil {
+			return nil, fmt.Errorf("failed to connect to Hive: %v", err)
+		}
+		impl.conn = conn
 	}
 	return impl, nil
 }
@@ -78,11 +86,58 @@ func additionalParams() params.Params {
 	}
 }
 
-// Ping tests the connectivity to the Hive server.
-// Full implementation with gohive will be added in a later phase.
+// newHiveConnection creates a gohive connection from DSN parameters.
+// It reads host, port, user, password, database from DSN and auth/transport_mode
+// from AdditionalParams. This follows the same approach as DMS-EE's NewHiveConn.
+func newHiveConnection(dsn *driverV2.DSN) (*gohive.Connection, error) {
+	port, err := strconv.Atoi(dsn.Port)
+	if err != nil {
+		return nil, fmt.Errorf("invalid port %q: %v", dsn.Port, err)
+	}
+
+	conf := gohive.NewConnectConfiguration()
+	conf.Username = dsn.User
+	conf.Password = dsn.Password
+	if dsn.DatabaseName != "" {
+		conf.Database = dsn.DatabaseName
+	}
+
+	auth := "NOSASL"
+	if dsn.AdditionalParams != nil {
+		if authParam := dsn.AdditionalParams.GetParam("auth"); authParam != nil {
+			if v := authParam.String(); v != "" {
+				auth = v
+			}
+		}
+		if transportParam := dsn.AdditionalParams.GetParam("transport_mode"); transportParam != nil {
+			if v := transportParam.String(); v != "" {
+				conf.TransportMode = v
+			}
+		}
+		if serviceParam := dsn.AdditionalParams.GetParam("service"); serviceParam != nil {
+			if v := serviceParam.String(); v != "" {
+				conf.Service = v
+			}
+		}
+	}
+
+	conn, err := gohive.Connect(dsn.Host, port, auth, conf)
+	if err != nil {
+		return nil, fmt.Errorf("gohive connect failed: %v", err)
+	}
+	return conn, nil
+}
+
+// Ping tests the connectivity to the Hive server by executing SELECT 1.
 func (h *HiveDriverImpl) Ping(ctx context.Context) error {
-	if h.dsn == nil {
+	if h.conn == nil {
 		return fmt.Errorf("hive connection is not initialized")
+	}
+	cursor := h.conn.Cursor()
+	cursor.Exec(ctx, "SELECT 1")
+	defer cursor.Close()
+	if cursor.Err != nil {
+		return fmt.Errorf("hive ping failed: %v", cursor.Err)
 	}
 	return nil
 }
@@ -114,7 +169,9 @@ func (h *HiveDriverImpl) Audit(ctx context.Context, sqls []string) ([]*driverV2.
 }
 
 func (h *HiveDriverImpl) Close(ctx context.Context) {
-	// Connection cleanup will be added when gohive integration is implemented.
+	if h.conn != nil {
+		h.conn.Close()
+	}
 }
 
 func (h *HiveDriverImpl) Exec(ctx context.Context, query string) (databaseDriver.Result, error) {

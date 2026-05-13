@@ -2,6 +2,7 @@ package hive
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	sqleDriver "github.com/actiontech/sqle/sqle/driver"
@@ -263,4 +264,28 @@ func TestOpenWithNilDSN(t *testing.T) {
 	if plugin == nil {
 		t.Fatal("Open() returned nil plugin")
 	}
+}
+
+func TestPingWithNilConn(t *testing.T) {
+	// When Open is called with nil DSN (offline audit mode), conn is nil.
+	// Ping should return an error indicating uninitialized connection.
+	impl := &HiveDriverImpl{
+		log: logrus.NewEntry(logrus.New()),
+	}
+	err := impl.Ping(context.Background())
+	if err == nil {
+		t.Error("expected Ping() to return error when conn is nil")
+	}
+	if !strings.Contains(err.Error(), "not initialized") {
+		t.Errorf("expected error to mention 'not initialized', got: %v", err)
+	}
+}
+
+func TestCloseWithNilConn(t *testing.T) {
+	// Close should not panic when conn is nil (offline audit mode).
+	impl := &HiveDriverImpl{
+		log: logrus.NewEntry(logrus.New()),
+	}
+	// Should not panic
+	impl.Close(context.Background())
 }
