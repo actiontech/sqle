@@ -450,6 +450,7 @@ var (
 	ApMetaSQLServerProcesslist            = &i18n.Message{ID: "ApMetaSQLServerProcesslist", Other: "SQLServer活跃会话采集"}
 	ApMetaHanaProcesslist                 = &i18n.Message{ID: "ApMetaHanaProcesslist", Other: "HANA Processlist"}
 	ApMetaHanaSlowLog                     = &i18n.Message{ID: "ApMetaHanaSlowLog", Other: "HANA 慢日志"}
+	ApMetaHiveProcesslist                 = &i18n.Message{ID: "ApMetaHiveProcesslist", Other: "Hive Processlist"}
 	ApMetaCollectTime                     = &i18n.Message{ID: "ApMetaCollectTime", Other: "采集时间"}
 	ApMetaThreadsConnected                = &i18n.Message{ID: "ApMetaThreadsConnected", Other: "线程数"}
 	ApMetaQPS                             = &i18n.Message{ID: "ApMetaQueries", Other: "QPS"}
