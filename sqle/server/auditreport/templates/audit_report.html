@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="{{.Lang}}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}}</title>
+    <style>
+        /* Reset and base styles */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: "Microsoft YaHei", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f9f9f9;
+            padding: 20px;
+        }
+
+        .report-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 40px;
+        }
+
+        /* Header styles */
+        .report-header {
+            text-align: center;
+            border-bottom: 2px solid #1890ff;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        .report-header .logo {
+            max-height: 50px;
+            margin-bottom: 15px;
+        }
+
+        .report-header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 8px;
+        }
+
+        .report-header .generated-at {
+            font-size: 13px;
+            color: #888;
+        }
+
+        /* Section styles */
+        .report-section {
+            margin-bottom: 30px;
+        }
+
+        .report-section h2 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a1a;
+            border-left: 4px solid #1890ff;
+            padding-left: 12px;
+            margin-bottom: 15px;
+        }
+
+        /* Table styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+            text-align: left;
+            vertical-align: top;
+            word-break: break-word;
+        }
+
+        th {
+            background-color: #fafafa;
+            font-weight: 600;
+            color: #555;
+            white-space: nowrap;
+        }
+
+        tr:nth-child(even) {
+            background-color: #fafafa;
+        }
+
+        tr:hover {
+            background-color: #f0f7ff;
+        }
+
+        /* Summary table (key-value pairs) */
+        .summary-table td:first-child {
+            width: 150px;
+            font-weight: 600;
+            color: #555;
+            background-color: #fafafa;
+            white-space: nowrap;
+        }
+
+        /* SQL code display */
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: "Courier New", Consolas, monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            max-width: 500px;
+            margin: 0;
+        }
+
+        /* Audit level badges */
+        .level-normal {
+            color: #52c41a;
+            font-weight: 600;
+        }
+
+        .level-notice {
+            color: #1890ff;
+            font-weight: 600;
+        }
+
+        .level-warn {
+            color: #faad14;
+            font-weight: 600;
+        }
+
+        .level-error {
+            color: #ff4d4f;
+            font-weight: 600;
+        }
+
+        /* Print styles */
+        @media print {
+            body {
+                background-color: #fff;
+                padding: 0;
+            }
+            .report-container {
+                border: none;
+                padding: 20px;
+                max-width: none;
+            }
+            tr:hover {
+                background-color: transparent;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="report-container">
+        <!-- Report header: Logo + Title + Generated time -->
+        <header class="report-header">
+            {{if .LogoBase64}}<img src="data:image/png;base64,{{.LogoBase64}}" alt="Logo" class="logo" />{{end}}
+            <h1>{{.Title}}</h1>
+            <p class="generated-at">{{.GeneratedAt.Format "2006-01-02 15:04:05"}}</p>
+        </header>
+
+        <!-- Module 1: Audit Summary -->
+        <section class="report-section">
+            <h2>{{.Labels.AuditSummary}}</h2>
+            <table class="summary-table">
+                <tbody>
+                    <tr>
+                        <td>{{.Labels.AuditTime}}</td>
+                        <td>{{.Summary.AuditTime}}</td>
+                    </tr>
+                    <tr>
+                        <td>{{.Labels.DataSource}}</td>
+                        <td>{{.Summary.InstanceName}}</td>
+                    </tr>
+                    <tr>
+                        <td>{{.Labels.Schema}}</td>
+                        <td>{{.Summary.Schema}}</td>
+                    </tr>
+                    <tr>
+                        <td>{{.Labels.TotalSQL}}</td>
+                        <td>{{.Summary.TotalSQL}}</td>
+                    </tr>
+                    <tr>
+                        <td>{{.Labels.PassRate}}</td>
+                        <td>{{.Summary.PassRate}}%</td>
+                    </tr>
+                    <tr>
+                        <td>{{.Labels.Score}}</td>
+                        <td>{{.Summary.Score}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Module 2: Audit Result Statistics (Level Distribution) -->
+        <section class="report-section">
+            <h2>{{.Labels.ResultStatistics}}</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>{{.Labels.AuditLevel}}</th>
+                        <th>{{.Labels.Count}}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .Statistics.LevelDistribution}}
+                    <tr>
+                        <td><span class="level-{{.Level}}">{{.Level}}</span></td>
+                        <td>{{.Count}}</td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Module 3: Problem SQL List -->
+        <section class="report-section">
+            <h2>{{.Labels.ProblemSQLList}}</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>{{.Labels.Number}}</th>
+                        <th>{{.Labels.SQL}}</th>
+                        <th>{{.Labels.AuditLevel}}</th>
+                        <th>{{.Labels.AuditResult}}</th>
+                        <th>{{.Labels.RuleName}}</th>
+                        <th>{{.Labels.Description}}</th>
+                        <th>{{.Labels.Suggestion}}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .ProblemSQLs}}
+                    <tr>
+                        <td>{{.Number}}</td>
+                        <td><pre>{{.SQL}}</pre></td>
+                        <td><span class="level-{{.AuditLevel}}">{{.AuditLevel}}</span></td>
+                        <td>{{.AuditResult}}</td>
+                        <td>{{.RuleName}}</td>
+                        <td>{{.Description}}</td>
+                        <td>{{.Suggestion}}</td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Module 4: Rule Hit Statistics -->
+        <section class="report-section">
+            <h2>{{.Labels.RuleHitStatistics}}</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>{{.Labels.RuleName}}</th>
+                        <th>{{.Labels.HitCount}}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .Statistics.RuleHits}}
+                    <tr>
+                        <td>{{.RuleName}}</td>
+                        <td>{{.HitCount}}</td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </section>
+    </div>
+</body>
+</html>

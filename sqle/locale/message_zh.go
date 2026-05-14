@@ -64,6 +64,26 @@ var (
 	TaskSQLReportDescription = &i18n.Message{ID: "TaskSQLReportDescription", Other: "SQL描述"}
 )
 
+// report labels (for audit report export)
+var (
+	ReportLabelAuditSummary      = &i18n.Message{ID: "ReportLabelAuditSummary", Other: "审核概要"}
+	ReportLabelResultStatistics  = &i18n.Message{ID: "ReportLabelResultStatistics", Other: "审核结果统计"}
+	ReportLabelProblemSQLList    = &i18n.Message{ID: "ReportLabelProblemSQLList", Other: "问题SQL列表"}
+	ReportLabelRuleHitStatistics = &i18n.Message{ID: "ReportLabelRuleHitStatistics", Other: "规则命中统计"}
+	ReportLabelAuditTime         = &i18n.Message{ID: "ReportLabelAuditTime", Other: "审核时间"}
+	ReportLabelDataSource        = &i18n.Message{ID: "ReportLabelDataSource", Other: "数据源"}
+	ReportLabelSchema            = &i18n.Message{ID: "ReportLabelSchema", Other: "数据库"}
+	ReportLabelTotalSQL          = &i18n.Message{ID: "ReportLabelTotalSQL", Other: "SQL总数"}
+	ReportLabelPassRate          = &i18n.Message{ID: "ReportLabelPassRate", Other: "通过率"}
+	ReportLabelScore             = &i18n.Message{ID: "ReportLabelScore", Other: "评分"}
+	ReportLabelAuditLevel        = &i18n.Message{ID: "ReportLabelAuditLevel", Other: "审核等级"}
+	ReportLabelRuleName          = &i18n.Message{ID: "ReportLabelRuleName", Other: "规则名称"}
+	ReportLabelSuggestion        = &i18n.Message{ID: "ReportLabelSuggestion", Other: "优化建议"}
+	ReportLabelCount             = &i18n.Message{ID: "ReportLabelCount", Other: "数量"}
+	ReportLabelHitCount          = &i18n.Message{ID: "ReportLabelHitCount", Other: "命中次数"}
+	ReportLabelTitle             = &i18n.Message{ID: "ReportLabelTitle", Other: "SQL审核报告"}
+)
+
 // workflow
 var (
 	WorkflowStepStateApprove = &i18n.Message{ID: "WorkflowStepStateApprove", Other: "通过"}
