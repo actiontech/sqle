@@ -413,6 +413,7 @@ var (
 	ApMetaAliRdsMySQLSlowLog              = &i18n.Message{ID: "ApMetaAliRdsMySQLSlowLog", Other: "阿里RDS MySQL慢日志"}
 	ApMetaAliRdsMySQLAuditLog             = &i18n.Message{ID: "ApMetaAliRdsMySQLAuditLog", Other: "阿里RDS MySQL审计日志"}
 	ApMetaBaiduRdsMySQLSlowLog            = &i18n.Message{ID: "ApMetaBaiduRdsMySQLSlowLog", Other: "百度云RDS MySQL慢日志"}
+	ApMetaHiveSlowLog                     = &i18n.Message{ID: "ApMetaHiveSlowLog", Other: "Hive慢日志"}
 	ApMetaHuaweiRdsMySQLSlowLog           = &i18n.Message{ID: "ApMetaHuaweiRdsMySQLSlowLog", Other: "华为云RDS MySQL慢日志"}
 	ApMetaOracleTopSQL                    = &i18n.Message{ID: "ApMetaOracleTopSQL", Other: "Oracle TOP SQL"}
 	ApMetaOracleSlowLog                   = &i18n.Message{ID: "ApMetaOracleSlowLog", Other: "Oracle慢日志"}
@@ -444,6 +445,7 @@ var (
 	ApMetaMSSQLTopSQL                     = &i18n.Message{ID: "ApMetaMSSQLTopSQL", Other: "SQL Server TOP SQL"}
 	ApMetricQueryTimeAvg                  = &i18n.Message{ID: "ApMetricQueryTimeAvg", Other: "平均查询时间(s)"}
 	ApMetricRowExaminedAvg                = &i18n.Message{ID: "ApMetricRowExaminedAvg", Other: "平均扫描行数"}
+	ApMetricHiveSlowLogDbUser             = &i18n.Message{ID: "ApMetricHiveSlowLogDbUser", Other: "执行用户"}
 	ApMetaPerformanceCollectTips          = &i18n.Message{ID: "ApMetaPerformanceCollectTips", Other: "性能指标采集将产生较大性能开销,请谨慎开启。开启后,系统将持续采集该数据源的性能数据(如QPS、连接数等)，并生成性能趋势图表，体现在性能洞察页面。"}
 	ApMetaSQLServerPerformanceCollect     = &i18n.Message{ID: "ApMetaSQLServerPerformanceCollect", Other: "SQLServer性能采集"}
 	ApMetaSQLServerPerformanceCollectTips = &i18n.Message{ID: "ApMetaSQLServerPerformanceCollectTips", Other: "定时采集SQLServer实例的连接数和QPS等性能指标"}
@@ -501,6 +503,13 @@ var (
 	OperatorLessThan    = &i18n.Message{ID: "OperatorLessThan", Other: "小于"}
 
 	OperationParamAuditLevel = &i18n.Message{ID: "OperationParamAuditLevel", Other: "触发审核级别"}
+
+	HiveSlowLogErrSysDbNotFound  = &i18n.Message{ID: "HiveSlowLogErrSysDbNotFound", Other: "Hive 实例 `sys` 库不存在。请联系 Hive 平台运维：1) 在 HS2 的 hive-site.xml 中配置 `hive.query.history.enabled=true`；2) 重启 HS2 服务后，HS2 会自动创建 `sys.query_history` 表。原始错误：%s"}
+	HiveSlowLogErrTableNotFound  = &i18n.Message{ID: "HiveSlowLogErrTableNotFound", Other: "Hive 实例 `sys.query_history` 表不存在。HS2 可能未启用 query history。请检查 HS2 配置 `hive.query.history.enabled` 是否为 true，并确认 HS2 已重启。原始错误：%s"}
+	HiveSlowLogErrColumnMismatch = &i18n.Message{ID: "HiveSlowLogErrColumnMismatch", Other: "Hive 慢日志采集 SQL 执行失败：字段引用错误。可能是 Hive 版本与 SQLE 适配版本（基线 Hive 4.2）存在差异；请把 `SELECT version()` 输出反馈给 SQLE 维护者。原始错误：%s"}
+	HiveSlowLogErrConnectFailed  = &i18n.Message{ID: "HiveSlowLogErrConnectFailed", Other: "Hive 实例连接失败：可能是 HiveServer2 启用了 SASL/LDAP 鉴权而数据源配置的 `auth` 为 `NOSASL`。请在 SQLE 数据源管理页编辑该 Hive 数据源，把 `auth` 改为 `NONE` 或 `LDAP`。原始错误：%s"}
+	HiveSlowLogErrAuthInvalid    = &i18n.Message{ID: "HiveSlowLogErrAuthInvalid", Other: "Hive 数据源 auth 参数值非法。允许的值：`NOSASL` / `NONE` / `LDAP` / `CUSTOM`。请在 SQLE 数据源管理页修正。原始错误：%s"}
+	HiveSlowLogErrUnknown        = &i18n.Message{ID: "HiveSlowLogErrUnknown", Other: "Hive 慢日志采集失败：%s"}
 )
 
 var (
