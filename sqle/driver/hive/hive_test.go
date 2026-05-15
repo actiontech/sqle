@@ -42,9 +42,22 @@ func TestGetDriverMetas(t *testing.T) {
 		t.Errorf("expected empty Rules, got %d rules", len(metas.Rules))
 	}
 
-	// Verify EnabledOptionalModule is empty
-	if len(metas.EnabledOptionalModule) != 0 {
-		t.Errorf("expected empty EnabledOptionalModule, got %d modules", len(metas.EnabledOptionalModule))
+	// Verify EnabledOptionalModule declares structure-compare capabilities (compat-RISK-1).
+	// The set must contain OptionalGetDatabaseObjectDDL and OptionalGetDatabaseDiffModifySQL
+	// for the controller/server capability check whitelist to accept Hive.
+	expectedModules := map[driverV2.OptionalModule]bool{
+		driverV2.OptionalGetDatabaseObjectDDL:     false,
+		driverV2.OptionalGetDatabaseDiffModifySQL: false,
+	}
+	for _, m := range metas.EnabledOptionalModule {
+		if _, ok := expectedModules[m]; ok {
+			expectedModules[m] = true
+		}
+	}
+	for m, seen := range expectedModules {
+		if !seen {
+			t.Errorf("expected EnabledOptionalModule to contain %v", m)
+		}
 	}
 
 	// Verify additionalParams: auth

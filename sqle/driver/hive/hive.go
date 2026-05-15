@@ -36,7 +36,10 @@ func (p *PluginProcessor) GetDriverMetas() (*driverV2.DriverMetas, error) {
 		Logo:                     logo,
 		DatabaseAdditionalParams: additionalParams(),
 		Rules:                    []*driverV2.Rule{},
-		EnabledOptionalModule:    []driverV2.OptionalModule{},
+		EnabledOptionalModule: []driverV2.OptionalModule{
+			driverV2.OptionalGetDatabaseObjectDDL,
+			driverV2.OptionalGetDatabaseDiffModifySQL,
+		},
 	}, nil
 }
 
