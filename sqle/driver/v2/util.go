@@ -35,6 +35,7 @@ const (
 	DriverTypeTDSQLForInnoDB = "TDSQL For InnoDB"
 	DriverTypeTBase          = "TBase"
 	DriverTypeHANA           = "HANA"
+	DriverTypeGaussDB        = "GaussDB"
 )
 
 type DriverNotSupportedError struct {
