@@ -98,6 +98,94 @@ type gohiveQueryRunner struct {
 	conn *gohive.Connection
 }
 
+// hs2NoResultRowErrMarkers are substring markers that identify a HiveServer2
+// "ROW-ERR" returned from FetchResults on a statement that produces no result
+// columns (e.g. `USE <db>`, `SET ...`, DDL). Such an error is **non-fatal** in
+// HS2's protocol: the same connection can still execute the next statement.
+//
+// See compat-RISK-10 (sqle-ee/docs/dev/compat_risks.md) and the reference
+// implementation in sqle-ee/cmd/hivetool/main.go (which tolerates ROW-ERR
+// and breaks out of the fetch loop).
+var hs2NoResultRowErrMarkers = []string{
+	// HiveServer2's generic "no result columns" message.
+	"Server-side error; please check HS2 logs.",
+	// Some HS2 builds wrap the same condition with an explicit status.
+	"StatusCode:ERROR_STATUS",
+}
+
+// isHS2NoResultRowErr reports whether err is the non-fatal ROW-ERR
+// HiveServer2 returns from FetchResults for a no-result-column statement.
+// It is a pure string match against the error's Error() output so we can
+// unit-test the classifier without needing a real gohive cursor.
+//
+// The function is conservative: only errors that match ALL of the canonical
+// markers are treated as tolerable. Real Hive runtime errors (syntax errors,
+// missing table, etc.) carry a different status / message and will NOT be
+// matched.
+func isHS2NoResultRowErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	for _, m := range hs2NoResultRowErrMarkers {
+		if !strings.Contains(msg, m) {
+			return false
+		}
+	}
+	return true
+}
+
+// hiveCursor abstracts the minimum *gohive.Cursor surface used by the
+// fetch loop. It exists solely so unit tests can substitute a fake; the
+// production code path uses *gohive.Cursor directly.
+type hiveCursor interface {
+	HasMore(ctx context.Context) bool
+	FetchOne(ctx context.Context, dests ...interface{})
+	Err() error
+}
+
+// gohiveCursorAdapter adapts *gohive.Cursor (whose error is a public field
+// rather than a method) to the hiveCursor interface for use in fetchAllRows.
+type gohiveCursorAdapter struct {
+	c *gohive.Cursor
+}
+
+func (a gohiveCursorAdapter) HasMore(ctx context.Context) bool                  { return a.c.HasMore(ctx) }
+func (a gohiveCursorAdapter) FetchOne(ctx context.Context, dests ...interface{}) { a.c.FetchOne(ctx, dests...) }
+func (a gohiveCursorAdapter) Err() error                                         { return a.c.Err }
+
+// fetchAllRows pulls a single STRING column from cur and returns each row.
+// HS2 ROW-ERR (non-fatal) is tolerated: when encountered, the loop breaks
+// and the rows captured so far are returned with a nil error. Real fetch
+// errors (any error that is not isHS2NoResultRowErr) are propagated.
+//
+// This is the shared core of gohiveQueryRunner.runSingleStringQuery; it is
+// also used by unit tests via a fake hiveCursor so that the ROW-ERR
+// tolerance contract can be exercised without a live HiveServer2 instance.
+func fetchAllRows(ctx context.Context, cur hiveCursor) ([]string, error) {
+	var rows []string
+	for cur.HasMore(ctx) {
+		if e := cur.Err(); e != nil {
+			if isHS2NoResultRowErr(e) {
+				// HS2 ROW-ERR on a no-result-column statement; treat as EOF.
+				break
+			}
+			return nil, fmt.Errorf("failed to fetch row: %v", e)
+		}
+		var val string
+		cur.FetchOne(ctx, &val)
+		if e := cur.Err(); e != nil {
+			if isHS2NoResultRowErr(e) {
+				// Same ROW-ERR can surface during FetchOne; tolerate and stop.
+				break
+			}
+			return nil, fmt.Errorf("failed to scan row: %v", e)
+		}
+		rows = append(rows, val)
+	}
+	return rows, nil
+}
+
 func (g *gohiveQueryRunner) runSingleStringQuery(ctx context.Context, query string) ([]string, error) {
 	if g.conn == nil {
 		return nil, fmt.Errorf("hive connection is not initialized")
@@ -110,19 +198,7 @@ func (g *gohiveQueryRunner) runSingleStringQuery(ctx context.Context, query stri
 		return nil, fmt.Errorf("failed to execute %q: %v", query, cursor.Err)
 	}
 
-	var rows []string
-	for cursor.HasMore(ctx) {
-		if cursor.Err != nil {
-			return nil, fmt.Errorf("failed to fetch row: %v", cursor.Err)
-		}
-		var val string
-		cursor.FetchOne(ctx, &val)
-		if cursor.Err != nil {
-			return nil, fmt.Errorf("failed to scan row: %v", cursor.Err)
-		}
-		rows = append(rows, val)
-	}
-	return rows, nil
+	return fetchAllRows(ctx, gohiveCursorAdapter{c: cursor})
 }
 
 func (p *PluginProcessor) Stop() error {
@@ -288,20 +364,10 @@ func (h *HiveDriverImpl) Schemas(ctx context.Context) ([]string, error) {
 		return nil, fmt.Errorf("failed to execute SHOW DATABASES: %v", cursor.Err)
 	}
 
-	var schemas []string
-	for cursor.HasMore(ctx) {
-		if cursor.Err != nil {
-			return nil, fmt.Errorf("failed to fetch schema row: %v", cursor.Err)
-		}
-		var dbName string
-		cursor.FetchOne(ctx, &dbName)
-		if cursor.Err != nil {
-			return nil, fmt.Errorf("failed to scan schema name: %v", cursor.Err)
-		}
-		schemas = append(schemas, dbName)
-	}
-
-	return schemas, nil
+	// SHOW DATABASES returns a single STRING column. Reuse fetchAllRows so
+	// the ROW-ERR tolerance contract (compat-RISK-10) stays consistent with
+	// runSingleStringQuery's behaviour.
+	return fetchAllRows(ctx, gohiveCursorAdapter{c: cursor})
 }
 
 func (h *HiveDriverImpl) GetTableMetaBySQL(ctx context.Context, conf *sqleDriver.GetTableMetaBySQLConf) (*sqleDriver.GetTableMetaBySQLResult, error) {

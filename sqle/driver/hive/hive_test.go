@@ -2,6 +2,7 @@ package hive
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -301,4 +302,184 @@ func TestCloseWithNilConn(t *testing.T) {
 	}
 	// Should not panic
 	impl.Close(context.Background())
+}
+
+// fakeHiveCursor lets tests drive fetchAllRows through fully-scripted
+// HasMore / FetchOne / Err sequences. It mimics how HiveServer2 surfaces a
+// non-fatal ROW-ERR after a no-result-column statement (USE, SET, DDL).
+//
+// Each step in `steps` represents one HasMore tick. Setting HasMore=false
+// signals end of stream; setting Err to a non-nil value triggers the
+// tolerance branch in fetchAllRows. If FetchValue is non-empty, FetchOne
+// will assign it to the destination string before the next HasMore tick.
+type fakeHiveCursor struct {
+	steps    []fakeCursorStep
+	idx      int
+	err      error
+	fetchVal string
+}
+
+type fakeCursorStep struct {
+	HasMore       bool
+	FetchValue    string
+	ErrBeforeNext error // err returned by Err() *after* this step's HasMore
+}
+
+func (f *fakeHiveCursor) HasMore(ctx context.Context) bool {
+	if f.idx >= len(f.steps) {
+		return false
+	}
+	step := f.steps[f.idx]
+	f.fetchVal = step.FetchValue
+	// Error surfaces immediately on entering the next iteration so the
+	// fetchAllRows branch can pick it up before FetchOne.
+	f.err = step.ErrBeforeNext
+	return step.HasMore
+}
+
+func (f *fakeHiveCursor) FetchOne(ctx context.Context, dests ...interface{}) {
+	if f.idx < len(f.steps) && len(dests) > 0 {
+		if p, ok := dests[0].(*string); ok {
+			*p = f.fetchVal
+		}
+	}
+	f.idx++
+}
+
+func (f *fakeHiveCursor) Err() error { return f.err }
+
+func Test_IsHS2NoResultRowErr(t *testing.T) {
+	cases := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{
+			name: "nil",
+			err:  nil,
+			want: false,
+		},
+		{
+			name: "tolerable_HS2_row_err",
+			// Real-world payload from HiveServer2 FetchResults on a USE statement.
+			err: fmt.Errorf("TStatus({StatusCode:ERROR_STATUS InfoMessages:[Server-side error; please check HS2 logs.] SqlState:<nil> ErrorCode:<nil> ErrorMessage:<nil>})"),
+			want: true,
+		},
+		{
+			name: "syntax_error_not_tolerable",
+			err:  fmt.Errorf("FAILED: ParseException line 1:0 cannot recognize input near 'SELEKT'"),
+			want: false,
+		},
+		{
+			name: "missing_marker_status_only",
+			err:  fmt.Errorf("StatusCode:ERROR_STATUS but message differs"),
+			want: false,
+		},
+		{
+			name: "missing_status_marker",
+			err:  fmt.Errorf("Server-side error; please check HS2 logs."),
+			want: false,
+		},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			got := isHS2NoResultRowErr(tc.err)
+			if got != tc.want {
+				t.Errorf("isHS2NoResultRowErr(%v) = %v, want %v", tc.err, got, tc.want)
+			}
+		})
+	}
+}
+
+// Test_FetchAllRows_RowErrTolerant exercises the HS2 ROW-ERR tolerance
+// contract for compat-RISK-10. The three scenarios verify:
+//
+//  1. USE-like statement returns ROW-ERR with zero rows -> fetchAllRows
+//     yields (nil, nil) (no hard error; caller can keep executing).
+//  2. SHOW TABLES yields two rows then a trailing ROW-ERR -> rows are
+//     returned and the ROW-ERR is treated as EOF (compat-RISK-10 must
+//     not drop already-fetched rows).
+//  3. A real Hive runtime error (syntax error) is propagated -> caller
+//     receives the wrapped failure as before the fix.
+func Test_FetchAllRows_RowErrTolerant(t *testing.T) {
+	hs2RowErr := fmt.Errorf("TStatus({StatusCode:ERROR_STATUS InfoMessages:[Server-side error; please check HS2 logs.]})")
+	syntaxErr := fmt.Errorf("FAILED: ParseException syntax error")
+
+	cases := map[string]struct {
+		steps    []fakeCursorStep
+		wantRows []string
+		wantErr  bool
+		errMatch string
+	}{
+		"USE_statement_row_err_tolerated": {
+			// First HasMore tick surfaces ROW-ERR with no row -> loop breaks.
+			steps: []fakeCursorStep{
+				{HasMore: true, ErrBeforeNext: hs2RowErr},
+			},
+			wantRows: nil,
+			wantErr:  false,
+		},
+		"SHOW_TABLES_rows_then_trailing_row_err": {
+			// Two real rows arrive; the third HasMore tick is the HS2
+			// terminator with ROW-ERR. Tolerated -> existing rows preserved.
+			steps: []fakeCursorStep{
+				{HasMore: true, FetchValue: "t_base_only"},
+				{HasMore: true, FetchValue: "t_diff_only"},
+				{HasMore: true, ErrBeforeNext: hs2RowErr},
+			},
+			wantRows: []string{"t_base_only", "t_diff_only"},
+			wantErr:  false,
+		},
+		"real_syntax_error_propagates": {
+			// A non-ROW-ERR is a genuine failure and must surface.
+			steps: []fakeCursorStep{
+				{HasMore: true, ErrBeforeNext: syntaxErr},
+			},
+			wantRows: nil,
+			wantErr:  true,
+			errMatch: "ParseException",
+		},
+	}
+
+	for name, tc := range cases {
+		tc := tc
+		t.Run(name, func(t *testing.T) {
+			cur := &fakeHiveCursor{steps: tc.steps}
+			rows, err := fetchAllRows(context.Background(), cur)
+			if tc.wantErr {
+				if err == nil {
+					t.Fatalf("expected error, got nil (rows=%v)", rows)
+				}
+				if tc.errMatch != "" && !strings.Contains(err.Error(), tc.errMatch) {
+					t.Errorf("err = %v, want substring %q", err, tc.errMatch)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if len(rows) != len(tc.wantRows) {
+				t.Fatalf("rows len = %d, want %d (rows=%v)", len(rows), len(tc.wantRows), rows)
+			}
+			for i, r := range rows {
+				if r != tc.wantRows[i] {
+					t.Errorf("rows[%d] = %q, want %q", i, r, tc.wantRows[i])
+				}
+			}
+		})
+	}
+}
+
+// Test_RunSingleStringQuery_NilConn verifies the early-return guard
+// continues to work after the refactor.
+func Test_RunSingleStringQuery_NilConn(t *testing.T) {
+	g := &gohiveQueryRunner{conn: nil}
+	_, err := g.runSingleStringQuery(context.Background(), "USE default")
+	if err == nil {
+		t.Fatal("expected error when conn is nil")
+	}
+	if !strings.Contains(err.Error(), "not initialized") {
+		t.Errorf("err = %v, want substring %q", err, "not initialized")
+	}
 }
