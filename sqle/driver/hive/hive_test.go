@@ -483,3 +483,138 @@ func Test_RunSingleStringQuery_NilConn(t *testing.T) {
 		t.Errorf("err = %v, want substring %q", err, "not initialized")
 	}
 }
+
+// scriptedRunner is a hiveQueryRunner whose runSingleStringQuery returns
+// pre-baked rows / errors keyed by exact query text. Used to verify the
+// listAllSchemaObjects helper and the "default discovery" behaviour of
+// GetDatabaseObjectDDL without needing a live HiveServer2.
+type scriptedRunner struct {
+	scripts map[string]scriptedReply
+	calls   []string
+}
+
+type scriptedReply struct {
+	rows []string
+	err  error
+}
+
+func (s *scriptedRunner) runSingleStringQuery(ctx context.Context, query string) ([]string, error) {
+	s.calls = append(s.calls, query)
+	r, ok := s.scripts[query]
+	if !ok {
+		return nil, fmt.Errorf("scriptedRunner: no script for %q", query)
+	}
+	return r.rows, r.err
+}
+
+func Test_ListAllSchemaObjects(t *testing.T) {
+	t.Run("tables_and_views_classified", func(t *testing.T) {
+		runner := &scriptedRunner{scripts: map[string]scriptedReply{
+			"SHOW TABLES": {rows: []string{"t_base_only", "v_user_summary", "t_alter_widen"}},
+			"SHOW VIEWS":  {rows: []string{"v_user_summary"}},
+		}}
+		objs, err := listAllSchemaObjects(context.Background(), runner)
+		if err != nil {
+			t.Fatalf("unexpected err: %v", err)
+		}
+		if len(objs) != 3 {
+			t.Fatalf("len=%d want 3 (%v)", len(objs), objs)
+		}
+		got := map[string]string{}
+		for _, o := range objs {
+			got[o.ObjectName] = o.ObjectType
+		}
+		if got["v_user_summary"] != driverV2.ObjectType_VIEW {
+			t.Errorf("v_user_summary type = %q want VIEW", got["v_user_summary"])
+		}
+		if got["t_base_only"] != driverV2.ObjectType_TABLE {
+			t.Errorf("t_base_only type = %q want TABLE", got["t_base_only"])
+		}
+		if got["t_alter_widen"] != driverV2.ObjectType_TABLE {
+			t.Errorf("t_alter_widen type = %q want TABLE", got["t_alter_widen"])
+		}
+	})
+	t.Run("show_views_failure_degrades_to_all_table", func(t *testing.T) {
+		// Older Hive (< 2.2) does not support SHOW VIEWS; we must not blow up.
+		runner := &scriptedRunner{scripts: map[string]scriptedReply{
+			"SHOW TABLES": {rows: []string{"t1", "v1"}},
+			"SHOW VIEWS":  {err: fmt.Errorf("unsupported on old HS2")},
+		}}
+		objs, err := listAllSchemaObjects(context.Background(), runner)
+		if err != nil {
+			t.Fatalf("expected tolerant fallback, got err: %v", err)
+		}
+		if len(objs) != 2 {
+			t.Fatalf("len=%d want 2", len(objs))
+		}
+		for _, o := range objs {
+			if o.ObjectType != driverV2.ObjectType_TABLE {
+				t.Errorf("%s degraded type = %q want TABLE", o.ObjectName, o.ObjectType)
+			}
+		}
+	})
+	t.Run("show_tables_error_propagates", func(t *testing.T) {
+		runner := &scriptedRunner{scripts: map[string]scriptedReply{
+			"SHOW TABLES": {err: fmt.Errorf("real fetch error")},
+		}}
+		_, err := listAllSchemaObjects(context.Background(), runner)
+		if err == nil {
+			t.Fatal("expected err to propagate")
+		}
+		if !strings.Contains(err.Error(), "show tables") {
+			t.Errorf("err = %v want substring %q", err, "show tables")
+		}
+	})
+	t.Run("empty_names_skipped", func(t *testing.T) {
+		runner := &scriptedRunner{scripts: map[string]scriptedReply{
+			"SHOW TABLES": {rows: []string{"", "t1", ""}},
+			"SHOW VIEWS":  {rows: []string{}},
+		}}
+		objs, err := listAllSchemaObjects(context.Background(), runner)
+		if err != nil {
+			t.Fatalf("unexpected err: %v", err)
+		}
+		if len(objs) != 1 || objs[0].ObjectName != "t1" {
+			t.Errorf("expected single t1, got %v", objs)
+		}
+	})
+}
+
+func Test_GetDatabaseObjectDDL_DefaultDiscovery(t *testing.T) {
+	// When caller passes objInfo.DatabaseObjects = nil, the driver must
+	// auto-enumerate via listAllSchemaObjects before producing DDLs.
+	runner := &scriptedRunner{scripts: map[string]scriptedReply{
+		"USE default":                    {rows: nil},
+		"SHOW TABLES":                    {rows: []string{"t_base_only", "v_user_summary"}},
+		"SHOW VIEWS":                     {rows: []string{"v_user_summary"}},
+		"SHOW CREATE TABLE t_base_only":  {rows: []string{"CREATE TABLE `t_base_only` (`id` int)"}},
+		"SHOW CREATE TABLE v_user_summary": {rows: []string{"CREATE VIEW `v_user_summary` AS SELECT 1"}},
+	}}
+	impl := &HiveDriverImpl{runner: runner}
+
+	res, err := impl.GetDatabaseObjectDDL(context.Background(), []*driverV2.DatabaseSchemaInfo{
+		{SchemaName: "default"}, // DatabaseObjects intentionally nil
+	})
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+	if len(res) != 1 {
+		t.Fatalf("len(res)=%d want 1", len(res))
+	}
+	if res[0].SchemaName != "default" {
+		t.Errorf("schema = %q want default", res[0].SchemaName)
+	}
+	if len(res[0].DatabaseObjectDDLs) != 2 {
+		t.Fatalf("ddls len = %d want 2 (auto-discovery): %v", len(res[0].DatabaseObjectDDLs), res[0].DatabaseObjectDDLs)
+	}
+	gotTypes := map[string]string{}
+	for _, d := range res[0].DatabaseObjectDDLs {
+		gotTypes[d.DatabaseObject.ObjectName] = d.DatabaseObject.ObjectType
+	}
+	if gotTypes["t_base_only"] != driverV2.ObjectType_TABLE {
+		t.Errorf("t_base_only type = %q want TABLE", gotTypes["t_base_only"])
+	}
+	if gotTypes["v_user_summary"] != driverV2.ObjectType_VIEW {
+		t.Errorf("v_user_summary type = %q want VIEW", gotTypes["v_user_summary"])
+	}
+}

@@ -303,22 +303,70 @@ func Test_GetDatabaseObjectDDL_UnsupportedTypeShortCircuit(t *testing.T) {
 // 6. Test_GetDatabaseObjectDDL_EmptyObjectList
 // --------------------------------------------------------------------- //
 
-// Test_GetDatabaseObjectDDL_EmptyObjectList verifies that when the caller
-// passes an empty DatabaseObjects slice, the driver returns an empty
-// result for that schema rather than panicking or expanding the list.
+// Test_GetDatabaseObjectDDL_EmptyObjectList verifies the **new contract**
+// for empty DatabaseObjects (compat-RISK-10 secondary fix, Task-TEST-FIX-001):
+//
+//   - When the caller passes an empty DatabaseObjects slice, the driver
+//     now auto-enumerates every TABLE/VIEW in the schema via SHOW TABLES
+//     / SHOW VIEWS (mirroring MySQL driver mysql_ee.go::GetDatabaseObjectDDL
+//     line 380-389).
+//   - This is required because server/compare/database_compare_ee.go
+//     ExecDatabaseCompare never populates DatabaseObjects itself — it only
+//     forwards SchemaName, expecting the driver to discover the rest.
+//
+// The previous contract ("empty list = zero DDLs returned") was incompatible
+// with the controller's actual call shape and would always yield "same".
 func Test_GetDatabaseObjectDDL_EmptyObjectList(t *testing.T) {
 	cases := map[string]struct {
-		schema string
+		schema       string
+		showTables   []string
+		showViews    []string
+		showCreates  map[string]string // object name -> DDL row
+		expectCount  int
 	}{
-		"empty objects in default schema":      {schema: "default"},
-		"empty objects in named schema":        {schema: "sqle_compare_test"},
-		"empty schema name falls back default": {schema: ""},
+		"empty objects in default schema": {
+			schema:     "default",
+			showTables: []string{"t1", "v1"},
+			showViews:  []string{"v1"},
+			showCreates: map[string]string{
+				"t1": "CREATE TABLE `t1` (`id` int)",
+				"v1": "CREATE VIEW `v1` AS SELECT 1",
+			},
+			expectCount: 2,
+		},
+		"empty objects in named schema": {
+			schema:     "sqle_compare_test",
+			showTables: []string{"t_diff_only"},
+			showViews:  []string{},
+			showCreates: map[string]string{
+				"t_diff_only": "CREATE TABLE `t_diff_only` (`a` string)",
+			},
+			expectCount: 1,
+		},
+		"empty schema name falls back default": {
+			schema:     "",
+			showTables: []string{},
+			showViews:  []string{},
+			expectCount: 0,
+		},
 	}
 	for name, tc := range cases {
+		tc := tc
 		t.Run(name, func(t *testing.T) {
+			effective := tc.schema
+			if effective == "" {
+				effective = "default"
+			}
 			runner := newFakeRunner().
-				on("USE default", "OK").
-				on("USE "+tc.schema, "OK")
+				on("USE "+effective, "OK")
+			// Auto-discovery scripts: SHOW TABLES, SHOW VIEWS, then SHOW
+			// CREATE TABLE for every discovered object. fakeRunner.on uses
+			// a variadic rows... param so a slice expands via "...".
+			runner.on("SHOW TABLES", tc.showTables...)
+			runner.on("SHOW VIEWS", tc.showViews...)
+			for obj, ddl := range tc.showCreates {
+				runner.on("SHOW CREATE TABLE "+obj, ddl)
+			}
 			h := &HiveDriverImpl{log: logrus.NewEntry(logrus.New()), runner: runner}
 			results, err := h.GetDatabaseObjectDDL(context.Background(),
 				[]*driverV2.DatabaseSchemaInfo{{
@@ -331,8 +379,8 @@ func Test_GetDatabaseObjectDDL_EmptyObjectList(t *testing.T) {
 			if len(results) != 1 {
 				t.Fatalf("expected 1 schema result, got %d", len(results))
 			}
-			if len(results[0].DatabaseObjectDDLs) != 0 {
-				t.Errorf("expected 0 DDLs for empty list, got %d", len(results[0].DatabaseObjectDDLs))
+			if got := len(results[0].DatabaseObjectDDLs); got != tc.expectCount {
+				t.Errorf("expected %d DDLs from auto-discovery, got %d", tc.expectCount, got)
 			}
 		})
 	}

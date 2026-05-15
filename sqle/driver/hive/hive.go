@@ -387,11 +387,58 @@ const hiveFunctionUnsupportedMsg = "Hive FUNCTION 暂未支持（计划第二批
 // SchemaName (design §3.2.1 "USE <SchemaName>; schema 为空走默认 default").
 const defaultHiveSchema = "default"
 
+// listAllSchemaObjects enumerates every TABLE and VIEW in the current
+// (already-USEd) Hive schema. It mirrors MySQL driver's "default to full
+// schema" behaviour for callers (controllers / server) that pass an
+// objInfo with an empty DatabaseObjects slice — the contract is that the
+// driver fills in the discovery itself.
+//
+// Discovery strategy: `SHOW VIEWS` first to learn which names are views,
+// then `SHOW TABLES` for the union of TABLE+VIEW, and finally subtract
+// the view names from the table list. The runner is expected to be
+// pointing at the desired schema already (caller did USE <schema>).
+//
+// Note: SHOW VIEWS is not available before Hive 2.2; if it fails (any
+// error, including ROW-ERR via fetchAllRows convention) we fall back to
+// "all names are TABLE", which is a tolerable degradation for the
+// structure-comparison use case — both sides degrade identically and
+// SHOW CREATE TABLE works for VIEWs in Hive anyway.
+func listAllSchemaObjects(ctx context.Context, runner hiveQueryRunner) ([]*driverV2.DatabaseObject, error) {
+	tableNames, err := runner.runSingleStringQuery(ctx, "SHOW TABLES")
+	if err != nil {
+		return nil, fmt.Errorf("show tables: %v", err)
+	}
+	viewSet := make(map[string]struct{})
+	if viewNames, verr := runner.runSingleStringQuery(ctx, "SHOW VIEWS"); verr == nil {
+		for _, v := range viewNames {
+			viewSet[v] = struct{}{}
+		}
+	}
+	out := make([]*driverV2.DatabaseObject, 0, len(tableNames))
+	for _, name := range tableNames {
+		if name == "" {
+			continue
+		}
+		objType := driverV2.ObjectType_TABLE
+		if _, isView := viewSet[name]; isView {
+			objType = driverV2.ObjectType_VIEW
+		}
+		out = append(out, &driverV2.DatabaseObject{
+			ObjectName: name,
+			ObjectType: objType,
+		})
+	}
+	return out, nil
+}
+
 // GetDatabaseObjectDDL fetches the CREATE statement for each requested
 // (schema, object) pair. It implements the contract described in
 // docs/spec/design.md §3.2.1:
 //
 //   - For each schema, first `USE <SchemaName>` (or "default" if empty).
+//   - When the caller passes an empty DatabaseObjects slice, the driver
+//     auto-discovers every TABLE/VIEW in the schema via
+//     listAllSchemaObjects, mirroring the MySQL driver's behaviour.
 //   - TABLE      -> SHOW CREATE TABLE <name>
 //   - VIEW       -> SHOW CREATE TABLE <name>  (Hive views reuse this command)
 //   - FUNCTION   -> placeholder DDL ""; the call still returns the result row
@@ -423,6 +470,19 @@ func (h *HiveDriverImpl) GetDatabaseObjectDDL(ctx context.Context, objInfos []*d
 		// resolve to this database (design §3.2.1).
 		if _, err := h.runner.runSingleStringQuery(ctx, fmt.Sprintf("USE %s", schemaName)); err != nil {
 			return nil, fmt.Errorf("use schema %q failed: %v", schemaName, err)
+		}
+
+		// Default discovery: when the caller did not specify which objects
+		// to inspect, enumerate every TABLE/VIEW in the current schema.
+		// This mirrors mysql/mysql_ee.go::GetDatabaseObjectDDL line 380-389
+		// and is what server/compare/database_compare_ee.go ExecDatabaseCompare
+		// relies on (it never populates DatabaseObjects itself).
+		if len(objInfo.DatabaseObjects) == 0 {
+			discovered, derr := listAllSchemaObjects(ctx, h.runner)
+			if derr != nil {
+				return nil, fmt.Errorf("enumerate schema %q failed: %v", schemaName, derr)
+			}
+			objInfo.DatabaseObjects = discovered
 		}
 
 		dbDDLs := make([]*driverV2.DatabaseObjectDDL, 0, len(objInfo.DatabaseObjects))
@@ -562,10 +622,47 @@ func (h *HiveDriverImpl) GetDatabaseDiffModifySQL(ctx context.Context, calibrate
 			return nil, fmt.Errorf("use compared schema %q: %v", comparedSchemaName, err)
 		}
 
+		// Default discovery (mirrors GetDatabaseObjectDDL): when the caller
+		// passes an empty DatabaseObjects slice, take the union of objects
+		// in both schemas so DROP / CREATE diffs for "only-in-base" and
+		// "only-in-compared" tables surface.
+		objs := objInfo.DatabaseObjects
+		if len(objs) == 0 {
+			baseObjs, berr := listAllSchemaObjects(ctx, h.runner)
+			if berr != nil {
+				return nil, fmt.Errorf("enumerate base schema %q: %v", baseSchemaName, berr)
+			}
+			comparedObjs, cerr := listAllSchemaObjects(ctx, compareRunner)
+			if cerr != nil {
+				return nil, fmt.Errorf("enumerate compared schema %q: %v", comparedSchemaName, cerr)
+			}
+			seen := make(map[string]struct{})
+			unionObjs := make([]*driverV2.DatabaseObject, 0, len(baseObjs)+len(comparedObjs))
+			for _, o := range append(baseObjs, comparedObjs...) {
+				key := o.ObjectType + "/" + o.ObjectName
+				if _, ok := seen[key]; ok {
+					continue
+				}
+				seen[key] = struct{}{}
+				unionObjs = append(unionObjs, o)
+			}
+			objs = unionObjs
+			// USE again on the base side after the enumeration round-trip
+			// so the SHOW CREATE TABLE calls below resolve in the right db.
+			if _, err := h.runner.runSingleStringQuery(ctx,
+				fmt.Sprintf("USE %s", baseSchemaName)); err != nil {
+				return nil, fmt.Errorf("re-use base schema %q: %v", baseSchemaName, err)
+			}
+			if _, err := compareRunner.runSingleStringQuery(ctx,
+				fmt.Sprintf("USE %s", comparedSchemaName)); err != nil {
+				return nil, fmt.Errorf("re-use compared schema %q: %v", comparedSchemaName, err)
+			}
+		}
+
 		sqls := make([]string, 0)
 		sqls = append(sqls, fmt.Sprintf("USE %s;", comparedSchemaName))
 
-		for _, obj := range objInfo.DatabaseObjects {
+		for _, obj := range objs {
 			switch obj.ObjectType {
 			case driverV2.ObjectType_TABLE:
 				stmts, terr := diffTableObject(ctx, h.runner, compareRunner, obj.ObjectName)
