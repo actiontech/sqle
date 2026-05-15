@@ -31,6 +31,13 @@ else
     echo -e "\n # sqle-init; DO NOT EDIT" >> ${CONF}
 fi
 
+# 兜底：确保 sqle-gaussdb-plugin 二进制存在。
+# 正常情况下由 RPM spec 在 %install 阶段从 sqle-pg-plugin 拷贝得到；
+# 此处仅为旧版 RPM / 用户自定义 plugins 目录时的兜底，避免 GaussDB driver 加载缺失。
+if [ -f "${SQLE_BASE}/plugins/sqle-pg-plugin" ] && [ ! -e "${SQLE_BASE}/plugins/sqle-gaussdb-plugin" ]; then
+    cp "${SQLE_BASE}/plugins/sqle-pg-plugin" "${SQLE_BASE}/plugins/sqle-gaussdb-plugin"
+fi
+
 echo "start sqle server..."
 cd ${SQLE_BASE}
 # 启动dms
