@@ -42,6 +42,11 @@ type HiveDriverImpl struct {
 	// In production it is set to gohiveQueryRunner wrapping h.conn; in unit
 	// tests it can be replaced with a fake to avoid network dependency.
 	runner hiveQueryRunner
+	// compareRunnerFactory builds a query runner for the calibrated
+	// (compared) DSN side of GetDatabaseDiffModifySQL. In production it
+	// opens a real gohive connection. Unit tests inject a fake to avoid
+	// requiring a Hive server.
+	compareRunnerFactory func(dsn *driverV2.DSN) (hiveQueryRunner, func(), error)
 }
 
 func (p *PluginProcessor) GetDriverMetas() (*driverV2.DriverMetas, error) {
@@ -71,7 +76,21 @@ func (p *PluginProcessor) Open(l *logrus.Entry, cfg *driverV2.Config) (sqleDrive
 		impl.conn = conn
 		impl.runner = &gohiveQueryRunner{conn: conn}
 	}
+	// Default compareRunnerFactory opens a fresh gohive connection to the
+	// calibratedDSN. Unit tests override this with a fake.
+	impl.compareRunnerFactory = defaultCompareRunnerFactory
 	return impl, nil
+}
+
+// defaultCompareRunnerFactory opens a real gohive connection to the
+// calibrated DSN and returns a runner + close hook.
+func defaultCompareRunnerFactory(dsn *driverV2.DSN) (hiveQueryRunner, func(), error) {
+	conn, err := newHiveConnection(dsn)
+	if err != nil {
+		return nil, func() {}, fmt.Errorf("connect to compared Hive: %v", err)
+	}
+	closer := func() { _ = conn.Close() }
+	return &gohiveQueryRunner{conn: conn}, closer, nil
 }
 
 // gohiveQueryRunner is the production hiveQueryRunner backed by *gohive.Connection.
@@ -413,8 +432,237 @@ func (h *HiveDriverImpl) GetDatabaseObjectDDL(ctx context.Context, objInfos []*d
 	return results, nil
 }
 
+// WARNING comments emitted at the head of TABLE / VIEW DROP+CREATE SQL
+// segments. Both Chinese and English lines are required by design §3.5 and
+// are consumed by dms-ui-ee ModifiedSqlDrawer for top-banner detection.
+const (
+	hiveWarningTableDropCreate = "-- WARNING: data loss risk; table will be dropped and recreated.\n" +
+		"-- 警告: 数据将丢失；表将被删除并重建。\n"
+	hiveWarningViewDropCreate = "-- WARNING: view will be recreated; downstream queries depending on this view may be affected.\n" +
+		"-- 警告: 视图将被重建；依赖该视图的下游查询可能受影响。\n"
+)
+
+// GetDatabaseDiffModifySQL generates the variant SQL needed to reconcile
+// the calibrated (compared) side of a Hive instance so its objects match
+// the base side (this driver's connection). The full strategy matrix is
+// in docs/spec/design.md §3.4 and §3.2.2.
+//
+// Per-object behavior:
+//
+//   - TABLE only in base, not in compared -> CREATE TABLE ...      (no WARNING)
+//   - TABLE only in compared, not in base -> DROP TABLE IF EXISTS  (no WARNING)
+//   - TABLE on both sides, ALTER-able diff -> ALTER TABLE sequence (no WARNING)
+//   - TABLE on both sides, fallback diff   -> DROP+CREATE          (WARNING)
+//   - VIEW (any diff, any direction)       -> DROP+CREATE          (WARNING)
+//   - FUNCTION                             -> return Chinese error; skip the
+//     entire schema's result (compat-RISK-9)
+//   - PROCEDURE / TRIGGER / EVENT          -> short-circuit, skip silently
+//     with a WARN log (compat-RISK-4)
+//
+// Each non-empty SchemaName produces a result entry with `USE <schema>;`
+// prefixed to the SQL block.
 func (h *HiveDriverImpl) GetDatabaseDiffModifySQL(ctx context.Context, calibratedDSN *driverV2.DSN, objInfos []*driverV2.DatabasCompareSchemaInfo) ([]*driverV2.DatabaseDiffModifySQLResult, error) {
-	return nil, fmt.Errorf("hive plugin does not support GetDatabaseDiffModifySQL")
+	if h.runner == nil {
+		return nil, fmt.Errorf("hive base connection is not initialized")
+	}
+	if h.compareRunnerFactory == nil {
+		return nil, fmt.Errorf("hive compareRunnerFactory is not initialized")
+	}
+	// Open compare-side runner once for the whole call; close at the end.
+	compareRunner, closeCompare, err := h.compareRunnerFactory(calibratedDSN)
+	if err != nil {
+		return nil, err
+	}
+	defer closeCompare()
+
+	results := make([]*driverV2.DatabaseDiffModifySQLResult, 0, len(objInfos))
+	for _, objInfo := range objInfos {
+		baseSchemaName := objInfo.BaseSchemaName
+		if baseSchemaName == "" {
+			baseSchemaName = defaultHiveSchema
+		}
+		comparedSchemaName := objInfo.ComparedSchemaName
+		if comparedSchemaName == "" {
+			comparedSchemaName = defaultHiveSchema
+		}
+
+		// USE on base side first so subsequent SHOW CREATE TABLE resolves.
+		if _, err := h.runner.runSingleStringQuery(ctx,
+			fmt.Sprintf("USE %s", baseSchemaName)); err != nil {
+			return nil, fmt.Errorf("use base schema %q: %v", baseSchemaName, err)
+		}
+		if _, err := compareRunner.runSingleStringQuery(ctx,
+			fmt.Sprintf("USE %s", comparedSchemaName)); err != nil {
+			return nil, fmt.Errorf("use compared schema %q: %v", comparedSchemaName, err)
+		}
+
+		sqls := make([]string, 0)
+		sqls = append(sqls, fmt.Sprintf("USE %s;", comparedSchemaName))
+
+		for _, obj := range objInfo.DatabaseObjects {
+			switch obj.ObjectType {
+			case driverV2.ObjectType_TABLE:
+				stmts, terr := diffTableObject(ctx, h.runner, compareRunner, obj.ObjectName)
+				if terr != nil {
+					return nil, terr
+				}
+				sqls = append(sqls, stmts...)
+			case driverV2.ObjectType_VIEW:
+				stmts, verr := diffViewObject(ctx, h.runner, compareRunner, obj.ObjectName)
+				if verr != nil {
+					return nil, verr
+				}
+				sqls = append(sqls, stmts...)
+			case driverV2.ObjectType_FUNCTION:
+				// Compat-RISK-9: FUNCTION is planned for the second batch.
+				if h.log != nil {
+					h.log.WithField("object", obj.ObjectName).
+						Warnf("hive driver: %s", hiveFunctionUnsupportedMsg)
+				}
+				return results, fmt.Errorf("%s", hiveFunctionUnsupportedMsg)
+			case driverV2.ObjectType_PROCEDURE,
+				driverV2.ObjectType_TRIGGER,
+				driverV2.ObjectType_EVENT:
+				// Compat-RISK-4: short-circuit physically unsupported types.
+				if h.log != nil {
+					h.log.WithField("object", obj.ObjectName).
+						WithField("objectType", obj.ObjectType).
+						Warn("hive driver: object type not supported, skipped")
+				}
+				continue
+			default:
+				if h.log != nil {
+					h.log.WithField("object", obj.ObjectName).
+						WithField("objectType", obj.ObjectType).
+						Warn("hive driver: unknown object type, skipped")
+				}
+				continue
+			}
+		}
+
+		results = append(results, &driverV2.DatabaseDiffModifySQLResult{
+			SchemaName: comparedSchemaName,
+			ModifySQLs: sqls,
+		})
+	}
+	return results, nil
+}
+
+// fetchTableDDL runs SHOW CREATE TABLE for the given object and returns the
+// concatenated DDL string. An empty string + nil error indicates the table
+// does not exist on that side; any other error is a real failure.
+func fetchTableDDL(ctx context.Context, runner hiveQueryRunner, objectName string) (string, bool, error) {
+	rows, err := runner.runSingleStringQuery(ctx,
+		fmt.Sprintf("SHOW CREATE TABLE %s", objectName))
+	if err != nil {
+		// Heuristic: Hive returns a SemanticException when the object is
+		// missing. We surface it as "not found" so the caller can decide
+		// the direction (only-in-base vs only-in-compared). Other errors
+		// could be propagated by the caller but for diff purposes we treat
+		// any failure as "not found", matching the MySQL impl pattern.
+		return "", false, nil
+	}
+	if len(rows) == 0 {
+		return "", false, nil
+	}
+	return strings.Join(rows, "\n"), true, nil
+}
+
+// diffTableObject generates the variant SQL for a single TABLE object.
+// It captures DDL from both sides and dispatches to diffTableDDL for the
+// detailed ALTER-vs-DROP+CREATE matrix decision.
+func diffTableObject(ctx context.Context, baseRunner, compareRunner hiveQueryRunner, objectName string) ([]string, error) {
+	baseDDL, baseExists, err := fetchTableDDL(ctx, baseRunner, objectName)
+	if err != nil {
+		return nil, err
+	}
+	compareDDL, compareExists, err := fetchTableDDL(ctx, compareRunner, objectName)
+	if err != nil {
+		return nil, err
+	}
+
+	switch {
+	case baseExists && !compareExists:
+		// Only on base side -> create on compared side (no WARNING).
+		return []string{ensureSemicolon(baseDDL)}, nil
+	case !baseExists && compareExists:
+		// Only on compared side -> drop from compared (no WARNING).
+		return []string{fmt.Sprintf("DROP TABLE IF EXISTS %s;", objectName)}, nil
+	case !baseExists && !compareExists:
+		// Neither side has it; nothing to do.
+		return nil, nil
+	}
+
+	// Both sides exist: decide ALTER vs DROP+CREATE.
+	alters, fallback, err := diffTableDDL(baseDDL, compareDDL)
+	if err != nil {
+		return nil, fmt.Errorf("diffTableDDL %q: %v", objectName, err)
+	}
+	if fallback {
+		// DROP+CREATE with WARNING header (compat-RISK-6).
+		return []string{
+			hiveWarningTableDropCreate +
+				fmt.Sprintf("DROP TABLE IF EXISTS %s;\n", objectName) +
+				ensureSemicolon(baseDDL),
+		}, nil
+	}
+	if len(alters) == 0 {
+		// No structural difference detected.
+		return nil, nil
+	}
+	return alters, nil
+}
+
+// diffViewObject generates the variant SQL for a single VIEW object.
+// Per design §3.4 / D3 decision: any view difference produces a unified
+// DROP+CREATE with the view-recreated WARNING header.
+func diffViewObject(ctx context.Context, baseRunner, compareRunner hiveQueryRunner, objectName string) ([]string, error) {
+	// Hive views use SHOW CREATE TABLE.
+	baseDDL, baseExists, err := fetchTableDDL(ctx, baseRunner, objectName)
+	if err != nil {
+		return nil, err
+	}
+	compareDDL, compareExists, err := fetchTableDDL(ctx, compareRunner, objectName)
+	if err != nil {
+		return nil, err
+	}
+
+	switch {
+	case baseExists && !compareExists:
+		return []string{ensureSemicolon(baseDDL)}, nil
+	case !baseExists && compareExists:
+		return []string{fmt.Sprintf("DROP VIEW IF EXISTS %s;", objectName)}, nil
+	case !baseExists && !compareExists:
+		return nil, nil
+	}
+
+	if normalizeWhitespace(baseDDL) == normalizeWhitespace(compareDDL) {
+		return nil, nil
+	}
+	// Any difference triggers DROP+CREATE with the VIEW-specific WARNING
+	// (compat-RISK-6, design §3.4 unified rule).
+	return []string{
+		hiveWarningViewDropCreate +
+			fmt.Sprintf("DROP VIEW IF EXISTS %s;\n", objectName) +
+			ensureSemicolon(baseDDL),
+	}, nil
+}
+
+// ensureSemicolon appends a trailing semicolon if the DDL string does not
+// already end with one (ignoring trailing whitespace).
+func ensureSemicolon(s string) string {
+	trimmed := strings.TrimRight(s, " \t\n\r")
+	if strings.HasSuffix(trimmed, ";") {
+		return trimmed + "\n"
+	}
+	return trimmed + ";\n"
+}
+
+// normalizeWhitespace collapses runs of whitespace to a single space so
+// that view DDL comparisons are not sensitive to formatting differences
+// (HiveServer2 sometimes emits extra newlines).
+func normalizeWhitespace(s string) string {
+	return strings.Join(strings.Fields(s), " ")
 }
 
 func (h *HiveDriverImpl) Backup(ctx context.Context, backupStrategy string, sql string, backupMaxRows uint64) ([]string, string, error) {
