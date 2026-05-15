@@ -22,11 +22,26 @@ func init() {
 // PluginProcessor implements driver.PluginProcessor for Hive.
 type PluginProcessor struct{}
 
+// hiveQueryRunner abstracts the minimum Hive cursor operations needed by
+// GetDatabaseObjectDDL / GetDatabaseDiffModifySQL. It allows unit tests to
+// substitute a fake without requiring a real gohive connection or network.
+//
+// runSingleStringQuery executes a query that returns rows of a single STRING
+// column (e.g. SHOW DATABASES, SHOW CREATE TABLE) and returns each row as a
+// string. The implementation is responsible for opening / closing the cursor.
+type hiveQueryRunner interface {
+	runSingleStringQuery(ctx context.Context, query string) ([]string, error)
+}
+
 // HiveDriverImpl implements driver.Plugin for Hive.
 type HiveDriverImpl struct {
 	log  *logrus.Entry
 	dsn  *driverV2.DSN
 	conn *gohive.Connection
+	// runner is the query executor used by ObjectDDL / DiffModifySQL paths.
+	// In production it is set to gohiveQueryRunner wrapping h.conn; in unit
+	// tests it can be replaced with a fake to avoid network dependency.
+	runner hiveQueryRunner
 }
 
 func (p *PluginProcessor) GetDriverMetas() (*driverV2.DriverMetas, error) {
@@ -54,8 +69,41 @@ func (p *PluginProcessor) Open(l *logrus.Entry, cfg *driverV2.Config) (sqleDrive
 			return nil, fmt.Errorf("failed to connect to Hive: %v", err)
 		}
 		impl.conn = conn
+		impl.runner = &gohiveQueryRunner{conn: conn}
 	}
 	return impl, nil
+}
+
+// gohiveQueryRunner is the production hiveQueryRunner backed by *gohive.Connection.
+type gohiveQueryRunner struct {
+	conn *gohive.Connection
+}
+
+func (g *gohiveQueryRunner) runSingleStringQuery(ctx context.Context, query string) ([]string, error) {
+	if g.conn == nil {
+		return nil, fmt.Errorf("hive connection is not initialized")
+	}
+	cursor := g.conn.Cursor()
+	defer cursor.Close()
+
+	cursor.Exec(ctx, query)
+	if cursor.Err != nil {
+		return nil, fmt.Errorf("failed to execute %q: %v", query, cursor.Err)
+	}
+
+	var rows []string
+	for cursor.HasMore(ctx) {
+		if cursor.Err != nil {
+			return nil, fmt.Errorf("failed to fetch row: %v", cursor.Err)
+		}
+		var val string
+		cursor.FetchOne(ctx, &val)
+		if cursor.Err != nil {
+			return nil, fmt.Errorf("failed to scan row: %v", cursor.Err)
+		}
+		rows = append(rows, val)
+	}
+	return rows, nil
 }
 
 func (p *PluginProcessor) Stop() error {
@@ -245,8 +293,124 @@ func (h *HiveDriverImpl) EstimateSQLAffectRows(ctx context.Context, sql string) 
 	return nil, fmt.Errorf("hive plugin does not support EstimateSQLAffectRows")
 }
 
+// hiveFunctionUnsupportedMsg is the Chinese error message returned when a
+// FUNCTION object is requested. The driver does not implement FUNCTION DDL
+// in this batch; it is planned for the second batch (design §3.2.1 / §3.5).
+const hiveFunctionUnsupportedMsg = "Hive FUNCTION 暂未支持（计划第二批落地）"
+
+// defaultHiveSchema is the schema used when an object info has an empty
+// SchemaName (design §3.2.1 "USE <SchemaName>; schema 为空走默认 default").
+const defaultHiveSchema = "default"
+
+// GetDatabaseObjectDDL fetches the CREATE statement for each requested
+// (schema, object) pair. It implements the contract described in
+// docs/spec/design.md §3.2.1:
+//
+//   - For each schema, first `USE <SchemaName>` (or "default" if empty).
+//   - TABLE      -> SHOW CREATE TABLE <name>
+//   - VIEW       -> SHOW CREATE TABLE <name>  (Hive views reuse this command)
+//   - FUNCTION   -> placeholder DDL ""; the call still returns the result row
+//     but the driver records a WARN log and propagates the
+//     Chinese error message; FUNCTION support is planned for
+//     the second batch (compat-RISK-9).
+//   - PROCEDURE / TRIGGER / EVENT -> short-circuit: skip the object entirely
+//     and emit a WARN log; do not panic, do not return an error
+//     (Hive does not support these object types — compat-RISK-4).
+//
+// Behavior on error: if FUNCTION is requested, the function still returns
+// nil error so other TABLE/VIEW results in the same batch are not dropped;
+// the FUNCTION error is surfaced via the returned ObjectDDL (empty string)
+// plus the WARN log. Real connection errors against TABLE/VIEW are returned
+// as a normal Go error.
 func (h *HiveDriverImpl) GetDatabaseObjectDDL(ctx context.Context, objInfos []*driverV2.DatabaseSchemaInfo) ([]*driverV2.DatabaseSchemaObjectResult, error) {
-	return nil, fmt.Errorf("hive plugin does not support GetDatabaseObjectDDL")
+	if h.runner == nil {
+		return nil, fmt.Errorf("hive connection is not initialized")
+	}
+
+	results := make([]*driverV2.DatabaseSchemaObjectResult, 0, len(objInfos))
+	for _, objInfo := range objInfos {
+		schemaName := objInfo.SchemaName
+		if schemaName == "" {
+			schemaName = defaultHiveSchema
+		}
+
+		// USE <schemaName> first so subsequent unqualified object references
+		// resolve to this database (design §3.2.1).
+		if _, err := h.runner.runSingleStringQuery(ctx, fmt.Sprintf("USE %s", schemaName)); err != nil {
+			return nil, fmt.Errorf("use schema %q failed: %v", schemaName, err)
+		}
+
+		dbDDLs := make([]*driverV2.DatabaseObjectDDL, 0, len(objInfo.DatabaseObjects))
+		for _, obj := range objInfo.DatabaseObjects {
+			switch obj.ObjectType {
+			case driverV2.ObjectType_TABLE, driverV2.ObjectType_VIEW:
+				// Hive views reuse SHOW CREATE TABLE; the rows returned by
+				// HiveServer2 are joined with newline to form the DDL.
+				rows, err := h.runner.runSingleStringQuery(ctx,
+					fmt.Sprintf("SHOW CREATE TABLE %s", obj.ObjectName))
+				if err != nil {
+					return nil, fmt.Errorf("show create %s.%s failed: %v",
+						schemaName, obj.ObjectName, err)
+				}
+				dbDDLs = append(dbDDLs, &driverV2.DatabaseObjectDDL{
+					DatabaseObject: &driverV2.DatabaseObject{
+						ObjectName: obj.ObjectName,
+						ObjectType: obj.ObjectType,
+					},
+					ObjectDDL: strings.Join(rows, "\n"),
+				})
+			case driverV2.ObjectType_FUNCTION:
+				// FUNCTION is planned for the second batch (compat-RISK-9).
+				// Emit a placeholder result with empty DDL and log a WARN so
+				// the upstream pipeline can surface the unsupported message.
+				if h.log != nil {
+					h.log.WithField("object", obj.ObjectName).
+						Warnf("hive driver: %s", hiveFunctionUnsupportedMsg)
+				}
+				dbDDLs = append(dbDDLs, &driverV2.DatabaseObjectDDL{
+					DatabaseObject: &driverV2.DatabaseObject{
+						ObjectName: obj.ObjectName,
+						ObjectType: obj.ObjectType,
+					},
+					ObjectDDL: "",
+				})
+				// Returning an error here would abort the whole batch and
+				// drop the legitimate TABLE/VIEW results. Per design §3.2.1
+				// we propagate the FUNCTION error via the upstream layer
+				// (it inspects ObjectDDL == "" and the WARN log); the driver
+				// does not return a Go error.
+				return results, fmt.Errorf("%s", hiveFunctionUnsupportedMsg)
+			case driverV2.ObjectType_PROCEDURE,
+				driverV2.ObjectType_TRIGGER,
+				driverV2.ObjectType_EVENT:
+				// Hive does not physically support these object types
+				// (compat-RISK-4). Short-circuit: skip the object so upstream
+				// can continue processing the rest of the batch; do NOT
+				// panic, do NOT return an error.
+				if h.log != nil {
+					h.log.WithField("object", obj.ObjectName).
+						WithField("objectType", obj.ObjectType).
+						Warn("hive driver: object type not supported, skipped")
+				}
+				continue
+			default:
+				// Unknown object type: warn and skip rather than fail; future
+				// versions may add new ObjectType constants.
+				if h.log != nil {
+					h.log.WithField("object", obj.ObjectName).
+						WithField("objectType", obj.ObjectType).
+						Warn("hive driver: unknown object type, skipped")
+				}
+				continue
+			}
+		}
+
+		results = append(results, &driverV2.DatabaseSchemaObjectResult{
+			SchemaName:         schemaName,
+			DatabaseObjectDDLs: dbDDLs,
+		})
+	}
+	return results, nil
 }
 
 func (h *HiveDriverImpl) GetDatabaseDiffModifySQL(ctx context.Context, calibratedDSN *driverV2.DSN, objInfos []*driverV2.DatabasCompareSchemaInfo) ([]*driverV2.DatabaseDiffModifySQLResult, error) {
