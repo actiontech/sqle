@@ -229,34 +229,39 @@ func Test_GetDatabaseObjectDDL_ViewHappy(t *testing.T) {
 // 4. Test_GetDatabaseObjectDDL_FunctionRejected
 // --------------------------------------------------------------------- //
 
-// Test_GetDatabaseObjectDDL_FunctionRejected verifies compat-RISK-9:
-// FUNCTION objects produce the Chinese error message and do NOT crash.
+// Test_GetDatabaseObjectDDL_FunctionRejected verifies compat-RISK-9 after
+// the FIX-002 driver alignment (TC-HIVE-015): FUNCTION objects are silently
+// skipped (no Go error, no placeholder DDL entry), matching the behaviour
+// of the PROCEDURE/TRIGGER/EVENT short-circuit. The Chinese error message
+// is emitted via the WARN log only — never as a returned Go error.
 func Test_GetDatabaseObjectDDL_FunctionRejected(t *testing.T) {
 	cases := map[string]struct {
-		object  string
-		wantSub string
+		object string
 	}{
 		"function planned for batch 2": {
-			object:  "my_udf",
-			wantSub: "Hive FUNCTION 暂未支持（计划第二批落地）",
+			object: "my_udf",
 		},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 			runner := newFakeRunner().on("USE default", "OK")
 			h := &HiveDriverImpl{log: logrus.NewEntry(logrus.New()), runner: runner}
-			_, err := h.GetDatabaseObjectDDL(context.Background(),
+			results, err := h.GetDatabaseObjectDDL(context.Background(),
 				[]*driverV2.DatabaseSchemaInfo{{
 					SchemaName: "default",
 					DatabaseObjects: []*driverV2.DatabaseObject{
 						{ObjectName: tc.object, ObjectType: driverV2.ObjectType_FUNCTION},
 					},
 				}})
-			if err == nil {
-				t.Fatal("expected error for FUNCTION object, got nil")
+			if err != nil {
+				t.Fatalf("expected nil error for FUNCTION skip, got %v", err)
 			}
-			if !strings.Contains(err.Error(), tc.wantSub) {
-				t.Errorf("error %q does not contain Chinese message %q", err.Error(), tc.wantSub)
+			if len(results) != 1 {
+				t.Fatalf("expected 1 schema result entry, got %d", len(results))
+			}
+			if got := len(results[0].DatabaseObjectDDLs); got != 0 {
+				t.Errorf("expected 0 DDLs (FUNCTION skipped) but got %d entries: %#v",
+					got, results[0].DatabaseObjectDDLs)
 			}
 		})
 	}
@@ -777,17 +782,19 @@ func Test_GetDatabaseDiffModifySQL_ViewDiff_AlwaysDropCreate(t *testing.T) {
 // 14. Test_GetDatabaseDiffModifySQL_FunctionRejected
 // --------------------------------------------------------------------- //
 
-// Test_GetDatabaseDiffModifySQL_FunctionRejected: design §3.2.2 / §3.4
-// row "FUNCTION / 第二批". Driver returns Chinese error and stops the
-// schema's processing (compat-RISK-9).
+// Test_GetDatabaseDiffModifySQL_FunctionRejected: design §3.2.2 line 239
+// row "FUNCTION / 第二批". After FIX-002 (TC-HIVE-015 / 016): the driver
+// silently skips the FUNCTION object — no Go error, no FUNCTION entry in
+// the SQL block. Only the leading `USE compared_schema;` header remains;
+// upstream layers can detect "all objects unsupported" by the empty body
+// (compat-RISK-9 verified; aligned with PROCEDURE/TRIGGER/EVENT
+// short-circuit at line 824).
 func Test_GetDatabaseDiffModifySQL_FunctionRejected(t *testing.T) {
 	cases := map[string]struct {
-		object  string
-		wantSub string
+		object string
 	}{
-		"function returns chinese error": {
-			object:  "my_udf",
-			wantSub: "Hive FUNCTION 暂未支持（计划第二批落地）",
+		"function returns no error and skips silently": {
+			object: "my_udf",
 		},
 	}
 	for name, tc := range cases {
@@ -795,7 +802,7 @@ func Test_GetDatabaseDiffModifySQL_FunctionRejected(t *testing.T) {
 			base := newFakeRunner().on("USE base_schema", "OK")
 			compared := newFakeRunner().on("USE compared_schema", "OK")
 			h := newDriverWithRunners(base, compared)
-			_, err := h.GetDatabaseDiffModifySQL(context.Background(),
+			results, err := h.GetDatabaseDiffModifySQL(context.Background(),
 				&driverV2.DSN{},
 				[]*driverV2.DatabasCompareSchemaInfo{{
 					BaseSchemaName:     "base_schema",
@@ -804,13 +811,138 @@ func Test_GetDatabaseDiffModifySQL_FunctionRejected(t *testing.T) {
 						{ObjectName: tc.object, ObjectType: driverV2.ObjectType_FUNCTION},
 					},
 				}})
-			if err == nil {
-				t.Fatal("expected error for FUNCTION object, got nil")
+			if err != nil {
+				t.Fatalf("expected nil error for FUNCTION skip, got %v", err)
 			}
-			if !strings.Contains(err.Error(), tc.wantSub) {
-				t.Errorf("error %q does not contain Chinese message %q", err.Error(), tc.wantSub)
+			if len(results) != 1 {
+				t.Fatalf("expected 1 schema result, got %d", len(results))
+			}
+			full := strings.Join(results[0].ModifySQLs, "\n")
+			// Only the USE header should be present; no FUNCTION-related output.
+			if !strings.Contains(full, "USE compared_schema;") {
+				t.Errorf("expected USE compared_schema; header in block; got=%q", full)
+			}
+			if strings.Contains(full, tc.object) {
+				t.Errorf("expected FUNCTION object %q to be skipped from results; got block=%q",
+					tc.object, full)
+			}
+			if strings.Contains(full, "DROP") ||
+				strings.Contains(full, "CREATE") ||
+				strings.Contains(full, "ALTER") {
+				t.Errorf("expected FUNCTION to produce no DDL; got block=%q", full)
 			}
 		})
+	}
+}
+
+// --------------------------------------------------------------------- //
+// 14b. Test_GetDatabaseDiffModifySQL_MixedFunctionAndTable
+// --------------------------------------------------------------------- //
+
+// Test_GetDatabaseDiffModifySQL_MixedFunctionAndTable: TC-HIVE-016 (compat-
+// RISK-9). Verifies that a mixed batch containing both a TABLE and a
+// FUNCTION lets the TABLE main path produce its ALTER SQL while the
+// FUNCTION is silently skipped. Before FIX-002 the driver returned a hard
+// error at the FUNCTION branch, dropping the TABLE result entirely; this
+// test pins the fixed behaviour.
+func Test_GetDatabaseDiffModifySQL_MixedFunctionAndTable(t *testing.T) {
+	cases := map[string]struct {
+		baseDDL string
+		compDDL string
+	}{
+		"int to bigint widening alongside FUNCTION": {
+			baseDDL: "CREATE TABLE t_alter_widen (amt BIGINT) STORED AS ORC",
+			compDDL: "CREATE TABLE t_alter_widen (amt INT) STORED AS ORC",
+		},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			base := newFakeRunner().
+				on("USE base_schema", "OK").
+				on("SHOW CREATE TABLE t_alter_widen", tc.baseDDL)
+			compared := newFakeRunner().
+				on("USE compared_schema", "OK").
+				on("SHOW CREATE TABLE t_alter_widen", tc.compDDL)
+			h := newDriverWithRunners(base, compared)
+			results, err := h.GetDatabaseDiffModifySQL(context.Background(),
+				&driverV2.DSN{},
+				[]*driverV2.DatabasCompareSchemaInfo{{
+					BaseSchemaName:     "base_schema",
+					ComparedSchemaName: "compared_schema",
+					DatabaseObjects: []*driverV2.DatabaseObject{
+						{ObjectName: "t_alter_widen", ObjectType: driverV2.ObjectType_TABLE},
+						{ObjectName: "fake_fn", ObjectType: driverV2.ObjectType_FUNCTION},
+					},
+				}})
+			if err != nil {
+				t.Fatalf("expected nil error for mixed batch, got %v", err)
+			}
+			if len(results) != 1 {
+				t.Fatalf("expected 1 schema result, got %d", len(results))
+			}
+			full := strings.Join(results[0].ModifySQLs, "\n")
+			// TABLE main path: ALTER produced.
+			if !strings.Contains(full, "ALTER TABLE t_alter_widen CHANGE COLUMN amt amt BIGINT") {
+				t.Errorf("expected TABLE ALTER CHANGE COLUMN amt amt BIGINT; got=%q", full)
+			}
+			// FUNCTION must be skipped — no fake_fn anywhere in the block.
+			if strings.Contains(full, "fake_fn") {
+				t.Errorf("expected FUNCTION fake_fn to be skipped; got block=%q", full)
+			}
+			// No WARNING / DROP fallback for a compatible widen.
+			if strings.Contains(full, "WARNING") {
+				t.Errorf("compatible widening should not emit WARNING; got=%q", full)
+			}
+			if strings.Contains(full, "DROP TABLE") {
+				t.Errorf("compatible widening must not fall back to DROP+CREATE; got=%q", full)
+			}
+			// Header preserved.
+			if !strings.Contains(full, "USE compared_schema;") {
+				t.Errorf("expected USE compared_schema; header in block; got=%q", full)
+			}
+		})
+	}
+}
+
+// --------------------------------------------------------------------- //
+// 14c. Test_GetDatabaseObjectDDL_MixedFunctionAndTable
+// --------------------------------------------------------------------- //
+
+// Test_GetDatabaseObjectDDL_MixedFunctionAndTable: TC-HIVE-016 sister
+// coverage for the SHOW CREATE TABLE path. A mixed batch (TABLE +
+// FUNCTION) returns the TABLE DDL and silently skips the FUNCTION —
+// the result entry contains exactly one DatabaseObjectDDL for the TABLE.
+func Test_GetDatabaseObjectDDL_MixedFunctionAndTable(t *testing.T) {
+	runner := newFakeRunner().
+		on("USE default", "OK").
+		on("SHOW CREATE TABLE tbl_order",
+			"CREATE TABLE tbl_order (id BIGINT) STORED AS ORC;")
+	h := &HiveDriverImpl{log: logrus.NewEntry(logrus.New()), runner: runner}
+	results, err := h.GetDatabaseObjectDDL(context.Background(),
+		[]*driverV2.DatabaseSchemaInfo{{
+			SchemaName: "default",
+			DatabaseObjects: []*driverV2.DatabaseObject{
+				{ObjectName: "tbl_order", ObjectType: driverV2.ObjectType_TABLE},
+				{ObjectName: "fake_fn", ObjectType: driverV2.ObjectType_FUNCTION},
+			},
+		}})
+	if err != nil {
+		t.Fatalf("expected nil error for mixed batch, got %v", err)
+	}
+	if len(results) != 1 {
+		t.Fatalf("expected 1 schema result, got %d", len(results))
+	}
+	ddls := results[0].DatabaseObjectDDLs
+	if len(ddls) != 1 {
+		t.Fatalf("expected exactly 1 DDL (TABLE only), got %d: %#v", len(ddls), ddls)
+	}
+	if ddls[0].DatabaseObject == nil ||
+		ddls[0].DatabaseObject.ObjectType != driverV2.ObjectType_TABLE ||
+		ddls[0].DatabaseObject.ObjectName != "tbl_order" {
+		t.Errorf("expected TABLE tbl_order entry; got %#v", ddls[0])
+	}
+	if !strings.Contains(ddls[0].ObjectDDL, "CREATE TABLE tbl_order") {
+		t.Errorf("expected SHOW CREATE TABLE output for tbl_order; got=%q", ddls[0].ObjectDDL)
 	}
 }
 

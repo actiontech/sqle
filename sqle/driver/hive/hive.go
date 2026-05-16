@@ -441,19 +441,19 @@ func listAllSchemaObjects(ctx context.Context, runner hiveQueryRunner) ([]*drive
 //     listAllSchemaObjects, mirroring the MySQL driver's behaviour.
 //   - TABLE      -> SHOW CREATE TABLE <name>
 //   - VIEW       -> SHOW CREATE TABLE <name>  (Hive views reuse this command)
-//   - FUNCTION   -> placeholder DDL ""; the call still returns the result row
-//     but the driver records a WARN log and propagates the
-//     Chinese error message; FUNCTION support is planned for
-//     the second batch (compat-RISK-9).
+//   - FUNCTION   -> skip the object entirely and emit a WARN log; do not
+//     append a placeholder DDL, do not return a Go error.
+//     FUNCTION support is planned for the second batch
+//     (compat-RISK-9; aligned with PROCEDURE/TRIGGER/EVENT).
 //   - PROCEDURE / TRIGGER / EVENT -> short-circuit: skip the object entirely
 //     and emit a WARN log; do not panic, do not return an error
 //     (Hive does not support these object types — compat-RISK-4).
 //
-// Behavior on error: if FUNCTION is requested, the function still returns
-// nil error so other TABLE/VIEW results in the same batch are not dropped;
-// the FUNCTION error is surfaced via the returned ObjectDDL (empty string)
-// plus the WARN log. Real connection errors against TABLE/VIEW are returned
-// as a normal Go error.
+// Behavior on error: requesting an unsupported object type (FUNCTION /
+// PROCEDURE / TRIGGER / EVENT) never aborts the whole batch — the driver
+// skips that object and continues so other TABLE/VIEW results survive.
+// Real connection errors against TABLE/VIEW are returned as a normal
+// Go error.
 func (h *HiveDriverImpl) GetDatabaseObjectDDL(ctx context.Context, objInfos []*driverV2.DatabaseSchemaInfo) ([]*driverV2.DatabaseSchemaObjectResult, error) {
 	if h.runner == nil {
 		return nil, fmt.Errorf("hive connection is not initialized")
@@ -506,25 +506,18 @@ func (h *HiveDriverImpl) GetDatabaseObjectDDL(ctx context.Context, objInfos []*d
 				})
 			case driverV2.ObjectType_FUNCTION:
 				// FUNCTION is planned for the second batch (compat-RISK-9).
-				// Emit a placeholder result with empty DDL and log a WARN so
-				// the upstream pipeline can surface the unsupported message.
+				// Aligned with the GetDatabaseDiffModifySQL behaviour and the
+				// PROCEDURE/TRIGGER/EVENT short-circuit: skip the FUNCTION
+				// objInfo, do NOT append a placeholder DDL, do NOT return a
+				// Go error. The upstream pipeline surfaces the unsupported
+				// state via the WARN log + an empty result entry when every
+				// requested object is FUNCTION (compat-RISK-9 verified, TC-HIVE-015 / 016).
 				if h.log != nil {
 					h.log.WithField("object", obj.ObjectName).
-						Warnf("hive driver: %s", hiveFunctionUnsupportedMsg)
+						WithField("objectType", "FUNCTION").
+						Warnf("hive driver: %s; skipped", hiveFunctionUnsupportedMsg)
 				}
-				dbDDLs = append(dbDDLs, &driverV2.DatabaseObjectDDL{
-					DatabaseObject: &driverV2.DatabaseObject{
-						ObjectName: obj.ObjectName,
-						ObjectType: obj.ObjectType,
-					},
-					ObjectDDL: "",
-				})
-				// Returning an error here would abort the whole batch and
-				// drop the legitimate TABLE/VIEW results. Per design §3.2.1
-				// we propagate the FUNCTION error via the upstream layer
-				// (it inspects ObjectDDL == "" and the WARN log); the driver
-				// does not return a Go error.
-				return results, fmt.Errorf("%s", hiveFunctionUnsupportedMsg)
+				continue
 			case driverV2.ObjectType_PROCEDURE,
 				driverV2.ObjectType_TRIGGER,
 				driverV2.ObjectType_EVENT:
@@ -580,8 +573,8 @@ const (
 //   - TABLE on both sides, ALTER-able diff -> ALTER TABLE sequence (no WARNING)
 //   - TABLE on both sides, fallback diff   -> DROP+CREATE          (WARNING)
 //   - VIEW (any diff, any direction)       -> DROP+CREATE          (WARNING)
-//   - FUNCTION                             -> return Chinese error; skip the
-//     entire schema's result (compat-RISK-9)
+//   - FUNCTION                             -> short-circuit, skip silently
+//     with a WARN log (compat-RISK-9; aligned with PROCEDURE/TRIGGER/EVENT)
 //   - PROCEDURE / TRIGGER / EVENT          -> short-circuit, skip silently
 //     with a WARN log (compat-RISK-4)
 //
@@ -678,11 +671,17 @@ func (h *HiveDriverImpl) GetDatabaseDiffModifySQL(ctx context.Context, calibrate
 				sqls = append(sqls, stmts...)
 			case driverV2.ObjectType_FUNCTION:
 				// Compat-RISK-9: FUNCTION is planned for the second batch.
+				// Skip the FUNCTION object so the rest of the batch (TABLE /
+				// VIEW main paths) continues to produce ALTER / DROP+CREATE
+				// SQL. Aligned with PROCEDURE/TRIGGER/EVENT short-circuit and
+				// design §3.2.2 line 239 ("跳过 objInfo, results 不含该项").
+				// See TC-HIVE-016 mixed-batch fix.
 				if h.log != nil {
 					h.log.WithField("object", obj.ObjectName).
-						Warnf("hive driver: %s", hiveFunctionUnsupportedMsg)
+						WithField("objectType", "FUNCTION").
+						Warnf("hive driver: %s; skipped", hiveFunctionUnsupportedMsg)
 				}
-				return results, fmt.Errorf("%s", hiveFunctionUnsupportedMsg)
+				continue
 			case driverV2.ObjectType_PROCEDURE,
 				driverV2.ObjectType_TRIGGER,
 				driverV2.ObjectType_EVENT:
