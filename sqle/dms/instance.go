@@ -27,10 +27,14 @@ var dmsDBTypeAliasMap = map[string]string{
 	"GaussDB / openGauss": driverV2.DriverTypeGaussDB,
 }
 
-// parseInstanceDBType 把 DMS 透传到 SQLE 的 db_type 字面值规范化为 SQLE 后端契约要求的字面值，
+// ParseInstanceDBType 把 DMS 透传到 SQLE 的 db_type 字面值规范化为 SQLE 后端契约要求的字面值，
 // 用作 inst.DbType 写入 model.Instance 之前的最后一道映射点；
+// 同时也供 common.NewDriverManagerWithoutAudit / NewDriverManagerWithoutCfg
+// 这类直接由 HTTP 请求（如 /v1/projects/.../instances/connection_check）
+// 携带原始 DBType 字面值的入口在 OpenPlugin 前做相同规范化，
+// 避免规范化只覆盖 DMS 列表导入路径、HTTP 直入口仍 plugin not found。
 // 未命中 dmsDBTypeAliasMap 的字面值原样透传，保持其它 DBType 行为不变。
-func parseInstanceDBType(dmsDBType string) string {
+func ParseInstanceDBType(dmsDBType string) string {
 	if mapped, ok := dmsDBTypeAliasMap[dmsDBType]; ok {
 		return mapped
 	}
@@ -163,7 +167,7 @@ func convertInstance(instance *dmsV2.ListDBService) (*model.Instance, error) {
 	return &model.Instance{
 		ID:                 uint64(instanceId),
 		Name:               instance.Name,
-		DbType:             parseInstanceDBType(instance.DBType),
+		DbType:             ParseInstanceDBType(instance.DBType),
 		RuleTemplateId:     uint64(ruleTemplateId),
 		RuleTemplateName:   ruleTemplateName,
 		ProjectId:          instance.ProjectUID,

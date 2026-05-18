@@ -2,10 +2,10 @@ package dms
 
 import "testing"
 
-// Test_parseInstanceDBType 覆盖 DMS → SQLE 透传 db_type 的规范化映射。
+// Test_ParseInstanceDBType 覆盖 DMS → SQLE 透传 db_type 的规范化映射。
 // 该映射是 sqle-ee #2877 修复 R5 「DMS 透传字面值与 SQLE 后端契约不一致」
 // 的唯一入口；任何映射条目改动都必须经过此测试。
-func Test_parseInstanceDBType(t *testing.T) {
+func Test_ParseInstanceDBType(t *testing.T) {
 	cases := map[string]struct {
 		input    string
 		expected string
@@ -35,9 +35,9 @@ func Test_parseInstanceDBType(t *testing.T) {
 	for name, tc := range cases {
 		tc := tc
 		t.Run(name, func(t *testing.T) {
-			got := parseInstanceDBType(tc.input)
+			got := ParseInstanceDBType(tc.input)
 			if got != tc.expected {
-				t.Fatalf("parseInstanceDBType(%q): expected %q, got %q", tc.input, tc.expected, got)
+				t.Fatalf("ParseInstanceDBType(%q): expected %q, got %q", tc.input, tc.expected, got)
 			}
 		})
 	}
