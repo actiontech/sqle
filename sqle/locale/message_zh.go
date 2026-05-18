@@ -427,6 +427,7 @@ var (
 	ApMetaPostgreSQLTopSQL                = &i18n.Message{ID: "ApMetaPostgreSQLTopSQL", Other: "TOP SQL"}
 	ApMetaPostgreSQLSlowLog               = &i18n.Message{ID: "ApMetaPostgreSQLSlowLog", Other: "慢日志"}
 	ApMetaPostgreSQLProcesslist           = &i18n.Message{ID: "ApMetaPostgreSQLProcesslist", Other: "PostgreSQL活跃会话采集"}
+	ApMetaGaussDBProcesslist              = &i18n.Message{ID: "ApMetaGaussDBProcesslist", Other: "GaussDB 进程列表"}
 	ApMetaGoldenDBTopSQL                  = &i18n.Message{ID: "ApMetaGoldenDBTopSQL", Other: "GoldenDB TOP SQL"}
 	ApMetaTiDBTopSQL                      = &i18n.Message{ID: "ApMetaTiDBTopSQL", Other: "TiDB TOP SQL"}
 	ApMetaTiDBSlowLog                     = &i18n.Message{ID: "ApMetaTiDBSlowLog", Other: "TiDB慢日志"}
