@@ -110,11 +110,13 @@ func convertInstance(instance *dmsV2.ListDBService) (*model.Instance, error) {
 		return nil, err
 	}
 
-	// RuleTemplateID may be empty when the data source has no SQLE rule template
-	// configured. In that case, fall back to 0 instead of failing with a ParseInt
-	// error so that single-instance lookups (e.g. /schemas, /tables) keep working.
+	// DMS 创建数据源时 rule_template_id 默认空字符串（未配规则模板），
+	// strconv.ParseInt("") 会直接报错 → convertInstance 失败 → 调用方按 "instance not exist" 处理（4011）。
+	// 这里把空字符串显式映射为 0，保留对其它非法字符串的 ParseInt 报错。详见 #2877 bug-B。
 	var ruleTemplateId int64
-	if instance.SQLEConfig != nil && instance.SQLEConfig.RuleTemplateID != "" {
+	if instance.SQLEConfig.RuleTemplateID == "" {
+		ruleTemplateId = 0
+	} else {
 		ruleTemplateId, err = strconv.ParseInt(instance.SQLEConfig.RuleTemplateID, 0, 64)
 		if err != nil {
 			return nil, err
@@ -160,16 +162,12 @@ func convertInstance(instance *dmsV2.ListDBService) (*model.Instance, error) {
 		environmentTagUID = instance.EnvironmentTag.UID
 		environmentTagName = instance.EnvironmentTag.Name
 	}
-	var ruleTemplateName string
-	if instance.SQLEConfig != nil {
-		ruleTemplateName = instance.SQLEConfig.RuleTemplateName
-	}
 	return &model.Instance{
 		ID:                 uint64(instanceId),
 		Name:               instance.Name,
 		DbType:             ParseInstanceDBType(instance.DBType),
 		RuleTemplateId:     uint64(ruleTemplateId),
-		RuleTemplateName:   ruleTemplateName,
+		RuleTemplateName:   instance.SQLEConfig.RuleTemplateName,
 		ProjectId:          instance.ProjectUID,
 		MaintenancePeriod:  maintenancePeriod,
 		Host:               instance.Host,
