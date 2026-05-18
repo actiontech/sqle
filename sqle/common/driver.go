@@ -44,13 +44,21 @@ var dbTypeAliasForPlugin = map[string]string{
 	"postgresql":          "PostgreSQL", // 基线自回环（不影响行为）
 }
 
-// normalizeDbTypeForPluginLookup 在调 plugin manager `OpenPlugin(name, cfg)` 前
+// NormalizeDbTypeForPluginLookup 在调 plugin manager `OpenPlugin(name, cfg)` 前
 // 把 db_type 字面量转成 plugin 注册名。查表未命中时**原样返回**输入字符串，
 // 保证未知 / 未来新增 db_type 仍由 OpenPlugin 报真实的 `plugin not found`。
 //
-// 详见 `docs/test/decision_round2_bugs.md §3` 与
-// `docs/test/fix-002_bug_a_round2_bug_c.md`。
-func normalizeDbTypeForPluginLookup(dbType string) string {
+// fix-002（commit be6ce279）仅在 NewDriverManagerWithoutAudit 内调用，函数命名
+// 为 unexported（同包私有）。fix-004（Issue #2868 / Bug F）补齐 audit 路径
+// （sqle-ee/sqle/server/sqled.go: newDriverManagerWithAudit）与 offline 路径
+// （本文件 NewDriverManagerWithoutCfg）的归一化时，audit 路径在 `server` 包
+// 需要跨包调用本函数，故 export 首字母为大写。
+//
+// 详见 `docs/test/decision_round2_bugs.md §3` /
+// `docs/test/decision_round4_bug_f.md §2.3` /
+// `docs/test/fix-002_bug_a_round2_bug_c.md` /
+// `docs/test/fix-004_bug_f_complete_normalization.md`。
+func NormalizeDbTypeForPluginLookup(dbType string) string {
 	key := strings.ToLower(strings.TrimSpace(dbType))
 	if canonical, ok := dbTypeAliasForPlugin[key]; ok {
 		return canonical
@@ -78,12 +86,12 @@ func NewDriverManagerWithoutAudit(l *logrus.Entry, inst *model.Instance, databas
 	cfg := &v2.Config{
 		DSN: dsn,
 	}
-	// 把 inst.DbType 通过 normalizeDbTypeForPluginLookup 归一化到 plugin 注册
+	// 把 inst.DbType 通过 NormalizeDbTypeForPluginLookup 归一化到 plugin 注册
 	// 名再 lookup，覆盖 ADR-004 历史命名 "GaussDB for MySQL" / 展示名
 	// "GaussDB / openGauss" / 同义别名 "openGauss" 三类历史 db_type，
 	// 避免 OpenPlugin 直接报 `plugin not found`（Issue #2868 / compat-RISK-1 /
 	// fix-002，详见 docs/test/decision_round2_bugs.md §3）。
-	pluginName := normalizeDbTypeForPluginLookup(inst.DbType)
+	pluginName := NormalizeDbTypeForPluginLookup(inst.DbType)
 	plugin, err := openPluginFunc(l, pluginName, cfg)
 	if err != nil {
 		return nil, errors.Wrap(err, "open plugin")
@@ -93,7 +101,16 @@ func NewDriverManagerWithoutAudit(l *logrus.Entry, inst *model.Instance, databas
 }
 
 func NewDriverManagerWithoutCfg(l *logrus.Entry, dbType string) (driver.Plugin, error) {
-	return driver.GetPluginManager().OpenPlugin(l, dbType, &v2.Config{})
+	// 与 NewDriverManagerWithoutAudit 对称：在调 OpenPlugin 前对 dbType 做归一
+	// 化，覆盖 ADR-004 历史命名 "GaussDB for MySQL" / 展示名 "GaussDB /
+	// openGauss" / 同义别名 "openGauss" 三类历史 db_type，避免 OpenPlugin 直接
+	// 报 `plugin not found`（Issue #2868 / compat-RISK-1 / fix-004，详见
+	// docs/test/decision_round4_bug_f.md §2.3 修复点 2）。
+	//
+	// 复用 openPluginFunc 包级 hook 与 fix-002 的 mock 模式一致，便于单测捕获
+	// 实际传给 OpenPlugin 的字面量。
+	pluginName := NormalizeDbTypeForPluginLookup(dbType)
+	return openPluginFunc(l, pluginName, &v2.Config{})
 }
 
 func NewDSN(instance *model.Instance, database string) (*v2.DSN, error) {

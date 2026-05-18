@@ -128,3 +128,98 @@ func TestNewDriverManagerWithoutAudit_UnknownDbType_PassThrough(t *testing.T) {
 		t.Errorf("OpenPlugin 接收到的 db_type 应原样透传 \"UnknownDb\"，got=%q", *got)
 	}
 }
+
+// ---------------------------------------------------------------------------
+// fix-004（Issue #2868 / Bug F）：NewDriverManagerWithoutCfg 在调 OpenPlugin
+// 前对 dbType 做归一化的对仗单测，覆盖 ADR-004 历史命名 / 同义别名 / 展示名
+// 三类 db_type 输入；mock hook openPluginFunc 捕获实际传给 OpenPlugin 的字面量。
+// 与 compat_risks.md compat-RISK-1 字段中 unit_tests 列表名字逐字对齐：
+//   - TestNewDriverManagerWithoutCfg_GaussDBForMySQL_Routed
+//   - TestNewDriverManagerWithoutCfg_GaussDBLower_Routed
+//   - TestNewDriverManagerWithoutCfg_OpenGaussLower_Routed
+//   - TestNewDriverManagerWithoutCfg_GaussDBCanonical_Routed
+//   - TestNewDriverManagerWithoutCfg_UnknownTypePassthrough_Routed
+//
+// 详见 docs/test/decision_round4_bug_f.md §2.3 修复点 2 与 §2.3 修复点 4。
+// ---------------------------------------------------------------------------
+
+// TestNewDriverManagerWithoutCfg_GaussDBForMySQL_Routed
+// dbType="GaussDB for MySQL" → OpenPlugin 收到 "GaussDB"（ADR-004 历史命名）。
+func TestNewDriverManagerWithoutCfg_GaussDBForMySQL_Routed(t *testing.T) {
+	got, restore := withMockOpenPlugin(t)
+	defer restore()
+
+	l := logrus.NewEntry(logrus.New())
+	_, err := NewDriverManagerWithoutCfg(l, "GaussDB for MySQL")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if *got != "GaussDB" {
+		t.Errorf("OpenPlugin 接收到的 db_type 应为 \"GaussDB\"，got=%q", *got)
+	}
+}
+
+// TestNewDriverManagerWithoutCfg_GaussDBLower_Routed
+// dbType="gaussdb" → OpenPlugin 收到 "GaussDB"（大小写不敏感归一化）。
+func TestNewDriverManagerWithoutCfg_GaussDBLower_Routed(t *testing.T) {
+	got, restore := withMockOpenPlugin(t)
+	defer restore()
+
+	l := logrus.NewEntry(logrus.New())
+	_, err := NewDriverManagerWithoutCfg(l, "gaussdb")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if *got != "GaussDB" {
+		t.Errorf("OpenPlugin 接收到的 db_type 应为 \"GaussDB\"，got=%q", *got)
+	}
+}
+
+// TestNewDriverManagerWithoutCfg_OpenGaussLower_Routed
+// dbType="opengauss" → OpenPlugin 收到 "GaussDB"（同义别名 + 小写）。
+func TestNewDriverManagerWithoutCfg_OpenGaussLower_Routed(t *testing.T) {
+	got, restore := withMockOpenPlugin(t)
+	defer restore()
+
+	l := logrus.NewEntry(logrus.New())
+	_, err := NewDriverManagerWithoutCfg(l, "opengauss")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if *got != "GaussDB" {
+		t.Errorf("OpenPlugin 接收到的 db_type 应为 \"GaussDB\"，got=%q", *got)
+	}
+}
+
+// TestNewDriverManagerWithoutCfg_GaussDBCanonical_Routed
+// dbType="GaussDB" → OpenPlugin 收到 "GaussDB"（基线 / canonical 自身回环）。
+func TestNewDriverManagerWithoutCfg_GaussDBCanonical_Routed(t *testing.T) {
+	got, restore := withMockOpenPlugin(t)
+	defer restore()
+
+	l := logrus.NewEntry(logrus.New())
+	_, err := NewDriverManagerWithoutCfg(l, "GaussDB")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if *got != "GaussDB" {
+		t.Errorf("OpenPlugin 接收到的 db_type 应为 \"GaussDB\"，got=%q", *got)
+	}
+}
+
+// TestNewDriverManagerWithoutCfg_UnknownTypePassthrough_Routed
+// dbType="UnknownDb" → OpenPlugin 收到原字符串 "UnknownDb"（未知 db_type
+// 不动，由 OpenPlugin 自己报 plugin not found，不掩盖真实错误）。
+func TestNewDriverManagerWithoutCfg_UnknownTypePassthrough_Routed(t *testing.T) {
+	got, restore := withMockOpenPlugin(t)
+	defer restore()
+
+	l := logrus.NewEntry(logrus.New())
+	_, err := NewDriverManagerWithoutCfg(l, "UnknownDb")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if *got != "UnknownDb" {
+		t.Errorf("OpenPlugin 接收到的 db_type 应原样透传 \"UnknownDb\"，got=%q", *got)
+	}
+}

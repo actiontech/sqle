@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/actiontech/sqle/sqle/common"
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/utils"
@@ -28,6 +29,17 @@ var sqled *Sqled
 
 func GetSqled() *Sqled {
 	return sqled
+}
+
+// openPluginFuncForAudit 是 driver.GetPluginManager().OpenPlugin 的可测试间接
+// 层，对仗 common.openPluginFunc 的 mock hook 模式。生产路径走默认实现；测试
+// 可在 setup 阶段替换为 mock 以验证 db_type 归一化行为，无需真正启动 plugin
+// manager（避免触发 go-plugin handshake + 子进程 spawn）。
+//
+// 与 newDriverManagerWithAudit 配合，详见 docs/test/decision_round4_bug_f.md
+// §2.3 修复点 3 与修复点 4（fix-004 / Issue #2868 / compat-RISK-1 / Bug F）。
+var openPluginFuncForAudit = func(l *logrus.Entry, dbType string, cfg *driverV2.Config) (driver.Plugin, error) {
+	return driver.GetPluginManager().OpenPlugin(l, dbType, cfg)
 }
 
 // Sqled is an async task scheduling service.
@@ -893,5 +905,14 @@ func newDriverManagerWithAudit(l *logrus.Entry, inst *model.Instance, database s
 		DSN:   dsn,
 		Rules: rules,
 	}
-	return driver.GetPluginManager().OpenPlugin(l, dbType, cfg)
+	// 在调 OpenPlugin 前对 dbType 做归一化，覆盖 ADR-004 历史命名
+	// "GaussDB for MySQL" / 展示名 "GaussDB / openGauss" / 同义别名
+	// "openGauss" 三类历史 db_type，避免 OpenPlugin 直接报 `plugin not found`。
+	//
+	// 与 common.NewDriverManagerWithoutAudit / common.NewDriverManagerWithoutCfg
+	// 三处 plugin entry point 对齐，覆盖数据导出主链路（schemas / audit /
+	// offline）的全部 OpenPlugin 调用点（Issue #2868 / compat-RISK-1 /
+	// Bug F / fix-004，详见 docs/test/decision_round4_bug_f.md §2.3 修复点 3）。
+	pluginName := common.NormalizeDbTypeForPluginLookup(dbType)
+	return openPluginFuncForAudit(l, pluginName, cfg)
 }
