@@ -9,10 +9,33 @@ import (
 	dmsV2 "github.com/actiontech/dms/pkg/dms-common/api/dms/v2"
 	"github.com/actiontech/dms/pkg/dms-common/dmsobject"
 	dmsCommonAes "github.com/actiontech/dms/pkg/dms-common/pkg/aes"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/pkg/params"
 )
+
+// dmsDBTypeAliasMap 解决 DMS 透传的 DBServiceType 字面值与 SQLE 后端使用的
+// driver/plugin name / InstanceType 常量字面值不一致的"规范化"问题。
+// 只在严格一一映射、且不影响其它已知 DBType 透传的前提下加入条目。
+// 详见 sqle-ee #2877（compat_risks R5）。
+var dmsDBTypeAliasMap = map[string]string{
+	// DMS 后端枚举 DBTypeGaussDB = "GaussDB / openGauss"（dms / dms-ee 双仓库同步），
+	// SQLE 后端 InstanceTypeGaussDB / DriverTypeGaussDB = "GaussDB"，
+	// 同时 sqle-gaussdb-plugin 注册的 driver name 也为 "GaussDB"，
+	// 三处契约要求 byte-by-byte 相等，故在此把 DMS 字面值规范化为后端契约值。
+	"GaussDB / openGauss": driverV2.DriverTypeGaussDB,
+}
+
+// parseInstanceDBType 把 DMS 透传到 SQLE 的 db_type 字面值规范化为 SQLE 后端契约要求的字面值，
+// 用作 inst.DbType 写入 model.Instance 之前的最后一道映射点；
+// 未命中 dmsDBTypeAliasMap 的字面值原样透传，保持其它 DBType 行为不变。
+func parseInstanceDBType(dmsDBType string) string {
+	if mapped, ok := dmsDBTypeAliasMap[dmsDBType]; ok {
+		return mapped
+	}
+	return dmsDBType
+}
 
 func getInstances(ctx context.Context, req dmsV2.ListDBServiceReq) ([]*model.Instance, error) {
 	var ret = make([]*model.Instance, 0)
@@ -140,7 +163,7 @@ func convertInstance(instance *dmsV2.ListDBService) (*model.Instance, error) {
 	return &model.Instance{
 		ID:                 uint64(instanceId),
 		Name:               instance.Name,
-		DbType:             instance.DBType,
+		DbType:             parseInstanceDBType(instance.DBType),
 		RuleTemplateId:     uint64(ruleTemplateId),
 		RuleTemplateName:   ruleTemplateName,
 		ProjectId:          instance.ProjectUID,
