@@ -51,9 +51,6 @@ type SQLAuditRecordResData struct {
 	Task *AuditTaskResV1 `json:"task"`
 }
 
-// 10M
-var maxZipFileSize int64 = 1024 * 1024 * 10
-
 // CreateSQLAuditRecord
 // @Summary SQL审核
 // @Id CreateSQLAuditRecordV1
@@ -174,7 +171,7 @@ func CreateSQLAuditRecord(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, &CreateSQLAuditRecordResV1{
-		BaseRes: controller.NewBaseReq(nil),
+		BaseRes: newBaseResWithMessage(sqls.Message),
 		Data: &SQLAuditRecordResData{
 			Id: record.AuditRecordId,
 			Task: &AuditTaskResV1{
@@ -205,6 +202,7 @@ type GetSQLFromFileResp struct {
 	SQLsFromFormData string
 	SQLsFromSQLFiles []SQLsFromSQLFile
 	SQLsFromXMLs     []SQLFromXML
+	Message          string // Optional message for user feedback (e.g., skipped file count)
 }
 
 type SQLsFromSQLFile struct {
@@ -351,65 +349,87 @@ func buildOfflineTaskForAudit(userId uint64, dbType string, sqls GetSQLFromFileR
 }
 
 // todo 此处跳过了不支持的编码格式文件
-func getSqlsFromZip(c echo.Context) (sqlsFromSQLFile []SQLsFromSQLFile, sqlsFromXML []SQLFromXML, exist bool, err error) {
+func getSqlsFromZip(c echo.Context) (sqlsFromSQLFile []SQLsFromSQLFile, sqlsFromXML []SQLFromXML, skippedCount int, exist bool, err error) {
 	file, err := c.FormFile(InputZipFileName)
 	if err == http.ErrMissingFile {
-		return nil, nil, false, nil
+		return nil, nil, 0, false, nil
 	}
 	if err != nil {
-		return nil, nil, false, err
+		return nil, nil, 0, false, err
 	}
 	f, err := file.Open()
 	if err != nil {
-		return nil, nil, false, err
+		return nil, nil, 0, false, err
 	}
 	defer f.Close()
 
-	if file.Size > maxZipFileSize {
-		return nil, nil, false, fmt.Errorf("file can't be bigger than %vM", maxZipFileSize/1024/1024)
+	// 使用 archiveConfig 进行压缩包总大小限制检查
+	if err := defaultArchiveConfig.checkSize(0, file.Size); err != nil {
+		return nil, nil, 0, false, err
 	}
 	r, err := zip.NewReader(f, file.Size)
 	if err != nil {
-		return nil, nil, false, err
+		return nil, nil, 0, false, err
 	}
 
 	var xmlContents []xmlParser.XmlFile
+	var totalSize int64
+	var fileCount int
 	for i := range r.File {
 		srcFile := r.File[i]
 		if srcFile == nil {
 			continue
 		}
-		if !strings.HasSuffix(srcFile.Name, ".xml") && !strings.HasSuffix(srcFile.Name, ".sql") {
+
+		// 使用 archiveConfig 进行文件数量限制检查
+		fileCount++
+		if err := defaultArchiveConfig.checkFileCount(fileCount); err != nil {
+			return nil, nil, 0, false, err
+		}
+
+		// 嵌套压缩包检查：depth=1 时跳过内层压缩包
+		ext := strings.ToLower(filepath.Ext(srcFile.Name))
+		if supportedArchiveExts[ext] {
 			continue
 		}
 
-		r, err := srcFile.Open()
+		// 读取文件内容
+		rc, err := srcFile.Open()
 		if err != nil {
-			return nil, nil, false, fmt.Errorf("open src file failed:  %v", err)
+			return nil, nil, 0, false, fmt.Errorf("open src file failed:  %v", err)
 		}
-		content, err := io.ReadAll(r)
+		content, err := io.ReadAll(rc)
+		rc.Close()
 		if err != nil {
-			return nil, nil, false, fmt.Errorf("read src file failed:  %v", err)
+			return nil, nil, 0, false, fmt.Errorf("read src file failed:  %v", err)
 		}
 
-		content, err = utils.ConvertToUtf8(content)
+		// 累计大小限制检查
+		totalSize += int64(len(content))
+		if err := defaultArchiveConfig.checkSize(0, totalSize); err != nil {
+			return nil, nil, 0, false, err
+		}
+
+		// 委托 processArchiveEntry 按扩展名分发处理
+		sqlContent, xmlContent, isSupported, err := processArchiveEntry(srcFile.Name, content)
 		if err != nil {
 			if e.Is(err, utils.ErrUnknownEncoding) {
 				log.NewEntry().WithField("convert_to_utf8", srcFile.Name).Errorf("convert to utf8 failed: %v", err)
 				continue
 			}
-			return nil, nil, false, fmt.Errorf("convert to utf8 failed:  %v", err)
+			return nil, nil, 0, false, err
+		}
+		if !isSupported {
+			skippedCount++
+			continue
 		}
 
-		if strings.HasSuffix(srcFile.Name, ".xml") {
-			xmlContents = append(xmlContents, xmlParser.XmlFile{
-				FilePath: srcFile.Name,
-				Content:  string(content),
-			})
-		} else if strings.HasSuffix(srcFile.Name, ".sql") {
+		if xmlContent != nil {
+			xmlContents = append(xmlContents, *xmlContent)
+		} else if sqlContent != "" {
 			sqlsFromSQLFile = append(sqlsFromSQLFile, SQLsFromSQLFile{
 				FilePath: srcFile.Name,
-				SQLs:     string(content),
+				SQLs:     sqlContent,
 			})
 		}
 	}
@@ -419,7 +439,7 @@ func getSqlsFromZip(c echo.Context) (sqlsFromSQLFile []SQLsFromSQLFile, sqlsFrom
 	{
 		sqlsFromXmls, err := parseXMLsWithFilePath(xmlContents)
 		if err != nil {
-			return nil, nil, false, err
+			return nil, nil, 0, false, err
 		}
 		sqlsFromXML = append(sqlsFromXML, sqlsFromXmls...)
 	}
@@ -432,7 +452,7 @@ func getSqlsFromZip(c echo.Context) (sqlsFromSQLFile []SQLsFromSQLFile, sqlsFrom
 		return utils.CompareNatural(sqlsFromXML[i].FilePath, sqlsFromXML[j].FilePath)
 	})
 
-	return sqlsFromSQLFile, sqlsFromXML, true, nil
+	return sqlsFromSQLFile, sqlsFromXML, skippedCount, true, nil
 }
 func parseXMLsWithFilePath(xmlContents []xmlParser.XmlFile) ([]SQLFromXML, error) {
 	allStmtsFromXml, err := xmlParser.ParseXMLs(xmlContents, xmlParser.SkipErrorQuery, xmlParser.RestoreOriginSql)
