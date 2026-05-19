@@ -83,9 +83,15 @@ func convertInstance(instance *dmsV2.ListDBService) (*model.Instance, error) {
 		return nil, err
 	}
 
-	ruleTemplateId, err := strconv.ParseInt(instance.SQLEConfig.RuleTemplateID, 0, 64)
-	if err != nil {
-		return nil, err
+	// RuleTemplateID may be empty when the data source has no SQLE rule template
+	// configured. In that case, fall back to 0 instead of failing with a ParseInt
+	// error so that single-instance lookups (e.g. /schemas, /tables) keep working.
+	var ruleTemplateId int64
+	if instance.SQLEConfig != nil && instance.SQLEConfig.RuleTemplateID != "" {
+		ruleTemplateId, err = strconv.ParseInt(instance.SQLEConfig.RuleTemplateID, 0, 64)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var maintenancePeriod = make(model.Periods, 0)
@@ -127,12 +133,16 @@ func convertInstance(instance *dmsV2.ListDBService) (*model.Instance, error) {
 		environmentTagUID = instance.EnvironmentTag.UID
 		environmentTagName = instance.EnvironmentTag.Name
 	}
+	var ruleTemplateName string
+	if instance.SQLEConfig != nil {
+		ruleTemplateName = instance.SQLEConfig.RuleTemplateName
+	}
 	return &model.Instance{
 		ID:                 uint64(instanceId),
 		Name:               instance.Name,
 		DbType:             instance.DBType,
 		RuleTemplateId:     uint64(ruleTemplateId),
-		RuleTemplateName:   instance.SQLEConfig.RuleTemplateName,
+		RuleTemplateName:   ruleTemplateName,
 		ProjectId:          instance.ProjectUID,
 		MaintenancePeriod:  maintenancePeriod,
 		Host:               instance.Host,
