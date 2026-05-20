@@ -368,6 +368,7 @@ var (
 	ApMetricNameActiveTimeTotal         = &i18n.Message{ID: "ApMetricNameActiveTimeTotal", Other: "活动总时间(ms)"}
 	ApMetricNameLastReceiveTimestamp    = &i18n.Message{ID: "ApMetricNameLastReceiveTimestamp", Other: "最后一次匹配到该指纹的时间"}
 	ApMetricNameCPUTimeTotal            = &i18n.Message{ID: "ApMetricNameCPUTimeTotal", Other: "CPU时间占用(s)"}
+	ApMetricNameMemorySizeTotal         = &i18n.Message{ID: "ApMetricNameMemorySizeTotal", Other: "总内存消耗(MB)"}
 	ApMetricNamePhyReadPageTotal        = &i18n.Message{ID: "ApMetricNamePhyReadPageTotal", Other: "物理读页数"}
 	ApMetricNameLogicReadPageTotal      = &i18n.Message{ID: "ApMetricNameLogicReadPageTotal", Other: "逻辑读页数"}
 	ApMetricNameQueryTimeMax            = &i18n.Message{ID: "ApMetricNameQueryTimeMax", Other: "最长执行时间(s)"}
@@ -422,6 +423,7 @@ var (
 	ApMetaDmTopSQL                        = &i18n.Message{ID: "ApMetaDmTopSQL", Other: "DM TOP SQL"}
 	ApMetaDmSlowLog                       = &i18n.Message{ID: "ApMetaDmSlowLog", Other: "DM慢日志"}
 	ApMetaDmProcesslist                   = &i18n.Message{ID: "ApMetaDmProcesslist", Other: "DM ProcessList"}
+	ApMetaHanaTopSQL                      = &i18n.Message{ID: "ApMetaHanaTopSQL", Other: "HANA TOP SQL"}
 	ApMetaObForOracleTopSQL               = &i18n.Message{ID: "ApMetaObForOracleTopSQL", Other: "OceanBase For Oracle TOP SQL"}
 	ApMetaObForOracleSlowLog              = &i18n.Message{ID: "ApMetaObForOracleSlowLog", Other: "OceanBase For Oracle 慢日志"}
 	ApMetaObForOracleProcesslist          = &i18n.Message{ID: "ApMetaObForOracleProcesslist", Other: "OceanBase For Oracle 活跃会话采集"}
