@@ -27,6 +27,7 @@ const MetricNameActiveWaitTimeTotal string = "act_wait_time_total"
 const MetricNameActiveTimeTotal string = "act_time_total"
 
 const MetricNameCPUTimeTotal string = "cpu_time_total"
+const MetricNameMemorySizeTotal string = "memory_size_total" // 总内存消耗
 const MetricNamePhyReadPageTotal string = "phy_read_page_total"
 const MetricNameLogicReadPageTotal string = "logic_read_page_total"
 const MetricNameUserIOWaitTimeTotal string = "user_io_wait_time_total"
@@ -105,6 +106,7 @@ var ALLMetric = map[string]MetricType{
 	MetricNameActiveWaitTimeTotal: MetricTypeFloat, // DB2 TOP SQL
 	MetricNameActiveTimeTotal:     MetricTypeFloat, // DB2 TOP SQL
 	MetricNameCPUTimeTotal:        MetricTypeFloat, // DM TOP SQL  | OB Oracle TOP SQL
+	MetricNameMemorySizeTotal:     MetricTypeFloat, // HANA TOP SQL
 	MetricNamePhyReadPageTotal:    MetricTypeInt,   // DM TOP SQL | OB Oracle TOP SQL
 	MetricNameLogicReadPageTotal:  MetricTypeInt,   // DM TOP SQL | OB Oracle TOP SQL
 
