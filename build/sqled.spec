@@ -44,11 +44,6 @@ mkdir -p $RPM_BUILD_ROOT/usr/local/sqle/jdk
 cp %{_builddir}/%{buildsubdir}/sqle/bin/sqled $RPM_BUILD_ROOT/usr/local/sqle/bin/sqled
 cp %{_builddir}/%{buildsubdir}/sqle/bin/scannerd $RPM_BUILD_ROOT/usr/local/sqle/bin/scannerd
 cp -R %{_builddir}/%{buildsubdir}/sqle/plugins $RPM_BUILD_ROOT/usr/local/sqle/plugins
-# 复用 sqle-pg-plugin 二进制以 sqle-gaussdb-plugin 文件名再落一份，
-# 配合 SQLE_PG_PLUGIN_DB_TYPE=GaussDB 让 plugin_manager 加载为独立 GaussDB driver
-if [ -f $RPM_BUILD_ROOT/usr/local/sqle/plugins/sqle-pg-plugin ]; then
-    cp $RPM_BUILD_ROOT/usr/local/sqle/plugins/sqle-pg-plugin $RPM_BUILD_ROOT/usr/local/sqle/plugins/sqle-gaussdb-plugin
-fi
 cp %{_builddir}/%{buildsubdir}/sqle/scripts/sqled.systemd $RPM_BUILD_ROOT/usr/local/sqle/scripts/sqled.systemd
 cp %{_builddir}/%{buildsubdir}/sqle/scripts/sqled.initd $RPM_BUILD_ROOT/usr/local/sqle/scripts/sqled.initd
 cp %{_builddir}/%{buildsubdir}/sqle/scripts/pt-online-schema-change.template $RPM_BUILD_ROOT/usr/local/sqle/scripts/pt-online-schema-change.template

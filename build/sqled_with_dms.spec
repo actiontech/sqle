@@ -53,11 +53,6 @@ cp %{_builddir}/%{buildsubdir}/%{name}/bin/sqled $RPM_BUILD_ROOT/usr/local/%{nam
 cp %{_builddir}/%{buildsubdir}/%{name}/bin/scannerd $RPM_BUILD_ROOT/usr/local/%{name}/bin/scannerd
 cp %{_builddir}/%{buildsubdir}/%{name}/bin/dms $RPM_BUILD_ROOT/usr/local/%{name}/bin/dms
 cp -R %{_builddir}/%{buildsubdir}/%{name}/plugins $RPM_BUILD_ROOT/usr/local/%{name}/plugins
-# 复用 sqle-pg-plugin 二进制以 sqle-gaussdb-plugin 文件名再落一份，
-# 配合 SQLE_PG_PLUGIN_DB_TYPE=GaussDB 让 plugin_manager 加载为独立 GaussDB driver
-if [ -f $RPM_BUILD_ROOT/usr/local/%{name}/plugins/sqle-pg-plugin ]; then
-    cp $RPM_BUILD_ROOT/usr/local/%{name}/plugins/sqle-pg-plugin $RPM_BUILD_ROOT/usr/local/%{name}/plugins/sqle-gaussdb-plugin
-fi
 cp -R %{_builddir}/%{buildsubdir}/%{name}/scripts $RPM_BUILD_ROOT/usr/local/%{name}/scripts
 cp %{_builddir}/%{buildsubdir}/dms/build/service-file-template/dms.systemd $RPM_BUILD_ROOT/usr/local/%{name}/scripts/dms.systemd
 cp -R %{_builddir}/%{buildsubdir}/%{name}/static/* $RPM_BUILD_ROOT/usr/local/%{name}/static/

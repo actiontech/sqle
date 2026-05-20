@@ -15,9 +15,6 @@ sqle:
     log_max_size_mb: 1024
     log_max_backup_number: 2
     plugin_path: './plugins'
-    plugin_config:
-      - plugin_name: sqle-gaussdb-plugin
-        cmd: 'SQLE_PG_PLUGIN_DB_TYPE=GaussDB ./plugins/sqle-gaussdb-plugin'
     enable_cluster_mode:
     database:
       mysql_host: '127.0.0.1'

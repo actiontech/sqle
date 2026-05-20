@@ -18,7 +18,6 @@ import (
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/agiledragon/gomonkey"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -383,83 +382,4 @@ func TestScoreTask(t *testing.T) {
 	score := scoreTask(task)
 
 	assert.Equal(t, int32(45), score)
-}
-
-// ---------------------------------------------------------------------------
-// fix-004（Issue #2868 / Bug F）：newDriverManagerWithAudit 在调 OpenPlugin 前
-// 对 dbType 做归一化的对仗单测，覆盖 audit 路径（数据导出工单 audit / 工单
-// 执行 / 回滚链路）。
-//
-// 测试通过替换 openPluginFuncForAudit 包内函数变量（与 common.openPluginFunc
-// 同款 mock 模式）捕获实际传给 OpenPlugin 的 dbType 字面量，无需启动真正的
-// plugin manager。
-//
-// 与 compat_risks.md compat-RISK-1 字段中 unit_tests 列表名字逐字对齐：
-//   - TestNewDriverManagerWithAudit_GaussDBForMySQL_Routed
-//   - TestNewDriverManagerWithAudit_GaussDBLower_Routed
-//   - TestNewDriverManagerWithAudit_OpenGaussCanonical_Routed
-//
-// 详见 docs/test/decision_round4_bug_f.md §2.3 修复点 3 与 §2.3 修复点 4。
-// ---------------------------------------------------------------------------
-
-// withMockOpenPluginForAudit 替换 openPluginFuncForAudit，捕获 dbType 入参 +
-// 返回 nil/nil；返回值 restore 函数用于测试结束 defer 还原。
-func withMockOpenPluginForAudit(t *testing.T) (captured *string, restore func()) {
-	t.Helper()
-	var cap string
-	original := openPluginFuncForAudit
-	openPluginFuncForAudit = func(l *logrus.Entry, dbType string, cfg *driverV2.Config) (driver.Plugin, error) {
-		cap = dbType
-		return nil, nil
-	}
-	return &cap, func() { openPluginFuncForAudit = original }
-}
-
-// TestNewDriverManagerWithAudit_GaussDBForMySQL_Routed
-// dbType="GaussDB for MySQL" → OpenPlugin 收到 "GaussDB"（核心修复目标：audit
-// 路径 plugin not found 不再出现）。
-func TestNewDriverManagerWithAudit_GaussDBForMySQL_Routed(t *testing.T) {
-	got, restore := withMockOpenPluginForAudit(t)
-	defer restore()
-
-	l := log.NewEntry()
-	_, err := newDriverManagerWithAudit(l, &model.Instance{DbType: "GaussDB for MySQL"}, "", "GaussDB for MySQL", nil)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if *got != "GaussDB" {
-		t.Errorf("OpenPlugin 接收到的 db_type 应为 \"GaussDB\"，got=%q", *got)
-	}
-}
-
-// TestNewDriverManagerWithAudit_GaussDBLower_Routed
-// dbType="gaussdb" → OpenPlugin 收到 "GaussDB"（大小写不敏感归一化）。
-func TestNewDriverManagerWithAudit_GaussDBLower_Routed(t *testing.T) {
-	got, restore := withMockOpenPluginForAudit(t)
-	defer restore()
-
-	l := log.NewEntry()
-	_, err := newDriverManagerWithAudit(l, &model.Instance{DbType: "gaussdb"}, "", "gaussdb", nil)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if *got != "GaussDB" {
-		t.Errorf("OpenPlugin 接收到的 db_type 应为 \"GaussDB\"，got=%q", *got)
-	}
-}
-
-// TestNewDriverManagerWithAudit_OpenGaussCanonical_Routed
-// dbType="openGauss" → OpenPlugin 收到 "GaussDB"（同义别名，canonical 大小写）。
-func TestNewDriverManagerWithAudit_OpenGaussCanonical_Routed(t *testing.T) {
-	got, restore := withMockOpenPluginForAudit(t)
-	defer restore()
-
-	l := log.NewEntry()
-	_, err := newDriverManagerWithAudit(l, &model.Instance{DbType: "openGauss"}, "", "openGauss", nil)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if *got != "GaussDB" {
-		t.Errorf("OpenPlugin 接收到的 db_type 应为 \"GaussDB\"，got=%q", *got)
-	}
 }
