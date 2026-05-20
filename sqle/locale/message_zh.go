@@ -433,6 +433,8 @@ var (
 	ApMetaPostgreSQLProcesslist           = &i18n.Message{ID: "ApMetaPostgreSQLProcesslist", Other: "PostgreSQL活跃会话采集"}
 	ApMetaGaussDBProcesslist              = &i18n.Message{ID: "ApMetaGaussDBProcesslist", Other: "GaussDB 进程列表"}
 	ApMetaGoldenDBTopSQL                  = &i18n.Message{ID: "ApMetaGoldenDBTopSQL", Other: "GoldenDB TOP SQL"}
+	ApMetaGoldenDBSlowLog                 = &i18n.Message{ID: "ApMetaGoldenDBSlowLog", Other: "GoldenDB 慢日志"}
+	ApMetaGoldenDBProcesslist             = &i18n.Message{ID: "ApMetaGoldenDBProcesslist", Other: "GoldenDB ProcessList"}
 	ApMetaTiDBTopSQL                      = &i18n.Message{ID: "ApMetaTiDBTopSQL", Other: "TiDB TOP SQL"}
 	ApMetaTiDBSlowLog                     = &i18n.Message{ID: "ApMetaTiDBSlowLog", Other: "TiDB慢日志"}
 	ApMetaTiDBProcesslist                 = &i18n.Message{ID: "ApMetaTiDBProcesslist", Other: "TiDB Processlist"}
