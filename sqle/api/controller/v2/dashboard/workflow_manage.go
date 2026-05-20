@@ -36,6 +36,8 @@ type GetGlobalWorkflowListReqV2 struct {
 	FilterProjectUid     string `json:"filter_project_uid" query:"filter_project_uid"`       // 项目ID
 	FilterInstanceId     string `json:"filter_instance_id" query:"filter_instance_id"`       // 实例ID
 	FilterCreateUserId   string `json:"filter_create_user_id" query:"filter_create_user_id"` // 创建人ID
+	FilterCreateTimeFrom string `json:"filter_create_time_from" query:"filter_create_time_from"`
+	FilterCreateTimeTo   string `json:"filter_create_time_to" query:"filter_create_time_to"`
 	FilterUpdateTimeFrom string `json:"filter_update_time_from" query:"filter_update_time_from"`
 	FilterUpdateTimeTo   string `json:"filter_update_time_to" query:"filter_update_time_to"`
 
@@ -92,6 +94,9 @@ func GetGlobalWorkflowStatisticsV2(c echo.Context) error {
 // @Param filter_status query string false "filter by unified workflow status; intersects with the card status set, applied to both sql_release and data_export workflows" Enums(pending_approval,pending_action,in_progress,exporting,rejected,cancelled,failed,completed,unknown)
 // @Param filter_update_time_from query string false "filter by update time from"
 // @Param filter_update_time_to query string false "filter by update time to"
+// @Param filter_create_user_id query string false "filter by create user id"
+// @Param filter_create_time_from query string false "filter create time from"
+// @Param filter_create_time_to query string false "filter create time to"
 // @Success 200 {object} GlobalWorkflowListResV2
 // @Router /v2/dashboard/workflows [get]
 func GetGlobalWorkflowListV2(c echo.Context) error {
