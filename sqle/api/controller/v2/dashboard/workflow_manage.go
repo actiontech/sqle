@@ -46,6 +46,9 @@ type GetGlobalWorkflowListReqV2 struct {
 
 	// 工单类型，sql_release: SQL上线工单，data_export: 数据导出工单
 	WorkflowType dashboard_svc.WorkflowType `json:"workflow_type" query:"workflow_type" valid:"omitempty,oneof=sql_release data_export" enums:"sql_release,data_export"`
+
+	// 工单状态（统一枚举），同时作用于上线工单与导出工单，由后端按工单类型映射到原生状态
+	FilterStatus dashboard_svc.UnifiedWorkflowStatus `json:"filter_status" query:"filter_status" valid:"omitempty,oneof=pending_approval pending_action in_progress exporting rejected cancelled failed completed unknown" enums:"pending_approval,pending_action,in_progress,exporting,rejected,cancelled,failed,completed,unknown"`
 }
 
 type GlobalWorkflowListResV2 struct {
