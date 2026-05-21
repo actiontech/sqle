@@ -273,12 +273,8 @@ func (a *action) terminatedFailed() {
 //   - PostgreSQL: "57P01" (SQLSTATE admin_shutdown，pg_terminate_backend 触发)
 //   - PostgreSQL: "conn closed" (pgconn 连接已关闭状态)
 //   - GaussDB / openGauss: "canceling statement due to user request"
-//     (pg_cancel_backend 触发的客户端错误，SQLSTATE 57014；仅在 dbType == GaussDB 时启用守卫)
 //   - SQL Server: "connection is broken" (SqlException，连接被 KILL 后抛出)
 //   - SQL Server: "Timeout expired" (KILL 后执行中的命令收到超时异常)
-//
-// dbType 入参（取自 model.Task.DBType）用于守卫 GaussDB-only 的子串识别分支，
-// 避免误伤其他 PG 系驱动的客户端主动 cancel 场景。
 func isConnectionTerminatedError(err error, dbType string) bool {
 	if err == nil {
 		return false
@@ -287,13 +283,15 @@ func isConnectionTerminatedError(err error, dbType string) bool {
 	// MySQL: 连接被 KILL 命令终止后，mysql 驱动返回 ErrInvalidConn，
 	// 其 Error() 为 "invalid connection"。错误可能经过 CodeError 或 fmt.Errorf 包装，
 	// 但包装后的字符串仍包含 "invalid connection"。
-	if strings.Contains(errMsg, "invalid connection") {
+	if dbType == driverV2.DriverTypeMySQL && strings.Contains(errMsg, "invalid connection") {
 		return true
 	}
 	// PostgreSQL: 连接被 pg_terminate_backend 终止后，pgx 驱动返回 PgError，
 	// 其 SQLSTATE 为 57P01 (admin_shutdown)。错误经过 gRPC 传输后以字符串形式保留。
 	// 典型格式: "FATAL: terminating connection due to administrator command (SQLSTATE 57P01)"
-	if strings.Contains(errMsg, "57P01") {
+	// PostgreSQL: 连接已被标记为关闭状态后，后续操作返回 "conn closed"。
+	// 这是 pgconn 的 connLockError 错误，在连接被终止后尝试复用时出现。
+	if dbType == driverV2.DriverTypePostgreSQL && (strings.Contains(errMsg, "57P01") || strings.Contains(errMsg, "conn closed")) {
 		return true
 	}
 	// GaussDB / openGauss: 当 sqle-gaussdb-plugin 的 KillProcess 调用 pg_cancel_backend
@@ -305,27 +303,20 @@ func isConnectionTerminatedError(err error, dbType string) bool {
 		strings.Contains(errMsg, "canceling statement due to user request") {
 		return true
 	}
-	// PostgreSQL: 连接已被标记为关闭状态后，后续操作返回 "conn closed"。
-	// 这是 pgconn 的 connLockError 错误，在连接被终止后尝试复用时出现。
-	if strings.Contains(errMsg, "conn closed") {
-		return true
-	}
 	// SQL Server: 连接被 KILL 命令终止后，System.Data.SqlClient 抛出 SqlException，
 	// 经过 C# gRPC 插件包装后，错误消息中包含 "connection is broken"。
-	if strings.Contains(errMsg, "connection is broken") {
-		return true
-	}
 	// SQL Server: 连接被 KILL 后，正在执行的命令可能收到超时异常而非连接断开异常。
 	// 典型消息: "Timeout expired. The timeout period elapsed prior to completion of the operation or the server is not responding."
 	// 经过 C# gRPC 插件的 "exec failed:" 前缀包装后仍可通过子串匹配识别。
-	if strings.Contains(errMsg, "Timeout expired") {
-		return true
-	}
 	// SQL Server: KILL 完成后，会话进入 kill 状态，后续操作返回:
 	// "Cannot continue the execution because the session is in the kill state."
-	if strings.Contains(errMsg, "session is in the kill state") {
+	if dbType == driverV2.DriverTypeSQLServer &&
+		(strings.Contains(errMsg, "connection is broken") ||
+			strings.Contains(errMsg, "Timeout expired") ||
+			strings.Contains(errMsg, "session is in the kill state")) {
 		return true
 	}
+
 	return false
 }
 
