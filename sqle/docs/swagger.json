@@ -11289,6 +11289,53 @@
                         "description": "filter by workflow type; sql_release SQL上线工单, data_export 数据导出工单",
                         "name": "workflow_type",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "pending_approval",
+                            "pending_action",
+                            "in_progress",
+                            "exporting",
+                            "rejected",
+                            "cancelled",
+                            "failed",
+                            "completed",
+                            "unknown"
+                        ],
+                        "type": "string",
+                        "description": "filter by unified workflow status; intersects with the card status set, applied to both sql_release and data_export workflows",
+                        "name": "filter_status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter by update time from",
+                        "name": "filter_update_time_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter by update time to",
+                        "name": "filter_update_time_to",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter by create user id",
+                        "name": "filter_create_user_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter create time from",
+                        "name": "filter_create_time_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter create time to",
+                        "name": "filter_create_time_to",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -13920,6 +13967,9 @@
         "dashboard.GlobalWorkflowListItem": {
             "type": "object",
             "properties": {
+                "create_user_name": {
+                    "type": "string"
+                },
                 "created_at": {
                     "description": "创建时间",
                     "type": "string"
@@ -13965,6 +14015,10 @@
                         "completed",
                         "unknown"
                     ]
+                },
+                "updated_at": {
+                    "description": "更新时间",
+                    "type": "string"
                 },
                 "workflow_desc": {
                     "description": "工单描述",

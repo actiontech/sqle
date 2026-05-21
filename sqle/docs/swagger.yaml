@@ -184,6 +184,8 @@ definitions:
     type: object
   dashboard.GlobalWorkflowListItem:
     properties:
+      create_user_name:
+        type: string
       created_at:
         description: 创建时间
         type: string
@@ -219,6 +221,9 @@ definitions:
         - failed
         - completed
         - unknown
+        type: string
+      updated_at:
+        description: 更新时间
         type: string
       workflow_desc:
         description: 工单描述
@@ -15400,6 +15405,41 @@ paths:
         - data_export
         in: query
         name: workflow_type
+        type: string
+      - description: filter by unified workflow status; intersects with the card status
+          set, applied to both sql_release and data_export workflows
+        enum:
+        - pending_approval
+        - pending_action
+        - in_progress
+        - exporting
+        - rejected
+        - cancelled
+        - failed
+        - completed
+        - unknown
+        in: query
+        name: filter_status
+        type: string
+      - description: filter by update time from
+        in: query
+        name: filter_update_time_from
+        type: string
+      - description: filter by update time to
+        in: query
+        name: filter_update_time_to
+        type: string
+      - description: filter by create user id
+        in: query
+        name: filter_create_user_id
+        type: string
+      - description: filter create time from
+        in: query
+        name: filter_create_time_from
+        type: string
+      - description: filter create time to
+        in: query
+        name: filter_create_time_to
         type: string
       responses:
         "200":
