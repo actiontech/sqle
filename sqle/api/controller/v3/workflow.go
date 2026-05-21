@@ -61,7 +61,7 @@ func BatchCompleteWorkflowsV3(c echo.Context) error {
 			return controller.JSONBaseErrorReq(c, err)
 		}
 		if !executable {
-			return controller.JSONBaseErrorReq(c, fmt.Errorf(reason))
+			return controller.JSONBaseErrorReq(c, fmt.Errorf("%s", reason))
 		}
 		workflow, err := v2.CheckCanCompleteWorkflow(projectUid, completeWorkflow.WorkflowID)
 		if err != nil {

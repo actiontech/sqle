@@ -118,6 +118,7 @@ func (s *Storage) getListResult(bodyTpl, queryTpl string, data map[string]interf
 	if err != nil {
 		return err
 	}
+	defer nameStmtTasksQuery.Close()
 	err = nameStmtTasksQuery.Select(result, data)
 	if err != nil {
 		return err
@@ -138,6 +139,7 @@ func (s *Storage) getCountResult(bodyTpl, countTpl string, data map[string]inter
 	if err != nil {
 		return 0, err
 	}
+	defer nameStmtCountQuery.Close()
 	var count uint64
 	err = nameStmtCountQuery.Get(&count, data)
 	if err != nil {

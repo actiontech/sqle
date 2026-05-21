@@ -309,14 +309,14 @@ type dbDriverResult struct {
 
 func (s *dbDriverResult) LastInsertId() (int64, error) {
 	if s.lastInsertIdErr != "" {
-		return s.lastInsertId, fmt.Errorf(s.lastInsertIdErr)
+		return s.lastInsertId, fmt.Errorf("%s", s.lastInsertIdErr)
 	}
 	return s.lastInsertId, nil
 }
 
 func (s *dbDriverResult) RowsAffected() (int64, error) {
 	if s.rowsAffectedErr != "" {
-		return s.rowsAffected, fmt.Errorf(s.rowsAffectedErr)
+		return s.rowsAffected, fmt.Errorf("%s", s.rowsAffectedErr)
 	}
 	return s.rowsAffected, nil
 }

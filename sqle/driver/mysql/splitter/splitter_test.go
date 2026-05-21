@@ -33,7 +33,7 @@ func TestSplitSqlText(t *testing.T) {
 			}
 			splitResults, err := s.splitSqlText(string(sqls))
 			if err != nil {
-				t.Fatalf(err.Error())
+				t.Fatal(err)
 			}
 			assert.Equal(t, testCase.expectedLength, len(splitResults))
 		})
@@ -60,7 +60,7 @@ func TestSplitterProcess(t *testing.T) {
 			}
 			executableNodes, err := s.ParseSqlText(string(sqlText))
 			if err != nil {
-				t.Fatalf(err.Error())
+				t.Fatal(err)
 			}
 			assert.Equal(t, testCase.expectedLength, len(executableNodes))
 		})
@@ -149,7 +149,7 @@ func TestSkipQuotedDelimiter(t *testing.T) {
 	}
 	splitResults, err := s.splitSqlText(string(sqls))
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 	for _, result := range splitResults {
 		fmt.Print("------------------------------\n")

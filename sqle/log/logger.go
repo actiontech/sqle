@@ -82,7 +82,7 @@ func (h *gormLogWrapper) Trace(ctx context.Context, begin time.Time, fc func() (
 		return
 	}
 	sql, rowsAffected := fc()
-	h.logger.Debugf(fmt.Sprintf("trace: sql: %v; rowsAffected: %v; err: %v", sql, rowsAffected, err))
+	h.logger.Debugf("trace: sql: %v; rowsAffected: %v; err: %v", sql, rowsAffected, err)
 }
 
 func (h *gormLogWrapper) Error(ctx context.Context, format string, a ...interface{}) {

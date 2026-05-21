@@ -84,7 +84,7 @@ endif
 DOCKER_REGISTRY ?= 10.186.18.20
 
 ## Dynamic Parameter
-GOLANGCI_LINT_IMAGE ?=golangci/golangci-lint:v1.45.2
+GOLANGCI_LINT_IMAGE ?=golangci/golangci-lint:v1.64.8-alpine
 SCSPELL_IMAGE ?=gerrywastaken/scspell
 GO_COMPILER_IMAGE ?= golang:1.24.0-bullseye
 RPM_BUILD_IMAGE ?= rpmbuild/centos7
