@@ -272,9 +272,10 @@ func (a *action) terminatedFailed() {
 //   - MySQL: "invalid connection" (mysql.ErrInvalidConn 的 Error() 输出)
 //   - PostgreSQL: "57P01" (SQLSTATE admin_shutdown，pg_terminate_backend 触发)
 //   - PostgreSQL: "conn closed" (pgconn 连接已关闭状态)
+//   - GaussDB / openGauss: "canceling statement due to user request"
 //   - SQL Server: "connection is broken" (SqlException，连接被 KILL 后抛出)
 //   - SQL Server: "Timeout expired" (KILL 后执行中的命令收到超时异常)
-func isConnectionTerminatedError(err error) bool {
+func isConnectionTerminatedError(err error, dbType string) bool {
 	if err == nil {
 		return false
 	}
@@ -282,36 +283,40 @@ func isConnectionTerminatedError(err error) bool {
 	// MySQL: 连接被 KILL 命令终止后，mysql 驱动返回 ErrInvalidConn，
 	// 其 Error() 为 "invalid connection"。错误可能经过 CodeError 或 fmt.Errorf 包装，
 	// 但包装后的字符串仍包含 "invalid connection"。
-	if strings.Contains(errMsg, "invalid connection") {
+	if dbType == driverV2.DriverTypeMySQL && strings.Contains(errMsg, "invalid connection") {
 		return true
 	}
 	// PostgreSQL: 连接被 pg_terminate_backend 终止后，pgx 驱动返回 PgError，
 	// 其 SQLSTATE 为 57P01 (admin_shutdown)。错误经过 gRPC 传输后以字符串形式保留。
 	// 典型格式: "FATAL: terminating connection due to administrator command (SQLSTATE 57P01)"
-	if strings.Contains(errMsg, "57P01") {
-		return true
-	}
 	// PostgreSQL: 连接已被标记为关闭状态后，后续操作返回 "conn closed"。
 	// 这是 pgconn 的 connLockError 错误，在连接被终止后尝试复用时出现。
-	if strings.Contains(errMsg, "conn closed") {
+	if dbType == driverV2.DriverTypePostgreSQL && (strings.Contains(errMsg, "57P01") || strings.Contains(errMsg, "conn closed")) {
+		return true
+	}
+	// GaussDB / openGauss: 当 sqle-gaussdb-plugin 的 KillProcess 调用 pg_cancel_backend
+	// 时，客户端会收到 "pq: canceling statement due to user request" (SQLSTATE 57014)。
+	// 该字符串可能被 driver adaptor / gRPC 包装，但子串保留。
+	// 仅在 dbType == GaussDB 时启用，避免误伤未来可能接入的纯 PostgreSQL 驱动的
+	// 用户主动 cancel 场景（cancel != terminate，普通 PG 客户端不应被误判为已终止）。
+	if dbType == driverV2.DriverTypeGaussDB &&
+		strings.Contains(errMsg, "canceling statement due to user request") {
 		return true
 	}
 	// SQL Server: 连接被 KILL 命令终止后，System.Data.SqlClient 抛出 SqlException，
 	// 经过 C# gRPC 插件包装后，错误消息中包含 "connection is broken"。
-	if strings.Contains(errMsg, "connection is broken") {
-		return true
-	}
 	// SQL Server: 连接被 KILL 后，正在执行的命令可能收到超时异常而非连接断开异常。
 	// 典型消息: "Timeout expired. The timeout period elapsed prior to completion of the operation or the server is not responding."
 	// 经过 C# gRPC 插件的 "exec failed:" 前缀包装后仍可通过子串匹配识别。
-	if strings.Contains(errMsg, "Timeout expired") {
-		return true
-	}
 	// SQL Server: KILL 完成后，会话进入 kill 状态，后续操作返回:
 	// "Cannot continue the execution because the session is in the kill state."
-	if strings.Contains(errMsg, "session is in the kill state") {
+	if dbType == driverV2.DriverTypeSQLServer &&
+		(strings.Contains(errMsg, "connection is broken") ||
+			strings.Contains(errMsg, "Timeout expired") ||
+			strings.Contains(errMsg, "session is in the kill state")) {
 		return true
 	}
+
 	return false
 }
 
@@ -443,17 +448,30 @@ func (a *action) execute() (err error) {
 	case e := <-exeErrChan:
 		err = e
 		if e != nil {
-			taskStatus = model.TaskStatusExecuteFailed
+			// 如果用户已经触发了上线终止 (a.terminate() 已被调用)，
+			// 且执行错误能被识别为"连接终止 / 语句取消"类错误，则
+			// 说明 SQL 实际是被 KillProcess 中断的，应当走 terminate_succeeded 收尾，
+			// 而不是默认的 exec_failed。
+			// 该路径覆盖：execTask 因 plugin Tx/Exec/ExecBatch 携带 cancel 错误返回，
+			// 但 terminate goroutine 的 KillProcess RPC 尚未在 select 中胜出的常见竞态。
+			if a.hasTermination() && isConnectionTerminatedError(e, a.task.DBType) {
+				a.terminatedSuccessfully()
+				taskStatus = model.TaskStatusTerminateSucc
+			} else {
+				taskStatus = model.TaskStatusExecuteFailed
+			}
 		} else {
 			taskStatus = model.TaskStatusExecuteSucceeded
 		}
 		// update task status by sql
 		// 验证task下所有的sql是否全部成功（工单中允许重新上线部分sql，所以需要验证全部sql是否成功）
+		// 注意：SQLExecuteStatusTerminateSucc 也算"非成功"，但若 task 已被识别为 terminate_succeeded
+		// (整体被用户中止)，则保留 terminate 收尾状态，不再回退到 exec_failed。
 		failedSqls, queryErr := st.GetExecSqlsByTaskIdAndStatus(task.ID, []string{model.SQLExecuteStatusFailed, model.SQLExecuteStatusTerminateSucc})
 		if queryErr != nil {
 			return queryErr
 		}
-		if len(failedSqls) > 0 {
+		if len(failedSqls) > 0 && taskStatus != model.TaskStatusTerminateSucc {
 			taskStatus = model.TaskStatusExecuteFailed
 		}
 
@@ -475,11 +493,11 @@ func (a *action) execute() (err error) {
 					return err
 				}
 			}
-
+			taskStatus = model.TaskStatusTerminateFail
 		} else {
 			a.terminatedSuccessfully() // NOTE: 如果中止成功，SQLs 状态已经被更新
+			taskStatus = model.TaskStatusTerminateSucc
 		}
-		taskStatus = model.TaskStatusExecuteFailed
 
 	}
 
@@ -702,7 +720,7 @@ func (a *action) executeSQLBatch(executeSQLs []*model.ExecuteSQL) error {
 		for idx, executeSQL := range executeSQLs {
 			executeSQL.ExecStatus = model.SQLExecuteStatusFailed
 			executeSQL.ExecResult = execErr.Error()
-			if a.hasTermination() && isConnectionTerminatedError(execErr) {
+			if a.hasTermination() && isConnectionTerminatedError(execErr, a.task.DBType) {
 				executeSQL.ExecStatus = model.SQLExecuteStatusTerminateSucc
 				if idx >= len(results) || results[idx] == nil {
 					continue
@@ -739,7 +757,7 @@ func (a *action) execSQL(executeSQL *model.ExecuteSQL) error {
 	if execErr != nil {
 		executeSQL.ExecStatus = model.SQLExecuteStatusFailed
 		executeSQL.ExecResult = execErr.Error()
-		if a.hasTermination() && isConnectionTerminatedError(execErr) {
+		if a.hasTermination() && isConnectionTerminatedError(execErr, a.task.DBType) {
 			executeSQL.ExecStatus = model.SQLExecuteStatusTerminateSucc
 		}
 	} else {
@@ -780,7 +798,7 @@ func (a *action) execSQLs(executeSQLs []*model.ExecuteSQL) error {
 		if txErr != nil {
 			executeSQL.ExecStatus = model.SQLExecuteStatusFailed
 			executeSQL.ExecResult = txErr.Error()
-			if a.hasTermination() && isConnectionTerminatedError(txErr) {
+			if a.hasTermination() && isConnectionTerminatedError(txErr, a.task.DBType) {
 				executeSQL.ExecStatus = model.SQLExecuteStatusTerminateSucc
 			}
 			continue
@@ -789,7 +807,7 @@ func (a *action) execSQLs(executeSQLs []*model.ExecuteSQL) error {
 			if results.ExecErr.ErrSqlIndex == uint32(idx) {
 				executeSQL.ExecStatus = model.SQLExecuteStatusFailed
 				executeSQL.ExecResult = results.ExecErr.SqlExecErrMsg
-				if a.hasTermination() && isConnectionTerminatedError(fmt.Errorf("%s", results.ExecErr.SqlExecErrMsg)) {
+				if a.hasTermination() && isConnectionTerminatedError(fmt.Errorf("%s", results.ExecErr.SqlExecErrMsg), a.task.DBType) {
 					executeSQL.ExecStatus = model.SQLExecuteStatusTerminateSucc
 				}
 			} else {
