@@ -447,7 +447,7 @@ func ExecuteOneTaskOnWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !executable {
-		return controller.JSONBaseErrorReq(c, fmt.Errorf(reason))
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("%s", reason))
 	}
 
 	isCan, err := v1.IsTaskCanExecute(s, taskIdStr)
@@ -902,7 +902,7 @@ func UpdateWorkflowScheduleV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !executable {
-		return controller.JSONBaseErrorReq(c, fmt.Errorf(reason))
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("%s", reason))
 	}
 
 	err = s.UpdateInstanceRecordSchedule(curTaskRecord, user.GetIDStr(), req.ScheduleTime)
@@ -958,7 +958,7 @@ func ExecuteTasksOnWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	if !executable {
-		return controller.JSONBaseErrorReq(c, fmt.Errorf(reason))
+		return controller.JSONBaseErrorReq(c, fmt.Errorf("%s", reason))
 	}
 
 	if err := v1.PrepareForWorkflowExecution(c, projectUid, workflow, user); err != nil {

@@ -31,7 +31,7 @@ func Validate(i interface{}) error {
 		errMsgs = append(errMsgs, err.Translate(cv.enTrans))
 	}
 	if len(errMsgs) > 0 {
-		return fmt.Errorf(strings.Join(errMsgs, "; "))
+		return fmt.Errorf("%s", strings.Join(errMsgs, "; "))
 	}
 	return nil
 }

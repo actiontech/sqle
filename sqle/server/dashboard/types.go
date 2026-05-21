@@ -85,16 +85,18 @@ const (
 )
 
 type GlobalWorkflowListItem struct {
-	WorkflowId   string                `json:"workflow_id"`   // 工单ID
-	WorkflowType WorkflowType          `json:"workflow_type" enums:"sql_release,data_export"` // 工单类型
-	WorkflowName string                `json:"workflow_name"` // 工单名称
-	WorkflowDesc string                `json:"workflow_desc"` // 工单描述
-	ProjectUid   string                `json:"project_uid"`   // 项目ID
-	ProjectName  string                `json:"project_name"`  // 项目名称
-	InstanceId   string                `json:"instance_id"`   // 实例ID
-	InstanceName string                `json:"instance_name"` // 实例名称
-	CurrentStepAssigneeUserNameList []string `json:"current_step_assignee_user_name_list"` // 当前处理人姓名列表
-	Priority     string                `json:"priority"`      // High, Medium, Low
-	Status       UnifiedWorkflowStatus `json:"status" enums:"pending_approval,pending_action,in_progress,exporting,rejected,cancelled,failed,completed,unknown"` // 工单状态
-	CreatedAt    string                `json:"created_at"`    // 创建时间
+	WorkflowId                      string                `json:"workflow_id"`                                                                                                      // 工单ID
+	WorkflowType                    WorkflowType          `json:"workflow_type" enums:"sql_release,data_export"`                                                                    // 工单类型
+	WorkflowName                    string                `json:"workflow_name"`                                                                                                    // 工单名称
+	WorkflowDesc                    string                `json:"workflow_desc"`                                                                                                    // 工单描述
+	ProjectUid                      string                `json:"project_uid"`                                                                                                      // 项目ID
+	ProjectName                     string                `json:"project_name"`                                                                                                     // 项目名称
+	InstanceId                      string                `json:"instance_id"`                                                                                                      // 实例ID
+	InstanceName                    string                `json:"instance_name"`                                                                                                    // 实例名称
+	CurrentStepAssigneeUserNameList []string              `json:"current_step_assignee_user_name_list"`                                                                             // 当前处理人姓名列表
+	Priority                        string                `json:"priority"`                                                                                                         // High, Medium, Low
+	Status                          UnifiedWorkflowStatus `json:"status" enums:"pending_approval,pending_action,in_progress,exporting,rejected,cancelled,failed,completed,unknown"` // 工单状态
+	CreatedAt                       string                `json:"created_at"`                                                                                                       // 创建时间
+	UpdatedAt                       string                `json:"updated_at"`                                                                                                       // 更新时间
+	CreateUser                      string                `json:"create_user_name"`
 }

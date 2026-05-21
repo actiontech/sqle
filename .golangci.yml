@@ -15,7 +15,7 @@ linters:
     - staticcheck
     # - forcetypeassert
     - prealloc
-    - deadcode
+    # - deadcode  # TODO: deprecated since v1.49.0, fully inactive in v1.64.x; remove or replace with `unused` later
     - gosimple
     - unconvert
     - errname
@@ -30,3 +30,18 @@ issues:
       linters:
         - errcheck
         - gosec
+
+    # ===== 以下为升级 golangci-lint 至 v1.64.x 后新触发的告警的临时豁免 =====
+    # TODO: 逐项修复代码后，请删除对应豁免规则
+
+    # gosimple 风格简化：bool 比较 / if-return / nil&&len / 多余 break|return / 结构体字面量类型
+    - linters:
+        - gosimple
+      text: "^S(1002|1008|1009|1016|1023):"
+
+    # staticcheck：废弃 API（io/ioutil、rand.Seed）+ 一些代码质量问题
+    # SA1019 deprecated, SA4004 unreachable, SA4006 unused value,
+    # SA4010 append result unused, SA9003 empty branch, SA9004 const group type
+    - linters:
+        - staticcheck
+      text: "^SA(1019|4004|4006|4010|9003|9004):"

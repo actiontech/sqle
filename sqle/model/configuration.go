@@ -369,14 +369,14 @@ func (s *Storage) CreateNotifyRecord(notifyType string, curTaskRecord *WorkflowI
 			TaskId: curTaskRecord.TaskId,
 		}
 		if err := s.Save(&record); err != nil {
-			return nil
+			return err
 		}
 	case NotifyTypeFeishu:
 		record := FeishuScheduledRecord{
 			TaskId: curTaskRecord.TaskId,
 		}
 		if err := s.Save(&record); err != nil {
-			return nil
+			return err
 		}
 	default:
 		return nil

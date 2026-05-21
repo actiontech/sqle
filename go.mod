@@ -1,11 +1,11 @@
 module github.com/actiontech/sqle
 
-go 1.19
+go 1.24.0
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/Masterminds/semver/v3 v3.1.1
-	github.com/actiontech/dms v0.0.0-20251027081421-309bc24335ca
+	github.com/actiontech/dms v0.0.0-20260520024857-5bc318ea23da
 	github.com/actiontech/java-sql-extractor v0.0.0-20251017060055-4ea7aa0b19dd
 	github.com/actiontech/mybatis-mapper-2-sql v0.5.1-0.20250307064901-aabaceee2249
 	github.com/agiledragon/gomonkey v2.0.2+incompatible
@@ -52,11 +52,11 @@ require (
 	github.com/sijms/go-ora/v2 v2.2.15
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/cobra v1.1.1
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.11.1
 	github.com/swaggo/swag v1.16.3
 	github.com/ungerik/go-dry v0.0.0-20210209114055-a3e162a9e62e
-	github.com/urfave/cli/v2 v2.8.1
-	golang.org/x/net v0.17.0
+	github.com/urfave/cli/v2 v2.27.7
+	golang.org/x/net v0.44.0
 	google.golang.org/grpc v1.50.1
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -64,20 +64,20 @@ require (
 )
 
 require (
+	github.com/360EntSecGroup-Skylar/excelize v1.4.1
 	github.com/aliyun/credentials-go v1.1.2
 	github.com/hashicorp/go-version v1.7.0
 	github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.1.69
 	github.com/nicksnyder/go-i18n/v2 v2.4.0
-	golang.org/x/crypto v0.14.0
-	golang.org/x/text v0.14.0
+	golang.org/x/crypto v0.42.0
+	golang.org/x/text v0.29.0
 	gorm.io/driver/mysql v1.4.7
 	gorm.io/gorm v1.24.3
 )
 
 require (
 	dario.cat/mergo v1.0.0 // indirect
-	github.com/360EntSecGroup-Skylar/excelize v1.4.1 // indirect
-	github.com/BurntSushi/toml v1.3.2 // indirect
+	github.com/BurntSushi/toml v1.5.0 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/ProtonMail/go-crypto v0.0.0-20230828082145-3c4c8a2d2371 // indirect
@@ -93,7 +93,7 @@ require (
 	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
 	github.com/cloudflare/circl v1.3.3 // indirect
-	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.7 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.4 // indirect
 	github.com/cznic/golex v0.0.0-20181122101858-9c343928389c // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -135,8 +135,8 @@ require (
 	github.com/labstack/gommon v0.4.0 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
-	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-isatty v0.0.17 // indirect
+	github.com/mattn/go-colorable v0.1.14 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mitchellh/go-testing-interface v1.14.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
@@ -164,16 +164,17 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
-	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
+	github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 // indirect
 	go.mongodb.org/mongo-driver v1.12.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.17.0 // indirect
 	golang.org/x/exp v0.0.0-20230515195305-f3d0a9c9a5cc // indirect
-	golang.org/x/mod v0.12.0 // indirect
-	golang.org/x/sys v0.15.0 // indirect
+	golang.org/x/mod v0.28.0 // indirect
+	golang.org/x/sync v0.17.0 // indirect
+	golang.org/x/sys v0.36.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
-	golang.org/x/tools v0.13.0 // indirect
+	golang.org/x/tools v0.37.0 // indirect
 	google.golang.org/genproto v0.0.0-20210701191553-46259e63a0a9 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect

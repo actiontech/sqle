@@ -2,6 +2,7 @@ package dmsobject
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/url"
 
@@ -47,8 +48,12 @@ func UpdateSystemVariables(ctx context.Context, dmsAddr string, req *dmsV1.Updat
 	}
 
 	// 调用 HTTP PATCH 请求
+	reqBody, err := json.Marshal(req)
+	if err != nil {
+		return fmt.Errorf("marshal error: %v", err)
+	}
 	reply := &baseV1.GenericResp{}
-	if err := pkgHttp.Call(ctx, "PATCH", baseURL.String(), header, req, reply); err != nil {
+	if err := pkgHttp.Call(ctx, "PATCH", baseURL.String(), header, "application/json", reqBody, reply); err != nil {
 		return err
 	}
 	if reply.Code != 0 {

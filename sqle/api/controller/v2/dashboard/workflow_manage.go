@@ -32,9 +32,14 @@ type GetGlobalWorkflowListReqV2 struct {
 	PageSize  uint32 `json:"page_size" query:"page_size" valid:"required"` // 每页条数
 
 	// 筛选与搜索
-	Keyword          string `json:"keyword" query:"keyword"`                       // 关键词模糊搜索
-	FilterProjectUid string `json:"filter_project_uid" query:"filter_project_uid"` // 项目ID
-	FilterInstanceId string `json:"filter_instance_id" query:"filter_instance_id"` // 实例ID
+	Keyword              string `json:"keyword" query:"keyword"`                             // 关键词模糊搜索
+	FilterProjectUid     string `json:"filter_project_uid" query:"filter_project_uid"`       // 项目ID
+	FilterInstanceId     string `json:"filter_instance_id" query:"filter_instance_id"`       // 实例ID
+	FilterCreateUserId   string `json:"filter_create_user_id" query:"filter_create_user_id"` // 创建人ID
+	FilterCreateTimeFrom string `json:"filter_create_time_from" query:"filter_create_time_from"`
+	FilterCreateTimeTo   string `json:"filter_create_time_to" query:"filter_create_time_to"`
+	FilterUpdateTimeFrom string `json:"filter_update_time_from" query:"filter_update_time_from"`
+	FilterUpdateTimeTo   string `json:"filter_update_time_to" query:"filter_update_time_to"`
 
 	// 卡片过滤类型
 	FilterCard dashboard_svc.GlobalWorkflowFilterCard `json:"filter_card" query:"filter_card" valid:"omitempty,oneof=archived pending_for_me initiated_by_me view_all" enums:"archived,pending_for_me,initiated_by_me,view_all"`
@@ -86,6 +91,12 @@ func GetGlobalWorkflowStatisticsV2(c echo.Context) error {
 // @Param filter_instance_id query string false "filter by instance id"
 // @Param filter_card query string false "filter by card type; archived 已完成工单, pending_for_me 待我处理, initiated_by_me 我发起, view_all 查看全部" Enums(archived,pending_for_me,initiated_by_me,view_all)
 // @Param workflow_type query string false "filter by workflow type; sql_release SQL上线工单, data_export 数据导出工单" Enums(sql_release,data_export)
+// @Param filter_status query string false "filter by unified workflow status; intersects with the card status set, applied to both sql_release and data_export workflows" Enums(pending_approval,pending_action,in_progress,exporting,rejected,cancelled,failed,completed,unknown)
+// @Param filter_update_time_from query string false "filter by update time from"
+// @Param filter_update_time_to query string false "filter by update time to"
+// @Param filter_create_user_id query string false "filter by create user id"
+// @Param filter_create_time_from query string false "filter create time from"
+// @Param filter_create_time_to query string false "filter create time to"
 // @Success 200 {object} GlobalWorkflowListResV2
 // @Router /v2/dashboard/workflows [get]
 func GetGlobalWorkflowListV2(c echo.Context) error {

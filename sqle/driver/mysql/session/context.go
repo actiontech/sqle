@@ -1427,7 +1427,7 @@ func (c *Context) CheckTransactionNotCommittedMySQL5(execTimeoutSecs int) (count
 	timeoutQuery := fmt.Sprintf("SELECT COUNT(*) AS cnt FROM information_schema.innodb_trx WHERE TIMESTAMPDIFF(SECOND, trx_started, NOW()) > %d", execTimeoutSecs)
 	timeoutResults, err := c.e.Db.Query(timeoutQuery)
 	if err != nil {
-		return count, 0, nil
+		return count, 0, err
 	}
 	if len(timeoutResults) > 0 {
 		if n, ok := timeoutResults[0]["cnt"]; ok && n.Valid {
