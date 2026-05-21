@@ -47,6 +47,7 @@ const (
 	UIdOfOpPermissionManageRoleMange         = "700035"
 	UIdOfOpPermissionDesensitization         = "700036"
 	UIDOfOpPermissionViewSQLInsight          = "700037"
+	UIdOfOpPermissionMaskingAudit            = "700038"
 
 	UIDOfDMSConfig = "700100"
 
@@ -125,6 +126,8 @@ func ConvertPermissionIdToType(opPermissionUid string) (apiOpPermissionTyp dmsCo
 		apiOpPermissionTyp = dmsCommonV1.OpPermissionManageRoleMange
 	case UIdOfOpPermissionDesensitization:
 		apiOpPermissionTyp = dmsCommonV1.OpPermissionDesensitization
+	case UIdOfOpPermissionMaskingAudit:
+		apiOpPermissionTyp = dmsCommonV1.OpPermissionMaskingAudit
 	case UIDOfOrdinaryUser:
 		apiOpPermissionTyp = dmsCommonV1.OpPermissionTypeNone
 	default:
@@ -202,6 +205,8 @@ func ConvertPermissionTypeToId(opPermissionType dmsCommonV1.OpPermissionType) (p
 		permissionId = UIdOfOpPermissionManageRoleMange
 	case dmsCommonV1.OpPermissionDesensitization:
 		permissionId = UIdOfOpPermissionDesensitization
+	case dmsCommonV1.OpPermissionMaskingAudit:
+		permissionId = UIdOfOpPermissionMaskingAudit
 	case dmsCommonV1.OpPermissionTypeNone:
 		permissionId = UIDOfOrdinaryUser
 	default:
@@ -239,6 +244,19 @@ func ParseDBType(s string) (DBType, error) {
 		return DBTypeGoldenDB, nil
 	case "TBase":
 		return DBTypeTBase, nil
+	case "Hive":
+		return DBTypeHive, nil
+	case "DM":
+		return DBTypeDM, nil
+	case "GaussDB for MySQL":
+		return DBTypeGaussDB, nil
+	case "HANA":
+		return DBTypeHANA, nil
+	case "PolarDB For MySQL":
+		return DBTypePolarDBForMySQL, nil
+	case "OceanBase For Oracle":
+		return DBTypeOceanBaseOracle, nil
+
 	default:
 		return "", fmt.Errorf("invalid db type: %s", s)
 	}
@@ -255,14 +273,41 @@ const (
 	DBTypeTDSQLForInnoDB DBType = "TDSQL For InnoDB"
 	DBTypeGoldenDB       DBType = "GoldenDB"
 	DBTypeTBase          DBType = "TBase"
+	DBTypeHive           DBType = "Hive"
+	DBTypeDM             DBType = "达梦(DM)"
+	DBTypeGaussDB        DBType = "GaussDB / openGauss"
+	DBTypeHANA              DBType = "HANA"
+	DBTypePolarDBForMySQL   DBType = "PolarDB For MySQL"
+	DBTypeOceanBaseOracle   DBType = "OceanBase For Oracle"
 )
 
-var SupportedDataExportDBTypes = map[DBType]struct{}{
+var supportedDataExportDBTypes = map[DBType]struct{}{
 	DBTypeMySQL:          {},
 	DBTypePostgreSQL:     {},
 	DBTypeOracle:         {},
 	DBTypeSQLServer:      {},
 	DBTypeOceanBaseMySQL: {},
+	DBTypeHive:           {},
+	DBTypeDM:             {},
+	// 新增数据源 (Issue #593)
+	DBTypeTiDB:           {},
+	DBTypeTDSQLForInnoDB: {},
+	DBTypeGoldenDB:       {},
+	DBTypeTBase:          {},
+	DBTypeGaussDB:        {},
+	DBTypeDB2:            {},
+	DBTypeHANA:              {},
+	DBTypePolarDBForMySQL:   {},
+	DBTypeOceanBaseOracle:   {},
+}
+
+func CheckDBTypeIfDataExportSupported(dbtype string) bool {
+	dbType, err := ParseDBType(dbtype)
+	if err != nil {
+		return false
+	}
+	_, ok := supportedDataExportDBTypes[dbType]
+	return ok
 }
 
 type FilterCondition struct {
@@ -286,6 +331,49 @@ const (
 	FilterOperatorLessThanOrEqual    FilterOperator = "<="
 	FilterOperatorIn                 FilterOperator = "in"
 )
+
+type FilterLogic string
+
+const (
+	FilterLogicAnd FilterLogic = "AND"
+	FilterLogicOr  FilterLogic = "OR"
+)
+
+type FilterConditionGroup struct {
+	Logic      FilterLogic
+	Conditions []FilterCondition
+	Groups     []FilterConditionGroup
+}
+
+type FilterOptions struct {
+	Logic  FilterLogic
+	Groups []FilterConditionGroup
+}
+
+func NewFilterOptions(logic FilterLogic, groups ...FilterConditionGroup) FilterOptions {
+	return FilterOptions{
+		Logic:  logic,
+		Groups: groups,
+	}
+}
+
+func NewConditionGroup(logic FilterLogic, conditions ...FilterCondition) FilterConditionGroup {
+	return FilterConditionGroup{
+		Logic:      logic,
+		Conditions: conditions,
+	}
+}
+
+func ConditionsToFilterOptions(conditions []FilterCondition) FilterOptions {
+	if len(conditions) == 0 {
+		return FilterOptions{}
+	}
+
+	return FilterOptions{
+		Logic:  FilterLogicAnd,
+		Groups: []FilterConditionGroup{NewConditionGroup(FilterLogicAnd, conditions...)},
+	}
+}
 
 type DBServiceSourceName string
 

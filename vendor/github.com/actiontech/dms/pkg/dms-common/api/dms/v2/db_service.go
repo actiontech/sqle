@@ -19,7 +19,7 @@ type ListDBServiceReq struct {
 	// in:query
 	OrderBy v1.DBServiceOrderByField `query:"order_by" json:"order_by"`
 	// the db service connection
-	// enum: connect_success,connect_failed
+	// enum: ["connect_success","connect_failed"]
 	// in:query
 	FilterLastConnectionTestStatus *string `query:"filter_last_connection_test_status" json:"filter_last_connection_test_status" validate:"omitempty,oneof=connect_success connect_failed"`
 	// the db service host
