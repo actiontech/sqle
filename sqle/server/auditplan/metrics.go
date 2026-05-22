@@ -15,9 +15,10 @@ const MetricNameHost string = "host"
 const MetricNameEndpoints string = "endpoints"
 const MetricNameStartTimeOfLastScrapedSQL string = "start_time_of_last_scraped_sql" // 抓取sql的开始时间
 
-const MetricNameMetaName string = "schema_meta_name"    // 表或者视图的名字
-const MetricNameMetaType string = "schema_meta_type"    // 表或者视图等等
-const MetricNameRecordDeleted string = "record_deleted" // 标记记录是否被删除掉
+const MetricNameMetaName string = "schema_meta_name"       // 表或者视图的名字
+const MetricNameMetaType string = "schema_meta_type"       // 表或者视图等等
+const MetricNameMetaCatalog string = "schema_meta_catalog" // 对象所在的 catalog（PG 系语义下为 database 名；无 catalog 概念的数据库为空）
+const MetricNameRecordDeleted string = "record_deleted"    // 标记记录是否被删除掉
 
 const MetricNameQueryTimeTotal string = "query_time_total" // 总执行时间
 const MetricNameCPUTimeAvg string = "cpu_time_avg"
@@ -96,6 +97,7 @@ var ALLMetric = map[string]MetricType{
 	MetricNameStartTimeOfLastScrapedSQL: MetricTypeString, // MySQL slow log
 	MetricNameMetaName:                  MetricTypeString, // MySQL schema meta
 	MetricNameMetaType:                  MetricTypeString, // MySQL schema meta
+	MetricNameMetaCatalog:               MetricTypeString, // PG-family schema meta (catalog/database name)
 	MetricNameRecordDeleted:             MetricTypeBool,   // MySQL schema meta
 	MetricNameHost:                      MetricTypeString, // OB MySQL Full Collect
 

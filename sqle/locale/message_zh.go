@@ -353,6 +353,7 @@ var (
 	ApMetricNameHost                    = &i18n.Message{ID: "ApMetricNameHost", Other: "主机"}
 	ApMetricNameMetaName                = &i18n.Message{ID: "ApMetricNameMetaName", Other: "对象名称"}
 	ApMetricNameMetaType                = &i18n.Message{ID: "ApMetricNameMetaType", Other: "对象类型"}
+	ApMetricNameMetaCatalog             = &i18n.Message{ID: "ApMetricNameMetaCatalog", Other: "catalog"}
 	ApMetricNameQueryTimeTotal          = &i18n.Message{ID: "ApMetricNameQueryTimeTotal", Other: "总执行时间(s)"}
 	ApMetricNameQueryTimeAvg            = &i18n.Message{ID: "ApMetricNameQueryTimeAvg", Other: "平均执行时间(s)"}
 	ApMetricNameQueryTimeTotalMS        = &i18n.Message{ID: "ApMetricNameQueryTimeTotalMS", Other: "总执行时间(ms)"}

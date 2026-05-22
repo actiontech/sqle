@@ -122,10 +122,16 @@ type BaseSchemaMetaTaskV2 struct {
 }
 
 type SchemaMetaSQL struct {
+	// SchemaName 表示对象所在的逻辑 schema/owner（PostgreSQL 系语义下指 namespace 名，例如 public、app_a）。
+	// 对于无 catalog/schema 区分的数据库（MySQL、TiDB 等），SchemaName 保留为采集到的库名即可。
 	SchemaName string
-	MetaName   string
-	MetaType   string
-	SQLContent string
+	// CatalogName 表示对象所在的 catalog（PostgreSQL 系语义下指 database 名，例如 db_a）。
+	// 仅当目标数据库存在 catalog 与 schema 双层命名空间时（PG / TBase / TDSQL-PG / openGauss / GaussDB 等）填充；
+	// 其它数据库可留空字符串。
+	CatalogName string
+	MetaName    string
+	MetaType    string
+	SQLContent  string
 }
 
 func (at *BaseSchemaMetaTaskV2) Params(instanceId ...string) params.Params {
@@ -155,6 +161,7 @@ func (at *BaseSchemaMetaTaskV2) Metrics() []string {
 	return []string{
 		MetricNameMetaType,
 		MetricNameMetaName,
+		MetricNameMetaCatalog,
 		MetricNameRecordDeleted,
 	}
 }
@@ -163,6 +170,7 @@ func (at *BaseSchemaMetaTaskV2) genSQLId(sql *SQLV2) string {
 	md5Json, err := json.Marshal(
 		struct {
 			ProjectId   string
+			Catalog     string
 			Schema      string
 			InstName    string
 			Source      string
@@ -171,6 +179,7 @@ func (at *BaseSchemaMetaTaskV2) genSQLId(sql *SQLV2) string {
 			MetaType    string
 		}{
 			ProjectId:   sql.ProjectId,
+			Catalog:     sql.Info.Get(MetricNameMetaCatalog).String(),
 			Schema:      sql.SchemaName,
 			InstName:    sql.InstanceID,
 			Source:      sql.Source,
@@ -180,7 +189,7 @@ func (at *BaseSchemaMetaTaskV2) genSQLId(sql *SQLV2) string {
 		},
 	)
 	if err != nil { // todo: 处理错误
-		return utils.Md5String(fmt.Sprintf("%s:%s:%s:%s", sql.AuditPlanId, sql.SchemaName, sql.Info.Get(MetricNameMetaName).String(), sql.Info.Get(MetricNameMetaType).String()))
+		return utils.Md5String(fmt.Sprintf("%s:%s:%s:%s:%s", sql.AuditPlanId, sql.Info.Get(MetricNameMetaCatalog).String(), sql.SchemaName, sql.Info.Get(MetricNameMetaName).String(), sql.Info.Get(MetricNameMetaType).String()))
 	} else {
 		return utils.Md5String(string(md5Json))
 	}
@@ -199,6 +208,9 @@ func (at *BaseSchemaMetaTaskV2) mergeSQL(originSQL, mergedSQL *SQLV2) {
 
 	// meta name
 	originSQL.Info.SetString(MetricNameMetaName, mergedSQL.Info.Get(MetricNameMetaName).String())
+
+	// meta catalog（PG 系 catalog/database 名，无 catalog 概念的数据库为空字符串）
+	originSQL.Info.SetString(MetricNameMetaCatalog, mergedSQL.Info.Get(MetricNameMetaCatalog).String())
 
 	// record deleted
 	originSQL.Info.SetBool(MetricNameRecordDeleted, mergedSQL.Info.Get(MetricNameRecordDeleted).Bool())
@@ -251,6 +263,7 @@ func (at *BaseSchemaMetaTaskV2) ExtractSQL(logger *logrus.Entry, ap *AuditPlan, 
 		sqlV2.Info.SetBool(MetricNameRecordDeleted, false)
 		sqlV2.Info.SetString(MetricNameMetaName, sql.MetaName)
 		sqlV2.Info.SetString(MetricNameMetaType, sql.MetaType)
+		sqlV2.Info.SetString(MetricNameMetaCatalog, sql.CatalogName)
 		sqlV2.SQLId = at.genSQLId(sqlV2)
 		if err := at.AggregateSQL(cache, sqlV2); err != nil {
 			logger.Errorf("aggregate sql failed, error: %v", err)
@@ -291,6 +304,10 @@ func (at *BaseSchemaMetaTaskV2) Head(ap *AuditPlan) []Head {
 		{
 			Name: model.AuditResultName,
 			Desc: model.AuditResultDesc,
+		},
+		{
+			Name: MetricNameMetaCatalog,
+			Desc: locale.ApMetricNameMetaCatalog,
 		},
 		{
 			Name: "schema_name",
@@ -360,6 +377,7 @@ func (at *BaseSchemaMetaTaskV2) GetSQLData(ctx context.Context, ap *AuditPlan, p
 			"id":                  sql.AuditPlanSqlId,
 			MetricNameMetaName:    info.Get(MetricNameMetaName).String(),
 			MetricNameMetaType:    info.Get(MetricNameMetaType).String(),
+			MetricNameMetaCatalog: info.Get(MetricNameMetaCatalog).String(),
 			model.AuditResultName: sql.AuditResult.GetAuditJsonStrByLangTag(locale.Bundle.GetLangTagFromCtx(ctx)),
 			model.AuditStatus:     sql.AuditStatus,
 		})
