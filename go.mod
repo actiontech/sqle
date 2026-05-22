@@ -15,6 +15,7 @@ require (
 	github.com/alibabacloud-go/tea v1.1.19
 	github.com/alibabacloud-go/tea-utils v1.4.3
 	github.com/baidubce/bce-sdk-go v0.9.151
+	github.com/beltran/gohive v1.6.0
 	github.com/bwmarrin/snowflake v0.3.0
 	github.com/clbanning/mxj/v2 v2.5.6 // indirect
 	github.com/cznic/mathutil v0.0.0-20181122101859-297441e03548
@@ -91,7 +92,10 @@ require (
 	github.com/alibabacloud-go/openapi-util v0.1.0 // indirect
 	github.com/alibabacloud-go/tea-xml v1.1.2 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect
+	github.com/apache/thrift v0.19.0 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
+	github.com/beltran/gosasl v0.0.0-20231124144235-92b2e4f10bb6 // indirect
+	github.com/beltran/gssapi v0.0.0-20200324152954-d86554db4bab // indirect
 	github.com/cloudflare/circl v1.3.3 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.7 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.4 // indirect
@@ -106,6 +110,7 @@ require (
 	github.com/go-git/go-billy/v5 v5.5.0 // indirect
 	github.com/go-mysql-org/go-mysql v1.3.0 // indirect
 	github.com/go-ole/go-ole v1.2.4 // indirect
+	github.com/go-zookeeper/zk v1.0.3 // indirect
 	github.com/go-openapi/errors v0.20.3 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/jsonreference v0.19.6 // indirect
