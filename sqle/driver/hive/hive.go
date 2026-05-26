@@ -47,6 +47,11 @@ type HiveDriverImpl struct {
 	// opens a real gohive connection. Unit tests inject a fake to avoid
 	// requiring a Hive server.
 	compareRunnerFactory func(dsn *driverV2.DSN) (hiveQueryRunner, func(), error)
+	// execRunnerFactory builds a hiveExecRunner used by Exec / ExecBatch.
+	// In production it is nil and a fresh gohiveExecRunner backed by
+	// h.conn is constructed on demand. Unit tests inject a fake so the
+	// Exec path can be exercised without a live HiveServer2.
+	execRunnerFactory func(h *HiveDriverImpl) hiveExecRunner
 }
 
 func (p *PluginProcessor) GetDriverMetas() (*driverV2.DriverMetas, error) {
@@ -320,12 +325,151 @@ func (h *HiveDriverImpl) Close(ctx context.Context) {
 	}
 }
 
-func (h *HiveDriverImpl) Exec(ctx context.Context, query string) (databaseDriver.Result, error) {
-	return nil, fmt.Errorf("hive plugin does not support Exec")
+// hiveExecResult is the driver.Result implementation returned by Hive's
+// Exec / ExecBatch. Hive does NOT report LastInsertId or RowsAffected for
+// most statements (HiveServer2 cursor.Exec is fire-and-forget for DDL and
+// returns affected rows only for a small subset of DMLs through a separate
+// channel that gohive does not surface). The contract follows
+// database/sql/driver.Result by returning a defensive error rather than
+// fabricating a zero — callers that genuinely need these values can detect
+// the unsupported-by-driver case from the error message.
+type hiveExecResult struct{}
+
+func (hiveExecResult) LastInsertId() (int64, error) {
+	return 0, fmt.Errorf("hive plugin does not support LastInsertId")
 }
 
+func (hiveExecResult) RowsAffected() (int64, error) {
+	return 0, fmt.Errorf("hive plugin does not support RowsAffected")
+}
+
+// hiveExecRunner abstracts the minimum cursor surface needed by Exec /
+// ExecBatch. It allows unit tests to substitute a fake cursor (so the
+// execution contract can be exercised without a live HiveServer2) and
+// keeps the driver layer decoupled from gohive's concrete cursor type.
+type hiveExecRunner interface {
+	exec(ctx context.Context, query string) error
+}
+
+// gohiveExecRunner is the production hiveExecRunner backed by *gohive.Connection.
+// It opens a fresh cursor per statement (matching gohive's recommended usage),
+// invokes cursor.Exec, and inspects cursor.Err. The HS2 ROW-ERR on no-result
+// statements (see compat-RISK-10) is tolerated using the same classifier as
+// runSingleStringQuery so DDL/DML batches don't fail spuriously.
+type gohiveExecRunner struct {
+	conn *gohive.Connection
+}
+
+func (g *gohiveExecRunner) exec(ctx context.Context, query string) error {
+	if g.conn == nil {
+		return fmt.Errorf("hive connection is not initialized")
+	}
+	cursor := g.conn.Cursor()
+	defer cursor.Close()
+
+	cursor.Exec(ctx, query)
+	if cursor.Err != nil {
+		if isHS2NoResultRowErr(cursor.Err) {
+			// HS2 returns a ROW-ERR for DDL / SET / USE statements that
+			// produce no result columns. cursor.Exec has already submitted
+			// the statement; treat as success (compat-RISK-10).
+			return nil
+		}
+		return fmt.Errorf("failed to execute %q: %v", query, cursor.Err)
+	}
+	return nil
+}
+
+// stripSQLTerminator removes a single trailing semicolon (and surrounding
+// whitespace) from a Hive statement. HiveServer2 rejects DDL/DML that
+// contains a trailing ';' because the JDBC protocol assumes one statement
+// per execute call. The structure-compare modify-SQL output emits
+// "USE <schema>; DROP TABLE x; CREATE TABLE x ...;" which is split on ';'
+// upstream — but defensive trimming here makes the driver tolerant of
+// either form.
+func stripSQLTerminator(query string) string {
+	q := strings.TrimSpace(query)
+	for strings.HasSuffix(q, ";") {
+		q = strings.TrimSpace(strings.TrimSuffix(q, ";"))
+	}
+	return q
+}
+
+// Exec submits a single Hive statement to HiveServer2 and waits for it to
+// complete. Empty / whitespace-only / comment-only statements are skipped
+// (no-op success) so that the modify-SQL splitter upstream — which can
+// produce empty trailers after stripping `;` — does not cause spurious
+// errors.
+func (h *HiveDriverImpl) Exec(ctx context.Context, query string) (databaseDriver.Result, error) {
+	trimmed := stripSQLTerminator(query)
+	if trimmed == "" || isAllCommentLines(trimmed) {
+		// Nothing meaningful to execute; succeed silently. This matches
+		// MySQL driver behaviour for empty statements piped through
+		// ExecBatch and avoids HS2 syntax-error noise.
+		return hiveExecResult{}, nil
+	}
+
+	// h.execRunnerFactory is the unit-test injection point. Production
+	// path (factory == nil) requires a live connection.
+	if h.execRunnerFactory == nil && h.conn == nil {
+		return nil, fmt.Errorf("hive connection is not initialized")
+	}
+
+	runner := h.execRunner()
+	if err := runner.exec(ctx, trimmed); err != nil {
+		return nil, err
+	}
+	return hiveExecResult{}, nil
+}
+
+// ExecBatch executes a sequence of statements via Exec. If any statement
+// fails the batch stops and returns the partial results so the caller can
+// see how far the batch progressed (matches MySQL driver's contract in
+// sqle/driver/mysql/mysql.go::ExecBatch).
 func (h *HiveDriverImpl) ExecBatch(ctx context.Context, sqls ...string) ([]databaseDriver.Result, error) {
-	return nil, fmt.Errorf("hive plugin does not support ExecBatch")
+	results := make([]databaseDriver.Result, 0, len(sqls))
+	for _, sql := range sqls {
+		result, err := h.Exec(ctx, sql)
+		results = append(results, result)
+		if err != nil {
+			return results, fmt.Errorf("exec sql failed: \n%s \n%v", sql, err)
+		}
+	}
+	return results, nil
+}
+
+// execRunner returns the execRunner used by Exec. h.execRunnerFactory is
+// the test-injection point; if unset, a fresh gohiveExecRunner backed by
+// h.conn is constructed on demand (production path).
+func (h *HiveDriverImpl) execRunner() hiveExecRunner {
+	if h.execRunnerFactory != nil {
+		return h.execRunnerFactory(h)
+	}
+	return &gohiveExecRunner{conn: h.conn}
+}
+
+// isAllCommentLines reports whether every non-empty line in s is a Hive
+// SQL comment (-- ...). Comment-only statements occur when modify-SQL
+// output is split on ';' and a trailing block like
+//
+//	"-- WARNING: data loss risk\n"
+//
+// is left behind. HiveServer2 rejects "comment-only" statements with a
+// generic parser error, so the driver normalises them to a no-op.
+func isAllCommentLines(s string) bool {
+	if s == "" {
+		return true
+	}
+	for _, line := range strings.Split(s, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		if !strings.HasPrefix(line, "--") {
+			return false
+		}
+	}
+	return true
 }
 
 func (h *HiveDriverImpl) Tx(ctx context.Context, queries ...string) (*driverV2.TxResponse, error) {

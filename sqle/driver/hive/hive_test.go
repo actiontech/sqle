@@ -618,3 +618,231 @@ func Test_GetDatabaseObjectDDL_DefaultDiscovery(t *testing.T) {
 		t.Errorf("v_user_summary type = %q want VIEW", gotTypes["v_user_summary"])
 	}
 }
+
+// fakeExecRunner records every Exec invocation and lets tests script the
+// per-query error response. It is the unit-test injection point for the
+// Exec / ExecBatch contract on HiveDriverImpl.
+type fakeExecRunner struct {
+	calls   []string
+	errs    map[string]error
+	defaultErr error
+}
+
+func (f *fakeExecRunner) exec(ctx context.Context, query string) error {
+	f.calls = append(f.calls, query)
+	if e, ok := f.errs[query]; ok {
+		return e
+	}
+	return f.defaultErr
+}
+
+func Test_StripSQLTerminator(t *testing.T) {
+	cases := map[string]struct {
+		in   string
+		want string
+	}{
+		"plain":              {in: "SELECT 1", want: "SELECT 1"},
+		"trailing semicolon": {in: "SELECT 1;", want: "SELECT 1"},
+		"trailing whitespace_and_semicolons": {in: " SELECT 1 ;;\n ", want: "SELECT 1"},
+		"only_semicolons":    {in: ";;;", want: ""},
+		"empty":              {in: "", want: ""},
+		"whitespace_only":    {in: "   \n  ", want: ""},
+	}
+	for name, tc := range cases {
+		tc := tc
+		t.Run(name, func(t *testing.T) {
+			got := stripSQLTerminator(tc.in)
+			if got != tc.want {
+				t.Errorf("stripSQLTerminator(%q) = %q want %q", tc.in, got, tc.want)
+			}
+		})
+	}
+}
+
+func Test_IsAllCommentLines(t *testing.T) {
+	cases := map[string]struct {
+		in   string
+		want bool
+	}{
+		"empty":                {in: "", want: true},
+		"single_comment":       {in: "-- hello", want: true},
+		"multiline_comments":   {in: "-- WARNING: data loss risk\n-- second comment", want: true},
+		"blank_lines_and_comment": {in: "\n  -- only comment\n  \n", want: true},
+		"mixed":                {in: "-- WARNING\nDROP TABLE t", want: false},
+		"sql_only":             {in: "DROP TABLE t", want: false},
+	}
+	for name, tc := range cases {
+		tc := tc
+		t.Run(name, func(t *testing.T) {
+			got := isAllCommentLines(tc.in)
+			if got != tc.want {
+				t.Errorf("isAllCommentLines(%q) = %v want %v", tc.in, got, tc.want)
+			}
+		})
+	}
+}
+
+// Test_Exec_SingleStatement covers the happy path: a DDL is forwarded to
+// the runner without alteration; the trailing semicolon (if present) is
+// stripped before submission; the returned hiveExecResult exposes the
+// "not supported" contract for LastInsertId / RowsAffected.
+func Test_Exec_SingleStatement(t *testing.T) {
+	runner := &fakeExecRunner{}
+	impl := &HiveDriverImpl{
+		execRunnerFactory: func(_ *HiveDriverImpl) hiveExecRunner { return runner },
+	}
+	res, err := impl.Exec(context.Background(), "DROP TABLE IF EXISTS sqle_compare_test.t_diff_only;")
+	if err != nil {
+		t.Fatalf("Exec returned err: %v", err)
+	}
+	if res == nil {
+		t.Fatal("Exec returned nil result")
+	}
+	if _, err := res.LastInsertId(); err == nil {
+		t.Error("expected LastInsertId to return an error (hive not supported)")
+	}
+	if _, err := res.RowsAffected(); err == nil {
+		t.Error("expected RowsAffected to return an error (hive not supported)")
+	}
+	if len(runner.calls) != 1 {
+		t.Fatalf("expected 1 runner.calls, got %d (%v)", len(runner.calls), runner.calls)
+	}
+	if runner.calls[0] != "DROP TABLE IF EXISTS sqle_compare_test.t_diff_only" {
+		t.Errorf("expected trailing-; stripped, got %q", runner.calls[0])
+	}
+}
+
+func Test_Exec_EmptyAndCommentStatementsAreNoOp(t *testing.T) {
+	runner := &fakeExecRunner{defaultErr: fmt.Errorf("runner must not be called")}
+	impl := &HiveDriverImpl{
+		execRunnerFactory: func(_ *HiveDriverImpl) hiveExecRunner { return runner },
+	}
+	cases := []string{
+		"",
+		"   ",
+		";",
+		";;\n;",
+		"-- WARNING: data loss risk",
+		"-- 警告: 数据将丢失\n-- second comment",
+	}
+	for _, q := range cases {
+		q := q
+		t.Run(fmt.Sprintf("noop_%q", q), func(t *testing.T) {
+			res, err := impl.Exec(context.Background(), q)
+			if err != nil {
+				t.Fatalf("Exec(%q) returned err: %v", q, err)
+			}
+			if res == nil {
+				t.Fatalf("Exec(%q) returned nil result", q)
+			}
+		})
+	}
+	if len(runner.calls) != 0 {
+		t.Errorf("expected runner to receive zero calls for no-op queries, got %v", runner.calls)
+	}
+}
+
+func Test_Exec_PropagatesRunnerError(t *testing.T) {
+	runner := &fakeExecRunner{
+		errs: map[string]error{
+			"CREATE TABLE x(a INT)": fmt.Errorf("FAILED: SemanticException [Error 10001]: Table x already exists"),
+		},
+	}
+	impl := &HiveDriverImpl{
+		execRunnerFactory: func(_ *HiveDriverImpl) hiveExecRunner { return runner },
+	}
+	_, err := impl.Exec(context.Background(), "CREATE TABLE x(a INT)")
+	if err == nil {
+		t.Fatal("expected Exec to return runner err")
+	}
+	if !strings.Contains(err.Error(), "Table x already exists") {
+		t.Errorf("expected runner err to be wrapped, got: %v", err)
+	}
+}
+
+func Test_Exec_NilConnAndNoFactoryFails(t *testing.T) {
+	impl := &HiveDriverImpl{}
+	_, err := impl.Exec(context.Background(), "DROP TABLE t")
+	if err == nil {
+		t.Fatal("expected Exec to fail when both conn and factory are nil")
+	}
+	if !strings.Contains(err.Error(), "not initialized") {
+		t.Errorf("expected 'not initialized', got: %v", err)
+	}
+}
+
+// Test_ExecBatch_AllSucceed verifies the batch contract: every statement is
+// forwarded in order, results are returned 1:1, and the per-statement
+// trailing-; is stripped consistently with Exec.
+func Test_ExecBatch_AllSucceed(t *testing.T) {
+	runner := &fakeExecRunner{}
+	impl := &HiveDriverImpl{
+		execRunnerFactory: func(_ *HiveDriverImpl) hiveExecRunner { return runner },
+	}
+	sqls := []string{
+		"USE sqle_compare_test;",
+		"ALTER TABLE t_alter_widen CHANGE COLUMN amt amt BIGINT;",
+		"-- WARNING: data loss risk", // comment-only -> no-op
+		"DROP TABLE IF EXISTS t_diff_only;",
+	}
+	results, err := impl.ExecBatch(context.Background(), sqls...)
+	if err != nil {
+		t.Fatalf("ExecBatch returned err: %v", err)
+	}
+	if len(results) != len(sqls) {
+		t.Fatalf("expected %d results, got %d", len(sqls), len(results))
+	}
+	for i, r := range results {
+		if r == nil {
+			t.Errorf("results[%d] is nil", i)
+		}
+	}
+	// Comment-only statement is filtered before reaching runner.
+	wantCalls := []string{
+		"USE sqle_compare_test",
+		"ALTER TABLE t_alter_widen CHANGE COLUMN amt amt BIGINT",
+		"DROP TABLE IF EXISTS t_diff_only",
+	}
+	if len(runner.calls) != len(wantCalls) {
+		t.Fatalf("runner.calls = %v want %v", runner.calls, wantCalls)
+	}
+	for i, want := range wantCalls {
+		if runner.calls[i] != want {
+			t.Errorf("runner.calls[%d] = %q want %q", i, runner.calls[i], want)
+		}
+	}
+}
+
+// Test_ExecBatch_StopsOnFirstError mirrors MySQL driver behaviour: on the
+// first error the batch returns the partial result set plus a wrapped err,
+// without executing any subsequent statement.
+func Test_ExecBatch_StopsOnFirstError(t *testing.T) {
+	runner := &fakeExecRunner{
+		errs: map[string]error{
+			"DROP TABLE IF EXISTS t_diff_only": fmt.Errorf("permission denied"),
+		},
+	}
+	impl := &HiveDriverImpl{
+		execRunnerFactory: func(_ *HiveDriverImpl) hiveExecRunner { return runner },
+	}
+	sqls := []string{
+		"USE sqle_compare_test",
+		"DROP TABLE IF EXISTS t_diff_only", // fails here
+		"CREATE TABLE never_runs (id INT)",
+	}
+	results, err := impl.ExecBatch(context.Background(), sqls...)
+	if err == nil {
+		t.Fatal("expected ExecBatch to return err on first failure")
+	}
+	if !strings.Contains(err.Error(), "permission denied") {
+		t.Errorf("expected err to wrap runner err, got: %v", err)
+	}
+	// Two results: one for USE (nil result is hiveExecResult{}), one for failed DROP (also returned).
+	if len(results) != 2 {
+		t.Fatalf("expected 2 partial results, got %d", len(results))
+	}
+	// The CREATE TABLE statement must NOT be invoked after the failure.
+	if len(runner.calls) != 2 {
+		t.Errorf("runner.calls = %v, expected 2 (USE + DROP), CREATE must be skipped", runner.calls)
+	}
+}
