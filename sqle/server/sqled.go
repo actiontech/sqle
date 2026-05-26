@@ -861,9 +861,9 @@ func (a *action) execSQLs(executeSQLs []*model.ExecuteSQL) error {
 			if results.ExecErr.ErrSqlIndex == uint32(idx) {
 				executeSQL.ExecStatus = model.SQLExecuteStatusFailed
 				executeSQL.ExecResult = results.ExecErr.SqlExecErrMsg
-				if a.hasTermination() && isConnectionTerminatedError(fmt.Errorf("%s", results.ExecErr.SqlExecErrMsg), a.task.DBType) {
+				if a.hasTermination() && isConnectionTerminatedError(_errors.New(results.ExecErr.SqlExecErrMsg), a.task.DBType) {
 					executeSQL.ExecStatus = model.SQLExecuteStatusTerminateSucc
-					executeSQL.ExecResult = terminatedExecResult(fmt.Errorf(results.ExecErr.SqlExecErrMsg))
+					executeSQL.ExecResult = terminatedExecResult(_errors.New(results.ExecErr.SqlExecErrMsg))
 				}
 			} else {
 				executeSQL.ExecStatus = model.SQLExecuteStatusFailed
