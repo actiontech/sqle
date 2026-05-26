@@ -275,6 +275,10 @@ func (a *action) terminatedFailed() {
 //   - GaussDB / openGauss: "canceling statement due to user request"
 //   - SQL Server: "connection is broken" (SqlException，连接被 KILL 后抛出)
 //   - SQL Server: "Timeout expired" (KILL 后执行中的命令收到超时异常)
+//   - Hive: "hive connection terminated:" (sqle-hive-plugin wrapHiveExecErr 在 Cancel 后加的稳定前缀)
+//   - Hive: "Connection not open" (gohive 在 cursor.Cancel() 后 WaitForCompletion 常见的 thrift NOT_OPEN)
+//   - Hive: "Context is done" / "Context was done before the query was executed" (gohive ctx 被取消)
+//   - Hive: "operation in state" + "CANCELED" (HiveServer2 透出 OperationState=CANCELED)
 func isConnectionTerminatedError(err error, dbType string) bool {
 	if err == nil {
 		return false
@@ -316,8 +320,55 @@ func isConnectionTerminatedError(err error, dbType string) bool {
 			strings.Contains(errMsg, "session is in the kill state")) {
 		return true
 	}
+	// Hive: sqle-hive-plugin 在 KillProcess 已发出 Cancel 后给后续 exec/wait error
+	// 统一加 "hive connection terminated:" 稳定前缀（见
+	// sqle-hive-plugin driver/hive.go wrapHiveExecErr），sqled 端只用一条规则就能
+	// 把这类 SQL 行打成 terminate_succ。即便底层 gohive/Thrift 错误消息后续升级
+	// 变形，前缀稳定不变。
+	if strings.Contains(errMsg, "hive connection terminated:") {
+		return true
+	}
+	// Hive: cursor.Cancel() 后 cursor.WaitForCompletion / 后续 Execute 常见的
+	// thrift "Connection not open" —— gohive 在 operationHandle 已被服务端关闭后
+	// 再次复用 cursor 时透出。属于 Cancel 后的派生错误，应判为终止成功。
+	if strings.Contains(errMsg, "Connection not open") {
+		return true
+	}
+	// Hive: gohive 的 cursor.Execute / WaitForCompletion 在 ctx 被取消后会返回
+	// "Context was done before the query was executed" 或裸 "Context is done"
+	// （前者来自 gohive cursor.go 守卫；后者是上游 ctx.Err 包装）。两种形态都
+	// 等价于「终止意图已收到 + 操作未真正跑完」。
+	if strings.Contains(errMsg, "Context was done before the query was executed") {
+		return true
+	}
+	if strings.Contains(errMsg, "Context is done") {
+		return true
+	}
+	// Hive: HiveServer2 透出 OperationState 时，典型消息形如
+	// "Invalid OperationHandle: OperationHandle [opType=EXECUTE_STATEMENT, ...]: operation in state CANCELED"。
+	// 同时要求出现 "operation in state" 与 "CANCELED" 两个子串，避免把
+	// "operation in state RUNNING/FINISHED" 等正常状态误判为终止。
+	if strings.Contains(errMsg, "operation in state") && strings.Contains(errMsg, "CANCELED") {
+		return true
+	}
 
 	return false
+}
+
+// terminatedExecResult 把 driver/plugin 返回的原始 error 包装成对用户可读的
+// 「因中止上线中断」文案，作为 ExecuteSQL.ExecResult 写入。命中
+// isConnectionTerminatedError 时调用：上层 UI（工单 SQL 详情）就不会再展示
+// `hive exec failed (sql=...): EOF` / `invalid connection` 这类对终端用户毫无
+// 意义的裸 driver 错误，而是「因中止上线中断: <原文本>」——明确告诉用户
+// 这条 SQL 是用户主动点了「中止上线」之后被取消的，并保留原始 error 便于
+// 后续 sqled.log / dev 排查回溯。
+const terminatedExecResultPrefix = "因中止上线中断"
+
+func terminatedExecResult(err error) string {
+	if err == nil {
+		return terminatedExecResultPrefix
+	}
+	return fmt.Sprintf("%s: %s", terminatedExecResultPrefix, err.Error())
 }
 
 var (
@@ -722,6 +773,7 @@ func (a *action) executeSQLBatch(executeSQLs []*model.ExecuteSQL) error {
 			executeSQL.ExecResult = execErr.Error()
 			if a.hasTermination() && isConnectionTerminatedError(execErr, a.task.DBType) {
 				executeSQL.ExecStatus = model.SQLExecuteStatusTerminateSucc
+				executeSQL.ExecResult = terminatedExecResult(execErr)
 				if idx >= len(results) || results[idx] == nil {
 					continue
 				}
@@ -759,6 +811,7 @@ func (a *action) execSQL(executeSQL *model.ExecuteSQL) error {
 		executeSQL.ExecResult = execErr.Error()
 		if a.hasTermination() && isConnectionTerminatedError(execErr, a.task.DBType) {
 			executeSQL.ExecStatus = model.SQLExecuteStatusTerminateSucc
+			executeSQL.ExecResult = terminatedExecResult(execErr)
 		}
 	} else {
 		executeSQL.ExecStatus = model.SQLExecuteStatusSucceeded
@@ -800,6 +853,7 @@ func (a *action) execSQLs(executeSQLs []*model.ExecuteSQL) error {
 			executeSQL.ExecResult = txErr.Error()
 			if a.hasTermination() && isConnectionTerminatedError(txErr, a.task.DBType) {
 				executeSQL.ExecStatus = model.SQLExecuteStatusTerminateSucc
+				executeSQL.ExecResult = terminatedExecResult(txErr)
 			}
 			continue
 		}
@@ -809,6 +863,7 @@ func (a *action) execSQLs(executeSQLs []*model.ExecuteSQL) error {
 				executeSQL.ExecResult = results.ExecErr.SqlExecErrMsg
 				if a.hasTermination() && isConnectionTerminatedError(fmt.Errorf("%s", results.ExecErr.SqlExecErrMsg), a.task.DBType) {
 					executeSQL.ExecStatus = model.SQLExecuteStatusTerminateSucc
+					executeSQL.ExecResult = terminatedExecResult(fmt.Errorf(results.ExecErr.SqlExecErrMsg))
 				}
 			} else {
 				executeSQL.ExecStatus = model.SQLExecuteStatusFailed
