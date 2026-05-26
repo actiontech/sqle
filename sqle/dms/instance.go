@@ -35,10 +35,17 @@ func getInstances(ctx context.Context, req dmsV2.ListDBServiceReq) ([]*model.Ins
 		}
 
 		for _, item := range dbServices {
-			if item.SQLEConfig == nil || item.SQLEConfig.RuleTemplateID == "" {
-				continue
-			}
-
+			// Data sources without an SQLE rule template (e.g. created via the
+			// open API without sqle_config.audit_enabled=true) used to be
+			// silently dropped here, which made the "create audit plan" data
+			// source dropdown empty for users picking such a source by
+			// environment + db_type. convertInstance already tolerates an
+			// empty SQLEConfig / RuleTemplateID (see #2815), so the only
+			// remaining role of this loop is the actual conversion. Audit /
+			// rule-template-sensitive callers must guard themselves on the
+			// returned RuleTemplateID/Name; for the common instance-tip and
+			// audit-plan-creation paths a missing rule template is not a
+			// reason to hide the data source.
 			instance, err := convertInstance(item)
 			if err != nil {
 				return nil, fmt.Errorf("convert instance error: %v", err)
