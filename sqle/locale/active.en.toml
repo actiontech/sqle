@@ -55,6 +55,7 @@ ApMetaSQLServerPerformanceCollectTips = "Periodically collect performance metric
 ApMetaSQLServerProcesslist = "SQLServer active sessions"
 ApMetaHanaProcesslist = "HANA active sessions"
 ApMetaHanaSlowLog = "HANA slow log"
+ApMetaHiveProcesslist = "Hive active sessions"
 ApMetaSQLServerSlowLog = "SQLServer slow SQL collect"
 ApMetaSchemaMeta = "Database schema metadata"
 ApMetaSlowLog = "Slow log"

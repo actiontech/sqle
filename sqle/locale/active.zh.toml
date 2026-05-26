@@ -55,6 +55,7 @@ ApMetaSQLServerPerformanceCollectTips = "定时采集SQLServer实例的连接数
 ApMetaSQLServerProcesslist = "SQLServer活跃会话采集"
 ApMetaHanaProcesslist = "HANA Processlist"
 ApMetaHanaSlowLog = "HANA 慢日志"
+ApMetaHiveProcesslist = "Hive Processlist"
 ApMetaSQLServerSlowLog = "SQLServer慢SQL采集"
 ApMetaSchemaMeta = "库表元数据"
 ApMetaSlowLog = "慢日志"
