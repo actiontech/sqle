@@ -686,6 +686,10 @@ func GetInstanceAuditPlanOverview(c echo.Context) error {
 		}
 
 		typeBase := ConvertAuditPlanTypeToRes(c.Request().Context(), v.ID, v.Type)
+		lastCollectionStatus := ""
+		if v.AuditPlanTaskInfo != nil {
+			lastCollectionStatus = v.AuditPlanTaskInfo.LastCollectionStatus
+		}
 		resAuditPlan := InstanceAuditPlanInfo{
 			ID:                   v.ID,
 			Type:                 typeBase,
@@ -696,7 +700,7 @@ func GetInstanceAuditPlanOverview(c echo.Context) error {
 			TotalSQLNums:         totalSQLNums,
 			UnsolvedSQLNums:      unsolvedSQLNums,
 			ActiveStatus:         v.ActiveStatus,
-			LastCollectionStatus: v.AuditPlanTaskInfo.LastCollectionStatus,
+			LastCollectionStatus: lastCollectionStatus,
 		}
 		if v.AuditPlanTaskInfo != nil {
 			resAuditPlan.LastCollectionTime = v.AuditPlanTaskInfo.LastCollectionTime
@@ -866,6 +870,11 @@ func UpdateAuditPlanStatus(c echo.Context) error {
 	auditPlan.ActiveStatus = req.Active
 	// 重启扫描任务时，重置最后采集状态
 	if req.Active == model.ActiveStatusNormal {
+		if auditPlan.AuditPlanTaskInfo == nil {
+			auditPlan.AuditPlanTaskInfo = &model.AuditPlanTaskInfo{
+				AuditPlanID: auditPlan.ID,
+			}
+		}
 		auditPlan.AuditPlanTaskInfo.LastCollectionStatus = ""
 		err = s.Save(auditPlan.AuditPlanTaskInfo)
 		if err != nil {

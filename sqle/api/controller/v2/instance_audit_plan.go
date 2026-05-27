@@ -330,13 +330,17 @@ func ConvertAuditPlanTypeToResByID(ctx context.Context, id string, token string)
 	}
 	for _, meta := range auditplan.Metas {
 		if meta.Type == auditPlan.Type {
+			lastCollectionStatus := ""
+			if auditPlan.AuditPlanTaskInfo != nil {
+				lastCollectionStatus = auditPlan.AuditPlanTaskInfo.LastCollectionStatus
+			}
 			return AuditPlanTypeResBase{
 				AuditPlanType:        auditPlan.Type,
 				AuditPlanTypeDesc:    locale.Bundle.LocalizeMsgByCtx(ctx, meta.Desc),
 				AuditPlanId:          auditPlan.ID,
 				Token:                token,
 				ActiveStatus:         auditPlan.ActiveStatus,
-				LastCollectionStatus: auditPlan.AuditPlanTaskInfo.LastCollectionStatus,
+				LastCollectionStatus: lastCollectionStatus,
 			}, nil
 		}
 	}
