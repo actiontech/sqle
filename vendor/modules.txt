@@ -124,6 +124,9 @@ github.com/aliyun/credentials-go/credentials/utils
 # github.com/antlr4-go/antlr/v4 v4.13.0
 ## explicit; go 1.20
 github.com/antlr4-go/antlr/v4
+# github.com/apache/thrift v0.19.0
+## explicit; go 1.20
+github.com/apache/thrift/lib/go/thrift
 # github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
 ## explicit; go 1.13
 github.com/asaskevich/govalidator
@@ -137,6 +140,16 @@ github.com/baidubce/bce-sdk-go/services/rds
 github.com/baidubce/bce-sdk-go/util
 github.com/baidubce/bce-sdk-go/util/crypto
 github.com/baidubce/bce-sdk-go/util/log
+# github.com/beltran/gohive v1.6.0
+## explicit; go 1.19
+github.com/beltran/gohive
+github.com/beltran/gohive/hiveserver
+# github.com/beltran/gosasl v0.0.0-20231124144235-92b2e4f10bb6
+## explicit; go 1.14
+github.com/beltran/gosasl
+# github.com/beltran/gssapi v0.0.0-20200324152954-d86554db4bab
+## explicit
+github.com/beltran/gssapi
 # github.com/bwmarrin/snowflake v0.3.0
 ## explicit
 github.com/bwmarrin/snowflake
@@ -336,6 +349,9 @@ github.com/go-playground/validator/v10
 # github.com/go-sql-driver/mysql v1.7.0
 ## explicit; go 1.13
 github.com/go-sql-driver/mysql
+# github.com/go-zookeeper/zk v1.0.3
+## explicit; go 1.13
+github.com/go-zookeeper/zk
 # github.com/golang-jwt/jwt v3.2.2+incompatible
 ## explicit
 github.com/golang-jwt/jwt

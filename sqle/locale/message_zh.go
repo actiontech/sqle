@@ -541,3 +541,15 @@ var (
 	NotifyWorkflowBodyCancel            = &i18n.Message{ID: "NotifyWorkflowBodyCancel", Other: "🚫 工单已关闭\n"}
 	NotifyWorkflowBodyComplete          = &i18n.Message{ID: "NotifyWorkflowBodyComplete", Other: "✅ 工单已标记为人工上线\n"}
 )
+
+// database structure comparison capability check (controller 层 4009)
+// 详见 design.md §3.2.3 / §3.5 EE-11 / EE-12；占位符 %s 顺序：
+//   1) 缺失能力的数据源类型描述（例："基准数据源类型 Hive"）
+//   2) 缺失的 OptionalModule 字面（例："OptionalGetDatabaseObjectDDL"）
+// 中英文案与 active.zh.toml / active.en.toml 中同 ID 条目保持一致。
+var (
+	DatabaseCompareNotSupportedByDbType = &i18n.Message{
+		ID:    "DatabaseCompareNotSupportedByDbType",
+		Other: "数据源类型 %s 不支持结构对比，请确认 SQLE 已加载支持 %s 的驱动版本",
+	}
+)

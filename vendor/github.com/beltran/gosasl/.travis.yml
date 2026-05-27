@@ -1,0 +1,18 @@
+
+language: go
+
+go:
+  - "1.18"
+  - "1.19"
+  - "1.20"
+  - "1.21.0"
+
+branches:
+  only:
+  - master
+
+script:
+  - go fmt ./...
+  - go get github.com/beltran/gssapi
+  - go test -tags kerberos -v -run .
+  - go test -v ./...
