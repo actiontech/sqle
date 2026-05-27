@@ -855,23 +855,16 @@ func (h *HiveDriverImpl) GetDatabaseDiffModifySQL(ctx context.Context, calibrate
 }
 
 // fetchTableDDL runs SHOW CREATE TABLE for the given object and returns the
-// concatenated DDL string. An empty string + nil error indicates the table
-// does not exist on that side; any other error is a real failure.
+// concatenated DDL string. An empty string with exists=false indicates the
+// table does not exist on that side (including query errors such as Hive's
+// SemanticException for missing objects), matching the MySQL impl pattern.
 func fetchTableDDL(ctx context.Context, runner hiveQueryRunner, objectName string) (string, bool, error) {
 	rows, err := runner.runSingleStringQuery(ctx,
 		fmt.Sprintf("SHOW CREATE TABLE %s", objectName))
-	if err != nil {
-		// Heuristic: Hive returns a SemanticException when the object is
-		// missing. We surface it as "not found" so the caller can decide
-		// the direction (only-in-base vs only-in-compared). Other errors
-		// could be propagated by the caller but for diff purposes we treat
-		// any failure as "not found", matching the MySQL impl pattern.
-		return "", false, nil
+	if err == nil && len(rows) > 0 {
+		return strings.Join(rows, "\n"), true, nil
 	}
-	if len(rows) == 0 {
-		return "", false, nil
-	}
-	return strings.Join(rows, "\n"), true, nil
+	return "", false, nil
 }
 
 // diffTableObject generates the variant SQL for a single TABLE object.
