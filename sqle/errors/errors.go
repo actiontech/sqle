@@ -19,7 +19,11 @@ const (
 	UserDisabled      ErrorCode = 4005
 	TaskNotExist      ErrorCode = 4006
 	TaskActionInvalid ErrorCode = 4009
-	DataExist         ErrorCode = 4010
+	// DatabaseCompareNotSupported 共用 4009：当 controller 层判定双侧 dbType 缺少
+	// OptionalGetDatabaseObjectDDL / OptionalGetDatabaseDiffModifySQL 能力时返回。
+	// 详见 design.md §3.5 / §3.2.3 EE-12。
+	DatabaseCompareNotSupported ErrorCode = 4009
+	DataExist                   ErrorCode = 4010
 	DataNotExist      ErrorCode = 4011
 	DataConflict      ErrorCode = 4012
 	DataInvalid       ErrorCode = 4013
