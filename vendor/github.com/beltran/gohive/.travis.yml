@@ -1,0 +1,46 @@
+sudo: required
+
+language: go
+
+services:
+  - docker
+
+go:
+  - "1.19"
+
+branches:
+  only:
+  - master
+  - coveralls
+
+addons:
+  sources:
+    - deadsnakes # source required so it finds the package definition below
+  packages:
+    - python3.8
+  hosts:
+    - hs2.example.com
+    - kerberos.example.com
+
+before_install:
+  - go install github.com/mattn/goveralls@latest
+  - sudo apt-get -y install krb5-user
+  - cat scripts/create_krbconf.sh
+  - sudo bash scripts/create_krbconf.sh
+  - docker network create com
+  - travis_retry go get github.com/beltran/gssapi
+
+
+env:
+  - DOCKER_COMPOSE_VERSION=1.22.0 GO111MODULE=on
+
+script:
+  - pyenv versions
+  - pyenv global 3.8
+  - curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+  - python3.8 get-pip.py --user
+  - set -e
+  - go vet ./...
+  - go fmt ./...
+  - PATH=$PATH:$HOME/.local/bin bash ./scripts/integration.sh
+  - $GOPATH/bin/goveralls -coverprofile=coverage.out -service=circle-ci
