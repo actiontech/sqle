@@ -509,6 +509,7 @@ var (
 	HiveSlowLogErrColumnMismatch = &i18n.Message{ID: "HiveSlowLogErrColumnMismatch", Other: "Hive 慢日志采集 SQL 执行失败：字段引用错误。可能是 Hive 版本与 SQLE 适配版本（基线 Hive 4.2）存在差异；请把 `SELECT version()` 输出反馈给 SQLE 维护者。原始错误：%s"}
 	HiveSlowLogErrConnectFailed  = &i18n.Message{ID: "HiveSlowLogErrConnectFailed", Other: "Hive 实例连接失败：可能是 HiveServer2 启用了 SASL/LDAP 鉴权而数据源配置的 `auth` 为 `NOSASL`。请在 SQLE 数据源管理页编辑该 Hive 数据源，把 `auth` 改为 `NONE` 或 `LDAP`。原始错误：%s"}
 	HiveSlowLogErrAuthInvalid    = &i18n.Message{ID: "HiveSlowLogErrAuthInvalid", Other: "Hive 数据源 auth 参数值非法。允许的值：`NOSASL` / `NONE` / `LDAP` / `CUSTOM`。请在 SQLE 数据源管理页修正。原始错误：%s"}
+	HiveSlowLogErrHS2ServerError = &i18n.Message{ID: "HiveSlowLogErrHS2ServerError", Other: "Hive HS2 服务端返回错误。常见原因：1) `sys.query_history` 表不存在 —— 请确认 HS2 的 hive-site.xml 中已配置 `hive.query.history.enabled=true` 并重启 HS2 服务；2) `sys` 库不存在 —— 同上，重启 HS2 后会自动创建；3) Hive 版本与 SQLE 适配基线（Hive 4.2）字段不一致。请查阅 HS2 服务端日志获取详细错误信息。原始错误：%s"}
 	HiveSlowLogErrUnknown        = &i18n.Message{ID: "HiveSlowLogErrUnknown", Other: "Hive 慢日志采集失败：%s"}
 )
 
