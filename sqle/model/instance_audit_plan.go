@@ -534,6 +534,22 @@ func (s *Storage) BatchSaveAuditPlans(auditPlans []*AuditPlanV2) error {
 				if err := txDB.Save(auditPlan).Error; err != nil {
 					return err
 				}
+				// 更新已存在的扫描任务时，兜底补齐缺失的 audit_plan_task_infos 行，
+				// 避免历史数据/手工修改造成 Preload 后 AuditPlanTaskInfo == nil 引发空指针。
+				var taskInfoCount int64
+				if err := txDB.Model(&AuditPlanTaskInfo{}).
+					Where("audit_plan_id = ?", auditPlan.ID).
+					Count(&taskInfoCount).Error; err != nil {
+					return err
+				}
+				if taskInfoCount == 0 {
+					apTaskInfo := &AuditPlanTaskInfo{
+						AuditPlanID: auditPlan.ID,
+					}
+					if err := txDB.Save(apTaskInfo).Error; err != nil {
+						return err
+					}
+				}
 			}
 		}
 		return nil
