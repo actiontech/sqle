@@ -66,10 +66,10 @@ func TestGetDriverMetas(t *testing.T) {
 	if authParam == nil {
 		t.Fatal("expected additionalParams to contain 'auth' param")
 	}
-	if authParam.Value != "NOSASL" {
-		t.Errorf("expected auth default value=%q, got %q", "NOSASL", authParam.Value)
+	if authParam.Value != "NONE" {
+		t.Errorf("expected auth default value=%q, got %q", "NONE", authParam.Value)
 	}
-	expectedAuthEnums := []string{"NOSASL", "NONE", "LDAP", "KERBEROS"}
+	expectedAuthEnums := []string{"NONE", "NOSASL", "LDAP", "KERBEROS"}
 	if len(authParam.Enums) != len(expectedAuthEnums) {
 		t.Fatalf("expected %d auth enums, got %d", len(expectedAuthEnums), len(authParam.Enums))
 	}
@@ -95,6 +95,15 @@ func TestGetDriverMetas(t *testing.T) {
 		if transportParam.Enums[i].Value != expected {
 			t.Errorf("transport_mode enum[%d]: expected %q, got %q", i, expected, transportParam.Enums[i].Value)
 		}
+	}
+
+	// Verify additionalParams: service
+	serviceParam := metas.DatabaseAdditionalParams.GetParam("service")
+	if serviceParam == nil {
+		t.Fatal("expected additionalParams to contain 'service' param")
+	}
+	if serviceParam.Value != "" {
+		t.Errorf("expected service default value=%q, got %q", "", serviceParam.Value)
 	}
 }
 
