@@ -214,12 +214,12 @@ func additionalParams() params.Params {
 	return params.Params{
 		{
 			Key:   "auth",
-			Value: "NOSASL",
+			Value: "NONE",
 			Desc:  "authentication mode",
 			Type:  params.ParamTypeString,
 			Enums: []params.EnumsValue{
-				{Value: "NOSASL", Desc: "No authentication"},
 				{Value: "NONE", Desc: "No authentication (SASL)"},
+				{Value: "NOSASL", Desc: "No authentication"},
 				{Value: "LDAP", Desc: "LDAP authentication"},
 				{Value: "KERBEROS", Desc: "Kerberos authentication"},
 			},
@@ -233,6 +233,11 @@ func additionalParams() params.Params {
 				{Value: "binary", Desc: "Binary transport (default)"},
 				{Value: "http", Desc: "HTTP transport"},
 			},
+		},
+		{
+			Key:  "service",
+			Desc: "Kerberos service name (optional, used when auth=KERBEROS)",
+			Type: params.ParamTypeString,
 		},
 	}
 }
@@ -253,7 +258,7 @@ func newHiveConnection(dsn *driverV2.DSN) (*gohive.Connection, error) {
 		conf.Database = dsn.DatabaseName
 	}
 
-	auth := "NOSASL"
+	auth := "NONE"
 	if dsn.AdditionalParams != nil {
 		if authParam := dsn.AdditionalParams.GetParam("auth"); authParam != nil {
 			if v := authParam.String(); v != "" {
