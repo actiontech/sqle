@@ -1809,8 +1809,6 @@ definitions:
     properties:
       db_type:
         type: string
-      default_port:
-        type: integer
       params:
         items:
           $ref: '#/definitions/v1.InstanceAdditionalParamResV1'
