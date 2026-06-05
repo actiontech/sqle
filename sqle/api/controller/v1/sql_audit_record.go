@@ -117,10 +117,10 @@ func CreateSQLAuditRecord(c echo.Context) error {
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
-	if req.Sqls != "" {
+	if rawSQLs, ok := getRawFormValue(c, "sqls"); ok {
 		sqls = GetSQLFromFileResp{
 			SourceType:       model.TaskSQLSourceFromFormData,
-			SQLsFromFormData: req.Sqls,
+			SQLsFromFormData: rawSQLs,
 		}
 	} else {
 		sqls, err = GetSQLFromFile(c)

@@ -183,6 +183,54 @@ func GetSQLFromFile(c echo.Context) (GetSQLFromFileResp, error) {
 	return GetSQLFromFileResp{}, errors.New(errors.DataInvalid, fmt.Errorf("input sql is empty"))
 }
 
+func getRawFormValue(c echo.Context, name string) (string, bool) {
+	req := c.Request()
+	if req == nil {
+		return "", false
+	}
+	if req.MultipartForm != nil {
+		if values, ok := req.MultipartForm.Value[name]; ok {
+			if len(values) == 0 {
+				return "", true
+			}
+			return values[0], true
+		}
+	}
+	if req.Form != nil {
+		if values, ok := req.Form[name]; ok {
+			if len(values) == 0 {
+				return "", true
+			}
+			return values[0], true
+		}
+	}
+	if req.PostForm != nil {
+		if values, ok := req.PostForm[name]; ok {
+			if len(values) == 0 {
+				return "", true
+			}
+			return values[0], true
+		}
+	}
+	if err := req.ParseMultipartForm(32 << 20); err == nil && req.MultipartForm != nil {
+		if values, ok := req.MultipartForm.Value[name]; ok {
+			if len(values) == 0 {
+				return "", true
+			}
+			return values[0], true
+		}
+	}
+	if err := req.ParseForm(); err == nil && req.PostForm != nil {
+		if values, ok := req.PostForm[name]; ok {
+			if len(values) == 0 {
+				return "", true
+			}
+			return values[0], true
+		}
+	}
+	return "", false
+}
+
 func saveFileFromContext(c echo.Context) ([]*model.AuditFile, error) {
 	fileHeader, fileType, err := getFileHeaderFromContext(c)
 	if err != nil {
@@ -320,10 +368,10 @@ func CreateAndAuditTask(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	if req.Sql != "" {
+	if rawSQL, ok := getRawFormValue(c, "sql"); ok {
 		sqls = GetSQLFromFileResp{
 			SourceType:       model.TaskSQLSourceFromFormData,
-			SQLsFromFormData: req.Sql,
+			SQLsFromFormData: rawSQL,
 		}
 	} else {
 		sqls, err = GetSQLFromFile(c)
