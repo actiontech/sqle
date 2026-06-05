@@ -125,20 +125,59 @@ func AuditSQLByDriver(projectId string, l *logrus.Entry, sql string, p driver.Pl
 
 func convertSQLsToTask(sql string, p driver.Plugin) (*model.Task, error) {
 	task := &model.Task{}
-	nodes, err := p.Parse(context.TODO(), sql)
+	executeSQLs, err := BuildExecuteSQLsFromSQL(context.TODO(), p, sql, BuildExecuteSQLsOptions{})
 	if err != nil {
 		return nil, err
 	}
-	for n, node := range nodes {
-		task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
+	task.ExecuteSQLs = executeSQLs
+	return task, nil
+}
+
+type BuildExecuteSQLsOptions struct {
+	StartNumber uint
+	SourceFile  string
+	StartLine   uint64
+}
+
+func BuildExecuteSQLsFromSQL(ctx context.Context, p driver.Plugin, sqlText string, opts BuildExecuteSQLsOptions) ([]*model.ExecuteSQL, error) {
+	trimmedSQL := strings.TrimSpace(sqlText)
+	if trimmedSQL == "" {
+		return nil, nil
+	}
+	number := opts.StartNumber
+	if number == 0 {
+		number = 1
+	}
+	nodes, err := p.Parse(ctx, sqlText)
+	if err != nil || len(nodes) == 0 {
+		return []*model.ExecuteSQL{{
 			BaseSQL: model.BaseSQL{
-				Number:  uint(n + 1),
-				Content: node.Text,
-				SQLType: node.Type,
+				Number:     number,
+				Content:    trimmedSQL,
+				SourceFile: opts.SourceFile,
+				StartLine:  opts.StartLine,
+			},
+		}}, nil
+	}
+
+	executeSQLs := make([]*model.ExecuteSQL, 0, len(nodes))
+	for i, node := range nodes {
+		startLine := opts.StartLine
+		if startLine == 0 {
+			startLine = node.StartLine
+		}
+		executeSQLs = append(executeSQLs, &model.ExecuteSQL{
+			BaseSQL: model.BaseSQL{
+				Number:      number + uint(i),
+				Content:     node.Text,
+				SourceFile:  opts.SourceFile,
+				StartLine:   startLine,
+				SQLType:     node.Type,
+				ExecBatchId: node.ExecBatchId,
 			},
 		})
 	}
-	return task, nil
+	return executeSQLs, nil
 }
 
 func audit(projectId string, l *logrus.Entry, task *model.Task, p driver.Plugin, customRules []*model.CustomRule) (err error) {
@@ -187,7 +226,8 @@ func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHoo
 		//      - In these case, we pass the raw SQL to plugins, it's ok.
 		node, err := parse(l, p, strings.TrimSpace(executeSQL.Content))
 		if err != nil {
-			return err
+			appendManualConfirmWarn(executeSQL, executeSQL.Content, err)
+			continue
 		}
 		var whitelistMatch bool
 		var matchedWhitelistID uint
@@ -232,7 +272,24 @@ func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHoo
 
 		results, err := p.Audit(context.TODO(), sqls)
 		if err != nil {
-			return err
+			for i, sql := range auditSqls {
+				result, singleErr := auditSingleSQL(l, p, task, sqls[i], customRules)
+				hook.AfterAudit(sql)
+				if singleErr != nil {
+					appendManualConfirmWarn(sql, sqls[i], singleErr)
+					continue
+				}
+				sql.AuditStatus = model.SQLAuditStatusFinished
+				sql.AuditLevel = string(result.Level())
+				sql.AuditFingerprint = utils.Md5String(string(append([]byte(result.Message()), []byte(nodes[i].Fingerprint)...)))
+				sql.SqlFingerprint = nodes[i].Fingerprint
+				appendExecuteSqlResults(sql, result)
+			}
+			ReplenishTaskStatistics(task)
+			if AfterAuditHook != nil {
+				go AfterAuditHook(task)
+			}
+			return nil
 		}
 		if len(results) != len(sqls) {
 			return fmt.Errorf("audit results [%d] does not match the number of SQL [%d]", len(results), len(sqls))
@@ -259,6 +316,13 @@ func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHoo
 }
 
 func ReplenishTaskStatistics(task *model.Task) {
+	if len(task.ExecuteSQLs) == 0 {
+		task.PassRate = 1
+		task.AuditLevel = string(driverV2.RuleLevelNull)
+		task.Score = scoreTask(task)
+		task.Status = model.TaskStatusAudited
+		return
+	}
 	var normalCount float64
 	maxAuditLevel := driverV2.RuleLevelNull
 	for _, executeSQL := range task.ExecuteSQLs {
@@ -274,6 +338,28 @@ func ReplenishTaskStatistics(task *model.Task) {
 	task.Score = scoreTask(task)
 
 	task.Status = model.TaskStatusAudited
+}
+
+func auditSingleSQL(l *logrus.Entry, p driver.Plugin, task *model.Task, sql string, customRules []*model.CustomRule) (*driverV2.AuditResults, error) {
+	results, err := p.Audit(context.TODO(), []string{sql})
+	if err != nil {
+		return nil, err
+	}
+	if len(results) != 1 {
+		return nil, fmt.Errorf("audit results [%d] does not match the number of SQL [1]", len(results))
+	}
+	CustomRuleAudit(l, task, []string{sql}, results, customRules)
+	return results[0], nil
+}
+
+func appendManualConfirmWarn(executeSQL *model.ExecuteSQL, sql string, err error) {
+	result := driverV2.NewAuditResults()
+	result.AddResultWithError(driverV2.RuleLevelWarn, "", err.Error(), false, plocale.Bundle.LocalizeAll(plocale.UnsupportedSyntaxError))
+	executeSQL.AuditStatus = model.SQLAuditStatusFinished
+	executeSQL.AuditLevel = string(result.Level())
+	executeSQL.AuditFingerprint = utils.Md5String(result.Message() + strings.TrimSpace(sql))
+	executeSQL.SqlFingerprint = utils.Md5String(strings.TrimSpace(sql))
+	appendExecuteSqlResults(executeSQL, result)
 }
 
 // Scoring rules from https://github.com/actiontech/sqle/issues/284

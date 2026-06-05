@@ -232,27 +232,16 @@ func addSQLsFromFileToTasks(sqls GetSQLFromFileResp, task *model.Task, plugin dr
 	var num uint = 1
 
 	fileTask := func(sqlsText, filePath string, defaultStartLine uint64) error {
-		nodes, err := plugin.Parse(context.TODO(), sqlsText)
+		executeSQLs, err := server.BuildExecuteSQLsFromSQL(context.TODO(), plugin, sqlsText, server.BuildExecuteSQLsOptions{
+			StartNumber: num,
+			SourceFile:  filePath,
+			StartLine:   defaultStartLine,
+		})
 		if err != nil {
-			return fmt.Errorf("parse sqls failed: %v", err)
+			return fmt.Errorf("build execute sqls failed: %v", err)
 		}
-		for _, node := range nodes {
-			startLine := defaultStartLine
-			if startLine == 0 {
-				startLine = node.StartLine
-			}
-			task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
-				BaseSQL: model.BaseSQL{
-					Number:      num,
-					Content:     node.Text,
-					SourceFile:  filePath,
-					StartLine:   startLine,
-					SQLType:     node.Type,
-					ExecBatchId: node.ExecBatchId,
-				},
-			})
-			num++
-		}
+		task.ExecuteSQLs = append(task.ExecuteSQLs, executeSQLs...)
+		num += uint(len(executeSQLs))
 		return nil
 	}
 
