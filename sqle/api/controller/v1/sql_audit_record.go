@@ -236,8 +236,7 @@ func addSQLsFromFileToTasks(sqls GetSQLFromFileResp, task *model.Task, plugin dr
 		if strings.TrimSpace(sqlsText) == "" {
 			return nil
 		}
-		nodes, err := plugin.Parse(context.TODO(), sqlsText)
-		if err != nil || len(nodes) == 0 {
+		appendRawSQL := func() {
 			task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
 				BaseSQL: model.BaseSQL{
 					Number:     num,
@@ -247,6 +246,15 @@ func addSQLsFromFileToTasks(sqls GetSQLFromFileResp, task *model.Task, plugin dr
 				},
 			})
 			num++
+		}
+		nodes, err := plugin.Parse(context.TODO(), sqlsText)
+		if err != nil {
+			appendRawSQL()
+			//nolint:nilerr // fallback to raw SQL when parse fails
+			return nil
+		}
+		if len(nodes) == 0 {
+			appendRawSQL()
 			return nil
 		}
 		for _, node := range completeParsedNodes(sqlsText, nodes) {
