@@ -24,6 +24,7 @@ import (
 	"github.com/actiontech/sqle/sqle/common"
 	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/driver"
+	driverV2 "github.com/actiontech/sqle/sqle/driver/v2"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/locale"
 	"github.com/actiontech/sqle/sqle/log"
@@ -232,11 +233,23 @@ func addSQLsFromFileToTasks(sqls GetSQLFromFileResp, task *model.Task, plugin dr
 	var num uint = 1
 
 	fileTask := func(sqlsText, filePath string, defaultStartLine uint64) error {
-		nodes, err := plugin.Parse(context.TODO(), sqlsText)
-		if err != nil {
-			return fmt.Errorf("parse sqls failed: %v", err)
+		if strings.TrimSpace(sqlsText) == "" {
+			return nil
 		}
-		for _, node := range nodes {
+		nodes, err := plugin.Parse(context.TODO(), sqlsText)
+		if err != nil || len(nodes) == 0 {
+			task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
+				BaseSQL: model.BaseSQL{
+					Number:     num,
+					Content:    sqlsText,
+					SourceFile: filePath,
+					StartLine:  defaultStartLine,
+				},
+			})
+			num++
+			return nil
+		}
+		for _, node := range completeParsedNodes(sqlsText, nodes) {
 			startLine := defaultStartLine
 			if startLine == 0 {
 				startLine = node.StartLine
@@ -278,6 +291,53 @@ func addSQLsFromFileToTasks(sqls GetSQLFromFileResp, task *model.Task, plugin dr
 		}
 	}
 	return nil
+}
+
+func completeParsedNodes(sqlText string, nodes []driverV2.Node) []driverV2.Node {
+	fragments := splitSQLFragments(sqlText)
+	if len(fragments) <= len(nodes) {
+		return nodes
+	}
+
+	remainingNodes := append([]driverV2.Node{}, nodes...)
+	completed := make([]driverV2.Node, 0, len(fragments))
+	matchedCount := 0
+	for _, fragment := range fragments {
+		matchedIndex := -1
+		for i, node := range remainingNodes {
+			if normalizeSQLFragment(node.Text) == normalizeSQLFragment(fragment) {
+				matchedIndex = i
+				break
+			}
+		}
+		if matchedIndex >= 0 {
+			completed = append(completed, remainingNodes[matchedIndex])
+			remainingNodes = append(remainingNodes[:matchedIndex], remainingNodes[matchedIndex+1:]...)
+			matchedCount++
+			continue
+		}
+		completed = append(completed, driverV2.Node{Text: strings.TrimSpace(fragment)})
+	}
+	if matchedCount != len(nodes) {
+		return nodes
+	}
+	return completed
+}
+
+func splitSQLFragments(sqlText string) []string {
+	parts := strings.Split(sqlText, ";")
+	fragments := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if strings.TrimSpace(part) == "" {
+			continue
+		}
+		fragments = append(fragments, part)
+	}
+	return fragments
+}
+
+func normalizeSQLFragment(sqlText string) string {
+	return strings.TrimSpace(strings.TrimSuffix(strings.TrimSpace(sqlText), ";"))
 }
 
 func buildOnlineTaskForAudit(c echo.Context, s *model.Storage, userId uint64, instanceName, instanceSchema, projectUid string, sqls GetSQLFromFileResp) (*model.Task, error) {
@@ -453,6 +513,9 @@ func parseXMLsWithFilePath(xmlContents []xmlParser.XmlFile) ([]SQLFromXML, error
 
 // todo 此处跳过了不支持的编码格式文件
 func getSqlsFromGit(c echo.Context) (sqlsFromSQLFiles, sqlsFromJavaFiles []SQLsFromSQLFile, sqlsFromXMLs []SQLFromXML, exist bool, err error) {
+	if c.FormValue(GitHttpURL) == "" {
+		return nil, nil, nil, false, nil
+	}
 	// clone from git
 	_, directory, cleanup, err := CloneGitRepository(c.Request().Context(), c.FormValue(GitHttpURL), c.FormValue(GitUserName), c.FormValue(GitPassword), c.FormValue(GitBranchName))
 	if err != nil {

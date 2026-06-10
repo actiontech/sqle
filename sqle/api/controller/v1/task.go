@@ -180,7 +180,7 @@ func GetSQLFromFile(c echo.Context) (GetSQLFromFileResp, error) {
 			SQLsFromXMLs:     sqlsFromXMLs,
 		}, nil
 	}
-	return GetSQLFromFileResp{}, errors.New(errors.DataInvalid, fmt.Errorf("input sql is empty"))
+	return GetSQLFromFileResp{}, nil
 }
 
 func saveFileFromContext(c echo.Context) ([]*model.AuditFile, error) {

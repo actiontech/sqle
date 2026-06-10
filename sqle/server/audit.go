@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/actiontech/dms/pkg/dms-common/i18nPkg"
 	"github.com/actiontech/sqle/sqle/driver"
 	"github.com/actiontech/sqle/sqle/driver/mysql/plocale"
 
@@ -27,6 +28,8 @@ var AfterAuditHook func(task *model.Task)
 // AfterWorkflowCreateHook 工单创建后的钩子函数，由 EE 版本注册实现
 // 用于记录提交工单时的规则触发统计
 var AfterWorkflowCreateHook func(tasks []*model.Task, workflowID string)
+
+var unsupportedSQLWarnMessage = i18nPkg.ConvertStr2I18nAsDefaultLang("语法错误或者解析器不支持，请人工确认SQL正确性")
 
 func Audit(l *logrus.Entry, task *model.Task, projectId *model.ProjectUID, ruleTemplateName string) (err error) {
 	return HookAudit(l, task, &EmptyAuditHook{}, projectId, ruleTemplateName)
@@ -125,11 +128,14 @@ func AuditSQLByDriver(projectId string, l *logrus.Entry, sql string, p driver.Pl
 
 func convertSQLsToTask(sql string, p driver.Plugin) (*model.Task, error) {
 	task := &model.Task{}
-	nodes, err := p.Parse(context.TODO(), sql)
-	if err != nil {
-		return nil, err
+	if strings.TrimSpace(sql) == "" {
+		return task, nil
 	}
-	for n, node := range nodes {
+	nodes, err := p.Parse(context.TODO(), sql)
+	if err != nil || len(nodes) == 0 {
+		nodes = []driverV2.Node{{Text: sql}}
+	}
+	for n, node := range completeParsedNodes(sql, nodes) {
 		task.ExecuteSQLs = append(task.ExecuteSQLs, &model.ExecuteSQL{
 			BaseSQL: model.BaseSQL{
 				Number:  uint(n + 1),
@@ -139,6 +145,53 @@ func convertSQLsToTask(sql string, p driver.Plugin) (*model.Task, error) {
 		})
 	}
 	return task, nil
+}
+
+func completeParsedNodes(sqlText string, nodes []driverV2.Node) []driverV2.Node {
+	fragments := splitSQLFragments(sqlText)
+	if len(fragments) <= len(nodes) {
+		return nodes
+	}
+
+	remainingNodes := append([]driverV2.Node{}, nodes...)
+	completed := make([]driverV2.Node, 0, len(fragments))
+	matchedCount := 0
+	for _, fragment := range fragments {
+		matchedIndex := -1
+		for i, node := range remainingNodes {
+			if normalizeSQLFragment(node.Text) == normalizeSQLFragment(fragment) {
+				matchedIndex = i
+				break
+			}
+		}
+		if matchedIndex >= 0 {
+			completed = append(completed, remainingNodes[matchedIndex])
+			remainingNodes = append(remainingNodes[:matchedIndex], remainingNodes[matchedIndex+1:]...)
+			matchedCount++
+			continue
+		}
+		completed = append(completed, driverV2.Node{Text: strings.TrimSpace(fragment)})
+	}
+	if matchedCount != len(nodes) {
+		return nodes
+	}
+	return completed
+}
+
+func splitSQLFragments(sqlText string) []string {
+	parts := strings.Split(sqlText, ";")
+	fragments := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if strings.TrimSpace(part) == "" {
+			continue
+		}
+		fragments = append(fragments, part)
+	}
+	return fragments
+}
+
+func normalizeSQLFragment(sqlText string) string {
+	return strings.TrimSpace(strings.TrimSuffix(strings.TrimSpace(sqlText), ";"))
 }
 
 func audit(projectId string, l *logrus.Entry, task *model.Task, p driver.Plugin, customRules []*model.CustomRule) (err error) {
@@ -187,7 +240,8 @@ func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHoo
 		//      - In these case, we pass the raw SQL to plugins, it's ok.
 		node, err := parse(l, p, strings.TrimSpace(executeSQL.Content))
 		if err != nil {
-			return err
+			appendUnsupportedSQLWarnResult(executeSQL)
+			continue
 		}
 		var whitelistMatch bool
 		var matchedWhitelistID uint
@@ -232,9 +286,8 @@ func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHoo
 
 		results, err := p.Audit(context.TODO(), sqls)
 		if err != nil {
-			return err
-		}
-		if len(results) != len(sqls) {
+			results = auditSQLsOneByOne(l, p, sqls)
+		} else if len(results) != len(sqls) {
 			return fmt.Errorf("audit results [%d] does not match the number of SQL [%d]", len(results), len(sqls))
 		}
 		CustomRuleAudit(l, task, sqls, results, customRules)
@@ -259,6 +312,14 @@ func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHoo
 }
 
 func ReplenishTaskStatistics(task *model.Task) {
+	if len(task.ExecuteSQLs) == 0 {
+		task.PassRate = 0
+		task.AuditLevel = string(driverV2.RuleLevelNull)
+		task.Score = 0
+		task.Status = model.TaskStatusAudited
+		return
+	}
+
 	var normalCount float64
 	maxAuditLevel := driverV2.RuleLevelNull
 	for _, executeSQL := range task.ExecuteSQLs {
@@ -274,6 +335,33 @@ func ReplenishTaskStatistics(task *model.Task) {
 	task.Score = scoreTask(task)
 
 	task.Status = model.TaskStatusAudited
+}
+
+func auditSQLsOneByOne(l *logrus.Entry, p driver.Plugin, sqls []string) []*driverV2.AuditResults {
+	results := make([]*driverV2.AuditResults, 0, len(sqls))
+	for _, sql := range sqls {
+		result, err := p.Audit(context.TODO(), []string{sql})
+		if err != nil || len(result) != 1 {
+			if err != nil {
+				l.Errorf("audit sql failed and fallback to warn: %v", err)
+			}
+			result := driverV2.NewAuditResults()
+			result.Add(driverV2.RuleLevelWarn, "", unsupportedSQLWarnMessage)
+			results = append(results, result)
+			continue
+		}
+		results = append(results, result[0])
+	}
+	return results
+}
+
+func appendUnsupportedSQLWarnResult(executeSQL *model.ExecuteSQL) {
+	result := driverV2.NewAuditResults()
+	result.Add(driverV2.RuleLevelWarn, "", unsupportedSQLWarnMessage)
+	executeSQL.AuditStatus = model.SQLAuditStatusFinished
+	executeSQL.AuditLevel = string(result.Level())
+	executeSQL.AuditFingerprint = utils.Md5String(result.Message())
+	appendExecuteSqlResults(executeSQL, result)
 }
 
 // Scoring rules from https://github.com/actiontech/sqle/issues/284
