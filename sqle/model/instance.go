@@ -36,8 +36,9 @@ type Instance struct {
 	Source             string         `json:"source" gorm:"not null"`
 	SyncInstanceTaskID uint           `json:"sync_instance_task_id"`
 
-	EnvironmentTagName string `json:"environment_tag_name"`
-	EnvironmentTagUID  string `json:"environment_tag_uid"`
+	EnvironmentTagName  string `json:"environment_tag_name"`
+	EnvironmentTagUID   string `json:"environment_tag_uid"`
+	EnvironmentTagColor string `json:"environment_tag_color"`
 
 	EnableBackup  bool   `json:"enable_backup"`
 	BackupMaxRows uint64 `json:"backup_max_rows"`

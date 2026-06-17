@@ -184,6 +184,9 @@ definitions:
     type: object
   dashboard.GlobalWorkflowListItem:
     properties:
+      assignee:
+        description: 当前处理人姓名
+        type: string
       create_user_name:
         type: string
       created_at:
@@ -1809,6 +1812,8 @@ definitions:
     properties:
       db_type:
         type: string
+      default_port:
+        type: integer
       params:
         items:
           $ref: '#/definitions/v1.InstanceAdditionalParamResV1'
@@ -7482,6 +7487,12 @@ definitions:
       desc:
         example: this is a instance
         type: string
+      environment_tag_color:
+        type: string
+      environment_tag_name:
+        type: string
+      environment_tag_uid:
+        type: string
       instance_name:
         type: string
       maintenance_times:
@@ -7504,6 +7515,8 @@ definitions:
         type: integer
       enable_backup:
         type: boolean
+      environment_tag_color:
+        type: string
       environment_tag_name:
         type: string
       environment_tag_uid:
