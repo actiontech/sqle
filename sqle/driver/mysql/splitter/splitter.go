@@ -188,8 +188,8 @@ func (s *splitter) skipBeginEndBlock(token *parser.Token) *parser.Token {
 		}
 		if matchedBlock != nil {
 			// 如果匹配到的是 IF 块，需要向前看以区分控制流 IF 与 IF() 函数。
+			// 此处 scanner 正位于 IF 之后（currentOffset），前向扫描后需复位以便后续 END 检测。
 			if _, ok := matchedBlock.(IfEndIfBlock); ok {
-				s.scanner.SetCursor(currentOffset)
 				if s.ifIsControlFlowStatement() {
 					blockStack = append(blockStack, matchedBlock)
 				}
