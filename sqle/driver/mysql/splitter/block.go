@@ -11,6 +11,10 @@ type Block interface {
 	MatchEnd(token *parser.Token) bool
 }
 
+func isThenToken(token *parser.Token) bool {
+	return strings.ToUpper(token.Ident()) == "THEN"
+}
+
 var allBlocks []Block = []Block{
 	BeginEndBlock{},
 	IfEndIfBlock{},

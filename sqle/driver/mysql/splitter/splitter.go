@@ -187,19 +187,13 @@ func (s *splitter) skipBeginEndBlock(token *parser.Token) *parser.Token {
 			}
 		}
 		if matchedBlock != nil {
-			// 如果匹配到的是 IF 块，需要向前看一个 token 来确定它是一个控制流语句还是一个函数。
+			// 如果匹配到的是 IF 块，需要向前看以区分控制流 IF 与 IF() 函数。
+			// 此处 scanner 正位于 IF 之后（currentOffset），前向扫描后需复位以便后续 END 检测。
 			if _, ok := matchedBlock.(IfEndIfBlock); ok {
-				// 向前看一个 token
-				nextToken := s.scanner.NextToken()
-				// **非常重要**：将扫描器位置恢复，以便后续逻辑可以重新处理这个 token
-				s.scanner.SetCursor(currentOffset)
-
-				if nextToken.Ident() == "(" {
-					// 如果 IF 后面是 '('，说明是 IF() 函数，而不是块语句，继续处理下一个 token。
-				} else {
-					// 否则，它是一个真正的 IF 块语句，将其压入堆栈。
+				if s.ifIsControlFlowStatement() {
 					blockStack = append(blockStack, matchedBlock)
 				}
+				s.scanner.SetCursor(currentOffset)
 			} else {
 				// 对于其他类型的块，直接压入堆栈
 				blockStack = append(blockStack, matchedBlock)
@@ -233,6 +227,28 @@ func (s *splitter) skipBeginEndBlock(token *parser.Token) *parser.Token {
 		}
 	}
 	return token
+}
+
+// ifIsControlFlowStatement 从 IF 之后向前看，判断是控制流 IF 块还是 IF() 函数。
+// 规则：跟踪括号深度，若在深度 0 处遇到 THEN，则为控制流 IF。
+func (s *splitter) ifIsControlFlowStatement() bool {
+	depth := 0
+	for s.scanner.Offset() < len(s.scanner.Text()) {
+		token := s.scanner.NextToken()
+		switch token.Ident() {
+		case "(":
+			depth++
+		case ")":
+			if depth > 0 {
+				depth--
+			}
+		default:
+			if isThenToken(token) && depth == 0 {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // isBeginQuit 判断BEGIN语句跟的是否就是结束符

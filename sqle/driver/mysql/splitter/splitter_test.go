@@ -1426,3 +1426,104 @@ SELECT * FROM users;`,
 		})
 	}
 }
+
+// TestIfControlFlowStatementInProcedure 测试 IF 控制流与 IF() 函数在存储过程中的拆分。
+func TestIfControlFlowStatementInProcedure(t *testing.T) {
+	parser := NewSplitter()
+
+	testCases := []struct {
+		name     string
+		sql      string
+		expected int
+		contains string
+	}{
+		{
+			name: "IF with parenthesized condition in procedure",
+			sql: `CREATE PROCEDURE test_proc(IN Arg0 INT)
+BEGIN
+    DECLARE v_lng DECIMAL(10,6);
+    DECLARE v_lat DECIMAL(10,6);
+    IF ( v_lng IS NULL OR v_lat IS NULL ) AND Arg0 IS NOT NULL THEN
+        SET v_lng = 0;
+    END IF;
+END;`,
+			expected: 1,
+			contains: "END;",
+		},
+		{
+			name: "IF without parenthesized condition in procedure",
+			sql: `CREATE PROCEDURE test_proc()
+BEGIN
+    DECLARE v_variable INT DEFAULT 0;
+    IF v_variable = 0 THEN
+        SET v_variable = 1;
+    END IF;
+END;`,
+			expected: 1,
+			contains: "END;",
+		},
+		{
+			name: "IF with ELSEIF in procedure",
+			sql: `CREATE PROCEDURE test_proc()
+BEGIN
+    DECLARE v_variable INT DEFAULT 0;
+    IF v_variable = 0 THEN
+        SET v_variable = 1;
+    ELSEIF v_variable = 1 THEN
+        SET v_variable = 2;
+    ELSE
+        SET v_variable = 0;
+    END IF;
+END;`,
+			expected: 1,
+			contains: "END;",
+		},
+		{
+			name: "IF function in trigger body",
+			sql: `CREATE TRIGGER trg BEFORE INSERT ON account
+FOR EACH ROW
+BEGIN
+    SET @deposits = @deposits + IF(NEW.amount>0,NEW.amount,0);
+END;`,
+			expected: 1,
+			contains: "IF(NEW.amount>0,NEW.amount,0)",
+		},
+		{
+			name: "IF function with nested CASE THEN in arguments",
+			sql: `CREATE TRIGGER trg BEFORE INSERT ON account
+FOR EACH ROW
+BEGIN
+    SET @x = IF(CASE WHEN NEW.amount > 0 THEN 1 ELSE 0 END, NEW.amount, 0);
+END;`,
+			expected: 1,
+			contains: "IF(CASE WHEN NEW.amount > 0 THEN 1 ELSE 0 END, NEW.amount, 0)",
+		},
+		{
+			name: "procedure followed by select",
+			sql: `CREATE PROCEDURE test_proc()
+BEGIN
+    IF ( 1 = 1 ) AND 2 > 0 THEN
+        SELECT 1;
+    END IF;
+END;
+SELECT 1;`,
+			expected: 2,
+			contains: "END;",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			stmts, err := parser.ParseSqlText(tc.sql)
+			if err != nil {
+				t.Fatalf("解析失败: %v", err)
+			}
+			if len(stmts) != tc.expected {
+				t.Fatalf("期望分割出 %d 个语句，实际得到 %d 个", tc.expected, len(stmts))
+			}
+			if tc.contains != "" && !strings.Contains(stmts[0].Text(), tc.contains) {
+				t.Fatalf("第一条语句应包含 %q，实际为: %s", tc.contains, stmts[0].Text())
+			}
+		})
+	}
+}
