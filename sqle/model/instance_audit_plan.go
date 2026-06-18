@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/actiontech/sqle/sqle/errors"
@@ -34,6 +35,23 @@ const (
 const (
 	LastCollectionNormal   = "normal"
 	LastCollectionAbnormal = "abnormal"
+)
+
+const (
+	RuleDiffResolved  = "resolved"
+	RuleDiffNew       = "new"
+	RuleDiffUnchanged = "unchanged"
+
+	auditLevelNormal = "normal"
+	auditLevelNotice = "notice"
+	auditLevelWarn   = "warn"
+	auditLevelError  = "error"
+
+	RemediationStatusResolved        = "resolved"
+	RemediationStatusPartiallyFixed  = "partially_fixed"
+	RemediationStatusUnchanged       = "unchanged"
+	RemediationStatusDeteriorated    = "deteriorated"
+	RemediationStatusNewlyDiscovered = "newly_discovered"
 )
 
 // TODO 推送配置
@@ -210,20 +228,226 @@ func (s *Storage) HasSQLManageRecords(sourceId string, source string) (bool, err
 type SQLManageRecord struct {
 	Model
 
-	Source         string         `json:"source" gorm:"type:varchar(255);index:idx_source_id_source"`
-	SourceId       string         `json:"source_id" gorm:"type:varchar(255);index:idx_source_id_source"`
-	ProjectId      string         `json:"project_id" gorm:"type:varchar(255)"`
-	InstanceID     string         `json:"instance_id" gorm:"type:varchar(255)"`
-	SchemaName     string         `json:"schema_name" gorm:"type:varchar(255)"`
-	SqlFingerprint string         `json:"sql_fingerprint" gorm:"type:mediumtext;not null"`
-	SqlText        string         `json:"sql_text" gorm:"type:mediumtext;not null"`
-	Info           JSON           `gorm:"type:json"` // 慢日志的 执行时间等特殊属性
-	AuditLevel     string         `json:"audit_level" gorm:"type:varchar(255)"`
-	AuditResults   *AuditResults  `json:"audit_results" gorm:"type:json"`
-	SQLID          string         `json:"sql_id" gorm:"type:varchar(255);unique;not null"`
-	Priority       sql.NullString `json:"priority" gorm:"type:varchar(255)"`
+	Source            string         `json:"source" gorm:"type:varchar(255);index:idx_source_id_source"`
+	SourceId          string         `json:"source_id" gorm:"type:varchar(255);index:idx_source_id_source"`
+	ProjectId         string         `json:"project_id" gorm:"type:varchar(255)"`
+	InstanceID        string         `json:"instance_id" gorm:"type:varchar(255)"`
+	SchemaName        string         `json:"schema_name" gorm:"type:varchar(255)"`
+	SqlFingerprint    string         `json:"sql_fingerprint" gorm:"type:mediumtext;not null"`
+	SqlText           string         `json:"sql_text" gorm:"type:mediumtext;not null"`
+	Info              JSON           `gorm:"type:json"` // 慢日志的 执行时间等特殊属性
+	AuditLevel        string         `json:"audit_level" gorm:"type:varchar(255)"`
+	AuditResults      *AuditResults  `json:"audit_results" gorm:"type:json"`
+	FirstAuditResults AuditResults   `json:"first_audit_results" gorm:"type:json"`
+	FirstAuditTime    *time.Time     `json:"first_audit_time" gorm:"type:datetime(3)"`
+	SQLID             string         `json:"sql_id" gorm:"type:varchar(255);unique;not null"`
+	Priority          sql.NullString `json:"priority" gorm:"type:varchar(255)"`
 
 	SQLManager SQLManageRecordProcess
+}
+
+type RuleDiff struct {
+	Type       string       `json:"type"`
+	AuditRules AuditResults `json:"audit_rules"`
+}
+
+type RemediationResult struct {
+	Resolved          AuditResults `json:"resolved"`
+	New               AuditResults `json:"new"`
+	Unchanged         AuditResults `json:"unchanged"`
+	Status            string       `json:"status"`
+	FirstAuditMissing bool         `json:"first_audit_missing"`
+}
+
+type RemediationStatusCounter struct {
+	Resolved        uint64 `json:"resolved"`
+	PartiallyFixed  uint64 `json:"partially_fixed"`
+	Unchanged       uint64 `json:"unchanged"`
+	Deteriorated    uint64 `json:"deteriorated"`
+	NewlyDiscovered uint64 `json:"newly_discovered"`
+}
+
+type SqlManageRemediationOverview struct {
+	ProjectID              string                   `json:"project_id"`
+	InstanceAuditPlanID    string                   `json:"instance_audit_plan_id"`
+	AuditPlanType          string                   `json:"audit_plan_type"`
+	SqlTotalNum            uint64                   `json:"sql_total_num"`
+	FirstScore             int32                    `json:"first_score"`
+	LatestScore            int32                    `json:"latest_score"`
+	ScoreChange            int32                    `json:"score_change"`
+	RemediationRate        float64                  `json:"remediation_rate"`
+	RemediationStatusCount RemediationStatusCounter `json:"remediation_status_count"`
+	FirstAuditMissingNum   uint64                   `json:"first_audit_missing_num"`
+}
+
+func CalculateRemediationResult(firstAuditResults, latestAuditResults AuditResults, firstAuditMissing bool) RemediationResult {
+	firstByRuleName := auditResultsByRuleName(firstAuditResults)
+	latestByRuleName := auditResultsByRuleName(latestAuditResults)
+
+	result := RemediationResult{FirstAuditMissing: firstAuditMissing}
+	for ruleName, firstAuditResult := range firstByRuleName {
+		if _, ok := latestByRuleName[ruleName]; ok {
+			result.Unchanged = append(result.Unchanged, firstAuditResult)
+			continue
+		}
+		result.Resolved = append(result.Resolved, firstAuditResult)
+	}
+	for ruleName, latestAuditResult := range latestByRuleName {
+		if _, ok := firstByRuleName[ruleName]; ok {
+			continue
+		}
+		result.New = append(result.New, latestAuditResult)
+	}
+
+	switch {
+	case len(firstByRuleName) == 0 && len(latestByRuleName) > 0:
+		result.Status = RemediationStatusNewlyDiscovered
+	case len(firstByRuleName) > 0 && len(latestByRuleName) == 0:
+		result.Status = RemediationStatusResolved
+	case len(result.New) > 0:
+		result.Status = RemediationStatusDeteriorated
+	case len(result.Resolved) > 0 && len(latestByRuleName) > 0:
+		result.Status = RemediationStatusPartiallyFixed
+	default:
+		result.Status = RemediationStatusUnchanged
+	}
+
+	return result
+}
+
+func dereferenceAuditResults(auditResults *AuditResults) AuditResults {
+	if auditResults == nil {
+		return nil
+	}
+	return *auditResults
+}
+
+func auditResultsByRuleName(auditResults AuditResults) map[string]AuditResult {
+	result := make(map[string]AuditResult, len(auditResults))
+	for _, auditResult := range auditResults {
+		if auditResult.RuleName == "" {
+			continue
+		}
+		if _, ok := result[auditResult.RuleName]; !ok {
+			result[auditResult.RuleName] = auditResult
+		}
+	}
+	return result
+}
+
+func (o SQLManageRecord) RemediationResult() RemediationResult {
+	return CalculateRemediationResult(o.FirstAuditResults, dereferenceAuditResults(o.AuditResults), o.FirstAuditTime == nil)
+}
+
+func CalculateSqlManageRemediationOverview(projectID, instanceAuditPlanID, auditPlanType string, records []*SQLManageRecord) SqlManageRemediationOverview {
+	overview := SqlManageRemediationOverview{
+		ProjectID:           projectID,
+		InstanceAuditPlanID: instanceAuditPlanID,
+		AuditPlanType:       auditPlanType,
+		SqlTotalNum:         uint64(len(records)),
+	}
+	if len(records) == 0 {
+		return overview
+	}
+
+	firstAuditResults := make([]AuditResults, 0, len(records))
+	latestAuditResults := make([]AuditResults, 0, len(records))
+	for _, record := range records {
+		if record == nil {
+			continue
+		}
+		remediationResult := record.RemediationResult()
+		switch remediationResult.Status {
+		case RemediationStatusResolved:
+			overview.RemediationStatusCount.Resolved++
+		case RemediationStatusPartiallyFixed:
+			overview.RemediationStatusCount.PartiallyFixed++
+		case RemediationStatusDeteriorated:
+			overview.RemediationStatusCount.Deteriorated++
+		case RemediationStatusNewlyDiscovered:
+			overview.RemediationStatusCount.NewlyDiscovered++
+		default:
+			overview.RemediationStatusCount.Unchanged++
+		}
+		if remediationResult.FirstAuditMissing {
+			overview.FirstAuditMissingNum++
+		}
+		firstAuditResults = append(firstAuditResults, record.FirstAuditResults)
+		latestAuditResults = append(latestAuditResults, dereferenceAuditResults(record.AuditResults))
+	}
+
+	overview.FirstScore = CalculateAuditResultsScore(firstAuditResults)
+	overview.LatestScore = CalculateAuditResultsScore(latestAuditResults)
+	overview.ScoreChange = overview.LatestScore - overview.FirstScore
+	remediated := overview.RemediationStatusCount.Resolved + overview.RemediationStatusCount.PartiallyFixed
+	overview.RemediationRate = float64(remediated) / float64(len(records))
+	return overview
+}
+
+func CalculateAuditResultsScore(auditResultsList []AuditResults) int32 {
+	if len(auditResultsList) == 0 {
+		return 0
+	}
+
+	var errorCount, warnCount, noticeCount float64
+	for _, auditResults := range auditResultsList {
+		switch auditLevelFromResults(auditResults) {
+		case auditLevelError:
+			errorCount++
+		case auditLevelWarn:
+			warnCount++
+		case auditLevelNotice:
+			noticeCount++
+		}
+	}
+
+	numberOfTask := float64(len(auditResultsList))
+	errorRate := errorCount / numberOfTask
+	warnRate := (warnCount + errorCount) / numberOfTask
+	noticeRate := (noticeCount + warnCount + errorCount) / numberOfTask
+	passRate := (numberOfTask - noticeCount - warnCount - errorCount) / numberOfTask
+
+	totalScore := passRate * 30
+	totalScore += (1 - errorRate) * 15
+	totalScore += (1 - warnRate) * 10
+	totalScore += (1 - noticeRate) * 5
+	if errorRate == 0 {
+		totalScore += 15
+	}
+	if warnRate == 0 {
+		totalScore += 10
+	}
+	if noticeRate == 0 {
+		totalScore += 5
+	}
+	if errorRate < 0.1 {
+		totalScore += 5
+	}
+	if warnRate < 0.1 {
+		totalScore += 3
+	}
+	if noticeRate < 0.1 {
+		totalScore += 2
+	}
+
+	return int32(math.Floor(totalScore))
+}
+
+func auditLevelFromResults(auditResults AuditResults) string {
+	level := auditLevelNormal
+	for _, auditResult := range auditResults {
+		switch auditResult.Level {
+		case auditLevelError:
+			return auditLevelError
+		case auditLevelWarn:
+			level = auditLevelWarn
+		case auditLevelNotice:
+			if level == auditLevelNormal {
+				level = auditLevelNotice
+			}
+		}
+	}
+	return level
 }
 
 func (o SQLManageRecord) GetFingerprintMD5() string {
@@ -377,6 +601,29 @@ func (s *Storage) GetManagerSQLListByAuditPlanId(auditPlanID uint) ([]*SQLManage
 		return nil, err
 	}
 	return sqls, nil
+}
+
+func (s *Storage) GetManagerSQLListByInstanceAuditPlanAndType(instanceAuditPlanID, auditPlanType string) ([]*SQLManageRecord, error) {
+	sqls := []*SQLManageRecord{}
+	err := s.db.Where("source_id = ? AND source = ?", instanceAuditPlanID, auditPlanType).Find(&sqls).Error
+	if err != nil {
+		return nil, err
+	}
+	return sqls, nil
+}
+
+func (s *Storage) BackfillSQLManageFirstAuditResult() (int64, error) {
+	result := s.db.Model(&SQLManageRecord{}).
+		Where("(first_audit_results IS NULL OR first_audit_results = '' OR first_audit_results = 'null')").
+		Where("audit_results IS NOT NULL AND audit_results <> '' AND audit_results <> 'null'").
+		Updates(map[string]interface{}{
+			"first_audit_results": gorm.Expr("audit_results"),
+			"first_audit_time":    gorm.Expr("last_receive_timestamp"),
+		})
+	if result.Error != nil {
+		return 0, result.Error
+	}
+	return result.RowsAffected, nil
 }
 
 // 获取指定扫描任务下的所有Schema
