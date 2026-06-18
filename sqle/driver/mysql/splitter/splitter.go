@@ -16,8 +16,10 @@ type splitter struct {
 }
 
 func NewSplitter() *splitter {
+	p := parser.New()
+	p.EnableWindowFunc(true)
 	return &splitter{
-		parser:    parser.New(),
+		parser:    p,
 		delimiter: NewDelimiter(),
 		scanner:   parser.NewScanner(""),
 	}

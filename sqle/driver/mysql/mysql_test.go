@@ -38,6 +38,12 @@ WHERE last_name = 'Smith';`)
 	assert.NoError(t, err)
 	assert.Len(t, nodes, 1)
 	assert.Equal(t, nodes[0].Type, driverV2.SQLTypeDML)
+
+	nodes, err = DefaultMysqlInspect().Parse(context.TODO(),
+		"SELECT id, ROW_NUMBER() OVER (PARTITION BY dept ORDER BY salary) AS rn FROM emp")
+	assert.NoError(t, err)
+	assert.Len(t, nodes, 1)
+	assert.Equal(t, driverV2.SQLTypeDQL, nodes[0].Type)
 }
 
 func TestInspect_onlineddlWithGhost(t *testing.T) {
@@ -208,6 +214,11 @@ CREATE TABLE new_tbl AS SELECT * FROM orig_tbl;`,
 			`
 CREATEaa TABLE new_tbl AS SELECT * FROM orig_tbl;`,
 			driverV2.SQLTypeDDL,
+		},
+		{
+			"case 8 window function select",
+			`SELECT id, ROW_NUMBER() OVER (PARTITION BY nominate_app_id ORDER BY create_date ASC) AS rn FROM sourcing.tt_nomi_record`,
+			driverV2.SQLTypeDQL,
 		},
 	}
 	i := &MysqlDriverImpl{}

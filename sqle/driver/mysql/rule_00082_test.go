@@ -74,20 +74,20 @@ func TestRuleSQLE00082(t *testing.T) {
 			},
 		}, newTestResult())
 
-	// case 5: SELECT 语句使用窗口函数可能触发 filesort // TODO 当前解析器解析不了此语法
-	// runAIRuleCase(rule, t, "case 5: SELECT 语句使用窗口函数可能触发 filesort",
-	// 	"SELECT age FROM (SELECT age, ROW_NUMBER() OVER (PARTITION BY age ORDER BY age DESC) gn FROM customers) T WHERE gn=1 LIMIT 1;",
-	// 	session.NewAIMockContext().WithSQL("CREATE TABLE customers (id INT, age INT);"),
-	// 	[]*AIMockSQLExpectation{
-	// 		{
-	// 			Query: "EXPLAIN SELECT age FROM (SELECT age, ROW_NUMBER() OVER (PARTITION BY age ORDER BY age DESC) gn FROM customers) T WHERE gn=1 LIMIT 1;",
-	// 			Rows:  sqlmock.NewRows([]string{"Extra"}).AddRow("Using filesort"),
-	// 		},
-	// 		{
-	// 			Query: "SHOW WARNINGS",
-	// 			Rows:  sqlmock.NewRows(nil),
-	// 		},
-	// 	}, newTestResult().addResult(ruleName))
+	// case 5: SELECT 语句使用窗口函数可能触发 filesort
+	runAIRuleCase(rule, t, "case 5: SELECT 语句使用窗口函数可能触发 filesort",
+		"SELECT age FROM (SELECT age, ROW_NUMBER() OVER (PARTITION BY age ORDER BY age DESC) gn FROM customers) T WHERE gn=1 LIMIT 1;",
+		session.NewAIMockContext().WithSQL("CREATE TABLE customers (id INT, age INT);"),
+		[]*AIMockSQLExpectation{
+			{
+				Query: "EXPLAIN SELECT age FROM (SELECT age, ROW_NUMBER() OVER (PARTITION BY age ORDER BY age DESC) gn FROM customers) T WHERE gn=1 LIMIT 1;",
+				Rows:  sqlmock.NewRows([]string{"Extra"}).AddRow("Using filesort"),
+			},
+			{
+				Query: "SHOW WARNINGS",
+				Rows:  sqlmock.NewRows(nil),
+			},
+		}, newTestResult().addResult(ruleName))
 
 	// case 6: SELECT 语句使用 GROUP BY 和 ORDER BY 不一致可能触发 filesort
 	runAIRuleCase(rule, t, "case 6: SELECT 语句使用 GROUP BY 和 ORDER BY 不一致可能触发 filesort",

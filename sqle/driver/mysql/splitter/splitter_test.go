@@ -249,6 +249,24 @@ Alter table point_trans_shard_00_part_202401 ADD CONSTRAINT chk_point_trans_shar
 	}
 }
 
+func TestParseWindowFunctionSelect(t *testing.T) {
+	parser := NewSplitter()
+	sql := "SELECT id, ROW_NUMBER() OVER (PARTITION BY nominate_app_id ORDER BY create_date ASC) AS rn FROM sourcing.tt_nomi_record WHERE is_delete = 0"
+	stmt, err := parser.ParseSqlText(sql)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(stmt) != 1 {
+		t.Fatalf("expect 1 stmt, got %d", len(stmt))
+	}
+	if _, ok := stmt[0].(*ast.UnparsedStmt); ok {
+		t.Fatal("expect SelectStmt, got UnparsedStmt")
+	}
+	if _, ok := stmt[0].(*ast.SelectStmt); !ok {
+		t.Fatalf("expect SelectStmt, got %T", stmt[0])
+	}
+}
+
 func TestPerfectParse(t *testing.T) {
 	parser := NewSplitter()
 
