@@ -36,11 +36,12 @@ type AuditResDataV2 struct {
 }
 
 type AuditSQLResV2 struct {
-	Number      uint          `json:"number"`
-	ExecSQL     string        `json:"exec_sql"`
-	AuditResult []AuditResult `json:"audit_result"`
-	AuditLevel  string        `json:"audit_level"`
-	SQLType     string        `json:"sql_type"`
+	Number             uint          `json:"number"`
+	ExecSQL            string        `json:"exec_sql"`
+	AuditResult        []AuditResult `json:"audit_result"`
+	SkippedAuditResult []AuditResult `json:"skipped_audit_result"`
+	AuditLevel         string        `json:"audit_level"`
+	SQLType            string        `json:"sql_type"`
 }
 
 type DirectAuditResV2 struct {
@@ -107,11 +108,12 @@ func convertTaskResultToAuditResV2(ctx context.Context, task *model.Task) *Audit
 	results := make([]AuditSQLResV2, len(task.ExecuteSQLs))
 	for i, sql := range task.ExecuteSQLs {
 		results[i] = AuditSQLResV2{
-			Number:      sql.Number,
-			ExecSQL:     sql.Content,
-			AuditResult: convertAuditResultToAuditResV2(ctx, sql.AuditResults),
-			AuditLevel:  sql.AuditLevel,
-			SQLType:     sql.SQLType,
+			Number:             sql.Number,
+			ExecSQL:            sql.Content,
+			AuditResult:        convertAuditResultToAuditResV2(ctx, sql.AuditResults),
+			SkippedAuditResult: convertAuditResultToAuditResV2(ctx, sql.SkippedAuditResults),
+			AuditLevel:         sql.AuditLevel,
+			SQLType:            sql.SQLType,
 		}
 
 	}
@@ -229,11 +231,12 @@ func convertFileAuditTaskResultToAuditResV2(ctx context.Context, task *model.Tas
 	results := make([]AuditSQLResV2, len(task.ExecuteSQLs))
 	for i, sql := range task.ExecuteSQLs {
 		results[i] = AuditSQLResV2{
-			Number:      sql.Number,
-			ExecSQL:     sql.Content,
-			AuditResult: convertAuditResultToAuditResV2(ctx, sql.AuditResults),
-			AuditLevel:  sql.AuditLevel,
-			SQLType:     sql.SQLType,
+			Number:             sql.Number,
+			ExecSQL:            sql.Content,
+			AuditResult:        convertAuditResultToAuditResV2(ctx, sql.AuditResults),
+			SkippedAuditResult: convertAuditResultToAuditResV2(ctx, sql.SkippedAuditResults),
+			AuditLevel:         sql.AuditLevel,
+			SQLType:            sql.SQLType,
 		}
 
 	}

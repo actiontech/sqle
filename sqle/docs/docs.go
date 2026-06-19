@@ -2725,6 +2725,175 @@ var doc = `{
                 }
             }
         },
+        "/v1/projects/{project_name}/audit_whitelist/rule_exceptions": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get sql rule exceptions with server side filters",
+                "tags": [
+                    "audit_whitelist"
+                ],
+                "summary": "获取单规则 SQL 审核例外列表",
+                "operationId": "getSQLRuleExceptionV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "fuzzy value",
+                        "name": "fuzzy_search_value",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "instance id",
+                        "name": "filter_instance_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "rule name",
+                        "name": "filter_rule_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "created by",
+                        "name": "filter_created_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "created time from",
+                        "name": "filter_created_time_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "created time to",
+                        "name": "filter_created_time_to",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "sql fingerprint",
+                        "name": "filter_sql_fingerprint",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "page index",
+                        "name": "page_index",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "page size",
+                        "name": "page_size",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetSQLRuleExceptionResV1"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "create a sql rule exception with project, instance, sql fingerprint and rule unique tuple",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "audit_whitelist"
+                ],
+                "summary": "添加单规则 SQL 审核例外",
+                "operationId": "createSQLRuleExceptionV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "add sql rule exception req",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.CreateSQLRuleExceptionReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.CreateSQLRuleExceptionResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/audit_whitelist/rule_exceptions/{sql_rule_exception_id}": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "delete a sql rule exception by id in project scope",
+                "tags": [
+                    "audit_whitelist"
+                ],
+                "summary": "取消单规则 SQL 审核例外",
+                "operationId": "deleteSQLRuleExceptionV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "sql rule exception id",
+                        "name": "sql_rule_exception_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{project_name}/audit_whitelist/{audit_whitelist_id}/": {
             "delete": {
                 "security": [
@@ -16034,6 +16203,52 @@ var doc = `{
                 }
             }
         },
+        "v1.CreateSQLRuleExceptionReqV1": {
+            "type": "object",
+            "properties": {
+                "instance_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "reason": {
+                    "type": "string",
+                    "example": "业务确认该 SQL 可例外"
+                },
+                "rule_desc": {
+                    "type": "string",
+                    "example": "rule description"
+                },
+                "rule_level": {
+                    "type": "string",
+                    "example": "error"
+                },
+                "rule_name": {
+                    "type": "string",
+                    "example": "all_check_prepare_statement_placeholders"
+                },
+                "sql_fingerprint": {
+                    "type": "string",
+                    "example": "select * from ?"
+                }
+            }
+        },
+        "v1.CreateSQLRuleExceptionResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/v1.SQLRuleExceptionResV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "v1.CreateSqlVersionReqV1": {
             "type": "object",
             "properties": {
@@ -18374,6 +18589,28 @@ var doc = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/v1.SQLAuditRecord"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "total_nums": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.GetSQLRuleExceptionResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.SQLRuleExceptionResV1"
                     }
                 },
                 "message": {
@@ -21030,6 +21267,44 @@ var doc = `{
                     "type": "integer"
                 },
                 "query_timeout_second": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.SQLRuleExceptionResV1": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "created_by": {
+                    "type": "string"
+                },
+                "instance_id": {
+                    "type": "integer"
+                },
+                "instance_name": {
+                    "type": "string"
+                },
+                "project_id": {
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "rule_desc": {
+                    "type": "string"
+                },
+                "rule_level": {
+                    "type": "string"
+                },
+                "rule_name": {
+                    "type": "string"
+                },
+                "sql_fingerprint": {
+                    "type": "string"
+                },
+                "sql_rule_exception_id": {
                     "type": "integer"
                 }
             }
@@ -23801,6 +24076,12 @@ var doc = `{
                 "number": {
                     "type": "integer"
                 },
+                "skipped_audit_result": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.AuditResult"
+                    }
+                },
                 "sql_type": {
                     "type": "string"
                 }
@@ -23873,6 +24154,12 @@ var doc = `{
                     "type": "array",
                     "items": {
                         "type": "string"
+                    }
+                },
+                "skipped_audit_result": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v2.AuditResult"
                     }
                 },
                 "sql_source_file": {

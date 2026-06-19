@@ -35,6 +35,7 @@ type AuditTaskSQLResV2 struct {
 	SQLSourceFile               string                        `json:"sql_source_file"`
 	SQLStartLine                uint64                        `json:"sql_start_line"`
 	AuditResult                 []*AuditResult                `json:"audit_result"`
+	SkippedAuditResult          []*AuditResult                `json:"skipped_audit_result"`
 	AuditLevel                  string                        `json:"audit_level"`
 	AuditStatus                 string                        `json:"audit_status"`
 	ExecResult                  string                        `json:"exec_result"`
@@ -162,6 +163,18 @@ func GetTaskSQLs(c echo.Context) error {
 		for i := range taskSQL.AuditResults {
 			ar := taskSQL.AuditResults[i]
 			taskSQLRes.AuditResult = append(taskSQLRes.AuditResult, &AuditResult{
+				Level:               ar.Level,
+				ExecutionFailed:     ar.ExecutionFailed,
+				ErrorInfo:           ar.GetAuditErrorMsgByLangTag(locale.Bundle.GetLangTagFromCtx(c.Request().Context())),
+				Message:             ar.GetAuditMsgByLangTag(locale.Bundle.GetLangTagFromCtx(c.Request().Context())),
+				RuleName:            ar.RuleName,
+				DbType:              task.DBType,
+				I18nAuditResultInfo: ar.I18nAuditResultInfo,
+			})
+		}
+		for i := range taskSQL.SkippedAuditResults {
+			ar := taskSQL.SkippedAuditResults[i]
+			taskSQLRes.SkippedAuditResult = append(taskSQLRes.SkippedAuditResult, &AuditResult{
 				Level:               ar.Level,
 				ExecutionFailed:     ar.ExecutionFailed,
 				ErrorInfo:           ar.GetAuditErrorMsgByLangTag(locale.Bundle.GetLangTagFromCtx(c.Request().Context())),
