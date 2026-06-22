@@ -128,34 +128,36 @@ func convertInstance(instance *dmsV2.ListDBService) (*model.Instance, error) {
 			AllowQueryWhenLessThanAuditLevel: string(instance.SQLEConfig.SQLQueryConfig.AllowQueryWhenLessThanAuditLevel),
 		}
 	}
-	var environmentTagName, environmentTagUID string
+	var environmentTagName, environmentTagUID, environmentTagColor string
 	if instance.EnvironmentTag != nil {
 		environmentTagUID = instance.EnvironmentTag.UID
 		environmentTagName = instance.EnvironmentTag.Name
+		environmentTagColor = instance.EnvironmentTag.Color
 	}
 	var ruleTemplateName string
 	if instance.SQLEConfig != nil {
 		ruleTemplateName = instance.SQLEConfig.RuleTemplateName
 	}
 	return &model.Instance{
-		ID:                 uint64(instanceId),
-		Name:               instance.Name,
-		DbType:             instance.DBType,
-		RuleTemplateId:     uint64(ruleTemplateId),
-		RuleTemplateName:   ruleTemplateName,
-		ProjectId:          instance.ProjectUID,
-		MaintenancePeriod:  maintenancePeriod,
-		Host:               instance.Host,
-		Port:               instance.Port,
-		User:               instance.User,
-		Password:           decryptPassword,
-		Desc:               instance.Desc,
-		AdditionalParams:   additionalParams,
-		SqlQueryConfig:     sqlQueryConfig,
-		EnvironmentTagName: environmentTagName,
-		EnvironmentTagUID:  environmentTagUID,
-		EnableBackup:       instance.EnableBackup,
-		BackupMaxRows:      instance.BackupMaxRows,
+		ID:                  uint64(instanceId),
+		Name:                instance.Name,
+		DbType:              instance.DBType,
+		RuleTemplateId:      uint64(ruleTemplateId),
+		RuleTemplateName:    ruleTemplateName,
+		ProjectId:           instance.ProjectUID,
+		MaintenancePeriod:   maintenancePeriod,
+		Host:                instance.Host,
+		Port:                instance.Port,
+		User:                instance.User,
+		Password:            decryptPassword,
+		Desc:                instance.Desc,
+		AdditionalParams:    additionalParams,
+		SqlQueryConfig:      sqlQueryConfig,
+		EnvironmentTagName:  environmentTagName,
+		EnvironmentTagUID:   environmentTagUID,
+		EnvironmentTagColor: environmentTagColor,
+		EnableBackup:        instance.EnableBackup,
+		BackupMaxRows:       instance.BackupMaxRows,
 	}, nil
 }
 

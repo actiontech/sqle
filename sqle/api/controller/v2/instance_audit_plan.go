@@ -46,6 +46,7 @@ type InstanceTipResV2 struct {
 	BackupMaxRows           uint64   `json:"backup_max_rows"`
 	EnvironmentTagName      string   `json:"environment_tag_name"`
 	EnvironmentTagUID       string   `json:"environment_tag_uid"`
+	EnvironmentTagColor     string   `json:"environment_tag_color,omitempty"`
 }
 
 // GetInstanceTips get instance tip list
@@ -132,6 +133,7 @@ func GetInstanceTips(c echo.Context) error {
 			SupportedBackupStrategy: svc.SupportedBackupStrategy(inst.DbType),
 			EnvironmentTagName:      inst.EnvironmentTagName,
 			EnvironmentTagUID:       inst.EnvironmentTagUID,
+			EnvironmentTagColor:     inst.EnvironmentTagColor,
 		}
 		instanceTipsResV1 = append(instanceTipsResV1, instanceTipRes)
 	}

@@ -31,17 +31,20 @@ type RuleTemplateV2 struct {
 }
 
 type InstanceResV2 struct {
-	Name             string                             `json:"instance_name"`
-	DBType           string                             `json:"db_type" example:"mysql"`
-	Host             string                             `json:"db_host" example:"10.10.10.10"`
-	Port             string                             `json:"db_port" example:"3306"`
-	User             string                             `json:"db_user" example:"root"`
-	Desc             string                             `json:"desc" example:"this is a instance"`
-	MaintenanceTimes []*v1.MaintenanceTimeResV1         `json:"maintenance_times" from:"maintenance_times"`
-	RuleTemplate     *RuleTemplateV2                    `json:"rule_template,omitempty"`
-	AdditionalParams []*v1.InstanceAdditionalParamResV1 `json:"additional_params"`
-	SQLQueryConfig   *v1.SQLQueryConfigResV1            `json:"sql_query_config"`
-	Source           string                             `json:"source" example:"SQLE"`
+	Name                string                             `json:"instance_name"`
+	DBType              string                             `json:"db_type" example:"mysql"`
+	Host                string                             `json:"db_host" example:"10.10.10.10"`
+	Port                string                             `json:"db_port" example:"3306"`
+	User                string                             `json:"db_user" example:"root"`
+	Desc                string                             `json:"desc" example:"this is a instance"`
+	MaintenanceTimes    []*v1.MaintenanceTimeResV1         `json:"maintenance_times" from:"maintenance_times"`
+	RuleTemplate        *RuleTemplateV2                    `json:"rule_template,omitempty"`
+	AdditionalParams    []*v1.InstanceAdditionalParamResV1 `json:"additional_params"`
+	SQLQueryConfig      *v1.SQLQueryConfigResV1            `json:"sql_query_config"`
+	Source              string                             `json:"source" example:"SQLE"`
+	EnvironmentTagName  string                             `json:"environment_tag_name"`
+	EnvironmentTagUID   string                             `json:"environment_tag_uid"`
+	EnvironmentTagColor string                             `json:"environment_tag_color,omitempty"`
 }
 
 type GetInstanceResV2 struct {
@@ -99,7 +102,10 @@ func convertInstanceToRes(ctx context.Context, instance *model.Instance) Instanc
 			AuditEnabled:                     instance.SqlQueryConfig.AuditEnabled,
 			AllowQueryWhenLessThanAuditLevel: instance.SqlQueryConfig.AllowQueryWhenLessThanAuditLevel,
 		},
-		Source: instance.Source,
+		Source:              instance.Source,
+		EnvironmentTagName:  instance.EnvironmentTagName,
+		EnvironmentTagUID:   instance.EnvironmentTagUID,
+		EnvironmentTagColor: instance.EnvironmentTagColor,
 	}
 
 	if len(instance.RuleTemplates) != 0 {
