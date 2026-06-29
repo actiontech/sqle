@@ -114,6 +114,10 @@ func (s Storage) GetReportPushConfigInProjectByType(projectID, typ string) (*Rep
 	return reportPushConfig, nil
 }
 
+func (s Storage) DisableReportPushConfigInProject(projectID string) error {
+	return s.db.Model(&ReportPushConfig{}).Where("project_id = ? AND enabled = ?", projectID, true).Update("enabled", false).Error
+}
+
 func (s Storage) DeleteReportPushConfigInProject(projectID string) error {
 	configs, err := s.GetReportPushConfigListInProject(projectID)
 	if err != nil {
