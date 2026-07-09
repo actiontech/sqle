@@ -332,9 +332,10 @@ func ConvertAuditResultFromModelToDriver(mar *AuditResult) *driverV2.AuditResult
 
 type ExecuteSQL struct {
 	BaseSQL
-	SqlFingerprint string       `json:"sql_fingerprint" gorm:"index,length:255;type:longtext"`
-	AuditStatus    string       `json:"audit_status" gorm:"default:\"initialized\""`
-	AuditResults   AuditResults `json:"audit_results" gorm:"type:json"`
+	SqlFingerprint      string       `json:"sql_fingerprint" gorm:"index,length:255;type:longtext"`
+	AuditStatus         string       `json:"audit_status" gorm:"default:\"initialized\""`
+	AuditResults        AuditResults `json:"audit_results" gorm:"type:json"`
+	SkippedAuditResults AuditResults `json:"skipped_audit_results" gorm:"type:json"`
 	// AuditFingerprint generate from SQL and SQL audit result use MD5 hash algorithm,
 	// it used for deduplication in one audit task.
 	AuditFingerprint string `json:"audit_fingerprint" gorm:"index;type:char(32)"`
@@ -651,19 +652,20 @@ func (s *Storage) GetTaskByInstanceId(instanceId uint64) ([]Task, error) {
 }
 
 type TaskSQLDetail struct {
-	Id            uint           `json:"id"`
-	Number        uint           `json:"number"`
-	Description   string         `json:"description"`
-	ExecSQL       string         `json:"exec_sql"`
-	SQLSourceFile sql.NullString `json:"sql_source_file"`
-	SQLStartLine  uint64         `json:"sql_start_line"`
-	AuditResults  AuditResults   `json:"audit_results"`
-	AuditLevel    string         `json:"audit_level"`
-	AuditStatus   string         `json:"audit_status"`
-	ExecResult    string         `json:"exec_result"`
-	ExecStatus    string         `json:"exec_status"`
-	RollbackSQL   sql.NullString `json:"rollback_sql"`
-	SQLType       sql.NullString `json:"sql_type"`
+	Id                  uint           `json:"id"`
+	Number              uint           `json:"number"`
+	Description         string         `json:"description"`
+	ExecSQL             string         `json:"exec_sql"`
+	SQLSourceFile       sql.NullString `json:"sql_source_file"`
+	SQLStartLine        uint64         `json:"sql_start_line"`
+	AuditResults        AuditResults   `json:"audit_results"`
+	SkippedAuditResults AuditResults   `json:"skipped_audit_results"`
+	AuditLevel          string         `json:"audit_level"`
+	AuditStatus         string         `json:"audit_status"`
+	ExecResult          string         `json:"exec_result"`
+	ExecStatus          string         `json:"exec_status"`
+	RollbackSQL         sql.NullString `json:"rollback_sql"`
+	SQLType             sql.NullString `json:"sql_type"`
 }
 
 func (t *TaskSQLDetail) GetAuditResults(ctx context.Context) string {
@@ -675,7 +677,7 @@ func (t *TaskSQLDetail) GetAuditResults(ctx context.Context) string {
 }
 
 var taskSQLsQueryTpl = `SELECT e_sql.id,e_sql.number, e_sql.description, e_sql.content AS exec_sql,  e_sql.source_file AS sql_source_file, e_sql.start_line AS sql_start_line, e_sql.sql_type,
-e_sql.audit_results, e_sql.audit_level, e_sql.audit_status, e_sql.exec_result, e_sql.exec_status
+e_sql.audit_results, e_sql.skipped_audit_results, e_sql.audit_level, e_sql.audit_status, e_sql.exec_result, e_sql.exec_status
 
 {{- template "body" . -}}
 

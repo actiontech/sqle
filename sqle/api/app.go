@@ -177,6 +177,12 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1Router.POST(fmt.Sprintf("%s/connection", dmsV1.InternalDBServiceRouterGroup), v1.CheckInstanceIsConnectable, sqleMiddleware.OpGlobalAllowed())
 		v1Router.GET("/database_driver_options", v1.GetDatabaseDriverOptions)
 		v1Router.GET("/database_driver_logos", v1.GetDatabaseDriverLogos)
+
+		// operation record
+		v1Router.GET("/operation_records/operation_type_names", v1.GetOperationTypeNameList, sqleMiddleware.ViewGlobalAllowed())
+		v1Router.GET("/operation_records/operation_actions", v1.GetOperationActionList, sqleMiddleware.ViewGlobalAllowed())
+		v1Router.GET("/operation_records", v1.GetOperationRecordListV1, sqleMiddleware.ViewGlobalAllowed())
+		v1Router.GET("/operation_records/exports", v1.GetExportOperationRecordListV1, sqleMiddleware.ViewGlobalAllowed())
 	}
 
 	// project admin and global manage router
@@ -184,6 +190,8 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 	{
 		// audit whitelist
 		v1OpProjectRouter.POST("/:project_name/audit_whitelist", v1.CreateAuditWhitelist)
+		v1OpProjectRouter.POST("/:project_name/audit_whitelist/rule_exceptions", v1.CreateSQLRuleException)
+		v1OpProjectRouter.DELETE("/:project_name/audit_whitelist/rule_exceptions/:sql_rule_exception_id", v1.DeleteSQLRuleException)
 		v1OpProjectRouter.PATCH("/:project_name/audit_whitelist/:audit_whitelist_id/", v1.UpdateAuditWhitelistById)
 		v1OpProjectRouter.DELETE("/:project_name/audit_whitelist/:audit_whitelist_id/", v1.DeleteAuditWhitelistById)
 
@@ -314,6 +322,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		v1ProjectViewRouter.GET("/:project_name/statistic/optimization_record_overview", v1.GetOptimizationRecordOverview)
 		v1ProjectViewRouter.GET("/:project_name/statistic/optimization_performance_improve_overview", v1.GetDBPerformanceImproveOverview)
 		v1ProjectViewRouter.GET("/:project_name/audit_whitelist", v1.GetSqlWhitelist)
+		v1ProjectViewRouter.GET("/:project_name/audit_whitelist/rule_exceptions", v1.GetSQLRuleException)
 
 		v1ProjectViewRouter.GET("/:project_name/instances/:instance_name/connection", v1.CheckInstanceIsConnectableByName)
 		v1ProjectViewRouter.GET("/:project_name/instances/:instance_name/schemas", v1.GetInstanceSchemas)

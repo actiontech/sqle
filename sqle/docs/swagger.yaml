@@ -1602,6 +1602,39 @@ definitions:
         example: ok
         type: string
     type: object
+  v1.CreateSQLRuleExceptionReqV1:
+    properties:
+      instance_id:
+        example: 1
+        type: integer
+      reason:
+        example: 业务确认该 SQL 可例外
+        type: string
+      rule_desc:
+        example: rule description
+        type: string
+      rule_level:
+        example: error
+        type: string
+      rule_name:
+        example: all_check_prepare_statement_placeholders
+        type: string
+      sql_fingerprint:
+        example: select * from ?
+        type: string
+    type: object
+  v1.CreateSQLRuleExceptionResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/v1.SQLRuleExceptionResV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
   v1.CreateSqlVersionReqV1:
     properties:
       create_sql_version_stage:
@@ -3215,6 +3248,21 @@ definitions:
       data:
         items:
           $ref: '#/definitions/v1.SQLAuditRecord'
+        type: array
+      message:
+        example: ok
+        type: string
+      total_nums:
+        type: integer
+    type: object
+  v1.GetSQLRuleExceptionResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/v1.SQLRuleExceptionResV1'
         type: array
       message:
         example: ok
@@ -5032,6 +5080,31 @@ definitions:
       max_pre_query_rows:
         type: integer
       query_timeout_second:
+        type: integer
+    type: object
+  v1.SQLRuleExceptionResV1:
+    properties:
+      created_at:
+        type: string
+      created_by:
+        type: string
+      instance_id:
+        type: integer
+      instance_name:
+        type: string
+      project_id:
+        type: string
+      reason:
+        type: string
+      rule_desc:
+        type: string
+      rule_level:
+        type: string
+      rule_name:
+        type: string
+      sql_fingerprint:
+        type: string
+      sql_rule_exception_id:
         type: integer
     type: object
   v1.SQLStatement:
@@ -6938,6 +7011,10 @@ definitions:
         type: string
       number:
         type: integer
+      skipped_audit_result:
+        items:
+          $ref: '#/definitions/v2.AuditResult'
+        type: array
       sql_type:
         type: string
     type: object
@@ -6988,6 +7065,10 @@ definitions:
       rollback_sqls:
         items:
           type: string
+        type: array
+      skipped_audit_result:
+        items:
+          $ref: '#/definitions/v2.AuditResult'
         type: array
       sql_source_file:
         type: string
@@ -9853,6 +9934,117 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 更新SQL白名单
+      tags:
+      - audit_whitelist
+  /v1/projects/{project_name}/audit_whitelist/rule_exceptions:
+    get:
+      description: get sql rule exceptions with server side filters
+      operationId: getSQLRuleExceptionV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: fuzzy value
+        in: query
+        name: fuzzy_search_value
+        type: string
+      - description: instance id
+        in: query
+        name: filter_instance_id
+        type: string
+      - description: rule name
+        in: query
+        name: filter_rule_name
+        type: string
+      - description: created by
+        in: query
+        name: filter_created_by
+        type: string
+      - description: created time from
+        in: query
+        name: filter_created_time_from
+        type: string
+      - description: created time to
+        in: query
+        name: filter_created_time_to
+        type: string
+      - description: sql fingerprint
+        in: query
+        name: filter_sql_fingerprint
+        type: string
+      - description: page index
+        in: query
+        name: page_index
+        required: true
+        type: string
+      - description: page size
+        in: query
+        name: page_size
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetSQLRuleExceptionResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取单规则 SQL 审核例外列表
+      tags:
+      - audit_whitelist
+    post:
+      consumes:
+      - application/json
+      description: create a sql rule exception with project, instance, sql fingerprint
+        and rule unique tuple
+      operationId: createSQLRuleExceptionV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: add sql rule exception req
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.CreateSQLRuleExceptionReqV1'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.CreateSQLRuleExceptionResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 添加单规则 SQL 审核例外
+      tags:
+      - audit_whitelist
+  /v1/projects/{project_name}/audit_whitelist/rule_exceptions/{sql_rule_exception_id}:
+    delete:
+      description: delete a sql rule exception by id in project scope
+      operationId: deleteSQLRuleExceptionV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: sql rule exception id
+        in: path
+        name: sql_rule_exception_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 取消单规则 SQL 审核例外
       tags:
       - audit_whitelist
   /v1/projects/{project_name}/blacklist:

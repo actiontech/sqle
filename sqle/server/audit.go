@@ -250,6 +250,7 @@ func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHoo
 				wlNode, err := parse(l, p, wl.Value)
 				if err != nil {
 					l.Errorf("parse whitelist sql error: %v,please check the accuracy of whitelist SQL: %s", err, wl.Value)
+					continue
 				}
 				if node.Fingerprint == wlNode.Fingerprint {
 					matchedWhitelistID = wl.ID
@@ -293,6 +294,10 @@ func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHoo
 		CustomRuleAudit(l, task, sqls, results, customRules)
 		for i, sql := range auditSqls {
 			hook.AfterAudit(sql)
+			results[i], sql.SkippedAuditResults, err = skipSQLRuleExceptionResults(l, st, projectId, taskInstanceID(task), nodes[i].Fingerprint, sql.Content, results[i])
+			if err != nil {
+				return err
+			}
 			sql.AuditStatus = model.SQLAuditStatusFinished
 			sql.AuditLevel = string(results[i].Level())
 			sql.AuditFingerprint = utils.Md5String(string(append([]byte(results[i].Message()), []byte(nodes[i].Fingerprint)...)))
@@ -309,6 +314,76 @@ func hookAudit(l *logrus.Entry, task *model.Task, p driver.Plugin, hook AuditHoo
 	}
 
 	return nil
+}
+
+func taskInstanceID(task *model.Task) uint64 {
+	if task == nil {
+		return 0
+	}
+	if task.InstanceId != 0 {
+		return task.InstanceId
+	}
+	if task.Instance != nil {
+		return uint64(task.Instance.ID)
+	}
+	return 0
+}
+
+func skipSQLRuleExceptionResults(l *logrus.Entry, st *model.Storage, projectID string, instanceID uint64, sqlFingerprint, sqlText string, results *driverV2.AuditResults) (*driverV2.AuditResults, model.AuditResults, error) {
+	matchedSQLFingerprints := sqlRuleExceptionMatchFingerprints(sqlFingerprint, sqlText)
+	if instanceID == 0 || len(matchedSQLFingerprints) == 0 || results == nil || len(results.Results) == 0 {
+		return results, nil, nil
+	}
+
+	ruleNames := make([]string, 0, len(results.Results))
+	for _, result := range results.Results {
+		if result == nil || result.RuleName == "" {
+			continue
+		}
+		ruleNames = append(ruleNames, result.RuleName)
+	}
+	if len(ruleNames) == 0 {
+		return results, nil, nil
+	}
+
+	sqlRuleExceptions, err := st.GetEffectiveSQLRuleExceptionsByFingerprints(model.ProjectUID(projectID), instanceID, matchedSQLFingerprints, ruleNames)
+	if err != nil {
+		return nil, nil, err
+	}
+	if len(sqlRuleExceptions) == 0 {
+		return results, nil, nil
+	}
+
+	filteredResults := driverV2.NewAuditResults()
+	skippedResults := model.AuditResults{}
+	for _, result := range results.Results {
+		if result != nil {
+			if sqlRuleException, ok := sqlRuleExceptions[result.RuleName]; ok {
+				l.Infof("skip audit rule by sql rule exception, project_id: %s, instance_id: %d, sql_fingerprint: %s, rule_name: %s", projectID, instanceID, sqlRuleException.SQLFingerprint, result.RuleName)
+				skippedResults.Append(result)
+				continue
+			}
+		}
+		filteredResults.Results = append(filteredResults.Results, result)
+	}
+	return filteredResults, skippedResults, nil
+}
+
+func sqlRuleExceptionMatchFingerprints(sqlFingerprint, sqlText string) []string {
+	matchedSQLFingerprints := make([]string, 0, 2)
+	seenSQLFingerprints := map[string]struct{}{}
+	for _, candidate := range []string{sqlFingerprint, sqlText} {
+		trimmedCandidate := strings.TrimSpace(candidate)
+		if trimmedCandidate == "" {
+			continue
+		}
+		if _, ok := seenSQLFingerprints[trimmedCandidate]; ok {
+			continue
+		}
+		seenSQLFingerprints[trimmedCandidate] = struct{}{}
+		matchedSQLFingerprints = append(matchedSQLFingerprints, trimmedCandidate)
+	}
+	return matchedSQLFingerprints
 }
 
 func ReplenishTaskStatistics(task *model.Task) {
