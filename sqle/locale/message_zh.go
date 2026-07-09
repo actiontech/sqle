@@ -283,6 +283,31 @@ var (
 	OprActionDeleteMemberGroup           = &i18n.Message{ID: "OprActionDeleteMemberGroup", Other: "删除成员组"}
 	OprActionUpdateMember                = &i18n.Message{ID: "OprActionUpdateMember", Other: "编辑成员"}
 	OprActionUpdateMemberGroup           = &i18n.Message{ID: "OprActionUpdateMemberGroup", Other: "编辑成员组"}
+	OprActionUpdateWorkflow              = &i18n.Message{ID: "OprActionUpdateWorkflow", Other: "更新工单"}
+	OprActionUpdateFeishuAuditConfiguration = &i18n.Message{ID: "OprActionUpdateFeishuAuditConfiguration", Other: "修改飞书审批配置"}
+	OprActionUpdateWechatAuditConfiguration = &i18n.Message{ID: "OprActionUpdateWechatAuditConfiguration", Other: "修改微信审批配置"}
+	OprActionUpdateCodingConfiguration   = &i18n.Message{ID: "OprActionUpdateCodingConfiguration", Other: "修改Coding配置"}
+	OprActionCreateAuditWhitelist        = &i18n.Message{ID: "OprActionCreateAuditWhitelist", Other: "创建审核SQL例外"}
+	OprActionUpdateAuditWhitelist        = &i18n.Message{ID: "OprActionUpdateAuditWhitelist", Other: "更新审核SQL例外"}
+	OprActionDeleteAuditWhitelist        = &i18n.Message{ID: "OprActionDeleteAuditWhitelist", Other: "删除审核SQL例外"}
+	OprActionCreateBlacklist             = &i18n.Message{ID: "OprActionCreateBlacklist", Other: "创建黑名单"}
+	OprActionUpdateBlacklist             = &i18n.Message{ID: "OprActionUpdateBlacklist", Other: "更新黑名单"}
+	OprActionDeleteBlacklist             = &i18n.Message{ID: "OprActionDeleteBlacklist", Other: "删除黑名单"}
+	OprActionUpdateReportPushConfig      = &i18n.Message{ID: "OprActionUpdateReportPushConfig", Other: "修改报告推送配置"}
+	OprActionCreateCustomRule            = &i18n.Message{ID: "OprActionCreateCustomRule", Other: "创建自定义规则"}
+	OprActionUpdateCustomRule            = &i18n.Message{ID: "OprActionUpdateCustomRule", Other: "更新自定义规则"}
+	OprActionDeleteCustomRule            = &i18n.Message{ID: "OprActionDeleteCustomRule", Other: "删除自定义规则"}
+	OprActionCreateSqlVersion            = &i18n.Message{ID: "OprActionCreateSqlVersion", Other: "创建SQL版本"}
+	OprActionUpdateSqlVersion            = &i18n.Message{ID: "OprActionUpdateSqlVersion", Other: "更新SQL版本"}
+	OprActionDeleteSqlVersion            = &i18n.Message{ID: "OprActionDeleteSqlVersion", Other: "删除SQL版本"}
+	OprActionLockSqlVersion              = &i18n.Message{ID: "OprActionLockSqlVersion", Other: "锁定SQL版本"}
+	OprActionCreateInstanceAuditPlan     = &i18n.Message{ID: "OprActionCreateInstanceAuditPlan", Other: "创建数据源扫描任务"}
+	OprActionUpdateInstanceAuditPlan     = &i18n.Message{ID: "OprActionUpdateInstanceAuditPlan", Other: "更新数据源扫描任务"}
+	OprActionDeleteInstanceAuditPlan     = &i18n.Message{ID: "OprActionDeleteInstanceAuditPlan", Other: "删除数据源扫描任务"}
+	OprActionCreatePipeline              = &i18n.Message{ID: "OprActionCreatePipeline", Other: "创建流水线"}
+	OprActionUpdatePipeline              = &i18n.Message{ID: "OprActionUpdatePipeline", Other: "更新流水线"}
+	OprActionDeletePipeline              = &i18n.Message{ID: "OprActionDeletePipeline", Other: "删除流水线"}
+	OprActionGenSSHKey                   = &i18n.Message{ID: "OprActionGenSSHKey", Other: "生成SSH密钥"}
 
 	OprOperationTime        = &i18n.Message{ID: "OprOperationTime", Other: "操作时间"}
 	OprOperationProjectName = &i18n.Message{ID: "OprOperationProjectName", Other: "项目"}
@@ -301,6 +326,14 @@ var (
 	OprTypeGlobalRuleTemplate  = &i18n.Message{ID: "OprTypeGlobalRuleTemplate", Other: "全局规则模板"}
 	OprTypeSystemConfiguration = &i18n.Message{ID: "OprTypeSystemConfiguration", Other: "系统配置"}
 	OprTypeProjectMember       = &i18n.Message{ID: "OprTypeProjectMember", Other: "项目成员"}
+	OprTypeAuditWhitelist      = &i18n.Message{ID: "OprTypeAuditWhitelist", Other: "审核SQL例外"}
+	OprTypeBlacklist           = &i18n.Message{ID: "OprTypeBlacklist", Other: "黑名单"}
+	OprTypeReportPush          = &i18n.Message{ID: "OprTypeReportPush", Other: "报告推送"}
+	OprTypeCustomRule          = &i18n.Message{ID: "OprTypeCustomRule", Other: "自定义规则"}
+	OprTypeSqlVersion          = &i18n.Message{ID: "OprTypeSqlVersion", Other: "SQL版本"}
+	OprTypeInstanceAuditPlan   = &i18n.Message{ID: "OprTypeInstanceAuditPlan", Other: "数据源扫描任务"}
+	OprTypePipeline            = &i18n.Message{ID: "OprTypePipeline", Other: "流水线"}
+	OprTypeRuleKnowledge       = &i18n.Message{ID: "OprTypeRuleKnowledge", Other: "规则知识库"}
 
 	OprStatusSucceeded = &i18n.Message{ID: "OprStatusSucceeded", Other: "成功"}
 	OprStatusFailed    = &i18n.Message{ID: "OprStatusFailed", Other: "失败"}
@@ -349,14 +382,12 @@ var (
 	ApMetricNameGrantedLockSql          = &i18n.Message{ID: "ApMetricNameGrantedLockSql", Other: "持有锁SQL"}
 	ApMetricNameWaitingLockSql          = &i18n.Message{ID: "ApMetricNameWaitingLockSql", Other: "等待锁SQL"}
 	ApMetricNameDBUser                  = &i18n.Message{ID: "ApMetricNameDBUser", Other: "用户"}
-	ApMetricUserClientIP                = &i18n.Message{ID: "ApMetricUserClientIP", Other: "客户端IP"}
 	ApMetricNameHost                    = &i18n.Message{ID: "ApMetricNameHost", Other: "主机"}
 	ApMetricNameMetaName                = &i18n.Message{ID: "ApMetricNameMetaName", Other: "对象名称"}
 	ApMetricNameMetaType                = &i18n.Message{ID: "ApMetricNameMetaType", Other: "对象类型"}
 	ApMetricNameQueryTimeTotal          = &i18n.Message{ID: "ApMetricNameQueryTimeTotal", Other: "总执行时间(s)"}
 	ApMetricNameQueryTimeAvg            = &i18n.Message{ID: "ApMetricNameQueryTimeAvg", Other: "平均执行时间(s)"}
 	ApMetricNameQueryTimeTotalMS        = &i18n.Message{ID: "ApMetricNameQueryTimeTotalMS", Other: "总执行时间(ms)"}
-	ApMetricNameQueryTimeTotalUS        = &i18n.Message{ID: "ApMetricNameQueryTimeTotalUS", Other: "总执行时间(μs)"}
 	ApMetricNameQueryTimeAvgMS          = &i18n.Message{ID: "ApMetricNameQueryTimeAvgMS", Other: "平均执行时间(ms)"}
 	ApMetricNameCounter                 = &i18n.Message{ID: "ApMetricNameCounter", Other: "执行次数"}
 	ApMetricNameCPUTimeAvg              = &i18n.Message{ID: "ApMetricNameCPUTimeAvg", Other: "平均 CPU 时间(μs)"}
@@ -368,7 +399,6 @@ var (
 	ApMetricNameActiveTimeTotal         = &i18n.Message{ID: "ApMetricNameActiveTimeTotal", Other: "活动总时间(ms)"}
 	ApMetricNameLastReceiveTimestamp    = &i18n.Message{ID: "ApMetricNameLastReceiveTimestamp", Other: "最后一次匹配到该指纹的时间"}
 	ApMetricNameCPUTimeTotal            = &i18n.Message{ID: "ApMetricNameCPUTimeTotal", Other: "CPU时间占用(s)"}
-	ApMetricNameMemorySizeTotal         = &i18n.Message{ID: "ApMetricNameMemorySizeTotal", Other: "总内存消耗(MB)"}
 	ApMetricNamePhyReadPageTotal        = &i18n.Message{ID: "ApMetricNamePhyReadPageTotal", Other: "物理读页数"}
 	ApMetricNameLogicReadPageTotal      = &i18n.Message{ID: "ApMetricNameLogicReadPageTotal", Other: "逻辑读页数"}
 	ApMetricNameQueryTimeMax            = &i18n.Message{ID: "ApMetricNameQueryTimeMax", Other: "最长执行时间(s)"}
@@ -386,84 +416,37 @@ var (
 	ApMetricNameRowsAffectedMax         = &i18n.Message{ID: "ApMetricNameRowsAffectedMax", Other: "最大影响行数"}
 	ApMetricNameRowsAffectedAvg         = &i18n.Message{ID: "ApMetricNameRowsAffectedAvg", Other: "平均影响行数"}
 	ApMetricNameChecksum                = &i18n.Message{ID: "ApMetricNameChecksum", Other: "校验和"}
-	ApMetricNameNoIndexUsedTotal        = &i18n.Message{ID: "ApMetricNameNoIndexUsedTotal", Other: "累计未使用索引次数"}
 
 	ApMetricNameCounterMoreThan        = &i18n.Message{ID: "ApMetricNameCounterMoreThan", Other: "出现次数 > "}
 	ApMetricNameQueryTimeAvgMoreThan   = &i18n.Message{ID: "ApMetricNameQueryTimeAvgMoreThan", Other: "平均执行时间(s) > "}
 	ApMetricNameRowExaminedAvgMoreThan = &i18n.Message{ID: "ApMetricNameRowExaminedAvgMoreThan", Other: "平均扫描行数 > "}
 
-	ApMetricNameInstance    = &i18n.Message{ID: "ApMetricNameInstance", Other: "节点地址"}
-	ApMetricNameMemMax      = &i18n.Message{ID: "ApMetricNameMemMax", Other: "使用的最大内存空间"}
-	ApMetricNameDiskMax     = &i18n.Message{ID: "ApMetricNameDiskMax", Other: "使用的最大硬盘空间"}
-	ApMetricNameTenantName  = &i18n.Message{ID: "ApMetricNameTenantName", Other: "租户名称"}
-	ApMetricNameRequestTime = &i18n.Message{ID: "ApMetricNameRequestTime", Other: "请求时间"}
-
-	ApMetaCustom             = &i18n.Message{ID: "ApMetaCustom", Other: "自定义"}
-	ApMetaSlowLog            = &i18n.Message{ID: "ApMetaSlowLog", Other: "慢日志"}
-	ApMetaMDBSlowLog         = &i18n.Message{ID: "ApMetaMDBSlowLog", Other: "慢日志（监控库）"}
-	ApMetaTopSQL             = &i18n.Message{ID: "ApMetaTopSQL", Other: "Top SQL"}
-	ApMetaSchemaMeta         = &i18n.Message{ID: "ApMetaSchemaMeta", Other: "库表元数据"}
-	ApMetaProcesslist        = &i18n.Message{ID: "ApMetaProcesslist", Other: "活跃会话"}
-	ApMetaAllAppExtract      = &i18n.Message{ID: "ApMetaAllAppExtract", Other: "应用程序SQL抓取"}
-	ApMetaDistributedLock    = &i18n.Message{ID: "ApMetaDistributedLock", Other: "分布式锁"}
-	ApMetaPerformanceCollect = &i18n.Message{ID: "ApMetaPerformanceCollect", Other: "数据源性能指标"}
-
-	ApMetaMySQLSchemaMeta                 = &i18n.Message{ID: "ApMetaMySQLSchemaMeta", Other: "库表元数据"}
-	ApMetaMySQLProcesslist                = &i18n.Message{ID: "ApMetaMySQLProcesslist", Other: "processlist 列表"}
-	ApMetaAliRdsMySQLSlowLog              = &i18n.Message{ID: "ApMetaAliRdsMySQLSlowLog", Other: "阿里RDS MySQL慢日志"}
-	ApMetaAliRdsMySQLAuditLog             = &i18n.Message{ID: "ApMetaAliRdsMySQLAuditLog", Other: "阿里RDS MySQL审计日志"}
-	ApMetaBaiduRdsMySQLSlowLog            = &i18n.Message{ID: "ApMetaBaiduRdsMySQLSlowLog", Other: "百度云RDS MySQL慢日志"}
-	ApMetaHiveSlowLog                     = &i18n.Message{ID: "ApMetaHiveSlowLog", Other: "Hive慢日志"}
-	ApMetaHuaweiRdsMySQLSlowLog           = &i18n.Message{ID: "ApMetaHuaweiRdsMySQLSlowLog", Other: "华为云RDS MySQL慢日志"}
-	ApMetaOracleTopSQL                    = &i18n.Message{ID: "ApMetaOracleTopSQL", Other: "Oracle TOP SQL"}
-	ApMetaOracleSlowLog                   = &i18n.Message{ID: "ApMetaOracleSlowLog", Other: "Oracle慢日志"}
-	ApMetaOracleProcesslist               = &i18n.Message{ID: "ApMetaOracleProcesslist", Other: "Oracle活跃会话采集"}
-	ApMetaTiDBAuditLog                    = &i18n.Message{ID: "ApMetaTiDBAuditLog", Other: "TiDB审计日志"}
-	ApMetaDB2TopSQL                       = &i18n.Message{ID: "ApMetaDB2TopSQL", Other: "DB2 Top SQL"}
-	ApMetaDB2SlowLog                      = &i18n.Message{ID: "ApMetaDB2SlowLog", Other: "DB2慢日志"}
-	ApMetaDmTopSQL                        = &i18n.Message{ID: "ApMetaDmTopSQL", Other: "DM TOP SQL"}
-	ApMetaDmSlowLog                       = &i18n.Message{ID: "ApMetaDmSlowLog", Other: "DM慢日志"}
-	ApMetaDmProcesslist                   = &i18n.Message{ID: "ApMetaDmProcesslist", Other: "DM ProcessList"}
-	ApMetaHanaTopSQL                      = &i18n.Message{ID: "ApMetaHanaTopSQL", Other: "HANA TOP SQL"}
-	ApMetaObForOracleTopSQL               = &i18n.Message{ID: "ApMetaObForOracleTopSQL", Other: "OceanBase For Oracle TOP SQL"}
-	ApMetaObForOracleSlowLog              = &i18n.Message{ID: "ApMetaObForOracleSlowLog", Other: "OceanBase For Oracle 慢日志"}
-	ApMetaObForOracleProcesslist          = &i18n.Message{ID: "ApMetaObForOracleProcesslist", Other: "OceanBase For Oracle 活跃会话采集"}
-	ApMetaOceanBaseForMySQLFullCollect    = &i18n.Message{ID: "ApMetaOceanBaseForMySQLFullCollect", Other: "全量采集"}
-	ApMetaOceanBaseForMySQLSlowLog        = &i18n.Message{ID: "ApMetaOceanBaseForMySQLSlowLog", Other: "慢日志"}
-	ApMetaOceanBaseForMySQLProcesslist    = &i18n.Message{ID: "ApMetaOceanBaseForMySQLProcesslist", Other: "processlist 列表"}
-	ApMetaPostgreSQLTopSQL                = &i18n.Message{ID: "ApMetaPostgreSQLTopSQL", Other: "TOP SQL"}
-	ApMetaPostgreSQLSlowLog               = &i18n.Message{ID: "ApMetaPostgreSQLSlowLog", Other: "慢日志"}
-	ApMetaPostgreSQLProcesslist           = &i18n.Message{ID: "ApMetaPostgreSQLProcesslist", Other: "PostgreSQL活跃会话采集"}
-	ApMetaGaussDBProcesslist              = &i18n.Message{ID: "ApMetaGaussDBProcesslist", Other: "GaussDB 进程列表"}
-	ApMetaGaussDBSlowLog                  = &i18n.Message{ID: "ApMetaGaussDBSlowLog", Other: "GaussDB 慢日志"}
-	ApMetaTBaseProcesslist                = &i18n.Message{ID: "ApMetaTBaseProcesslist", Other: "TBase 活跃会话采集"}
-	ApMetaGoldenDBTopSQL                  = &i18n.Message{ID: "ApMetaGoldenDBTopSQL", Other: "GoldenDB TOP SQL"}
-	ApMetaTiDBTopSQL                      = &i18n.Message{ID: "ApMetaTiDBTopSQL", Other: "TiDB TOP SQL"}
-	ApMetaTiDBSlowLog                     = &i18n.Message{ID: "ApMetaTiDBSlowLog", Other: "TiDB慢日志"}
-	ApMetaTiDBProcesslist                 = &i18n.Message{ID: "ApMetaTiDBProcesslist", Other: "TiDB Processlist"}
-	ApMetaMySQLTopSQL                     = &i18n.Message{ID: "ApMetaMySQLTopSQL", Other: "MySQL TOP SQL"}
-	ApMetaMSSQLTopSQL                     = &i18n.Message{ID: "ApMetaMSSQLTopSQL", Other: "SQL Server TOP SQL"}
-	ApMetricQueryTimeAvg                  = &i18n.Message{ID: "ApMetricQueryTimeAvg", Other: "平均查询时间(s)"}
-	ApMetricRowExaminedAvg                = &i18n.Message{ID: "ApMetricRowExaminedAvg", Other: "平均扫描行数"}
-	ApMetricHiveSlowLogDbUser             = &i18n.Message{ID: "ApMetricHiveSlowLogDbUser", Other: "执行用户"}
-	ApMetaPerformanceCollectTips          = &i18n.Message{ID: "ApMetaPerformanceCollectTips", Other: "性能指标采集将产生较大性能开销,请谨慎开启。开启后,系统将持续采集该数据源的性能数据(如QPS、连接数等)，并生成性能趋势图表，体现在性能洞察页面。"}
-	ApMetaSQLServerPerformanceCollect     = &i18n.Message{ID: "ApMetaSQLServerPerformanceCollect", Other: "SQLServer性能采集"}
-	ApMetaSQLServerPerformanceCollectTips = &i18n.Message{ID: "ApMetaSQLServerPerformanceCollectTips", Other: "定时采集SQLServer实例的连接数和QPS等性能指标"}
-	ApMetaSQLServerSlowLog                = &i18n.Message{ID: "ApMetaSQLServerSlowLog", Other: "SQLServer慢SQL采集"}
-	ApMetaSQLServerProcesslist            = &i18n.Message{ID: "ApMetaSQLServerProcesslist", Other: "SQLServer活跃会话采集"}
-	ApMetaHanaProcesslist                 = &i18n.Message{ID: "ApMetaHanaProcesslist", Other: "HANA Processlist"}
-	ApMetaHanaSlowLog                     = &i18n.Message{ID: "ApMetaHanaSlowLog", Other: "HANA 慢日志"}
-	ApMetaHiveProcesslist                 = &i18n.Message{ID: "ApMetaHiveProcesslist", Other: "Hive Processlist"}
-	ApMetaCollectTime                     = &i18n.Message{ID: "ApMetaCollectTime", Other: "采集时间"}
-	ApMetaThreadsConnected                = &i18n.Message{ID: "ApMetaThreadsConnected", Other: "线程数"}
-	ApMetaQPS                             = &i18n.Message{ID: "ApMetaQueries", Other: "QPS"}
-	ApMetricNameFullTableScanCount        = &i18n.Message{ID: "ApMetricNameFullTableScanCount", Other: "全表扫描次数"}
+	ApMetaCustom                = &i18n.Message{ID: "ApMetaCustom", Other: "自定义"}
+	ApMetaMySQLSchemaMeta       = &i18n.Message{ID: "ApMetaMySQLSchemaMeta", Other: "库表元数据"}
+	ApMetaMySQLProcesslist      = &i18n.Message{ID: "ApMetaMySQLProcesslist", Other: "processlist 列表"}
+	ApMetaAliRdsMySQLSlowLog    = &i18n.Message{ID: "ApMetaAliRdsMySQLSlowLog", Other: "阿里RDS MySQL慢日志"}
+	ApMetaAliRdsMySQLAuditLog   = &i18n.Message{ID: "ApMetaAliRdsMySQLAuditLog", Other: "阿里RDS MySQL审计日志"}
+	ApMetaBaiduRdsMySQLSlowLog  = &i18n.Message{ID: "ApMetaBaiduRdsMySQLSlowLog", Other: "百度云RDS MySQL慢日志"}
+	ApMetaHuaweiRdsMySQLSlowLog = &i18n.Message{ID: "ApMetaHuaweiRdsMySQLSlowLog", Other: "华为云RDS MySQL慢日志"}
+	ApMetaOracleTopSQL          = &i18n.Message{ID: "ApMetaOracleTopSQL", Other: "Oracle TOP SQL"}
+	ApMetaAllAppExtract         = &i18n.Message{ID: "ApMetaAllAppExtract", Other: "应用程序SQL抓取"}
+	ApMetaTiDBAuditLog          = &i18n.Message{ID: "ApMetaTiDBAuditLog", Other: "TiDB审计日志"}
+	ApMetaSlowLog               = &i18n.Message{ID: "ApMetaSlowLog", Other: "慢日志"}
+	ApMetaMDBSlowLog            = &i18n.Message{ID: "ApMetaMDBSlowLog", Other: "慢日志（监控库）"}
+	ApMetaTopSQL                = &i18n.Message{ID: "ApMetaTopSQL", Other: "Top SQL"}
+	ApMetaDB2TopSQL             = &i18n.Message{ID: "ApMetaDB2TopSQL", Other: "DB2 Top SQL"}
+	ApMetaSchemaMeta            = &i18n.Message{ID: "ApMetaSchemaMeta", Other: "库表元数据"}
+	ApMetaDistributedLock       = &i18n.Message{ID: "ApMetaDistributedLock", Other: "分布式锁"}
+	ApMetaDmTopSQL              = &i18n.Message{ID: "ApMetaDmTopSQL", Other: "DM TOP SQL"}
+	ApMetaObForOracleTopSQL     = &i18n.Message{ID: "ApMetaObForOracleTopSQL", Other: "OceanBase For Oracle TOP SQL"}
+	ApMetaPostgreSQLTopSQL      = &i18n.Message{ID: "ApMetaPostgreSQLTopSQL", Other: "TOP SQL"}
+	ApMetricQueryTimeAvg        = &i18n.Message{ID: "ApMetricQueryTimeAvg", Other: "平均查询时间(s)"}
+	ApMetricRowExaminedAvg      = &i18n.Message{ID: "ApMetricRowExaminedAvg", Other: "平均扫描行数"}
 
 	ApPriorityHigh = &i18n.Message{ID: "ApPriorityHigh", Other: "高优先级"}
 
 	ParamCollectIntervalMinute           = &i18n.Message{ID: "ParamCollectIntervalMinute", Other: "采集周期（分钟）"}
 	ParamTopN                            = &i18n.Message{ID: "ParamTopN", Other: "Top N"}
-	ParamPgSlowSQLMinSecond              = &i18n.Message{ID: "ParamPgSlowSQLMinSecond", Other: "慢SQL阈值（秒）"}
 	ParamIndicator                       = &i18n.Message{ID: "ParamIndicator", Other: "关注指标"}
 	ParamCollectIntervalMinuteMySQL      = &i18n.Message{ID: "ParamCollectIntervalMinuteMySQL", Other: "采集周期（分钟，仅对 mysql.slow_log 有效）"}
 	ParamSlowLogCollectInput             = &i18n.Message{ID: "ParamSlowLogCollectInput", Other: "采集来源"}
@@ -473,8 +456,6 @@ var (
 	ParamOrderByColumnGeneric            = &i18n.Message{ID: "ParamOrderByColumnGeneric", Other: "排序字段"}
 	ParamCollectIntervalSecond           = &i18n.Message{ID: "ParamCollectIntervalSecond", Other: "采集周期（秒）"}
 	ParamSQLMinSecond                    = &i18n.Message{ID: "ParamSQLMinSecond", Other: "SQL 最小执行时间（秒）"}
-	ParamSlowSqlThreshold                = &i18n.Message{ID: "ParamSlowSqlThreshold", Other: "慢SQL判定时间阈值（秒）"}
-	ParamFirstSqlsScrappedHoursGeneric   = &i18n.Message{ID: "ParamFirstSqlsScrappedHoursGeneric", Other: "启动任务时拉取慢日志时间范围(单位:小时)"}
 	ParamCollectView                     = &i18n.Message{ID: "ParamCollectView", Other: "是否采集视图信息"}
 	ParamDBInstanceId                    = &i18n.Message{ID: "ParamDBInstanceId", Other: "实例ID"}
 	ParamAccessKeyId                     = &i18n.Message{ID: "ParamAccessKeyId", Other: "Access Key ID"}
@@ -483,17 +464,6 @@ var (
 	ParamRdsPath                         = &i18n.Message{ID: "ParamRdsPath", Other: "RDS Open API地址"}
 	ParamProjectId                       = &i18n.Message{ID: "ParamProjectId", Other: "项目ID"}
 	ParamRegion                          = &i18n.Message{ID: "ParamRegion", Other: "当前RDS实例所在的地区（示例：cn-east-2）"}
-	ParamTimeSpan                        = &i18n.Message{ID: "ParamTimeSpan", Other: "时间跨度（小时）"}
-	ParamInstance                        = &i18n.Message{ID: "ParamInstance", Other: "节点地址（0 代表所有节点）"}
-	ParamKpiType                         = &i18n.Message{ID: "ParamkpiType", Other: "指标"}
-
-	EnumKpiTypeQueryTime          = &i18n.Message{ID: "EnumkpiTypeQueryTime", Other: "执行时间"}
-	EnumKpiTypeMemMax             = &i18n.Message{ID: "EnumKpiTypeMemMax", Other: "使用的最大内存空间"}
-	EnumKpiTypeDiskMax            = &i18n.Message{ID: "EnumKpiTypeDiskMax", Other: "使用的最大硬盘空间"}
-	EnumKpiTypeExecuteCount       = &i18n.Message{ID: "EnumKpiTypeExecuteCount", Other: "执行次数"}
-	EnumKpiTypeFullTableScanCount = &i18n.Message{ID: "EnumKpiTypeFullTableScan", Other: "全表扫描次数"}
-	EnumKpiTypeLockWaitTotal      = &i18n.Message{ID: "EnumKpiTypeLockWaitTotal", Other: "累计锁等待时间"}
-	EnumKpiTypeNoIndexUsedTotal   = &i18n.Message{ID: "EnumKpiTypeNoIndexUsedTotal", Other: "累计未使用索引次数"}
 
 	EnumSlowLogFileSource  = &i18n.Message{ID: "EnumSlowLogFileSource", Other: "从slow.log 文件采集,需要适配scanner"}
 	EnumSlowLogTableSource = &i18n.Message{ID: "EnumSlowLogTableSource", Other: "从mysql.slow_log 表采集"}
@@ -503,20 +473,9 @@ var (
 	OperatorLessThan    = &i18n.Message{ID: "OperatorLessThan", Other: "小于"}
 
 	OperationParamAuditLevel = &i18n.Message{ID: "OperationParamAuditLevel", Other: "触发审核级别"}
-
-	HiveSlowLogErrSysDbNotFound  = &i18n.Message{ID: "HiveSlowLogErrSysDbNotFound", Other: "Hive 实例 `sys` 库不存在。请联系 Hive 平台运维：1) 在 HS2 的 hive-site.xml 中配置 `hive.query.history.enabled=true`；2) 重启 HS2 服务后，HS2 会自动创建 `sys.query_history` 表。原始错误：%s"}
-	HiveSlowLogErrTableNotFound  = &i18n.Message{ID: "HiveSlowLogErrTableNotFound", Other: "Hive 实例 `sys.query_history` 表不存在。HS2 可能未启用 query history。请检查 HS2 配置 `hive.query.history.enabled` 是否为 true，并确认 HS2 已重启。原始错误：%s"}
-	HiveSlowLogErrColumnMismatch = &i18n.Message{ID: "HiveSlowLogErrColumnMismatch", Other: "Hive 慢日志采集 SQL 执行失败：字段引用错误。可能是 Hive 版本与 SQLE 适配版本（基线 Hive 4.2）存在差异；请把 `SELECT version()` 输出反馈给 SQLE 维护者。原始错误：%s"}
-	HiveSlowLogErrConnectFailed  = &i18n.Message{ID: "HiveSlowLogErrConnectFailed", Other: "Hive 实例连接失败：可能是 HiveServer2 启用了 SASL/LDAP 鉴权而数据源配置的 `auth` 为 `NOSASL`。请在 SQLE 数据源管理页编辑该 Hive 数据源，把 `auth` 改为 `NONE` 或 `LDAP`。原始错误：%s"}
-	HiveSlowLogErrAuthInvalid    = &i18n.Message{ID: "HiveSlowLogErrAuthInvalid", Other: "Hive 数据源 auth 参数值非法。允许的值：`NOSASL` / `NONE` / `LDAP` / `CUSTOM`。请在 SQLE 数据源管理页修正。原始错误：%s"}
-	HiveSlowLogErrHS2ServerError         = &i18n.Message{ID: "HiveSlowLogErrHS2ServerError", Other: "Hive HS2 服务端返回错误。常见原因：1) `sys.query_history` 表不存在 —— 请确认 HS2 的 hive-site.xml 中已配置 `hive.query.history.enabled=true` 并重启 HS2 服务；2) `sys` 库不存在 —— 同上，重启 HS2 后会自动创建；3) Hive 版本与 SQLE 适配基线（Hive 4.2）字段不一致。请查阅 HS2 服务端日志获取详细错误信息。原始错误：%s"}
-	HiveSlowLogErrPluginTransportClosing = &i18n.Message{ID: "HiveSlowLogErrPluginTransportClosing", Other: "Hive 慢日志采集失败：sqle-hive-plugin 进程异常退出（gRPC 通道关闭，错误信号 `transport is closing`）。最常见的原因是 Hive 数据源 `auth` 参数值非法（plugin 内 gohive 在 `innerConnect` 内 `panic: Unrecognized auth`，进程崩溃后 panic 信息不会跨 gRPC 传递）。请按以下顺序自查：1) 在 SQLE 数据源管理页确认 `auth` 是允许的值：`NOSASL` / `NONE` / `LDAP` / `CUSTOM`；2) 确认 host / port 可达；3) 查阅 plugin / HS2 服务端日志获取 panic 堆栈。原始错误：%s"}
-	HiveSlowLogErrUnknown                = &i18n.Message{ID: "HiveSlowLogErrUnknown", Other: "Hive 慢日志采集失败：%s"}
 )
 
-var (
-	PipelineCmdUsage = &i18n.Message{ID: "PipelineCmdUsage", Other: "#使用方法#\n1. 确保运行该命令的用户具有scannerd的执行权限。\n2. 在scannerd文件所在目录执行启动命令。\n#启动命令#\n"}
-)
+var PipelineCmdUsage = &i18n.Message{ID: "PipelineCmdUsage", Other: "#使用方法#\n1. 确保运行该命令的用户具有scannerd的执行权限。\n2. 在scannerd文件所在目录执行启动命令。\n#启动命令#\n"}
 
 // notification
 var (
@@ -526,8 +485,6 @@ var (
 	NotifyWorkflowNotifyTypeReject         = &i18n.Message{ID: "WorkflowNotifyTypeReject", Other: "SQL工单已被驳回"}
 	NotifyWorkflowNotifyTypeExecuteSuccess = &i18n.Message{ID: "WorkflowNotifyTypeExecuteSuccess", Other: "SQL工单上线成功"}
 	NotifyWorkflowNotifyTypeExecuteFail    = &i18n.Message{ID: "WorkflowNotifyTypeExecuteFail", Other: "SQL工单上线失败"}
-	NotifyWorkflowNotifyTypeComplete       = &i18n.Message{ID: "WorkflowNotifyTypeComplete", Other: "SQL工单标记为人工上线"}
-	NotifyWorkflowNotifyTypeCancel         = &i18n.Message{ID: "WorkflowNotifyTypeCancel", Other: "SQL工单已关闭"}
 	NotifyWorkflowNotifyTypeDefault        = &i18n.Message{ID: "WorkflowNotifyTypeDefault", Other: "SQL工单未知请求"}
 
 	NotifyAuditPlanSubject  = &i18n.Message{ID: "NotifyAuditPlanSubject", Other: "SQLE扫描任务[%v]扫描结果[%v]"}
@@ -541,26 +498,12 @@ var (
 	NotifyManageRecordBodyProj   = &i18n.Message{ID: "NotifyManageRecordBodyProj", Other: "所属项目: %v"}
 
 	NotifyWorkflowBodyHead              = &i18n.Message{ID: "NotifyWorkflowBodyHead", Other: "\n📋 工单主题: %v\n📍 所属项目: %v\n🆔 工单ID: %v\n📝 工单描述: %v\n👤 申请人: %v\n⏰ 创建时间: %v\n"}
-	NotifyWorkflowBodyWorkFlowErr       = &i18n.Message{ID: "NotifyWorkflowBodyWorkFlowErr", Other: "❌ 读取工单任务内容失败，请通过SQLE界面确认工单状态"}
+	NotifyWorkflowBodyWorkFlowErr       = &i18n.Message{ID: "NotifyWorkflowBodyWorkFlowErr", Other: "- 读取工单任务内容失败，请通过SQLE界面确认工单状态"}
 	NotifyWorkflowBodyLink              = &i18n.Message{ID: "NotifyWorkflowBodyLink", Other: "🔗 工单链接: %v"}
 	NotifyWorkflowBodyConfigUrl         = &i18n.Message{ID: "NotifyWorkflowBodyConfigUrl", Other: "请在系统设置-全局配置中补充全局url"}
 	NotifyWorkflowBodyInstanceErr       = &i18n.Message{ID: "NotifyWorkflowBodyInstanceErr", Other: "❌ 获取数据源实例失败: %v\n"}
 	NotifyWorkflowBodyInstanceAndSchema = &i18n.Message{ID: "NotifyWorkflowBodyInstanceAndSchema", Other: "🗄️ 数据源: %v\n📊 Schema: %v\n"}
 	NotifyWorkflowBodyStartEnd          = &i18n.Message{ID: "NotifyWorkflowBodyStartEnd", Other: "▶️ 上线开始时间: %v\n◀️ 上线结束时间: %v\n"}
 	NotifyWorkflowBodyReason            = &i18n.Message{ID: "NotifyWorkflowBodyReason", Other: "❌ 驳回原因: %v\n"}
-	NotifyWorkflowBodyReport            = &i18n.Message{ID: "NotifyWorkflowBodyReport", Other: "✅ 工单审核得分: %v\n"}
-	NotifyWorkflowBodyCancel            = &i18n.Message{ID: "NotifyWorkflowBodyCancel", Other: "🚫 工单已关闭\n"}
-	NotifyWorkflowBodyComplete          = &i18n.Message{ID: "NotifyWorkflowBodyComplete", Other: "✅ 工单已标记为人工上线\n"}
-)
-
-// database structure comparison capability check (controller 层 4009)
-// 详见 design.md §3.2.3 / §3.5 EE-11 / EE-12；占位符 %s 顺序：
-//   1) 缺失能力的数据源类型描述（例："基准数据源类型 Hive"）
-//   2) 缺失的 OptionalModule 字面（例："OptionalGetDatabaseObjectDDL"）
-// 中英文案与 active.zh.toml / active.en.toml 中同 ID 条目保持一致。
-var (
-	DatabaseCompareNotSupportedByDbType = &i18n.Message{
-		ID:    "DatabaseCompareNotSupportedByDbType",
-		Other: "数据源类型 %s 不支持结构对比，请确认 SQLE 已加载支持 %s 的驱动版本",
-	}
+	NotifyWorkflowBodyReport            = &i18n.Message{ID: "NotifyWorkflowBodyReport", Other: "✅ 工单审核得分: %v\n📈 工单审核通过率：%v%%\n"}
 )
