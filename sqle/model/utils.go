@@ -499,6 +499,66 @@ func (s *Storage) CreateDefaultWorkflowTemplatesIfNotExist() error {
 	if err := s.CreateDefaultDataExportTemplatesIfNotExist(); err != nil {
 		return fmt.Errorf("create default data export templates failed: %v", err)
 	}
+	if err := s.MigrateWorkflowTemplateDefaults(); err != nil {
+		return fmt.Errorf("migrate workflow template defaults failed: %v", err)
+	}
+	return nil
+}
+
+// MigrateWorkflowTemplateDefaults ensures each project/type has exactly one default template.
+// Existing templates without is_default are initialized by marking the oldest row as default.
+func (s *Storage) MigrateWorkflowTemplateDefaults() error {
+	type projectTypePair struct {
+		ProjectId    string
+		WorkflowType string
+	}
+	var pairs []projectTypePair
+	err := s.db.Model(&WorkflowTemplate{}).
+		Select("project_id, workflow_type").
+		Group("project_id, workflow_type").
+		Find(&pairs).Error
+	if err != nil {
+		return err
+	}
+	for _, pair := range pairs {
+		var defaultCount int64
+		err = s.db.Model(&WorkflowTemplate{}).
+			Where("project_id = ? AND workflow_type = ? AND is_default = ?", pair.ProjectId, pair.WorkflowType, true).
+			Count(&defaultCount).Error
+		if err != nil {
+			return err
+		}
+		if defaultCount == 1 {
+			continue
+		}
+		if defaultCount > 1 {
+			var keep WorkflowTemplate
+			err = s.db.Where("project_id = ? AND workflow_type = ? AND is_default = ?", pair.ProjectId, pair.WorkflowType, true).
+				Order("id asc").First(&keep).Error
+			if err != nil {
+				return err
+			}
+			err = s.db.Model(&WorkflowTemplate{}).
+				Where("project_id = ? AND workflow_type = ? AND is_default = ? AND id <> ?",
+					pair.ProjectId, pair.WorkflowType, true, keep.ID).
+				Update("is_default", false).Error
+			if err != nil {
+				return err
+			}
+			continue
+		}
+		var oldest WorkflowTemplate
+		err = s.db.Where("project_id = ? AND workflow_type = ?", pair.ProjectId, pair.WorkflowType).
+			Order("id asc").First(&oldest).Error
+		if err != nil {
+			return err
+		}
+		err = s.db.Model(&WorkflowTemplate{}).Where("id = ?", oldest.ID).Update("is_default", true).Error
+		if err != nil {
+			return err
+		}
+		log.NewEntry().Infof("migrated default workflow template id=%d for project=%s type=%s", oldest.ID, pair.ProjectId, pair.WorkflowType)
+	}
 	return nil
 }
 

@@ -20,6 +20,8 @@ type WorkflowListDetail struct {
 	TaskInstanceType           RowList        `json:"task_instance_type"` // unused
 	SqlVersionNames            RowList        `json:"versions"`
 	InstanceIds                RowList        `json:"instance_ids"`
+	WorkflowTemplateId         sql.NullInt64  `json:"workflow_template_id"`
+	WorkflowTemplateName       sql.NullString `json:"workflow_template_name"`
 }
 
 func (w *WorkflowListDetail) CurrentAssigneeUser() []string {
@@ -45,7 +47,9 @@ SELECT
        IF(wr.status = 'rejected', w.create_user_id, curr_ws.assignees) AS current_step_assignee_user_id_list,
        wr.status,
 	   GROUP_CONCAT(DISTINCT wir.instance_id SEPARATOR ',') AS instance_ids,
-	   GROUP_CONCAT(DISTINCT versions.version SEPARATOR ',') AS versions
+	   GROUP_CONCAT(DISTINCT versions.version SEPARATOR ',') AS versions,
+	   w.workflow_template_id AS workflow_template_id,
+	   wt.name AS workflow_template_name
 {{- template "body" . -}}
 GROUP BY w.id
 {{- if .filter_instance_id }}
@@ -81,6 +85,7 @@ LEFT JOIN workflow_steps AS curr_ws ON wr.current_workflow_step_id = curr_ws.id
 LEFT JOIN workflow_step_templates AS curr_wst ON curr_ws.workflow_step_template_id = curr_wst.id
 LEFT JOIN workflow_version_stages AS stages ON stages.workflow_id = w.workflow_id
 LEFT JOIN sql_versions AS versions ON stages.sql_version_id = versions.id AND versions.deleted_at IS NULL
+LEFT JOIN workflow_templates AS wt ON w.workflow_template_id = wt.id
 
 {{- if .check_user_can_access }}
 LEFT JOIN workflow_steps AS all_ws ON w.workflow_id = all_ws.workflow_id AND all_ws.state !='initialized'
@@ -161,6 +166,10 @@ AND w.workflow_id = :filter_workflow_id
 
 {{- if .filter_sql_version_id }}
 AND versions.id = :filter_sql_version_id
+{{- end }}
+
+{{- if .filter_workflow_template_id }}
+AND w.workflow_template_id = :filter_workflow_template_id
 {{- end }}
 
 {{- if .filter_project_id }}

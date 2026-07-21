@@ -23,6 +23,7 @@ var (
 	errCommunityEditionDoesNotSupportFileOrder                 = errors.New(errors.EnterpriseEditionFeatures, e.New("community edition does not support file order"))
 	errCommunityEditionDoesNotSupportDataExportWorkflowList    = errors.New(errors.EnterpriseEditionFeatures, e.New("community edition does not support data export workflow list"))
 	errCommunityEditionDoesNotSupportWorkflowTemplateList      = errors.New(errors.EnterpriseEditionFeatures, e.New("community edition does not support workflow template list"))
+	errCommunityEditionDoesNotSupportMultiWorkflowTemplate     = errors.New(errors.EnterpriseEditionFeatures, e.New("community edition does not support multi workflow template"))
 )
 
 func exportWorkflowV1(c echo.Context) error {
@@ -63,4 +64,20 @@ func getGlobalDataExportWorkflowStatisticsV1(c echo.Context) error {
 
 func getWorkflowTemplateList(c echo.Context) error {
 	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportWorkflowTemplateList)
+}
+
+func createWorkflowTemplate(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportMultiWorkflowTemplate)
+}
+
+func getWorkflowTemplateById(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportMultiWorkflowTemplate)
+}
+
+func updateWorkflowTemplateById(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportMultiWorkflowTemplate)
+}
+
+func deleteWorkflowTemplate(c echo.Context) error {
+	return controller.JSONBaseErrorReq(c, errCommunityEditionDoesNotSupportMultiWorkflowTemplate)
 }

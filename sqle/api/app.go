@@ -200,6 +200,9 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 
 		// workflow template
 		v1OpProjectRouter.PATCH("/:project_name/workflow_template/:workflow_type/", v1.UpdateWorkflowTemplate)
+		v1OpProjectRouter.POST("/:project_name/workflow_templates", v1.CreateWorkflowTemplateV1)
+		v1OpProjectRouter.PATCH("/:project_name/workflow_templates/:workflow_template_id/", v1.UpdateWorkflowTemplateByIdV1)
+		v1OpProjectRouter.DELETE("/:project_name/workflow_templates/:workflow_template_id/", v1.DeleteWorkflowTemplateV1)
 
 		// report push
 		v1OpProjectRouter.PUT("/:project_name/report_push_configs/:report_push_config_id/", v1.UpdateReportPushConfig)
@@ -330,6 +333,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 
 		// workflow template
 		v1ProjectViewRouter.GET("/:project_name/workflow_templates", v1.GetWorkflowTemplateList)
+		v1ProjectViewRouter.GET("/:project_name/workflow_templates/:workflow_template_id/", v1.GetWorkflowTemplateByIdV1)
 		v1ProjectViewRouter.GET("/:project_name/workflow_template", v1.GetWorkflowTemplate)
 		v1ProjectViewRouter.GET("/:project_name/workflows/:workflow_name/", DeprecatedBy(apiV2))
 		v1ProjectViewRouter.GET("/:project_name/workflows", v1.GetWorkflowsV1)

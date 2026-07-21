@@ -586,10 +586,11 @@ func GetSummaryOfWorkflowTasksV2(c echo.Context) error {
 }
 
 type CreateWorkflowReqV2 struct {
-	Subject      string `json:"workflow_subject" form:"workflow_subject" valid:"required,name"`
-	Desc         string `json:"desc" form:"desc"`
-	SqlVersionID *uint  `json:"sql_version_id" form:"sql_version_id"`
-	TaskIds      []uint `json:"task_ids" form:"task_ids" valid:"required"`
+	Subject            string `json:"workflow_subject" form:"workflow_subject" valid:"required,name"`
+	Desc               string `json:"desc" form:"desc"`
+	SqlVersionID       *uint  `json:"sql_version_id" form:"sql_version_id"`
+	WorkflowTemplateId *uint  `json:"workflow_template_id" form:"workflow_template_id"`
+	TaskIds            []uint `json:"task_ids" form:"task_ids" valid:"required"`
 }
 
 type CreateWorkflowResV2 struct {
@@ -619,7 +620,7 @@ func CreateWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	w, err := v1.CheckWorkflowCreationPrerequisites(c, c.Param("project_name"), req.TaskIds)
+	w, err := v1.CheckWorkflowCreationPrerequisites(c, c.Param("project_name"), req.TaskIds, req.WorkflowTemplateId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -632,7 +633,7 @@ func CreateWorkflowV2(c echo.Context) error {
 	}
 	s := model.GetStorage()
 	// create workflow with checking op permission in task
-	err = s.CreateWorkflowV2(req.Subject, w.WorkflowId, req.Desc, w.User, w.Tasks, w.StepTemplates, w.ProjectId, req.SqlVersionID, nil, nil, w.GetOpExecUser)
+	err = s.CreateWorkflowV2(req.Subject, w.WorkflowId, req.Desc, w.User, w.Tasks, w.StepTemplates, w.ProjectId, req.SqlVersionID, nil, nil, w.WorkflowTemplateId, w.GetOpExecUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1002,6 +1003,8 @@ type WorkflowResV2 struct {
 	ExecMode                    string                        `json:"exec_mode" enums:"sql_file,sqls"`
 	CreateUser                  string                        `json:"create_user_name"`
 	CreateTime                  *time.Time                    `json:"create_time"`
+	WorkflowTemplateId          *uint                         `json:"workflow_template_id,omitempty"`
+	WorkflowTemplateName        string                        `json:"workflow_template_name,omitempty"`
 	SqlVersion                  *SqlVersion                   `json:"sql_version,omitempty"`
 	Record                      *WorkflowRecordResV2          `json:"record"`
 	RecordHistory               []*WorkflowRecordResV2        `json:"record_history_list,omitempty"`
@@ -1099,8 +1102,14 @@ func convertWorkflowToRes(ctx context.Context, workflow *model.Workflow, sqlVers
 		ExecMode:                    workflow.ExecMode,
 		CreateUser:                  dms.GetUserNameWithDelTag(workflow.CreateUserId),
 		CreateTime:                  &workflow.CreatedAt,
+		WorkflowTemplateId:          workflow.WorkflowTemplateId,
 		AssociatedStageWorkflows:    convertAssociatedWorkflowToRes(associatedWorkflows),
 		AssociatedRollbackWorkflows: convertAssociatedRollbackWorkflowToRes(associatedRollbackWorkflows),
+	}
+	if workflow.WorkflowTemplateId != nil {
+		if template, exist, err := model.GetStorage().GetWorkflowTemplateById(*workflow.WorkflowTemplateId); err == nil && exist {
+			workflowRes.WorkflowTemplateName = template.Name
+		}
 	}
 	sqlVersionRes := &SqlVersion{
 		SqlVersionId:   sqlVersion.ID,

@@ -25,6 +25,7 @@ type WorkflowTemplate struct {
 	WorkflowType                  string     `json:"workflow_type" gorm:"type:varchar(64); not null; default:'workflow'; column:workflow_type"`
 	Desc                          string     `gorm:"type:varchar(255)"`
 	AllowSubmitWhenLessAuditLevel string     `gorm:"type:varchar(255)"`
+	IsDefault                     bool       `json:"is_default" gorm:"column:is_default; not null; default:false"`
 
 	Steps []*WorkflowStepTemplate `json:"-" gorm:"foreignkey:WorkflowTemplateId"`
 	// Instances []*Instance             `gorm:"foreignkey:WorkflowTemplateId"`
@@ -70,6 +71,7 @@ func DefaultWorkflowTemplate(projectId string) *WorkflowTemplate {
 		Name:                          fmt.Sprintf("%s-WorkflowTemplate", projectId),
 		WorkflowType:                  WorkflowTemplateTypeWorkflow,
 		AllowSubmitWhenLessAuditLevel: string(driverV2.RuleLevelWarn),
+		IsDefault:                     true,
 		Steps: []*WorkflowStepTemplate{
 			{
 				Number: 1,
@@ -96,6 +98,7 @@ func DefaultDataExportWorkflowTemplate(projectId string) *WorkflowTemplate {
 		ProjectId:    ProjectUID(projectId),
 		Name:         fmt.Sprintf("%s-DataExportWorkflowTemplate", projectId),
 		WorkflowType: WorkflowTemplateTypeDataExport,
+		IsDefault:    true,
 		Steps: []*WorkflowStepTemplate{
 			{
 				Number: 1,
@@ -136,27 +139,170 @@ func (s *Storage) GetWorkflowTemplateById(id uint) (*WorkflowTemplate, bool, err
 }
 
 func (s *Storage) GetWorkflowTemplateByProjectId(projectId ProjectUID) (*WorkflowTemplate, bool, error) {
-	workflowTemplate := &WorkflowTemplate{}
-	err := s.db.Where("project_id = ?", projectId).First(workflowTemplate).Error
-	if err == gorm.ErrRecordNotFound {
-		return workflowTemplate, false, nil
-	}
-	return workflowTemplate, true, errors.New(errors.ConnectStorageError, err)
+	return s.GetDefaultWorkflowTemplateByProjectIdAndType(projectId, WorkflowTemplateTypeWorkflow)
 }
 
 func (s *Storage) GetWorkflowTemplateByProjectIdAndType(projectId ProjectUID, workflowType string) (*WorkflowTemplate, bool, error) {
+	return s.GetDefaultWorkflowTemplateByProjectIdAndType(projectId, workflowType)
+}
+
+func (s *Storage) GetDefaultWorkflowTemplateByProjectIdAndType(projectId ProjectUID, workflowType string) (*WorkflowTemplate, bool, error) {
 	workflowTemplate := &WorkflowTemplate{}
-	err := s.db.Where("project_id = ? AND workflow_type = ?", projectId, workflowType).First(workflowTemplate).Error
+	err := s.db.Where("project_id = ? AND workflow_type = ? AND is_default = ?", projectId, workflowType, true).
+		First(workflowTemplate).Error
+	if err == nil {
+		return workflowTemplate, true, nil
+	}
+	if err != gorm.ErrRecordNotFound {
+		return workflowTemplate, false, errors.New(errors.ConnectStorageError, err)
+	}
+	// Fallback for legacy rows before is_default migration.
+	err = s.db.Where("project_id = ? AND workflow_type = ?", projectId, workflowType).
+		Order("id asc").First(workflowTemplate).Error
 	if err == gorm.ErrRecordNotFound {
 		return workflowTemplate, false, nil
 	}
-	return workflowTemplate, true, errors.New(errors.ConnectStorageError, err)
+	if err != nil {
+		return workflowTemplate, false, errors.New(errors.ConnectStorageError, err)
+	}
+	return workflowTemplate, true, nil
 }
 
 func (s *Storage) GetWorkflowTemplatesByProjectId(projectId ProjectUID) ([]*WorkflowTemplate, error) {
 	templates := []*WorkflowTemplate{}
-	err := s.db.Where("project_id = ?", projectId).Find(&templates).Error
+	err := s.db.Where("project_id = ?", projectId).Order("workflow_type asc, is_default desc, id asc").Find(&templates).Error
 	return templates, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetWorkflowTemplatesByProjectIdAndType(projectId ProjectUID, workflowType string) ([]*WorkflowTemplate, error) {
+	templates := []*WorkflowTemplate{}
+	db := s.db.Where("project_id = ?", projectId)
+	if workflowType != "" {
+		db = db.Where("workflow_type = ?", workflowType)
+	}
+	err := db.Order("workflow_type asc, is_default desc, id asc").Find(&templates).Error
+	return templates, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) GetWorkflowTemplateByProjectIdAndId(projectId ProjectUID, templateId uint) (*WorkflowTemplate, bool, error) {
+	workflowTemplate := &WorkflowTemplate{}
+	err := s.db.Where("project_id = ? AND id = ?", projectId, templateId).First(workflowTemplate).Error
+	if err == gorm.ErrRecordNotFound {
+		return workflowTemplate, false, nil
+	}
+	if err != nil {
+		return workflowTemplate, false, errors.New(errors.ConnectStorageError, err)
+	}
+	return workflowTemplate, true, nil
+}
+
+func (s *Storage) IsWorkflowTemplateNameExist(projectId ProjectUID, workflowType, name string, excludeID uint) (bool, error) {
+	var count int64
+	db := s.db.Model(&WorkflowTemplate{}).Where("project_id = ? AND workflow_type = ? AND name = ?", projectId, workflowType, name)
+	if excludeID > 0 {
+		db = db.Where("id <> ?", excludeID)
+	}
+	err := db.Count(&count).Error
+	return count > 0, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) CountWorkflowTemplatesByProjectIdAndType(projectId ProjectUID, workflowType string) (int64, error) {
+	var count int64
+	err := s.db.Model(&WorkflowTemplate{}).Where("project_id = ? AND workflow_type = ?", projectId, workflowType).Count(&count).Error
+	return count, errors.New(errors.ConnectStorageError, err)
+}
+
+// ValidateWorkflowTemplateForCreate checks that an explicit template ID belongs to the project and type=workflow.
+// When templateId is nil/zero, returns the project default workflow template.
+func ValidateWorkflowTemplateForCreate(template *WorkflowTemplate, projectId ProjectUID) error {
+	if template == nil {
+		return errors.New(errors.DataNotExist, fmt.Errorf("workflow template not found"))
+	}
+	if template.ProjectId != projectId {
+		return errors.New(errors.DataInvalid, fmt.Errorf("workflow template does not belong to the project"))
+	}
+	if template.WorkflowType != WorkflowTemplateTypeWorkflow {
+		return errors.New(errors.DataInvalid, fmt.Errorf("workflow template type must be %s", WorkflowTemplateTypeWorkflow))
+	}
+	return nil
+}
+
+func (s *Storage) ResolveWorkflowTemplateForCreate(projectId ProjectUID, templateId *uint) (*WorkflowTemplate, error) {
+	if templateId != nil && *templateId != 0 {
+		template, exist, err := s.GetWorkflowTemplateById(*templateId)
+		if err != nil {
+			return nil, err
+		}
+		if !exist {
+			return nil, errors.New(errors.DataNotExist, fmt.Errorf("workflow template not found"))
+		}
+		if err := ValidateWorkflowTemplateForCreate(template, projectId); err != nil {
+			return nil, err
+		}
+		return template, nil
+	}
+	template, exist, err := s.GetDefaultWorkflowTemplateByProjectIdAndType(projectId, WorkflowTemplateTypeWorkflow)
+	if err != nil {
+		return nil, err
+	}
+	if !exist {
+		return nil, errors.New(errors.DataNotExist, fmt.Errorf("the task instance is not bound workflow template"))
+	}
+	return template, nil
+}
+
+func CanDeleteWorkflowTemplate(isDefault bool, sameTypeCount int64, hasUnfinishedWorkflows bool) error {
+	if isDefault {
+		return errors.New(errors.DataInvalid, fmt.Errorf("default workflow template cannot be deleted"))
+	}
+	if sameTypeCount <= 1 {
+		return errors.New(errors.DataInvalid, fmt.Errorf("the only workflow template of this type cannot be deleted"))
+	}
+	if hasUnfinishedWorkflows {
+		return errors.New(errors.DataConflict, fmt.Errorf("workflow template is referenced by unfinished workflows"))
+	}
+	return nil
+}
+
+func (s *Storage) HasUnfinishedWorkflowByTemplateId(templateId uint) (bool, error) {
+	endStatus := []string{WorkflowStatusExecFailed, WorkflowStatusFinish, WorkflowStatusCancel}
+	var count int64
+	err := s.db.Table("workflows").
+		Joins("LEFT JOIN workflow_records ON workflows.workflow_record_id = workflow_records.id").
+		Where("workflows.workflow_template_id = ?", templateId).
+		Where("workflows.deleted_at IS NULL").
+		Where("workflow_records.status NOT IN (?)", endStatus).
+		Count(&count).Error
+	return count > 0, errors.New(errors.ConnectStorageError, err)
+}
+
+func (s *Storage) SetDefaultWorkflowTemplate(projectId ProjectUID, workflowType string, templateId uint) error {
+	return s.Tx(func(tx *gorm.DB) error {
+		if err := tx.Model(&WorkflowTemplate{}).
+			Where("project_id = ? AND workflow_type = ? AND is_default = ?", projectId, workflowType, true).
+			Update("is_default", false).Error; err != nil {
+			return err
+		}
+		result := tx.Model(&WorkflowTemplate{}).
+			Where("id = ? AND project_id = ? AND workflow_type = ?", templateId, projectId, workflowType).
+			Update("is_default", true)
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return fmt.Errorf("workflow template not found")
+		}
+		return nil
+	})
+}
+
+func (s *Storage) DeleteWorkflowTemplate(template *WorkflowTemplate) error {
+	return s.Tx(func(tx *gorm.DB) error {
+		if err := tx.Where("workflow_template_id = ?", template.ID).Delete(&WorkflowStepTemplate{}).Error; err != nil {
+			return err
+		}
+		return tx.Delete(template).Error
+	})
 }
 
 func (s *Storage) GetWorkflowStepsByTemplateId(id uint) ([]*WorkflowStepTemplate, error) {
@@ -179,8 +325,8 @@ func (s *Storage) SaveWorkflowTemplate(template *WorkflowTemplate) error {
 }
 
 func saveWorkflowTemplate(template *WorkflowTemplate, tx *sql.Tx) (templateId int64, err error) {
-	result, err := tx.Exec("INSERT INTO workflow_templates (name, `desc`, `allow_submit_when_less_audit_level`, `project_id`, `workflow_type`) values (?, ?, ?, ?, ?)",
-		template.Name, template.Desc, template.AllowSubmitWhenLessAuditLevel, template.ProjectId, template.WorkflowType)
+	result, err := tx.Exec("INSERT INTO workflow_templates (name, `desc`, `allow_submit_when_less_audit_level`, `project_id`, `workflow_type`, `is_default`) values (?, ?, ?, ?, ?, ?)",
+		template.Name, template.Desc, template.AllowSubmitWhenLessAuditLevel, template.ProjectId, template.WorkflowType, template.IsDefault)
 	if err != nil {
 		return 0, err
 	}
@@ -241,12 +387,13 @@ func (s *Storage) GetWorkflowTemplateTip() ([]*WorkflowTemplate, error) {
 
 type Workflow struct {
 	Model
-	Subject          string `gorm:"type:varchar(255)"`
-	WorkflowId       string `gorm:"index:unique; type:varchar(255)"`
-	Desc             string `gorm:"type:varchar(3000)"`
-	CreateUserId     string `gorm:"type:varchar(255)"`
-	WorkflowRecordId uint
-	ProjectId        ProjectUID `gorm:"index; not null; type:varchar(255)"`
+	Subject            string `gorm:"type:varchar(255)"`
+	WorkflowId         string `gorm:"index:unique; type:varchar(255)"`
+	Desc               string `gorm:"type:varchar(3000)"`
+	CreateUserId       string `gorm:"type:varchar(255)"`
+	WorkflowRecordId   uint
+	ProjectId          ProjectUID `gorm:"index; not null; type:varchar(255)"`
+	WorkflowTemplateId *uint      `json:"workflow_template_id" gorm:"index; column:workflow_template_id"`
 
 	Record *WorkflowRecord `gorm:"foreignkey:WorkflowRecordId"`
 	// Project       *Project          `gorm:"foreignkey:ProjectId"`
@@ -560,7 +707,7 @@ func (w *Workflow) GetNeedSendOATaskIds(entry *logrus.Entry) ([]uint, error) {
 	return taskIds, nil
 }
 
-func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User, tasks []*Task, stepTemplates []*WorkflowStepTemplate, projectId ProjectUID, sqlVersionId, versionStageId *uint, workflowStageSequence *int, getOpExecUser func([]*Task) (canAuditUsers [][]*User, canExecUsers [][]*User)) error {
+func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User, tasks []*Task, stepTemplates []*WorkflowStepTemplate, projectId ProjectUID, sqlVersionId, versionStageId *uint, workflowStageSequence *int, workflowTemplateId *uint, getOpExecUser func([]*Task) (canAuditUsers [][]*User, canExecUsers [][]*User)) error {
 	if len(tasks) <= 0 {
 		return errors.New(errors.DataConflict, fmt.Errorf("there is no task for creating workflow"))
 	}
@@ -602,14 +749,15 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 	}
 
 	workflow := &Workflow{
-		Subject:          subject,
-		WorkflowId:       workflowId,
-		Desc:             desc,
-		ProjectId:        projectId,
-		CreateUserId:     user.GetIDStr(),
-		ExecMode:         execMode,
-		Mode:             workflowMode,
-		WorkflowRecordId: record.ID,
+		Subject:            subject,
+		WorkflowId:         workflowId,
+		Desc:               desc,
+		ProjectId:          projectId,
+		CreateUserId:       user.GetIDStr(),
+		ExecMode:           execMode,
+		Mode:               workflowMode,
+		WorkflowRecordId:   record.ID,
+		WorkflowTemplateId: workflowTemplateId,
 	}
 
 	err = tx.Save(workflow).Error
