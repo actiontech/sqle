@@ -111,3 +111,29 @@ func TestWorkflowStepTypesByWorkflowType(t *testing.T) {
 		})
 	}
 }
+
+func TestWorkflowRecordUpdateValues(t *testing.T) {
+	t.Run("keeps desc unchanged when desc is omitted", func(t *testing.T) {
+		updates := workflowRecordUpdateValues(12, nil)
+
+		assert.Equal(t, uint(12), updates["workflow_record_id"])
+		_, exists := updates["desc"]
+		assert.False(t, exists)
+	})
+
+	t.Run("updates desc when new value is provided", func(t *testing.T) {
+		desc := "new workflow desc"
+		updates := workflowRecordUpdateValues(13, &desc)
+
+		assert.Equal(t, uint(13), updates["workflow_record_id"])
+		assert.Equal(t, "new workflow desc", updates["desc"])
+	})
+
+	t.Run("clears desc when empty string is provided", func(t *testing.T) {
+		desc := ""
+		updates := workflowRecordUpdateValues(14, &desc)
+
+		assert.Equal(t, uint(14), updates["workflow_record_id"])
+		assert.Equal(t, "", updates["desc"])
+	})
+}

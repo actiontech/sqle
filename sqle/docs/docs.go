@@ -25383,6 +25383,9 @@ var doc = `{
         "v2.UpdateWorkflowReqV2": {
             "type": "object",
             "properties": {
+                "desc": {
+                    "type": "string"
+                },
                 "task_ids": {
                     "type": "array",
                     "items": {

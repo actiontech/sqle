@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 
@@ -664,7 +665,8 @@ func CreateWorkflowV2(c echo.Context) error {
 }
 
 type UpdateWorkflowReqV2 struct {
-	TaskIds []uint `json:"task_ids" form:"task_ids" valid:"required"`
+	TaskIds []uint  `json:"task_ids" form:"task_ids" valid:"required"`
+	Desc    *string `json:"desc" form:"desc"`
 }
 
 // UpdateWorkflowV2
@@ -684,6 +686,10 @@ func UpdateWorkflowV2(c echo.Context) error {
 	req := new(UpdateWorkflowReqV2)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
+	}
+	if req.Desc != nil && utf8.RuneCountInString(*req.Desc) > 3000 {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid,
+			fmt.Errorf("desc length must be less than or equal to 3000 characters")))
 	}
 
 	projectUid, err := dms.GetProjectUIDByName(context.TODO(), c.Param("project_name"), true)
@@ -787,7 +793,7 @@ func UpdateWorkflowV2(c echo.Context) error {
 			fmt.Errorf("you are not allow to operate the workflow")))
 	}
 
-	err = s.UpdateWorkflowRecord(workflow, tasks)
+	err = s.UpdateWorkflowRecordWithDesc(workflow, tasks, req.Desc)
 	if err != nil {
 		return c.JSON(http.StatusOK, controller.NewBaseReq(err))
 	}

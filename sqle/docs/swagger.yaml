@@ -7898,6 +7898,8 @@ definitions:
     type: object
   v2.UpdateWorkflowReqV2:
     properties:
+      desc:
+        type: string
       task_ids:
         items:
           type: integer

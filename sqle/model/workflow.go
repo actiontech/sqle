@@ -920,6 +920,10 @@ func UpdateInstanceRecord(stepTemplates []*WorkflowStepTemplate, tasks []*Task, 
 }
 
 func (s *Storage) UpdateWorkflowRecord(w *Workflow, tasks []*Task) error {
+	return s.UpdateWorkflowRecordWithDesc(w, tasks, nil)
+}
+
+func (s *Storage) UpdateWorkflowRecordWithDesc(w *Workflow, tasks []*Task, desc *string) error {
 	instRecords := w.Record.InstanceRecords
 	if len(instRecords) != len(tasks) {
 		return e.New("task and instRecord are not equal in length")
@@ -976,12 +980,22 @@ func (s *Storage) UpdateWorkflowRecord(w *Workflow, tasks []*Task) error {
 
 	// update workflow record to new
 	if err := tx.Model(&Workflow{}).Where("workflow_id = ?", w.WorkflowId).
-		Update("workflow_record_id", record.ID).Error; err != nil {
+		Updates(workflowRecordUpdateValues(record.ID, desc)).Error; err != nil {
 		tx.Rollback()
 		return errors.New(errors.ConnectStorageError, err)
 	}
 
 	return errors.New(errors.ConnectStorageError, tx.Commit().Error)
+}
+
+func workflowRecordUpdateValues(recordID uint, desc *string) map[string]interface{} {
+	updates := map[string]interface{}{
+		"workflow_record_id": recordID,
+	}
+	if desc != nil {
+		updates["desc"] = *desc
+	}
+	return updates
 }
 
 // UpdateWorkflowStatus, 仅改变工单状态，用于关闭工单
