@@ -1557,6 +1557,8 @@ definitions:
         type: array
       workflow_subject:
         type: string
+      workflow_template_id:
+        type: integer
     type: object
   v1.CreateRollbackWorkflowRes:
     properties:
@@ -1659,6 +1661,31 @@ definitions:
           type: integer
         type: array
       workflow_subject:
+        type: string
+    type: object
+  v1.CreateWorkflowTemplateReqV1:
+    properties:
+      allow_submit_when_less_audit_level:
+        enum:
+        - normal
+        - notice
+        - warn
+        - error
+        type: string
+      desc:
+        type: string
+      is_default:
+        type: boolean
+      workflow_step_template_list:
+        items:
+          $ref: '#/definitions/v1.WorkFlowStepTemplateReqV1'
+        type: array
+      workflow_template_name:
+        type: string
+      workflow_type:
+        enum:
+        - workflow
+        - data_export
         type: string
     type: object
   v1.CustomRuleResV1:
@@ -6131,6 +6158,26 @@ definitions:
       schedule_time:
         type: string
     type: object
+  v1.UpdateWorkflowTemplateByIdReqV1:
+    properties:
+      allow_submit_when_less_audit_level:
+        enum:
+        - normal
+        - notice
+        - warn
+        - error
+        type: string
+      desc:
+        type: string
+      is_default:
+        type: boolean
+      workflow_step_template_list:
+        items:
+          $ref: '#/definitions/v1.WorkFlowStepTemplateReqV1'
+        type: array
+      workflow_template_name:
+        type: string
+    type: object
   v1.UpdateWorkflowTemplateReqV1:
     properties:
       allow_submit_when_less_audit_level:
@@ -6284,6 +6331,10 @@ definitions:
       workflow_id:
         type: string
       workflow_name:
+        type: string
+      workflow_template_id:
+        type: integer
+      workflow_template_name:
         type: string
     type: object
   v1.WorkflowDetailWithInstance:
@@ -6500,12 +6551,16 @@ definitions:
         type: string
       desc:
         type: string
+      is_default:
+        type: boolean
       update_time:
         type: string
       workflow_step_template_list:
         items:
           $ref: '#/definitions/v1.WorkFlowStepTemplateResV1'
         type: array
+      workflow_template_id:
+        type: integer
       workflow_template_name:
         type: string
       workflow_type:
@@ -7022,6 +7077,8 @@ definitions:
         type: array
       workflow_subject:
         type: string
+      workflow_template_id:
+        type: integer
     type: object
   v2.CreateWorkflowResV2:
     properties:
@@ -7937,6 +7994,10 @@ definitions:
       workflow_id:
         type: string
       workflow_name:
+        type: string
+      workflow_template_id:
+        type: integer
+      workflow_template_name:
         type: string
     type: object
   v2.WorkflowStepResV2:
@@ -12971,7 +13032,8 @@ paths:
       - task
   /v1/projects/{project_name}/workflow_template:
     get:
-      description: get workflow template detail
+      description: get workflow template detail; query by workflow_template_id or
+        by workflow_type default template
       operationId: getWorkflowTemplateV1
       parameters:
       - description: project name
@@ -12985,8 +13047,11 @@ paths:
         - data_export
         in: query
         name: workflow_type
-        required: true
         type: string
+      - description: workflow template id
+        in: query
+        name: workflow_template_id
+        type: integer
       responses:
         "200":
           description: OK
@@ -13045,6 +13110,13 @@ paths:
         name: project_name
         required: true
         type: string
+      - description: filter workflow type
+        enum:
+        - workflow
+        - data_export
+        in: query
+        name: workflow_type
+        type: string
       responses:
         "200":
           description: OK
@@ -13053,6 +13125,118 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: 获取审批流程模板列表
+      tags:
+      - workflow
+    post:
+      consumes:
+      - application/json
+      description: create workflow template
+      operationId: createWorkflowTemplateV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: create workflow template
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.CreateWorkflowTemplateReqV1'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetWorkflowTemplateResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 创建审批流程模板
+      tags:
+      - workflow
+  /v1/projects/{project_name}/workflow_templates/{workflow_template_id}/:
+    delete:
+      description: delete workflow template by id
+      operationId: deleteWorkflowTemplateV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: workflow template id
+        in: path
+        name: workflow_template_id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 删除审批流程模板
+      tags:
+      - workflow
+    get:
+      description: get workflow template by id
+      operationId: getWorkflowTemplateByIdV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: workflow template id
+        in: path
+        name: workflow_template_id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetWorkflowTemplateResV1'
+      security:
+      - ApiKeyAuth: []
+      summary: 根据ID获取审批流程模板详情
+      tags:
+      - workflow
+    patch:
+      consumes:
+      - application/json
+      description: update workflow template by id
+      operationId: updateWorkflowTemplateByIdV1
+      parameters:
+      - description: project name
+        in: path
+        name: project_name
+        required: true
+        type: string
+      - description: workflow template id
+        in: path
+        name: workflow_template_id
+        required: true
+        type: integer
+      - description: update workflow template
+        in: body
+        name: instance
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UpdateWorkflowTemplateByIdReqV1'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.BaseRes'
+      security:
+      - ApiKeyAuth: []
+      summary: 根据ID更新审批流程模板
       tags:
       - workflow
   /v1/projects/{project_name}/workflows:
@@ -13116,6 +13300,10 @@ paths:
         in: query
         name: filter_sql_version_id
         type: string
+      - description: filter workflow template id
+        in: query
+        name: filter_workflow_template_id
+        type: integer
       - description: page index
         in: query
         name: page_index

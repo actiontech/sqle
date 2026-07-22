@@ -50,10 +50,12 @@ type GetWorkflowTemplateResV1 struct {
 }
 
 type WorkflowTemplateDetailResV1 struct {
+	WorkflowTemplateId            uint                         `json:"workflow_template_id"`
 	Name                          string                       `json:"workflow_template_name"`
 	Desc                          string                       `json:"desc,omitempty"`
 	WorkflowType                  string                       `json:"workflow_type" enums:"workflow,data_export"`
 	AllowSubmitWhenLessAuditLevel string                       `json:"allow_submit_when_less_audit_level" enums:"normal,notice,warn,error"`
+	IsDefault                     bool                         `json:"is_default"`
 	Steps                         []*WorkFlowStepTemplateResV1 `json:"workflow_step_template_list"`
 	UpdateTime                    time.Time                    `json:"update_time"`
 }
@@ -73,12 +75,13 @@ type WorkFlowStepTemplateResV1 struct {
 }
 
 // @Summary 获取审批流程模板详情
-// @Description get workflow template detail
+// @Description get workflow template detail; query by workflow_template_id or by workflow_type default template
 // @Tags workflow
 // @Id getWorkflowTemplateV1
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
-// @Param workflow_type query string true "filter workflow type" Enums(workflow,data_export)
+// @Param workflow_type query string false "filter workflow type" Enums(workflow,data_export)
+// @Param workflow_template_id query uint false "workflow template id"
 // @Success 200 {object} v1.GetWorkflowTemplateResV1
 // @router /v1/projects/{project_name}/workflow_template [get]
 func GetWorkflowTemplate(c echo.Context) error {
@@ -91,18 +94,82 @@ func GetWorkflowTemplate(c echo.Context) error {
 // @Id getWorkflowTemplateListV1
 // @Security ApiKeyAuth
 // @Param project_name path string true "project name"
+// @Param workflow_type query string false "filter workflow type" Enums(workflow,data_export)
 // @Success 200 {object} v1.GetWorkflowTemplateListResV1
 // @router /v1/projects/{project_name}/workflow_templates [get]
 func GetWorkflowTemplateList(c echo.Context) error {
 	return getWorkflowTemplateList(c)
 }
 
+// CreateWorkflowTemplateV1
+// @Summary 创建审批流程模板
+// @Description create workflow template
+// @Tags workflow
+// @Id createWorkflowTemplateV1
+// @Security ApiKeyAuth
+// @Accept json
+// @Produce json
+// @Param project_name path string true "project name"
+// @Param instance body v1.CreateWorkflowTemplateReqV1 true "create workflow template"
+// @Success 200 {object} v1.GetWorkflowTemplateResV1
+// @router /v1/projects/{project_name}/workflow_templates [post]
+func CreateWorkflowTemplateV1(c echo.Context) error {
+	return createWorkflowTemplate(c)
+}
+
+// GetWorkflowTemplateByIdV1
+// @Summary 根据ID获取审批流程模板详情
+// @Description get workflow template by id
+// @Tags workflow
+// @Id getWorkflowTemplateByIdV1
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Param workflow_template_id path uint true "workflow template id"
+// @Success 200 {object} v1.GetWorkflowTemplateResV1
+// @router /v1/projects/{project_name}/workflow_templates/{workflow_template_id}/ [get]
+func GetWorkflowTemplateByIdV1(c echo.Context) error {
+	return getWorkflowTemplateById(c)
+}
+
+// UpdateWorkflowTemplateByIdV1
+// @Summary 根据ID更新审批流程模板
+// @Description update workflow template by id
+// @Tags workflow
+// @Id updateWorkflowTemplateByIdV1
+// @Security ApiKeyAuth
+// @Accept json
+// @Produce json
+// @Param project_name path string true "project name"
+// @Param workflow_template_id path uint true "workflow template id"
+// @Param instance body v1.UpdateWorkflowTemplateByIdReqV1 true "update workflow template"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/projects/{project_name}/workflow_templates/{workflow_template_id}/ [patch]
+func UpdateWorkflowTemplateByIdV1(c echo.Context) error {
+	return updateWorkflowTemplateById(c)
+}
+
+// DeleteWorkflowTemplateV1
+// @Summary 删除审批流程模板
+// @Description delete workflow template by id
+// @Tags workflow
+// @Id deleteWorkflowTemplateV1
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Param workflow_template_id path uint true "workflow template id"
+// @Success 200 {object} controller.BaseRes
+// @router /v1/projects/{project_name}/workflow_templates/{workflow_template_id}/ [delete]
+func DeleteWorkflowTemplateV1(c echo.Context) error {
+	return deleteWorkflowTemplate(c)
+}
+
 func convertWorkflowTemplateToRes(template *model.WorkflowTemplate) *WorkflowTemplateDetailResV1 {
 	res := &WorkflowTemplateDetailResV1{
+		WorkflowTemplateId:            template.ID,
 		Name:                          template.Name,
 		Desc:                          template.Desc,
 		WorkflowType:                  template.WorkflowType,
 		AllowSubmitWhenLessAuditLevel: template.AllowSubmitWhenLessAuditLevel,
+		IsDefault:                     template.IsDefault,
 		UpdateTime:                    template.UpdatedAt,
 	}
 	stepsRes := make([]*WorkFlowStepTemplateResV1, 0, len(template.Steps))
@@ -141,6 +208,23 @@ type WorkFlowStepTemplateReqV1 struct {
 type UpdateWorkflowTemplateReqV1 struct {
 	Desc                          *string                      `json:"desc" form:"desc"`
 	AllowSubmitWhenLessAuditLevel *string                      `json:"allow_submit_when_less_audit_level" enums:"normal,notice,warn,error"`
+	Steps                         []*WorkFlowStepTemplateReqV1 `json:"workflow_step_template_list" form:"workflow_step_template_list"`
+}
+
+type CreateWorkflowTemplateReqV1 struct {
+	Name                          string                       `json:"workflow_template_name" form:"workflow_template_name" valid:"required,name"`
+	Desc                          string                       `json:"desc" form:"desc"`
+	WorkflowType                  string                       `json:"workflow_type" form:"workflow_type" valid:"required,oneof=workflow data_export" enums:"workflow,data_export"`
+	AllowSubmitWhenLessAuditLevel *string                      `json:"allow_submit_when_less_audit_level" enums:"normal,notice,warn,error"`
+	IsDefault                     *bool                        `json:"is_default" form:"is_default"`
+	Steps                         []*WorkFlowStepTemplateReqV1 `json:"workflow_step_template_list" form:"workflow_step_template_list" valid:"required,dive"`
+}
+
+type UpdateWorkflowTemplateByIdReqV1 struct {
+	Name                          *string                      `json:"workflow_template_name" form:"workflow_template_name"`
+	Desc                          *string                      `json:"desc" form:"desc"`
+	AllowSubmitWhenLessAuditLevel *string                      `json:"allow_submit_when_less_audit_level" enums:"normal,notice,warn,error"`
+	IsDefault                     *bool                        `json:"is_default" form:"is_default"`
 	Steps                         []*WorkFlowStepTemplateReqV1 `json:"workflow_step_template_list" form:"workflow_step_template_list"`
 }
 
@@ -504,16 +588,17 @@ func CreateWorkflowV1(c echo.Context) error {
 }
 
 type CheckedWorkflowInfo struct {
-	WorkflowId    string
-	User          *model.User
-	Tasks         []*model.Task
-	InstanceIds   []uint64
-	StepTemplates []*model.WorkflowStepTemplate
-	ProjectId     model.ProjectUID
-	GetOpExecUser func([]*model.Task) (canAuditUsers [][]*model.User, canExecUsers [][]*model.User)
+	WorkflowId         string
+	User               *model.User
+	Tasks              []*model.Task
+	InstanceIds        []uint64
+	StepTemplates      []*model.WorkflowStepTemplate
+	ProjectId          model.ProjectUID
+	WorkflowTemplateId *uint
+	GetOpExecUser      func([]*model.Task) (canAuditUsers [][]*model.User, canExecUsers [][]*model.User)
 }
 
-func CheckWorkflowCreationPrerequisites(c echo.Context, projectName string, taskIdsToBindWithWorkflow []uint) (*CheckedWorkflowInfo, error) {
+func CheckWorkflowCreationPrerequisites(c echo.Context, projectName string, taskIdsToBindWithWorkflow []uint, workflowTemplateId *uint) (*CheckedWorkflowInfo, error) {
 	// check project
 	projectUid, err := dms.GetProjectUIDByName(context.TODO(), projectName, true)
 	if err != nil {
@@ -568,14 +653,11 @@ func CheckWorkflowCreationPrerequisites(c echo.Context, projectName string, task
 	for _, instance := range instancesOfWorkflowInProject {
 		projectInstanceMap[instance.ID] = instance
 	}
-	// check template of workflow exist
-	workflowTemplate, exist, err := s.GetWorkflowTemplateByProjectId(model.ProjectUID(projectUid))
+	workflowTemplate, err := s.ResolveWorkflowTemplateForCreate(model.ProjectUID(projectUid), workflowTemplateId)
 	if err != nil {
 		return nil, err
 	}
-	if !exist {
-		return nil, errors.New(errors.DataNotExist, fmt.Errorf("the task instance is not bound workflow template"))
-	}
+	templateID := workflowTemplate.ID
 	// check tasks instance
 	for _, task := range tasks {
 		if instance, ok := projectInstanceMap[task.InstanceId]; ok {
@@ -643,12 +725,13 @@ func CheckWorkflowCreationPrerequisites(c echo.Context, projectName string, task
 		return nil, err
 	}
 	return &CheckedWorkflowInfo{
-		WorkflowId:    workflowId,
-		User:          user,
-		Tasks:         tasks,
-		StepTemplates: stepTemplates,
-		InstanceIds:   instanceIdsOfWorkflowTasks,
-		ProjectId:     model.ProjectUID(projectUid),
+		WorkflowId:         workflowId,
+		User:               user,
+		Tasks:              tasks,
+		StepTemplates:      stepTemplates,
+		InstanceIds:        instanceIdsOfWorkflowTasks,
+		ProjectId:          model.ProjectUID(projectUid),
+		WorkflowTemplateId: &templateID,
 		GetOpExecUser: func(tasks []*model.Task) (auditWorkflowUsers, canExecUser [][]*model.User) {
 			auditWorkflowUsers = make([][]*model.User, len(tasks))
 			executorWorkflowUsers := make([][]*model.User, len(tasks))
@@ -694,6 +777,7 @@ type GetWorkflowsReqV1 struct {
 	FilterTaskExecuteStartTimeFrom  string                `json:"filter_task_execute_start_time_from" query:"filter_task_execute_start_time_from"`
 	FilterTaskExecuteStartTimeTo    string                `json:"filter_task_execute_start_time_to" query:"filter_task_execute_start_time_to"`
 	FilterSqlVersionID              *uint                 `json:"filter_sql_version_id" query:"filter_sql_version_id"`
+	FilterWorkflowTemplateId        *uint                 `json:"filter_workflow_template_id" query:"filter_workflow_template_id"`
 	FilterProjectUid                string                `json:"filter_project_uid" query:"filter_project_uid"`
 	FilterInstanceId                string                `json:"filter_instance_id" query:"filter_instance_id"`
 	FilterProjectPriority           dmsV1.ProjectPriority `json:"filter_project_priority" query:"filter_project_priority"  valid:"omitempty,oneof=high medium low"`
@@ -722,6 +806,8 @@ type WorkflowDetailResV1 struct {
 	CurrentStepAssigneeUser []string              `json:"current_step_assignee_user_name_list,omitempty"`
 	Status                  string                `json:"status" enums:"wait_for_audit,wait_for_approve,wait_for_execution,wait_for_export,rejected,canceled,cancel,exec_failed,failed,executing,exporting,finished,finish"`
 	InstanceInfo            []InstanceInfo        `json:"instance_info,omitempty"`
+	WorkflowTemplateId      *uint                 `json:"workflow_template_id,omitempty"`
+	WorkflowTemplateName    string                `json:"workflow_template_name,omitempty"`
 }
 
 type InstanceInfo struct {
@@ -1218,6 +1304,7 @@ func loadInstanceByInstanceIds(ctx context.Context, instanceIds []string) (insta
 // @Param filter_current_step_assignee_user_id query string false "filter current step assignee user id"
 // @Param filter_task_instance_id query string false "filter instance id"
 // @Param filter_sql_version_id query string false "filter sql version id"
+// @Param filter_workflow_template_id query uint false "filter workflow template id"
 // @Param page_index query uint32 true "page index"
 // @Param page_size query uint32 true "size of per page"
 // @Param project_name path string true "project name"
@@ -1248,6 +1335,7 @@ func GetWorkflowsV1(c echo.Context) error {
 	data := map[string]interface{}{
 		"filter_workflow_id":                   req.FilterWorkflowID,
 		"filter_sql_version_id":                req.FilterSqlVersionID,
+		"filter_workflow_template_id":          req.FilterWorkflowTemplateId,
 		"filter_subject":                       req.FilterSubject,
 		"filter_create_time_from":              req.FilterCreateTimeFrom,
 		"filter_create_time_to":                req.FilterCreateTimeTo,
@@ -1283,6 +1371,11 @@ func GetWorkflowsV1(c echo.Context) error {
 		for _, currentStepAssigneeUser := range workflow.CurrentAssigneeUser() {
 			CurrentStepAssigneeUserNames = append(CurrentStepAssigneeUserNames, dms.GetUserNameWithDelTag(currentStepAssigneeUser))
 		}
+		var templateId *uint
+		if workflow.WorkflowTemplateId.Valid {
+			id := uint(workflow.WorkflowTemplateId.Int64)
+			templateId = &id
+		}
 		workflowRes := &WorkflowDetailResV1{
 			ProjectName:             workflow.ProjectId, // dms-todo: 暂时使用id代替name
 			Name:                    workflow.Subject,
@@ -1294,6 +1387,8 @@ func GetWorkflowsV1(c echo.Context) error {
 			CurrentStepAssigneeUser: CurrentStepAssigneeUserNames,
 			Status:                  workflow.Status,
 			SqlVersionName:          workflow.SqlVersionNames,
+			WorkflowTemplateId:      templateId,
+			WorkflowTemplateName:    workflow.WorkflowTemplateName.String,
 		}
 		workflowsResV1 = append(workflowsResV1, workflowRes)
 	}
@@ -1871,11 +1966,12 @@ func GetWorkflowTaskAuditFile(c echo.Context) error {
 }
 
 type CreateRollbackWorkflowReq struct {
-	Subject        string `json:"workflow_subject" form:"workflow_subject" valid:"required,name"`
-	Desc           string `json:"desc" form:"desc"`
-	SqlVersionID   *uint  `json:"sql_version_id" form:"sql_version_id"`
-	TaskIds        []uint `json:"task_ids" form:"task_ids" valid:"required"`
-	RollbackSqlIds []uint `json:"rollback_sql_ids" form:"rollback_sql_ids" valid:"required"`
+	Subject            string `json:"workflow_subject" form:"workflow_subject" valid:"required,name"`
+	Desc               string `json:"desc" form:"desc"`
+	SqlVersionID       *uint  `json:"sql_version_id" form:"sql_version_id"`
+	WorkflowTemplateId *uint  `json:"workflow_template_id" form:"workflow_template_id"`
+	TaskIds            []uint `json:"task_ids" form:"task_ids" valid:"required"`
+	RollbackSqlIds     []uint `json:"rollback_sql_ids" form:"rollback_sql_ids" valid:"required"`
 }
 
 type CreateRollbackWorkflowRes struct {
@@ -1912,8 +2008,9 @@ type AutoCreateAndExecuteWorkflowReqV1 struct {
 	// 审核task group的参数
 	Sql string `json:"sql" form:"sql" example:"alter table tb1 drop columns c1"`
 	// 创建工单的参数
-	Subject string `json:"workflow_subject" form:"workflow_subject" valid:"required,name"`
-	Desc    string `json:"desc" form:"desc"`
+	Subject            string `json:"workflow_subject" form:"workflow_subject" valid:"required,name"`
+	Desc               string `json:"desc" form:"desc"`
+	WorkflowTemplateId *uint  `json:"workflow_template_id" form:"workflow_template_id"`
 }
 
 type AutoCreateAndExecuteWorkflowResV1 struct {
@@ -1995,7 +2092,7 @@ func AutoCreateAndExecuteWorkflowV1(c echo.Context) error {
 		taskIds = append(taskIds, task.ID)
 	}
 
-	w, err := CheckWorkflowCreationPrerequisites(c, projectName, taskIds)
+	w, err := CheckWorkflowCreationPrerequisites(c, projectName, taskIds, req.WorkflowTemplateId)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -2011,7 +2108,7 @@ func AutoCreateAndExecuteWorkflowV1(c echo.Context) error {
 	}
 
 	// 9. 创建工单
-	if err := s.CreateWorkflowV2(req.Subject, w.WorkflowId, req.Desc, w.User, w.Tasks, w.StepTemplates, w.ProjectId, nil, nil, nil, w.GetOpExecUser); err != nil {
+	if err := s.CreateWorkflowV2(req.Subject, w.WorkflowId, req.Desc, w.User, w.Tasks, w.StepTemplates, w.ProjectId, nil, nil, nil, w.WorkflowTemplateId, w.GetOpExecUser); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
@@ -2060,6 +2157,14 @@ func parseAutoCreateWorkflowRequest(c echo.Context) (*AutoCreateAndExecuteWorkfl
 		if err := json.Unmarshal([]byte(instancesStr), &req.Instances); err != nil {
 			return nil, errors.New(errors.DataInvalid, fmt.Errorf("invalid instances JSON: %v", err))
 		}
+	}
+	if templateIdStr := c.FormValue("workflow_template_id"); templateIdStr != "" {
+		templateId, err := strconv.ParseUint(templateIdStr, 10, 64)
+		if err != nil {
+			return nil, errors.New(errors.DataInvalid, fmt.Errorf("invalid workflow_template_id: %v", err))
+		}
+		id := uint(templateId)
+		req.WorkflowTemplateId = &id
 	}
 	return req, nil
 }

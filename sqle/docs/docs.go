@@ -7557,7 +7557,7 @@ var doc = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "get workflow template detail",
+                "description": "get workflow template detail; query by workflow_template_id or by workflow_type default template",
                 "tags": [
                     "workflow"
                 ],
@@ -7579,8 +7579,13 @@ var doc = `{
                         "type": "string",
                         "description": "filter workflow type",
                         "name": "workflow_type",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "workflow template id",
+                        "name": "workflow_template_id",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -7671,6 +7676,16 @@ var doc = `{
                         "name": "project_name",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "enum": [
+                            "workflow",
+                            "data_export"
+                        ],
+                        "type": "string",
+                        "description": "filter workflow type",
+                        "name": "workflow_type",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -7678,6 +7693,179 @@ var doc = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/v1.GetWorkflowTemplateListResV1"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "create workflow template",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "创建审批流程模板",
+                "operationId": "createWorkflowTemplateV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "create workflow template",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.CreateWorkflowTemplateReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetWorkflowTemplateResV1"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/projects/{project_name}/workflow_templates/{workflow_template_id}/": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "get workflow template by id",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "根据ID获取审批流程模板详情",
+                "operationId": "getWorkflowTemplateByIdV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "workflow template id",
+                        "name": "workflow_template_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetWorkflowTemplateResV1"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "delete workflow template by id",
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "删除审批流程模板",
+                "operationId": "deleteWorkflowTemplateV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "workflow template id",
+                        "name": "workflow_template_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "update workflow template by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "workflow"
+                ],
+                "summary": "根据ID更新审批流程模板",
+                "operationId": "updateWorkflowTemplateByIdV1",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "project name",
+                        "name": "project_name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "workflow template id",
+                        "name": "workflow_template_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "update workflow template",
+                        "name": "instance",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.UpdateWorkflowTemplateByIdReqV1"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.BaseRes"
                         }
                     }
                 }
@@ -7776,6 +7964,12 @@ var doc = `{
                         "type": "string",
                         "description": "filter sql version id",
                         "name": "filter_sql_version_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "filter workflow template id",
+                        "name": "filter_workflow_template_id",
                         "in": "query"
                     },
                     {
@@ -15970,6 +16164,9 @@ var doc = `{
                 },
                 "workflow_subject": {
                     "type": "string"
+                },
+                "workflow_template_id": {
+                    "type": "integer"
                 }
             }
         },
@@ -16124,6 +16321,42 @@ var doc = `{
                 },
                 "workflow_subject": {
                     "type": "string"
+                }
+            }
+        },
+        "v1.CreateWorkflowTemplateReqV1": {
+            "type": "object",
+            "properties": {
+                "allow_submit_when_less_audit_level": {
+                    "type": "string",
+                    "enum": [
+                        "normal",
+                        "notice",
+                        "warn",
+                        "error"
+                    ]
+                },
+                "desc": {
+                    "type": "string"
+                },
+                "is_default": {
+                    "type": "boolean"
+                },
+                "workflow_step_template_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.WorkFlowStepTemplateReqV1"
+                    }
+                },
+                "workflow_template_name": {
+                    "type": "string"
+                },
+                "workflow_type": {
+                    "type": "string",
+                    "enum": [
+                        "workflow",
+                        "data_export"
+                    ]
                 }
             }
         },
@@ -22645,6 +22878,35 @@ var doc = `{
                 }
             }
         },
+        "v1.UpdateWorkflowTemplateByIdReqV1": {
+            "type": "object",
+            "properties": {
+                "allow_submit_when_less_audit_level": {
+                    "type": "string",
+                    "enum": [
+                        "normal",
+                        "notice",
+                        "warn",
+                        "error"
+                    ]
+                },
+                "desc": {
+                    "type": "string"
+                },
+                "is_default": {
+                    "type": "boolean"
+                },
+                "workflow_step_template_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.WorkFlowStepTemplateReqV1"
+                    }
+                },
+                "workflow_template_name": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.UpdateWorkflowTemplateReqV1": {
             "type": "object",
             "properties": {
@@ -22869,6 +23131,12 @@ var doc = `{
                     "type": "string"
                 },
                 "workflow_name": {
+                    "type": "string"
+                },
+                "workflow_template_id": {
+                    "type": "integer"
+                },
+                "workflow_template_name": {
                     "type": "string"
                 }
             }
@@ -23189,6 +23457,9 @@ var doc = `{
                 "desc": {
                     "type": "string"
                 },
+                "is_default": {
+                    "type": "boolean"
+                },
                 "update_time": {
                     "type": "string"
                 },
@@ -23197,6 +23468,9 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/v1.WorkFlowStepTemplateResV1"
                     }
+                },
+                "workflow_template_id": {
+                    "type": "integer"
                 },
                 "workflow_template_name": {
                     "type": "string"
@@ -23932,6 +24206,9 @@ var doc = `{
                 },
                 "workflow_subject": {
                     "type": "string"
+                },
+                "workflow_template_id": {
+                    "type": "integer"
                 }
             }
         },
@@ -25246,6 +25523,12 @@ var doc = `{
                     "type": "string"
                 },
                 "workflow_name": {
+                    "type": "string"
+                },
+                "workflow_template_id": {
+                    "type": "integer"
+                },
+                "workflow_template_name": {
                     "type": "string"
                 }
             }

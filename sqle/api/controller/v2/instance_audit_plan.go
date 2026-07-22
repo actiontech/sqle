@@ -104,7 +104,7 @@ func GetInstanceTips(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 	s := model.GetStorage()
-	template, exist, err := s.GetWorkflowTemplateByProjectId(model.ProjectUID(projectUid))
+	template, exist, err := s.GetDefaultWorkflowTemplateByProjectIdAndType(model.ProjectUID(projectUid), model.WorkflowTemplateTypeWorkflow)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
