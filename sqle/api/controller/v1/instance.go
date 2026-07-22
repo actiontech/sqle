@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	baseV1 "github.com/actiontech/dms/pkg/dms-common/api/base/v1"
 	v1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
@@ -230,13 +231,37 @@ type GetInstanceConnectableReqV1 struct {
 	AdditionalParams []*InstanceAdditionalParamReqV1 `json:"additional_params" from:"additional_params"`
 }
 
+type checkDbConnectableReq struct {
+	DBType           string                `json:"db_type" form:"db_type" example:"mysql"`
+	User             string                `json:"user" form:"db_user" example:"root"`
+	Host             string                `json:"host" form:"db_host" example:"10.10.10.10" valid:"required,ip_addr|uri|hostname|hostname_rfc1123"`
+	Port             string                `json:"port" form:"db_port" example:"3306" valid:"required,port"`
+	Password         string                `json:"password" form:"db_password" example:"123456"`
+	AdditionalParams []*v1.AdditionalParam `json:"additional_params" from:"additional_params"`
+}
+
+func isRedisClusterConnectReq(dbType string, additionalParams []*v1.AdditionalParam) bool {
+	if !strings.EqualFold(dbType, "Redis") {
+		return false
+	}
+	for _, item := range additionalParams {
+		if item != nil && item.Name == "connection_mode" {
+			return item.Value == "cluster"
+		}
+	}
+	return false
+}
+
 func CheckInstanceIsConnectable(c echo.Context) error {
-	req := new(v1.CheckDbConnectable)
+	req := new(checkDbConnectableReq)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return err
 	}
 	if req.DBType == "" {
 		req.DBType = driverV2.DriverTypeMySQL
+	}
+	if req.User == "" && !isRedisClusterConnectReq(req.DBType, req.AdditionalParams) {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("db service user can't be empty")))
 	}
 
 	additionalParams := driver.GetPluginManager().AllAdditionalParams()[req.DBType]
