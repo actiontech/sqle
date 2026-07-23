@@ -52,6 +52,7 @@ var (
 	SQLExecuteStatusFailed           = &i18n.Message{ID: "SQLExecuteStatusFailed", Other: "执行失败"}
 	SQLExecuteStatusSucceeded        = &i18n.Message{ID: "SQLExecuteStatusSucceeded", Other: "执行成功"}
 	SQLExecuteStatusManuallyExecuted = &i18n.Message{ID: "SQLExecuteStatusManuallyExecuted", Other: "人工执行"}
+	SQLExecuteStatusNotExecuted      = &i18n.Message{ID: "SQLExecuteStatusNotExecuted", Other: "未执行"}
 	SQLExecuteStatusUnknown          = &i18n.Message{ID: "SQLExecuteStatusUnknown", Other: "未知"}
 
 	TaskSQLReportIndex       = &i18n.Message{ID: "TaskSQLReportIndex", Other: "序号"}

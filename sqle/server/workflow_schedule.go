@@ -112,6 +112,15 @@ func ExecuteWorkflow(workflow *model.Workflow, needExecTaskIdToUserId map[uint]s
 		// if instance is not connectable, exec sql must be failed;
 		// commit action unable to retry, so don't to exec it.
 		if err = common.CheckInstanceIsConnectable(task.Instance); err != nil {
+			if persistErr := PersistTaskDatasourceConnectFailure(task, err); persistErr != nil {
+				l.Errorf("persist datasource connect failure for task %v: %v", task.ID, persistErr)
+			}
+			if workflow.Record != nil {
+				workflow.Record.Status = model.WorkflowStatusExecFailed
+				if wfErr := s.UpdateWorkflowStatus(workflow); wfErr != nil {
+					l.Errorf("update workflow status to exec_failed after connect failure: %v", wfErr)
+				}
+			}
 			return nil, errors.New(errors.ConnectRemoteDatabaseError, err)
 		}
 	}

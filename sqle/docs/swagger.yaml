@@ -982,6 +982,12 @@ definitions:
         type: boolean
       exec_end_time:
         type: string
+      exec_fail_reason:
+        type: string
+      exec_fail_sql_count:
+        type: integer
+      exec_fail_stage:
+        type: string
       exec_mode:
         type: string
       exec_start_time:
@@ -7037,6 +7043,10 @@ definitions:
       exec_sql_id:
         type: integer
       exec_status:
+        type: string
+      fail_reason:
+        type: string
+      fail_stage:
         type: string
       number:
         type: integer
@@ -17002,6 +17012,7 @@ paths:
         - terminate_succeeded
         - terminate_failed
         - execute_rollback
+        - not_executed
         in: query
         name: filter_exec_status
         type: string

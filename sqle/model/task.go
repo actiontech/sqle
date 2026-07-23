@@ -66,11 +66,15 @@ type Task struct {
 	BackupMaxRows        uint64         `json:"backup_max_rows" gorm:"column:backup_max_rows;not null;default:0"`
 	InstanceEnableBackup bool           `gorm:"column:instance_enable_backup"` // 用于记录创建task时，instance备份开关的状态
 	FileOrderMethod      string         `json:"file_order_method" gorm:"column:file_order_method;type:varchar(255)"`
-	Instance             *Instance      `json:"-" gorm:"-"`
-	RuleTemplate         *RuleTemplate  `json:"-" gorm:"foreignkey:RuleTemplateID"`
-	ExecuteSQLs          []*ExecuteSQL  `json:"-" gorm:"foreignkey:TaskId"`
-	RollbackSQLs         []*RollbackSQL `json:"-" gorm:"foreignkey:TaskId"`
-	AuditFiles           []*AuditFile   `json:"-" gorm:"foreignkey:TaskId"`
+	// ExecFail* 上线失败摘要（Phase-1）；可空，不做历史回填
+	ExecFailStage    string `json:"exec_fail_stage" gorm:"column:exec_fail_stage;type:varchar(64);default:''"`
+	ExecFailReason   string `json:"exec_fail_reason" gorm:"column:exec_fail_reason;type:text"`
+	ExecFailSQLCount int    `json:"exec_fail_sql_count" gorm:"column:exec_fail_sql_count;default:0"`
+	Instance         *Instance      `json:"-" gorm:"-"`
+	RuleTemplate     *RuleTemplate  `json:"-" gorm:"foreignkey:RuleTemplateID"`
+	ExecuteSQLs      []*ExecuteSQL  `json:"-" gorm:"foreignkey:TaskId"`
+	RollbackSQLs     []*RollbackSQL `json:"-" gorm:"foreignkey:TaskId"`
+	AuditFiles       []*AuditFile   `json:"-" gorm:"foreignkey:TaskId"`
 }
 
 func (t *Task) RuleTemplateName() string {
@@ -123,6 +127,24 @@ const (
 	SQLExecuteStatusTerminateSucc    = "terminate_succeeded"
 	SQLExecuteStatusTerminateFailed  = "terminate_failed"
 	SQLExecuteStatusExecuteRollback  = "execute_rollback" // 执行回滚
+	SQLExecuteStatusNotExecuted      = "not_executed"     // 前序失败未执行到
+)
+
+// 上线失败阶段（后端权威值，对齐架构 overview §3.1）
+const (
+	OnlineFailStageSQLBackup          = "sql_backup"
+	OnlineFailStageSQLExecute         = "sql_execute"
+	OnlineFailStageDatasourceConnect  = "datasource_connect"
+	OnlineFailStagePreCheck           = "pre_check"
+	OnlineFailStageTerminate          = "terminate"
+	OnlineFailStageUnknown            = "unknown"
+)
+
+const (
+	// SQLNotExecutedReason 后续未执行 SQL 的固定说明
+	SQLNotExecutedReason = "前序 SQL 上线失败，本条 SQL 未执行"
+	// OnlineFailReasonFallback 无具体原因时的兜底文案（不得覆盖已有业务错误）
+	OnlineFailReasonFallback = "上线失败，暂未获取到具体原因，请联系管理员查看服务日志"
 )
 
 type BaseSQL struct {
@@ -162,6 +184,8 @@ func (s *BaseSQL) GetExecStatusDesc(ctx context.Context) string {
 		return locale.Bundle.LocalizeMsgByCtx(ctx, locale.SQLExecuteStatusSucceeded)
 	case SQLExecuteStatusManuallyExecuted:
 		return locale.Bundle.LocalizeMsgByCtx(ctx, locale.SQLExecuteStatusManuallyExecuted)
+	case SQLExecuteStatusNotExecuted:
+		return locale.Bundle.LocalizeMsgByCtx(ctx, locale.SQLExecuteStatusNotExecuted)
 	default:
 		return locale.Bundle.LocalizeMsgByCtx(ctx, locale.SQLExecuteStatusUnknown)
 	}
@@ -339,7 +363,9 @@ type ExecuteSQL struct {
 	// it used for deduplication in one audit task.
 	AuditFingerprint string `json:"audit_fingerprint" gorm:"index;type:char(32)"`
 	// AuditLevel has four level: error, warn, notice, normal.
-	AuditLevel string      `json:"audit_level" gorm:"type:varchar(255)"`
+	AuditLevel string `json:"audit_level" gorm:"type:varchar(255)"`
+	// FailStage 上线失败阶段；失败/未执行时写入，供详情刷新再读
+	FailStage  string      `json:"fail_stage" gorm:"column:fail_stage;type:varchar(64);default:''"`
 	BackupTask *BackupTask `json:"-" gorm:"foreignkey:execute_sql_id"`
 }
 
@@ -522,6 +548,15 @@ func (s *Storage) GetExecSqlsByTaskIdAndStatus(taskId uint, status []string) ([]
 	return executeSQLs, nil
 }
 
+func (s *Storage) GetExecuteSQLsByTaskID(taskId uint) ([]*ExecuteSQL, error) {
+	executeSQLs := []*ExecuteSQL{}
+	err := s.db.Where("task_id = ?", taskId).Order("number ASC").Find(&executeSQLs).Error
+	if err != nil {
+		return nil, errors.New(errors.ConnectStorageError, err)
+	}
+	return executeSQLs, nil
+}
+
 func (s *Storage) GetTaskExecuteSQLContent(taskId string) ([]byte, error) {
 	rows, err := s.db.Model(&ExecuteSQL{}).Select("content").
 		Where("task_id = ?", taskId).Rows()
@@ -662,6 +697,7 @@ type TaskSQLDetail struct {
 	AuditStatus   string         `json:"audit_status"`
 	ExecResult    string         `json:"exec_result"`
 	ExecStatus    string         `json:"exec_status"`
+	FailStage     string         `json:"fail_stage"`
 	RollbackSQL   sql.NullString `json:"rollback_sql"`
 	SQLType       sql.NullString `json:"sql_type"`
 }
@@ -675,7 +711,7 @@ func (t *TaskSQLDetail) GetAuditResults(ctx context.Context) string {
 }
 
 var taskSQLsQueryTpl = `SELECT e_sql.id,e_sql.number, e_sql.description, e_sql.content AS exec_sql,  e_sql.source_file AS sql_source_file, e_sql.start_line AS sql_start_line, e_sql.sql_type,
-e_sql.audit_results, e_sql.audit_level, e_sql.audit_status, e_sql.exec_result, e_sql.exec_status
+e_sql.audit_results, e_sql.audit_level, e_sql.audit_status, e_sql.exec_result, e_sql.exec_status, e_sql.fail_stage
 
 {{- template "body" . -}}
 

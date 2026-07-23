@@ -33,6 +33,9 @@ func ReExecuteTaskSQLs(workflow *model.Workflow, task *model.Task, execSqlIds []
 	// if instance is not connectable, exec sql must be failed;
 	// commit action unable to retry, so don't to exec it.
 	if err = common.CheckInstanceIsConnectable(task.Instance); err != nil {
+		if persistErr := PersistTaskDatasourceConnectFailure(task, err); persistErr != nil {
+			l.Errorf("persist datasource connect failure for task %v: %v", task.ID, persistErr)
+		}
 		return errors.New(errors.ConnectRemoteDatabaseError, err)
 	}
 
