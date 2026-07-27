@@ -13593,7 +13593,8 @@ var doc = `{
                             "terminating",
                             "terminate_succeeded",
                             "terminate_failed",
-                            "execute_rollback"
+                            "execute_rollback",
+                            "not_executed"
                         ],
                         "type": "string",
                         "description": "filter: exec status of task sql",
@@ -15324,6 +15325,21 @@ var doc = `{
                     "type": "boolean"
                 },
                 "exec_end_time": {
+                    "type": "string"
+                },
+                "exec_fail_reason": {
+                    "type": "string"
+                },
+                "exec_fail_sql_count": {
+                    "type": "integer"
+                },
+                "exec_fail_sql_id": {
+                    "type": "integer"
+                },
+                "exec_fail_sql_number": {
+                    "type": "integer"
+                },
+                "exec_fail_stage": {
                     "type": "string"
                 },
                 "exec_mode": {
@@ -24145,6 +24161,12 @@ var doc = `{
                     "type": "integer"
                 },
                 "exec_status": {
+                    "type": "string"
+                },
+                "fail_reason": {
+                    "type": "string"
+                },
+                "fail_stage": {
                     "type": "string"
                 },
                 "number": {

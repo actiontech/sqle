@@ -39,6 +39,8 @@ type AuditTaskSQLResV2 struct {
 	AuditStatus                 string                        `json:"audit_status"`
 	ExecResult                  string                        `json:"exec_result"`
 	ExecStatus                  string                        `json:"exec_status"`
+	FailStage                   string                        `json:"fail_stage,omitempty"`
+	FailReason                  string                        `json:"fail_reason,omitempty"`
 	RollbackSQLs                []string                      `json:"rollback_sqls,omitempty"`
 	Description                 string                        `json:"description"`
 	SQLType                     string                        `json:"sql_type"`
@@ -71,7 +73,7 @@ type AuditResult struct {
 // @Id getAuditTaskSQLsV2
 // @Security ApiKeyAuth
 // @Param task_id path string true "task id"
-// @Param filter_exec_status query string false "filter: exec status of task sql" Enums(initialized,doing,succeeded,failed,manually_executed,terminating,terminate_succeeded,terminate_failed,execute_rollback)
+// @Param filter_exec_status query string false "filter: exec status of task sql" Enums(initialized,doing,succeeded,failed,manually_executed,terminating,terminate_succeeded,terminate_failed,execute_rollback,not_executed)
 // @Param filter_audit_status query string false "filter: audit status of task sql" Enums(initialized,doing,finished)
 // @Param filter_audit_level query string false "filter: audit level of task sql" Enums(normal,notice,warn,error)
 // @Param no_duplicate query boolean false "select unique (fingerprint and audit result) for task sql"
@@ -140,6 +142,33 @@ func GetTaskSQLs(c echo.Context) error {
 	}
 
 	for _, taskSQL := range taskSQLs {
+		backupStatus := backupTaskMap.GetBackupStatus(taskSQL.Id)
+		backupResult := backupTaskMap.GetBackupResult(taskSQL.Id)
+		execResult := taskSQL.ExecResult
+		// 方案 D：历史备份失败且 exec_result 空时，用 backup_result 补展示（不写库）
+		if execResult == "" && backupStatus == "failed" && backupResult != "" {
+			execResult = backupResult
+		}
+		failStage := taskSQL.FailStage
+		if failStage == "" {
+			switch {
+			case taskSQL.ExecStatus == model.SQLExecuteStatusExecuteRollback:
+				// 同事务回滚同伴：禁止合成 sql_execute（AC-009 / overview §16.1）
+			case taskSQL.ExecStatus == model.SQLExecuteStatusFailed && backupStatus == "failed":
+				failStage = model.OnlineFailStageSQLBackup
+			case taskSQL.ExecStatus == model.SQLExecuteStatusFailed:
+				failStage = model.OnlineFailStageSQLExecute
+			case taskSQL.ExecStatus == model.SQLExecuteStatusNotExecuted:
+				failStage = task.ExecFailStage
+			}
+		}
+		failReason := ""
+		if taskSQL.ExecStatus == model.SQLExecuteStatusFailed ||
+			taskSQL.ExecStatus == model.SQLExecuteStatusNotExecuted ||
+			taskSQL.ExecStatus == model.SQLExecuteStatusExecuteRollback ||
+			backupStatus == "failed" {
+			failReason = execResult
+		}
 		taskSQLRes := &AuditTaskSQLResV2{
 			ExecSqlID:                   taskSQL.Id,
 			Number:                      taskSQL.Number,
@@ -149,14 +178,16 @@ func GetTaskSQLs(c echo.Context) error {
 			SQLStartLine:                taskSQL.SQLStartLine,
 			AuditLevel:                  taskSQL.AuditLevel,
 			AuditStatus:                 taskSQL.AuditStatus,
-			ExecResult:                  taskSQL.ExecResult,
+			ExecResult:                  execResult,
 			ExecStatus:                  taskSQL.ExecStatus,
+			FailStage:                   failStage,
+			FailReason:                  failReason,
 			RollbackSQLs:                rollbackSqlMap[taskSQL.Id],
 			SQLType:                     taskSQL.SQLType.String,
 			BackupStrategy:              backupTaskMap.GetBackupStrategy(taskSQL.Id),
 			BackupStrategyTip:           backupTaskMap.GetBackupStrategyTip(taskSQL.Id),
-			BackupStatus:                backupTaskMap.GetBackupStatus(taskSQL.Id),
-			BackupResult:                backupTaskMap.GetBackupResult(taskSQL.Id),
+			BackupStatus:                backupStatus,
+			BackupResult:                backupResult,
 			AssociatedRollbackWorkflows: associatedRollbackWorkflowsMap[taskSQL.Id],
 		}
 		for i := range taskSQL.AuditResults {

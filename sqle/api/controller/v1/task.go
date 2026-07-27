@@ -66,6 +66,11 @@ type AuditTaskResV1 struct {
 	EnableBackup               bool            `json:"enable_backup"`
 	BackupMaxRows              uint64          `json:"backup_max_rows,omitempty"`
 	BackupConflictWithInstance bool            `json:"backup_conflict_with_instance"` // 当数据源备份开启，工单备份关闭，则需要提示审核人工单备份策略与数据源备份策略不一致
+	ExecFailStage              string          `json:"exec_fail_stage,omitempty"`
+	ExecFailReason             string          `json:"exec_fail_reason,omitempty"`
+	ExecFailSQLCount           int             `json:"exec_fail_sql_count,omitempty"`
+	ExecFailSQLNumber          uint            `json:"exec_fail_sql_number,omitempty"`
+	ExecFailSQLID              uint            `json:"exec_fail_sql_id,omitempty"`
 	AuditFiles                 []AuditFileResp `json:"audit_files,omitempty"`
 }
 
@@ -91,6 +96,11 @@ func convertTaskToRes(task *model.Task) *AuditTaskResV1 {
 		BackupMaxRows:              task.BackupMaxRows,
 		BackupConflictWithInstance: server.BackupService{}.IsBackupConflictWithInstance(task.EnableBackup, task.InstanceEnableBackup),
 		FileOrderMethod:            task.FileOrderMethod,
+		ExecFailStage:              task.ExecFailStage,
+		ExecFailReason:             task.ExecFailReason,
+		ExecFailSQLCount:           task.ExecFailSQLCount,
+		ExecFailSQLNumber:          task.ExecFailSQLNumber,
+		ExecFailSQLID:              task.ExecFailSQLID,
 		AuditFiles:                 convertToAuditFileResp(task.AuditFiles),
 	}
 }

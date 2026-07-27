@@ -561,7 +561,40 @@ func (a *action) execute() (err error) {
 		"status":      taskStatus,
 		"exec_end_at": time.Now(),
 	}
+	if taskStatus == model.TaskStatusExecuteFailed {
+		if a.task.ExecFailStage == "" {
+			a.fillExecFailSummaryFromSQLs()
+		}
+		if a.task.ExecFailStage != "" {
+			attrs["exec_fail_stage"] = a.task.ExecFailStage
+			attrs["exec_fail_reason"] = ensureNonEmptyFailReason(a.task.ExecFailReason)
+			attrs["exec_fail_sql_count"] = a.task.ExecFailSQLCount
+			if a.task.ExecFailSQLNumber != 0 {
+				attrs["exec_fail_sql_number"] = a.task.ExecFailSQLNumber
+			}
+			if a.task.ExecFailSQLID != 0 {
+				attrs["exec_fail_sql_id"] = a.task.ExecFailSQLID
+			}
+		}
+	}
 	return st.UpdateTask(task, attrs)
+}
+
+func (a *action) fillExecFailSummaryFromSQLs() {
+	if a.task == nil {
+		return
+	}
+	for _, sql := range a.task.ExecuteSQLs {
+		if sql.ExecStatus != model.SQLExecuteStatusFailed {
+			continue
+		}
+		stage := sql.FailStage
+		if stage == "" {
+			stage = model.OnlineFailStageSQLExecute
+		}
+		a.applyTaskExecFailSummary(stage, sql.ExecResult, sql)
+		return
+	}
 }
 
 func (a *action) GetTaskStatus(st *model.Storage) string {
@@ -615,9 +648,14 @@ func (a *action) backupAndExecSql() error {
 	for _, executeSQL := range a.task.ExecuteSQLs {
 		backupMgr, err := getBackupManager(a.plugin, executeSQL, a.task.DBType, a.task.BackupMaxRows)
 		if err != nil {
+			_ = a.persistOnlineFailure(executeSQL, model.OnlineFailStageSQLBackup, err.Error())
 			return fmt.Errorf("in backupAndExecSql when getBackupManager, err %w , task: %v", err, a.task.ID)
 		}
 		if err = backupMgr.Backup(); err != nil {
+			// Backup() 已将业务原因放入 error；同时 defer 已写 backup_tasks
+			if persistErr := a.persistOnlineFailure(executeSQL, model.OnlineFailStageSQLBackup, err.Error()); persistErr != nil {
+				a.entry.Errorf("persist online failure after backup failed, task=%v sql=%v err=%v", a.task.ID, executeSQL.ID, persistErr)
+			}
 			return fmt.Errorf("in backupAndExecSql when backupMgr Backup, err %w, backup manager: %v, task: %v", err, backupMgr, a.task.ID)
 		}
 		if err := a.execSQL(executeSQL); err != nil {
@@ -794,6 +832,19 @@ func (a *action) executeSQLBatch(executeSQLs []*model.ExecuteSQL) error {
 	if err != nil {
 		return err
 	}
+	if execErr != nil {
+		// 中止成功路径不改写为 failed/not_executed
+		for _, sql := range executeSQLs {
+			if sql.ExecStatus == model.SQLExecuteStatusTerminateSucc {
+				return nil
+			}
+		}
+		lastSQL := executeSQLs[len(executeSQLs)-1]
+		reason := execErr.Error()
+		if persistErr := a.persistOnlineFailure(lastSQL, model.OnlineFailStageSQLExecute, reason); persistErr != nil {
+			a.entry.Errorf("persist online failure after executeSQLBatch failed, task=%v err=%v", a.task.ID, persistErr)
+		}
+	}
 	return nil
 }
 
@@ -821,6 +872,17 @@ func (a *action) execSQL(executeSQL *model.ExecuteSQL) error {
 		return err
 	}
 	if execErr != nil {
+		if executeSQL.ExecStatus == model.SQLExecuteStatusTerminateSucc {
+			return execErr
+		}
+		stage := model.OnlineFailStageSQLExecute
+		reason := executeSQL.ExecResult
+		if strings.TrimSpace(reason) == "" {
+			reason = execErr.Error()
+		}
+		if persistErr := a.persistOnlineFailure(executeSQL, stage, reason); persistErr != nil {
+			a.entry.Errorf("persist online failure after execSQL failed, task=%v sql=%v err=%v", a.task.ID, executeSQL.ID, persistErr)
+		}
 		return execErr
 	}
 	return nil
@@ -858,16 +920,21 @@ func (a *action) execSQLs(executeSQLs []*model.ExecuteSQL) error {
 			continue
 		}
 		if results != nil && results.ExecErr != nil {
-			if results.ExecErr.ErrSqlIndex == uint32(idx) {
+			errIdx := int(results.ExecErr.ErrSqlIndex)
+			if errIdx == idx {
 				executeSQL.ExecStatus = model.SQLExecuteStatusFailed
 				executeSQL.ExecResult = results.ExecErr.SqlExecErrMsg
+				executeSQL.FailStage = model.OnlineFailStageSQLExecute
 				if a.hasTermination() && isConnectionTerminatedError(_errors.New(results.ExecErr.SqlExecErrMsg), a.task.DBType) {
 					executeSQL.ExecStatus = model.SQLExecuteStatusTerminateSucc
 					executeSQL.ExecResult = terminatedExecResult(_errors.New(results.ExecErr.SqlExecErrMsg))
+					executeSQL.FailStage = ""
 				}
 			} else {
-				executeSQL.ExecStatus = model.SQLExecuteStatusFailed
+				// 同事务同伴：随事务回滚，可与出错条区分（AC-009 / overview §15.2）
+				executeSQL.ExecStatus = model.SQLExecuteStatusExecuteRollback
 				executeSQL.ExecResult = model.TaskExecResultRollback
+				executeSQL.FailStage = ""
 			}
 			continue
 		}
@@ -878,9 +945,39 @@ func (a *action) execSQLs(executeSQLs []*model.ExecuteSQL) error {
 		return err
 	}
 	if txErr != nil {
+		for _, sql := range executeSQLs {
+			if sql.ExecStatus == model.SQLExecuteStatusTerminateSucc {
+				return txErr
+			}
+		}
+		// 仅 txErr、无 ExecErr：Begin/连接类等；归属首条并落库（禁止冒充 ExecErr 场景）
+		failedSQL := executeSQLs[0]
+		reason := txErr.Error()
+		if persistErr := a.persistOnlineFailure(failedSQL, model.OnlineFailStageSQLExecute, reason); persistErr != nil {
+			a.entry.Errorf("persist online failure after execSQLs tx failed, task=%v err=%v", a.task.ID, persistErr)
+		}
 		return txErr
 	}
 	if results != nil && results.ExecErr != nil {
+		idx := int(results.ExecErr.ErrSqlIndex)
+		var failedSQL *model.ExecuteSQL
+		if idx >= 0 && idx < len(executeSQLs) {
+			failedSQL = executeSQLs[idx]
+		} else if len(executeSQLs) > 0 {
+			a.entry.Errorf("execSQLs ExecErr.ErrSqlIndex=%d out of range [0,%d), degrade to nearest index", idx, len(executeSQLs))
+			if idx < 0 {
+				failedSQL = executeSQLs[0]
+			} else {
+				failedSQL = executeSQLs[len(executeSQLs)-1]
+			}
+		}
+		if failedSQL != nil && failedSQL.ExecStatus == model.SQLExecuteStatusTerminateSucc {
+			return fmt.Errorf("sql execute err msg: %v", results.ExecErr.SqlExecErrMsg)
+		}
+		reason := results.ExecErr.SqlExecErrMsg
+		if persistErr := a.persistOnlineFailure(failedSQL, model.OnlineFailStageSQLExecute, reason); persistErr != nil {
+			a.entry.Errorf("persist online failure after execSQLs execErr, task=%v err=%v", a.task.ID, persistErr)
+		}
 		return fmt.Errorf("sql execute err msg: %v", results.ExecErr.SqlExecErrMsg)
 	}
 	return nil
