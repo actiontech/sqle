@@ -152,6 +152,8 @@ func GetTaskSQLs(c echo.Context) error {
 		failStage := taskSQL.FailStage
 		if failStage == "" {
 			switch {
+			case taskSQL.ExecStatus == model.SQLExecuteStatusExecuteRollback:
+				// 同事务回滚同伴：禁止合成 sql_execute（AC-009 / overview §16.1）
 			case taskSQL.ExecStatus == model.SQLExecuteStatusFailed && backupStatus == "failed":
 				failStage = model.OnlineFailStageSQLBackup
 			case taskSQL.ExecStatus == model.SQLExecuteStatusFailed:
@@ -163,6 +165,7 @@ func GetTaskSQLs(c echo.Context) error {
 		failReason := ""
 		if taskSQL.ExecStatus == model.SQLExecuteStatusFailed ||
 			taskSQL.ExecStatus == model.SQLExecuteStatusNotExecuted ||
+			taskSQL.ExecStatus == model.SQLExecuteStatusExecuteRollback ||
 			backupStatus == "failed" {
 			failReason = execResult
 		}

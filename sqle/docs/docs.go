@@ -15333,6 +15333,12 @@ var doc = `{
                 "exec_fail_sql_count": {
                     "type": "integer"
                 },
+                "exec_fail_sql_id": {
+                    "type": "integer"
+                },
+                "exec_fail_sql_number": {
+                    "type": "integer"
+                },
                 "exec_fail_stage": {
                     "type": "string"
                 },

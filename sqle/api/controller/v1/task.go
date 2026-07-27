@@ -69,6 +69,8 @@ type AuditTaskResV1 struct {
 	ExecFailStage              string          `json:"exec_fail_stage,omitempty"`
 	ExecFailReason             string          `json:"exec_fail_reason,omitempty"`
 	ExecFailSQLCount           int             `json:"exec_fail_sql_count,omitempty"`
+	ExecFailSQLNumber          uint            `json:"exec_fail_sql_number,omitempty"`
+	ExecFailSQLID              uint            `json:"exec_fail_sql_id,omitempty"`
 	AuditFiles                 []AuditFileResp `json:"audit_files,omitempty"`
 }
 
@@ -97,6 +99,8 @@ func convertTaskToRes(task *model.Task) *AuditTaskResV1 {
 		ExecFailStage:              task.ExecFailStage,
 		ExecFailReason:             task.ExecFailReason,
 		ExecFailSQLCount:           task.ExecFailSQLCount,
+		ExecFailSQLNumber:          task.ExecFailSQLNumber,
+		ExecFailSQLID:              task.ExecFailSQLID,
 		AuditFiles:                 convertToAuditFileResp(task.AuditFiles),
 	}
 }

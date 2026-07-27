@@ -41,7 +41,8 @@ const (
 )
 
 const TaskExecResultOK = "OK"
-const TaskExecResultRollback = "The transaction has been rolled back"
+// TaskExecResultRollback 同事务内非出错 SQL 的固定说明（AC-009 / overview §15.2）
+const TaskExecResultRollback = "同事务内其它 SQL 已随事务回滚"
 
 const ExecModeSqlFile = "sql_file"
 const ExecModeSqls = "sqls"
@@ -66,10 +67,12 @@ type Task struct {
 	BackupMaxRows        uint64         `json:"backup_max_rows" gorm:"column:backup_max_rows;not null;default:0"`
 	InstanceEnableBackup bool           `gorm:"column:instance_enable_backup"` // 用于记录创建task时，instance备份开关的状态
 	FileOrderMethod      string         `json:"file_order_method" gorm:"column:file_order_method;type:varchar(255)"`
-	// ExecFail* 上线失败摘要（Phase-1）；可空，不做历史回填
-	ExecFailStage    string `json:"exec_fail_stage" gorm:"column:exec_fail_stage;type:varchar(64);default:''"`
-	ExecFailReason   string `json:"exec_fail_reason" gorm:"column:exec_fail_reason;type:text"`
-	ExecFailSQLCount int    `json:"exec_fail_sql_count" gorm:"column:exec_fail_sql_count;default:0"`
+	// ExecFail* 上线失败摘要（Phase-1/3）；可空，不做历史回填
+	ExecFailStage     string `json:"exec_fail_stage" gorm:"column:exec_fail_stage;type:varchar(64);default:''"`
+	ExecFailReason    string `json:"exec_fail_reason" gorm:"column:exec_fail_reason;type:text"`
+	ExecFailSQLCount  int    `json:"exec_fail_sql_count" gorm:"column:exec_fail_sql_count;default:0"`
+	ExecFailSQLNumber uint   `json:"exec_fail_sql_number" gorm:"column:exec_fail_sql_number;default:0"` // 出错 SQL 工单内序号（AC-009）
+	ExecFailSQLID     uint   `json:"exec_fail_sql_id" gorm:"column:exec_fail_sql_id;default:0"`         // 出错 SQL ID（可选双写）
 	Instance         *Instance      `json:"-" gorm:"-"`
 	RuleTemplate     *RuleTemplate  `json:"-" gorm:"foreignkey:RuleTemplateID"`
 	ExecuteSQLs      []*ExecuteSQL  `json:"-" gorm:"foreignkey:TaskId"`

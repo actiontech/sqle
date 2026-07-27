@@ -569,6 +569,12 @@ func (a *action) execute() (err error) {
 			attrs["exec_fail_stage"] = a.task.ExecFailStage
 			attrs["exec_fail_reason"] = ensureNonEmptyFailReason(a.task.ExecFailReason)
 			attrs["exec_fail_sql_count"] = a.task.ExecFailSQLCount
+			if a.task.ExecFailSQLNumber != 0 {
+				attrs["exec_fail_sql_number"] = a.task.ExecFailSQLNumber
+			}
+			if a.task.ExecFailSQLID != 0 {
+				attrs["exec_fail_sql_id"] = a.task.ExecFailSQLID
+			}
 		}
 	}
 	return st.UpdateTask(task, attrs)
@@ -586,7 +592,7 @@ func (a *action) fillExecFailSummaryFromSQLs() {
 		if stage == "" {
 			stage = model.OnlineFailStageSQLExecute
 		}
-		a.applyTaskExecFailSummary(stage, sql.ExecResult)
+		a.applyTaskExecFailSummary(stage, sql.ExecResult, sql)
 		return
 	}
 }
@@ -914,16 +920,21 @@ func (a *action) execSQLs(executeSQLs []*model.ExecuteSQL) error {
 			continue
 		}
 		if results != nil && results.ExecErr != nil {
-			if results.ExecErr.ErrSqlIndex == uint32(idx) {
+			errIdx := int(results.ExecErr.ErrSqlIndex)
+			if errIdx == idx {
 				executeSQL.ExecStatus = model.SQLExecuteStatusFailed
 				executeSQL.ExecResult = results.ExecErr.SqlExecErrMsg
+				executeSQL.FailStage = model.OnlineFailStageSQLExecute
 				if a.hasTermination() && isConnectionTerminatedError(_errors.New(results.ExecErr.SqlExecErrMsg), a.task.DBType) {
 					executeSQL.ExecStatus = model.SQLExecuteStatusTerminateSucc
 					executeSQL.ExecResult = terminatedExecResult(_errors.New(results.ExecErr.SqlExecErrMsg))
+					executeSQL.FailStage = ""
 				}
 			} else {
-				executeSQL.ExecStatus = model.SQLExecuteStatusFailed
+				// 同事务同伴：随事务回滚，可与出错条区分（AC-009 / overview §15.2）
+				executeSQL.ExecStatus = model.SQLExecuteStatusExecuteRollback
 				executeSQL.ExecResult = model.TaskExecResultRollback
+				executeSQL.FailStage = ""
 			}
 			continue
 		}
@@ -939,6 +950,7 @@ func (a *action) execSQLs(executeSQLs []*model.ExecuteSQL) error {
 				return txErr
 			}
 		}
+		// 仅 txErr、无 ExecErr：Begin/连接类等；归属首条并落库（禁止冒充 ExecErr 场景）
 		failedSQL := executeSQLs[0]
 		reason := txErr.Error()
 		if persistErr := a.persistOnlineFailure(failedSQL, model.OnlineFailStageSQLExecute, reason); persistErr != nil {
@@ -952,7 +964,12 @@ func (a *action) execSQLs(executeSQLs []*model.ExecuteSQL) error {
 		if idx >= 0 && idx < len(executeSQLs) {
 			failedSQL = executeSQLs[idx]
 		} else if len(executeSQLs) > 0 {
-			failedSQL = executeSQLs[0]
+			a.entry.Errorf("execSQLs ExecErr.ErrSqlIndex=%d out of range [0,%d), degrade to nearest index", idx, len(executeSQLs))
+			if idx < 0 {
+				failedSQL = executeSQLs[0]
+			} else {
+				failedSQL = executeSQLs[len(executeSQLs)-1]
+			}
 		}
 		if failedSQL != nil && failedSQL.ExecStatus == model.SQLExecuteStatusTerminateSucc {
 			return fmt.Errorf("sql execute err msg: %v", results.ExecErr.SqlExecErrMsg)
