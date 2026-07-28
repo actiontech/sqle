@@ -13,6 +13,7 @@ import (
 	"github.com/actiontech/sqle/sqle/log"
 	"github.com/actiontech/sqle/sqle/model"
 	"github.com/actiontech/sqle/sqle/notification/webhook"
+	"github.com/actiontech/sqle/sqle/pkg/loginencryption"
 	"github.com/actiontech/sqle/sqle/server"
 	"github.com/actiontech/sqle/sqle/server/cluster"
 	"github.com/actiontech/sqle/sqle/utils"
@@ -38,6 +39,10 @@ func Run(config *config.Config) error {
 		if err := utils.SetSecretKey([]byte(secretKey)); err != nil {
 			return fmt.Errorf("set secret key error, %v, check your secret key in config file", err)
 		}
+	}
+
+	if err := loginencryption.Init(sqleCnf.LoginEncryptionMode, sqleCnf.LoginEncryptionPrivateKeyPath); err != nil {
+		return fmt.Errorf("init login encryption error: %v", err)
 	}
 
 	defer driver.GetPluginManager().Stop()

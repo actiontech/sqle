@@ -1114,6 +1114,24 @@ var doc = `{
                 }
             }
         },
+        "/v1/login/encryption": {
+            "get": {
+                "description": "get login password encryption public info",
+                "tags": [
+                    "user"
+                ],
+                "summary": "获取登录密码加密配置",
+                "operationId": "getLoginEncryptionV1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.GetLoginEncryptionResV1"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/logout": {
             "post": {
                 "description": "user logout",
@@ -7364,7 +7382,7 @@ var doc = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/v1.UserLoginReqV1"
+                            "$ref": "#/definitions/v2.UserLoginReqV2"
                         }
                     }
                 ],
@@ -8445,6 +8463,26 @@ var doc = `{
                 "message": {
                     "type": "string",
                     "example": "ok"
+                }
+            }
+        },
+        "loginencryption.PublicInfo": {
+            "type": "object",
+            "properties": {
+                "algorithm": {
+                    "type": "string"
+                },
+                "cipher_mode": {
+                    "type": "string"
+                },
+                "enable": {
+                    "type": "boolean"
+                },
+                "key_id": {
+                    "type": "string"
+                },
+                "public_key": {
+                    "type": "string"
                 }
             }
         },
@@ -10091,6 +10129,23 @@ var doc = `{
                 "data": {
                     "type": "object",
                     "$ref": "#/definitions/v1.LicenseUsageV1"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "v1.GetLoginEncryptionResV1": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "data": {
+                    "type": "object",
+                    "$ref": "#/definitions/loginencryption.PublicInfo"
                 },
                 "message": {
                     "type": "string",
@@ -13417,6 +13472,12 @@ var doc = `{
         "v1.UserLoginReqV1": {
             "type": "object",
             "properties": {
+                "encrypted_password": {
+                    "type": "string"
+                },
+                "key_id": {
+                    "type": "string"
+                },
                 "password": {
                     "type": "string",
                     "example": "123456"
@@ -14662,6 +14723,25 @@ var doc = `{
             "properties": {
                 "schedule_time": {
                     "type": "string"
+                }
+            }
+        },
+        "v2.UserLoginReqV2": {
+            "type": "object",
+            "properties": {
+                "encrypted_password": {
+                    "type": "string"
+                },
+                "key_id": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string",
+                    "example": "123456"
+                },
+                "username": {
+                    "type": "string",
+                    "example": "test"
                 }
             }
         },

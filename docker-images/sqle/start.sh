@@ -12,6 +12,8 @@ if [ ! -f "${SQLE_CONF}" ];then
       debug_log: ${DEBUG}
       log_path: '${SQLE_BASE}/logs'
       plugin_path: '${SQLE_BASE}/plugins'
+      # login_encryption_mode: disabled | compatible | required
+      # login_encryption_private_key_path: '${SQLE_BASE}/etc/sm2_login_private.pem'
     db_config:
       mysql_cnf:
         mysql_host: '${MYSQL_HOST}'

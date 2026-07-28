@@ -11,6 +11,7 @@ import (
 	"github.com/actiontech/sqle/sqle/api/controller"
 	"github.com/actiontech/sqle/sqle/errors"
 	"github.com/actiontech/sqle/sqle/model"
+	"github.com/actiontech/sqle/sqle/pkg/loginencryption"
 	"github.com/actiontech/sqle/sqle/utils"
 
 	"github.com/go-ldap/ldap/v3"
@@ -18,8 +19,10 @@ import (
 )
 
 type UserLoginReqV1 struct {
-	UserName string `json:"username" form:"username" example:"test" valid:"required"`
-	Password string `json:"password" form:"password" example:"123456" valid:"required"`
+	UserName          string `json:"username" form:"username" example:"test" valid:"required"`
+	Password          string `json:"password" form:"password" example:"123456"`
+	EncryptedPassword string `json:"encrypted_password" form:"encrypted_password"`
+	KeyID             string `json:"key_id" form:"key_id"`
 }
 
 type GetUserLoginResV1 struct {
@@ -29,6 +32,25 @@ type GetUserLoginResV1 struct {
 
 type UserLoginResV1 struct {
 	Token string `json:"token" example:"this is a jwt token string"`
+}
+
+type GetLoginEncryptionResV1 struct {
+	controller.BaseRes
+	Data loginencryption.PublicInfo `json:"data"`
+}
+
+// GetLoginEncryption
+// @Summary 获取登录密码加密配置
+// @Description get login password encryption public info
+// @Tags user
+// @Id getLoginEncryptionV1
+// @Success 200 {object} v1.GetLoginEncryptionResV1
+// @router /v1/login/encryption [get]
+func GetLoginEncryption(c echo.Context) error {
+	return c.JSON(http.StatusOK, &GetLoginEncryptionResV1{
+		BaseRes: controller.NewBaseReq(nil),
+		Data:    loginencryption.GetManager().PublicInfo(),
+	})
 }
 
 // @Summary 用户登录
@@ -44,7 +66,12 @@ func LoginV1(c echo.Context) error {
 		return err
 	}
 
-	t, err := Login(c, req.UserName, req.Password)
+	password, err := ResolveLoginPassword(req.Password, req.EncryptedPassword, req.KeyID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	t, err := Login(c, req.UserName, password)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -55,6 +82,15 @@ func LoginV1(c echo.Context) error {
 			Token: t, // this token won't be used any more
 		},
 	})
+}
+
+// ResolveLoginPassword decrypts encrypted password when login encryption is enabled.
+func ResolveLoginPassword(plainPassword, encryptedPassword, keyID string) (string, error) {
+	password, err := loginencryption.GetManager().ResolvePassword(plainPassword, encryptedPassword, keyID)
+	if err != nil {
+		return "", errors.New(errors.DataInvalid, err)
+	}
+	return password, nil
 }
 
 func Login(c echo.Context, userName, password string) (token string, err error) {

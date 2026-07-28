@@ -9,15 +9,17 @@ import (
 )
 
 type UserLoginReqV2 struct {
-	UserName string `json:"username" form:"username" example:"test" valid:"required"`
-	Password string `json:"password" form:"password" example:"123456" valid:"required"`
+	UserName          string `json:"username" form:"username" example:"test" valid:"required"`
+	Password          string `json:"password" form:"password" example:"123456"`
+	EncryptedPassword string `json:"encrypted_password" form:"encrypted_password"`
+	KeyID             string `json:"key_id" form:"key_id"`
 }
 
 // @Summary 用户登录
 // @Description user login
 // @Tags user
 // @Id loginV2
-// @Param user body v1.UserLoginReqV1 true "user login request"
+// @Param user body v2.UserLoginReqV2 true "user login request"
 // @Success 200 {object} controller.BaseRes
 // @router /v2/login [post]
 func LoginV2(c echo.Context) error {
@@ -26,7 +28,12 @@ func LoginV2(c echo.Context) error {
 		return err
 	}
 
-	_, err := v1.Login(c, req.UserName, req.Password)
+	password, err := v1.ResolveLoginPassword(req.Password, req.EncryptedPassword, req.KeyID)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	_, err = v1.Login(c, req.UserName, password)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
