@@ -260,7 +260,7 @@ func updateStatus(s *model.Storage, workflow *model.Workflow, l *logrus.Entry, w
 	}
 }
 
-func ApproveWorkflowProcess(workflow *model.Workflow, user *model.User, s *model.Storage) error {
+func ApproveWorkflowProcess(workflow *model.Workflow, user *model.User, s *model.Storage, reason string) error {
 	currentStep := workflow.CurrentStep()
 
 	if workflow.Record.Status == model.WorkflowStatusWaitForExecution {
@@ -269,6 +269,7 @@ func ApproveWorkflowProcess(workflow *model.Workflow, user *model.User, s *model
 	}
 
 	currentStep.State = model.WorkflowStepStateApprove
+	currentStep.Reason = reason
 	now := time.Now()
 	currentStep.OperateAt = &now
 	currentStep.OperationUserId = user.GetIDStr()

@@ -13191,6 +13191,14 @@ var doc = `{
                         "name": "project_name",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "workflow approve request",
+                        "name": "workflow_approve",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/v2.ApproveWorkflowReqV2"
+                        }
                     }
                 ],
                 "responses": {
@@ -23745,6 +23753,14 @@ var doc = `{
                     "type": "integer"
                 },
                 "err_message": {
+                    "type": "string"
+                }
+            }
+        },
+        "v2.ApproveWorkflowReqV2": {
+            "type": "object",
+            "properties": {
+                "reason": {
                     "type": "string"
                 }
             }
