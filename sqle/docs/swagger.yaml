@@ -9,6 +9,19 @@ definitions:
         example: ok
         type: string
     type: object
+  loginencryption.PublicInfo:
+    properties:
+      algorithm:
+        type: string
+      cipher_mode:
+        type: string
+      enable:
+        type: boolean
+      key_id:
+        type: string
+      public_key:
+        type: string
+    type: object
   v1.AuditPlanMetaV1:
     properties:
       audit_plan_params:
@@ -1138,6 +1151,18 @@ definitions:
         type: integer
       data:
         $ref: '#/definitions/v1.LicenseUsageV1'
+        type: object
+      message:
+        example: ok
+        type: string
+    type: object
+  v1.GetLoginEncryptionResV1:
+    properties:
+      code:
+        example: 0
+        type: integer
+      data:
+        $ref: '#/definitions/loginencryption.PublicInfo'
         type: object
       message:
         example: ok
@@ -3389,6 +3414,10 @@ definitions:
     type: object
   v1.UserLoginReqV1:
     properties:
+      encrypted_password:
+        type: string
+      key_id:
+        type: string
       password:
         example: "123456"
         type: string
@@ -4237,6 +4266,19 @@ definitions:
       schedule_time:
         type: string
     type: object
+  v2.UserLoginReqV2:
+    properties:
+      encrypted_password:
+        type: string
+      key_id:
+        type: string
+      password:
+        example: "123456"
+        type: string
+      username:
+        example: test
+        type: string
+    type: object
   v2.WorkflowRecordResV2:
     properties:
       current_step_number:
@@ -5005,6 +5047,18 @@ paths:
           schema:
             $ref: '#/definitions/v1.GetUserLoginResV1'
       summary: 用户登录
+      tags:
+      - user
+  /v1/login/encryption:
+    get:
+      description: get login password encryption public info
+      operationId: getLoginEncryptionV1
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.GetLoginEncryptionResV1'
+      summary: 获取登录密码加密配置
       tags:
       - user
   /v1/logout:
@@ -9042,7 +9096,7 @@ paths:
         name: user
         required: true
         schema:
-          $ref: '#/definitions/v1.UserLoginReqV1'
+          $ref: '#/definitions/v2.UserLoginReqV2'
       responses:
         "200":
           description: OK

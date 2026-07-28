@@ -25,6 +25,10 @@ type SqleConfig struct {
 	LogMaxBackupNumber int    `yaml:"log_max_backup_number"`
 	PluginPath         string `yaml:"plugin_path"`
 	SecretKey          string `yaml:"secret_key"`
+	// LoginEncryptionMode: disabled | compatible | required
+	LoginEncryptionMode string `yaml:"login_encryption_mode"`
+	// LoginEncryptionPrivateKeyPath points to SM2 private key file (PEM or hex).
+	LoginEncryptionPrivateKeyPath string `yaml:"login_encryption_private_key_path"`
 }
 
 type DatabaseConfig struct {
