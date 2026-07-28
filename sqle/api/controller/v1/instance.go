@@ -266,13 +266,6 @@ func CheckInstanceIsConnectable(c echo.Context) error {
 
 	additionalParams := driver.GetPluginManager().AllAdditionalParams()[req.DBType]
 	for _, additionalParam := range req.AdditionalParams {
-		// Ignore Mongo legacy advanced params removed from plugin meta (still present on old datasources).
-		if req.DBType == "MongoDB" {
-			switch additionalParam.Name {
-			case "auth_mechanism", "tls", "tls_skip_verify", "direct_connection":
-				continue
-			}
-		}
 		err := additionalParams.SetParamValue(additionalParam.Name, additionalParam.Value)
 		if err != nil {
 			return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
