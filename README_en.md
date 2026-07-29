@@ -22,11 +22,6 @@ Copyright (c)  ActionTech and/or its affiliates. SQLE is a SQL audit platform, w
 #### Login user
 * user: admin
 * pass： admin
-#### test MySQL
-* host：20.20.20.3
-* port：3306
-* user：root
-* pass：test
 #### Notice
 1. This service is only used for online functional experience, please do not use it in the production environment;
 2. The test service data is cleaned up periodically.
