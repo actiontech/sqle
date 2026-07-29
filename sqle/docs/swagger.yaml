@@ -6759,6 +6759,11 @@ definitions:
       err_message:
         type: string
     type: object
+  v2.ApproveWorkflowReqV2:
+    properties:
+      reason:
+        type: string
+    type: object
   v2.AssociatedRollbackWorkflow:
     properties:
       status:
@@ -16699,6 +16704,11 @@ paths:
         name: project_name
         required: true
         type: string
+      - description: workflow approve request
+        in: body
+        name: workflow_approve
+        schema:
+          $ref: '#/definitions/v2.ApproveWorkflowReqV2'
       responses:
         "200":
           description: OK

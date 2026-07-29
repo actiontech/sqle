@@ -40,6 +40,10 @@ type WorkflowStepResV2 struct {
 	Reason        string     `json:"reason,omitempty"`
 }
 
+type ApproveWorkflowReqV2 struct {
+	Reason string `json:"reason" form:"reason"`
+}
+
 // @Summary 审批通过
 // @Description approve workflow
 // @Tags workflow
@@ -48,9 +52,22 @@ type WorkflowStepResV2 struct {
 // @Param workflow_id path string true "workflow id"
 // @Param workflow_step_id path string true "workflow step id"
 // @Param project_name path string true "project name"
+// @Param workflow_approve body v2.ApproveWorkflowReqV2 false "workflow approve request"
 // @Success 200 {object} controller.BaseRes
 // @router /v2/projects/{project_name}/workflows/{workflow_id}/steps/{workflow_step_id}/approve [post]
 func ApproveWorkflowV2(c echo.Context) error {
+	req := new(ApproveWorkflowReqV2)
+	// 兼容旧客户端：无 body / ContentLength=0 时按空意见处理
+	if c.Request().ContentLength != 0 {
+		if err := controller.BindAndValidateReq(c, req); err != nil {
+			return controller.JSONBaseErrorReq(c, err)
+		}
+	}
+	reason := strings.TrimSpace(req.Reason)
+	if utf8.RuneCountInString(reason) > 255 {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("审批意见不能超过255个字符")))
+	}
+
 	projectUid, err := dms.GetProjectUIDByName(c.Request().Context(), c.Param("project_name"), true)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
@@ -88,7 +105,7 @@ func ApproveWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, err))
 	}
 
-	if err := server.ApproveWorkflowProcess(workflow, user, s); err != nil {
+	if err := server.ApproveWorkflowProcess(workflow, user, s, reason); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
@@ -120,6 +137,13 @@ func RejectWorkflowV2(c echo.Context) error {
 	req := new(RejectWorkflowReqV2)
 	if err := controller.BindAndValidateReq(c, req); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
+	}
+	reason := strings.TrimSpace(req.Reason)
+	if reason == "" {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("审批意见不能为空")))
+	}
+	if utf8.RuneCountInString(reason) > 255 {
+		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("审批意见不能超过255个字符")))
 	}
 
 	s := model.GetStorage()
@@ -166,11 +190,11 @@ func RejectWorkflowV2(c echo.Context) error {
 		}
 	}
 
-	if err := server.RejectWorkflowProcess(workflow, req.Reason, user, s); err != nil {
+	if err := server.RejectWorkflowProcess(workflow, reason, user, s); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	go im.UpdateApprove(workflow.WorkflowId, user, model.ApproveStatusRefuse, req.Reason)
+	go im.UpdateApprove(workflow.WorkflowId, user, model.ApproveStatusRefuse, reason)
 
 	return c.JSON(http.StatusOK, controller.NewBaseReq(nil))
 }
