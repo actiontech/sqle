@@ -21,7 +21,7 @@ Copyright (c)  ActionTech and/or its affiliates. SQLE is a SQL audit platform, w
 * [SQLE Enterprise Edition](http://demo.sqle.actionsky.com:8889/)
 #### Login user
 * user: admin
-* pass： admin
+* pass： Sqle.@ctionSky666
 #### Notice
 1. This service is only used for online functional experience, please do not use it in the production environment;
 2. The test service data is cleaned up periodically.
