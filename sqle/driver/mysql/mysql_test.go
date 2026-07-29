@@ -220,6 +220,54 @@ CREATEaa TABLE new_tbl AS SELECT * FROM orig_tbl;`,
 			`SELECT id, ROW_NUMBER() OVER (PARTITION BY nominate_app_id ORDER BY create_date ASC) AS rn FROM sourcing.tt_nomi_record`,
 			driverV2.SQLTypeDQL,
 		},
+		// AC-007：CTE 稳健性 — sql_type 按外层语义归类
+		{
+			"cte_minimal_dql",
+			`WITH cte AS (SELECT 1 AS id) SELECT * FROM cte`,
+			driverV2.SQLTypeDQL,
+		},
+		{
+			"cte_with_recursive",
+			`WITH RECURSIVE t AS (
+  SELECT 1 AS n
+  UNION ALL
+  SELECT n + 1 FROM t WHERE n < 3
+)
+SELECT * FROM t`,
+			driverV2.SQLTypeDQL,
+		},
+		{
+			"cte_multi",
+			`WITH cte1 AS (SELECT 1 AS id),
+cte2 AS (SELECT id FROM cte1)
+SELECT * FROM cte2`,
+			driverV2.SQLTypeDQL,
+		},
+		{
+			"cte_insert",
+			`WITH cte AS (SELECT 1 AS id) INSERT INTO t (id) SELECT id FROM cte`,
+			driverV2.SQLTypeDML,
+		},
+		{
+			"cte_update",
+			`WITH cte AS (SELECT 1 AS id) UPDATE t SET v = 1 WHERE id IN (SELECT id FROM cte)`,
+			driverV2.SQLTypeDML,
+		},
+		{
+			"cte_delete",
+			`WITH cte AS (SELECT id FROM exist_tb_1 WHERE id = 1) DELETE FROM exist_tb_1 WHERE id IN (SELECT id FROM cte)`,
+			driverV2.SQLTypeDML,
+		},
+		{
+			"cte_ctrl_real_ddl",
+			`CREATE TABLE t_cte_ctrl (id INT PRIMARY KEY)`,
+			driverV2.SQLTypeDDL,
+		},
+		{
+			"cte_ctrl_illegal_sql",
+			`SELECTxxx FROM nowhere WHERE`,
+			driverV2.SQLTypeDDL,
+		},
 	}
 	i := &MysqlDriverImpl{}
 	for _, arg := range args {

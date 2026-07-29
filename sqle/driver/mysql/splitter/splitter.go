@@ -43,6 +43,13 @@ func (s *splitter) processToExecutableNodes(results []*singleSQL) ([]ast.StmtNod
 		// 根据解析结果生成得到sql的抽象语法树
 		stmt, err := s.parser.ParseOneStmt(result.originSql, "", "")
 		if err != nil {
+			// pingcap parser 不识别 MySQL CTE：保守剥离 WITH … AS (…) 后解析外层语句
+			if cteStmt, ok := tryParseMySQLCTE(s.parser, result.originSql); ok {
+				cteStmt.SetStartLine(result.lineNumber)
+				cteStmt.SetText(result.originSql)
+				executableNodes = append(executableNodes, cteStmt)
+				continue
+			}
 			// 若解析结果为错误，则将分割后的SQL作为不可解析的SQL添加到executableNodes中
 			unParsedStmt := &ast.UnparsedStmt{}
 			unParsedStmt.SetStartLine(result.lineNumber)
