@@ -278,7 +278,6 @@ func (at *TaskWrapper) loop(cancel chan struct{}, interval time.Duration) {
 		at.logger.Warnf("task(%v) loop interval can not be zero", at.ap.Name)
 		return
 	}
-	at.extractSQL()
 
 	tk := time.NewTicker(interval)
 	for {
