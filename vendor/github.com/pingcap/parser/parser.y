@@ -272,6 +272,7 @@ import (
 	where             "WHERE"
 	write             "WRITE"
 	window            "WINDOW"
+	recursive         "RECURSIVE"
 	with              "WITH"
 	xor               "XOR"
 	yearMonth         "YEAR_MONTH"
@@ -840,6 +841,10 @@ import (
 	UnionStmt            "Union select state ment"
 	UseStmt              "USE statement"
 	ShutdownStmt         "SHUTDOWN statement"
+	SelectStmtNoWith     "Select statement without CTE clause"
+	UpdateStmtNoWith     "Update statement without CTE clause"
+	DeleteFromStmtNoWith "Delete statement without CTE clause"
+	InsertIntoStmtNoWith "Insert statement without CTE clause"
 
 %type	<item>
 	AdminShowSlow                          "Admin Show Slow statement"
@@ -873,6 +878,9 @@ import (
 	ColumnNameOrUserVariableList           "column name or user variable list"
 	ColumnList                             "column list"
 	ColumnNameListOpt                      "column name list opt"
+	IdentList                              "identifier list"
+	IdentListWithParenOpt                  "identifier list with parentheses"
+	CommonTableExpr                        "Common table expression"
 	ColumnNameOrUserVarListOpt             "column name or user vairiabe list opt"
 	ColumnNameOrUserVarListOptWithBrackets "column name or user variable list opt with brackets"
 	ColumnSetValue                         "insert statement set value by column name"
@@ -1120,6 +1128,8 @@ import (
 	WhenClause                             "When clause"
 	WhenClauseList                         "When clause list"
 	WithReadLockOpt                        "With Read Lock opt"
+	WithClause                             "With Clause"
+	WithList                               "With list"
 	WithGrantOptionOpt                     "With Grant Option opt"
 	WithValidation                         "with validation"
 	WithValidationOpt                      "optional with validation"
@@ -1265,6 +1275,8 @@ import (
 %precedence stringLit
 %precedence lowerThanSetKeyword
 %precedence set
+%precedence selectKwd
+%precedence lowerThanSelectStmt
 %precedence lowerThanInsertValues
 %precedence insertValues
 %precedence lowerThanCreateTableSelect
@@ -2465,6 +2477,27 @@ ColumnNameListOpt:
 |	ColumnNameList
 	{
 		$$ = $1.([]*ast.ColumnName)
+	}
+
+
+IdentListWithParenOpt:
+	/* EMPTY */
+	{
+		$$ = []model.CIStr{}
+	}
+|	'(' IdentList ')'
+	{
+		$$ = $2
+	}
+
+IdentList:
+	Identifier
+	{
+		$$ = []model.CIStr{model.NewCIStr($1)}
+	}
+|	IdentList ',' Identifier
+	{
+		$$ = append($1.([]model.CIStr), model.NewCIStr($3))
 	}
 
 ColumnNameOrUserVarListOpt:
@@ -3802,7 +3835,17 @@ DoStmt:
  *  Delete Statement
  *
  *******************************************************************/
+
 DeleteFromStmt:
+	DeleteFromStmtNoWith
+|	WithClause DeleteFromStmtNoWith
+	{
+		d := $2.(*ast.DeleteStmt)
+		d.With = $1.(*ast.WithClause)
+		$$ = d
+	}
+
+DeleteFromStmtNoWith:
 	"DELETE" TableOptimizerHints PriorityOpt QuickOptional IgnoreOptional "FROM" TableName PartitionNameListOpt TableAsNameOpt IndexHintListOpt WhereClauseOptional OrderByOptional LimitClause
 	{
 		// Single Table
@@ -5376,7 +5419,17 @@ NotKeywordToken:
  *
  *  TODO: support PARTITION
  **********************************************************************************/
+
 InsertIntoStmt:
+	InsertIntoStmtNoWith
+|	WithClause InsertIntoStmtNoWith
+	{
+		x := $2.(*ast.InsertStmt)
+		x.With = $1.(*ast.WithClause)
+		$$ = x
+	}
+
+InsertIntoStmtNoWith:
 	"INSERT" TableOptimizerHints PriorityOpt IgnoreOptional IntoOpt TableName PartitionNameListOpt InsertValues OnDuplicateKeyUpdate
 	{
 		x := $8.(*ast.InsertStmt)
@@ -7161,7 +7214,17 @@ SelectStmtFromTable:
 		$$ = st
 	}
 
+
 SelectStmt:
+	SelectStmtNoWith
+|	WithClause SelectStmtNoWith
+	{
+		st := $2.(*ast.SelectStmt)
+		st.With = $1.(*ast.WithClause)
+		$$ = st
+	}
+
+SelectStmtNoWith:
 	SelectStmtBasic OrderByOptional SelectStmtLimit SelectLockOpt SelectStmtIntoOption
 	{
 		st := $1.(*ast.SelectStmt)
@@ -7226,6 +7289,44 @@ SelectStmt:
 			st.SelectIntoOpt = $5.(*ast.SelectIntoOption)
 		}
 		$$ = st
+	}
+
+
+WithClause:
+	"WITH" WithList
+	{
+		$$ = $2
+	}
+|	"WITH" "RECURSIVE" WithList
+	{
+		ws := $3.(*ast.WithClause)
+		ws.IsRecursive = true
+		$$ = ws
+	}
+
+WithList:
+	WithList ',' CommonTableExpr
+	{
+		ws := $1.(*ast.WithClause)
+		ws.CTEs = append(ws.CTEs, $3.(*ast.CommonTableExpression))
+		$$ = ws
+	}
+|	CommonTableExpr
+	{
+		ws := &ast.WithClause{}
+		ws.CTEs = make([]*ast.CommonTableExpression, 0, 4)
+		ws.CTEs = append(ws.CTEs, $1.(*ast.CommonTableExpression))
+		$$ = ws
+	}
+
+CommonTableExpr:
+	Identifier IdentListWithParenOpt "AS" SubSelect
+	{
+		cte := &ast.CommonTableExpression{}
+		cte.Name = model.NewCIStr($1)
+		cte.ColNameList = $2.([]model.CIStr)
+		cte.Query = $4.(*ast.SubqueryExpr)
+		$$ = cte
 	}
 
 FromDual:
@@ -10529,7 +10630,17 @@ StringNameOrBRIEOptionKeyword:
  * Update Statement
  * See https://dev.mysql.com/doc/refman/5.7/en/update.html
  ***********************************************************************************/
+
 UpdateStmt:
+	UpdateStmtNoWith
+|	WithClause UpdateStmtNoWith
+	{
+		u := $2.(*ast.UpdateStmt)
+		u.With = $1.(*ast.WithClause)
+		$$ = u
+	}
+
+UpdateStmtNoWith:
 	"UPDATE" TableOptimizerHints PriorityOpt IgnoreOptional TableRef "SET" AssignmentList WhereClauseOptional OrderByOptional LimitClause
 	{
 		var refs *ast.Join
