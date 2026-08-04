@@ -1801,3 +1801,5 @@ sourcegraph.com/sourcegraph/appdash-data v0.0.0-20151005221446-73f23eafcf67/go.m
 storj.io/drpc v0.0.21/go.mod h1:OSJH7wvH3yKlhnMHwblKJioaaeyI6X8xbXT1SG9woe8=
 vitess.io/vitess v0.12.0 h1:pzQpNHLqBG/3JZnZ5A0U25017b81CuxeR+s6ry9/wl4=
 vitess.io/vitess v0.12.0/go.mod h1:QKt1VKLbuFqSi39giZa3z2i+ZG7/uSasnahoYjSB/go=
+github.com/tjfoc/gmsm v1.4.1/go.mod h1:j4INPkHWMrhJb38G+J6W4Tw0AbuN8Thu3PbdVYhVcTE=
+github.com/tjfoc/gmsm v1.4.1 h1:aMe1GlZb+0bLjn+cKTPEvvn9oUEBlJitaZiiBwsbgho=
