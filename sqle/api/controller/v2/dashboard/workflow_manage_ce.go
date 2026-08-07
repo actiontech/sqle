@@ -15,3 +15,7 @@ func getGlobalWorkflowStatisticsV2(c echo.Context) error {
 func getGlobalWorkflowListV2(c echo.Context) error {
 	return controller.JSONOnlySupportForEnterpriseVersionErr(c)
 }
+
+func exportGlobalWorkflowsV2(c echo.Context) error {
+	return controller.JSONOnlySupportForEnterpriseVersionErr(c)
+}

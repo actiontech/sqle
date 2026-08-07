@@ -15673,6 +15673,94 @@ paths:
       summary: 获取全局工单管理列表
       tags:
       - GlobalDashboard
+  /v2/dashboard/workflows/exports:
+    get:
+      description: export global dashboard workflows as CSV or Excel; filter/permission
+        semantics match GET /v2/dashboard/workflows (no pagination). workflow_type=sql_release|data_export|omit(common
+        columns with workflow type). First column includes project name for global
+        layouts. Max 10000 workflows (sum of both types when workflow_type omitted).
+      operationId: ExportGlobalWorkflowsV2
+      parameters:
+      - description: fuzzy search keyword
+        in: query
+        name: keyword
+        type: string
+      - description: filter by project uid
+        in: query
+        name: filter_project_uid
+        type: string
+      - description: filter by instance id
+        in: query
+        name: filter_instance_id
+        type: string
+      - description: filter by card type; archived 已完成工单, pending_for_me 待我处理, initiated_by_me
+          我发起, view_all 查看全部
+        enum:
+        - archived
+        - pending_for_me
+        - initiated_by_me
+        - view_all
+        in: query
+        name: filter_card
+        type: string
+      - description: sql_release SQL上线完整列; data_export 数据导出列; omit/empty 全量公共列(含工单类型)
+        enum:
+        - sql_release
+        - data_export
+        in: query
+        name: workflow_type
+        type: string
+      - description: filter by unified workflow status
+        enum:
+        - pending_approval
+        - pending_action
+        - in_progress
+        - exporting
+        - rejected
+        - cancelled
+        - failed
+        - completed
+        - unknown
+        in: query
+        name: filter_status
+        type: string
+      - description: filter by update time from
+        in: query
+        name: filter_update_time_from
+        type: string
+      - description: filter by update time to
+        in: query
+        name: filter_update_time_to
+        type: string
+      - description: filter by create user id
+        in: query
+        name: filter_create_user_id
+        type: string
+      - description: filter create time from
+        in: query
+        name: filter_create_time_from
+        type: string
+      - description: filter create time to
+        in: query
+        name: filter_create_time_to
+        type: string
+      - description: 'export format: csv or excel, default csv'
+        enum:
+        - csv
+        - excel
+        in: query
+        name: export_format
+        type: string
+      responses:
+        "200":
+          description: export workflow
+          schema:
+            type: file
+      security:
+      - ApiKeyAuth: []
+      summary: 导出全局工单管理列表
+      tags:
+      - GlobalDashboard
   /v2/dashboard/workflows/statistics:
     get:
       description: get global workflow statistics, returns archived, pending_for_me,
