@@ -78,7 +78,7 @@ type AuditFileResp struct {
 	FileName string `json:"file_name"`
 }
 
-func convertTaskToRes(task *model.Task) *AuditTaskResV1 {
+func convertTaskToRes(ctx context.Context, task *model.Task) *AuditTaskResV1 {
 	return &AuditTaskResV1{
 		Id:                         task.ID,
 		InstanceName:               task.InstanceName(),
@@ -97,7 +97,7 @@ func convertTaskToRes(task *model.Task) *AuditTaskResV1 {
 		BackupConflictWithInstance: server.BackupService{}.IsBackupConflictWithInstance(task.EnableBackup, task.InstanceEnableBackup),
 		FileOrderMethod:            task.FileOrderMethod,
 		ExecFailStage:              task.ExecFailStage,
-		ExecFailReason:             task.ExecFailReason,
+		ExecFailReason:             model.LocalizeFixedFailReason(ctx, task.ExecFailReason),
 		ExecFailSQLCount:           task.ExecFailSQLCount,
 		ExecFailSQLNumber:          task.ExecFailSQLNumber,
 		ExecFailSQLID:              task.ExecFailSQLID,
@@ -420,7 +420,7 @@ func CreateAndAuditTask(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, &GetAuditTaskResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertTaskToRes(task),
+		Data:    convertTaskToRes(c.Request().Context(), task),
 	})
 }
 
@@ -463,7 +463,7 @@ func GetTask(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, &GetAuditTaskResV1{
 		BaseRes: controller.NewBaseReq(nil),
-		Data:    convertTaskToRes(task),
+		Data:    convertTaskToRes(c.Request().Context(), task),
 	})
 }
 func GetTaskById(ctx context.Context, taskId string) (*model.Task, error) {
