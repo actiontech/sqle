@@ -550,6 +550,7 @@ func StartApi(net *gracenet.Net, exitChan chan struct{}, config *config.SqleOpti
 		// 全局Dashboard V2
 		v2Router.GET("/dashboard/workflows/statistics", v2Dashboard.GetGlobalWorkflowStatisticsV2)
 		v2Router.GET("/dashboard/workflows", v2Dashboard.GetGlobalWorkflowListV2)
+		v2Router.GET("/dashboard/workflows/exports", v2Dashboard.ExportGlobalWorkflowsV2)
 
 		v2Router.GET("/dashboard/sql_manage/statistics", v2Dashboard.GetGlobalSqlManageStatisticsV2)
 		v2Router.GET("/dashboard/sql_manage/tasks", v2Dashboard.GetGlobalSqlManageTaskListV2)

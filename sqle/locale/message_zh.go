@@ -78,6 +78,7 @@ var (
 	WorkflowStatusExecFailed       = &i18n.Message{ID: "WorkflowStatusExecFailed", Other: "上线失败"}
 	WorkflowStatusFinish           = &i18n.Message{ID: "WorkflowStatusFinish", Other: "上线成功"}
 
+	WFExportProjectName         = &i18n.Message{ID: "ExportProjectName", Other: "项目名称"}
 	WFExportWorkflowNumber      = &i18n.Message{ID: "ExportWorkflowNumber", Other: "工单编号"}
 	WFExportWorkflowName        = &i18n.Message{ID: "ExportWorkflowName", Other: "工单名称"}
 	WFExportWorkflowDescription = &i18n.Message{ID: "ExportWorkflowDescription", Other: "工单描述"}
@@ -104,6 +105,25 @@ var (
 	WFExportExecutionStartTime  = &i18n.Message{ID: "ExportExecutionStartTime", Other: "上线开始时间"}
 	WFExportExecutionEndTime    = &i18n.Message{ID: "ExportExecutionEndTime", Other: "上线结束时间"}
 	WFExportExecutionStatus     = &i18n.Message{ID: "ExportExecutionStatus", Other: "上线结果"}
+
+	// Global export (S2): dynamic audit node templates + common / data-export columns
+	WFExportNodeAuditorTpl    = &i18n.Message{ID: "ExportNodeAuditorTpl", Other: "[节点%d]审核人"}
+	WFExportNodeAuditTimeTpl  = &i18n.Message{ID: "ExportNodeAuditTimeTpl", Other: "[节点%d]审核时间"}
+	WFExportNodeAuditResultTpl = &i18n.Message{ID: "ExportNodeAuditResultTpl", Other: "[节点%d]审核结果"}
+	WFExportWorkflowType      = &i18n.Message{ID: "ExportWorkflowType", Other: "工单类型"}
+	WFExportTypeSQLRelease    = &i18n.Message{ID: "ExportTypeSQLRelease", Other: "SQL上线工单"}
+	WFExportTypeDataExport    = &i18n.Message{ID: "ExportTypeDataExport", Other: "数据导出工单"}
+	WFExportDataExportExecTime = &i18n.Message{ID: "ExportDataExportExecTime", Other: "导出执行时间"}
+	WFExportDataExportResult  = &i18n.Message{ID: "ExportDataExportResult", Other: "导出结果"}
+	WFExportUnifiedStatusPendingApproval = &i18n.Message{ID: "ExportUnifiedStatusPendingApproval", Other: "待审批"}
+	WFExportUnifiedStatusPendingAction   = &i18n.Message{ID: "ExportUnifiedStatusPendingAction", Other: "待处理"}
+	WFExportUnifiedStatusInProgress      = &i18n.Message{ID: "ExportUnifiedStatusInProgress", Other: "处理中"}
+	WFExportUnifiedStatusExporting       = &i18n.Message{ID: "ExportUnifiedStatusExporting", Other: "导出中"}
+	WFExportUnifiedStatusRejected        = &i18n.Message{ID: "ExportUnifiedStatusRejected", Other: "已驳回"}
+	WFExportUnifiedStatusCancelled       = &i18n.Message{ID: "ExportUnifiedStatusCancelled", Other: "已取消"}
+	WFExportUnifiedStatusFailed          = &i18n.Message{ID: "ExportUnifiedStatusFailed", Other: "已失败"}
+	WFExportUnifiedStatusCompleted       = &i18n.Message{ID: "ExportUnifiedStatusCompleted", Other: "已完成"}
+	WFExportUnifiedStatusUnknown         = &i18n.Message{ID: "ExportUnifiedStatusUnknown", Other: "未知"}
 )
 
 // sql version

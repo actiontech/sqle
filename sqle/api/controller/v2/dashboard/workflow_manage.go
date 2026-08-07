@@ -3,6 +3,7 @@ package dashboard
 import (
 	"github.com/actiontech/sqle/sqle/api/controller"
 	dashboard_svc "github.com/actiontech/sqle/sqle/server/dashboard"
+	"github.com/actiontech/sqle/sqle/utils"
 	"github.com/labstack/echo/v4"
 )
 
@@ -104,4 +105,49 @@ func GetGlobalWorkflowStatisticsV2(c echo.Context) error {
 // @Router /v2/dashboard/workflows [get]
 func GetGlobalWorkflowListV2(c echo.Context) error {
 	return getGlobalWorkflowListV2(c)
+}
+
+// ExportGlobalWorkflowReqV2 mirrors GetGlobalWorkflowListReqV2 filters without pagination, plus export_format.
+type ExportGlobalWorkflowReqV2 struct {
+	Keyword              string `json:"keyword" query:"keyword"`
+	FilterProjectUid     string `json:"filter_project_uid" query:"filter_project_uid"`
+	FilterInstanceId     string `json:"filter_instance_id" query:"filter_instance_id"`
+	FilterCreateUserId   string `json:"filter_create_user_id" query:"filter_create_user_id"`
+	FilterCreateTimeFrom string `json:"filter_create_time_from" query:"filter_create_time_from"`
+	FilterCreateTimeTo   string `json:"filter_create_time_to" query:"filter_create_time_to"`
+	FilterUpdateTimeFrom string `json:"filter_update_time_from" query:"filter_update_time_from"`
+	FilterUpdateTimeTo   string `json:"filter_update_time_to" query:"filter_update_time_to"`
+
+	FilterCard dashboard_svc.GlobalWorkflowFilterCard `json:"filter_card" query:"filter_card" valid:"omitempty,oneof=archived pending_for_me initiated_by_me view_all" enums:"archived,pending_for_me,initiated_by_me,view_all"`
+
+	// WorkflowType: sql_release | data_export | empty(全量公共列，含工单类型).
+	WorkflowType dashboard_svc.WorkflowType `json:"workflow_type" query:"workflow_type" valid:"omitempty,oneof=sql_release data_export" enums:"sql_release,data_export"`
+
+	FilterStatus dashboard_svc.UnifiedWorkflowStatus `json:"filter_status" query:"filter_status" valid:"omitempty,oneof=pending_approval pending_action in_progress exporting rejected cancelled failed completed unknown" enums:"pending_approval,pending_action,in_progress,exporting,rejected,cancelled,failed,completed,unknown"`
+
+	ExportFormat utils.ExportFormat `json:"export_format" query:"export_format" enums:"csv,excel" example:"csv"`
+}
+
+// ExportGlobalWorkflowsV2
+// @Summary 导出全局工单管理列表
+// @Description export global dashboard workflows as CSV or Excel; filter/permission semantics match GET /v2/dashboard/workflows (no pagination). workflow_type=sql_release|data_export|omit(common columns with workflow type). First column includes project name for global layouts. Max 10000 workflows (sum of both types when workflow_type omitted).
+// @Tags GlobalDashboard
+// @Id ExportGlobalWorkflowsV2
+// @Security ApiKeyAuth
+// @Param keyword query string false "fuzzy search keyword"
+// @Param filter_project_uid query string false "filter by project uid"
+// @Param filter_instance_id query string false "filter by instance id"
+// @Param filter_card query string false "filter by card type; archived 已完成工单, pending_for_me 待我处理, initiated_by_me 我发起, view_all 查看全部" Enums(archived,pending_for_me,initiated_by_me,view_all)
+// @Param workflow_type query string false "sql_release SQL上线完整列; data_export 数据导出列; omit/empty 全量公共列(含工单类型)" Enums(sql_release,data_export)
+// @Param filter_status query string false "filter by unified workflow status" Enums(pending_approval,pending_action,in_progress,exporting,rejected,cancelled,failed,completed,unknown)
+// @Param filter_update_time_from query string false "filter by update time from"
+// @Param filter_update_time_to query string false "filter by update time to"
+// @Param filter_create_user_id query string false "filter by create user id"
+// @Param filter_create_time_from query string false "filter create time from"
+// @Param filter_create_time_to query string false "filter create time to"
+// @Param export_format query string false "export format: csv or excel, default csv" Enums(csv,excel)
+// @Success 200 {file} file "export workflow"
+// @Router /v2/dashboard/workflows/exports [get]
+func ExportGlobalWorkflowsV2(c echo.Context) error {
+	return exportGlobalWorkflowsV2(c)
 }
