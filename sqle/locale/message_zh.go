@@ -55,6 +55,13 @@ var (
 	SQLExecuteStatusNotExecuted      = &i18n.Message{ID: "SQLExecuteStatusNotExecuted", Other: "未执行"}
 	SQLExecuteStatusUnknown          = &i18n.Message{ID: "SQLExecuteStatusUnknown", Other: "未知"}
 
+	SQLNotExecutedReason       = &i18n.Message{ID: "SQLNotExecutedReason", Other: "前序 SQL 上线失败，本条 SQL 未执行"}
+	OnlineFailReasonFallback   = &i18n.Message{ID: "OnlineFailReasonFallback", Other: "上线失败，暂未获取到具体原因，请联系管理员查看服务日志"}
+
+	AIHubNoData                    = &i18n.Message{ID: "AIHubNoData", Other: "暂无数据"}
+	AIHubHighRiskEliminationRate   = &i18n.Message{ID: "AIHubHighRiskEliminationRate", Other: "高危风险消除率 %.0f%%"}
+	AIHubPerfImprovement           = &i18n.Message{ID: "AIHubPerfImprovement", Other: "性能提升%.0f%%"}
+
 	TaskSQLReportIndex       = &i18n.Message{ID: "TaskSQLReportIndex", Other: "序号"}
 	TaskSQLReportSQL         = &i18n.Message{ID: "TaskSQLReportSQL", Other: "SQL"}
 	TaskSQLReportAuditStatus = &i18n.Message{ID: "TaskSQLReportAuditStatus", Other: "SQL审核状态"}

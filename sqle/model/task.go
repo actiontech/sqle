@@ -144,11 +144,23 @@ const (
 )
 
 const (
-	// SQLNotExecutedReason 后续未执行 SQL 的固定说明
+	// SQLNotExecutedReason 后续未执行 SQL 的固定说明（落库中文原文；读路径经 LocalizeFixedFailReason 按语言输出）
 	SQLNotExecutedReason = "前序 SQL 上线失败，本条 SQL 未执行"
 	// OnlineFailReasonFallback 无具体原因时的兜底文案（不得覆盖已有业务错误）
 	OnlineFailReasonFallback = "上线失败，暂未获取到具体原因，请联系管理员查看服务日志"
 )
+
+// LocalizeFixedFailReason 将已知固定失败文案按请求语言本地化；其它业务/驱动原文原样返回。
+func LocalizeFixedFailReason(ctx context.Context, reason string) string {
+	switch reason {
+	case SQLNotExecutedReason:
+		return locale.Bundle.LocalizeMsgByCtx(ctx, locale.SQLNotExecutedReason)
+	case OnlineFailReasonFallback:
+		return locale.Bundle.LocalizeMsgByCtx(ctx, locale.OnlineFailReasonFallback)
+	default:
+		return reason
+	}
+}
 
 type BaseSQL struct {
 	Model
