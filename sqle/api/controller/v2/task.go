@@ -144,7 +144,7 @@ func GetTaskSQLs(c echo.Context) error {
 	for _, taskSQL := range taskSQLs {
 		backupStatus := backupTaskMap.GetBackupStatus(taskSQL.Id)
 		backupResult := backupTaskMap.GetBackupResult(taskSQL.Id)
-		execResult := taskSQL.ExecResult
+		execResult := model.LocalizeFixedFailReason(c.Request().Context(), taskSQL.ExecResult)
 		// 方案 D：历史备份失败且 exec_result 空时，用 backup_result 补展示（不写库）
 		if execResult == "" && backupStatus == "failed" && backupResult != "" {
 			execResult = backupResult
