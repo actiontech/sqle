@@ -113,15 +113,17 @@ var (
 	WFExportExecutionEndTime    = &i18n.Message{ID: "ExportExecutionEndTime", Other: "上线结束时间"}
 	WFExportExecutionStatus     = &i18n.Message{ID: "ExportExecutionStatus", Other: "上线结果"}
 
-	// Global export (S2): dynamic audit node templates + common / data-export columns
-	WFExportNodeAuditorTpl    = &i18n.Message{ID: "ExportNodeAuditorTpl", Other: "[节点%d]审核人"}
-	WFExportNodeAuditTimeTpl  = &i18n.Message{ID: "ExportNodeAuditTimeTpl", Other: "[节点%d]审核时间"}
+	// Global export (S2): project-layout node templates kept; global uses single audit record
+	WFExportNodeAuditorTpl     = &i18n.Message{ID: "ExportNodeAuditorTpl", Other: "[节点%d]审核人"}
+	WFExportNodeAuditTimeTpl   = &i18n.Message{ID: "ExportNodeAuditTimeTpl", Other: "[节点%d]审核时间"}
 	WFExportNodeAuditResultTpl = &i18n.Message{ID: "ExportNodeAuditResultTpl", Other: "[节点%d]审核结果"}
-	WFExportWorkflowType      = &i18n.Message{ID: "ExportWorkflowType", Other: "工单类型"}
-	WFExportTypeSQLRelease    = &i18n.Message{ID: "ExportTypeSQLRelease", Other: "SQL上线工单"}
-	WFExportTypeDataExport    = &i18n.Message{ID: "ExportTypeDataExport", Other: "数据导出工单"}
+	WFExportAuditRecord        = &i18n.Message{ID: "ExportAuditRecord", Other: "审核记录"}
+	WFExportSQLContentPlain    = &i18n.Message{ID: "ExportSQLContentPlain", Other: "SQL 内容"}
+	WFExportWorkflowType       = &i18n.Message{ID: "ExportWorkflowType", Other: "工单类型"}
+	WFExportTypeSQLRelease     = &i18n.Message{ID: "ExportTypeSQLRelease", Other: "SQL上线工单"}
+	WFExportTypeDataExport     = &i18n.Message{ID: "ExportTypeDataExport", Other: "数据导出工单"}
 	WFExportDataExportExecTime = &i18n.Message{ID: "ExportDataExportExecTime", Other: "导出执行时间"}
-	WFExportDataExportResult  = &i18n.Message{ID: "ExportDataExportResult", Other: "导出结果"}
+	WFExportDataExportResult   = &i18n.Message{ID: "ExportDataExportResult", Other: "导出结果"}
 	WFExportUnifiedStatusPendingApproval = &i18n.Message{ID: "ExportUnifiedStatusPendingApproval", Other: "待审批"}
 	WFExportUnifiedStatusPendingAction   = &i18n.Message{ID: "ExportUnifiedStatusPendingAction", Other: "待处理"}
 	WFExportUnifiedStatusInProgress      = &i18n.Message{ID: "ExportUnifiedStatusInProgress", Other: "处理中"}

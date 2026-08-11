@@ -2,7 +2,6 @@ package workflowexport
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
@@ -33,9 +32,9 @@ const (
 )
 
 const (
-	timeLayout        = "2006-01-02 15:04:05"
-	projectFixedNodes = 4
-	minAuditNodes     = 1
+	timeLayout           = "2006-01-02 15:04:05"
+	projectFixedNodes    = 4
+	auditRecordSeparator = "；"
 )
 
 var workflowStepStateMap = map[string]*i18n.Message{
@@ -84,12 +83,14 @@ func BuildHeader(ctx context.Context, includeProjectName bool) []string {
 }
 
 // BuildHeaderForLayout builds headers for the given layout.
+// maxAuditNodes is ignored for global layouts (kept for API compatibility; global uses single audit record column).
 func BuildHeaderForLayout(ctx context.Context, layout Layout, maxAuditNodes int) []string {
+	_ = maxAuditNodes
 	switch layout {
 	case LayoutGlobalSQLRelease:
-		return buildGlobalSQLReleaseHeader(ctx, normalizeMaxAuditNodes(maxAuditNodes))
+		return buildGlobalSQLReleaseHeader(ctx)
 	case LayoutGlobalDataExport:
-		return buildGlobalDataExportHeader(ctx, normalizeMaxAuditNodes(maxAuditNodes))
+		return buildGlobalDataExportHeader(ctx)
 	case LayoutGlobalCommon:
 		return buildGlobalCommonHeader(ctx)
 	default:
@@ -102,20 +103,20 @@ func BuildRows(ctx context.Context, workflowIDs []string, includeProjectName boo
 	return buildProjectRows(ctx, workflowIDs, includeProjectName, projectNameByUID)
 }
 
-// BuildGlobalSQLReleaseExport builds header+rows for global sql_release (dynamic audit nodes, SQL last).
+// BuildGlobalSQLReleaseExport builds header+rows for global sql_release (single audit column, SQL last).
 func BuildGlobalSQLReleaseExport(ctx context.Context, workflowIDs []string, projectNameByUID map[string]string) ([]string, [][]string, error) {
 	workflows, err := loadWorkflowsForExport(ctx, workflowIDs)
 	if err != nil {
 		return nil, nil, err
 	}
-	maxN := maxAuditNodesFromWorkflows(workflows)
-	header := buildGlobalSQLReleaseHeader(ctx, maxN)
+	header := buildGlobalSQLReleaseHeader(ctx)
 	rows := make([][]string, 0)
 	for _, workflow := range workflows {
 		projectName := ""
 		if projectNameByUID != nil {
 			projectName = projectNameByUID[string(workflow.ProjectId)]
 		}
+		auditRecord := formatAuditRecordFromSQLSteps(ctx, workflow.AuditStepList())
 		for _, instanceRecord := range workflow.Record.InstanceRecords {
 			instanceName := instanceNameOf(instanceRecord)
 			row := []string{
@@ -127,18 +128,17 @@ func BuildGlobalSQLReleaseExport(ctx context.Context, workflowIDs []string, proj
 				workflow.Model.CreatedAt.Format(timeLayout),
 				dms.GetUserNameWithDelTag(workflow.CreateUserId),
 				locale.Bundle.LocalizeMsgByCtx(ctx, model.WorkflowStatus[workflow.Record.Status]),
-			}
-			row = append(row, getAuditListN(ctx, workflow, maxN)...)
-			row = append(row,
+				auditRecord,
 				dms.GetUserNameWithDelTag(instanceRecord.ExecutionUserId),
 				instanceRecord.Task.TaskExecStartAt(),
 				instanceRecord.Task.TaskExecEndAt(),
 				locale.Bundle.LocalizeMsgByCtx(ctx, executeStateMap[instanceRecord.Task.Status]),
 				getExecuteSqlList(instanceRecord.Task.ExecuteSQLs),
-			)
+			}
 			rows = append(rows, row)
 		}
 	}
+	header, rows = pruneEmptyColumns(header, rows)
 	return header, rows, nil
 }
 
@@ -153,6 +153,10 @@ type DataExportExportRecord struct {
 	CreatedAt      string
 	CreatorName    string
 	UnifiedStatus  string
+	AuditRecord    string
+	SQLContent     string
+	ExportExecTime string
+	ExportResult   string
 }
 
 // FromListDataExportWorkflow maps a DMS list item to export record.
@@ -223,11 +227,10 @@ func mapSQLWorkflowStatus(native string) string {
 
 // BuildGlobalDataExportExport builds header+rows for global data_export (§4.4.3).
 func BuildGlobalDataExportExport(ctx context.Context, records []DataExportExportRecord) ([]string, [][]string) {
-	maxN := minAuditNodes
-	header := buildGlobalDataExportHeader(ctx, maxN)
+	header := buildGlobalDataExportHeader(ctx)
 	rows := make([][]string, 0, len(records))
 	for _, r := range records {
-		row := []string{
+		rows = append(rows, []string{
 			r.ProjectName,
 			r.WorkflowID,
 			r.WorkflowName,
@@ -236,12 +239,13 @@ func BuildGlobalDataExportExport(ctx context.Context, records []DataExportExport
 			r.CreatedAt,
 			r.CreatorName,
 			localizeUnifiedStatus(ctx, r.UnifiedStatus),
-		}
-		row = append(row, emptyAuditNodes(maxN)...)
-		row = append(row, "", "") // 导出执行时间、导出结果 — 列表无字段，留空
-		rows = append(rows, row)
+			r.AuditRecord,
+			r.SQLContent,
+			r.ExportExecTime,
+			r.ExportResult,
+		})
 	}
-	return header, rows
+	return pruneEmptyColumns(header, rows)
 }
 
 // CommonExportRow is one row for LayoutGlobalCommon (one workflow per row).
@@ -250,10 +254,12 @@ type CommonExportRow struct {
 	WorkflowType string
 	WorkflowID   string
 	WorkflowName string
+	Description  string
 	CreatorName  string
 	CreatedAt    string
 	Status       string
 	DataSource   string
+	SQLContent   string
 	SortKey      string
 }
 
@@ -267,13 +273,15 @@ func BuildGlobalCommonExport(ctx context.Context, rowsIn []CommonExportRow) ([]s
 			r.WorkflowType,
 			r.WorkflowID,
 			r.WorkflowName,
+			r.Description,
 			r.CreatorName,
 			r.CreatedAt,
 			r.Status,
 			r.DataSource,
+			r.SQLContent,
 		})
 	}
-	return header, rows
+	return pruneEmptyColumns(header, rows)
 }
 
 // LocalizeWorkflowTypeSQLRelease returns localized "SQL上线工单".
@@ -294,6 +302,29 @@ func LocalizeUnifiedStatus(ctx context.Context, status string) string {
 // ExceedLimitError returns a user-readable business error when workflow count exceeds the limit.
 func ExceedLimitError(count uint64) error {
 	return errors.NewDataInvalidErr("导出工单数量超过上限 %d（当前 %d），请收窄筛选条件后重试", MaxExportWorkflowCount, count)
+}
+
+// FormatAuditRecordParts joins audit step parts for global audit-record column.
+func FormatAuditRecordParts(parts []string) string {
+	filtered := make([]string, 0, len(parts))
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			continue
+		}
+		filtered = append(filtered, p)
+	}
+	return strings.Join(filtered, auditRecordSeparator)
+}
+
+// LocalizeWorkflowStepApprove exposes approve label for data-export enrichment.
+func LocalizeWorkflowStepApprove(ctx context.Context) string {
+	return locale.Bundle.LocalizeMsgByCtx(ctx, locale.WorkflowStepStateApprove)
+}
+
+// LocalizeWorkflowStepReject exposes reject label for data-export enrichment.
+func LocalizeWorkflowStepReject(ctx context.Context) string {
+	return locale.Bundle.LocalizeMsgByCtx(ctx, locale.WorkflowStepStateReject)
 }
 
 func buildProjectHeader(ctx context.Context) []string {
@@ -325,8 +356,8 @@ func buildProjectHeader(ctx context.Context) []string {
 	return header
 }
 
-func buildGlobalSQLReleaseHeader(ctx context.Context, maxN int) []string {
-	header := []string{
+func buildGlobalSQLReleaseHeader(ctx context.Context) []string {
+	return []string{
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportProjectName),
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportWorkflowNumber),
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportWorkflowName),
@@ -335,20 +366,17 @@ func buildGlobalSQLReleaseHeader(ctx context.Context, maxN int) []string {
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportCreateTime),
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportCreator),
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportTaskOrderStatus),
-	}
-	header = append(header, buildDynamicAuditNodeHeaders(ctx, maxN)...)
-	header = append(header,
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportAuditRecord),
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportExecutor),
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportExecutionStartTime),
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportExecutionEndTime),
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportExecutionStatus),
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportSQLContent),
-	)
-	return header
+	}
 }
 
-func buildGlobalDataExportHeader(ctx context.Context, maxN int) []string {
-	header := []string{
+func buildGlobalDataExportHeader(ctx context.Context) []string {
+	return []string{
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportProjectName),
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportWorkflowNumber),
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportWorkflowName),
@@ -357,13 +385,11 @@ func buildGlobalDataExportHeader(ctx context.Context, maxN int) []string {
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportCreateTime),
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportCreator),
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportTaskOrderStatus),
-	}
-	header = append(header, buildDynamicAuditNodeHeaders(ctx, maxN)...)
-	header = append(header,
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportAuditRecord),
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportSQLContentPlain),
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportDataExportExecTime),
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportDataExportResult),
-	)
-	return header
+	}
 }
 
 func buildGlobalCommonHeader(ctx context.Context) []string {
@@ -372,23 +398,73 @@ func buildGlobalCommonHeader(ctx context.Context) []string {
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportWorkflowType),
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportWorkflowNumber),
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportWorkflowName),
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportWorkflowDescription),
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportCreator),
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportCreateTime),
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportTaskOrderStatus),
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportDataSource),
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportSQLContentPlain),
 	}
 }
 
-func buildDynamicAuditNodeHeaders(ctx context.Context, maxN int) []string {
-	header := make([]string, 0, maxN*3)
-	for k := 1; k <= maxN; k++ {
-		header = append(header,
-			fmt.Sprintf(locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportNodeAuditorTpl), k),
-			fmt.Sprintf(locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportNodeAuditTimeTpl), k),
-			fmt.Sprintf(locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportNodeAuditResultTpl), k),
-		)
+// pruneEmptyColumns implements B-0: when there is at least one data row, drop columns empty in every row.
+// Zero-row exports keep the baseline candidate headers unchanged.
+func pruneEmptyColumns(header []string, rows [][]string) ([]string, [][]string) {
+	if len(rows) == 0 || len(header) == 0 {
+		return header, rows
 	}
-	return header
+	keep := make([]bool, len(header))
+	for col := 0; col < len(header); col++ {
+		for _, row := range rows {
+			if col < len(row) && strings.TrimSpace(row[col]) != "" {
+				keep[col] = true
+				break
+			}
+		}
+	}
+	newHeader := make([]string, 0, len(header))
+	for i, h := range header {
+		if keep[i] {
+			newHeader = append(newHeader, h)
+		}
+	}
+	newRows := make([][]string, len(rows))
+	for r, row := range rows {
+		nr := make([]string, 0, len(newHeader))
+		for i := range header {
+			if !keep[i] {
+				continue
+			}
+			cell := ""
+			if i < len(row) {
+				cell = row[i]
+			}
+			nr = append(nr, cell)
+		}
+		newRows[r] = nr
+	}
+	return newHeader, newRows
+}
+
+func formatAuditRecordFromSQLSteps(ctx context.Context, steps []*model.WorkflowStep) string {
+	parts := make([]string, 0, len(steps))
+	for _, step := range steps {
+		if step == nil {
+			continue
+		}
+		auditor := dms.GetUserNameWithDelTag(step.OperationUserId)
+		opTime := step.OperationTime()
+		resultMsg := workflowStepStateMap[step.State]
+		result := ""
+		if resultMsg != nil {
+			result = locale.Bundle.LocalizeMsgByCtx(ctx, resultMsg)
+		}
+		if auditor == "" && opTime == "" {
+			continue
+		}
+		parts = append(parts, strings.TrimSpace(auditor+" "+opTime+" "+result))
+	}
+	return FormatAuditRecordParts(parts)
 }
 
 func buildProjectRows(ctx context.Context, workflowIDs []string, includeProjectName bool, projectNameByUID map[string]string) ([][]string, error) {
@@ -463,23 +539,6 @@ func loadWorkflowsForExport(ctx context.Context, workflowIDs []string) ([]*model
 	return out, nil
 }
 
-func maxAuditNodesFromWorkflows(workflows []*model.Workflow) int {
-	maxN := 0
-	for _, w := range workflows {
-		if n := len(w.AuditStepList()); n > maxN {
-			maxN = n
-		}
-	}
-	return normalizeMaxAuditNodes(maxN)
-}
-
-func normalizeMaxAuditNodes(n int) int {
-	if n < minAuditNodes {
-		return minAuditNodes
-	}
-	return n
-}
-
 func instanceNameOf(instanceRecord *model.WorkflowInstanceRecord) string {
 	if instanceRecord.Instance != nil {
 		return utils.AddDelTag(nil, instanceRecord.Instance.Name)
@@ -522,23 +581,6 @@ func getAuditListFixed(ctx context.Context, workflow *model.Workflow) (workflowL
 	return auditNodeList
 }
 
-func getAuditListN(ctx context.Context, workflow *model.Workflow, maxN int) []string {
-	out := make([]string, maxN*3)
-	steps := workflow.AuditStepList()
-	for i := 0; i < maxN && i < len(steps); i++ {
-		step := steps[i]
-		base := i * 3
-		out[base] = dms.GetUserNameWithDelTag(step.OperationUserId)
-		out[base+1] = step.OperationTime()
-		out[base+2] = locale.Bundle.LocalizeMsgByCtx(ctx, workflowStepStateMap[step.State])
-	}
-	return out
-}
-
-func emptyAuditNodes(maxN int) []string {
-	return make([]string, maxN*3)
-}
-
 func localizeUnifiedStatus(ctx context.Context, status string) string {
 	if msg, ok := unifiedStatusMsg[status]; ok {
 		return locale.Bundle.LocalizeMsgByCtx(ctx, msg)
@@ -556,9 +598,13 @@ func BuildCommonRowsFromSQLRelease(ctx context.Context, workflowIDs []string, pr
 	out := make([]CommonExportRow, 0, len(workflows))
 	for _, workflow := range workflows {
 		names := make([]string, 0, len(workflow.Record.InstanceRecords))
+		var sqlBuilder strings.Builder
 		for _, ir := range workflow.Record.InstanceRecords {
 			if n := instanceNameOf(ir); n != "" {
 				names = append(names, n)
+			}
+			if ir.Task != nil {
+				sqlBuilder.WriteString(getExecuteSqlList(ir.Task.ExecuteSQLs))
 			}
 		}
 		projectName := ""
@@ -571,10 +617,12 @@ func BuildCommonRowsFromSQLRelease(ctx context.Context, workflowIDs []string, pr
 			WorkflowType: typeLabel,
 			WorkflowID:   workflow.WorkflowId,
 			WorkflowName: workflow.Subject,
+			Description:  workflow.Desc,
 			CreatorName:  dms.GetUserNameWithDelTag(workflow.CreateUserId),
 			CreatedAt:    created,
 			Status:       localizeUnifiedStatus(ctx, mapSQLWorkflowStatus(workflow.Record.Status)),
 			DataSource:   strings.Join(names, ","),
+			SQLContent:   sqlBuilder.String(),
 			SortKey:      created,
 		})
 	}
@@ -591,10 +639,12 @@ func BuildCommonRowsFromDataExport(ctx context.Context, records []DataExportExpo
 			WorkflowType: typeLabel,
 			WorkflowID:   r.WorkflowID,
 			WorkflowName: r.WorkflowName,
+			Description:  r.Description,
 			CreatorName:  r.CreatorName,
 			CreatedAt:    r.CreatedAt,
 			Status:       localizeUnifiedStatus(ctx, r.UnifiedStatus),
 			DataSource:   strings.Join(r.DBServiceNames, ","),
+			SQLContent:   r.SQLContent,
 			SortKey:      r.CreatedAt,
 		})
 	}

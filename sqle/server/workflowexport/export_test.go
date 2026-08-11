@@ -2,7 +2,7 @@ package workflowexport
 
 import (
 	"context"
-	"fmt"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -34,15 +34,6 @@ func TestExceedLimitError(t *testing.T) {
 	}
 }
 
-func TestNormalizeMaxAuditNodes(t *testing.T) {
-	if normalizeMaxAuditNodes(0) != 1 {
-		t.Fatalf("want 1 for 0")
-	}
-	if normalizeMaxAuditNodes(2) != 2 {
-		t.Fatalf("want 2")
-	}
-}
-
 func TestBuildHeaderForLayoutGlobalSQLRelease(t *testing.T) {
 	ctx := context.Background()
 	header := BuildHeaderForLayout(ctx, LayoutGlobalSQLRelease, 2)
@@ -59,13 +50,13 @@ func TestBuildHeaderForLayoutGlobalSQLRelease(t *testing.T) {
 	if header[len(header)-1] != locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportSQLContent) {
 		t.Fatalf("last col want SQL content, got %s", header[len(header)-1])
 	}
-	auditor1 := fmt.Sprintf(locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportNodeAuditorTpl), 1)
-	auditor2 := fmt.Sprintf(locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportNodeAuditorTpl), 2)
-	if !strings.Contains(joined, auditor1) || !strings.Contains(joined, auditor2) {
-		t.Fatalf("want dynamic nodes 1 and 2 in %v", header)
+	auditCol := locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportAuditRecord)
+	if !strings.Contains(joined, auditCol) {
+		t.Fatalf("want single audit record col in %v", header)
 	}
-	if strings.Contains(joined, fmt.Sprintf(locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportNodeAuditorTpl), 3)) {
-		t.Fatalf("must not contain node 3 when maxN=2: %v", header)
+	nodeRe := regexp.MustCompile(`\[节点\d+\]`)
+	if nodeRe.MatchString(joined) {
+		t.Fatalf("global sql_release must not contain [节点N] headers: %v", header)
 	}
 }
 
@@ -90,11 +81,17 @@ func TestBuildHeaderForLayoutProjectFrozen(t *testing.T) {
 func TestBuildGlobalCommonHeader(t *testing.T) {
 	ctx := context.Background()
 	header := BuildHeaderForLayout(ctx, LayoutGlobalCommon, 0)
-	if len(header) != 8 {
-		t.Fatalf("common header len=%d want 8: %v", len(header), header)
+	if len(header) != 10 {
+		t.Fatalf("common header len=%d want 10: %v", len(header), header)
 	}
 	if header[1] != locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportWorkflowType) {
 		t.Fatalf("col2 want workflow type, got %s", header[1])
+	}
+	if header[4] != locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportWorkflowDescription) {
+		t.Fatalf("col5 want description, got %s", header[4])
+	}
+	if header[9] != locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportSQLContentPlain) {
+		t.Fatalf("last col want SQL content plain, got %s", header[9])
 	}
 }
 
@@ -107,6 +104,74 @@ func TestBuildGlobalDataExportHeader(t *testing.T) {
 	}
 	if !strings.Contains(joined, locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportDataExportResult)) {
 		t.Fatalf("want export result col")
+	}
+	if !strings.Contains(joined, locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportSQLContentPlain)) {
+		t.Fatalf("want SQL content col")
+	}
+	if !strings.Contains(joined, locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportAuditRecord)) {
+		t.Fatalf("want audit record col")
+	}
+	nodeRe := regexp.MustCompile(`\[节点\d+\]`)
+	if nodeRe.MatchString(joined) {
+		t.Fatalf("data_export must not contain [节点N]: %v", header)
+	}
+}
+
+func TestPruneEmptyColumns(t *testing.T) {
+	header := []string{"a", "b", "c"}
+	rows := [][]string{
+		{"1", "", "x"},
+		{"2", "", "y"},
+	}
+	h, r := pruneEmptyColumns(header, rows)
+	if len(h) != 2 || h[0] != "a" || h[1] != "c" {
+		t.Fatalf("header=%v", h)
+	}
+	if len(r) != 2 || r[0][0] != "1" || r[0][1] != "x" {
+		t.Fatalf("rows=%v", r)
+	}
+	h0, r0 := pruneEmptyColumns(header, nil)
+	if len(h0) != 3 || r0 != nil {
+		t.Fatalf("zero rows should keep baseline header: %v %v", h0, r0)
+	}
+}
+
+func TestFormatAuditRecordParts(t *testing.T) {
+	got := FormatAuditRecordParts([]string{"张三 2026-08-01 10:00 通过", "  ", "李四 2026-08-01 11:20 驳回"})
+	want := "张三 2026-08-01 10:00 通过；李四 2026-08-01 11:20 驳回"
+	if got != want {
+		t.Fatalf("got %q want %q", got, want)
+	}
+}
+
+func TestBuildGlobalDataExportPrunesEmptyOptionalCols(t *testing.T) {
+	ctx := context.Background()
+	header, rows := BuildGlobalDataExportExport(ctx, []DataExportExportRecord{
+		{
+			ProjectName:   "p",
+			WorkflowID:    "1",
+			WorkflowName:  "n",
+			Description:   "d",
+			DBServiceNames: []string{"db"},
+			CreatedAt:     "2026-01-01 00:00:00",
+			CreatorName:   "u",
+			UnifiedStatus: "completed",
+			SQLContent:    "SELECT 1",
+			// AuditRecord / ExportExecTime / ExportResult empty → pruned
+		},
+	})
+	joined := strings.Join(header, "|")
+	if strings.Contains(joined, locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportAuditRecord)) {
+		t.Fatalf("empty audit col should be pruned: %v", header)
+	}
+	if strings.Contains(joined, locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportDataExportExecTime)) {
+		t.Fatalf("empty exec time should be pruned: %v", header)
+	}
+	if !strings.Contains(joined, locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportSQLContentPlain)) {
+		t.Fatalf("SQL content must remain: %v", header)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("rows=%d", len(rows))
 	}
 }
 
@@ -153,10 +218,23 @@ func TestCommonColumnStatusVocabularyUnified(t *testing.T) {
 	}
 
 	_, rows := BuildGlobalCommonExport(ctx, []CommonExportRow{
-		{ProjectName: "p", WorkflowType: "SQL", WorkflowID: "1", Status: sqlReleaseStatus},
-		{ProjectName: "p", WorkflowType: "DE", WorkflowID: "2", Status: dataExportStatus},
+		{ProjectName: "p", WorkflowType: "SQL", WorkflowID: "1", Description: "d", Status: sqlReleaseStatus, SQLContent: "s1"},
+		{ProjectName: "p", WorkflowType: "DE", WorkflowID: "2", Description: "d", Status: dataExportStatus, SQLContent: "s2"},
 	})
-	statusCol := 6
+	statusCol := -1
+	header := BuildHeaderForLayout(ctx, LayoutGlobalCommon, 0)
+	// After prune, status column index may shift; locate by building without prune via known order.
+	// Rows still follow candidate order before prune... BuildGlobalCommonExport prunes.
+	// Find status by matching known value.
+	for i, cell := range rows[0] {
+		if cell == sqlReleaseStatus {
+			statusCol = i
+			break
+		}
+	}
+	if statusCol < 0 {
+		t.Fatalf("status col not found in row %v header candidate %v", rows[0], header)
+	}
 	seen := map[string]bool{}
 	for _, row := range rows {
 		seen[row[statusCol]] = true
