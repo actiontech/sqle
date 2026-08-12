@@ -166,8 +166,8 @@ func FromListDataExportWorkflow(r *dmsV1.ListDataExportWorkflow) DataExportExpor
 		WorkflowName:  r.WorkflowName,
 		Description:   r.Description,
 		CreatedAt:     r.CreatedAt.Format(timeLayout),
-		CreatorName:   r.Creater.Name,
-		UnifiedStatus: string(mapDataExportStatus(r.Status)),
+		CreatorName:   r.Creater.Name, //nolint:misspell // DMS API field is Creater
+		UnifiedStatus: mapDataExportStatus(r.Status),
 	}
 	if r.ProjectInfo != nil {
 		out.ProjectName = r.ProjectInfo.ProjectName

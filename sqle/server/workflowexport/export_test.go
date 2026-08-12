@@ -148,15 +148,15 @@ func TestBuildGlobalDataExportPrunesEmptyOptionalCols(t *testing.T) {
 	ctx := context.Background()
 	header, rows := BuildGlobalDataExportExport(ctx, []DataExportExportRecord{
 		{
-			ProjectName:   "p",
-			WorkflowID:    "1",
-			WorkflowName:  "n",
-			Description:   "d",
+			ProjectName:    "p",
+			WorkflowID:     "1",
+			WorkflowName:   "n",
+			Description:    "d",
 			DBServiceNames: []string{"db"},
-			CreatedAt:     "2026-01-01 00:00:00",
-			CreatorName:   "u",
-			UnifiedStatus: "completed",
-			SQLContent:    "SELECT 1",
+			CreatedAt:      "2026-01-01 00:00:00",
+			CreatorName:    "u",
+			UnifiedStatus:  "completed",
+			SQLContent:     "SELECT 1",
 			// AuditRecord / ExportExecTime / ExportResult empty → pruned
 		},
 	})
