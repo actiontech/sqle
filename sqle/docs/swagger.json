@@ -11542,6 +11542,128 @@
                 }
             }
         },
+        "/v2/dashboard/workflows/exports": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "export global dashboard workflows as CSV or Excel; filter/permission semantics match GET /v2/dashboard/workflows (no pagination). workflow_type=sql_release|data_export|omit(common columns with workflow type). First column includes project name for global layouts. Max 10000 workflows (sum of both types when workflow_type omitted).",
+                "tags": [
+                    "GlobalDashboard"
+                ],
+                "summary": "导出全局工单管理列表",
+                "operationId": "ExportGlobalWorkflowsV2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "fuzzy search keyword",
+                        "name": "keyword",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter by project uid",
+                        "name": "filter_project_uid",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter by instance id",
+                        "name": "filter_instance_id",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "archived",
+                            "pending_for_me",
+                            "initiated_by_me",
+                            "view_all"
+                        ],
+                        "type": "string",
+                        "description": "filter by card type; archived 已完成工单, pending_for_me 待我处理, initiated_by_me 我发起, view_all 查看全部",
+                        "name": "filter_card",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "sql_release",
+                            "data_export"
+                        ],
+                        "type": "string",
+                        "description": "sql_release SQL上线完整列; data_export 数据导出列; omit/empty 全量公共列(含工单类型)",
+                        "name": "workflow_type",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "pending_approval",
+                            "pending_action",
+                            "in_progress",
+                            "exporting",
+                            "rejected",
+                            "cancelled",
+                            "failed",
+                            "completed",
+                            "unknown"
+                        ],
+                        "type": "string",
+                        "description": "filter by unified workflow status",
+                        "name": "filter_status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter by update time from",
+                        "name": "filter_update_time_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter by update time to",
+                        "name": "filter_update_time_to",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter by create user id",
+                        "name": "filter_create_user_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter create time from",
+                        "name": "filter_create_time_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter create time to",
+                        "name": "filter_create_time_to",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "csv",
+                            "excel"
+                        ],
+                        "type": "string",
+                        "description": "export format: csv or excel, default csv",
+                        "name": "export_format",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "export workflow",
+                        "schema": {
+                            "type": "file"
+                        }
+                    }
+                }
+            }
+        },
         "/v2/dashboard/workflows/statistics": {
             "get": {
                 "security": [
