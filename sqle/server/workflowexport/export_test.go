@@ -76,6 +76,12 @@ func TestBuildHeaderForLayoutProjectFrozen(t *testing.T) {
 	if header[len(header)-1] == locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportSQLContent) {
 		t.Fatalf("project layout SQL content should not be last column")
 	}
+	if header[2] != locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportWorkflowDescription) {
+		t.Fatalf("col3 want description, got %s", header[2])
+	}
+	if header[3] != locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportOpsType) {
+		t.Fatalf("col4 want ops type after description, got %s", header[3])
+	}
 }
 
 func TestBuildGlobalCommonHeader(t *testing.T) {

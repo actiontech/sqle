@@ -1,5 +1,7 @@
 package dashboard
 
+import "github.com/actiontech/sqle/sqle/dms"
+
 // ViewType defines the global dashboard visibility scope (user personal vs admin global).
 //
 // swagger:enum ViewType
@@ -99,4 +101,6 @@ type GlobalWorkflowListItem struct {
 	CreatedAt                       string                `json:"created_at"`                                                                                                       // 创建时间
 	UpdatedAt                       string                `json:"updated_at"`                                                                                                       // 更新时间
 	CreateUser                      string                `json:"create_user_name"`
+	// OpsType 运维类型（跨项目按工单所属项目字典批量解析）；未设置或字典项已删时省略
+	OpsType *dms.OpsType `json:"ops_type,omitempty"`
 }
