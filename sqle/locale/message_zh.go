@@ -89,6 +89,7 @@ var (
 	WFExportWorkflowNumber      = &i18n.Message{ID: "ExportWorkflowNumber", Other: "工单编号"}
 	WFExportWorkflowName        = &i18n.Message{ID: "ExportWorkflowName", Other: "工单名称"}
 	WFExportWorkflowDescription = &i18n.Message{ID: "ExportWorkflowDescription", Other: "工单描述"}
+	WFExportOpsType             = &i18n.Message{ID: "ExportOpsType", Other: "运维类型"}
 	WFExportDataSource          = &i18n.Message{ID: "ExportDataSource", Other: "数据源"}
 	WFExportCreateTime          = &i18n.Message{ID: "ExportCreateTime", Other: "创建时间"}
 	WFExportCreator             = &i18n.Message{ID: "ExportCreator", Other: "创建人"}

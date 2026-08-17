@@ -332,6 +332,7 @@ func buildProjectHeader(ctx context.Context) []string {
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportWorkflowNumber),
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportWorkflowName),
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportWorkflowDescription),
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportOpsType),
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportDataSource),
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportCreateTime),
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportCreator),
@@ -472,11 +473,22 @@ func buildProjectRows(ctx context.Context, workflowIDs []string, includeProjectN
 	if err != nil {
 		return nil, err
 	}
+	opsTypeNameByProject := map[string]map[string]string{}
 	rows := make([][]string, 0)
 	for _, workflow := range workflows {
+		projectUID := string(workflow.ProjectId)
 		projectName := ""
 		if includeProjectName && projectNameByUID != nil {
-			projectName = projectNameByUID[string(workflow.ProjectId)]
+			projectName = projectNameByUID[projectUID]
+		}
+		opsTypeNameByUID, ok := opsTypeNameByProject[projectUID]
+		if !ok {
+			opsTypeNameByUID = dms.BuildOpsTypeNameMap(ctx, projectUID)
+			opsTypeNameByProject[projectUID] = opsTypeNameByUID
+		}
+		opsTypeName := ""
+		if ot := dms.ResolveOpsTypeFromMap(workflow.OpsTypeUID, opsTypeNameByUID); ot != nil {
+			opsTypeName = ot.Name
 		}
 		for _, instanceRecord := range workflow.Record.InstanceRecords {
 			instanceName := instanceNameOf(instanceRecord)
@@ -484,6 +496,7 @@ func buildProjectRows(ctx context.Context, workflowIDs []string, includeProjectN
 				workflow.WorkflowId,
 				workflow.Subject,
 				workflow.Desc,
+				opsTypeName,
 				instanceName,
 				workflow.Model.CreatedAt.Format(timeLayout),
 				dms.GetUserNameWithDelTag(workflow.CreateUserId),

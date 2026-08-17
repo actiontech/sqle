@@ -22,6 +22,7 @@ type WorkflowListDetail struct {
 	InstanceIds                RowList        `json:"instance_ids"`
 	WorkflowTemplateId         sql.NullInt64  `json:"workflow_template_id"`
 	WorkflowTemplateName       sql.NullString `json:"workflow_template_name"`
+	OpsTypeUID                 string         `json:"ops_type_uid"`
 }
 
 func (w *WorkflowListDetail) CurrentAssigneeUser() []string {
@@ -49,7 +50,8 @@ SELECT
 	   GROUP_CONCAT(DISTINCT wir.instance_id SEPARATOR ',') AS instance_ids,
 	   GROUP_CONCAT(DISTINCT versions.version SEPARATOR ',') AS versions,
 	   w.workflow_template_id AS workflow_template_id,
-	   wt.name AS workflow_template_name
+	   wt.name AS workflow_template_name,
+	   w.ops_type_uid AS ops_type_uid
 {{- template "body" . -}}
 GROUP BY w.id
 {{- if .filter_instance_id }}
@@ -175,6 +177,11 @@ AND w.workflow_template_id = :filter_workflow_template_id
 {{- if .filter_project_id }}
 AND w.project_id = :filter_project_id
 {{- end }}
+
+{{- if .filter_by_ops_type_uid }}
+AND w.ops_type_uid = :filter_by_ops_type_uid
+{{- end }}
+
 {{- if .filter_status_list }}
 AND wr.status IN ( 
 	{{ range $index, $element := .filter_status_list }}

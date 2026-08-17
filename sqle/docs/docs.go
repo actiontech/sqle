@@ -7973,6 +7973,12 @@ var doc = `{
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "filter by ops type dictionary item uid; empty means no filter",
+                        "name": "filter_by_ops_type_uid",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
                         "description": "page index",
                         "name": "page_index",
@@ -8319,6 +8325,12 @@ var doc = `{
                         "type": "string",
                         "description": "filter instance id",
                         "name": "filter_task_instance_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter by ops type dictionary item uid; empty means no filter",
+                        "name": "filter_by_ops_type_uid",
                         "in": "query"
                     },
                     {
@@ -11546,6 +11558,12 @@ var doc = `{
                         "description": "filter create time to",
                         "name": "filter_create_time_to",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "filter by ops type dictionary item uid; empty means no filter; applies to sql_release and data_export",
+                        "name": "filter_by_ops_type_uid",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -14334,6 +14352,11 @@ var doc = `{
                     "description": "实例名称",
                     "type": "string"
                 },
+                "ops_type": {
+                    "description": "OpsType 运维类型（跨项目按工单所属项目字典批量解析）；未设置或字典项已删时省略",
+                    "type": "object",
+                    "$ref": "#/definitions/dms.OpsType"
+                },
                 "priority": {
                     "description": "High, Medium, Low",
                     "type": "string"
@@ -14439,6 +14462,17 @@ var doc = `{
                 "view_all_count": {
                     "description": "查看全部的工单数量",
                     "type": "integer"
+                }
+            }
+        },
+        "dms.OpsType": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "uid": {
+                    "type": "string"
                 }
             }
         },
@@ -23240,6 +23274,11 @@ var doc = `{
                         "$ref": "#/definitions/v1.InstanceInfo"
                     }
                 },
+                "ops_type": {
+                    "description": "OpsType 运维类型（项目字典批量解析）；未设置或字典项已删时省略",
+                    "type": "object",
+                    "$ref": "#/definitions/dms.OpsType"
+                },
                 "project_name": {
                     "type": "string"
                 },
@@ -24353,6 +24392,10 @@ var doc = `{
             "type": "object",
             "properties": {
                 "desc": {
+                    "type": "string"
+                },
+                "ops_type_uid": {
+                    "description": "OpsTypeUID 运维类型字典项标识；可选；空表示未设置；创建后不可改",
                     "type": "string"
                 },
                 "sql_version_id": {
@@ -25667,6 +25710,11 @@ var doc = `{
                         "same_sqls",
                         "different_sqls"
                     ]
+                },
+                "ops_type": {
+                    "description": "OpsType 运维类型（项目字典解析）；未设置或字典项已删时省略，供前端「-」约定",
+                    "type": "object",
+                    "$ref": "#/definitions/dms.OpsType"
                 },
                 "record": {
                     "type": "object",

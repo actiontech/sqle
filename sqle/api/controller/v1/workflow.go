@@ -598,10 +598,15 @@ type CheckedWorkflowInfo struct {
 	GetOpExecUser      func([]*model.Task) (canAuditUsers [][]*model.User, canExecUsers [][]*model.User)
 }
 
-func CheckWorkflowCreationPrerequisites(c echo.Context, projectName string, taskIdsToBindWithWorkflow []uint, workflowTemplateId *uint) (*CheckedWorkflowInfo, error) {
+func CheckWorkflowCreationPrerequisites(c echo.Context, projectName string, taskIdsToBindWithWorkflow []uint, workflowTemplateId *uint, opsTypeUID string) (*CheckedWorkflowInfo, error) {
 	// check project
 	projectUid, err := dms.GetProjectUIDByName(context.TODO(), projectName, true)
 	if err != nil {
+		return nil, err
+	}
+
+	// 运维类型归属：非空须属于本项目字典；空=未设置（允许）
+	if err := dms.ValidateOpsTypeBelongToProject(c.Request().Context(), projectUid, opsTypeUID); err != nil {
 		return nil, err
 	}
 
@@ -781,6 +786,7 @@ type GetWorkflowsReqV1 struct {
 	FilterProjectUid                string                `json:"filter_project_uid" query:"filter_project_uid"`
 	FilterInstanceId                string                `json:"filter_instance_id" query:"filter_instance_id"`
 	FilterProjectPriority           dmsV1.ProjectPriority `json:"filter_project_priority" query:"filter_project_priority"  valid:"omitempty,oneof=high medium low"`
+	FilterByOpsTypeUID              string                `json:"filter_by_ops_type_uid" query:"filter_by_ops_type_uid"`
 	PageIndex                       uint32                `json:"page_index" query:"page_index" valid:"required"`
 	PageSize                        uint32                `json:"page_size" query:"page_size" valid:"required"`
 	FuzzyKeyword                    string                `json:"fuzzy_keyword" query:"fuzzy_keyword"`
@@ -808,6 +814,8 @@ type WorkflowDetailResV1 struct {
 	InstanceInfo            []InstanceInfo        `json:"instance_info,omitempty"`
 	WorkflowTemplateId      *uint                 `json:"workflow_template_id,omitempty"`
 	WorkflowTemplateName    string                `json:"workflow_template_name,omitempty"`
+	// OpsType 运维类型（项目字典批量解析）；未设置或字典项已删时省略
+	OpsType *dms.OpsType `json:"ops_type,omitempty"`
 }
 
 type InstanceInfo struct {
@@ -1305,6 +1313,7 @@ func loadInstanceByInstanceIds(ctx context.Context, instanceIds []string) (insta
 // @Param filter_task_instance_id query string false "filter instance id"
 // @Param filter_sql_version_id query string false "filter sql version id"
 // @Param filter_workflow_template_id query uint false "filter workflow template id"
+// @Param filter_by_ops_type_uid query string false "filter by ops type dictionary item uid; empty means no filter"
 // @Param page_index query uint32 true "page index"
 // @Param page_size query uint32 true "size of per page"
 // @Param project_name path string true "project name"
@@ -1345,6 +1354,7 @@ func GetWorkflowsV1(c echo.Context) error {
 		"filter_status":                        req.FilterStatus,
 		"filter_current_step_assignee_user_id": req.FilterCurrentStepAssigneeUserId,
 		"filter_task_instance_id":              req.FilterTaskInstanceId,
+		"filter_by_ops_type_uid":               req.FilterByOpsTypeUID,
 		"filter_project_id":                    projectUid,
 		"current_user_id":                      user.ID,
 		"check_user_can_access":                !up.CanViewProject(),
@@ -1362,6 +1372,11 @@ func GetWorkflowsV1(c echo.Context) error {
 	workflows, count, err := s.GetWorkflowsByReq(data)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	opsTypeNameByUID := map[string]string{}
+	if len(workflows) > 0 {
+		opsTypeNameByUID = dms.BuildOpsTypeNameMap(c.Request().Context(), projectUid)
 	}
 
 	workflowsResV1 := make([]*WorkflowDetailResV1, 0, len(workflows))
@@ -1389,6 +1404,7 @@ func GetWorkflowsV1(c echo.Context) error {
 			SqlVersionName:          workflow.SqlVersionNames,
 			WorkflowTemplateId:      templateId,
 			WorkflowTemplateName:    workflow.WorkflowTemplateName.String,
+			OpsType:                 dms.ResolveOpsTypeFromMap(workflow.OpsTypeUID, opsTypeNameByUID),
 		}
 		workflowsResV1 = append(workflowsResV1, workflowRes)
 	}
@@ -1683,6 +1699,7 @@ type ExportWorkflowReqV1 struct {
 	FilterTaskInstanceId            string `json:"filter_task_instance_id" query:"filter_task_instance_id"`
 	FilterTaskExecuteStartTimeFrom  string `json:"filter_task_execute_start_time_from" query:"filter_task_execute_start_time_from"`
 	FilterTaskExecuteStartTimeTo    string `json:"filter_task_execute_start_time_to" query:"filter_task_execute_start_time_to"`
+	FilterByOpsTypeUID              string `json:"filter_by_ops_type_uid" query:"filter_by_ops_type_uid"`
 	FuzzyKeyword                    string `json:"fuzzy_keyword" query:"fuzzy_keyword"`
 	ExportFormat                    string `json:"export_format" query:"export_format" enums:"csv,excel" example:"excel"` // 导出格式：csv 或 excel，默认为 excel
 }
@@ -1703,6 +1720,7 @@ type ExportWorkflowReqV1 struct {
 // @Param filter_status query string false "filter workflow status" Enums(wait_for_audit,wait_for_execution,rejected,executing,canceled,exec_failed,finished)
 // @Param filter_current_step_assignee_user_id query string false "filter current step assignee user id"
 // @Param filter_task_instance_id query string false "filter instance id"
+// @Param filter_by_ops_type_uid query string false "filter by ops type dictionary item uid; empty means no filter"
 // @Param project_name path string true "project name"
 // @Param fuzzy_keyword query string false "fuzzy matching subject/workflow_id/desc"
 // @Param export_format query string false "export format" Enums(csv,excel) "export format: csv or excel, default is excel"
@@ -2092,7 +2110,7 @@ func AutoCreateAndExecuteWorkflowV1(c echo.Context) error {
 		taskIds = append(taskIds, task.ID)
 	}
 
-	w, err := CheckWorkflowCreationPrerequisites(c, projectName, taskIds, req.WorkflowTemplateId)
+	w, err := CheckWorkflowCreationPrerequisites(c, projectName, taskIds, req.WorkflowTemplateId, "")
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -2108,7 +2126,7 @@ func AutoCreateAndExecuteWorkflowV1(c echo.Context) error {
 	}
 
 	// 9. 创建工单
-	if err := s.CreateWorkflowV2(req.Subject, w.WorkflowId, req.Desc, w.User, w.Tasks, w.StepTemplates, w.ProjectId, nil, nil, nil, w.WorkflowTemplateId, w.GetOpExecUser); err != nil {
+	if err := s.CreateWorkflowV2(req.Subject, w.WorkflowId, req.Desc, "", w.User, w.Tasks, w.StepTemplates, w.ProjectId, nil, nil, nil, w.WorkflowTemplateId, w.GetOpExecUser); err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 

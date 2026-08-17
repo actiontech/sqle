@@ -616,6 +616,8 @@ type CreateWorkflowReqV2 struct {
 	SqlVersionID       *uint  `json:"sql_version_id" form:"sql_version_id"`
 	WorkflowTemplateId *uint  `json:"workflow_template_id" form:"workflow_template_id"`
 	TaskIds            []uint `json:"task_ids" form:"task_ids" valid:"required"`
+	// OpsTypeUID 运维类型字典项标识；可选；空表示未设置；创建后不可改
+	OpsTypeUID string `json:"ops_type_uid" form:"ops_type_uid"`
 }
 
 type CreateWorkflowResV2 struct {
@@ -645,7 +647,7 @@ func CreateWorkflowV2(c echo.Context) error {
 		return controller.JSONBaseErrorReq(c, err)
 	}
 
-	w, err := v1.CheckWorkflowCreationPrerequisites(c, c.Param("project_name"), req.TaskIds, req.WorkflowTemplateId)
+	w, err := v1.CheckWorkflowCreationPrerequisites(c, c.Param("project_name"), req.TaskIds, req.WorkflowTemplateId, req.OpsTypeUID)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -658,7 +660,7 @@ func CreateWorkflowV2(c echo.Context) error {
 	}
 	s := model.GetStorage()
 	// create workflow with checking op permission in task
-	err = s.CreateWorkflowV2(req.Subject, w.WorkflowId, req.Desc, w.User, w.Tasks, w.StepTemplates, w.ProjectId, req.SqlVersionID, nil, nil, w.WorkflowTemplateId, w.GetOpExecUser)
+	err = s.CreateWorkflowV2(req.Subject, w.WorkflowId, req.Desc, req.OpsTypeUID, w.User, w.Tasks, w.StepTemplates, w.ProjectId, req.SqlVersionID, nil, nil, w.WorkflowTemplateId, w.GetOpExecUser)
 	if err != nil {
 		return controller.JSONBaseErrorReq(c, err)
 	}
@@ -1035,6 +1037,8 @@ type WorkflowResV2 struct {
 	CreateTime                  *time.Time                    `json:"create_time"`
 	WorkflowTemplateId          *uint                         `json:"workflow_template_id,omitempty"`
 	WorkflowTemplateName        string                        `json:"workflow_template_name,omitempty"`
+	// OpsType 运维类型（项目字典解析）；未设置或字典项已删时省略，供前端「-」约定
+	OpsType                     *dms.OpsType                  `json:"ops_type,omitempty"`
 	SqlVersion                  *SqlVersion                   `json:"sql_version,omitempty"`
 	Record                      *WorkflowRecordResV2          `json:"record"`
 	RecordHistory               []*WorkflowRecordResV2        `json:"record_history_list,omitempty"`
@@ -1133,6 +1137,7 @@ func convertWorkflowToRes(ctx context.Context, workflow *model.Workflow, sqlVers
 		CreateUser:                  dms.GetUserNameWithDelTag(workflow.CreateUserId),
 		CreateTime:                  &workflow.CreatedAt,
 		WorkflowTemplateId:          workflow.WorkflowTemplateId,
+		OpsType:                     dms.ResolveOpsTypeDisplay(ctx, string(workflow.ProjectId), workflow.OpsTypeUID),
 		AssociatedStageWorkflows:    convertAssociatedWorkflowToRes(associatedWorkflows),
 		AssociatedRollbackWorkflows: convertAssociatedRollbackWorkflowToRes(associatedRollbackWorkflows),
 	}

@@ -401,6 +401,8 @@ type Workflow struct {
 
 	Mode     string `gorm:"type:varchar(255)"`
 	ExecMode string `json:"exec_mode" gorm:"default:'sqls'; type:varchar(255)" example:"sqls"`
+	// OpsTypeUID 运维类型字典项标识（引用式存储；空表示未设置；创建后不可改）
+	OpsTypeUID string `json:"ops_type_uid" gorm:"column:ops_type_uid;type:varchar(32);default:''"`
 }
 
 const (
@@ -707,7 +709,7 @@ func (w *Workflow) GetNeedSendOATaskIds(entry *logrus.Entry) ([]uint, error) {
 	return taskIds, nil
 }
 
-func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User, tasks []*Task, stepTemplates []*WorkflowStepTemplate, projectId ProjectUID, sqlVersionId, versionStageId *uint, workflowStageSequence *int, workflowTemplateId *uint, getOpExecUser func([]*Task) (canAuditUsers [][]*User, canExecUsers [][]*User)) error {
+func (s *Storage) CreateWorkflowV2(subject, workflowId, desc, opsTypeUID string, user *User, tasks []*Task, stepTemplates []*WorkflowStepTemplate, projectId ProjectUID, sqlVersionId, versionStageId *uint, workflowStageSequence *int, workflowTemplateId *uint, getOpExecUser func([]*Task) (canAuditUsers [][]*User, canExecUsers [][]*User)) error {
 	if len(tasks) <= 0 {
 		return errors.New(errors.DataConflict, fmt.Errorf("there is no task for creating workflow"))
 	}
@@ -758,6 +760,7 @@ func (s *Storage) CreateWorkflowV2(subject, workflowId, desc string, user *User,
 		Mode:               workflowMode,
 		WorkflowRecordId:   record.ID,
 		WorkflowTemplateId: workflowTemplateId,
+		OpsTypeUID:         strings.TrimSpace(opsTypeUID),
 	}
 
 	err = tx.Save(workflow).Error
@@ -1154,6 +1157,9 @@ func (s *Storage) CompletionWorkflow(w *Workflow, operateStep *WorkflowStep, nee
 }
 
 func (s *Storage) UpdateWorkflowById(workflowId uint, workflowParam map[string]interface{}) error {
+	// 创建后不可改运维类型：忽略任何对 ops_type_uid 的写入尝试
+	delete(workflowParam, "ops_type_uid")
+	delete(workflowParam, "OpsTypeUID")
 	err := s.db.Model(&Workflow{}).Where("id = ?", workflowId).
 		Updates(workflowParam).Error
 	if err != nil {

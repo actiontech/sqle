@@ -203,6 +203,10 @@ definitions:
       instance_name:
         description: 实例名称
         type: string
+      ops_type:
+        $ref: '#/definitions/dms.OpsType'
+        description: OpsType 运维类型（跨项目按工单所属项目字典批量解析）；未设置或字典项已删时省略
+        type: object
       priority:
         description: High, Medium, Low
         type: string
@@ -282,6 +286,13 @@ definitions:
       view_all_count:
         description: 查看全部的工单数量
         type: integer
+    type: object
+  dms.OpsType:
+    properties:
+      name:
+        type: string
+      uid:
+        type: string
     type: object
   model.AuditResultInfo:
     properties:
@@ -6312,6 +6323,10 @@ definitions:
         items:
           $ref: '#/definitions/v1.InstanceInfo'
         type: array
+      ops_type:
+        $ref: '#/definitions/dms.OpsType'
+        description: OpsType 运维类型（项目字典批量解析）；未设置或字典项已删时省略
+        type: object
       project_name:
         type: string
       project_priority:
@@ -7087,6 +7102,9 @@ definitions:
   v2.CreateWorkflowReqV2:
     properties:
       desc:
+        type: string
+      ops_type_uid:
+        description: OpsTypeUID 运维类型字典项标识；可选；空表示未设置；创建后不可改
         type: string
       sql_version_id:
         type: integer
@@ -8002,6 +8020,10 @@ definitions:
         - same_sqls
         - different_sqls
         type: string
+      ops_type:
+        $ref: '#/definitions/dms.OpsType'
+        description: OpsType 运维类型（项目字典解析）；未设置或字典项已删时省略，供前端「-」约定
+        type: object
       record:
         $ref: '#/definitions/v2.WorkflowRecordResV2'
         type: object
@@ -13325,6 +13347,10 @@ paths:
         in: query
         name: filter_workflow_template_id
         type: integer
+      - description: filter by ops type dictionary item uid; empty means no filter
+        in: query
+        name: filter_by_ops_type_uid
+        type: string
       - description: page index
         in: query
         name: page_index
@@ -14115,6 +14141,10 @@ paths:
       - description: filter instance id
         in: query
         name: filter_task_instance_id
+        type: string
+      - description: filter by ops type dictionary item uid; empty means no filter
+        in: query
+        name: filter_by_ops_type_uid
         type: string
       - description: project name
         in: path
@@ -15662,6 +15692,11 @@ paths:
       - description: filter create time to
         in: query
         name: filter_create_time_to
+        type: string
+      - description: filter by ops type dictionary item uid; empty means no filter;
+          applies to sql_release and data_export
+        in: query
+        name: filter_by_ops_type_uid
         type: string
       responses:
         "200":
