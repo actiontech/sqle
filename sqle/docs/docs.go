@@ -11678,6 +11678,12 @@ var doc = `{
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "description": "filter by ops type dictionary item uid; empty means no filter; applies to sql_release and data_export; same semantics as GET /v2/dashboard/workflows",
+                        "name": "filter_by_ops_type_uid",
+                        "in": "query"
+                    },
+                    {
                         "enum": [
                             "csv",
                             "excel"
