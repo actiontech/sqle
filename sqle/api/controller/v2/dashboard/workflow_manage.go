@@ -120,6 +120,8 @@ type ExportGlobalWorkflowReqV2 struct {
 	FilterCreateTimeTo   string `json:"filter_create_time_to" query:"filter_create_time_to"`
 	FilterUpdateTimeFrom string `json:"filter_update_time_from" query:"filter_update_time_from"`
 	FilterUpdateTimeTo   string `json:"filter_update_time_to" query:"filter_update_time_to"`
+	// FilterByOpsTypeUID 按运维类型单选筛选（空则不筛；不提供「未设置」；对 SQL 上线与数据导出均生效；语义与 GetGlobalWorkflowListReqV2 对齐）
+	FilterByOpsTypeUID string `json:"filter_by_ops_type_uid" query:"filter_by_ops_type_uid"`
 
 	FilterCard dashboard_svc.GlobalWorkflowFilterCard `json:"filter_card" query:"filter_card" valid:"omitempty,oneof=archived pending_for_me initiated_by_me view_all" enums:"archived,pending_for_me,initiated_by_me,view_all"`
 
@@ -148,6 +150,7 @@ type ExportGlobalWorkflowReqV2 struct {
 // @Param filter_create_user_id query string false "filter by create user id"
 // @Param filter_create_time_from query string false "filter create time from"
 // @Param filter_create_time_to query string false "filter create time to"
+// @Param filter_by_ops_type_uid query string false "filter by ops type dictionary item uid; empty means no filter; applies to sql_release and data_export; same semantics as GET /v2/dashboard/workflows"
 // @Param export_format query string false "export format: csv or excel, default csv" Enums(csv,excel)
 // @Success 200 {file} file "export workflow"
 // @Router /v2/dashboard/workflows/exports [get]
