@@ -110,11 +110,22 @@ func BuildGlobalSQLReleaseExport(ctx context.Context, workflowIDs []string, proj
 		return nil, nil, err
 	}
 	header := buildGlobalSQLReleaseHeader(ctx)
+	opsTypeNameByProject := map[string]map[string]string{}
 	rows := make([][]string, 0)
 	for _, workflow := range workflows {
+		projectUID := string(workflow.ProjectId)
 		projectName := ""
 		if projectNameByUID != nil {
-			projectName = projectNameByUID[string(workflow.ProjectId)]
+			projectName = projectNameByUID[projectUID]
+		}
+		opsTypeNameByUID, ok := opsTypeNameByProject[projectUID]
+		if !ok {
+			opsTypeNameByUID = dms.BuildOpsTypeNameMap(ctx, projectUID)
+			opsTypeNameByProject[projectUID] = opsTypeNameByUID
+		}
+		opsTypeName := ""
+		if ot := dms.ResolveOpsTypeFromMap(workflow.OpsTypeUID, opsTypeNameByUID); ot != nil {
+			opsTypeName = ot.Name
 		}
 		auditRecord := formatAuditRecordFromSQLSteps(ctx, workflow.AuditStepList())
 		for _, instanceRecord := range workflow.Record.InstanceRecords {
@@ -124,6 +135,7 @@ func BuildGlobalSQLReleaseExport(ctx context.Context, workflowIDs []string, proj
 				workflow.WorkflowId,
 				workflow.Subject,
 				workflow.Desc,
+				opsTypeName,
 				instanceName,
 				workflow.Model.CreatedAt.Format(timeLayout),
 				dms.GetUserNameWithDelTag(workflow.CreateUserId),
@@ -153,6 +165,7 @@ type DataExportExportRecord struct {
 	CreatedAt      string
 	CreatorName    string
 	UnifiedStatus  string
+	OpsTypeName    string
 	AuditRecord    string
 	SQLContent     string
 	ExportExecTime string
@@ -172,6 +185,9 @@ func FromListDataExportWorkflow(r *dmsV1.ListDataExportWorkflow) DataExportExpor
 	if r.ProjectInfo != nil {
 		out.ProjectName = r.ProjectInfo.ProjectName
 		out.ProjectUID = r.ProjectInfo.ProjectUid
+	}
+	if r.OpsType != nil {
+		out.OpsTypeName = r.OpsType.Name
 	}
 	for _, db := range r.DBServiceInfos {
 		if db == nil {
@@ -235,6 +251,7 @@ func BuildGlobalDataExportExport(ctx context.Context, records []DataExportExport
 			r.WorkflowID,
 			r.WorkflowName,
 			r.Description,
+			r.OpsTypeName,
 			strings.Join(r.DBServiceNames, ","),
 			r.CreatedAt,
 			r.CreatorName,
@@ -258,6 +275,7 @@ type CommonExportRow struct {
 	CreatorName  string
 	CreatedAt    string
 	Status       string
+	OpsTypeName  string
 	DataSource   string
 	SQLContent   string
 	SortKey      string
@@ -277,6 +295,7 @@ func BuildGlobalCommonExport(ctx context.Context, rowsIn []CommonExportRow) ([]s
 			r.CreatorName,
 			r.CreatedAt,
 			r.Status,
+			r.OpsTypeName,
 			r.DataSource,
 			r.SQLContent,
 		})
@@ -363,6 +382,7 @@ func buildGlobalSQLReleaseHeader(ctx context.Context) []string {
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportWorkflowNumber),
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportWorkflowName),
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportWorkflowDescription),
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportOpsType),
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportDataSource),
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportCreateTime),
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportCreator),
@@ -382,6 +402,7 @@ func buildGlobalDataExportHeader(ctx context.Context) []string {
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportWorkflowNumber),
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportWorkflowName),
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportWorkflowDescription),
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportOpsType),
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportDataSource),
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportCreateTime),
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportCreator),
@@ -403,6 +424,7 @@ func buildGlobalCommonHeader(ctx context.Context) []string {
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportCreator),
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportCreateTime),
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportTaskOrderStatus),
+		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportOpsType),
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportDataSource),
 		locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportSQLContentPlain),
 	}
@@ -608,6 +630,7 @@ func BuildCommonRowsFromSQLRelease(ctx context.Context, workflowIDs []string, pr
 		return nil, err
 	}
 	typeLabel := LocalizeWorkflowTypeSQLRelease(ctx)
+	opsTypeNameByProject := map[string]map[string]string{}
 	out := make([]CommonExportRow, 0, len(workflows))
 	for _, workflow := range workflows {
 		names := make([]string, 0, len(workflow.Record.InstanceRecords))
@@ -620,9 +643,19 @@ func BuildCommonRowsFromSQLRelease(ctx context.Context, workflowIDs []string, pr
 				sqlBuilder.WriteString(getExecuteSqlList(ir.Task.ExecuteSQLs))
 			}
 		}
+		projectUID := string(workflow.ProjectId)
 		projectName := ""
 		if projectNameByUID != nil {
-			projectName = projectNameByUID[string(workflow.ProjectId)]
+			projectName = projectNameByUID[projectUID]
+		}
+		opsTypeNameByUID, ok := opsTypeNameByProject[projectUID]
+		if !ok {
+			opsTypeNameByUID = dms.BuildOpsTypeNameMap(ctx, projectUID)
+			opsTypeNameByProject[projectUID] = opsTypeNameByUID
+		}
+		opsTypeName := ""
+		if ot := dms.ResolveOpsTypeFromMap(workflow.OpsTypeUID, opsTypeNameByUID); ot != nil {
+			opsTypeName = ot.Name
 		}
 		created := workflow.Model.CreatedAt.Format(timeLayout)
 		out = append(out, CommonExportRow{
@@ -634,6 +667,7 @@ func BuildCommonRowsFromSQLRelease(ctx context.Context, workflowIDs []string, pr
 			CreatorName:  dms.GetUserNameWithDelTag(workflow.CreateUserId),
 			CreatedAt:    created,
 			Status:       localizeUnifiedStatus(ctx, mapSQLWorkflowStatus(workflow.Record.Status)),
+			OpsTypeName:  opsTypeName,
 			DataSource:   strings.Join(names, ","),
 			SQLContent:   sqlBuilder.String(),
 			SortKey:      created,
@@ -656,6 +690,7 @@ func BuildCommonRowsFromDataExport(ctx context.Context, records []DataExportExpo
 			CreatorName:  r.CreatorName,
 			CreatedAt:    r.CreatedAt,
 			Status:       localizeUnifiedStatus(ctx, r.UnifiedStatus),
+			OpsTypeName:  r.OpsTypeName,
 			DataSource:   strings.Join(r.DBServiceNames, ","),
 			SQLContent:   r.SQLContent,
 			SortKey:      r.CreatedAt,

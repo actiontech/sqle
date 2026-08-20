@@ -47,6 +47,15 @@ func TestBuildHeaderForLayoutGlobalSQLRelease(t *testing.T) {
 	if header[0] != locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportProjectName) {
 		t.Fatalf("first col want project name, got %s", header[0])
 	}
+	if header[3] != locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportWorkflowDescription) {
+		t.Fatalf("col4 want description, got %s", header[3])
+	}
+	if header[4] != locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportOpsType) {
+		t.Fatalf("col5 want ops type after description, got %s", header[4])
+	}
+	if header[5] != locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportDataSource) {
+		t.Fatalf("col6 want data source after ops type, got %s", header[5])
+	}
 	if header[len(header)-1] != locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportSQLContent) {
 		t.Fatalf("last col want SQL content, got %s", header[len(header)-1])
 	}
@@ -87,8 +96,8 @@ func TestBuildHeaderForLayoutProjectFrozen(t *testing.T) {
 func TestBuildGlobalCommonHeader(t *testing.T) {
 	ctx := context.Background()
 	header := BuildHeaderForLayout(ctx, LayoutGlobalCommon, 0)
-	if len(header) != 10 {
-		t.Fatalf("common header len=%d want 10: %v", len(header), header)
+	if len(header) != 11 {
+		t.Fatalf("common header len=%d want 11: %v", len(header), header)
 	}
 	if header[1] != locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportWorkflowType) {
 		t.Fatalf("col2 want workflow type, got %s", header[1])
@@ -96,8 +105,17 @@ func TestBuildGlobalCommonHeader(t *testing.T) {
 	if header[4] != locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportWorkflowDescription) {
 		t.Fatalf("col5 want description, got %s", header[4])
 	}
-	if header[9] != locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportSQLContentPlain) {
-		t.Fatalf("last col want SQL content plain, got %s", header[9])
+	if header[7] != locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportTaskOrderStatus) {
+		t.Fatalf("col8 want status, got %s", header[7])
+	}
+	if header[8] != locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportOpsType) {
+		t.Fatalf("col9 want ops type after status, got %s", header[8])
+	}
+	if header[9] != locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportDataSource) {
+		t.Fatalf("col10 want data source after ops type, got %s", header[9])
+	}
+	if header[10] != locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportSQLContentPlain) {
+		t.Fatalf("last col want SQL content plain, got %s", header[10])
 	}
 }
 
@@ -105,6 +123,15 @@ func TestBuildGlobalDataExportHeader(t *testing.T) {
 	ctx := context.Background()
 	header := BuildHeaderForLayout(ctx, LayoutGlobalDataExport, 1)
 	joined := strings.Join(header, "|")
+	if header[3] != locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportWorkflowDescription) {
+		t.Fatalf("col4 want description, got %s", header[3])
+	}
+	if header[4] != locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportOpsType) {
+		t.Fatalf("col5 want ops type after description, got %s", header[4])
+	}
+	if header[5] != locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportDataSource) {
+		t.Fatalf("col6 want data source after ops type, got %s", header[5])
+	}
 	if !strings.Contains(joined, locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportDataExportExecTime)) {
 		t.Fatalf("want export exec time col")
 	}
@@ -163,10 +190,13 @@ func TestBuildGlobalDataExportPrunesEmptyOptionalCols(t *testing.T) {
 			CreatorName:    "u",
 			UnifiedStatus:  "completed",
 			SQLContent:     "SELECT 1",
-			// AuditRecord / ExportExecTime / ExportResult empty → pruned
+			// OpsTypeName / AuditRecord / ExportExecTime / ExportResult empty → pruned
 		},
 	})
 	joined := strings.Join(header, "|")
+	if strings.Contains(joined, locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportOpsType)) {
+		t.Fatalf("empty ops type col should be pruned: %v", header)
+	}
 	if strings.Contains(joined, locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportAuditRecord)) {
 		t.Fatalf("empty audit col should be pruned: %v", header)
 	}
@@ -178,6 +208,64 @@ func TestBuildGlobalDataExportPrunesEmptyOptionalCols(t *testing.T) {
 	}
 	if len(rows) != 1 {
 		t.Fatalf("rows=%d", len(rows))
+	}
+}
+
+func TestBuildGlobalDataExportKeepsOpsTypeWhenPresent(t *testing.T) {
+	ctx := context.Background()
+	opsType := "共享运维类型-导出验收"
+	header, rows := BuildGlobalDataExportExport(ctx, []DataExportExportRecord{
+		{
+			ProjectName:    "p",
+			WorkflowID:     "1",
+			WorkflowName:   "n",
+			Description:    "d",
+			OpsTypeName:    opsType,
+			DBServiceNames: []string{"db"},
+			CreatedAt:      "2026-01-01 00:00:00",
+			CreatorName:    "u",
+			UnifiedStatus:  "completed",
+			SQLContent:     "SELECT 1",
+		},
+		{
+			ProjectName:    "p2",
+			WorkflowID:     "2",
+			WorkflowName:   "n2",
+			Description:    "d2",
+			OpsTypeName:    "",
+			DBServiceNames: []string{"db2"},
+			CreatedAt:      "2026-01-02 00:00:00",
+			CreatorName:    "u2",
+			UnifiedStatus:  "completed",
+			SQLContent:     "SELECT 2",
+		},
+	})
+	opsCol := locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportOpsType)
+	descCol := locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportWorkflowDescription)
+	dsCol := locale.Bundle.LocalizeMsgByCtx(ctx, locale.WFExportDataSource)
+	opsIdx, descIdx, dsIdx := -1, -1, -1
+	for i, h := range header {
+		switch h {
+		case opsCol:
+			opsIdx = i
+		case descCol:
+			descIdx = i
+		case dsCol:
+			dsIdx = i
+		}
+	}
+	if opsIdx < 0 {
+		t.Fatalf("ops type col must remain when any row has value: %v", header)
+	}
+	if !(descIdx >= 0 && opsIdx == descIdx+1 && dsIdx == opsIdx+1) {
+		t.Fatalf("want description, ops type, data source consecutive, got desc=%d ops=%d ds=%d header=%v",
+			descIdx, opsIdx, dsIdx, header)
+	}
+	if rows[0][opsIdx] != opsType {
+		t.Fatalf("row0 ops=%q want %q", rows[0][opsIdx], opsType)
+	}
+	if rows[1][opsIdx] != "" {
+		t.Fatalf("row1 empty ops must be empty cell, got %q", rows[1][opsIdx])
 	}
 }
 
