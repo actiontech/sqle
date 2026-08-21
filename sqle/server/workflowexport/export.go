@@ -181,13 +181,11 @@ func FromListDataExportWorkflow(r *dmsV1.ListDataExportWorkflow) DataExportExpor
 		CreatedAt:     r.CreatedAt.Format(timeLayout),
 		CreatorName:   r.Creater.Name, //nolint:misspell // DMS API field is Creater
 		UnifiedStatus: mapDataExportStatus(r.Status),
+		OpsTypeName:   opsTypeNameFromListDataExport(r),
 	}
 	if r.ProjectInfo != nil {
 		out.ProjectName = r.ProjectInfo.ProjectName
 		out.ProjectUID = r.ProjectInfo.ProjectUid
-	}
-	if r.OpsType != nil {
-		out.OpsTypeName = r.OpsType.Name
 	}
 	for _, db := range r.DBServiceInfos {
 		if db == nil {
