@@ -14332,10 +14332,6 @@ var doc = `{
         "dashboard.GlobalWorkflowListItem": {
             "type": "object",
             "properties": {
-                "assignee": {
-                    "description": "当前处理人姓名",
-                    "type": "string"
-                },
                 "create_user_name": {
                     "type": "string"
                 },
@@ -16767,9 +16763,6 @@ var doc = `{
             "properties": {
                 "db_type": {
                     "type": "string"
-                },
-                "default_port": {
-                    "type": "integer"
                 },
                 "params": {
                     "type": "array",
