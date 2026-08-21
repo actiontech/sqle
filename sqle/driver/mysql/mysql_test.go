@@ -220,6 +220,16 @@ CREATEaa TABLE new_tbl AS SELECT * FROM orig_tbl;`,
 			`SELECT id, ROW_NUMBER() OVER (PARTITION BY nominate_app_id ORDER BY create_date ASC) AS rn FROM sourcing.tt_nomi_record`,
 			driverV2.SQLTypeDQL,
 		},
+		{
+			"case 9 JSON_TABLE FROM",
+			`SELECT * FROM JSON_TABLE('[{"locationId":"SH","endTime":"2099-12-31","passcardId":"p1"}]', '$[*]' COLUMNS (locationId VARCHAR(20) PATH '$.locationId', endTime DATE PATH '$.endTime', passcardId VARCHAR(64) PATH '$.passcardId')) AS jt WHERE jt.locationId = 'SH' AND jt.endTime > CURDATE();`,
+			driverV2.SQLTypeDQL,
+		},
+		{
+			"case 10 JSON_TABLE CROSS JOIN",
+			`SELECT DISTINCT jt.locationId, jt.endTime, jt.passcardId FROM json_table_export_demo pf CROSS JOIN JSON_TABLE(pf.pass_info, '$[*]' COLUMNS (locationId VARCHAR(20) PATH '$.locationId', endTime DATE PATH '$.endTime', passcardId VARCHAR(64) PATH '$.passcardId')) AS jt WHERE jt.locationId = 'SH' AND jt.endTime > CURDATE();`,
+			driverV2.SQLTypeDQL,
+		},
 	}
 	i := &MysqlDriverImpl{}
 	for _, arg := range args {

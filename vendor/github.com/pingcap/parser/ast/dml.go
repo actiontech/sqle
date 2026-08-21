@@ -19,6 +19,7 @@ import (
 	"github.com/pingcap/parser/format"
 	"github.com/pingcap/parser/model"
 	"github.com/pingcap/parser/mysql"
+	"github.com/pingcap/parser/types"
 )
 
 var (
@@ -44,6 +45,8 @@ var (
 	_ Node = &TableName{}
 	_ Node = &TableRefsClause{}
 	_ Node = &TableSource{}
+	_ Node = &JsonTableExpr{}
+	_ Node = &JsonTableColumn{}
 	_ Node = &UnionSelectList{}
 	_ Node = &WildCardField{}
 	_ Node = &WindowSpec{}
@@ -379,11 +382,95 @@ type TableSource struct {
 	node
 
 	// Source is the source of the data, can be a TableName,
-	// a SelectStmt, a UnionStmt, or a JoinNode.
+	// a SelectStmt, a UnionStmt, a JoinNode, or a JsonTableExpr.
 	Source ResultSetNode
 
 	// AsName is the alias name of the table source.
 	AsName model.CIStr
+}
+
+// JsonTableColumn represents one COLUMNS entry of JSON_TABLE.
+type JsonTableColumn struct {
+	node
+
+	Name model.CIStr
+	Type *types.FieldType
+	Path string
+}
+
+// Restore implements Node interface.
+func (n *JsonTableColumn) Restore(ctx *format.RestoreCtx) error {
+	ctx.WriteName(n.Name.String())
+	ctx.WritePlain(" ")
+	ctx.WriteKeyWord(n.Type.String())
+	ctx.WriteKeyWord(" PATH ")
+	ctx.WriteString(n.Path)
+	return nil
+}
+
+// Accept implements Node Accept interface.
+func (n *JsonTableColumn) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*JsonTableColumn)
+	return v.Leave(n)
+}
+
+// JsonTableExpr represents MySQL JSON_TABLE(...) table function.
+type JsonTableExpr struct {
+	node
+	resultSetNode
+
+	Expr    ExprNode
+	Path    string
+	Columns []*JsonTableColumn
+}
+
+// Restore implements Node interface.
+func (n *JsonTableExpr) Restore(ctx *format.RestoreCtx) error {
+	ctx.WriteKeyWord("JSON_TABLE")
+	ctx.WritePlain("(")
+	if err := n.Expr.Restore(ctx); err != nil {
+		return errors.Annotate(err, "An error occurred while restore JsonTableExpr.Expr")
+	}
+	ctx.WritePlain(", ")
+	ctx.WriteString(n.Path)
+	ctx.WriteKeyWord(" COLUMNS")
+	ctx.WritePlain(" (")
+	for i, col := range n.Columns {
+		if i != 0 {
+			ctx.WritePlain(", ")
+		}
+		if err := col.Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore JsonTableExpr.Columns[%d]", i)
+		}
+	}
+	ctx.WritePlain("))")
+	return nil
+}
+
+// Accept implements Node Accept interface.
+func (n *JsonTableExpr) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*JsonTableExpr)
+	node, ok := n.Expr.Accept(v)
+	if !ok {
+		return n, false
+	}
+	n.Expr = node.(ExprNode)
+	for i, col := range n.Columns {
+		node, ok = col.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.Columns[i] = node.(*JsonTableColumn)
+	}
+	return v.Leave(n)
 }
 
 // Restore implements Node interface.

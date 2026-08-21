@@ -408,6 +408,7 @@ import (
 	isolation             "ISOLATION"
 	issuer                "ISSUER"
 	jsonType              "JSON"
+	jsonTable             "JSON_TABLE"
 	keyBlockSize          "KEY_BLOCK_SIZE"
 	labels                "LABELS"
 	language              "LANGUAGE"
@@ -466,6 +467,7 @@ import (
 	partitioning          "PARTITIONING"
 	partitions            "PARTITIONS"
 	password              "PASSWORD"
+	pathKwd               "PATH"
 	per_db                "PER_DB"
 	per_table             "PER_TABLE"
 	pipesAsOr
@@ -957,6 +959,8 @@ import (
 	InsertValues                           "Rest part of INSERT/REPLACE INTO statement"
 	JoinTable                              "join table"
 	JoinType                               "join type"
+	JsonTableColumn                        "JSON_TABLE column definition"
+	JsonTableColumnList                    "JSON_TABLE column definition list"
 	KillOrKillTiDB                         "Kill or Kill TiDB"
 	LocationLabelList                      "location label name list"
 	LikeEscapeOpt                          "like escape option"
@@ -5034,6 +5038,7 @@ UnReservedKeyword:
 |	"PACK_KEYS"
 |	"PARSER"
 |	"PASSWORD" %prec lowerThanEq
+|	"PATH"
 |	"PREPARE"
 |	"PRE_SPLIT_REGIONS"
 |	"QUICK"
@@ -5092,6 +5097,7 @@ UnReservedKeyword:
 |	"DELAY_KEY_WRITE"
 |	"ISOLATION"
 |	"JSON"
+|	"JSON_TABLE"
 |	"REPEATABLE"
 |	"RESPECT"
 |	"COMMITTED"
@@ -7592,6 +7598,15 @@ TableFactor:
 		tn.IndexHints = $4.([]*ast.IndexHint)
 		$$ = &ast.TableSource{Source: tn, AsName: $3.(model.CIStr)}
 	}
+|	"JSON_TABLE" '(' Expression ',' stringLit "COLUMNS" '(' JsonTableColumnList ')' ')' TableAsNameOpt
+	{
+		jt := &ast.JsonTableExpr{
+			Expr:    $3.(ast.ExprNode),
+			Path:    $5,
+			Columns: $8.([]*ast.JsonTableColumn),
+		}
+		$$ = &ast.TableSource{Source: jt, AsName: $11.(model.CIStr)}
+	}
 |	'(' SelectStmt ')' TableAsName
 	{
 		st := $2.(*ast.SelectStmt)
@@ -7606,6 +7621,26 @@ TableFactor:
 |	'(' TableRefs ')'
 	{
 		$$ = $2
+	}
+
+JsonTableColumnList:
+	JsonTableColumn
+	{
+		$$ = []*ast.JsonTableColumn{$1.(*ast.JsonTableColumn)}
+	}
+|	JsonTableColumnList ',' JsonTableColumn
+	{
+		$$ = append($1.([]*ast.JsonTableColumn), $3.(*ast.JsonTableColumn))
+	}
+
+JsonTableColumn:
+	Identifier Type "PATH" stringLit
+	{
+		$$ = &ast.JsonTableColumn{
+			Name: model.NewCIStr($1),
+			Type: $2.(*types.FieldType),
+			Path: $4,
+		}
 	}
 
 PartitionNameListOpt:
