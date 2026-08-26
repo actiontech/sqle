@@ -854,6 +854,90 @@ func (n *OrderByClause) Accept(v Visitor) (Node, bool) {
 	return v.Leave(n)
 }
 
+// CommonTableExpression is a CTE definition: name [(cols)] AS (subquery).
+type CommonTableExpression struct {
+	node
+
+	Name        model.CIStr
+	Query       *SubqueryExpr
+	ColNameList []model.CIStr
+}
+
+// Restore implements Node interface.
+func (n *CommonTableExpression) Restore(ctx *format.RestoreCtx) error {
+	ctx.WriteName(n.Name.String())
+	if len(n.ColNameList) > 0 {
+		ctx.WritePlain(" (")
+		for j, name := range n.ColNameList {
+			if j != 0 {
+				ctx.WritePlain(", ")
+			}
+			ctx.WriteName(name.String())
+		}
+		ctx.WritePlain(")")
+	}
+	ctx.WriteKeyWord(" AS ")
+	return n.Query.Restore(ctx)
+}
+
+// Accept implements Node Accept interface.
+func (n *CommonTableExpression) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*CommonTableExpression)
+	node, ok := n.Query.Accept(v)
+	if !ok {
+		return n, false
+	}
+	n.Query = node.(*SubqueryExpr)
+	return v.Leave(n)
+}
+
+// WithClause is the WITH [RECURSIVE] cte_list clause.
+type WithClause struct {
+	node
+
+	IsRecursive bool
+	CTEs        []*CommonTableExpression
+}
+
+// Restore implements Node interface.
+func (n *WithClause) Restore(ctx *format.RestoreCtx) error {
+	ctx.WriteKeyWord("WITH ")
+	if n.IsRecursive {
+		ctx.WriteKeyWord("RECURSIVE ")
+	}
+	for i, cte := range n.CTEs {
+		if i != 0 {
+			ctx.WritePlain(", ")
+		}
+		if err := cte.Restore(ctx); err != nil {
+			return err
+		}
+	}
+	ctx.WritePlain(" ")
+	return nil
+}
+
+// Accept implements Node Accept interface.
+func (n *WithClause) Accept(v Visitor) (Node, bool) {
+	newNode, skipChildren := v.Enter(n)
+	if skipChildren {
+		return v.Leave(newNode)
+	}
+	n = newNode.(*WithClause)
+	for i, cte := range n.CTEs {
+		node, ok := cte.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.CTEs[i] = node.(*CommonTableExpression)
+	}
+	return v.Leave(n)
+}
+
 // SelectStmt represents the select query node.
 // See https://dev.mysql.com/doc/refman/5.7/en/select.html
 type SelectStmt struct {
@@ -888,14 +972,23 @@ type SelectStmt struct {
 	IsAfterUnionDistinct bool
 	// IsInBraces indicates whether it's a stmt in brace.
 	IsInBraces bool
+	// WithBeforeBraces indicates whether stmt's with clause is before the brace.
+	WithBeforeBraces bool
 	// QueryBlockOffset indicates the order of this SelectStmt if counted from left to right in the sql text.
 	QueryBlockOffset int
 	// SelectIntoOpt is the select-into option.
 	SelectIntoOpt *SelectIntoOption
+	// With is the optional CTE clause for this select.
+	With *WithClause
 }
 
 // Restore implements Node interface.
 func (n *SelectStmt) Restore(ctx *format.RestoreCtx) error {
+	if n.With != nil {
+		if err := n.With.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore SelectStmt.With")
+		}
+	}
 	ctx.WriteKeyWord("SELECT ")
 
 	if n.SelectStmtOpts.Priority > 0 {
@@ -1029,6 +1122,13 @@ func (n *SelectStmt) Accept(v Visitor) (Node, bool) {
 	}
 
 	n = newNode.(*SelectStmt)
+	if n.With != nil {
+		node, ok := n.With.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.With = node.(*WithClause)
+	}
 	if n.TableHints != nil && len(n.TableHints) != 0 {
 		newHints := make([]*TableOptimizerHint, len(n.TableHints))
 		for i, hint := range n.TableHints {
@@ -1163,10 +1263,16 @@ type UnionStmt struct {
 	SelectList *UnionSelectList
 	OrderBy    *OrderByClause
 	Limit      *Limit
+	With       *WithClause
 }
 
 // Restore implements Node interface.
 func (n *UnionStmt) Restore(ctx *format.RestoreCtx) error {
+	if n.With != nil {
+		if err := n.With.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore UnionStmt.With")
+		}
+	}
 	if err := n.SelectList.Restore(ctx); err != nil {
 		return errors.Annotate(err, "An error occurred while restore UnionStmt.SelectList")
 	}
@@ -1194,6 +1300,13 @@ func (n *UnionStmt) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*UnionStmt)
+	if n.With != nil {
+		node, ok := n.With.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.With = node.(*WithClause)
+	}
 	if n.SelectList != nil {
 		node, ok := n.SelectList.Accept(v)
 		if !ok {
@@ -1645,10 +1758,16 @@ type DeleteStmt struct {
 	BeforeFrom   bool
 	// TableHints represents the table level Optimizer Hint for join type.
 	TableHints []*TableOptimizerHint
+	With       *WithClause
 }
 
 // Restore implements Node interface.
 func (n *DeleteStmt) Restore(ctx *format.RestoreCtx) error {
+	if n.With != nil {
+		if err := n.With.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore DeleteStmt.With")
+		}
+	}
 	ctx.WriteKeyWord("DELETE ")
 
 	if n.TableHints != nil && len(n.TableHints) != 0 {
@@ -1735,6 +1854,13 @@ func (n *DeleteStmt) Accept(v Visitor) (Node, bool) {
 	}
 
 	n = newNode.(*DeleteStmt)
+	if n.With != nil {
+		node, ok := n.With.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.With = node.(*WithClause)
+	}
 	node, ok := n.TableRefs.Accept(v)
 	if !ok {
 		return n, false
@@ -1787,10 +1913,16 @@ type UpdateStmt struct {
 	IgnoreErr     bool
 	MultipleTable bool
 	TableHints    []*TableOptimizerHint
+	With          *WithClause
 }
 
 // Restore implements Node interface.
 func (n *UpdateStmt) Restore(ctx *format.RestoreCtx) error {
+	if n.With != nil {
+		if err := n.With.Restore(ctx); err != nil {
+			return errors.Annotate(err, "An error occurred while restore UpdateStmt.With")
+		}
+	}
 	ctx.WriteKeyWord("UPDATE ")
 
 	if n.TableHints != nil && len(n.TableHints) != 0 {
@@ -1865,6 +1997,13 @@ func (n *UpdateStmt) Accept(v Visitor) (Node, bool) {
 		return v.Leave(newNode)
 	}
 	n = newNode.(*UpdateStmt)
+	if n.With != nil {
+		node, ok := n.With.Accept(v)
+		if !ok {
+			return n, false
+		}
+		n.With = node.(*WithClause)
+	}
 	node, ok := n.TableRefs.Accept(v)
 	if !ok {
 		return n, false

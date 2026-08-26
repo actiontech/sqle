@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -39,7 +40,7 @@ func TestCTEAuditNoUnsupportedSQLWarn(t *testing.T) {
 
 			i := DefaultMysqlInspectOffline()
 			i.rules = nil
-			actual, err := i.Audit(nil, []string{c.sql})
+			actual, err := i.Audit(context.TODO(), []string{c.sql})
 			assert.NoError(t, err)
 			if !assert.Len(t, actual, 1) {
 				return
