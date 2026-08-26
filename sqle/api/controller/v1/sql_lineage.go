@@ -10,6 +10,8 @@ type SQLLineageAnalyzeReqV1 struct {
 	InstanceType      string   `json:"instance_type" form:"instance_type" valid:"omitempty,oneof=MySQL"`
 	DefaultSchema     string   `json:"default_schema" form:"default_schema"`
 	ResultColumnNames []string `json:"result_columns" form:"result_columns"`
+	ProjectUid        string   `json:"project_uid" form:"project_uid"`
+	DBServiceUid      string   `json:"db_service_uid" form:"db_service_uid"`
 }
 
 type SQLLineageAnalyzeResV1 struct {
