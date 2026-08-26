@@ -217,3 +217,23 @@ func testFingerprint(t *testing.T, input, expect string) {
 	}
 	assert.Equal(t, expect, actual)
 }
+
+func TestParseOneSqlWindowFunc(t *testing.T) {
+	const sql = `SELECT id, ROW_NUMBER() OVER (PARTITION BY dept ORDER BY salary DESC) AS rn FROM emp;`
+	stmt, err := ParseOneSql(sql)
+	assert.NoError(t, err)
+
+	selectStmt, ok := stmt.(*ast.SelectStmt)
+	assert.True(t, ok)
+	assert.NotNil(t, selectStmt.Fields)
+
+	foundWindow := false
+	for _, field := range selectStmt.Fields.Fields {
+		if _, ok := field.Expr.(*ast.WindowFuncExpr); ok {
+			foundWindow = true
+			break
+		}
+	}
+	assert.True(t, foundWindow, "expected AST to contain WindowFuncExpr")
+}
+
