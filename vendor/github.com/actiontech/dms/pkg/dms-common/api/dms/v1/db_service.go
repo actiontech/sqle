@@ -207,7 +207,7 @@ type SQLQueryConfig struct {
 	AllowQueryWhenLessThanAuditLevel SQLAllowQueryAuditLevel `json:"allow_query_when_less_than_audit_level" enums:"normal,notice,warn,error" valid:"omitempty,oneof=normal notice warn error " example:"error"`
 	RuleTemplateName                 string                  `json:"rule_template_name"`
 	RuleTemplateID                   string                  `json:"rule_template_id"`
-	MaintenanceTimes                 []*MaintenanceTime      `json:"maintenance_times"` // 允许执行非 DQL 的运维时间窗口，与数据源 maintenance_times 结构一致
+	MaintenanceTimes                 []*MaintenanceTime      `json:"maintenance_times"`   // 允许执行非 DQL 的运维时间窗口，与数据源 maintenance_times 结构一致
 }
 
 // swagger:model ListDBServiceReply

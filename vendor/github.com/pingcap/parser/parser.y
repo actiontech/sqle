@@ -211,6 +211,7 @@ import (
 	rangeKwd          "RANGE"
 	rank              "RANK"
 	read              "READ"
+	recursive         "RECURSIVE"
 	realType          "REAL"
 	references        "REFERENCES"
 	regexpKwd         "REGEXP"
@@ -821,6 +822,10 @@ import (
 	LockTablesStmt       "Lock tables statement"
 	PreparedStmt         "PreparedStmt"
 	SelectStmt           "SELECT statement"
+	SelectStmtWithClause "common table expression SELECT statement"
+	DeleteFromStmtNoWith "DELETE FROM statement without WITH"
+	UpdateStmtNoWith     "UPDATE statement without WITH"
+	UnionStmtNoWith      "Union select without WITH"
 	RenameTableStmt      "rename table statement"
 	ReplaceIntoStmt      "REPLACE INTO statement"
 	RecoverTableStmt     "recover table statement"
@@ -1123,6 +1128,11 @@ import (
 	WhereClauseOptional                    "Optional WHERE clause"
 	WhenClause                             "When clause"
 	WhenClauseList                         "When clause list"
+	WithClause                             "With Clause"
+	WithList                               "With list"
+	CommonTableExpr                        "Common table expression"
+	IdentList                              "identifier list"
+	IdentListWithParenOpt                  "identifier list with parentheses optional"
 	WithReadLockOpt                        "With Read Lock opt"
 	WithGrantOptionOpt                     "With Grant Option opt"
 	WithValidation                         "with validation"
@@ -3624,6 +3634,10 @@ CreateTableSelectOpt:
 	{
 		$$ = &ast.CreateTableStmt{Select: $1}
 	}
+|	SelectStmtWithClause
+	{
+		$$ = &ast.CreateTableStmt{Select: $1}
+	}
 |	UnionStmt
 	{
 		$$ = &ast.CreateTableStmt{Select: $1}
@@ -3638,6 +3652,10 @@ CreateViewSelectOpt:
 	SelectStmt
 	{
 		$$ = $1.(*ast.SelectStmt)
+	}
+|	SelectStmtWithClause
+	{
+		$$ = $1
 	}
 |	UnionStmt
 	{
@@ -3807,6 +3825,15 @@ DoStmt:
  *
  *******************************************************************/
 DeleteFromStmt:
+	DeleteFromStmtNoWith
+|	WithClause DeleteFromStmtNoWith
+	{
+		d := $2.(*ast.DeleteStmt)
+		d.With = $1.(*ast.WithClause)
+		$$ = d
+	}
+
+DeleteFromStmtNoWith:
 	"DELETE" TableOptimizerHints PriorityOpt QuickOptional IgnoreOptional "FROM" TableName PartitionNameListOpt TableAsNameOpt IndexHintListOpt WhereClauseOptional OrderByOptional LimitClause
 	{
 		// Single Table
@@ -5417,6 +5444,10 @@ InsertValues:
 	{
 		$$ = &ast.InsertStmt{Columns: $2.([]*ast.ColumnName), Select: $4.(*ast.SelectStmt)}
 	}
+|	'(' ColumnNameListOpt ')' SelectStmtWithClause
+	{
+		$$ = &ast.InsertStmt{Columns: $2.([]*ast.ColumnName), Select: $4.(ast.ResultSetNode)}
+	}
 |	'(' ColumnNameListOpt ')' '(' SelectStmt ')'
 	{
 		$$ = &ast.InsertStmt{Columns: $2.([]*ast.ColumnName), Select: $5.(*ast.SelectStmt)}
@@ -5436,6 +5467,10 @@ InsertValues:
 |	SelectStmt
 	{
 		$$ = &ast.InsertStmt{Select: $1.(*ast.SelectStmt)}
+	}
+|	SelectStmtWithClause
+	{
+		$$ = &ast.InsertStmt{Select: $1.(ast.ResultSetNode)}
 	}
 |	UnionStmt
 	{
@@ -8010,6 +8045,24 @@ SubSelect:
 		s.SetText(src[yyS[yypt-1].offset:yyS[yypt].offset])
 		$$ = &ast.SubqueryExpr{Query: s}
 	}
+|	'(' SelectStmtWithClause ')'
+	{
+		switch rs := $2.(type) {
+		case *ast.SelectStmt:
+			endOffset := parser.endOffset(&yyS[yypt])
+			parser.setLastSelectFieldText(rs, endOffset)
+			src := parser.src
+			rs.SetText(src[yyS[yypt-1].offset:yyS[yypt].offset])
+			$$ = &ast.SubqueryExpr{Query: rs}
+		case *ast.UnionStmt:
+			s := rs
+			src := parser.src
+			s.SetText(src[yyS[yypt-1].offset:yyS[yypt].offset])
+			$$ = &ast.SubqueryExpr{Query: s}
+		default:
+			$$ = &ast.SubqueryExpr{Query: $2.(ast.ResultSetNode)}
+		}
+	}
 |	'(' UnionStmt ')'
 	{
 		s := $2.(*ast.UnionStmt)
@@ -8038,8 +8091,97 @@ SelectLockOpt:
 		$$ = ast.SelectLockInShareMode
 	}
 
+IdentListWithParenOpt:
+	/* EMPTY */
+	{
+		$$ = []model.CIStr{}
+	}
+|	'(' IdentList ')'
+	{
+		$$ = $2
+	}
+
+IdentList:
+	Identifier
+	{
+		$$ = []model.CIStr{model.NewCIStr($1)}
+	}
+|	IdentList ',' Identifier
+	{
+		$$ = append($1.([]model.CIStr), model.NewCIStr($3))
+	}
+
+SelectStmtWithClause:
+	WithClause SelectStmt
+	{
+		sel := $2.(*ast.SelectStmt)
+		sel.With = $1.(*ast.WithClause)
+		$$ = sel
+	}
+|	WithClause SubSelect
+	{
+		var sel ast.StmtNode
+		switch x := $2.(*ast.SubqueryExpr).Query.(type) {
+		case *ast.SelectStmt:
+			x.IsInBraces = true
+			x.WithBeforeBraces = true
+			x.With = $1.(*ast.WithClause)
+			sel = x
+		case *ast.UnionStmt:
+			x.With = $1.(*ast.WithClause)
+			sel = x
+		}
+		$$ = sel
+	}
+
+WithClause:
+	"WITH" WithList
+	{
+		$$ = $2
+	}
+|	"WITH" recursive WithList
+	{
+		ws := $3.(*ast.WithClause)
+		ws.IsRecursive = true
+		$$ = ws
+	}
+
+WithList:
+	WithList ',' CommonTableExpr
+	{
+		ws := $1.(*ast.WithClause)
+		ws.CTEs = append(ws.CTEs, $3.(*ast.CommonTableExpression))
+		$$ = ws
+	}
+|	CommonTableExpr
+	{
+		ws := &ast.WithClause{}
+		ws.CTEs = make([]*ast.CommonTableExpression, 0, 4)
+		ws.CTEs = append(ws.CTEs, $1.(*ast.CommonTableExpression))
+		$$ = ws
+	}
+
+CommonTableExpr:
+	Identifier IdentListWithParenOpt "AS" SubSelect
+	{
+		cte := &ast.CommonTableExpression{}
+		cte.Name = model.NewCIStr($1)
+		cte.ColNameList = $2.([]model.CIStr)
+		cte.Query = $4.(*ast.SubqueryExpr)
+		$$ = cte
+	}
+
 // See https://dev.mysql.com/doc/refman/5.7/en/union.html
 UnionStmt:
+	UnionStmtNoWith
+|	WithClause UnionStmtNoWith
+	{
+		u := $2.(*ast.UnionStmt)
+		u.With = $1.(*ast.WithClause)
+		$$ = u
+	}
+
+UnionStmtNoWith:
 	UnionClauseList "UNION" UnionOpt SelectStmtBasic OrderByOptional SelectStmtLimit SelectLockOpt
 	{
 		st := $4.(*ast.SelectStmt)
@@ -9481,6 +9623,7 @@ Statement:
 |	RevokeStmt
 |	RevokeRoleStmt
 |	SelectStmt
+|	SelectStmtWithClause
 |	UnionStmt
 |	SetStmt
 |	SetRoleStmt
@@ -9503,6 +9646,7 @@ Statement:
 
 TraceableStmt:
 	SelectStmt
+|	SelectStmtWithClause
 |	DeleteFromStmt
 |	UpdateStmt
 |	InsertIntoStmt
@@ -9516,6 +9660,7 @@ TraceableStmt:
 
 ExplainableStmt:
 	SelectStmt
+|	SelectStmtWithClause
 |	DeleteFromStmt
 |	UpdateStmt
 |	InsertIntoStmt
@@ -10565,6 +10710,15 @@ StringNameOrBRIEOptionKeyword:
  * See https://dev.mysql.com/doc/refman/5.7/en/update.html
  ***********************************************************************************/
 UpdateStmt:
+	UpdateStmtNoWith
+|	WithClause UpdateStmtNoWith
+	{
+		u := $2.(*ast.UpdateStmt)
+		u.With = $1.(*ast.WithClause)
+		$$ = u
+	}
+
+UpdateStmtNoWith:
 	"UPDATE" TableOptimizerHints PriorityOpt IgnoreOptional TableRef "SET" AssignmentList WhereClauseOptional OrderByOptional LimitClause
 	{
 		var refs *ast.Join
