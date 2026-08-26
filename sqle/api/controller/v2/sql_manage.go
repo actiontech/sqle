@@ -50,6 +50,7 @@ type SqlManage struct {
 // @Param filter_last_audit_start_time_to query string false "last audit start time to"
 // @Param filter_status query string false "status" Enums(unhandled,solved,ignored,manual_audited,sent)
 // @Param filter_rule_name query string false "rule name"
+// @Param filter_remediation_status query string false "remediation status" Enums(resolved,partially_fixed,unchanged,deteriorated,newly_discovered)
 // @Param filter_db_type query string false "db type"
 // @Param filter_business query string false "filter by business" // This parameter is deprecated
 // @Param filter_by_environment_tag query string false "filter by environment tag"

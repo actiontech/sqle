@@ -2,10 +2,13 @@ package v1
 
 import (
 	"context"
+	"net/http"
 
 	dmsV1 "github.com/actiontech/dms/pkg/dms-common/api/dms/v1"
 	"github.com/actiontech/sqle/sqle/api/controller"
+	"github.com/actiontech/sqle/sqle/dms"
 	"github.com/actiontech/sqle/sqle/locale"
+	"github.com/actiontech/sqle/sqle/model"
 	"github.com/labstack/echo/v4"
 )
 
@@ -66,6 +69,61 @@ type AuditResult struct {
 	ExecutionFailed bool   `json:"execution_failed"`
 }
 
+type RuleDiff struct {
+	Resolved  []*AuditResult `json:"resolved"`
+	New       []*AuditResult `json:"new"`
+	Unchanged []*AuditResult `json:"unchanged"`
+}
+
+type GetSqlManageRemediationResp struct {
+	controller.BaseRes
+	Data *SqlManageRemediation `json:"data"`
+}
+
+type GetSqlManageRemediationOverviewReq struct {
+	InstanceAuditPlanID string `query:"instance_audit_plan_id" json:"instance_audit_plan_id" valid:"required"`
+	AuditPlanType       string `query:"audit_plan_type" json:"audit_plan_type" valid:"required"`
+}
+
+type GetSqlManageRemediationOverviewResp struct {
+	controller.BaseRes
+	Data *SqlManageRemediationOverview `json:"data"`
+}
+
+type SqlManageRemediationOverview struct {
+	ProjectID              string                    `json:"project_id"`
+	InstanceAuditPlanID    string                    `json:"instance_audit_plan_id"`
+	AuditPlanType          string                    `json:"audit_plan_type"`
+	SqlTotalNum            uint64                    `json:"sql_total_num"`
+	FirstScore             int32                     `json:"first_score"`
+	LatestScore            int32                     `json:"latest_score"`
+	ScoreChange            int32                     `json:"score_change"`
+	RemediationRate        float64                   `json:"remediation_rate"`
+	RemediationStatusCount *RemediationStatusCounter `json:"remediation_status_count"`
+	FirstAuditMissingNum   uint64                    `json:"first_audit_missing_num"`
+}
+
+type RemediationStatusCounter struct {
+	Resolved        uint64 `json:"resolved"`
+	PartiallyFixed  uint64 `json:"partially_fixed"`
+	Unchanged       uint64 `json:"unchanged"`
+	Deteriorated    uint64 `json:"deteriorated"`
+	NewlyDiscovered uint64 `json:"newly_discovered"`
+}
+
+type SqlManageRemediation struct {
+	Id                uint64         `json:"id"`
+	SqlFingerprint    string         `json:"sql_fingerprint"`
+	Sql               string         `json:"sql"`
+	FirstAuditResult  []*AuditResult `json:"first_audit_result"`
+	FirstAuditTime    string         `json:"first_audit_time"`
+	LatestAuditResult []*AuditResult `json:"latest_audit_result"`
+	LatestAuditTime   string         `json:"latest_audit_time"`
+	RuleDiff          *RuleDiff      `json:"rule_diff"`
+	RemediationStatus string         `json:"remediation_status" enums:"resolved,partially_fixed,unchanged,deteriorated,newly_discovered"`
+	FirstAuditMissing bool           `json:"first_audit_missing"`
+}
+
 type Source struct {
 	SqlSourceType string   `json:"sql_source_type"`
 	SqlSourceDesc string   `json:"sql_source_desc"`
@@ -90,6 +148,7 @@ type Source struct {
 // @Param filter_last_audit_start_time_to query string false "last audit start time to"
 // @Param filter_status query string false "status" Enums(unhandled,solved,ignored,manual_audited)
 // @Param filter_rule_name query string false "rule name"
+// @Param filter_remediation_status query string false "remediation status" Enums(resolved,partially_fixed,unchanged,deteriorated,newly_discovered)
 // @Param filter_db_type query string false "db type"
 // @Param fuzzy_search_endpoint query string false "fuzzy search endpoint"
 // @Param fuzzy_search_schema_name query string false "fuzzy search schema name"
@@ -101,6 +160,61 @@ type Source struct {
 // @Router /v1/projects/{project_name}/sql_manages [get]
 func GetSqlManageList(c echo.Context) error {
 	return nil
+}
+
+// GetSqlManageRemediationOverviewV1
+// @Summary 获取SQL管控整改概览
+// @Description get sql manage remediation overview
+// @Tags SqlManage
+// @Id GetSqlManageRemediationOverviewV1
+// @Security ApiKeyAuth
+// @Param project_name path string true "project name"
+// @Param instance_audit_plan_id query string true "instance audit plan id"
+// @Param audit_plan_type query string true "audit plan type"
+// @Success 200 {object} v1.GetSqlManageRemediationOverviewResp
+// @Router /v1/projects/{project_name}/sql_manages/remediation_overview [get]
+func GetSqlManageRemediationOverviewV1(c echo.Context) error {
+	return getSqlManageRemediationOverviewV1(c)
+}
+
+func getSqlManageRemediationOverviewV1(c echo.Context) error {
+	req := new(GetSqlManageRemediationOverviewReq)
+	if err := controller.BindAndValidateReq(c, req); err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	projectUID, err := dms.GetProjectUIDByName(c.Request().Context(), c.Param("project_name"))
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	records, err := model.GetStorage().GetManagerSQLListByInstanceAuditPlanAndType(req.InstanceAuditPlanID, req.AuditPlanType)
+	if err != nil {
+		return controller.JSONBaseErrorReq(c, err)
+	}
+
+	overview := model.CalculateSqlManageRemediationOverview(projectUID, req.InstanceAuditPlanID, req.AuditPlanType, records)
+	return c.JSON(http.StatusOK, &GetSqlManageRemediationOverviewResp{
+		BaseRes: controller.NewBaseReq(nil),
+		Data: &SqlManageRemediationOverview{
+			ProjectID:           overview.ProjectID,
+			InstanceAuditPlanID: overview.InstanceAuditPlanID,
+			AuditPlanType:       overview.AuditPlanType,
+			SqlTotalNum:         overview.SqlTotalNum,
+			FirstScore:          overview.FirstScore,
+			LatestScore:         overview.LatestScore,
+			ScoreChange:         overview.ScoreChange,
+			RemediationRate:     overview.RemediationRate,
+			RemediationStatusCount: &RemediationStatusCounter{
+				Resolved:        overview.RemediationStatusCount.Resolved,
+				PartiallyFixed:  overview.RemediationStatusCount.PartiallyFixed,
+				Unchanged:       overview.RemediationStatusCount.Unchanged,
+				Deteriorated:    overview.RemediationStatusCount.Deteriorated,
+				NewlyDiscovered: overview.RemediationStatusCount.NewlyDiscovered,
+			},
+			FirstAuditMissingNum: overview.FirstAuditMissingNum,
+		},
+	})
 }
 
 type BatchUpdateSqlManageReq struct {
@@ -518,9 +632,9 @@ func GetGlobalSqlManageList(c echo.Context) error {
 
 type GetGlobalSqlManageStatisticsReq struct {
 	FilterProjectUid                *string                `query:"filter_project_uid" json:"filter_project_uid,omitempty"`
-	FilterInstanceId                 *string                `query:"filter_instance_id" json:"filter_instance_id,omitempty"`
-	FilterProjectPriority            *dmsV1.ProjectPriority `query:"filter_project_priority" json:"filter_project_priority,omitempty" enums:"high,medium,low"`
-	FilterCurrentStepAssigneeUserId  *string                `query:"filter_current_step_assignee_user_id" json:"filter_current_step_assignee_user_id,omitempty"`
+	FilterInstanceId                *string                `query:"filter_instance_id" json:"filter_instance_id,omitempty"`
+	FilterProjectPriority           *dmsV1.ProjectPriority `query:"filter_project_priority" json:"filter_project_priority,omitempty" enums:"high,medium,low"`
+	FilterCurrentStepAssigneeUserId *string                `query:"filter_current_step_assignee_user_id" json:"filter_current_step_assignee_user_id,omitempty"`
 }
 
 type GetGlobalSqlManageStatisticsResp struct {
