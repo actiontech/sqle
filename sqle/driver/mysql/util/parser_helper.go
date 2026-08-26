@@ -29,6 +29,7 @@ func ParseSql(sql string) ([]ast.StmtNode, error) {
 
 func ParseOneSql(sql string) (ast.StmtNode, error) {
 	p := parser.New()
+	p.EnableWindowFunc(true)
 	stmt, err := p.ParseOneStmt(sql, "", "")
 	if err != nil {
 		fmt.Printf("parse error: %v\nsql: %v", err, sql)

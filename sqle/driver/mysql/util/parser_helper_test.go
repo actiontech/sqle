@@ -217,3 +217,35 @@ func testFingerprint(t *testing.T, input, expect string) {
 	}
 	assert.Equal(t, expect, actual)
 }
+
+// 需求完整 SQL（缩写形态）：外层 WHERE rn=1 + 内层 ROW_NUMBER() OVER，涉及三张业务表。
+const requirementWindowFuncSQL = `
+SELECT *
+FROM (
+  SELECT a.line_code,
+         a.lasttpoint_passdate,
+         ROW_NUMBER() OVER (
+           PARTITION BY a.line_code
+           ORDER BY a.lasttpoint_passdate DESC
+         ) AS rn
+  FROM WIP_BILL_WORKORDER a
+  JOIN mes_trace_productinfo b ON a.id = b.workorder_id
+  JOIN INT_MDP_02 c ON a.code = c.code
+) t
+WHERE rn = 1
+`
+
+const minimalWindowFuncSQL = `SELECT id, ROW_NUMBER() OVER (PARTITION BY dept ORDER BY salary) AS rn FROM emp`
+
+func TestParseOneSql_WindowFunction(t *testing.T) {
+	for _, sql := range []string{requirementWindowFuncSQL, minimalWindowFuncSQL} {
+		stmt, err := ParseOneSql(sql)
+		assert.NoError(t, err)
+		assert.NotNil(t, stmt)
+		_, isSelect := stmt.(*ast.SelectStmt)
+		assert.True(t, isSelect, "expected SelectStmt, got %T", stmt)
+		_, isUnparsed := stmt.(*ast.UnparsedStmt)
+		assert.False(t, isUnparsed)
+	}
+}
+
