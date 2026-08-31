@@ -20,6 +20,14 @@ func sendSqlManage(c echo.Context) error {
 	return ErrCommunityEditionNotSupportSqlManage
 }
 
+func exportSqlManageRemediationV1(c echo.Context) error {
+	return ErrCommunityEditionNotSupportSqlManage
+}
+
+func exportGlobalSqlManageRemediationV1(c echo.Context) error {
+	return ErrCommunityEditionNotSupportSqlManage
+}
+
 func getSqlManageRuleTips(c echo.Context) error {
 	return ErrCommunityEditionNotSupportSqlManage
 }

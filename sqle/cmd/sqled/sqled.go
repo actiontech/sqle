@@ -68,6 +68,7 @@ func main() {
 	rootCmd.Flags().StringVarP(&pluginPath, "plugin-path", "", "", "plugin path")
 
 	rootCmd.AddCommand(genSecretPasswordCmd())
+	rootCmd.AddCommand(backfillSQLManageFirstAuditCmd())
 	if err := rootCmd.Execute(); err != nil {
 		log.NewEntry().Error("sqle abnormal termination:", err)
 		os.Exit(1)
