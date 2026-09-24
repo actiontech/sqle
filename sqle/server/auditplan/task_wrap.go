@@ -101,6 +101,7 @@ type TaskWrapper struct {
 	sync.WaitGroup
 	isStarted    bool
 	cancel       chan struct{}
+	cancelOnce   sync.Once
 	loopInterval func() time.Duration
 }
 
@@ -219,7 +220,11 @@ func (at *TaskWrapper) stopCollect() error {
 	if !at.isStarted {
 		return nil
 	}
-	at.cancel <- struct{}{}
+	// S2 scheme B: close once so Stop is non-blocking while ExtractSQL is still running.
+	// loop's `select { case <-cancel: }` unblocks on close; avoid unbuffered send deadlock.
+	at.cancelOnce.Do(func() {
+		close(at.cancel)
+	})
 	at.isStarted = false
 	at.WaitGroup.Wait()
 	at.logger.Infof("stop task")
