@@ -176,8 +176,13 @@ func (s *Storage) GetLatestStartTimeAuditPlanSQLV2(sourceId uint, typ string) (s
 	info := struct {
 		StartTime string `gorm:"column:max_start_time"`
 	}{}
-	err := s.db.Raw(`SELECT MAX(STR_TO_DATE(JSON_UNQUOTE(JSON_EXTRACT(info, '$.start_time_of_last_scraped_sql')), '%Y-%m-%dT%H:%i:%s.%f')) 
-					AS max_start_time FROM sql_manage_records WHERE source_id = ? AND source = ? AND deleted_at is NULL`, sourceId, typ).Scan(&info).Error
+	// Compatible with DATETIME(6) (space separator) and historical RFC3339-like values (T separator).
+	// Trailing timezone suffixes on RFC3339 are ignored once the format is exhausted.
+	err := s.db.Raw(`SELECT MAX(COALESCE(
+		STR_TO_DATE(JSON_UNQUOTE(JSON_EXTRACT(info, '$.start_time_of_last_scraped_sql')), '%Y-%m-%d %H:%i:%s.%f'),
+		STR_TO_DATE(JSON_UNQUOTE(JSON_EXTRACT(info, '$.start_time_of_last_scraped_sql')), '%Y-%m-%dT%H:%i:%s.%f'),
+		STR_TO_DATE(JSON_UNQUOTE(JSON_EXTRACT(info, '$.start_time_of_last_scraped_sql')), '%Y-%m-%d %H:%i:%s')
+	)) AS max_start_time FROM sql_manage_records WHERE source_id = ? AND source = ? AND deleted_at is NULL`, sourceId, typ).Scan(&info).Error
 	return info.StartTime, err
 }
 
