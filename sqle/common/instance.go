@@ -9,8 +9,17 @@ import (
 	"github.com/actiontech/sqle/sqle/model"
 )
 
+// catalogDatabaseNameFromInstance 从实例附加参数读取 catalog database（database_name）。
+// 有值时由测连路径写入 DSN；空值交由 dialector 回退 postgres。未声明该参数时返回空串。
+func catalogDatabaseNameFromInstance(instance *model.Instance) string {
+	if instance == nil || instance.AdditionalParams == nil {
+		return ""
+	}
+	return instance.AdditionalParams.GetParam("database_name").String()
+}
+
 func CheckInstanceIsConnectable(instance *model.Instance) error {
-	plugin, err := NewDriverManagerWithoutAudit(log.NewEntry(), instance, "")
+	plugin, err := NewDriverManagerWithoutAudit(log.NewEntry(), instance, catalogDatabaseNameFromInstance(instance))
 	if err != nil {
 		return err
 	}
