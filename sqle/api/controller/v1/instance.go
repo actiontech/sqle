@@ -240,16 +240,9 @@ type checkDbConnectableReq struct {
 	AdditionalParams []*v1.AdditionalParam `json:"additional_params" from:"additional_params"`
 }
 
-func isRedisClusterConnectReq(dbType string, additionalParams []*v1.AdditionalParam) bool {
-	if !strings.EqualFold(dbType, "Redis") {
-		return false
-	}
-	for _, item := range additionalParams {
-		if item != nil && item.Name == "connection_mode" {
-			return item.Value == "cluster"
-		}
-	}
-	return false
+// allowsEmptyDBServiceUser: Redis (standalone/cluster) may omit connection user.
+func allowsEmptyDBServiceUser(dbType string) bool {
+	return strings.EqualFold(dbType, "Redis")
 }
 
 func CheckInstanceIsConnectable(c echo.Context) error {
@@ -260,7 +253,7 @@ func CheckInstanceIsConnectable(c echo.Context) error {
 	if req.DBType == "" {
 		req.DBType = driverV2.DriverTypeMySQL
 	}
-	if req.User == "" && !isRedisClusterConnectReq(req.DBType, req.AdditionalParams) {
+	if req.User == "" && !allowsEmptyDBServiceUser(req.DBType) {
 		return controller.JSONBaseErrorReq(c, errors.New(errors.DataInvalid, fmt.Errorf("db service user can't be empty")))
 	}
 
