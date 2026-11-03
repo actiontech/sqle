@@ -145,6 +145,8 @@ type AuditPlanTaskInfo struct {
 	AuditPlanID          uint       `json:"audit_plan_id" gorm:"not null"`
 	LastCollectionTime   *time.Time `json:"last_collection_time" gorm:"type:datetime(3)"`
 	LastCollectionStatus string     `json:"last_collection_status" gorm:"type:varchar(25)"`
+	// CollectCursor 持久化云慢日志采集游标（JSON）；NULL/空表示无游标、走首次采集窗。
+	CollectCursor JSON `json:"collect_cursor" gorm:"type:json"`
 }
 
 func (a AuditPlanV2) TableName() string {
@@ -801,6 +803,19 @@ func (s *Storage) UpdateAuditPlanLastCollectionTime(auditPlanID uint, collection
 func (s *Storage) UpdateAuditPlanInfoByAPID(id uint, attrs map[string]interface{}) error {
 	err := s.db.Model(AuditPlanTaskInfo{}).Where("audit_plan_id = ?", id).Updates(attrs).Error
 	return errors.New(errors.ConnectStorageError, err)
+}
+
+// GetAuditPlanTaskInfoByAPID 按 audit_plan_id 读取任务运行时信息（含 collect_cursor）。
+func (s *Storage) GetAuditPlanTaskInfoByAPID(auditPlanID uint) (*AuditPlanTaskInfo, bool, error) {
+	info := &AuditPlanTaskInfo{}
+	err := s.db.Model(AuditPlanTaskInfo{}).Where("audit_plan_id = ?", auditPlanID).First(info).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil, false, nil
+	}
+	if err != nil {
+		return nil, false, errors.New(errors.ConnectStorageError, err)
+	}
+	return info, true, nil
 }
 
 func (s *Storage) GetAuditPlansByProjectId(projectID string) ([]*InstanceAuditPlan, error) {
