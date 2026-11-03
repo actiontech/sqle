@@ -165,6 +165,7 @@ var autoMigrateList = []interface{}{
 	&InstanceAuditPlan{},
 	&AuditPlanV2{},
 	&AuditPlanTaskInfo{},
+	&AuditPlanCollectEventDedup{},
 	&SQLManageRecord{},
 	&SQLManageRecordProcess{},
 	&SQLManageQueue{},
