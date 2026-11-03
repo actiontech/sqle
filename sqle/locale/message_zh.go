@@ -55,12 +55,12 @@ var (
 	SQLExecuteStatusNotExecuted      = &i18n.Message{ID: "SQLExecuteStatusNotExecuted", Other: "未执行"}
 	SQLExecuteStatusUnknown          = &i18n.Message{ID: "SQLExecuteStatusUnknown", Other: "未知"}
 
-	SQLNotExecutedReason       = &i18n.Message{ID: "SQLNotExecutedReason", Other: "前序 SQL 上线失败，本条 SQL 未执行"}
-	OnlineFailReasonFallback   = &i18n.Message{ID: "OnlineFailReasonFallback", Other: "上线失败，暂未获取到具体原因，请联系管理员查看服务日志"}
+	SQLNotExecutedReason     = &i18n.Message{ID: "SQLNotExecutedReason", Other: "前序 SQL 上线失败，本条 SQL 未执行"}
+	OnlineFailReasonFallback = &i18n.Message{ID: "OnlineFailReasonFallback", Other: "上线失败，暂未获取到具体原因，请联系管理员查看服务日志"}
 
-	AIHubNoData                    = &i18n.Message{ID: "AIHubNoData", Other: "暂无数据"}
-	AIHubHighRiskEliminationRate   = &i18n.Message{ID: "AIHubHighRiskEliminationRate", Other: "高危风险消除率 %.0f%%"}
-	AIHubPerfImprovement           = &i18n.Message{ID: "AIHubPerfImprovement", Other: "性能提升%.0f%%"}
+	AIHubNoData                  = &i18n.Message{ID: "AIHubNoData", Other: "暂无数据"}
+	AIHubHighRiskEliminationRate = &i18n.Message{ID: "AIHubHighRiskEliminationRate", Other: "高危风险消除率 %.0f%%"}
+	AIHubPerfImprovement         = &i18n.Message{ID: "AIHubPerfImprovement", Other: "性能提升%.0f%%"}
 
 	TaskSQLReportIndex       = &i18n.Message{ID: "TaskSQLReportIndex", Other: "序号"}
 	TaskSQLReportSQL         = &i18n.Message{ID: "TaskSQLReportSQL", Other: "SQL"}
@@ -115,16 +115,16 @@ var (
 	WFExportExecutionStatus     = &i18n.Message{ID: "ExportExecutionStatus", Other: "上线结果"}
 
 	// Global export (S2): project-layout node templates kept; global uses single audit record
-	WFExportNodeAuditorTpl     = &i18n.Message{ID: "ExportNodeAuditorTpl", Other: "[节点%d]审核人"}
-	WFExportNodeAuditTimeTpl   = &i18n.Message{ID: "ExportNodeAuditTimeTpl", Other: "[节点%d]审核时间"}
-	WFExportNodeAuditResultTpl = &i18n.Message{ID: "ExportNodeAuditResultTpl", Other: "[节点%d]审核结果"}
-	WFExportAuditRecord        = &i18n.Message{ID: "ExportAuditRecord", Other: "审核记录"}
-	WFExportSQLContentPlain    = &i18n.Message{ID: "ExportSQLContentPlain", Other: "SQL 内容"}
-	WFExportWorkflowType       = &i18n.Message{ID: "ExportWorkflowType", Other: "工单类型"}
-	WFExportTypeSQLRelease     = &i18n.Message{ID: "ExportTypeSQLRelease", Other: "SQL上线工单"}
-	WFExportTypeDataExport     = &i18n.Message{ID: "ExportTypeDataExport", Other: "数据导出工单"}
-	WFExportDataExportExecTime = &i18n.Message{ID: "ExportDataExportExecTime", Other: "导出执行时间"}
-	WFExportDataExportResult   = &i18n.Message{ID: "ExportDataExportResult", Other: "导出结果"}
+	WFExportNodeAuditorTpl               = &i18n.Message{ID: "ExportNodeAuditorTpl", Other: "[节点%d]审核人"}
+	WFExportNodeAuditTimeTpl             = &i18n.Message{ID: "ExportNodeAuditTimeTpl", Other: "[节点%d]审核时间"}
+	WFExportNodeAuditResultTpl           = &i18n.Message{ID: "ExportNodeAuditResultTpl", Other: "[节点%d]审核结果"}
+	WFExportAuditRecord                  = &i18n.Message{ID: "ExportAuditRecord", Other: "审核记录"}
+	WFExportSQLContentPlain              = &i18n.Message{ID: "ExportSQLContentPlain", Other: "SQL 内容"}
+	WFExportWorkflowType                 = &i18n.Message{ID: "ExportWorkflowType", Other: "工单类型"}
+	WFExportTypeSQLRelease               = &i18n.Message{ID: "ExportTypeSQLRelease", Other: "SQL上线工单"}
+	WFExportTypeDataExport               = &i18n.Message{ID: "ExportTypeDataExport", Other: "数据导出工单"}
+	WFExportDataExportExecTime           = &i18n.Message{ID: "ExportDataExportExecTime", Other: "导出执行时间"}
+	WFExportDataExportResult             = &i18n.Message{ID: "ExportDataExportResult", Other: "导出结果"}
 	WFExportUnifiedStatusPendingApproval = &i18n.Message{ID: "ExportUnifiedStatusPendingApproval", Other: "待审批"}
 	WFExportUnifiedStatusPendingAction   = &i18n.Message{ID: "ExportUnifiedStatusPendingAction", Other: "待处理"}
 	WFExportUnifiedStatusInProgress      = &i18n.Message{ID: "ExportUnifiedStatusInProgress", Other: "处理中"}
@@ -446,6 +446,8 @@ var (
 	ApMetaBaiduRdsMySQLSlowLog            = &i18n.Message{ID: "ApMetaBaiduRdsMySQLSlowLog", Other: "百度云RDS MySQL慢日志"}
 	ApMetaHiveSlowLog                     = &i18n.Message{ID: "ApMetaHiveSlowLog", Other: "Hive慢日志"}
 	ApMetaHuaweiRdsMySQLSlowLog           = &i18n.Message{ID: "ApMetaHuaweiRdsMySQLSlowLog", Other: "华为云RDS MySQL慢日志"}
+	ApMetaTencentCdbMySQLSlowLog          = &i18n.Message{ID: "ApMetaTencentCdbMySQLSlowLog", Other: "腾讯云 CDB MySQL 慢日志"}
+	ApMetaTencentPostgreSQLSlowLog        = &i18n.Message{ID: "ApMetaTencentPostgreSQLSlowLog", Other: "腾讯云 PostgreSQL 慢日志"}
 	ApMetaOracleTopSQL                    = &i18n.Message{ID: "ApMetaOracleTopSQL", Other: "Oracle TOP SQL"}
 	ApMetaOracleSlowLog                   = &i18n.Message{ID: "ApMetaOracleSlowLog", Other: "Oracle慢日志"}
 	ApMetaOracleProcesslist               = &i18n.Message{ID: "ApMetaOracleProcesslist", Other: "Oracle活跃会话采集"}
@@ -514,6 +516,11 @@ var (
 	ParamRdsPath                         = &i18n.Message{ID: "ParamRdsPath", Other: "RDS Open API地址"}
 	ParamProjectId                       = &i18n.Message{ID: "ParamProjectId", Other: "项目ID"}
 	ParamRegion                          = &i18n.Message{ID: "ParamRegion", Other: "当前RDS实例所在的地区（示例：cn-east-2）"}
+	ParamTencentSecretId                 = &i18n.Message{ID: "ParamTencentSecretId", Other: "SecretId"}
+	ParamTencentSecretKey                = &i18n.Message{ID: "ParamTencentSecretKey", Other: "SecretKey"}
+	ParamTencentRegion                   = &i18n.Message{ID: "ParamTencentRegion", Other: "Region（示例：ap-guangzhou）"}
+	ParamTencentDBInstanceId             = &i18n.Message{ID: "ParamTencentDBInstanceId", Other: "腾讯云实例 ID"}
+	ParamTencentDatabaseName             = &i18n.Message{ID: "ParamTencentDatabaseName", Other: "数据库名称"}
 	ParamTimeSpan                        = &i18n.Message{ID: "ParamTimeSpan", Other: "时间跨度（小时）"}
 	ParamInstance                        = &i18n.Message{ID: "ParamInstance", Other: "节点地址（0 代表所有节点）"}
 	ParamKpiType                         = &i18n.Message{ID: "ParamkpiType", Other: "指标"}
@@ -535,11 +542,11 @@ var (
 
 	OperationParamAuditLevel = &i18n.Message{ID: "OperationParamAuditLevel", Other: "触发审核级别"}
 
-	HiveSlowLogErrSysDbNotFound  = &i18n.Message{ID: "HiveSlowLogErrSysDbNotFound", Other: "Hive 实例 `sys` 库不存在。请联系 Hive 平台运维：1) 在 HS2 的 hive-site.xml 中配置 `hive.query.history.enabled=true`；2) 重启 HS2 服务后，HS2 会自动创建 `sys.query_history` 表。原始错误：%s"}
-	HiveSlowLogErrTableNotFound  = &i18n.Message{ID: "HiveSlowLogErrTableNotFound", Other: "Hive 实例 `sys.query_history` 表不存在。HS2 可能未启用 query history。请检查 HS2 配置 `hive.query.history.enabled` 是否为 true，并确认 HS2 已重启。原始错误：%s"}
-	HiveSlowLogErrColumnMismatch = &i18n.Message{ID: "HiveSlowLogErrColumnMismatch", Other: "Hive 慢日志采集 SQL 执行失败：字段引用错误。可能是 Hive 版本与 SQLE 适配版本（基线 Hive 4.2）存在差异；请把 `SELECT version()` 输出反馈给 SQLE 维护者。原始错误：%s"}
-	HiveSlowLogErrConnectFailed  = &i18n.Message{ID: "HiveSlowLogErrConnectFailed", Other: "Hive 实例连接失败：可能是 HiveServer2 启用了 SASL/LDAP 鉴权而数据源配置的 `auth` 为 `NOSASL`。请在 SQLE 数据源管理页编辑该 Hive 数据源，把 `auth` 改为 `NONE` 或 `LDAP`。原始错误：%s"}
-	HiveSlowLogErrAuthInvalid    = &i18n.Message{ID: "HiveSlowLogErrAuthInvalid", Other: "Hive 数据源 auth 参数值非法。允许的值：`NOSASL` / `NONE` / `LDAP` / `CUSTOM`。请在 SQLE 数据源管理页修正。原始错误：%s"}
+	HiveSlowLogErrSysDbNotFound          = &i18n.Message{ID: "HiveSlowLogErrSysDbNotFound", Other: "Hive 实例 `sys` 库不存在。请联系 Hive 平台运维：1) 在 HS2 的 hive-site.xml 中配置 `hive.query.history.enabled=true`；2) 重启 HS2 服务后，HS2 会自动创建 `sys.query_history` 表。原始错误：%s"}
+	HiveSlowLogErrTableNotFound          = &i18n.Message{ID: "HiveSlowLogErrTableNotFound", Other: "Hive 实例 `sys.query_history` 表不存在。HS2 可能未启用 query history。请检查 HS2 配置 `hive.query.history.enabled` 是否为 true，并确认 HS2 已重启。原始错误：%s"}
+	HiveSlowLogErrColumnMismatch         = &i18n.Message{ID: "HiveSlowLogErrColumnMismatch", Other: "Hive 慢日志采集 SQL 执行失败：字段引用错误。可能是 Hive 版本与 SQLE 适配版本（基线 Hive 4.2）存在差异；请把 `SELECT version()` 输出反馈给 SQLE 维护者。原始错误：%s"}
+	HiveSlowLogErrConnectFailed          = &i18n.Message{ID: "HiveSlowLogErrConnectFailed", Other: "Hive 实例连接失败：可能是 HiveServer2 启用了 SASL/LDAP 鉴权而数据源配置的 `auth` 为 `NOSASL`。请在 SQLE 数据源管理页编辑该 Hive 数据源，把 `auth` 改为 `NONE` 或 `LDAP`。原始错误：%s"}
+	HiveSlowLogErrAuthInvalid            = &i18n.Message{ID: "HiveSlowLogErrAuthInvalid", Other: "Hive 数据源 auth 参数值非法。允许的值：`NOSASL` / `NONE` / `LDAP` / `CUSTOM`。请在 SQLE 数据源管理页修正。原始错误：%s"}
 	HiveSlowLogErrHS2ServerError         = &i18n.Message{ID: "HiveSlowLogErrHS2ServerError", Other: "Hive HS2 服务端返回错误。常见原因：1) `sys.query_history` 表不存在 —— 请确认 HS2 的 hive-site.xml 中已配置 `hive.query.history.enabled=true` 并重启 HS2 服务；2) `sys` 库不存在 —— 同上，重启 HS2 后会自动创建；3) Hive 版本与 SQLE 适配基线（Hive 4.2）字段不一致。请查阅 HS2 服务端日志获取详细错误信息。原始错误：%s"}
 	HiveSlowLogErrPluginTransportClosing = &i18n.Message{ID: "HiveSlowLogErrPluginTransportClosing", Other: "Hive 慢日志采集失败：sqle-hive-plugin 进程异常退出（gRPC 通道关闭，错误信号 `transport is closing`）。最常见的原因是 Hive 数据源 `auth` 参数值非法（plugin 内 gohive 在 `innerConnect` 内 `panic: Unrecognized auth`，进程崩溃后 panic 信息不会跨 gRPC 传递）。请按以下顺序自查：1) 在 SQLE 数据源管理页确认 `auth` 是允许的值：`NOSASL` / `NONE` / `LDAP` / `CUSTOM`；2) 确认 host / port 可达；3) 查阅 plugin / HS2 服务端日志获取 panic 堆栈。原始错误：%s"}
 	HiveSlowLogErrUnknown                = &i18n.Message{ID: "HiveSlowLogErrUnknown", Other: "Hive 慢日志采集失败：%s"}
@@ -586,8 +593,9 @@ var (
 
 // database structure comparison capability check (controller 层 4009)
 // 详见 design.md §3.2.3 / §3.5 EE-11 / EE-12；占位符 %s 顺序：
-//   1) 缺失能力的数据源类型描述（例："基准数据源类型 Hive"）
-//   2) 缺失的 OptionalModule 字面（例："OptionalGetDatabaseObjectDDL"）
+//  1. 缺失能力的数据源类型描述（例："基准数据源类型 Hive"）
+//  2. 缺失的 OptionalModule 字面（例："OptionalGetDatabaseObjectDDL"）
+//
 // 中英文案与 active.zh.toml / active.en.toml 中同 ID 条目保持一致。
 var (
 	DatabaseCompareNotSupportedByDbType = &i18n.Message{

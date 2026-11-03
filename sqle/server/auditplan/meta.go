@@ -41,6 +41,7 @@ const (
 	TypeAliRdsMySQLSlowLog      = "ali_rds_mysql_slow_log"
 	TypeAliRdsMySQLAuditLog     = "ali_rds_mysql_audit_log"
 	TypeHuaweiRdsMySQLSlowLog   = "huawei_rds_mysql_slow_log"
+	TypeTencentCdbMySQLSlowLog  = "tencent_cdb_mysql_slow_log"
 	TypeOracleTopSQL            = "oracle_top_sql"
 	TypeAllAppExtract           = "all_app_extract"
 	TypeBaiduRdsMySQLSlowLog    = "baidu_rds_mysql_slow_log"
@@ -68,6 +69,7 @@ const (
 	paramKeyFirstSqlsScrappedInLastPeriodHours = "first_sqls_scrapped_in_last_period_hours"
 	paramKeyProjectId                          = "project_id"
 	paramKeyRegion                             = "region"
+	paramKeyDatabaseName                       = "database_name"
 )
 
 const (
@@ -111,6 +113,11 @@ var MetaBuilderList = []MetaBuilder{
 		Type:          TypeHuaweiRdsMySQLSlowLog,
 		Desc:          locale.ApMetaHuaweiRdsMySQLSlowLog,
 		TaskHandlerFn: NewMySQLSlowLogHuaweiTaskV2Fn(),
+	},
+	{
+		Type:          TypeTencentCdbMySQLSlowLog,
+		Desc:          locale.ApMetaTencentCdbMySQLSlowLog,
+		TaskHandlerFn: NewMySQLSlowLogTencentTaskV2Fn(),
 	},
 	{
 		Type:          TypeOracleTopSQL,
